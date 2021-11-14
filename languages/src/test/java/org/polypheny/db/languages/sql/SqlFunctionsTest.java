@@ -47,8 +47,8 @@ import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.Test;
-import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Utilities;
 
 

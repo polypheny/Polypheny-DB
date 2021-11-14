@@ -16,9 +16,9 @@
 
 package org.polypheny.db.languages.sql.ddl;
 
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlAlter;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 

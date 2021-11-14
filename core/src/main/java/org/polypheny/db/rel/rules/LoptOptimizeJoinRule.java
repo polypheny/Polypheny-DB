@@ -43,7 +43,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -166,7 +166,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
                         continue;
                     }
                     RexCall filterCall = (RexCall) filter;
-                    if ( (filterCall.getOperator() != SqlStdOperatorTable.EQUALS)
+                    if ( (filterCall.getOperator() != StdOperatorRegistry.get( "EQUALS" ))
                             || !(filterCall.getOperands().get( 0 ) instanceof RexInputRef)
                             || !(filterCall.getOperands().get( 1 ) instanceof RexInputRef) ) {
                         continue;
@@ -971,7 +971,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
                 if ( condition == null ) {
                     condition = joinFilter;
                 } else {
-                    condition = rexBuilder.makeCall( SqlStdOperatorTable.AND, condition, joinFilter );
+                    condition = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), condition, joinFilter );
                 }
                 filterIter.remove();
             }
@@ -1528,5 +1528,6 @@ public class LoptOptimizeJoinRule extends RelOptRule {
         // IS NOT NULL filter on the join keys that are nullable.  Therefore, it's ok if there are nulls in the unique key.
         return RelMdUtil.areColumnsDefinitelyUniqueWhenNullsFiltered( mq, leftRel, joinInfo.leftSet() );
     }
+
 }
 

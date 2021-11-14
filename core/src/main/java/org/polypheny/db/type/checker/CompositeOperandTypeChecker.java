@@ -25,8 +25,6 @@ import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Util;
@@ -135,7 +133,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
         StringBuilder ret = new StringBuilder();
         for ( Ord<PolyOperandTypeChecker> ord : Ord.<PolyOperandTypeChecker>zip( allowedRules ) ) {
             if ( ord.i > 0 ) {
-                ret.append( SqlOperator.NL );
+                ret.append( Operator.NL );
             }
             ret.append( ord.e.getAllowedSignatures( op, opName ) );
             if ( composition == Composition.AND ) {
@@ -264,7 +262,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
     }
 
 
-    private boolean check( SqlCallBinding callBinding ) {
+    private boolean check( CallBinding callBinding ) {
         switch ( composition ) {
             case REPEAT:
                 if ( !range.isValidCount( callBinding.getOperandCount() ) ) {

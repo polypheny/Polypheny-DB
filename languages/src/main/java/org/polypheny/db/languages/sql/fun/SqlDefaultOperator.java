@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.PolyType;

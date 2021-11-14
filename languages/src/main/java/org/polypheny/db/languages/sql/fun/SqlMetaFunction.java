@@ -18,10 +18,10 @@ package org.polypheny.db.languages.sql.fun;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlCallBinding;
+import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;

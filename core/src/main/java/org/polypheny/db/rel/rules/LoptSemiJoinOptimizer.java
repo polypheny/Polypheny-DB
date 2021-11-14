@@ -43,7 +43,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
@@ -59,7 +60,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.Kind;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
@@ -403,11 +403,11 @@ public class LoptSemiJoinOptimizer {
             if ( right == null ) {
                 return left;
             }
-            return rexBuilder.makeCall( SqlStdOperatorTable.AND, left, right );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), left, right );
         }
 
         // Determine which side of the equality filter references the join operand we're interested in; then, check if it is contained in our key list
-        assert call.getOperator() == SqlStdOperatorTable.EQUALS;
+        assert call.getOperator() == StdOperatorRegistry.get( "EQUALS" );
         List<RexNode> operands = call.getOperands();
         assert operands.get( 0 ) instanceof RexInputRef;
         assert operands.get( 1 ) instanceof RexInputRef;
@@ -656,6 +656,7 @@ public class LoptSemiJoinOptimizer {
             }
             return (c1.isLt( c2 )) ? -1 : ((c1.equals( c2 )) ? 0 : 1);
         }
+
     }
 
 
@@ -687,6 +688,7 @@ public class LoptSemiJoinOptimizer {
         public FemLocalIndex findSemiJoinIndexByCost( RelNode dimRel, List<Integer> actualLeftKeys, List<Integer> rightKeys, List<Integer> bestKeyOrder ) {
             return null;
         }
+
     }
 
 
@@ -706,6 +708,8 @@ public class LoptSemiJoinOptimizer {
         public static boolean isLcsRidColumnId( int originColumnOrdinal ) {
             return false;
         }
+
     }
+
 }
 

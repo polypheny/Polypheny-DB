@@ -49,11 +49,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.util.Util;
 
 
@@ -1126,46 +1124,8 @@ public enum PolyType {
     }
 
 
-    public SqlLiteral createLiteral( Object o, ParserPos pos ) {
-        switch ( this ) {
-            case BOOLEAN:
-                return SqlLiteral.createBoolean( (Boolean) o, pos );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-            case BIGINT:
-            case DECIMAL:
-                return SqlLiteral.createExactNumeric( o.toString(), pos );
-            case JSON:
-            case VARCHAR:
-            case CHAR:
-                return SqlLiteral.createCharString( (String) o, pos );
-            case VARBINARY:
-            case BINARY:
-                return SqlLiteral.createBinaryString( (byte[]) o, pos );
-            case DATE:
-                return SqlLiteral.createDate(
-                        o instanceof Calendar
-                                ? DateString.fromCalendarFields( (Calendar) o )
-                                : (DateString) o,
-                        pos );
-            case TIME:
-                return SqlLiteral.createTime(
-                        o instanceof Calendar
-                                ? TimeString.fromCalendarFields( (Calendar) o )
-                                : (TimeString) o,
-                        0 /* todo */,
-                        pos );
-            case TIMESTAMP:
-                return SqlLiteral.createTimestamp(
-                        o instanceof Calendar
-                                ? TimestampString.fromCalendarFields( (Calendar) o )
-                                : (TimestampString) o,
-                        0 /* todo */,
-                        pos );
-            default:
-                throw Util.unexpected( this );
-        }
+    public Literal createLiteral( Object o, ParserPos pos ) {
+        return LanguageManager.getInstance().createLiteral( this, o, pos );
     }
 
 

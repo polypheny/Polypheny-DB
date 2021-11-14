@@ -54,6 +54,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     private final SqlValidator validator;
     @Getter
     private final SqlValidatorScope scope;
+    @Getter
     private final SqlCall call;
 
 
@@ -91,14 +92,6 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
             return n;
         }
         return validator.isAggregate( select ) ? 0 : -1;
-    }
-
-
-    /**
-     * Returns the call node.
-     */
-    public SqlCall getCall() {
-        return call;
     }
 
 

@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;

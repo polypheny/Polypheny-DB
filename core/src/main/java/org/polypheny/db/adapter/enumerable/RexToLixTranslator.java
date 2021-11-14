@@ -63,6 +63,7 @@ import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
@@ -79,7 +80,6 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.runtime.Functions;
-import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ControlFlowException;
@@ -425,7 +425,7 @@ public class RexToLixTranslator {
                 break;
             case CHAR:
             case VARCHAR:
-                final SqlIntervalQualifier interval = sourceType.getIntervalQualifier();
+                final IntervalQualifier interval = sourceType.getIntervalQualifier();
                 switch ( sourceType.getPolyType() ) {
                     case DATE:
                         convert = RexImpTable.optimize2(
@@ -472,7 +472,7 @@ public class RexToLixTranslator {
                                 Expressions.call(
                                         BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
                                         operand,
-                                        Expressions.constant( interval.timeUnitRange ) ) );
+                                        Expressions.constant( interval.getTimeUnitRange() ) ) );
                         break;
                     case INTERVAL_DAY:
                     case INTERVAL_DAY_HOUR:
@@ -489,7 +489,7 @@ public class RexToLixTranslator {
                                 Expressions.call(
                                         BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
                                         operand,
-                                        Expressions.constant( interval.timeUnitRange ),
+                                        Expressions.constant( interval.getTimeUnitRange() ),
                                         Expressions.constant( interval.getFractionalSecondPrecision( typeFactory.getTypeSystem() ) ) ) );
                         break;
                     case BOOLEAN:

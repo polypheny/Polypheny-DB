@@ -52,13 +52,13 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -472,7 +472,7 @@ public class PhysTypeImpl implements PhysType {
             return type;
         }
         return typeFactory.builder()
-                .add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, type )
+                .add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, type )
                 .build();
     }
 
@@ -622,5 +622,6 @@ public class PhysTypeImpl implements PhysType {
         }
         return format.field( expression, field, fieldType, storageType );
     }
+
 }
 

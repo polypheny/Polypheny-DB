@@ -17,10 +17,10 @@
 package org.polypheny.db.type.inference;
 
 
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**
@@ -49,8 +49,9 @@ public class ExplicitReturnTypeInference implements PolyReturnTypeInference {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         return protoType.apply( opBinding.getTypeFactory() );
     }
+
 }
 

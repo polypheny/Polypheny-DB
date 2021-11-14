@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Setter;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
@@ -61,7 +62,6 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -411,7 +411,7 @@ public abstract class AbstractRelNode implements RelNode {
     protected String computeDigest() {
         StringWriter sw = new StringWriter();
         RelWriter pw =
-                new RelWriterImpl( new PrintWriter( sw ), SqlExplainLevel.DIGEST_ATTRIBUTES, false ) {
+                new RelWriterImpl( new PrintWriter( sw ), ExplainLevel.DIGEST_ATTRIBUTES, false ) {
                     @Override
                     protected void explain_( RelNode rel, List<Pair<String, Object>> values ) {
                         pw.write( getRelTypeName() );

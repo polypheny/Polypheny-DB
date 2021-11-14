@@ -16,15 +16,24 @@
 
 package org.polypheny.db.core;
 
+import javax.annotation.Nonnull;
 import lombok.Getter;
 
 public interface Function {
 
-    FunctionType getFunctionType();
+    default FunctionType getFunctionType() {
+        throw new RuntimeException( "Not Implemented Yet" );
+    }
+
+    @Nonnull
+    FunctionCategory getFunctionCategory();
 
     enum FunctionType {
         COUNT( true ),
-        SINGLE_VALUE( true );
+        SINGLE_VALUE( true ),
+        JSON_VALUE( false ),
+        DOC_EQUAL( false ),
+        CAST( false );
 
         @Getter
         private final boolean isAgg;

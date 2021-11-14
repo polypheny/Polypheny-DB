@@ -49,6 +49,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
@@ -59,7 +60,6 @@ import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 
 

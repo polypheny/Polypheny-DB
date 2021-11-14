@@ -70,7 +70,7 @@ import org.polypheny.db.sql.SqlDescribeTable;
 import org.polypheny.db.sql.SqlDynamicParam;
 import org.polypheny.db.sql.SqlExplain;
 import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.sql.ExplainLevel;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -1092,7 +1092,7 @@ SqlSelect SqlSelect() :
 SqlNode SqlExplain() :
 {
     SqlNode stmt;
-    SqlExplainLevel detailLevel = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+    ExplainLevel detailLevel = ExplainLevel.EXPPLAN_ATTRIBUTES;
     SqlExplain.Depth depth;
     final SqlExplainFormat format;
 }
@@ -1172,19 +1172,19 @@ SqlExplain.Depth ExplainDepth() :
 /**
  * Parses INCLUDING ALL ATTRIBUTES modifier for EXPLAIN PLAN.
  */
-SqlExplainLevel ExplainDetailLevel() :
+ExplainLevel ExplainDetailLevel() :
 {
-    SqlExplainLevel level = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+    ExplainLevel level = ExplainLevel.EXPPLAN_ATTRIBUTES;
 }
 {
     (
         <EXCLUDING> <ATTRIBUTES>
         {
-            level = SqlExplainLevel.NO_ATTRIBUTES;
+            level = ExplainLevel.NO_ATTRIBUTES;
         }
         |
         <INCLUDING>
-        [ <ALL> { level = SqlExplainLevel.ALL_ATTRIBUTES; } ]
+        [ <ALL> { level = ExplainLevel.ALL_ATTRIBUTES; } ]
         <ATTRIBUTES>
         {
         }
@@ -1233,7 +1233,7 @@ SqlNode SqlDescribe() :
         stmt = SqlQueryOrDml() {
             // DESCRIBE STATEMENT currently does the same as EXPLAIN. See
             //   [POLYPHENYDB-1221] Implement DESCRIBE DATABASE, CATALOG, STATEMENT
-            final SqlExplainLevel detailLevel = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+            final ExplainLevel detailLevel = ExplainLevel.EXPPLAN_ATTRIBUTES;
             final SqlExplain.Depth depth = SqlExplain.Depth.PHYSICAL;
             final SqlExplainFormat format = SqlExplainFormat.TEXT;
             return new SqlExplain(s.end(stmt),

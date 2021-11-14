@@ -17,20 +17,19 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import java.util.Arrays;
 import org.polypheny.db.core.Call;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.core.json.JsonQueryWrapperBehavior;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeTransforms;
 import org.polypheny.db.type.checker.OperandTypes;

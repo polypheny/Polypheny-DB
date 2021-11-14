@@ -40,13 +40,12 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlIntervalQualifier;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -291,7 +290,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
         if ( typeName == null ) {
             return null;
         }
-        return new SqlIdentifier( typeName.name(), ParserPos.ZERO );
+        return LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, typeName.name(), ParserPos.ZERO );
     }
 
 

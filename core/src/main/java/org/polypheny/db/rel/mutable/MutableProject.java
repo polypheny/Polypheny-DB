@@ -36,11 +36,11 @@ package org.polypheny.db.rel.mutable;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
@@ -81,7 +81,7 @@ public class MutableProject extends MutableSingleRel {
      * @param fieldNameList Aliases of the expressions, or null to generate
      */
     public static MutableRel of( MutableRel input, List<RexNode> exprList, List<String> fieldNameList ) {
-        final RelDataType rowType = RexUtil.createStructType( input.cluster.getTypeFactory(), exprList, fieldNameList, SqlValidatorUtil.F_SUGGESTER );
+        final RelDataType rowType = RexUtil.createStructType( input.cluster.getTypeFactory(), exprList, fieldNameList, ValidatorUtil.F_SUGGESTER );
         return of( rowType, input, exprList );
     }
 
@@ -124,5 +124,6 @@ public class MutableProject extends MutableSingleRel {
     public MutableRel clone() {
         return of( rowType, input.clone(), projects );
     }
+
 }
 

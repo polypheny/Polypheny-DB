@@ -52,6 +52,8 @@ import org.polypheny.db.adapter.enumerable.EnumerableJoin;
 import org.polypheny.db.adapter.enumerable.EnumerableMergeJoin;
 import org.polypheny.db.adapter.enumerable.EnumerableSemiJoin;
 import org.polypheny.db.adapter.enumerable.EnumerableThetaJoin;
+import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.hep.HepRelVertex;
 import org.polypheny.db.plan.volcano.RelSubset;
@@ -80,8 +82,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.sql.SemiJoinType;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
@@ -251,7 +251,7 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
             return ImmutableList.of();
         }
         final Multimap<Integer, Integer> targets = LinkedListMultimap.create();
-        final Map<Integer, SqlMonotonicity> targetsWithMonotonicity = new HashMap<>();
+        final Map<Integer, Monotonicity> targetsWithMonotonicity = new HashMap<>();
         for ( Ord<RexNode> project : Ord.<RexNode>zip( projects ) ) {
             if ( project.e instanceof RexInputRef ) {
                 targets.put( ((RexInputRef) project.e).getIndex(), project.i );
@@ -280,8 +280,8 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         }
 
         final List<RelFieldCollation> fieldCollationsForRexCalls = new ArrayList<>();
-        for ( Map.Entry<Integer, SqlMonotonicity> entry : targetsWithMonotonicity.entrySet() ) {
-            final SqlMonotonicity value = entry.getValue();
+        for ( Map.Entry<Integer, Monotonicity> entry : targetsWithMonotonicity.entrySet() ) {
+            final Monotonicity value = entry.getValue();
             switch ( value ) {
                 case NOT_MONOTONIC:
                 case CONSTANT:
@@ -457,5 +457,6 @@ public class RelMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         }
         return ImmutableList.of();
     }
+
 }
 

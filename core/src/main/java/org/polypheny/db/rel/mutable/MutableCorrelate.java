@@ -35,10 +35,10 @@ package org.polypheny.db.rel.mutable;
 
 
 import java.util.Objects;
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -106,4 +106,5 @@ public class MutableCorrelate extends MutableBiRel {
     public MutableRel clone() {
         return MutableCorrelate.of( rowType, left.clone(), right.clone(), correlationId, requiredColumns, joinType );
     }
+
 }

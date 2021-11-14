@@ -47,7 +47,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql2rel.InitializerExpressionFactory;
 import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.type.ObjectPolyType;

@@ -18,16 +18,16 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.Locale;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.json.JsonConstructorNullClause;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.checker.OperandTypes;

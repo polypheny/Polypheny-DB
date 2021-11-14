@@ -17,11 +17,11 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlPrefixOperator;
+import org.polypheny.db.languages.sql.validate.SqlValidator;
 
 
 /**

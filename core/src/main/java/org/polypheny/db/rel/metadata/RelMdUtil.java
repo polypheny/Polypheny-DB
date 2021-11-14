@@ -44,6 +44,7 @@ import java.util.Set;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
@@ -65,7 +66,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -79,7 +79,7 @@ import org.polypheny.db.util.NumberUtil;
 public class RelMdUtil {
 
     public static final Operator ARTIFICIAL_SELECTIVITY_FUNC =
-            new SqlFunction(
+            LanguageManager.getInstance().createFunction(
                     "ARTIFICIAL_SELECTIVITY",
                     Kind.OTHER_FUNCTION,
                     ReturnTypes.BOOLEAN, // returns boolean since we'll AND it

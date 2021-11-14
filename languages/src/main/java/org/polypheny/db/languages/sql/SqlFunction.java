@@ -22,10 +22,13 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Function;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -165,6 +168,7 @@ public class SqlFunction extends SqlOperator implements Function {
     /**
      * @return function category
      */
+    @Override
     @Nonnull
     public FunctionCategory getFunctionCategory() {
         return this.category;
@@ -202,8 +206,8 @@ public class SqlFunction extends SqlOperator implements Function {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
-        return deriveType( validator, scope, call, true );
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+        return deriveType( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call, true );
     }
 
 
@@ -263,10 +267,5 @@ public class SqlFunction extends SqlOperator implements Function {
         return false;
     }
 
-
-    @Override
-    public FunctionType getFunctionType() {
-        throw new RuntimeException( "Not Implemented Yet" );
-    }
 
 }

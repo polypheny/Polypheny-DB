@@ -54,6 +54,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -81,8 +83,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Bug;
@@ -583,6 +583,7 @@ public class SubstitutionVisitor {
             this.before = before;
             this.after = after;
         }
+
     }
 
 
@@ -747,6 +748,7 @@ public class SubstitutionVisitor {
     protected static class MatchFailed extends ControlFlowException {
 
         public static final MatchFailed INSTANCE = new MatchFailed();
+
     }
 
 
@@ -809,6 +811,7 @@ public class SubstitutionVisitor {
                     return ImmutableList.copyOf( slots ).subList( 0, slotCount );
             }
         }
+
     }
 
 
@@ -861,6 +864,7 @@ public class SubstitutionVisitor {
         public RexSimplify getSimplify() {
             return simplify;
         }
+
     }
 
 
@@ -880,6 +884,7 @@ public class SubstitutionVisitor {
             assert equalType( "query", call.query, "result", result, Litmus.THROW );
             this.result = result;
         }
+
     }
 
 
@@ -939,6 +944,7 @@ public class SubstitutionVisitor {
         protected static Operand target( int ordinal ) {
             return new TargetOperand( ordinal );
         }
+
     }
 
 
@@ -964,6 +970,7 @@ public class SubstitutionVisitor {
             }
             return null;
         }
+
     }
 
 
@@ -1000,6 +1007,7 @@ public class SubstitutionVisitor {
             final MutableRel newProject2 = MutableRels.strip( newProject );
             return call.result( newProject2 );
         }
+
     }
 
 
@@ -1031,6 +1039,7 @@ public class SubstitutionVisitor {
             final MutableRel newProject2 = MutableRels.strip( newProject );
             return call.result( newProject2 );
         }
+
     }
 
 
@@ -1114,6 +1123,7 @@ public class SubstitutionVisitor {
             }
             return MutableProject.of( model.rowType, input, exprList );
         }
+
     }
 
 
@@ -1160,6 +1170,7 @@ public class SubstitutionVisitor {
             }
             return MutableFilter.of( target, newCondition );
         }
+
     }
 
 
@@ -1191,6 +1202,7 @@ public class SubstitutionVisitor {
             }
             return null;
         }
+
     }
 
 
@@ -1231,6 +1243,7 @@ public class SubstitutionVisitor {
             }
             return call.result( result );
         }
+
     }
 
 
@@ -1334,18 +1347,19 @@ public class SubstitutionVisitor {
             final MutableRel result = unifyAggregates( aggregate2, target );
             return result == null ? null : call.result( result );
         }
+
     }
 
 
-    public static SqlAggFunction getRollup( SqlAggFunction aggregation ) {
-        if ( aggregation == SqlStdOperatorTable.SUM
-                || aggregation == SqlStdOperatorTable.MIN
-                || aggregation == SqlStdOperatorTable.MAX
-                || aggregation == SqlStdOperatorTable.SUM0
-                || aggregation == SqlStdOperatorTable.ANY_VALUE ) {
+    public static AggFunction getRollup( AggFunction aggregation ) {
+        if ( aggregation == StdOperatorRegistry.getAgg( "SUM" )
+                || aggregation == StdOperatorRegistry.getAgg( "MIN" )
+                || aggregation == StdOperatorRegistry.getAgg( "MAX" )
+                || aggregation == StdOperatorRegistry.getAgg( "SUM0" )
+                || aggregation == StdOperatorRegistry.getAgg( ".ANY_VALUE" ) ) {
             return aggregation;
-        } else if ( aggregation == SqlStdOperatorTable.COUNT ) {
-            return SqlStdOperatorTable.SUM0;
+        } else if ( aggregation == StdOperatorRegistry.getAgg( "COUNT" ) ) {
+            return StdOperatorRegistry.getAgg( "SUM0" );
         } else {
             return null;
         }
@@ -1439,6 +1453,7 @@ public class SubstitutionVisitor {
         public boolean isWeaker( SubstitutionVisitor visitor, MutableRel rel ) {
             return false;
         }
+
     }
 
 
@@ -1492,6 +1507,7 @@ public class SubstitutionVisitor {
             }
             return true;
         }
+
     }
 
 
@@ -1509,6 +1525,7 @@ public class SubstitutionVisitor {
         public boolean matches( SubstitutionVisitor visitor, MutableRel rel ) {
             return clazz.isInstance( rel );
         }
+
     }
 
 
@@ -1534,6 +1551,7 @@ public class SubstitutionVisitor {
             visitor.slots[ordinal] = rel;
             return true;
         }
+
     }
 
 
@@ -1565,6 +1583,7 @@ public class SubstitutionVisitor {
             assert rel0 != null : "QueryOperand should have been called first";
             return visitor.isWeaker( rel0, rel );
         }
+
     }
 
 
@@ -1590,6 +1609,7 @@ public class SubstitutionVisitor {
                 }
             }
         }
+
     }
 
 
@@ -1642,6 +1662,8 @@ public class SubstitutionVisitor {
 
             call.transformTo( LogicalFilter.create( newProject, newCondition ) );
         }
+
     }
+
 }
 

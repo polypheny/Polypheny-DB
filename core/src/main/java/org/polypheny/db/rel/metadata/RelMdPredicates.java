@@ -52,7 +52,9 @@ import java.util.TreeMap;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
@@ -80,8 +82,6 @@ import org.polypheny.db.rex.RexPermuteInputsShuttle;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.BuiltInMethod;
@@ -192,12 +192,12 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                 columnsMappedBuilder.set( sIdx );
                 // Project can also generate constants. We need to include them.
             } else if ( RexLiteral.isNullLiteral( expr.e ) ) {
-                projectPullUpPredicates.add( rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, rexBuilder.makeInputRef( project, expr.i ) ) );
+                projectPullUpPredicates.add( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), rexBuilder.makeInputRef( project, expr.i ) ) );
             } else if ( RexUtil.isConstant( expr.e ) ) {
                 final List<RexNode> args = ImmutableList.of( rexBuilder.makeInputRef( project, expr.i ), expr.e );
-                final SqlOperator op = args.get( 0 ).getType().isNullable() || args.get( 1 ).getType().isNullable()
-                        ? SqlStdOperatorTable.IS_NOT_DISTINCT_FROM
-                        : SqlStdOperatorTable.EQUALS;
+                final Operator op = args.get( 0 ).getType().isNullable() || args.get( 1 ).getType().isNullable()
+                        ? StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" )
+                        : StdOperatorRegistry.get( "EQUALS" );
                 projectPullUpPredicates.add( rexBuilder.makeCall( op, args ) );
             }
         }
@@ -246,7 +246,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             final List<RexNode> list = new ArrayList<>();
             for ( int c : columnsMapped.intersect( rCols ) ) {
                 if ( input.getRowType().getFieldList().get( c ).getType().isNullable() && Strong.isNull( r, ImmutableBitSet.of( c ) ) ) {
-                    list.add( rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_NULL, rexBuilder.makeInputRef( input, c ) ) );
+                    list.add( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), rexBuilder.makeInputRef( input, c ) ) );
                 }
             }
             if ( !list.isEmpty() ) {
@@ -689,6 +689,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                 }
                 return null;
             }
+
         }
 
 
@@ -804,6 +805,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                     iterationIdx[i] = t + 1;
                 }
             }
+
         }
 
 
@@ -826,6 +828,8 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             }
             return predicate.isAlwaysTrue();
         }
+
     }
+
 }
 

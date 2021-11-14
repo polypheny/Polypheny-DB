@@ -19,10 +19,10 @@ package org.polypheny.db.type.checker;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -46,12 +46,12 @@ public class MultisetOperandTypeChecker implements PolyOperandTypeChecker {
 
     @Override
     public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
-        final SqlNode op0 = callBinding.operand( 0 );
+        final Node op0 = callBinding.operand( 0 );
         if ( !OperandTypes.MULTISET.checkSingleOperandType( callBinding, op0, 0, throwOnFailure ) ) {
             return false;
         }
 
-        final SqlNode op1 = callBinding.operand( 1 );
+        final Node op1 = callBinding.operand( 1 );
         if ( !OperandTypes.MULTISET.checkSingleOperandType( callBinding, op1, 0, throwOnFailure ) ) {
             return false;
         }

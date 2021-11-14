@@ -18,14 +18,14 @@ package org.polypheny.db.document.rules;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.core.Function;
+import org.polypheny.db.core.Function.FunctionType;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlDocEqualExpressionOperator;
-import org.polypheny.db.sql.fun.SqlJsonValueFunction;
 
 
 /**
@@ -75,11 +75,11 @@ public class DocumentRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            SqlOperator operator = call.getOperator();
+            Operator operator = call.getOperator();
             if ( operator.kind == Kind.JSON_VALUE_EXPRESSION
-                    || operator instanceof SqlJsonValueFunction
+                    || ((Function) operator).getFunctionType() == FunctionType.JSON_VALUE
                     || operator.kind == Kind.JSON_API_COMMON_SYNTAX
-                    || operator instanceof SqlDocEqualExpressionOperator ) {
+                    || ((Function) operator).getFunctionType() == FunctionType.DOC_EQUAL ) {
                 containsJson = true;
             }
             return super.visitCall( call );
@@ -105,7 +105,7 @@ public class DocumentRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            SqlOperator operator = call.getOperator();
+            Operator operator = call.getOperator();
             if ( Kind.DOC_KIND.contains( operator.getKind() ) ) {
                 containsDocument = true;
             }

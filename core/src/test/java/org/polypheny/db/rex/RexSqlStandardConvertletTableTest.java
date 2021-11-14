@@ -34,8 +34,6 @@
 package org.polypheny.db.rex;
 
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;

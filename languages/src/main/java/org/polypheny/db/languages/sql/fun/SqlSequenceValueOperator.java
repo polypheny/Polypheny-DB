@@ -18,16 +18,16 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.List;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlSpecialOperator;
+import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.PolyType;
 
 

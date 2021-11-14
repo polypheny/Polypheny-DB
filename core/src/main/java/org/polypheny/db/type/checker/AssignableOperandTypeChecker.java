@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -68,8 +68,8 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
     public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         // Do not use callBinding.operands(). We have not resolved to a function yet, therefore we do not know the ordered
         // parameter names.
-        final List<SqlNode> operands = callBinding.getCall().getOperandList();
-        for ( Pair<RelDataType, SqlNode> pair : Pair.zip( paramTypes, operands ) ) {
+        final List<Node> operands = callBinding.getCall().getOperandList();
+        for ( Pair<RelDataType, Node> pair : Pair.zip( paramTypes, operands ) ) {
             RelDataType argType = callBinding.getValidator().deriveType( callBinding.getScope(), pair.right );
             if ( !PolyTypeUtil.canAssignFrom( pair.left, argType ) ) {
                 if ( throwOnFailure ) {

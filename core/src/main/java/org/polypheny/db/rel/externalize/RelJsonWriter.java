@@ -46,7 +46,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.JsonBuilder;
 import org.polypheny.db.util.Pair;
 
@@ -157,7 +156,7 @@ public class RelJsonWriter implements RelWriter {
 
     @Override
     public ExplainLevel getDetailLevel() {
-        return SqlExplainLevel.ALL_ATTRIBUTES;
+        return ExplainLevel.ALL_ATTRIBUTES;
     }
 
 
@@ -219,4 +218,5 @@ public class RelJsonWriter implements RelWriter {
         map.put( "Plan", relList.get( relList.size() - 1 ) );
         return jsonBuilder.toJsonString( map );
     }
+
 }

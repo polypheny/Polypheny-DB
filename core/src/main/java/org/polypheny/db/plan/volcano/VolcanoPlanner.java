@@ -60,6 +60,7 @@ import java.util.regex.Pattern;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Convention;
@@ -93,7 +94,6 @@ import org.polypheny.db.rel.rules.JoinCommuteRule;
 import org.polypheny.db.rel.rules.SemiJoinRule;
 import org.polypheny.db.rel.rules.SortRemoveRule;
 import org.polypheny.db.rel.rules.UnionToDistinctRule;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.Util;
@@ -285,7 +285,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         if ( this.originalRoot == null ) {
             this.originalRoot = rel;
         }
-        this.originalRootString = RelOptUtil.toString( root, SqlExplainLevel.ALL_ATTRIBUTES );
+        this.originalRootString = RelOptUtil.toString( root, ExplainLevel.ALL_ATTRIBUTES );
 
         // Making a node the root changes its importance.
         this.ruleQueue.recompute( this.root );
@@ -569,7 +569,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         }
         RelNode cheapest = root.buildCheapestPlan( this );
         if ( LOGGER.isDebugEnabled() ) {
-            LOGGER.debug( "Cheapest plan:\n{}", RelOptUtil.toString( cheapest, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            LOGGER.debug( "Cheapest plan:\n{}", RelOptUtil.toString( cheapest, ExplainLevel.ALL_ATTRIBUTES ) );
             LOGGER.debug( "Provenance:\n{}", provenance( cheapest ) );
         }
         return cheapest;
@@ -1615,6 +1615,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             final VolcanoRuleMatch match = new VolcanoRuleMatch( volcanoPlanner, getOperand0(), rels, nodeInputs );
             volcanoPlanner.ruleQueue.addMatch( match );
         }
+
     }
 
 
@@ -1624,6 +1625,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     private abstract static class Provenance {
 
         public static final Provenance EMPTY = new UnknownProvenance();
+
     }
 
 
@@ -1646,6 +1648,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         DirectProvenance( RelNode source ) {
             this.source = source;
         }
+
     }
 
 
@@ -1664,6 +1667,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             this.rels = rels;
             this.callId = callId;
         }
+
     }
+
 }
 

@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;

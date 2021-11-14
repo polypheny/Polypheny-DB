@@ -40,7 +40,10 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelNode;
@@ -71,7 +74,7 @@ public class AggregateUnionTransposeRule extends RelOptRule {
 
     public static final AggregateUnionTransposeRule INSTANCE = new AggregateUnionTransposeRule( LogicalAggregate.class, LogicalUnion.class, RelFactories.LOGICAL_BUILDER );
 
-    private static final Map<Class<? extends SqlAggFunction>, Boolean> SUPPORTED_AGGREGATES = new IdentityHashMap<>();
+    private static final Map<Class<? extends AggFunction>, Boolean> SUPPORTED_AGGREGATES = new IdentityHashMap<>();
 
 
     static {
@@ -153,10 +156,10 @@ public class AggregateUnionTransposeRule extends RelOptRule {
             if ( origCall.isDistinct() || !SUPPORTED_AGGREGATES.containsKey( origCall.getAggregation().getClass() ) ) {
                 return null;
             }
-            final SqlAggFunction aggFun;
+            final AggFunction aggFun;
             final RelDataType aggType;
-            if ( origCall.getAggregation() == SqlStdOperatorTable.COUNT ) {
-                aggFun = SqlStdOperatorTable.SUM0;
+            if ( origCall.getAggregation() == StdOperatorRegistry.get( "COUNT" ) ) {
+                aggFun = StdOperatorRegistry.getAgg( "SUM0" );
                 // count(any) is always not null, however nullability of sum might depend on the number of columns in GROUP BY.
                 // Here we use SUM0 since we are sure we will not face nullable inputs nor we'll face empty set.
                 aggType = null;
@@ -166,7 +169,7 @@ public class AggregateUnionTransposeRule extends RelOptRule {
             }
             AggregateCall newCall =
                     AggregateCall.create(
-                            aggFun,
+                            (Operator & AggFunction) aggFun,
                             origCall.isDistinct(),
                             origCall.isApproximate(),
                             ImmutableList.of( groupCount + ord.i ),
@@ -180,5 +183,6 @@ public class AggregateUnionTransposeRule extends RelOptRule {
         }
         return newCalls;
     }
+
 }
 

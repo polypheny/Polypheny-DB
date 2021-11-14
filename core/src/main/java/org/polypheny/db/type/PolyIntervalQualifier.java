@@ -33,9 +33,9 @@
 package org.polypheny.db.type;
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.sql.SqlIntervalQualifier;
 
 public class PolyIntervalQualifier {
 
@@ -51,8 +51,8 @@ public class PolyIntervalQualifier {
     public final int fractionalSecondPrecision;
 
 
-    public static PolyIntervalQualifier fromSqlQualifier( SqlIntervalQualifier intervalQualifier ) {
-        return new PolyIntervalQualifier( intervalQualifier.getStartPrecisionPreservingDefault(), intervalQualifier.timeUnitRange, intervalQualifier.getFractionalSecondPrecision() );
+    public static PolyIntervalQualifier fromSqlQualifier( IntervalQualifier intervalQualifier ) {
+        return new PolyIntervalQualifier( intervalQualifier.getStartPrecisionPreservingDefault(), intervalQualifier.getTimeUnitRange(), intervalQualifier.getFractionalSecondPrecisionPreservingDefault() );
     }
 
 

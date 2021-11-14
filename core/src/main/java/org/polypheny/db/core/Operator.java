@@ -28,6 +28,7 @@ import org.polypheny.db.util.Litmus;
 
 public abstract class Operator {
 
+    public static final String NL = System.getProperty( "line.separator" );
     /**
      * See {@link Kind}. It's possible to have a name that doesn't match the kind
      */

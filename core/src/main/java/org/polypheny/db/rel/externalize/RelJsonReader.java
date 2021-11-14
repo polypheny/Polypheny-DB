@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
@@ -64,7 +65,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.Schema;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -351,7 +351,7 @@ public class RelJsonReader {
 
     private AggregateCall toAggCall( Map<String, Object> jsonAggCall ) {
         final String aggName = (String) jsonAggCall.get( "agg" );
-        final SqlAggFunction aggregation = relJson.toAggregation( aggName, jsonAggCall );
+        final AggFunction aggregation = relJson.toAggregation( aggName, jsonAggCall );
         final Boolean distinct = (Boolean) jsonAggCall.get( "distinct" );
         @SuppressWarnings("unchecked") final List<Integer> operands = (List<Integer>) jsonAggCall.get( "operands" );
         final Integer filterOperand = (Integer) jsonAggCall.get( "filter" );
@@ -368,5 +368,6 @@ public class RelJsonReader {
         }
         return node;
     }
+
 }
 

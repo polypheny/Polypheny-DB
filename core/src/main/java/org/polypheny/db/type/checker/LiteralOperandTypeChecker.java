@@ -18,10 +18,10 @@ package org.polypheny.db.type.checker;
 
 
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -53,16 +53,16 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
     public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
         Util.discard( iFormalOperand );
 
-        if ( SqlUtil.isNullLiteral( node, true ) ) {
+        if ( CoreUtil.isNullLiteral( node, true ) ) {
             if ( allowNull ) {
                 return true;
             }
             if ( throwOnFailure ) {
-                throw callBinding.newError( Static.RESOURCE.argumentMustNotBeNull( callBinding.getOperator().getName() ) );
+                throw callBinding.newError( Static.RESOURCE.argumentMustNotBeNull(  callBinding.getOperator().getName() ) );
             }
             return false;
         }
-        if ( !RexLiteral.isLiteral( node ) && !SqlUtil.isLiteralChain( node ) ) {
+        if ( !RexLiteral.isLiteral( node ) && !CoreUtil.isLiteralChain( node ) ) {
             if ( throwOnFailure ) {
                 throw callBinding.newError( Static.RESOURCE.argumentMustBeLiteral( callBinding.getOperator().getName() ) );
             }

@@ -60,7 +60,9 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.core.Filter;
@@ -73,8 +75,6 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.runtime.Functions;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Bug;
@@ -205,6 +205,7 @@ public abstract class DateRangeRules {
             relBuilder.push( filter.getInput() ).filter( condition );
             call.transformTo( relBuilder.build() );
         }
+
     }
 
 
@@ -248,6 +249,7 @@ public abstract class DateRangeRules {
             timeUnits.clear();
             opKinds.clear();
         }
+
     }
 
 
@@ -503,16 +505,16 @@ public abstract class DateRangeRules {
         RexNode toRex( RexNode operand, Range<Calendar> r ) {
             final List<RexNode> nodes = new ArrayList<>();
             if ( r.hasLowerBound() ) {
-                final SqlBinaryOperator op =
+                final Operator op =
                         r.lowerBoundType() == BoundType.CLOSED
-                                ? SqlStdOperatorTable.GREATER_THAN_OR_EQUAL
-                                : SqlStdOperatorTable.GREATER_THAN;
+                                ? StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" )
+                                : StdOperatorRegistry.get( "GREATER_THAN" );
                 nodes.add( rexBuilder.makeCall( op, operand, dateTimeLiteral( rexBuilder, r.lowerEndpoint(), operand ) ) );
             }
             if ( r.hasUpperBound() ) {
-                final SqlBinaryOperator op = r.upperBoundType() == BoundType.CLOSED
-                        ? SqlStdOperatorTable.LESS_THAN_OR_EQUAL
-                        : SqlStdOperatorTable.LESS_THAN;
+                final Operator op = r.upperBoundType() == BoundType.CLOSED
+                        ? StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" )
+                        : StdOperatorRegistry.get( "LESS_THAN" );
                 nodes.add( rexBuilder.makeCall( op, operand, dateTimeLiteral( rexBuilder, r.upperEndpoint(), operand ) ) );
             }
             return RexUtil.composeConjunction( rexBuilder, nodes );
@@ -715,6 +717,8 @@ public abstract class DateRangeRules {
             }
             return c;
         }
+
     }
+
 }
 

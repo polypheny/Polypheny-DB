@@ -58,6 +58,8 @@ import org.polypheny.db.adapter.enumerable.impl.WinAggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -75,7 +77,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.runtime.SortedMultiMap;
-import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -134,6 +135,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             }
             return constants.get( index - actualInputFieldCount );
         }
+
     }
 
 
@@ -463,7 +465,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
     private Function<BlockBuilder, WinAggFrameResultContext>
     getBlockBuilderWinAggFrameResultContextFunction(
-            final JavaTypeFactory typeFactory, final SqlConformance conformance,
+            final JavaTypeFactory typeFactory, final Conformance conformance,
             final Result result, final List<Expression> translatedConstants,
             final Expression comparator_,
             final Expression rows_, final ParameterExpression i_,
@@ -733,7 +735,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                     };
             String aggName = "a" + agg.aggIdx;
             if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                aggName = Util.toJavaId( agg.call.getAggregation().getName(), 0 ).substring( "ID$0$".length() ) + aggName;
+                aggName = Util.toJavaId( ((Operator) agg.call.getAggregation()).getName(), 0 ).substring( "ID$0$".length() ) + aggName;
             }
             List<Type> state = agg.implementor.getStateType( agg.context );
             final List<Expression> decls = new ArrayList<>( state.size() );
@@ -885,5 +887,6 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                         : BuiltInMethod.BINARY_SEARCH6_UPPER).method,
                 rows_, val, searchLower, searchUpper, keySelector, keyComparator );
     }
+
 }
 

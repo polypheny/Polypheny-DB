@@ -19,6 +19,7 @@ package org.polypheny.db.type.inference;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlNode;
@@ -44,7 +45,7 @@ public abstract class InferTypes {
             ( callBinding, returnType, operandTypes ) -> {
                 final RelDataType unknownType = callBinding.getValidator().getUnknownType();
                 RelDataType knownType = unknownType;
-                for ( SqlNode operand : callBinding.operands() ) {
+                for ( Node operand : callBinding.operands() ) {
                     knownType = callBinding.getValidator().deriveType( callBinding.getScope(), operand );
                     if ( !knownType.equals( unknownType ) ) {
                         break;

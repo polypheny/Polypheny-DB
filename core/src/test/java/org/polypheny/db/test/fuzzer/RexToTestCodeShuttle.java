@@ -37,6 +37,7 @@ package org.polypheny.db.test.fuzzer;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -44,7 +45,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 
 

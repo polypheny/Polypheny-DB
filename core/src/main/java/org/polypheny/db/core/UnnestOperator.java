@@ -16,24 +16,10 @@
 
 package org.polypheny.db.core;
 
-import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.type.PolyType;
+public interface UnnestOperator {
 
-public interface IntervalQualifier extends Visitable {
-
-    PolyType typeName();
-
-    int getStartPrecisionPreservingDefault();
-
-    int getFractionalSecondPrecision( RelDataTypeSystem typeSystem );
-
-    int getFractionalSecondPrecisionPreservingDefault();
-
-    boolean isSingleDatetimeField();
-
-    boolean isYearMonth();
-
-    TimeUnitRange getTimeUnitRange();
+    String ORDINALITY_COLUMN_NAME = "ORDINALITY";
+    String MAP_KEY_COLUMN_NAME = "KEY";
+    String MAP_VALUE_COLUMN_NAME = "VALUE";
 
 }

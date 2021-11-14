@@ -45,6 +45,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -54,8 +56,6 @@ import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.externalize.RelWriterImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -229,7 +229,7 @@ public class RexProgram {
 
 
     public RelWriter collectExplainTerms( String prefix, RelWriter pw ) {
-        return collectExplainTerms( prefix, pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES );
+        return collectExplainTerms( prefix, pw, ExplainLevel.EXPPLAN_ATTRIBUTES );
     }
 
 
@@ -239,7 +239,7 @@ public class RexProgram {
      * @param prefix Prefix for term names, usually the empty string, but useful if a relational expression contains more than one program
      * @param pw Plan writer
      */
-    public RelWriter collectExplainTerms( String prefix, RelWriter pw, SqlExplainLevel level ) {
+    public RelWriter collectExplainTerms( String prefix, RelWriter pw, ExplainLevel level ) {
         final List<RelDataTypeField> inFields = inputRowType.getFieldList();
         final List<RelDataTypeField> outFields = outputRowType.getFieldList();
         assert outFields.size() == projects.size() : "outFields.length=" + outFields.size() + ", projects.length=" + projects.size();
@@ -252,7 +252,7 @@ public class RexProgram {
         int trivialCount = 0;
 
         // Do not use the trivialCount optimization if computing digest for the optimizer (as opposed to doing an explain plan).
-        if ( level != SqlExplainLevel.DIGEST_ATTRIBUTES ) {
+        if ( level != ExplainLevel.DIGEST_ATTRIBUTES ) {
             trivialCount = countTrivial( projects );
         }
 
@@ -629,7 +629,7 @@ public class RexProgram {
         int index = project.index;
         while ( true ) {
             RexNode expr = exprs.get( index );
-            if ( expr instanceof RexCall && ((RexCall) expr).getOperator() == SqlStdOperatorTable.IN_FENNEL ) {
+            if ( expr instanceof RexCall && ((RexCall) expr).getOperator() == StdOperatorRegistry.get( "IN_FENNEL" ) ) {
                 // drill through identity function
                 expr = ((RexCall) expr).getOperands().get( 0 );
             }
@@ -786,6 +786,7 @@ public class RexProgram {
             }
             return litmus.succeed();
         }
+
     }
 
 
@@ -807,6 +808,7 @@ public class RexProgram {
             RexNode tree = exprs.get( localRef.getIndex() );
             return tree.accept( this );
         }
+
     }
 
 
@@ -833,6 +835,7 @@ public class RexProgram {
             // Correlating variables are constant WITHIN A RESTART, so that's good enough.
             return true;
         }
+
     }
 
 
@@ -904,6 +907,7 @@ public class RexProgram {
             final RexNode referenceExpr = fieldAccess.getReferenceExpr().accept( this );
             return new RexFieldAccess( referenceExpr, fieldAccess.getField() );
         }
+
     }
 
 
@@ -923,6 +927,8 @@ public class RexProgram {
             refCounts[index]++;
             return null;
         }
+
     }
+
 }
 

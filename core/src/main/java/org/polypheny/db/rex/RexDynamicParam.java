@@ -35,8 +35,8 @@ package org.polypheny.db.rex;
 
 
 import java.util.Objects;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -50,7 +50,7 @@ public class RexDynamicParam extends RexVariable {
     /**
      * Creates a dynamic parameter.
      *
-     * @param type  inferred type of parameter
+     * @param type inferred type of parameter
      * @param index 0-based index of dynamic parameter in statement
      */
     public RexDynamicParam( RelDataType type, long index ) {
@@ -96,5 +96,6 @@ public class RexDynamicParam extends RexVariable {
     public int hashCode() {
         return Objects.hash( digest, type, index );
     }
+
 }
 

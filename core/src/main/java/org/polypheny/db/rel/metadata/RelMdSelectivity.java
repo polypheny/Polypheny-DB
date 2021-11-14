@@ -36,6 +36,7 @@ package org.polypheny.db.rel.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
@@ -47,7 +48,6 @@ import org.polypheny.db.rel.core.Union;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -125,7 +125,7 @@ public class RelMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
         RexBuilder rexBuilder = rel.getCluster().getRexBuilder();
         RexNode newPred = RelMdUtil.makeSemiJoinSelectivityRexNode( mq, rel );
         if ( predicate != null ) {
-            newPred = rexBuilder.makeCall( SqlStdOperatorTable.AND, newPred, predicate );
+            newPred = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), newPred, predicate );
         }
 
         return mq.getSelectivity( rel.getLeft(), newPred );
@@ -176,5 +176,6 @@ public class RelMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
     public Double getSelectivity( RelNode rel, RelMetadataQuery mq, RexNode predicate ) {
         return RelMdUtil.guessSelectivity( predicate );
     }
+
 }
 

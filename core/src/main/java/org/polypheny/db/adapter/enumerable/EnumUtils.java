@@ -51,11 +51,11 @@ import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 

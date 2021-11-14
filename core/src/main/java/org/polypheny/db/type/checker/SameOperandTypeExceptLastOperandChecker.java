@@ -21,12 +21,10 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Static;
 
@@ -86,12 +84,13 @@ public class SameOperandTypeExceptLastOperandChecker extends SameOperandTypeChec
     public String getAllowedSignatures( Operator op, String opName ) {
         final String typeName = getTypeName();
         if ( nOperands == -1 ) {
-            return SqlUtil.getAliasedSignature( op, opName, ImmutableList.of( typeName, typeName, "..." ) );
+            return CoreUtil.getAliasedSignature( op, opName, ImmutableList.of( typeName, typeName, "..." ) );
         } else {
             List<String> types = Collections.nCopies( nOperands - 1, typeName );
             types.add( lastOperandTypeName );
-            return SqlUtil.getAliasedSignature( op, opName, types );
+            return CoreUtil.getAliasedSignature( op, opName, types );
         }
     }
+
 }
 

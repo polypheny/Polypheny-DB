@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.cottontail.rel;
 
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.cottontail.rel.CottontailFilter.AtomicPredicate;
 import org.polypheny.db.adapter.cottontail.rel.CottontailFilter.BooleanPredicate;

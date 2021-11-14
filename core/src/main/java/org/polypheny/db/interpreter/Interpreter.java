@@ -61,7 +61,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.TransformedEnumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
@@ -238,7 +238,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                                         throw new AssertionError( "unknown expression " + call );
                                 }
                             default:
-                                if ( call.getOperator() == SqlStdOperatorTable.UPPER ) {
+                                if ( call.getOperator() == StdOperatorRegistry.get( "UPPER" ) ) {
                                     argScalar.execute( context, args );
                                     String s0 = (String) args[0];
                                     if ( s0 == null ) {
@@ -246,7 +246,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                                     }
                                     return s0.toUpperCase( Locale.ROOT );
                                 }
-                                if ( call.getOperator() == SqlStdOperatorTable.SUBSTRING ) {
+                                if ( call.getOperator() == StdOperatorRegistry.getAgg( "SUBSTRING" ) ) {
                                     argScalar.execute( context, args );
                                     String s0 = (String) args[0];
                                     Number i1 = (Number) args[1];
@@ -281,6 +281,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                 }
             };
         }
+
     }
 
 
@@ -299,6 +300,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             this.rel = rel;
             this.rowEnumerable = rowEnumerable;
         }
+
     }
 
 
@@ -330,6 +332,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         public void close() {
             enumerator.close();
         }
+
     }
 
 
@@ -391,6 +394,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         public void close() {
             // noop
         }
+
     }
 
 
@@ -627,6 +631,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         public DataContext getDataContext() {
             return interpreter.dataContext;
         }
+
     }
 
 
@@ -638,6 +643,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         Edge( RelNode parent, int ordinal ) {
             super( parent, ordinal );
         }
+
     }
 
 
@@ -647,6 +653,8 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
     interface ScalarCompiler {
 
         Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext );
+
     }
+
 }
 

@@ -40,8 +40,8 @@ public class StdOperatorRegistry {
     }
 
 
-    public static AggFunction getAgg( String key ) {
-        return (AggFunction) get( key );
+    public static <T extends Operator & AggFunction> T getAgg( String key ) {
+        return (T) get( key );
     }
 
 

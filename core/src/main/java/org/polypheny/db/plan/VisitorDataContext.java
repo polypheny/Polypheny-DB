@@ -41,6 +41,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.Function;
+import org.polypheny.db.core.Function.FunctionType;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.type.RelDataType;
@@ -49,8 +52,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlCastFunction;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
@@ -223,8 +224,8 @@ public class VisitorDataContext implements DataContext {
     private static RexNode removeCast( RexNode inputRef ) {
         if ( inputRef instanceof RexCall ) {
             final RexCall castedRef = (RexCall) inputRef;
-            final SqlOperator operator = castedRef.getOperator();
-            if ( operator instanceof SqlCastFunction ) {
+            final Operator operator = castedRef.getOperator();
+            if ( ((Function) operator).getFunctionType() == FunctionType.CAST ) {
                 inputRef = castedRef.getOperands().get( 0 );
             }
         }

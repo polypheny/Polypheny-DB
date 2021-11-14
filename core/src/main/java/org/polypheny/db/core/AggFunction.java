@@ -16,7 +16,9 @@
 
 package org.polypheny.db.core;
 
-public interface AggFunction extends Function {
+import org.polypheny.db.schema.Wrapper;
+
+public interface AggFunction extends Function, Wrapper {
 
     Kind getKind();
 

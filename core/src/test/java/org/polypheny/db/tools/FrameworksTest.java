@@ -79,8 +79,8 @@ import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.sql.ExplainLevel;
 import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.parser.SqlParseException;
@@ -137,7 +137,7 @@ public class FrameworksTest {
                     // Now, plan.
                     return planner.findBestExp();
                 } );
-        String s = RelOptUtil.dumpPlan( "", x, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES );
+        String s = RelOptUtil.dumpPlan( "", x, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
         assertThat(
                 Util.toLinux( s ),
                 equalTo( "EnumerableFilter(condition=[>($1, 1)])\n  EnumerableTableScan(table=[[myTable]])\n" ) );
@@ -346,7 +346,7 @@ public class FrameworksTest {
         n = planner.validate( n );
         RelNode root = planner.rel( n ).project();
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Logical Plan", root, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( RelOptUtil.dumpPlan( "-- Logical Plan", root, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         RelOptCluster cluster = root.getCluster();
         final RelOptPlanner optPlanner = cluster.getPlanner();
@@ -354,12 +354,12 @@ public class FrameworksTest {
         RelTraitSet desiredTraits = cluster.traitSet().replace( EnumerableConvention.INSTANCE );
         final RelNode newRoot = optPlanner.changeTraits( root, desiredTraits );
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Mid Plan", newRoot, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( RelOptUtil.dumpPlan( "-- Mid Plan", newRoot, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         optPlanner.setRoot( newRoot );
         RelNode bestExp = optPlanner.findBestExp();
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Best Plan", bestExp, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( RelOptUtil.dumpPlan( "-- Best Plan", bestExp, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
     }
 

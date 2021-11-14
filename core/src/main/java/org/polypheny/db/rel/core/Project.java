@@ -42,6 +42,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -58,7 +59,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Permutation;
@@ -216,7 +216,7 @@ public abstract class Project extends SingleRel {
         // If we're generating a digest, include the rowtype. If two projects differ in return type, we don't want to regard them as equivalent, otherwise we will try to put rels
         // of different types into the same planner equivalence set.
         //CHECKSTYLE: IGNORE 2
-        if ( (pw.getDetailLevel() == SqlExplainLevel.DIGEST_ATTRIBUTES) && false ) {
+        if ( (pw.getDetailLevel() == ExplainLevel.DIGEST_ATTRIBUTES) && false ) {
             pw.item( "type", rowType );
         }
 
@@ -338,5 +338,6 @@ public abstract class Project extends SingleRel {
                 (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 rowType.toString() + "&";
     }
+
 }
 

@@ -43,7 +43,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.avatica.AvaticaUtils;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Function;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationImpl;
@@ -65,9 +68,6 @@ import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlFunction;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.JsonBuilder;
@@ -355,8 +355,8 @@ public class RelJson {
                         case CAST:
                             map.put( "type", toJson( node.getType() ) );
                     }
-                    if ( call.getOperator() instanceof SqlFunction ) {
-                        if ( ((SqlFunction) call.getOperator()).getFunctionType().isUserDefined() ) {
+                    if ( call.getOperator() instanceof Function ) {
+                        if ( ((Function) call.getOperator()).getFunctionCategory().isUserDefined() ) {
                             map.put( "class", call.getOperator().getClass().getName() );
                         }
                     }
@@ -379,7 +379,7 @@ public class RelJson {
             if ( op != null ) {
                 final List operands = (List) map.get( "operands" );
                 final Object jsonType = map.get( "type" );
-                final SqlOperator operator = toOp( op, map );
+                final Operator operator = toOp( op, map );
                 final List<RexNode> rexOperands = toRexList( relInput, operands );
                 RelDataType type;
                 if ( jsonType != null ) {
@@ -450,29 +450,27 @@ public class RelJson {
     }
 
 
-    private SqlOperator toOp( String op, Map<String, Object> map ) {
+    private Operator toOp( String op, Map<String, Object> map ) {
         // TODO: build a map, for more efficient lookup
         // TODO: look up based on Kind
-        final List<SqlOperator> operatorList = SqlStdOperatorTable.instance().getOperatorList();
-        for ( SqlOperator operator : operatorList ) {
-            if ( operator.getName().equals( op ) ) {
-                return operator;
-            }
+        if ( StdOperatorRegistry.get( op ) != null ) { // todo dl this should now work, maybe implement kind lookup...
+            return StdOperatorRegistry.get( op );
         }
+
         String class_ = (String) map.get( "class" );
         if ( class_ != null ) {
-            return AvaticaUtils.instantiatePlugin( SqlOperator.class, class_ );
+            return AvaticaUtils.instantiatePlugin( Operator.class, class_ );
         }
         return null;
     }
 
 
-    SqlAggFunction toAggregation( String agg, Map<String, Object> map ) {
-        return (SqlAggFunction) toOp( agg, map );
+    AggFunction toAggregation( String agg, Map<String, Object> map ) {
+        return (AggFunction) toOp( agg, map );
     }
 
 
-    private String toJson( SqlOperator operator ) {
+    private String toJson( Operator operator ) {
         // User-defined operators are not yet handled.
         return operator.getName();
     }

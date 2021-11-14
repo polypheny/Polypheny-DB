@@ -28,6 +28,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -39,9 +40,8 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.schema.HrSchema;
+import org.polypheny.db.sql.ExplainLevel;
 import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.type.PolyType;
@@ -138,7 +138,7 @@ public class RelWriterTest {
                     } catch ( IOException e ) {
                         throw new RuntimeException( e );
                     }
-                    return RelOptUtil.dumpPlan( "", node, SqlExplainFormat.TEXT, SqlExplainLevel.EXPPLAN_ATTRIBUTES );
+                    return RelOptUtil.dumpPlan( "", node, SqlExplainFormat.TEXT, ExplainLevel.EXPPLAN_ATTRIBUTES );
                 } );
 
         assertThat( s,

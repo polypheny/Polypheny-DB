@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PolyType;
@@ -133,7 +133,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
     public RelDataType createJavaType( Class clazz ) {
         final JavaType javaType =
                 clazz == String.class
-                        ? new JavaType( clazz, true, getDefaultCharset(), SqlCollation.IMPLICIT )
+                        ? new JavaType( clazz, true, getDefaultCharset(), Collation.IMPLICIT )
                         : new JavaType( clazz );
         return canonize( javaType );
     }
@@ -597,7 +597,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
         private final Class clazz;
         private final boolean nullable;
-        private SqlCollation collation;
+        private Collation collation;
         private Charset charset;
 
 
@@ -611,7 +611,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
         }
 
 
-        public JavaType( Class clazz, boolean nullable, Charset charset, SqlCollation collation ) {
+        public JavaType( Class clazz, boolean nullable, Charset charset, Collation collation ) {
             super( fieldsOf( clazz ) );
             this.clazz = clazz;
             this.nullable = nullable;
@@ -666,7 +666,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
 
         @Override
-        public SqlCollation getCollation() {
+        public Collation getCollation() {
             return this.collation;
         }
 

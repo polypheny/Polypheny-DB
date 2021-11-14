@@ -76,6 +76,11 @@ import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.json.JsonConstructorNullClause;
+import org.polypheny.db.core.json.JsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.core.json.JsonQueryWrapperBehavior;
+import org.polypheny.db.core.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
@@ -109,11 +114,11 @@ import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.runtime.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.MqlFunctions;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
-import org.polypheny.db.runtime.Functions;
-import org.polypheny.db.runtime.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ModifiableTable;
@@ -123,11 +128,6 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.SqlJsonConstructorNullClause;
-import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
-import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.PolyType;
 
@@ -250,12 +250,12 @@ public enum BuiltInMethod {
     JSON_STRUCTURED_VALUE_EXPRESSION( Functions.class, "jsonStructuredValueExpression", Object.class ),
     JSON_API_COMMON_SYNTAX( Functions.class, "jsonApiCommonSyntax", Object.class, String.class ),
     JSON_EXISTS( Functions.class, "jsonExists", Object.class ),
-    JSON_VALUE_ANY( Functions.class, "jsonValueAny", Object.class, SqlJsonValueEmptyOrErrorBehavior.class, Object.class, SqlJsonValueEmptyOrErrorBehavior.class, Object.class ),
-    JSON_QUERY( Functions.class, "jsonQuery", Object.class, SqlJsonQueryWrapperBehavior.class, SqlJsonQueryEmptyOrErrorBehavior.class, SqlJsonQueryEmptyOrErrorBehavior.class ),
-    JSON_OBJECT( Functions.class, "jsonObject", SqlJsonConstructorNullClause.class ),
-    JSON_OBJECTAGG_ADD( Functions.class, "jsonObjectAggAdd", Map.class, String.class, Object.class, SqlJsonConstructorNullClause.class ),
-    JSON_ARRAY( Functions.class, "jsonArray", SqlJsonConstructorNullClause.class ),
-    JSON_ARRAYAGG_ADD( Functions.class, "jsonArrayAggAdd", List.class, Object.class, SqlJsonConstructorNullClause.class ),
+    JSON_VALUE_ANY( Functions.class, "jsonValueAny", Object.class, JsonValueEmptyOrErrorBehavior.class, Object.class, JsonValueEmptyOrErrorBehavior.class, Object.class ),
+    JSON_QUERY( Functions.class, "jsonQuery", Object.class, JsonQueryWrapperBehavior.class, JsonQueryEmptyOrErrorBehavior.class, JsonQueryEmptyOrErrorBehavior.class ),
+    JSON_OBJECT( Functions.class, "jsonObject", JsonConstructorNullClause.class ),
+    JSON_OBJECTAGG_ADD( Functions.class, "jsonObjectAggAdd", Map.class, String.class, Object.class, JsonConstructorNullClause.class ),
+    JSON_ARRAY( Functions.class, "jsonArray", JsonConstructorNullClause.class ),
+    JSON_ARRAYAGG_ADD( Functions.class, "jsonArrayAggAdd", List.class, Object.class, JsonConstructorNullClause.class ),
     IS_JSON_VALUE( Functions.class, "isJsonValue", String.class ),
     IS_JSON_OBJECT( Functions.class, "isJsonObject", String.class ),
     IS_JSON_ARRAY( Functions.class, "isJsonArray", String.class ),
@@ -391,7 +391,7 @@ public enum BuiltInMethod {
     NON_CUMULATIVE_COST( NonCumulativeCost.class, "getNonCumulativeCost" ),
     PREDICATES( Predicates.class, "getPredicates" ),
     ALL_PREDICATES( AllPredicates.class, "getAllPredicates" ),
-    EXPLAIN_VISIBILITY( ExplainVisibility.class, "isVisibleInExplain", SqlExplainLevel.class ),
+    EXPLAIN_VISIBILITY( ExplainVisibility.class, "isVisibleInExplain", ExplainLevel.class ),
     SCALAR_EXECUTE1( Scalar.class, "execute", Context.class ),
     SCALAR_EXECUTE2( Scalar.class, "execute", Context.class, Object[].class ),
     CONTEXT_VALUES( Context.class, "values", true ),

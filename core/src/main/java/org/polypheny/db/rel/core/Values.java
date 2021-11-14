@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -52,7 +53,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexDigestIncludeType;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 
@@ -176,7 +176,7 @@ public abstract class Values extends AbstractRelNode {
         // A little adapter just to get the tuples to come out with curly brackets instead of square brackets.  Plus more whitespace for readability.
         RelWriter relWriter = super.explainTerms( pw )
                 // For rel digest, include the row type since a rendered literal may leave the type ambiguous (e.g. "null").
-                .itemIf( "type", rowType, pw.getDetailLevel() == SqlExplainLevel.DIGEST_ATTRIBUTES )
+                .itemIf( "type", rowType, pw.getDetailLevel() == ExplainLevel.DIGEST_ATTRIBUTES )
                 .itemIf( "type", rowType.getFieldList(), pw.nest() );
         if ( pw.nest() ) {
             pw.item( "tuples", tuples );

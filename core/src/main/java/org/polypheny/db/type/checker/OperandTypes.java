@@ -24,12 +24,14 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Predicate;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -66,7 +68,7 @@ public abstract class OperandTypes {
     public static final PolySingleOperandTypeChecker POSITIVE_INTEGER_LITERAL =
             new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.INTEGER ), i -> false ) {
                 @Override
-                public boolean checkSingleOperandType( SqlCallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
+                public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
                     if ( !LITERAL.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
                         return false;
                     }
@@ -75,7 +77,7 @@ public abstract class OperandTypes {
                         return false;
                     }
 
-                    final SqlLiteral arg = (SqlLiteral) node;
+                    final Literal arg = (Literal) node;
                     final BigDecimal value = (BigDecimal) arg.getValue();
                     if ( value.compareTo( BigDecimal.ZERO ) < 0 || hasFractionalPart( value ) ) {
                         if ( throwOnFailure ) {
@@ -440,7 +442,7 @@ public abstract class OperandTypes {
     public static final PolySingleOperandTypeChecker RECORD_COLLECTION =
             new PolySingleOperandTypeChecker() {
                 @Override
-                public boolean checkSingleOperandType( SqlCallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
+                public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
                     assert 0 == iFormalOperand;
                     RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
                     boolean validationError = false;
@@ -513,7 +515,7 @@ public abstract class OperandTypes {
     public static final PolyOperandTypeChecker RECORD_TO_SCALAR =
             new PolySingleOperandTypeChecker() {
                 @Override
-                public boolean checkSingleOperandType( SqlCallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
+                public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
                     assert 0 == iFormalOperand;
                     RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
                     boolean validationError = false;
@@ -575,7 +577,7 @@ public abstract class OperandTypes {
     private static class PeriodOperandTypeChecker implements PolySingleOperandTypeChecker {
 
         @Override
-        public boolean checkSingleOperandType( SqlCallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
+        public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
             assert 0 == iFormalOperand;
             RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
             boolean valid = false;
@@ -615,7 +617,7 @@ public abstract class OperandTypes {
 
         @Override
         public String getAllowedSignatures( Operator op, String opName ) {
-            return SqlUtil.getAliasedSignature( op, opName, ImmutableList.of( "PERIOD (DATETIME, INTERVAL)", "PERIOD (DATETIME, DATETIME)" ) );
+            return CoreUtil.getAliasedSignature( op, opName, ImmutableList.of( "PERIOD (DATETIME, INTERVAL)", "PERIOD (DATETIME, DATETIME)" ) );
         }
 
 

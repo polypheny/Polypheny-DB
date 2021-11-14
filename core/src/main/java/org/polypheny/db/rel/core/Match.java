@@ -50,7 +50,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelCollation;
@@ -62,10 +63,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.fun.SqlBitOpAggFunction;
-import org.polypheny.db.sql.fun.SqlMinMaxAggFunction;
-import org.polypheny.db.sql.fun.SqlSumAggFunction;
-import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 
 
 /**
@@ -282,24 +279,24 @@ public abstract class Match extends SingleRel {
             AggFunction aggFunction = null;
             switch ( call.getKind() ) {
                 case SUM:
-                    aggFunction = new SqlSumAggFunction( call.getType() );
+                    aggFunction = LanguageManager.getInstance().createSumAggFunction( call.getType() );
                     break;
                 case SUM0:
-                    aggFunction = new SqlSumEmptyIsZeroAggFunction();
+                    aggFunction = LanguageManager.getInstance().createSumEmptyIsZeroFunction();
                     break;
                 case MAX:
                 case MIN:
-                    aggFunction = new SqlMinMaxAggFunction( call.getKind() );
+                    aggFunction = LanguageManager.getInstance().createMinMaxAggFunction( call.getKind() );
                     break;
                 case COUNT:
-                    aggFunction = SqlStdOperatorTable.COUNT;
+                    aggFunction = StdOperatorRegistry.getAgg( "COUNT" );
                     break;
                 case ANY_VALUE:
-                    aggFunction = SqlStdOperatorTable.ANY_VALUE;
+                    aggFunction = StdOperatorRegistry.getAgg( "ANY_VALUE" );
                     break;
                 case BIT_AND:
                 case BIT_OR:
-                    aggFunction = new SqlBitOpAggFunction( call.getKind() );
+                    aggFunction = LanguageManager.getInstance().createBitOpAggFunction( call.getKind() );
                     break;
                 default:
                     for ( RexNode rex : call.getOperands() ) {

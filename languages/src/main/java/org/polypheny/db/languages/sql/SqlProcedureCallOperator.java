@@ -19,9 +19,9 @@ package org.polypheny.db.languages.sql;
 
 import java.util.Collections;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 
 

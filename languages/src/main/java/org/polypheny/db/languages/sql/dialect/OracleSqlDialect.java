@@ -18,7 +18,6 @@ package org.polypheny.db.languages.sql.dialect;
 
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -26,6 +25,7 @@ import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlFloorFunction;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 
 
 /**

@@ -59,6 +59,8 @@ import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -69,8 +71,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -113,7 +113,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
             throw new UnsupportedOperationException();
         };
         final Expression root = Expressions.field( context_, BuiltInMethod.CONTEXT_ROOT.field );
-        final SqlConformance conformance = SqlConformanceEnum.DEFAULT; // TODO: get this from implementor
+        final Conformance conformance = ConformanceEnum.DEFAULT; // TODO: get this from implementor
         final List<Expression> list = RexToLixTranslator.translateProjects( program, javaTypeFactory, conformance, builder, null, root, inputGetter, correlates );
         for ( int i = 0; i < list.size(); i++ ) {
             builder.add(
@@ -185,5 +185,6 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
         }
         return (Scalar) cbe.createInstance( new StringReader( s ) );
     }
+
 }
 

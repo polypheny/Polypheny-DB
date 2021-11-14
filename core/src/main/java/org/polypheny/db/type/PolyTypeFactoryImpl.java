@@ -36,13 +36,13 @@ package org.polypheny.db.type;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.util.Util;
 
 
@@ -141,7 +141,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
 
     @Override
-    public RelDataType createTypeWithCharsetAndCollation( RelDataType type, Charset charset, SqlCollation collation ) {
+    public RelDataType createTypeWithCharsetAndCollation( RelDataType type, Charset charset, Collation collation ) {
         assert PolyTypeUtil.inCharFamily( type ) : type;
         assert charset != null;
         assert collation != null;
@@ -307,8 +307,8 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
             if ( PolyTypeUtil.inCharOrBinaryFamilies( type ) ) {
                 Charset charset1 = type.getCharset();
                 Charset charset2 = resultType.getCharset();
-                SqlCollation collation1 = type.getCollation();
-                SqlCollation collation2 = resultType.getCollation();
+                Collation collation1 = type.getCollation();
+                Collation collation2 = resultType.getCollation();
 
                 // TODO:  refine collation combination rules
                 final int precision = PolyTypeUtil.maxPrecision( resultType.getPrecision(), type.getPrecision() );
@@ -339,7 +339,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
                     resultType = createPolyType( newTypeName, precision );
                 }
                 Charset charset = null;
-                SqlCollation collation = null;
+                Collation collation = null;
                 if ( (charset1 != null) || (charset2 != null) ) {
                     if ( charset1 == null ) {
                         charset = charset2;
@@ -513,9 +513,9 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     protected RelDataType canonize( RelDataType type ) {
         // skip canonize step for ArrayTypes, to not cache cardinality or dimension
         //type = super.canonize( type );
-        if( ! (type instanceof ArrayType)) {
+        if ( !(type instanceof ArrayType) ) {
             type = super.canonize( type );
-        } else if ( ((ArrayType)type).getCardinality() == -1 && ((ArrayType)type).getDimension() == -1 ) {
+        } else if ( ((ArrayType) type).getCardinality() == -1 && ((ArrayType) type).getDimension() == -1 ) {
             type = super.canonize( type );
         }
         if ( !(type instanceof ObjectPolyType) ) {
@@ -545,6 +545,8 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
         protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
             sb.append( "UNKNOWN" );
         }
+
     }
+
 }
 

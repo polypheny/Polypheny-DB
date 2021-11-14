@@ -21,11 +21,13 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 
-public interface CallBinding {
+public interface CallBinding extends Node{
 
     Validator getValidator();
 
     ValidatorScope getScope();
+
+    Call getCall();
 
     List<Node> operands();
 

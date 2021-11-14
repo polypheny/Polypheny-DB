@@ -36,10 +36,10 @@ package org.polypheny.db.type;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.util.Util;
 
 
@@ -111,7 +111,7 @@ public abstract class PolyTypeTransforms {
     public static final PolyTypeTransform TO_VARYING =
             new PolyTypeTransform() {
                 @Override
-                public RelDataType transformType( SqlOperatorBinding opBinding, RelDataType typeToTransform ) {
+                public RelDataType transformType( OperatorBinding opBinding, RelDataType typeToTransform ) {
                     switch ( typeToTransform.getPolyType() ) {
                         case VARCHAR:
                         case VARBINARY:

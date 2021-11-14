@@ -17,16 +17,16 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.languages.sql.parser.SqlParser;
-import org.polypheny.db.languages.sql.parser.SqlParserUtil;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.sql.parser.SqlParser;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;

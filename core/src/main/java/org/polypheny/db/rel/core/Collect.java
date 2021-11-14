@@ -44,8 +44,6 @@ import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.fun.SqlMultisetQueryConstructor;
-import org.polypheny.db.sql.fun.SqlMultisetValueConstructor;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -55,7 +53,7 @@ import org.polypheny.db.type.PolyTypeUtil;
  * Rules:
  *
  * <ul>
- * <li>{@code net.sf.farrago.fennel.rel.FarragoMultisetSplitterRule} creates a Collect from a call to {@link SqlMultisetValueConstructor} or to {@link SqlMultisetQueryConstructor}.</li>
+ * <li>{@code net.sf.farrago.fennel.rel.FarragoMultisetSplitterRule} creates a Collect from a call to {# @link SqlMultisetValueConstructor} or to {# @link SqlMultisetQueryConstructor}.</li>
  * </ul>
  */
 public class Collect extends SingleRel {
@@ -141,5 +139,6 @@ public class Collect extends SingleRel {
         ret = typeFactory.builder().add( fieldName, null, ret ).build();
         return typeFactory.createTypeWithNullability( ret, false );
     }
+
 }
 

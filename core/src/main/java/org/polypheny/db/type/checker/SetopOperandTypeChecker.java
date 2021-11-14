@@ -20,11 +20,13 @@ package org.polypheny.db.type.checker;
 import java.util.AbstractList;
 import java.util.List;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.Validator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -51,7 +53,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
         assert callBinding.getOperandCount() == 2 : "setops are binary (for now)";
         final RelDataType[] argTypes = new RelDataType[callBinding.getOperandCount()];
         int colCount = -1;
-        final SqlValidator validator = callBinding.getValidator();
+        final Validator validator = callBinding.getValidator();
         for ( int i = 0; i < argTypes.length; i++ ) {
             final RelDataType argType = argTypes[i] = callBinding.getOperandType( i );
             if ( !argType.isStruct() ) {
@@ -71,8 +73,8 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
 
             if ( fields.size() != colCount ) {
                 if ( throwOnFailure ) {
-                    SqlNode node = callBinding.operand( i );
-                    if ( node instanceof SqlSelect ) {
+                    Node node = callBinding.operand( i );
+                    if ( node.getKind() == Kind.SELECT ) {
                         node = ((SqlSelect) node).getSelectList();
                     }
                     throw validator.newValidationError( node, Static.RESOURCE.columnCountMismatchInSetop( callBinding.getOperator().getName() ) );
@@ -101,7 +103,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
                             } );
             if ( type == null ) {
                 if ( throwOnFailure ) {
-                    SqlNode field = SqlUtil.getSelectListItem( callBinding.operand( 0 ), i );
+                    Node field = SqlUtil.getSelectListItem( callBinding.operand( 0 ), i );
                     throw validator.newValidationError(
                             field,
                             Static.RESOURCE.columnTypeMismatchInSetop(

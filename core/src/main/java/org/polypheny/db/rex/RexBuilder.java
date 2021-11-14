@@ -92,7 +92,7 @@ public class RexBuilder {
      * Special operator that accesses an unadvertised field of an input record.
      * This operator cannot be used in SQL queries; it is introduced temporarily during sql-to-rel translation, then replaced during the process that trims unwanted fields.
      */
-    public static final Operator GET_OPERATOR = LanguageManager.getInstance().createOperator( "_get", Kind.OTHER_FUNCTION );
+    public static final Operator GET_OPERATOR = LanguageManager.getInstance().createSpecialOperator( "_get", Kind.OTHER_FUNCTION );
 
 
     /**

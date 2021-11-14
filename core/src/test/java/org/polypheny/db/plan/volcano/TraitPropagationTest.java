@@ -47,6 +47,7 @@ import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.jdbc.PolyphenyDbServerStatement;
 import org.polypheny.db.plan.Convention;
@@ -89,9 +90,8 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.sql.ExplainLevel;
 import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RuleSet;
@@ -116,7 +116,7 @@ public class TraitPropagationTest {
     public void testOne() throws Exception {
         RelNode planned = run( new PropAction(), RULES );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
-            System.out.println( RelOptUtil.dumpPlan( "LOGICAL PLAN", planned, SqlExplainFormat.TEXT, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            System.out.println( RelOptUtil.dumpPlan( "LOGICAL PLAN", planned, SqlExplainFormat.TEXT, ExplainLevel.ALL_ATTRIBUTES ) );
         }
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         assertEquals( "Sortedness was not propagated", 3, mq.getCumulativeCost( planned ).getRows(), 0 );
@@ -175,7 +175,7 @@ public class TraitPropagationTest {
 
             final RelNode rootRel = agg;
 
-            RelOptUtil.dumpPlan( "LOGICAL PLAN", rootRel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES );
+            RelOptUtil.dumpPlan( "LOGICAL PLAN", rootRel, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
 
             RelTraitSet desiredTraits = rootRel.getTraitSet().replace( PHYSICAL );
             final RelNode rootRel2 = planner.changeTraits( rootRel, desiredTraits );

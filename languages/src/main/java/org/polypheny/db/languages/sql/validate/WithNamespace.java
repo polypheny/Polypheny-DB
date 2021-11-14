@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql.validate;
 
 
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWith;
 import org.polypheny.db.languages.sql.SqlWithItem;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.Util;
 
 

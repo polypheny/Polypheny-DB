@@ -35,6 +35,8 @@ package org.polypheny.db.rel.core;
 
 
 import java.util.List;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.UnnestOperator;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -46,8 +48,6 @@ import org.polypheny.db.rel.logical.LogicalCorrelate;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlUnnestOperator;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -151,8 +151,8 @@ public class Uncollect extends SingleRel {
 
         for ( RelDataTypeField field : fields ) {
             if ( field.getType() instanceof MapPolyType ) {
-                builder.add( SqlUnnestOperator.MAP_KEY_COLUMN_NAME, null, field.getType().getKeyType() );
-                builder.add( SqlUnnestOperator.MAP_VALUE_COLUMN_NAME, null, field.getType().getValueType() );
+                builder.add( UnnestOperator.MAP_KEY_COLUMN_NAME, null, field.getType().getKeyType() );
+                builder.add( UnnestOperator.MAP_VALUE_COLUMN_NAME, null, field.getType().getValueType() );
             } else {
                 RelDataType ret = field.getType().getComponentType();
                 assert null != ret;
@@ -160,13 +160,14 @@ public class Uncollect extends SingleRel {
                     builder.addAll( ret.getFieldList() );
                 } else {
                     // Element type is not a record. It may be a scalar type, say "INTEGER". Wrap it in a struct type.
-                    builder.add( SqlUtil.deriveAliasFromOrdinal( field.getIndex() ), null, ret );
+                    builder.add( CoreUtil.deriveAliasFromOrdinal( field.getIndex() ), null, ret );
                 }
             }
         }
         if ( withOrdinality ) {
-            builder.add( SqlUnnestOperator.ORDINALITY_COLUMN_NAME, null, PolyType.INTEGER );
+            builder.add( UnnestOperator.ORDINALITY_COLUMN_NAME, null, PolyType.INTEGER );
         }
         return builder.build();
     }
+
 }

@@ -40,31 +40,24 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.AbstractList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.ParserUtil;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.CompositeList;
-import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
@@ -733,7 +726,7 @@ public class RexLiteral extends RexNode {
      * @param literal the (non-SQL encoded) string representation, as returned by the Jdbc call to return a column as a string
      * @return a typed RexLiteral, or null
      */
-    public static RexLiteral fromJdbcString( RelDataType type, PolyType typeName, String literal ) {
+    /*public static RexLiteral fromJdbcString( RelDataType type, PolyType typeName, String literal ) {
         if ( literal == null ) {
             return null;
         }
@@ -812,9 +805,7 @@ public class RexLiteral extends RexNode {
             default:
                 throw new AssertionError( "fromJdbcString: unsupported type" );
         }
-    }
-
-
+    }*/
     private static String getCalendarFormat( PolyType typeName ) {
         switch ( typeName ) {
             case DATE:

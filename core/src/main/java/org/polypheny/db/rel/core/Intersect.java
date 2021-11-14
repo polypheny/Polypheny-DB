@@ -36,12 +36,12 @@ package org.polypheny.db.rel.core;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -85,4 +85,5 @@ public abstract class Intersect extends SetOp {
                 inputs.stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
                 all + "&";
     }
+
 }

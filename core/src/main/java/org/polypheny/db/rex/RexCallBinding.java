@@ -37,19 +37,19 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.sql.validate.SqlValidatorException;
 
 
 /**
@@ -80,7 +80,7 @@ public class RexCallBinding extends OperatorBinding {
         return new RexCallBinding( typeFactory, call.getOperator(), call.getOperands(), inputCollations );
     }
 
-
+    /*
     @Override
     public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
         final RexNode node = operands.get( ordinal );
@@ -92,7 +92,7 @@ public class RexCallBinding extends OperatorBinding {
 
 
     @Override
-    public SqlMonotonicity getOperandMonotonicity( int ordinal ) {
+    public Monotonicity getOperandMonotonicity( int ordinal ) {
         RexNode operand = operands.get( ordinal );
 
         if ( operand instanceof RexInputRef ) {
@@ -114,9 +114,9 @@ public class RexCallBinding extends OperatorBinding {
             return ((RexCall) operand).getOperator().getMonotonicity( binding );
         }
 
-        return SqlMonotonicity.NOT_MONOTONIC;
+        return Monotonicity.NOT_MONOTONIC;
     }
-
+    */
 
     @Override
     public boolean isOperandNull( int ordinal, boolean allowCast ) {
@@ -146,7 +146,7 @@ public class RexCallBinding extends OperatorBinding {
 
     @Override
     public PolyphenyDbException newError( ExInst<SqlValidatorException> e ) {
-        return SqlUtil.newContextException( ParserPos.ZERO, e );
+        return CoreUtil.newContextException( ParserPos.ZERO, e );
     }
 
 
@@ -171,6 +171,8 @@ public class RexCallBinding extends OperatorBinding {
             }
             return super.getOperandType( ordinal );
         }
+
     }
+
 }
 

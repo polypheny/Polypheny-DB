@@ -23,6 +23,7 @@ import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.sql.ExplainLevel;
 import org.polypheny.db.sql.JoinConditionType;
 import org.polypheny.db.sql.JoinType;
 import org.polypheny.db.sql.Kind;
@@ -41,7 +42,6 @@ import org.polypheny.db.sql.SqlDrop;
 import org.polypheny.db.sql.SqlDynamicParam;
 import org.polypheny.db.sql.SqlExplain;
 import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlInsert;
@@ -2551,7 +2551,7 @@ public class SqlParserImpl extends SqlAbstractParserImpl implements org.polyphen
  */
   final public SqlNode SqlExplain() throws ParseException {
     SqlNode stmt;
-    SqlExplainLevel detailLevel = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+    ExplainLevel detailLevel = ExplainLevel.EXPPLAN_ATTRIBUTES;
     SqlExplain.Depth depth;
     final SqlExplainFormat format;
     jj_consume_token(EXPLAIN);
@@ -2632,17 +2632,17 @@ public class SqlParserImpl extends SqlAbstractParserImpl implements org.polyphen
 /**
  * Parses INCLUDING ALL ATTRIBUTES modifier for EXPLAIN PLAN.
  */
-  final public SqlExplainLevel ExplainDetailLevel() throws ParseException {
-    SqlExplainLevel level = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+  final public ExplainLevel ExplainDetailLevel() throws ParseException {
+    ExplainLevel level = ExplainLevel.EXPPLAN_ATTRIBUTES;
     if (jj_2_237(2)) {
       jj_consume_token(EXCLUDING);
       jj_consume_token(ATTRIBUTES);
-            level = SqlExplainLevel.NO_ATTRIBUTES;
+            level = ExplainLevel.NO_ATTRIBUTES;
     } else if (jj_2_238(2)) {
       jj_consume_token(INCLUDING);
       if (jj_2_236(2)) {
         jj_consume_token(ALL);
-                  level = SqlExplainLevel.ALL_ATTRIBUTES;
+                  level = ExplainLevel.ALL_ATTRIBUTES;
       } else {
         ;
       }
@@ -2706,7 +2706,7 @@ public class SqlParserImpl extends SqlAbstractParserImpl implements org.polyphen
       stmt = SqlQueryOrDml();
             // DESCRIBE STATEMENT currently does the same as EXPLAIN. See
             //   [POLYPHENYDB-1221] Implement DESCRIBE DATABASE, CATALOG, STATEMENT
-            final SqlExplainLevel detailLevel = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+            final ExplainLevel detailLevel = ExplainLevel.EXPPLAN_ATTRIBUTES;
             final SqlExplain.Depth depth = SqlExplain.Depth.PHYSICAL;
             final SqlExplainFormat format = SqlExplainFormat.TEXT;
             {if (true) return new SqlExplain(s.end(stmt),

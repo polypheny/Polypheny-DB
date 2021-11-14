@@ -20,6 +20,10 @@ package org.polypheny.db.type.inference;
 import com.google.common.base.Preconditions;
 import java.util.AbstractList;
 import java.util.List;
+import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -125,7 +129,7 @@ public abstract class ReturnTypes {
     public static final PolyReturnTypeInference ARG0_NULLABLE_IF_EMPTY =
             new OrdinalReturnTypeInference( 0 ) {
                 @Override
-                public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+                public RelDataType inferReturnType( OperatorBinding opBinding ) {
                     final RelDataType type = super.inferReturnType( opBinding );
                     if ( opBinding.getGroupCount() == 0 || opBinding.hasFilter() ) {
                         return opBinding.getTypeFactory().createTypeWithNullability( type, true );
@@ -466,13 +470,13 @@ public abstract class ReturnTypes {
                 if ( !containsAnyType && !(PolyTypeUtil.inCharOrBinaryFamilies( argType0 ) && PolyTypeUtil.inCharOrBinaryFamilies( argType1 )) ) {
                     Preconditions.checkArgument( PolyTypeUtil.sameNamedType( argType0, argType1 ) );
                 }
-                SqlCollation pickedCollation = null;
+                Collation pickedCollation = null;
                 if ( !containsAnyType && PolyTypeUtil.inCharFamily( argType0 ) ) {
                     if ( !PolyTypeUtil.isCharTypeComparable( opBinding.collectOperandTypes().subList( 0, 2 ) ) ) {
                         throw opBinding.newError( Static.RESOURCE.typeNotComparable( argType0.getFullTypeString(), argType1.getFullTypeString() ) );
                     }
 
-                    pickedCollation = SqlCollation.getCoercibilityDyadicOperator( argType0.getCollation(), argType1.getCollation() );
+                    pickedCollation = Collation.getCoercibilityDyadicOperator( argType0.getCollation(), argType1.getCollation() );
                     assert null != pickedCollation;
                 }
 
@@ -527,7 +531,7 @@ public abstract class ReturnTypes {
      * that namespace.
      */
     public static final PolyReturnTypeInference SCOPE = opBinding -> {
-        SqlCallBinding callBinding = (SqlCallBinding) opBinding;
+        CallBinding callBinding = (CallBinding) opBinding;
         return callBinding.getValidator().getNamespace( callBinding.getCall() ).getRowType();
     };
 
@@ -555,7 +559,7 @@ public abstract class ReturnTypes {
         RelDataType componentType = multisetType.getComponentType();
         assert componentType != null : "expected a multiset type: " + multisetType;
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType type = typeFactory.builder().add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, componentType ).build();
+        final RelDataType type = typeFactory.builder().add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, componentType ).build();
         return typeFactory.createMultisetType( type, -1 );
     };
     /**

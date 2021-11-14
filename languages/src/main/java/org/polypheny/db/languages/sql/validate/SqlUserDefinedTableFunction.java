@@ -19,11 +19,11 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.lang.reflect.Type;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;

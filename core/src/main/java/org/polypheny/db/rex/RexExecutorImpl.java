@@ -50,6 +50,8 @@ import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -57,8 +59,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 
@@ -96,7 +96,7 @@ public class RexExecutorImpl implements RexExecutor {
                 Expressions.declare(
                         Modifier.FINAL, root_,
                         Expressions.convert_( root0_, DataContext.class ) ) );
-        final SqlConformance conformance = SqlConformanceEnum.DEFAULT;
+        final Conformance conformance = ConformanceEnum.DEFAULT;
         final RexProgram program = programBuilder.getProgram();
         final List<Expression> expressions =
                 RexToLixTranslator.translateProjects(
@@ -195,6 +195,8 @@ public class RexExecutorImpl implements RexExecutor {
             }
             return RexToLixTranslator.convert( recordAccess, storageType );
         }
+
     }
+
 }
 

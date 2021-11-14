@@ -28,9 +28,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
-import org.polypheny.db.core.ParseException;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 
 

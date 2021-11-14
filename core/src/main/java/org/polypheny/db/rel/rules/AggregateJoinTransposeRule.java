@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptUtil;
@@ -192,7 +193,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
                     projects.add( relBuilder.field( i ) );
                 }
                 for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
-                    final SqlAggFunction aggregation = aggCall.e.getAggregation();
+                    final AggFunction aggregation = aggCall.e.getAggregation();
                     final SqlSplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SqlSplittableAggFunction.class ) );
                     if ( !aggCall.e.getArgList().isEmpty() && fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
                         final RexNode singleton = splitter.singleton( rexBuilder, joinInput.getRowType(), aggCall.e.transform( mapping ) );
@@ -218,7 +219,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
                 final int oldGroupKeyCount = aggregate.getGroupCount();
                 final int newGroupKeyCount = belowAggregateKey.cardinality();
                 for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
-                    final SqlAggFunction aggregation = aggCall.e.getAggregation();
+                    final AggFunction aggregation = aggCall.e.getAggregation();
                     final SqlSplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SqlSplittableAggFunction.class ) );
                     final AggregateCall call1;
                     if ( fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
@@ -260,7 +261,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
         final int newLeftWidth = sides.get( 0 ).newInput.getRowType().getFieldCount();
         final List<RexNode> projects = new ArrayList<>( rexBuilder.identityProjects( relBuilder.peek().getRowType() ) );
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
-            final SqlAggFunction aggregation = aggCall.e.getAggregation();
+            final AggFunction aggregation = aggCall.e.getAggregation();
             final SqlSplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SqlSplittableAggFunction.class ) );
             final Integer leftSubTotal = sides.get( 0 ).split.get( aggCall.i );
             final Integer rightSubTotal = sides.get( 1 ).split.get( aggCall.i );

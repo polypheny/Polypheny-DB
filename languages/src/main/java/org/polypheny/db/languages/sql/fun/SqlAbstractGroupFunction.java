@@ -17,18 +17,18 @@
 package org.polypheny.db.languages.sql.fun;
 
 
+import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.validate.AggregatingSelectScope;
 import org.polypheny.db.languages.sql.validate.OrderByScope;
 import org.polypheny.db.languages.sql.validate.SelectScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;

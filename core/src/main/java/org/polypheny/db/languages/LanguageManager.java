@@ -21,11 +21,14 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
@@ -37,6 +40,11 @@ import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.slf4j.Logger;
 
 public abstract class LanguageManager {
@@ -57,7 +65,7 @@ public abstract class LanguageManager {
 
     public abstract Validator createValidator( QueryLanguage language, Context context, PolyphenyDbCatalogReader catalogReader );
 
-    public abstract Operator createOperator( String get, Kind otherFunction );
+    public abstract Operator createSpecialOperator( String get, Kind otherFunction );
 
     public abstract NodeToRelConverter createToRelConverter( QueryLanguage sql,
             ViewExpander polyphenyDbPreparingStmt,
@@ -88,5 +96,17 @@ public abstract class LanguageManager {
     public abstract DataTypeSpec createDataTypeSpec( QueryLanguage sql, Identifier typeIdentifier, Identifier componentTypeIdentifier, int precision, int scale, int dimension, int cardinality, String charSetName, TimeZone o, boolean nullable, ParserPos zero );
 
     public abstract IntervalQualifier createIntervalQualifier( QueryLanguage queryLanguage, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision, ParserPos zero );
+
+    public abstract Literal createLiteral( PolyType polyType, Object o, ParserPos pos );
+
+    public abstract AggFunction createMinMaxAggFunction( Kind kind );
+
+    public abstract AggFunction createSumEmptyIsZeroFunction();
+
+    public abstract AggFunction createBitOpAggFunction( Kind kind );
+
+    public abstract AggFunction createSumAggFunction( RelDataType type );
+
+    public abstract Operator createFunction( String artificial_selectivity, Kind otherFunction, PolyReturnTypeInference aBoolean, PolyOperandTypeInference o, PolySingleOperandTypeChecker numeric, FunctionCategory system );
 
 }

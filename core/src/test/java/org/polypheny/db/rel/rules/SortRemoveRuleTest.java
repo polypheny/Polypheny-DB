@@ -58,8 +58,8 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schemas.HrClusteredSchema;
+import org.polypheny.db.sql.ExplainLevel;
 import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -216,7 +216,7 @@ public final class SortRemoveRuleTest {
 
 
     private String toString( RelNode rel ) {
-        return Util.toLinux( RelOptUtil.dumpPlan( "", rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        return Util.toLinux( RelOptUtil.dumpPlan( "", rel, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
     }
 
 }

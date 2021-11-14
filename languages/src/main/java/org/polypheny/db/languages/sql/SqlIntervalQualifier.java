@@ -237,6 +237,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     }
 
 
+    @Override
     public int getStartPrecisionPreservingDefault() {
         return startPrecision;
     }
@@ -279,6 +280,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     }
 
 
+    @Override
     public int getFractionalSecondPrecision( RelDataTypeSystem typeSystem ) {
         if ( fractionalSecondPrecision == RelDataType.PRECISION_NOT_SPECIFIED ) {
             return typeName().getDefaultScale();
@@ -288,6 +290,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     }
 
 
+    @Override
     public int getFractionalSecondPrecisionPreservingDefault() {
         if ( useDefaultFractionalSecondPrecision() ) {
             return RelDataType.PRECISION_NOT_SPECIFIED;

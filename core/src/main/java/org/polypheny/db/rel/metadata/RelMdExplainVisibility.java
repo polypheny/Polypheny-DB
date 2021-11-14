@@ -34,8 +34,8 @@
 package org.polypheny.db.rel.metadata;
 
 
+import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -58,13 +58,14 @@ public class RelMdExplainVisibility implements MetadataHandler<BuiltInMetadata.E
 
 
     /**
-     * Catch-all implementation for {@link BuiltInMetadata.ExplainVisibility#isVisibleInExplain(SqlExplainLevel)}, invoked using reflection.
+     * Catch-all implementation for {@link BuiltInMetadata.ExplainVisibility#isVisibleInExplain(ExplainLevel)}, invoked using reflection.
      *
-     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#isVisibleInExplain(RelNode, SqlExplainLevel)
+     * @see org.polypheny.db.rel.metadata.RelMetadataQuery#isVisibleInExplain(RelNode, ExplainLevel)
      */
-    public Boolean isVisibleInExplain( RelNode rel, RelMetadataQuery mq, SqlExplainLevel explainLevel ) {
+    public Boolean isVisibleInExplain( RelNode rel, RelMetadataQuery mq, ExplainLevel explainLevel ) {
         // no information available
         return null;
     }
+
 }
 

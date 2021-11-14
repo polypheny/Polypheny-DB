@@ -19,9 +19,9 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.util.ReflectiveSqlOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;

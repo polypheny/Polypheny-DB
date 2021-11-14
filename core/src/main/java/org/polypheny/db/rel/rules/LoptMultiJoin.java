@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.JoinRelType;
@@ -55,7 +56,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
 import org.polypheny.db.util.BitSets;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
@@ -763,6 +763,7 @@ public class LoptMultiJoin {
         public String toString() {
             return "Edge(condition: " + condition + ", factors: " + factors + ", columns: " + columns + ")";
         }
+
     }
 
 
@@ -807,6 +808,8 @@ public class LoptMultiJoin {
         public Map<Integer, Integer> getColumnMapping() {
             return columnMapping;
         }
+
     }
+
 }
 

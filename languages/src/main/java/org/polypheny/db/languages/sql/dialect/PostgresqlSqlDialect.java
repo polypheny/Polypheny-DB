@@ -19,13 +19,13 @@ package org.polypheny.db.languages.sql.dialect;
 
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;

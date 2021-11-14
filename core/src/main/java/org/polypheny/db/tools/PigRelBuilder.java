@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
@@ -166,9 +166,9 @@ public class PigRelBuilder extends RelBuilder {
             final RexNode row =
                     cluster.getRexBuilder().makeCall(
                             peek( 1, 0 ).getRowType(),
-                            SqlStdOperatorTable.ROW,
+                            StdOperatorRegistry.get( "ROW" ),
                             fields() );
-            aggregate( groupKey.e, aggregateCall( SqlStdOperatorTable.COLLECT, row ).as( getAlias() ) );
+            aggregate( groupKey.e, aggregateCall( StdOperatorRegistry.getAgg( "COLLECT" ), row ).as( getAlias() ) );
             if ( groupKey.i < n - 1 ) {
                 push( r );
                 List<RexNode> predicates = new ArrayList<>();
@@ -221,5 +221,6 @@ public class PigRelBuilder extends RelBuilder {
         MERGE,
         COLLECTED
     }
+
 }
 

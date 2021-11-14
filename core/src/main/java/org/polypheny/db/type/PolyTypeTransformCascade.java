@@ -35,8 +35,8 @@ package org.polypheny.db.type;
 
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
@@ -62,7 +62,7 @@ public class PolyTypeTransformCascade implements PolyReturnTypeInference {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         RelDataType ret = rule.inferReturnType( opBinding );
         if ( ret == null ) {
             // inferReturnType may return null; transformType does not accept or
@@ -74,5 +74,6 @@ public class PolyTypeTransformCascade implements PolyReturnTypeInference {
         }
         return ret;
     }
+
 }
 

@@ -20,11 +20,11 @@ package org.polypheny.db.languages.sql.fun;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.languages.sql.SqlCallBinding;
+import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;

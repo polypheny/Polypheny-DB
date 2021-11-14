@@ -63,8 +63,6 @@ import org.polypheny.db.util.Util;
  */
 public abstract class SqlOperator extends Operator {
 
-    public static final String NL = System.getProperty( "line.separator" );
-
     /**
      * Maximum precedence.
      */

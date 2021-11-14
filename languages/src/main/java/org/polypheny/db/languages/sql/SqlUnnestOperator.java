@@ -19,6 +19,8 @@ package org.polypheny.db.languages.sql;
 
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.UnnestOperator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.ArrayType;
@@ -33,7 +35,7 @@ import org.polypheny.db.util.Util;
 /**
  * The <code>UNNEST</code> operator.
  */
-public class SqlUnnestOperator extends SqlFunctionalOperator {
+public class SqlUnnestOperator extends SqlFunctionalOperator implements UnnestOperator {
 
     /**
      * Whether {@code WITH ORDINALITY} was specified.
@@ -41,12 +43,6 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
      * If so, the returned records include a column {@code ORDINALITY}.
      */
     public final boolean withOrdinality;
-
-    public static final String ORDINALITY_COLUMN_NAME = "ORDINALITY";
-
-    public static final String MAP_KEY_COLUMN_NAME = "KEY";
-
-    public static final String MAP_VALUE_COLUMN_NAME = "VALUE";
 
 
     public SqlUnnestOperator( boolean withOrdinality ) {
@@ -65,7 +61,7 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
         for ( Integer operand : Util.range( opBinding.getOperandCount() ) ) {
@@ -84,8 +80,8 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
 
             assert type instanceof ArrayType || type instanceof MultisetPolyType || type instanceof MapPolyType;
             if ( type instanceof MapPolyType ) {
-                builder.add( MAP_KEY_COLUMN_NAME, null, type.getKeyType() );
-                builder.add( MAP_VALUE_COLUMN_NAME, null, type.getValueType() );
+                builder.add( UnnestOperator.MAP_KEY_COLUMN_NAME, null, type.getKeyType() );
+                builder.add( UnnestOperator.MAP_VALUE_COLUMN_NAME, null, type.getValueType() );
             } else {
                 if ( type.getComponentType().isStruct() ) {
                     builder.addAll( type.getComponentType().getFieldList() );
@@ -95,7 +91,7 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
             }
         }
         if ( withOrdinality ) {
-            builder.add( ORDINALITY_COLUMN_NAME, null, PolyType.INTEGER );
+            builder.add( UnnestOperator.ORDINALITY_COLUMN_NAME, null, PolyType.INTEGER );
         }
         return builder.build();
     }

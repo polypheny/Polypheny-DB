@@ -17,9 +17,9 @@
 package org.polypheny.db.languages.sql2rel;
 
 
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.rex.RexNode;
 
 
 /**

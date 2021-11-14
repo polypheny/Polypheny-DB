@@ -18,9 +18,9 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlInternalOperator;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;

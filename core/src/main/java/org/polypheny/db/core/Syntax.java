@@ -16,8 +16,6 @@
 
 package org.polypheny.db.core;
 
-import org.polypheny.db.util.Util;
-
 public enum Syntax {
     /**
      * Function syntax, as in "Foo(x, y)".

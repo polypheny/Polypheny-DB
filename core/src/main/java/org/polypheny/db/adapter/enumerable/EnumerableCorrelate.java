@@ -42,6 +42,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelCollationTraitDef;
@@ -50,7 +51,6 @@ import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.metadata.RelMdCollation;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.sql.SemiJoinType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -130,5 +130,6 @@ public class EnumerableCorrelate extends Correlate implements EnumerableRel {
 
         return implementor.result( physType, builder.toBlock() );
     }
+
 }
 
