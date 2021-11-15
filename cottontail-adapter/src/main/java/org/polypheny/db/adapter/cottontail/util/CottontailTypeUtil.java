@@ -434,41 +434,34 @@ public class CottontailTypeUtil {
      * @return {@link Vector}
      */
     public static Vector toVectorCallData( Object vectorObject, PolyType dstElementType ) {
-        Vector vector = toVectorData( vectorObject );
-        if ( vector != null ) {
-            return vector;
-        } else {
-            final Object firstItem = ((List) vectorObject).get( 0 );
-            if ( !(firstItem instanceof Number) ) {
-                throw new RuntimeException( "Unsupported type: " + firstItem.getClass().getName() );
-            }
-            final Vector.Builder builder = Vector.newBuilder();
-            switch ( dstElementType ) {
-                case INTEGER:
-                    for ( Number o : (List<Number>) vectorObject ) {
-                        builder.getIntVectorBuilder().addVector( o.intValue() );
-                    }
-                    break;
-                case BIGINT:
-                    for ( Number o : (List<Number>) vectorObject ) {
-                        builder.getLongVectorBuilder().addVector( o.longValue() );
-                    }
-                    break;
-                case DECIMAL:
-                case DOUBLE:
-                    for ( Number o : (List<Number>) vectorObject ) {
-                        builder.getDoubleVectorBuilder().addVector( o.doubleValue() );
-                    }
-                case FLOAT:
-                case REAL:
-                    for ( Number o : (List<Number>) vectorObject ) {
-                        builder.getFloatVectorBuilder().addVector( o.floatValue() );
-                    }
-                    break;
-                default:
-                    throw new RuntimeException( "Unsupported type: " + dstElementType.getName() );
-            }
-            return builder.build();
+        final Vector.Builder builder = Vector.newBuilder();
+        switch ( dstElementType ) {
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                for ( Number o : (List<Number>) vectorObject ) {
+                    builder.getIntVectorBuilder().addVector( o.intValue() );
+                }
+                return builder.build();
+            case BIGINT:
+                for ( Number o : (List<Number>) vectorObject ) {
+                    builder.getLongVectorBuilder().addVector( o.longValue() );
+                }
+                return builder.build();
+            case DECIMAL:
+            case DOUBLE:
+                for ( Number o : (List<Number>) vectorObject ) {
+                    builder.getDoubleVectorBuilder().addVector( o.doubleValue() );
+                }
+                return builder.build();
+            case FLOAT:
+            case REAL:
+                for ( Number o : (List<Number>) vectorObject ) {
+                    builder.getFloatVectorBuilder().addVector( o.floatValue() );
+                }
+                return builder.build();
+            default:
+                throw new RuntimeException( "Unsupported type: " + dstElementType.getName() );
         }
     }
 
@@ -650,7 +643,7 @@ public class CottontailTypeUtil {
             final Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), actualType );
             return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", arrayList, Expressions.constant( actualType ) );
         } else if ( node instanceof RexDynamicParam ) {
-            RexDynamicParam dynamicParam = (RexDynamicParam) node;
+            final RexDynamicParam dynamicParam = (RexDynamicParam) node;
             final MethodCallExpression listExpression = Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) );
             return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", listExpression, Expressions.constant( actualType ) );
         }
