@@ -96,6 +96,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             // Add information to query analyzer
             if ( statement.getTransaction().isAnalyze() ) {
                 val page = new InformationPage( "Routing" );
+                statement.getTransaction().getQueryAnalyzer().addPage( page );
                 InformationGroup group = new InformationGroup( page, "Selected Adapters" );
                 statement.getTransaction().getQueryAnalyzer().addGroup( group );
                 InformationTable table = new InformationTable(
