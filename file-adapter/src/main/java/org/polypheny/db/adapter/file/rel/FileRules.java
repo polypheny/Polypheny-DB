@@ -25,6 +25,8 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.core.Function;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -43,8 +45,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.sql.SqlFunction;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
@@ -318,8 +318,8 @@ public class FileRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            SqlOperator operator = call.getOperator();
-            if ( operator instanceof SqlFunction ) {
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function ) {
                 containsFunction = true;
             }
             return super.visitCall( call );

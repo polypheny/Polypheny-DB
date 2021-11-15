@@ -81,9 +81,9 @@ public class HiveSqlDialect extends SqlDialect {
             case POSITION:
                 final SqlWriter.Frame frame = writer.startFunCall( "INSTR" );
                 writer.sep( "," );
-                call.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+                ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
                 writer.sep( "," );
-                call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+                ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
                 if ( 3 == call.operandCount() ) {
                     throw new RuntimeException( "3rd operand Not Supported for Function INSTR in Hive" );
                 }
@@ -103,4 +103,5 @@ public class HiveSqlDialect extends SqlDialect {
     public boolean supportsCharSet() {
         return false;
     }
+
 }

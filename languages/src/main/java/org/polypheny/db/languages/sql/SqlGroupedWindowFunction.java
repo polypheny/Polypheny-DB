@@ -124,6 +124,7 @@ public class SqlGroupedWindowFunction extends SqlFunction {
         // Monotonic iff its first argument is, but not strict.
         //
         // Note: This strategy happens to works for all current group functions (HOP, TUMBLE, SESSION). When there are exceptions to this rule, we'll make the method abstract.
-        return call.getOperandMonotonicity( 0 ).unstrict();
+        return ((SqlOperatorBinding) call).getOperandMonotonicity( 0 ).unstrict();
     }
+
 }

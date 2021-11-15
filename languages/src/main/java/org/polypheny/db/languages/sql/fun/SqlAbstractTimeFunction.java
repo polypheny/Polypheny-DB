@@ -55,13 +55,13 @@ public class SqlAbstractTimeFunction extends SqlFunction {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         // REVIEW jvs: Need to take care of time zones.
         int precision = 0;
         if ( opBinding.getOperandCount() == 1 ) {
             RelDataType type = opBinding.getOperandType( 0 );
             if ( PolyTypeUtil.isNumeric( type ) ) {
-                precision = opBinding.getOperandLiteralValue( 0, Integer.class );
+                precision = ((SqlOperatorBinding) opBinding).getOperandLiteralValue( 0, Integer.class );
             }
         }
         assert precision >= 0;
@@ -84,5 +84,6 @@ public class SqlAbstractTimeFunction extends SqlFunction {
     public boolean isDynamicFunction() {
         return true;
     }
+
 }
 

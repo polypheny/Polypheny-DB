@@ -121,9 +121,9 @@ public class MssqlSqlDialect extends SqlDialect {
                 break;
             case WEEK:
                 writer.print( "CONVERT(DATETIME, CONVERT(VARCHAR(10), DATEADD(day, - (6 + DATEPART(weekday, " );
-                call.operand( 0 ).unparse( writer, 0, 0 );
+                ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
                 writer.print( ")) % 7, " );
-                call.operand( 0 ).unparse( writer, 0, 0 );
+                ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
                 writer.print( "), 126))" );
                 break;
             case DAY:
@@ -157,7 +157,7 @@ public class MssqlSqlDialect extends SqlDialect {
         }
         writer.sep( ",", true );
 
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
         writer.endList( frame );
     }
 
@@ -209,7 +209,7 @@ public class MssqlSqlDialect extends SqlDialect {
         writer.print( "CONVERT" );
         SqlWriter.Frame frame = writer.startList( "(", ")" );
         writer.print( "DATETIME, CONVERT(VARCHAR(" + charLen + "), " );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         writer.print( ", 126)" );
 
         if ( offset.length() > 0 ) {
@@ -217,5 +217,6 @@ public class MssqlSqlDialect extends SqlDialect {
         }
         writer.endList( frame );
     }
+
 }
 

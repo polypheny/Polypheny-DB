@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql;
 import java.util.List;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -73,11 +74,17 @@ public class SqlUpdate extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( targetTable, targetColumnList, sourceExpressionList, condition, alias );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 assert operand instanceof SqlIdentifier;
-                targetTable = operand;
+                targetTable = (SqlNode) operand;
                 break;
             case 1:
                 targetColumnList = (SqlNodeList) operand;
@@ -86,7 +93,7 @@ public class SqlUpdate extends SqlCall {
                 sourceExpressionList = (SqlNodeList) operand;
                 break;
             case 3:
-                condition = operand;
+                condition = (SqlNode) operand;
                 break;
             case 4:
                 sourceExpressionList = (SqlNodeList) operand;
@@ -165,15 +172,15 @@ public class SqlUpdate extends SqlCall {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SELECT, "UPDATE", "" );
-        final int opLeft = getOperator().getLeftPrec();
-        final int opRight = getOperator().getRightPrec();
+        final int opLeft = ((SqlOperator) getOperator()).getLeftPrec();
+        final int opRight = ((SqlOperator) getOperator()).getRightPrec();
         targetTable.unparse( writer, opLeft, opRight );
         if ( alias != null ) {
             writer.keyword( "AS" );
             alias.unparse( writer, opLeft, opRight );
         }
         final SqlWriter.Frame setFrame = writer.startList( SqlWriter.FrameTypeEnum.UPDATE_SET_LIST, "SET", "" );
-        for ( Pair<SqlNode, SqlNode> pair : Pair.zip( getTargetColumnList(), getSourceExpressionList() ) ) {
+        for ( Pair<SqlNode, SqlNode> pair : Pair.zip( getTargetColumnList().getSqlList(), getSourceExpressionList().getSqlList() ) ) {
             writer.sep( "," );
             SqlIdentifier id = (SqlIdentifier) pair.left;
             id.unparse( writer, opLeft, opRight );
@@ -194,5 +201,6 @@ public class SqlUpdate extends SqlCall {
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateUpdate( this );
     }
+
 }
 

@@ -68,6 +68,12 @@ public class SqlDelete extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( targetTable, condition, alias );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:

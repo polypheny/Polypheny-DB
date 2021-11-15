@@ -22,7 +22,6 @@ import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;

@@ -23,18 +23,15 @@ import java.util.List;
 import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.ExplicitOperatorBinding;
 import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.ValidatorNamespace;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.sql.ExplicitOperatorBinding;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeTransform;
@@ -527,7 +524,7 @@ public abstract class ReturnTypes {
 
     /**
      * Type-inference strategy where the expression is assumed to be registered as a
-     * {@link org.polypheny.db.sql.validate.SqlValidatorNamespace}, and therefore the result type of the call is the type of
+     * {@link ValidatorNamespace}, and therefore the result type of the call is the type of
      * that namespace.
      */
     public static final PolyReturnTypeInference SCOPE = opBinding -> {

@@ -19,6 +19,8 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlCallBinding;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -45,7 +47,7 @@ public class SqlJsonValueExpressionOperator extends SqlSpecialOperator {
                     return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                 },
                 ( callBinding, returnType, operandTypes ) -> {
-                    if ( callBinding.isOperandNull( 0, false ) ) {
+                    if ( ((SqlCallBinding) callBinding).isOperandNull( 0, false ) ) {
                         final RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
                         operandTypes[0] = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                     }
@@ -57,10 +59,11 @@ public class SqlJsonValueExpressionOperator extends SqlSpecialOperator {
 
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         if ( !structured ) {
             writer.keyword( "FORMAT JSON" );
         }
     }
+
 }
 

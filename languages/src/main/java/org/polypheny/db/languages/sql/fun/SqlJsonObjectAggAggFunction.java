@@ -20,10 +20,13 @@ package org.polypheny.db.languages.sql.fun;
 import java.util.Locale;
 import java.util.Objects;
 import lombok.Getter;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.JsonAgg;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -72,22 +75,22 @@ public class SqlJsonObjectAggAggFunction extends SqlAggFunction implements JsonA
         assert call.operandCount() == 2;
         final SqlWriter.Frame frame = writer.startFunCall( "JSON_OBJECTAGG" );
         writer.keyword( "KEY" );
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
         writer.keyword( "VALUE" );
-        call.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
         writer.keyword( nullClause.sql );
         writer.endFunCall( frame );
     }
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // To prevent operator rewriting by SqlFunction#deriveType.
         for ( Node operand : call.getOperandList() ) {
             RelDataType nodeType = validator.deriveType( scope, operand );
             ((SqlValidatorImpl) validator).setValidatedNodeType( (SqlNode) operand, nodeType );
         }
-        return validateOperands( validator, scope, call );
+        return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }
 
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Call;
+import org.polypheny.db.core.ExplicitOperatorBinding;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
@@ -281,7 +282,7 @@ public abstract class SqlOperator extends Operator {
     /**
      * Validates a call to this operator.
      *
-     * This method should not perform type-derivation or perform validation related related to types. That is done later, by {@link #deriveType(SqlValidator, SqlValidatorScope, SqlCall)}. This method should focus on structural validation.
+     * This method should not perform type-derivation or perform validation related related to types. That is done later, by {@link #deriveType(Validator, ValidatorScope, Call)}. This method should focus on structural validation.
      *
      * A typical implementation of this method first validates the operands, then performs some operator-specific logic. The default implementation just validates the operands.
      *
@@ -292,7 +293,7 @@ public abstract class SqlOperator extends Operator {
      * @param scope validator scope
      * @param operandScope validator scope in which to validate operands to this call; usually equal to scope, but not always because some operators introduce new scopes
      * @see SqlNode#validateExpr(SqlValidator, SqlValidatorScope)
-     * @see #deriveType(SqlValidator, SqlValidatorScope, SqlCall)
+     * @see #deriveType(Validator, ValidatorScope, Call)
      */
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         assert call.getOperator() == this;

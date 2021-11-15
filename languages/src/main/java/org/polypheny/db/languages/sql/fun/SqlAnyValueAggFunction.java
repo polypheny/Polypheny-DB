@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.base.Preconditions;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.fun.AnyValueAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -29,7 +30,7 @@ import org.polypheny.db.util.Optionality;
 /**
  * Definition of the <code>ANY_VALUE</code> aggregate functions, returning any one of the values which go into it.
  */
-public class SqlAnyValueAggFunction extends SqlAggFunction {
+public class SqlAnyValueAggFunction extends SqlAggFunction implements AnyValueAggFunction {
 
 
     /**

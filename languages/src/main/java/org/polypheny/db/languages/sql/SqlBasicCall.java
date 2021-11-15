@@ -92,6 +92,12 @@ public class SqlBasicCall extends SqlCall {
     }
 
 
+    @Override
+    public List<SqlNode> getSqlOperandList() {
+        return UnmodifiableArrayList.of( operands ); // not immutable, but quick
+    }
+
+
     @SuppressWarnings("unchecked")
     @Override
     public <S extends Node> S operand( int i ) {

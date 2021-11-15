@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
@@ -97,7 +98,8 @@ public class SqlSetOption extends SqlAlter {
 
     /**
      * Creates a node.
-     *  @param pos Parser position, must not be null.
+     *
+     * @param pos Parser position, must not be null.
      * @param scope Scope (generally "SYSTEM" or "SESSION"), may be null.
      * @param name Name of option, as an identifier, must not be null.
      * @param value Value of option, as an identifier or literal, may be null. If null, assume RESET command, else assume SET command.
@@ -134,6 +136,12 @@ public class SqlSetOption extends SqlAlter {
         operandList.add( name );
         operandList.add( value );
         return ImmutableNullableList.copyOf( operandList );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
+        return getOperandList().stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
     }
 
 

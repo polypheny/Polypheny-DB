@@ -69,6 +69,12 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, columnList );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
@@ -92,7 +98,7 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
         try {
             DdlManager.getInstance().addUniqueConstraint(
                     catalogTable,
-                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                     constraintName.getSimple() );
         } catch ( DdlOnSourceException e ) {
             throw CoreUtil.newContextException( table.getPos(), RESOURCE.ddlOnSourceTable() );

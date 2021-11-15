@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -55,8 +56,9 @@ public class SqlThrowOperator extends SqlSpecialOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         writer.endFunCall( frame );
     }
+
 }
 

@@ -21,14 +21,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.cql.utils.ExclusiveComparisons;
+import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilder.AggCall;
 import org.polypheny.db.tools.RelBuilder.GroupKey;
@@ -234,11 +234,11 @@ public class Projections {
 
 
     public enum AggregationFunctions {
-        COUNT( SqlStdOperatorTable.COUNT ),
-        MAX( SqlStdOperatorTable.MAX ),
-        MIN( SqlStdOperatorTable.MIN ),
-        SUM( SqlStdOperatorTable.SUM ),
-        AVG( SqlStdOperatorTable.AVG );
+        COUNT( StdOperatorRegistry.getAgg( "COUNT" ) ),
+        MAX( StdOperatorRegistry.getAgg( "MAX" ) ),
+        MIN( StdOperatorRegistry.getAgg( "MIN" ) ),
+        SUM( StdOperatorRegistry.getAgg( "SUM" ) ),
+        AVG( StdOperatorRegistry.getAgg( "AVG" ) );
 
 
         private final SqlAggFunction sqlAggFunction;

@@ -43,10 +43,10 @@ import java.util.TimeZone;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
 import org.polypheny.db.type.PolyType;
 
 

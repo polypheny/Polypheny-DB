@@ -34,6 +34,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.SaffronProperties;
+import org.polypheny.db.util.Util;
 
 public class CoreUtil {
 
@@ -270,6 +271,51 @@ public class CoreUtil {
                         : RESOURCE.validatorContext( line, col, endLine, endCol )).ex( e.ex() );
         contextExcn.setPosition( line, col, endLine, endCol );
         return contextExcn;
+    }
+
+
+    /**
+     * Returns the <code>i</code>th select-list item of a query.
+     */
+    public static Node getSelectListItem( Node query, int i ) {
+        switch ( query.getKind() ) {
+            case SELECT:
+                Select select = (Select) query;
+                final Node from = stripAs( select.getFrom() );
+                if ( from.getKind() == Kind.VALUES ) {
+                    // They wrote "VALUES (x, y)", but the validator has converted this into "SELECT * FROM VALUES (x, y)".
+                    return getSelectListItem( from, i );
+                }
+                final NodeList fields = select.getSelectList();
+
+                // Range check the index to avoid index out of range.  This could be expanded to actually check to see if the select list is a "*"
+                if ( i >= fields.size() ) {
+                    i = 0;
+                }
+                return fields.get( i );
+
+            case VALUES:
+                Call call = (Call) query;
+                assert call.getOperandList().size() > 0 : "VALUES must have at least one operand";
+                final Call row = call.operand( 0 );
+                assert row.getOperandList().size() > i : "VALUES has too few columns";
+                return row.operand( i );
+
+            default:
+                // Unexpected type of query.
+                throw Util.needToImplement( query );
+        }
+    }
+
+
+    /**
+     * If a node is "AS", returns the underlying expression; otherwise returns the node.
+     */
+    public static Node stripAs( Node node ) {
+        if ( node != null && node.getKind() == Kind.AS ) {
+            return ((Call) node).operand( 0 );
+        }
+        return node;
     }
 
 

@@ -17,7 +17,10 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -91,7 +94,10 @@ public class SqlFilterOperator extends SqlBinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator rawValidator, ValidatorScope rawScope, Call rawCall ) {
+        SqlValidator validator = (SqlValidator) rawValidator;
+        SqlValidatorScope scope = (SqlValidatorScope) rawScope;
+        SqlCall call = (SqlCall) rawCall;
         // Validate type of the inner aggregate call
         validateOperands( validator, scope, call );
 

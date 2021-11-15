@@ -24,13 +24,15 @@ import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -65,7 +67,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
         return new ReduceResult(
                 ordinal - 1,
                 ordinal + 2,
-                createCall(
+                (SqlNode) createCall(
                         ParserPos.sum( Arrays.asList( left.getPos(), right.getPos(), list.pos( ordinal ) ) ),
                         left,
                         right ) );
@@ -75,9 +77,9 @@ public class SqlDotOperator extends SqlSpecialOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.IDENTIFIER );
-        call.operand( 0 ).unparse( writer, leftPrec, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, 0 );
         writer.sep( "." );
-        call.operand( 1 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 1 )).unparse( writer, 0, 0 );
         writer.endList( frame );
     }
 
@@ -100,7 +102,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         final Node operand = call.getOperandList().get( 0 );
         final RelDataType nodeType = validator.deriveType( scope, operand );
         assert nodeType != null;
@@ -117,7 +119,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
         RelDataType type = field.getType();
 
         // Validate and determine coercibility and resulting collation name of binary operator if needed.
-        type = adjustType( validator, call, type );
+        type = adjustType( (SqlValidator) validator, (SqlCall) call, type );
         ValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
         return type;
     }
@@ -134,8 +136,8 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        final SqlNode left = callBinding.operand( 0 );
-        final SqlNode right = callBinding.operand( 1 );
+        final SqlNode left = (SqlNode) callBinding.operand( 0 );
+        final SqlNode right = (SqlNode) callBinding.operand( 1 );
         final RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), left );
         if ( type.getPolyType() != PolyType.ROW ) {
             return false;
@@ -171,7 +173,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType recordType = opBinding.getOperandType( 0 );
         switch ( recordType.getPolyType() ) {

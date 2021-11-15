@@ -56,9 +56,14 @@ import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.core.BsonUtil;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.document.rules.DocumentRules;
+import org.polypheny.db.languages.sql.fun.SqlDatetimePlusOperator;
+import org.polypheny.db.languages.sql.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -95,11 +100,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlDatetimePlusOperator;
-import org.polypheny.db.sql.fun.SqlDatetimeSubtractionOperator;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -135,7 +135,7 @@ public class MongoRules {
      * Returns 'string' if it is a call to item['string'], null otherwise.
      */
     static String isItem( RexCall call ) {
-        if ( call.getOperator() != SqlStdOperatorTable.ITEM ) {
+        if ( call.getOperator() != StdOperatorRegistry.get( "ITEM" ) ) {
             return null;
         }
         final RexNode op0 = call.operands.get( 0 );
@@ -158,7 +158,7 @@ public class MongoRules {
 
 
     static List<String> mongoFieldNames( final RelDataType rowType ) {
-        return SqlValidatorUtil.uniquify(
+        return ValidatorUtil.uniquify(
                 new AbstractList<String>() {
                     @Override
                     public String get( int index ) {
@@ -172,7 +172,7 @@ public class MongoRules {
                         return rowType.getFieldCount();
                     }
                 },
-                SqlValidatorUtil.EXPR_SUGGESTER, true );
+                ValidatorUtil.EXPR_SUGGESTER, true );
     }
 
 
@@ -227,46 +227,46 @@ public class MongoRules {
         private final JavaTypeFactory typeFactory;
         private final List<String> inFields;
 
-        static final Map<SqlOperator, String> MONGO_OPERATORS = new HashMap<>();
+        static final Map<Operator, String> MONGO_OPERATORS = new HashMap<>();
 
 
         static {
             // Arithmetic
-            MONGO_OPERATORS.put( SqlStdOperatorTable.DIVIDE, "$divide" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.MULTIPLY, "$multiply" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.MOD, "$mod" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.PLUS, "$add" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.MINUS, "$subtract" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "DIVIDE" ), "$divide" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "MULTIPLY" ), "$multiply" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "MOD" ), "$mod" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "PLUS" ), "$add" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "MINUS" ), "$subtract" );
             // Boolean
-            MONGO_OPERATORS.put( SqlStdOperatorTable.AND, "$and" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.OR, "$or" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.NOT, "$not" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "AND" ), "$and" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "OR" ), "$or" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "NOT" ), "$not" );
             // Comparison
-            MONGO_OPERATORS.put( SqlStdOperatorTable.EQUALS, "$eq" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.NOT_EQUALS, "$ne" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.GREATER_THAN, "$gt" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, "$gte" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.LESS_THAN, "$lt" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, "$lte" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "EQUALS" ), "$eq" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "NOT_EQUALS" ), "$ne" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "GREATER_THAN" ), "$gt" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ), "$gte" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "LESS_THAN" ), "$lt" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ), "$lte" );
 
-            MONGO_OPERATORS.put( SqlStdOperatorTable.FLOOR, "$floor" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.CEIL, "$ceil" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.EXP, "$exp" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.LN, "$ln" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.LOG10, "$log10" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.ABS, "$abs" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.CHAR_LENGTH, "$strLenCP" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.SUBSTRING, "$substrCP" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.ROUND, "$round" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.ACOS, "$acos" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.TAN, "$tan" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.COS, "$cos" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.ASIN, "$asin" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.SIN, "$sin" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.ATAN, "$atan" );
-            MONGO_OPERATORS.put( SqlStdOperatorTable.ATAN2, "$atan2" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "FLOOR" ), "$floor" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "CEIL" ), "$ceil" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "EXP" ), "$exp" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "LN" ), "$ln" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "LOG10" ), "$log10" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "ABS" ), "$abs" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "CHAR_LENGTH" ), "$strLenCP" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "SUBSTRING" ), "$substrCP" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "ROUND" ), "$round" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "ACOS" ), "$acos" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "TAN" ), "$tan" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "COS" ), "$cos" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "ASIN" ), "$asin" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "SIN" ), "$sin" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "ATAN" ), "$atan" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "ATAN2" ), "$atan2" );
 
-            MONGO_OPERATORS.put( SqlStdOperatorTable.POWER, "$pow" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "POWER" ), "$pow" );
         }
 
 
@@ -315,7 +315,7 @@ public class MongoRules {
             }
             String stdOperator = MONGO_OPERATORS.get( call.getOperator() );
             if ( stdOperator != null ) {
-                if ( call.getOperator() == SqlStdOperatorTable.SUBSTRING ) {
+                if ( call.getOperator() == StdOperatorRegistry.get( "SUBSTRING" ) ) {
                     String first = strings.get( 1 );
                     first = "{\"$subtract\":[" + first + ", 1]}";
                     strings.remove( 1 );
@@ -326,10 +326,12 @@ public class MongoRules {
                 }
                 return "{" + stdOperator + ": [" + Util.commaList( strings ) + "]}";
             }
-            if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
+            if ( call.getOperator() == StdOperatorRegistry.get( "ITEM" ) ) {
                 final RexNode op1 = call.operands.get( 1 );
                 // normal
-                if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
+                if ( op1 instanceof RexLiteral && op1.getType().
+
+                        getPolyType() == PolyType.INTEGER ) {
                     return "{$arrayElemAt:[" + strings.get( 0 ) + "," + (((RexLiteral) op1).getValueAs( Integer.class ) - 1) + "]}";
                 }
                 // prepared
@@ -337,13 +339,14 @@ public class MongoRules {
                     return "{$arrayElemAt:[" + strings.get( 0 ) + ", {$subtract:[" + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + ", 1]}]}";
                 }
             }
-            if ( call.getOperator() == SqlStdOperatorTable.CASE ) {
+            if ( call.getOperator() == StdOperatorRegistry.get( "CASE" ) ) {
                 StringBuilder sb = new StringBuilder();
                 StringBuilder finish = new StringBuilder();
                 // case(a, b, c)  -> $cond:[a, b, c]
                 // case(a, b, c, d) -> $cond:[a, b, $cond:[c, d, null]]
                 // case(a, b, c, d, e) -> $cond:[a, b, $cond:[c, d, e]]
-                for ( int i = 0; i < strings.size(); i += 2 ) {
+                for (
+                        int i = 0; i < strings.size(); i += 2 ) {
                     sb.append( "{$cond:[" );
                     finish.append( "]}" );
 
@@ -363,7 +366,7 @@ public class MongoRules {
                 sb.append( finish );
                 return sb.toString();
             }
-            if ( call.op == SqlStdOperatorTable.UNARY_MINUS ) {
+            if ( call.op == StdOperatorRegistry.get( "UNARY_MINUS" ) ) {
                 if ( strings.size() == 1 ) {
                     return "{\"$multiply\":[" + strings.get( 0 ) + ",-1]}";
                 }
@@ -373,11 +376,13 @@ public class MongoRules {
             if ( special != null ) {
                 return special;
             }
-            if ( call.op.getName().equals( MqlStdOperatorTable.DOC_JSONIZE.getName() ) ) {
+            if ( call.op.getName().
+
+                    equals( MqlStdOperatorTable.DOC_JSONIZE.getName() ) ) {
                 return call.operands.get( 0 ).accept( this );
             }
 
-            if ( call.op == SqlStdOperatorTable.SIGN ) {
+            if ( call.op == StdOperatorRegistry.get( "SIGN" ) ) {
                 // x < 0, -1
                 // x == 0, 0
                 // x > 0, 1
@@ -405,11 +410,18 @@ public class MongoRules {
                 return sb.toString();
             }
 
-            if ( call.op == SqlStdOperatorTable.IS_NOT_NULL ) {
-                return call.operands.get( 0 ).accept( this );
+            if ( call.op == StdOperatorRegistry.get( "IS_NOT_NULL" ) ) {
+                return call.operands.get( 0 ).
+
+                        accept( this );
+
             }
 
-            throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
+            throw new
+
+                    IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
+
+
         }
 
 
@@ -634,13 +646,13 @@ public class MongoRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            SqlOperator operator = call.getOperator();
-            if ( operator == SqlStdOperatorTable.COALESCE
-                    || operator == SqlStdOperatorTable.EXTRACT
-                    || operator == SqlStdOperatorTable.OVERLAY
-                    || operator == SqlStdOperatorTable.COT
-                    || operator == SqlStdOperatorTable.FLOOR
-                    || (operator == SqlStdOperatorTable.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
+            Operator operator = call.getOperator();
+            if ( operator == StdOperatorRegistry.get( "COALESCE" )
+                    || operator == StdOperatorRegistry.get( "EXTRACT" )
+                    || operator == StdOperatorRegistry.get( "OVERLAY" )
+                    || operator == StdOperatorRegistry.get( "COT" )
+                    || operator == StdOperatorRegistry.get( "FLOOR" )
+                    || (operator == StdOperatorRegistry.get( "CAST" ) && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {
                 containsIncompatible = true;

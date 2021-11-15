@@ -18,12 +18,12 @@ package org.polypheny.db.languages.rex;
 
 
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
@@ -63,7 +63,7 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
     public SqlNode convertCall( RexCall call ) {
         final RexSqlConvertlet convertlet = convertletTable.get( call );
         if ( convertlet != null ) {
-            return convertlet.convertCall( this, call );
+            return (SqlNode) convertlet.convertCall( this, call );
         }
 
         return null;
@@ -137,5 +137,6 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
     public SqlNode convertInputRef( RexInputRef ref ) {
         return null;
     }
+
 }
 

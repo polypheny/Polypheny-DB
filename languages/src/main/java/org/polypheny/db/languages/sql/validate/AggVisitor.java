@@ -24,9 +24,8 @@ import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.Syntax;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.fun.SqlAbstractGroupFunction;
 
 
@@ -93,9 +92,9 @@ abstract class AggVisitor extends BasicNodeVisitor<Void> {
         if ( operator instanceof SqlFunction ) {
             final SqlFunction sqlFunction = (SqlFunction) operator;
             if ( sqlFunction.getFunctionCategory().isUserDefinedNotSpecificFunction() ) {
-                final List<SqlOperator> list = new ArrayList<>();
-                opTab.lookupOperatorOverloads( sqlFunction.getSqlIdentifier(), sqlFunction.getFunctionCategory(), SqlSyntax.FUNCTION, list );
-                for ( SqlOperator operator2 : list ) {
+                final List<Operator> list = new ArrayList<>();
+                opTab.lookupOperatorOverloads( sqlFunction.getSqlIdentifier(), sqlFunction.getFunctionCategory(), Syntax.FUNCTION, list );
+                for ( Operator operator2 : list ) {
                     if ( operator2.isAggregator() && !operator2.requiresOver() ) {
                         // If nested aggregates disallowed or found aggregate at invalid level
                         if ( aggregate ) {

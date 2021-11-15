@@ -22,6 +22,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -52,12 +53,12 @@ public class SqlPositionFunction extends SqlFunction {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
         writer.sep( "IN" );
-        call.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
         if ( 3 == call.operandCount() ) {
             writer.sep( "FROM" );
-            call.operand( 2 ).unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) call.operand( 2 )).unparse( writer, leftPrec, rightPrec );
         }
         writer.endFunCall( frame );
     }
@@ -88,5 +89,6 @@ public class SqlPositionFunction extends SqlFunction {
                 throw new AssertionError();
         }
     }
+
 }
 

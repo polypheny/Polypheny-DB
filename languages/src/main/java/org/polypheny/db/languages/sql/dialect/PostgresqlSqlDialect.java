@@ -211,7 +211,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                                 null,
                                 null,
                                 FunctionCategory.USER_DEFINED_FUNCTION );
-                        SqlCall call1 = call.getOperator().createCall( call.getPos(), call.getOperandList().get( 1 ) );
+                        SqlCall call1 = (SqlCall) call.getOperator().createCall( call.getPos(), call.getOperandList().get( 1 ) );
                         SqlUtil.unparseFunctionSyntax( func, writer, call1 );
                     } else {
                         super.unparseCall( writer, call, leftPrec, rightPrec );

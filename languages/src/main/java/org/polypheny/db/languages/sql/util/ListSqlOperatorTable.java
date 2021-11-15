@@ -19,11 +19,13 @@ package org.polypheny.db.languages.sql.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.Syntax;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlOperator;
 
 
@@ -51,9 +53,9 @@ public class ListSqlOperatorTable implements OperatorTable {
 
 
     @Override
-    public void lookupOperatorOverloads( SqlIdentifier opName, FunctionCategory category, Syntax syntax, List<SqlOperator> operatorList ) {
+    public void lookupOperatorOverloads( Identifier opName, FunctionCategory category, Syntax syntax, List<Operator> operatorList ) {
         for ( SqlOperator operator : this.operatorList ) {
-            if ( operator.getSqlSyntax() != syntax ) {
+            if ( operator.getSyntax() != syntax ) {
                 continue;
             }
             if ( !opName.isSimple() || !operator.isName( opName.getSimple() ) ) {
@@ -78,6 +80,7 @@ public class ListSqlOperatorTable implements OperatorTable {
 
     @Override
     public List<Operator> getOperatorList() {
-        return operatorList;
+        return operatorList.stream().map( o -> (Operator) o ).collect( Collectors.toList() );
     }
+
 }

@@ -16,15 +16,43 @@
 
 package org.polypheny.db.core;
 
+import java.util.List;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+
 public class LangFunctionOperator extends Operator {
 
     public LangFunctionOperator( String name, Kind kind ) {
-        super( name, kind );
+        super( name, kind, null, null, null );
+    }
+
+
+    @Override
+    public Syntax getSyntax() {
+        throw new RuntimeException( "Not Implemented" );
     }
 
 
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
+        return null;
+    }
+
+
+    @Override
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+        throw new RuntimeException( "Not Implemented" );
+    }
+
+
+    @Override
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+        throw new RuntimeException( "Not Implemented" );
+    }
+
+
+    @Override
+    public RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes ) {
         return null;
     }
 

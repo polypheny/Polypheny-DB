@@ -22,13 +22,14 @@ import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.DataTypeSpec;
+import org.polypheny.db.core.DynamicParam;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlDynamicParam;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 
@@ -42,47 +43,48 @@ public class SqlShuttle extends BasicNodeVisitor<SqlNode> {
 
     @Override
     public SqlNode visit( Literal literal ) {
-        return literal;
+        return (SqlNode) literal;
     }
 
 
     @Override
     public SqlNode visit( Identifier id ) {
-        return id;
+        return (SqlNode) id;
     }
 
 
     @Override
     public SqlNode visit( DataTypeSpec type ) {
-        return type;
+        return (SqlNode) type;
     }
 
 
     @Override
-    public SqlNode visit( SqlDynamicParam param ) {
-        return param;
+    public SqlNode visit( DynamicParam param ) {
+        return (SqlNode) param;
     }
 
 
     @Override
     public SqlNode visit( IntervalQualifier intervalQualifier ) {
-        return intervalQualifier;
+        return (SqlNode) intervalQualifier;
     }
 
 
     @Override
     public SqlNode visit( final Call call ) {
         // Handler creates a new copy of 'call' only if one or more operands change.
-        ArgHandler<SqlNode> argHandler = new CallCopyingArgHandler( call, false );
+        ArgHandler<SqlNode> argHandler = new CallCopyingArgHandler( (SqlCall) call, false );
         call.getOperator().acceptCall( this, call, false, argHandler );
         return argHandler.result();
     }
 
 
     @Override
-    public SqlNode visit( NodeList nodeList ) {
+    public SqlNode visit( NodeList rawNodeList ) {
+        SqlNodeList nodeList = ((SqlNodeList) rawNodeList);
         boolean update = false;
-        List<SqlNode> exprs = nodeList.getList();
+        List<SqlNode> exprs = nodeList.getSqlList();
         int exprCount = exprs.size();
         List<SqlNode> newList = new ArrayList<>( exprCount );
         for ( SqlNode operand : exprs ) {
@@ -119,7 +121,7 @@ public class SqlShuttle extends BasicNodeVisitor<SqlNode> {
         public CallCopyingArgHandler( SqlCall call, boolean alwaysCopy ) {
             this.call = call;
             this.update = false;
-            final List<SqlNode> operands = call.getOperandList();
+            final List<SqlNode> operands = call.getSqlOperandList();
             this.clonedOperands = operands.toArray( new SqlNode[0] );
             this.alwaysCopy = alwaysCopy;
         }
@@ -128,7 +130,7 @@ public class SqlShuttle extends BasicNodeVisitor<SqlNode> {
         @Override
         public SqlNode result() {
             if ( update || alwaysCopy ) {
-                return call.getOperator().createCall( call.getFunctionQuantifier(), call.getPos(), clonedOperands );
+                return (SqlNode) call.getOperator().createCall( call.getFunctionQuantifier(), call.getPos(), clonedOperands );
             } else {
                 return call;
             }
@@ -136,7 +138,7 @@ public class SqlShuttle extends BasicNodeVisitor<SqlNode> {
 
 
         @Override
-        public SqlNode visitChild( NodeVisitor<SqlNode> visitor, SqlNode expr, int i, SqlNode operand ) {
+        public SqlNode visitChild( NodeVisitor<SqlNode> visitor, Node expr, int i, Node operand ) {
             if ( operand == null ) {
                 return null;
             }
@@ -147,6 +149,8 @@ public class SqlShuttle extends BasicNodeVisitor<SqlNode> {
             clonedOperands[i] = newOperand;
             return newOperand;
         }
+
     }
+
 }
 

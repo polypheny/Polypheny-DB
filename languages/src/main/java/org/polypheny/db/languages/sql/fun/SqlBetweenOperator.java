@@ -21,15 +21,16 @@ import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.ExplicitOperatorBinding;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.ExplicitOperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlInfixOperator;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -122,7 +123,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         SqlCallBinding callBinding = (SqlCallBinding) opBinding;
         ExplicitOperatorBinding newOpBinding =
                 new ExplicitOperatorBinding(
@@ -151,7 +152,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( FRAME_TYPE, "", "" );
-        call.operand( VALUE_OPERAND ).unparse( writer, getLeftPrec(), 0 );
+        ((SqlNode) call.operand( VALUE_OPERAND )).unparse( writer, getLeftPrec(), 0 );
         writer.sep( super.getName() );
         writer.sep( flag.name() );
 
@@ -213,7 +214,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
 
         // Create the call.
         SqlNode exp0 = list.node( opOrdinal - 1 );
-        SqlCall newExp = createCall( list.pos( opOrdinal ), exp0, exp1, exp2 );
+        SqlCall newExp = (SqlCall) createCall( list.pos( opOrdinal ), exp0, exp1, exp2 );
 
         // Replace all of the matched nodes with the single reduced node.
         return new ReduceResult( opOrdinal - 1, opOrdinal + 4, newExp );
@@ -227,7 +228,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
 
         @Override
         public Void visit( Call call ) {
-            final SqlOperator operator = call.getOperator();
+            final Operator operator = call.getOperator();
             if ( operator == SqlStdOperatorTable.AND ) {
                 throw Util.FoundOne.NULL;
             }
@@ -243,6 +244,8 @@ public class SqlBetweenOperator extends SqlInfixOperator {
                 return true;
             }
         }
+
     }
+
 }
 

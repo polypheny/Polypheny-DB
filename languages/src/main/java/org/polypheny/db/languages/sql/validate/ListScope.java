@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerImpl;
 import org.polypheny.db.core.SqlMonikerType;
 import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;

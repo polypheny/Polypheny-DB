@@ -33,6 +33,7 @@ import org.polypheny.db.core.Advisor;
 import org.polypheny.db.core.ParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerImpl;
 import org.polypheny.db.core.SqlMonikerType;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -43,7 +44,6 @@ import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
-import org.polypheny.db.languages.sql.validate.SqlMonikerImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorWithHints;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -323,7 +323,7 @@ public class SqlAdvisor implements Advisor {
         nodes = Lists.reverse( nodes );
         return nodes.size() > 2
                 && nodes.get( 2 ) instanceof SqlSelect
-                && nodes.get( 1 ) == ((SqlSelect) nodes.get( 2 )).getSelectList();
+                && nodes.get( 1 ) == ((SqlSelect) nodes.get( 2 )).getSqlSelectList();
     }
 
 

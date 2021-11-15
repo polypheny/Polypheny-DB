@@ -56,7 +56,7 @@ public class SqlCoalesceFunction extends SqlFunction {
     public SqlNode rewriteCall( SqlValidator validator, SqlCall call ) {
         validateQuantifier( validator, call ); // check DISTINCT/ALL
 
-        List<SqlNode> operands = call.getOperandList();
+        List<SqlNode> operands = call.getSqlOperandList();
 
         if ( operands.size() == 1 ) {
             // No CASE needed

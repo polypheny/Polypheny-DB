@@ -36,7 +36,6 @@ package org.polypheny.db.type;
 
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**
@@ -51,10 +50,11 @@ public interface PolyTypeTransform {
     /**
      * Transforms a type.
      *
-     * @param opBinding       call context in which transformation is being performed
+     * @param opBinding call context in which transformation is being performed
      * @param typeToTransform type to be transformed, never null
      * @return transformed type, never null
      */
     RelDataType transformType( OperatorBinding opBinding, RelDataType typeToTransform );
+
 }
 

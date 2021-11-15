@@ -21,6 +21,7 @@ import lombok.Setter;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -69,6 +70,12 @@ public class SqlInsert extends SqlCall {
     }
 
 
+    @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( keywords, targetTable, source, columnList );
+    }
+
+
     /**
      * Returns whether this is an UPSERT statement.
      *
@@ -88,10 +95,10 @@ public class SqlInsert extends SqlCall {
                 break;
             case 1:
                 assert operand instanceof SqlIdentifier;
-                targetTable = operand;
+                targetTable = (SqlNode) operand;
                 break;
             case 2:
-                source = operand;
+                source = (SqlNode) operand;
                 break;
             case 3:
                 columnList = (SqlNodeList) operand;
@@ -132,7 +139,7 @@ public class SqlInsert extends SqlCall {
 
 
     public final SqlNode getModifierNode( SqlInsertKeyword modifier ) {
-        for ( SqlNode keyword : keywords ) {
+        for ( SqlNode keyword : keywords.getSqlList() ) {
             SqlInsertKeyword keyword2 = ((SqlLiteral) keyword).symbolValue( SqlInsertKeyword.class );
             if ( keyword2 == modifier ) {
                 return keyword;
@@ -148,8 +155,8 @@ public class SqlInsert extends SqlCall {
         writer.sep( isUpsert()
                 ? "UPSERT INTO"
                 : "INSERT INTO" );
-        final int opLeft = getOperator().getLeftPrec();
-        final int opRight = getOperator().getRightPrec();
+        final int opLeft = ((SqlOperator) getOperator()).getLeftPrec();
+        final int opRight = ((SqlOperator) getOperator()).getRightPrec();
         targetTable.unparse( writer, opLeft, opRight );
         if ( columnList != null ) {
             columnList.unparse( writer, opLeft, opRight );

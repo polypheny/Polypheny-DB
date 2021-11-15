@@ -22,7 +22,6 @@ import java.util.List;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.type.PolyType;
 
 

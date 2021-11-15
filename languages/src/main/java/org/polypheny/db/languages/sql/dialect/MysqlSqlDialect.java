@@ -24,6 +24,7 @@ import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
@@ -37,7 +38,6 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.fun.SqlCase;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -154,14 +154,14 @@ public class MysqlSqlDialect extends SqlDialect {
         //   END
         final SqlNode caseExpr =
                 new SqlCase( ParserPos.ZERO,
-                        SqlStdOperatorTable.COUNT.createCall( ParserPos.ZERO, operand ),
+                        (SqlNode) StdOperatorRegistry.get( "COUNT" ).createCall( ParserPos.ZERO, operand ),
                         SqlNodeList.of(
                                 SqlLiteral.createExactNumeric( "0", ParserPos.ZERO ),
                                 SqlLiteral.createExactNumeric( "1", ParserPos.ZERO ) ),
                         SqlNodeList.of( nullLiteral, operand ),
-                        SqlStdOperatorTable.SCALAR_QUERY.createCall(
+                        (SqlNode) StdOperatorRegistry.get( "SCALAR_QUERY" ).createCall(
                                 ParserPos.ZERO,
-                                SqlStdOperatorTable.UNION_ALL.createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
+                                (SqlNode) StdOperatorRegistry.get( "UNION_ALL" ).createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
 
         log.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
 
@@ -202,7 +202,7 @@ public class MysqlSqlDialect extends SqlDialect {
             SqlWriter.Frame frame = writer.startList( "(", ")" );
 
             writer.print( "DATE_FORMAT(" );
-            call.operand( 0 ).unparse( writer, 0, 0 );
+            ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
             writer.print( ", '%x%v-1'), '%x%v-%w'" );
             writer.endList( frame );
             return;
@@ -234,7 +234,7 @@ public class MysqlSqlDialect extends SqlDialect {
 
         writer.print( "DATE_FORMAT" );
         SqlWriter.Frame frame = writer.startList( "(", ")" );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         writer.sep( ",", true );
         writer.print( "'" + format + "'" );
         writer.endList( frame );
@@ -297,5 +297,6 @@ public class MysqlSqlDialect extends SqlDialect {
                 throw new AssertionError( " Time unit " + timeUnit + "is not supported now." );
         }
     }
+
 }
 

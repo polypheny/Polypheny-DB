@@ -42,13 +42,13 @@ class WithItemNamespace extends AbstractNamespace {
 
     @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
-        final SqlValidatorNamespace childNs = validator.getNamespace( withItem.query );
+        final SqlValidatorNamespace childNs = validator.getSqlNamespace( withItem.query );
         final RelDataType rowType = childNs.getRowTypeSansSystemColumns();
         if ( withItem.columnList == null ) {
             return rowType;
         }
         final Builder builder = validator.getTypeFactory().builder();
-        for ( Pair<SqlNode, RelDataTypeField> pair : Pair.zip( withItem.columnList, rowType.getFieldList() ) ) {
+        for ( Pair<SqlNode, RelDataTypeField> pair : Pair.zip( withItem.columnList.getSqlList(), rowType.getFieldList() ) ) {
             builder.add( ((SqlIdentifier) pair.left).getSimple(), null, pair.right.getType() );
         }
         return builder.build();
@@ -76,5 +76,6 @@ class WithItemNamespace extends AbstractNamespace {
         }
         throw new AssertionError( "unknown field '" + name + "' in rowtype " + underlyingRowType );
     }
+
 }
 

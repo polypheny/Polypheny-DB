@@ -18,10 +18,11 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import com.google.common.base.Preconditions;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SplittableAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlSplittableAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
@@ -32,7 +33,7 @@ import org.polypheny.db.util.Optionality;
  *
  * Only INTEGER types are supported: tinyint, smallint, int, bigint
  */
-public class SqlBitOpAggFunction extends SqlAggFunction {
+public class SqlBitOpAggFunction extends SqlAggFunction implements AggFunction {
 
 
     /**
@@ -56,10 +57,11 @@ public class SqlBitOpAggFunction extends SqlAggFunction {
 
     @Override
     public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SqlSplittableAggFunction.class ) {
-            return clazz.cast( SqlSplittableAggFunction.SelfSplitter.INSTANCE );
+        if ( clazz == SplittableAggFunction.class ) {
+            return clazz.cast( SplittableAggFunction.SelfSplitter.INSTANCE );
         }
         return super.unwrap( clazz );
     }
+
 }
 

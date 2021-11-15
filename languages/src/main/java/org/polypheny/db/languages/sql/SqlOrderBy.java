@@ -73,6 +73,12 @@ public class SqlOrderBy extends SqlCall {
     }
 
 
+    @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( query, orderList, offset, fetch );
+    }
+
+
     /**
      * Definition of {@code ORDER BY} operator.
      */

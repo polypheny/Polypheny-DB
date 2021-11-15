@@ -38,7 +38,7 @@ public class SqlLateralOperator extends SqlSpecialOperator {
         if ( call.operandCount() == 1 && call.getOperandList().get( 0 ).getKind() == Kind.COLLECTION_TABLE ) {
             // do not create ( ) around the following TABLE clause
             writer.keyword( getName() );
-            call.operand( 0 ).unparse( writer, 0, 0 );
+            ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         } else {
             SqlUtil.unparseFunctionSyntax( this, writer, call );
         }

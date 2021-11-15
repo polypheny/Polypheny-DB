@@ -76,6 +76,7 @@ import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.core.ArrayValueConstructor;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.core.json.JsonQueryEmptyOrErrorBehavior;
@@ -128,7 +129,6 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.PolyType;
 
 
@@ -136,7 +136,7 @@ import org.polypheny.db.type.PolyType;
  * Built-in methods.
  */
 public enum BuiltInMethod {
-    PARSE_ARRAY_FROM_TEXT( SqlArrayValueConstructor.class, "reparse", PolyType.class, Long.class, String.class ),
+    PARSE_ARRAY_FROM_TEXT( ArrayValueConstructor.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
     QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),

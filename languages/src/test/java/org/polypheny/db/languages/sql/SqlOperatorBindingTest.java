@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -59,7 +59,7 @@ public class SqlOperatorBindingTest {
     public void setUp() {
         JavaTypeFactory typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         integerDataType = typeFactory.createPolyType( PolyType.INTEGER );
-        integerType = PolyTypeUtil.convertTypeToSpec( integerDataType );
+        integerType = (SqlDataTypeSpec) PolyTypeUtil.convertTypeToSpec( integerDataType );
         rexBuilder = new RexBuilder( typeFactory );
     }
 
@@ -73,11 +73,11 @@ public class SqlOperatorBindingTest {
         final SqlNode literal = SqlLiteral.createExactNumeric(
                 "0",
                 ParserPos.ZERO );
-        final SqlNode castLiteral = SqlStdOperatorTable.CAST.createCall(
+        final SqlNode castLiteral = (SqlNode) StdOperatorRegistry.get( "CAST" ).createCall(
                 ParserPos.ZERO,
                 literal,
                 integerType );
-        final SqlNode castCastLiteral = SqlStdOperatorTable.CAST.createCall(
+        final SqlNode castCastLiteral = (SqlNode) StdOperatorRegistry.get( "CAST" ).createCall(
                 ParserPos.ZERO,
                 castLiteral,
                 integerType );
@@ -102,14 +102,13 @@ public class SqlOperatorBindingTest {
 
         final RexNode castLiteral = rexBuilder.makeCall(
                 integerDataType,
-                SqlStdOperatorTable.CAST,
+                StdOperatorRegistry.get( "CAST" ),
                 Lists.newArrayList( literal ) );
 
         final RexNode castCastLiteral = rexBuilder.makeCall(
                 integerDataType,
-                SqlStdOperatorTable.CAST,
+                StdOperatorRegistry.get( "CAST" ),
                 Lists.newArrayList( castLiteral ) );
-
         // RexLiteral is considered as a Literal
         assertSame( true, RexUtil.isLiteral( literal, true ) );
         // CAST(RexLiteral as type) is considered as a Literal
@@ -117,5 +116,6 @@ public class SqlOperatorBindingTest {
         // CAST(CAST(RexLiteral as type) as type) is NOT considered as a Literal
         assertSame( false, RexUtil.isLiteral( castCastLiteral, true ) );
     }
+
 }
 

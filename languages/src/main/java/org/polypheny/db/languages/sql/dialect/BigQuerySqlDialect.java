@@ -21,6 +21,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSetOperator;
 import org.polypheny.db.languages.sql.SqlSyntax;
@@ -53,9 +54,9 @@ public class BigQuerySqlDialect extends SqlDialect {
             case POSITION:
                 final SqlWriter.Frame frame = writer.startFunCall( "STRPOS" );
                 writer.sep( "," );
-                call.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+                ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
                 writer.sep( "," );
-                call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+                ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
                 if ( 3 == call.operandCount() ) {
                     throw new RuntimeException( "3rd operand Not Supported for Function STRPOS in Big Query" );
                 }

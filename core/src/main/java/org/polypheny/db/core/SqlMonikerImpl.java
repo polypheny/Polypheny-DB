@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql.validate;
+package org.polypheny.db.core;
 
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.Identifier;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.SqlMonikerType;
-import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.util.Util;
 
 
@@ -83,7 +80,7 @@ public class SqlMonikerImpl implements SqlMoniker {
 
     @Override
     public Identifier toIdentifier() {
-        return new SqlIdentifier( names, ParserPos.ZERO );
+        return LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, names, ParserPos.ZERO );
     }
 
 
@@ -96,5 +93,6 @@ public class SqlMonikerImpl implements SqlMoniker {
     public String id() {
         return type + "(" + this + ")";
     }
+
 }
 

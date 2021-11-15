@@ -68,11 +68,11 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
         if ( call.operandCount() == 2 ) {
-            call.operand( 0 ).unparse( writer, 0, 100 );
+            ((SqlNode) call.operand( 0 )).unparse( writer, 0, 100 );
             writer.sep( "TO" );
-            call.operand( 1 ).unparse( writer, 100, 0 );
+            ((SqlNode) call.operand( 1 )).unparse( writer, 100, 0 );
         } else {
-            call.operand( 0 ).unparse( writer, 0, 0 );
+            ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         }
         writer.endFunCall( frame );
     }
@@ -88,7 +88,7 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
      */
     public static SqlCall replaceTimeUnitOperand( SqlCall call, String literal, ParserPos pos ) {
         SqlLiteral literalNode = SqlLiteral.createCharString( literal, null, pos );
-        return call.getOperator().createCall( call.getFunctionQuantifier(), pos, call.getOperandList().get( 0 ), literalNode );
+        return (SqlCall) call.getOperator().createCall( call.getFunctionQuantifier(), pos, call.getOperandList().get( 0 ), literalNode );
     }
 
 
@@ -118,9 +118,10 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
             SqlNode op1 = call.operand( 0 );
             SqlNode op2 = call.operand( 1 );
 
-            call1 = call.getOperator().createCall( call.getPos(), op2, op1 );
+            call1 = (SqlCall) call.getOperator().createCall( call.getPos(), op2, op1 );
         }
 
         SqlUtil.unparseFunctionSyntax( func, writer, call1 );
     }
+
 }

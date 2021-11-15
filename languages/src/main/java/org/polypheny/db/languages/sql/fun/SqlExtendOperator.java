@@ -43,15 +43,15 @@ public class SqlExtendOperator extends SqlInternalOperator {
 
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        final SqlOperator operator = call.getOperator();
+        final SqlOperator operator = (SqlOperator) call.getOperator();
         assert call.operandCount() == 2;
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE );
-        call.operand( 0 ).unparse( writer, leftPrec, operator.getLeftPrec() );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, operator.getLeftPrec() );
         writer.setNeedWhitespace( true );
         writer.sep( operator.getName() );
         final SqlNodeList list = call.operand( 1 );
         final SqlWriter.Frame frame2 = writer.startList( "(", ")" );
-        for ( Ord<SqlNode> node2 : Ord.zip( list ) ) {
+        for ( Ord<SqlNode> node2 : Ord.zip( list.getSqlList() ) ) {
             if ( node2.i > 0 && node2.i % 2 == 0 ) {
                 writer.sep( "," );
             }
@@ -60,5 +60,6 @@ public class SqlExtendOperator extends SqlInternalOperator {
         writer.endList( frame2 );
         writer.endList( frame );
     }
+
 }
 

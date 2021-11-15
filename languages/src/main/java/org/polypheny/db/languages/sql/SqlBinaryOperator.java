@@ -20,13 +20,15 @@ package org.polypheny.db.languages.sql;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import org.polypheny.db.core.BinaryOperator;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -131,7 +133,7 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         RelDataType type = super.deriveType( validator, scope, call );
 
         RelDataType operandType1 = validator.getValidatedNodeType( call.operand( 0 ) );
@@ -163,11 +165,11 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
         if ( getName().equals( "/" ) ) {
-            final Monotonicity mono0 = call.getOperandMonotonicity( 0 );
-            final Monotonicity mono1 = call.getOperandMonotonicity( 1 );
+            final Monotonicity mono0 = ((SqlOperatorBinding) call).getOperandMonotonicity( 0 );
+            final Monotonicity mono1 = ((SqlOperatorBinding) call).getOperandMonotonicity( 1 );
             if ( mono1 == Monotonicity.CONSTANT ) {
                 if ( call.isOperandLiteral( 1, false ) ) {
-                    switch ( call.getOperandLiteralValue( 1, BigDecimal.class ).signum() ) {
+                    switch ( ((SqlOperatorBinding) call).getOperandLiteralValue( 1, BigDecimal.class ).signum() ) {
                         case -1:
                             // mono / -ve constant --> reverse mono, unstrict
                             return mono0.reverse().unstrict();

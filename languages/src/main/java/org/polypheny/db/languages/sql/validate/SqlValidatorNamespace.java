@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.validate;
 import java.util.List;
 import org.polypheny.db.core.Modality;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.ValidatorNamespace;
 import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -35,13 +36,13 @@ import org.polypheny.db.util.Pair;
  * Other examples of namespaces include a table in the from list (the namespace contains the constituent columns) and a sub-query (the namespace contains the columns in the SELECT clause of the sub-query).
  *
  * These various kinds of namespace are implemented by classes {@link IdentifierNamespace} for table names, {@link SelectNamespace} for SELECT queries, {@link SetopNamespace} for UNION, EXCEPT and INTERSECT, and so forth.
- * But if you are looking at a SELECT query and call {@link SqlValidator#getNamespace(SqlNode)}, you may not get a SelectNamespace. Why? Because the validator is allowed to wrap namespaces in other objects which implement {@link SqlValidatorNamespace}.
+ * But if you are looking at a SELECT query and call {@link SqlValidator#getSqlNamespace(SqlNode)}, you may not get a SelectNamespace. Why? Because the validator is allowed to wrap namespaces in other objects which implement {@link SqlValidatorNamespace}.
  * Your SelectNamespace will be there somewhere, but might be one or two levels deep.  Don't try to cast the namespace or use <code>instanceof</code>; use {@link SqlValidatorNamespace#unwrap(Class)} and {@link SqlValidatorNamespace#isWrapperFor(Class)} instead.
  *
  * @see SqlValidator
  * @see SqlValidatorScope
  */
-public interface SqlValidatorNamespace {
+public interface SqlValidatorNamespace extends ValidatorNamespace {
 
     /**
      * Returns the validator.
@@ -54,13 +55,6 @@ public interface SqlValidatorNamespace {
      * Returns the underlying table, or null if there is none.
      */
     ValidatorTable getTable();
-
-    /**
-     * Returns the row type of this namespace, which comprises a list of names and types of the output columns. If the scope's type has not yet been derived, derives it.
-     *
-     * @return Row type of this namespace, never null, always a struct
-     */
-    RelDataType getRowType();
 
     /**
      * Returns the type of this namespace.

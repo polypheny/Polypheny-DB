@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.rel.type.RelDataType;
@@ -68,7 +69,7 @@ public class SqlPostfixOperator extends SqlOperator {
                 throw new AssertionError( "operand's type should have been derived" );
             }
             if ( PolyTypeUtil.inCharFamily( operandType ) ) {
-                SqlCollation collation = operandType.getCollation();
+                Collation collation = operandType.getCollation();
                 assert null != collation : "An implicit or explicit collation should have been set";
                 type = validator.getTypeFactory()
                         .createTypeWithCharsetAndCollation( type, type.getCharset(), collation );

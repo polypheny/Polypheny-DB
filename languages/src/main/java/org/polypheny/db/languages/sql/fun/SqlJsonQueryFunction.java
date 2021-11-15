@@ -61,7 +61,7 @@ public class SqlJsonQueryFunction extends SqlFunction {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         final JsonQueryWrapperBehavior wrapperBehavior =
                 getEnumValue( call.operand( 1 ) );
         switch ( wrapperBehavior ) {
@@ -84,7 +84,6 @@ public class SqlJsonQueryFunction extends SqlFunction {
         writer.keyword( "ON ERROR" );
         writer.endFunCall( frame );
     }
-
 
 
     @Override
@@ -125,5 +124,6 @@ public class SqlJsonQueryFunction extends SqlFunction {
     private <E extends Enum<E>> E getEnumValue( SqlNode operand ) {
         return (E) ((SqlLiteral) operand).getValue();
     }
+
 }
 

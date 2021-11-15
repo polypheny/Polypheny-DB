@@ -28,4 +28,6 @@ public interface Call extends Visitable, Node {
 
     <S extends Node> S operand( int i );
 
+    boolean isCountStar();
+
 }

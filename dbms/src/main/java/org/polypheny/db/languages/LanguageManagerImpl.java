@@ -18,6 +18,7 @@ package org.polypheny.db.languages;
 
 import java.io.Reader;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -39,11 +40,13 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
+import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
+import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlBitOpAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlMinMaxAggFunction;
@@ -52,7 +55,13 @@ import org.polypheny.db.languages.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
 import org.polypheny.db.languages.sql.parser.SqlParser;
+import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.languages.sql.util.SqlString;
 import org.polypheny.db.languages.sql.validate.PolyphenyDbSqlValidator;
+import org.polypheny.db.languages.sql.validate.SqlUserDefinedAggFunction;
+import org.polypheny.db.languages.sql.validate.SqlUserDefinedFunction;
+import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableFunction;
+import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableMacro;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql2rel.SqlRexConvertletTable;
 import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
@@ -63,11 +72,20 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.schema.AggregateFunction;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.TableFunction;
+import org.polypheny.db.schema.TableMacro;
+import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -124,7 +142,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
     @Override
     public ParserFactory getFactory( QueryLanguage sql ) {
-        return SqlParserImpl.FACTORY;
+        return;
     }
 
 
@@ -150,7 +168,13 @@ public class LanguageManagerImpl extends LanguageManager {
 
     @Override
     public Identifier createIdentifier( QueryLanguage sql, String name, ParserPos zero ) {
-        return new SqlIdentifier( name, ParserPos.ZERO );
+        return new SqlIdentifier( name, zero );
+    }
+
+
+    @Override
+    public Identifier createIdentifier( QueryLanguage sql, List<String> names, ParserPos zero ) {
+        return new SqlIdentifier( names, zero );
     }
 
 
@@ -255,6 +279,65 @@ public class LanguageManagerImpl extends LanguageManager {
                 o,
                 typeChecker, // takes a numeric param
                 system );
+    }
+
+
+    @Override
+    public void createIntervalTypeString( StringBuilder sb, PolyIntervalQualifier intervalQualifier ) {
+        sb.append( "INTERVAL " );
+        final SqlDialect dialect = AnsiSqlDialect.DEFAULT;
+        final SqlPrettyWriter writer = new SqlPrettyWriter( dialect );
+        writer.setAlwaysUseParentheses( false );
+        writer.setSelectListItemsOnSeparateLines( false );
+        writer.setIndentation( 0 );
+        new SqlIntervalQualifier( intervalQualifier ).unparse( writer, 0, 0 );
+        final String sql = writer.toString();
+        sb.append( new SqlString( dialect, sql ).getSql() );
+    }
+
+
+    @Override
+    public Operator createUserDefinedFunction( QueryLanguage sql, Identifier name, PolyReturnTypeInference infer, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, List<RelDataType> paramTypes, Function function ) {
+        return new SqlUserDefinedFunction( (SqlIdentifier) name, infer, explicit, typeChecker, paramTypes, function );
+    }
+
+
+    @Override
+    public Operator createUserDefinedAggFunction( QueryLanguage queryLanguage, Identifier name, PolyReturnTypeInference infer, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, AggregateFunction function, boolean b, boolean b1, Optionality forbidden, RelDataTypeFactory typeFactory ) {
+        return new SqlUserDefinedAggFunction(
+                (SqlIdentifier) name,
+                infer,
+                explicit,
+                typeChecker,
+                function,
+                false,
+                false,
+                Optionality.FORBIDDEN,
+                typeFactory );
+    }
+
+
+    @Override
+    public Operator createUserDefinedTableMacro( QueryLanguage sql,
+            Identifier name,
+            PolyReturnTypeInference cursor,
+            PolyOperandTypeInference explicit,
+            FamilyOperandTypeChecker typeChecker,
+            List<RelDataType> paramTypes,
+            TableMacro function ) {
+        return new SqlUserDefinedTableMacro( (SqlIdentifier) name, ReturnTypes.CURSOR, explicit, typeChecker, paramTypes, function );
+    }
+
+
+    @Override
+    public Operator createUserDefinedTableFunction( QueryLanguage sql,
+            Identifier name,
+            PolyReturnTypeInference cursor,
+            PolyOperandTypeInference explicit,
+            FamilyOperandTypeChecker typeChecker,
+            List<RelDataType> paramTypes,
+            TableFunction function ) {
+        return new SqlUserDefinedTableFunction( (SqlIdentifier) name, ReturnTypes.CURSOR, explicit, typeChecker, paramTypes, function );
     }
 
 

@@ -18,10 +18,13 @@ package org.polypheny.db.core;
 
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 
-public interface CallBinding extends Node{
+public interface CallBinding {
+
+    Operator getOperator();
 
     Validator getValidator();
 
@@ -31,9 +34,16 @@ public interface CallBinding extends Node{
 
     List<Node> operands();
 
+    Node operand( int i );
+
     int getOperandCount();
 
     RelDataType getOperandType( int ordinal );
+
+    /**
+     * @return factory for type creation
+     */
+    RelDataTypeFactory getTypeFactory();
 
     PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e );
 

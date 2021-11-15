@@ -85,14 +85,14 @@ public class SqlCastFunction extends SqlFunction {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         assert opBinding.getOperandCount() == 2;
         RelDataType ret = opBinding.getOperandType( 1 );
         RelDataType firstType = opBinding.getOperandType( 0 );
         ret = opBinding.getTypeFactory().createTypeWithNullability( ret, firstType.isNullable() );
         if ( opBinding instanceof SqlCallBinding ) {
             SqlCallBinding callBinding = (SqlCallBinding) opBinding;
-            SqlNode operand0 = callBinding.operand( 0 );
+            SqlNode operand0 = (SqlNode) callBinding.operand( 0 );
 
             // dynamic parameters and null constants need their types assigned to them using the type they are casted to.
             if ( ((operand0 instanceof SqlLiteral) && (((SqlLiteral) operand0).getValue() == null)) || (operand0 instanceof SqlDynamicParam) ) {
@@ -126,8 +126,8 @@ public class SqlCastFunction extends SqlFunction {
      */
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        final SqlNode left = callBinding.operand( 0 );
-        final SqlNode right = callBinding.operand( 1 );
+        final SqlNode left = (SqlNode) callBinding.operand( 0 );
+        final SqlNode right = (SqlNode) callBinding.operand( 1 );
         if ( CoreUtil.isNullLiteral( left, false ) || left instanceof SqlDynamicParam ) {
             return true;
         }
@@ -160,12 +160,12 @@ public class SqlCastFunction extends SqlFunction {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() == 2;
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         writer.sep( "AS" );
         if ( call.operand( 1 ) instanceof SqlIntervalQualifier ) {
             writer.sep( "INTERVAL" );
         }
-        call.operand( 1 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 1 )).unparse( writer, 0, 0 );
         writer.endFunCall( frame );
     }
 
@@ -177,7 +177,7 @@ public class SqlCastFunction extends SqlFunction {
         if ( castFrom instanceof PolyTypeFamily && castTo instanceof PolyTypeFamily && nonMonotonicCasts.containsEntry( castFrom, castTo ) ) {
             return Monotonicity.NOT_MONOTONIC;
         } else {
-            return call.getOperandMonotonicity( 0 );
+            return ((SqlOperatorBinding) call).getOperandMonotonicity( 0 );
         }
     }
 

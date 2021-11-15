@@ -18,8 +18,11 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.Locale;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -64,7 +67,7 @@ public class SqlJsonArrayFunction extends SqlFunction {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         if ( operands[0] == null ) {
             operands[0] = SqlLiteral.createSymbol( JsonConstructorNullClause.ABSENT_ON_NULL, pos );
         }
@@ -92,7 +95,7 @@ public class SqlJsonArrayFunction extends SqlFunction {
         SqlWriter.Frame listFrame = writer.startList( "", "" );
         for ( int i = 1; i < call.operandCount(); i++ ) {
             writer.sep( "," );
-            call.operand( i ).unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) call.operand( i )).unparse( writer, leftPrec, rightPrec );
         }
         writer.endList( listFrame );
 

@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql;
 
 import java.util.List;
 import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;
@@ -55,7 +56,7 @@ public class SqlUnresolvedFunction extends SqlFunction {
      * The operator class for this function isn't resolved to the correct class. This happens in the case of user defined functions. Return the return type to be 'ANY', so we don't fail.
      */
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
     }

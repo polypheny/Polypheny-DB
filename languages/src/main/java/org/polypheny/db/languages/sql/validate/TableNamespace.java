@@ -18,7 +18,6 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -102,7 +101,7 @@ class TableNamespace extends AbstractNamespace {
      * rarely used fields in the underlying HBase table.
      */
     public TableNamespace extend( SqlNodeList extendList ) {
-        final List<SqlNode> identifierList = Util.quotientList( extendList.getList(), 2, 0 );
+        final List<SqlNode> identifierList = Util.quotientList( extendList.getSqlList(), 2, 0 );
         SqlValidatorUtil.checkIdentifierListForDuplicates( identifierList, validator.getValidationErrorFunction() );
         final ImmutableList.Builder<RelDataTypeField> builder = ImmutableList.builder();
         builder.addAll( this.extendedFields );
@@ -151,9 +150,7 @@ class TableNamespace extends AbstractNamespace {
                 if ( !extType.equals( baseType ) ) {
                     // Get the extended column node that failed validation.
                     final SqlNode extColNode =
-                            Iterables.find(
-                                    extendList.getList(),
-                                    sqlNode -> sqlNode instanceof SqlIdentifier && Util.last( ((SqlIdentifier) sqlNode).names ).equals( extendedField.getName() ) );
+                            extendList.getSqlList().stream().filter( sqlNode -> sqlNode instanceof SqlIdentifier && Util.last( ((SqlIdentifier) sqlNode).names ).equals( extendedField.getName() ) ).findFirst().get();
 
                     throw validator.getValidationErrorFunction().apply(
                             extColNode,
@@ -166,5 +163,6 @@ class TableNamespace extends AbstractNamespace {
             }
         }
     }
+
 }
 

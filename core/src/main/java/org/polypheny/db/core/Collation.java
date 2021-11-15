@@ -16,6 +16,8 @@
 
 package org.polypheny.db.core;
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.Locale;
@@ -23,6 +25,7 @@ import lombok.Getter;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.SerializableCharset;
+import org.polypheny.db.util.Util;
 
 public class Collation implements Serializable {
 
@@ -88,6 +91,87 @@ public class Collation implements Serializable {
         return wrappedCharset.getCharset();
     }
 
+
+    /**
+     * Returns the collating sequence (the collation name) and the coercibility for the resulting value of a dyadic operator.
+     *
+     * @param col1 first operand for the dyadic operation
+     * @param col2 second operand for the dyadic operation
+     * @return the resulting collation sequence. The "no collating sequence" result is returned as null.
+     * @see Glossary#SQL99 SQL:1999 Part 2 Section 4.2.3 Table 2
+     */
+    public static Collation getCoercibilityDyadicOperator( Collation col1, Collation col2 ) {
+        return getCoercibilityDyadic( col1, col2 );
+    }
+
+
+    /**
+     * Returns the result for {#@link #getCoercibilityDyadicComparison} and {@link #getCoercibilityDyadicOperator}.
+     */
+    protected static Collation getCoercibilityDyadic( Collation col1, Collation col2 ) {
+        assert null != col1;
+        assert null != col2;
+        final Coercibility coercibility1 = col1.getCoercibility();
+        final Coercibility coercibility2 = col2.getCoercibility();
+        switch ( coercibility1 ) {
+            case COERCIBLE:
+                switch ( coercibility2 ) {
+                    case COERCIBLE:
+                        return col2;
+                    case IMPLICIT:
+                        return col2;
+                    case NONE:
+                        return null;
+                    case EXPLICIT:
+                        return col2;
+                    default:
+                        throw Util.unexpected( coercibility2 );
+                }
+            case IMPLICIT:
+                switch ( coercibility2 ) {
+                    case COERCIBLE:
+                        return col1;
+                    case IMPLICIT:
+                        if ( col1.collationName.equals( col2.collationName ) ) {
+                            return col2;
+                        }
+                        return null;
+                    case NONE:
+                        return null;
+                    case EXPLICIT:
+                        return col2;
+                    default:
+                        throw Util.unexpected( coercibility2 );
+                }
+            case NONE:
+                switch ( coercibility2 ) {
+                    case COERCIBLE:
+                    case IMPLICIT:
+                    case NONE:
+                        return null;
+                    case EXPLICIT:
+                        return col2;
+                    default:
+                        throw Util.unexpected( coercibility2 );
+                }
+            case EXPLICIT:
+                switch ( coercibility2 ) {
+                    case COERCIBLE:
+                    case IMPLICIT:
+                    case NONE:
+                        return col1;
+                    case EXPLICIT:
+                        if ( col1.collationName.equals( col2.collationName ) ) {
+                            return col2;
+                        }
+                        throw RESOURCE.differentCollations( col1.collationName, col2.collationName ).ex();
+                    default:
+                        throw Util.unexpected( coercibility2 );
+                }
+            default:
+                throw Util.unexpected( coercibility1 );
+        }
+    }
 
 
     /**

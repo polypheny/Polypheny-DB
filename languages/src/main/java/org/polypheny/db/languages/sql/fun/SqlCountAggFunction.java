@@ -17,14 +17,16 @@
 package org.polypheny.db.languages.sql.fun;
 
 
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SplittableAggFunction;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.core.fun.CountAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlSplittableAggFunction;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -38,7 +40,7 @@ import org.polypheny.db.util.Optionality;
  *
  * <code>COUNT</code> is an aggregator which returns the number of rows which have gone into it. With one argument (or more), it returns the number of rows for which that argument (or all) is not <code>null</code>.
  */
-public class SqlCountAggFunction extends SqlAggFunction {
+public class SqlCountAggFunction extends SqlAggFunction implements CountAggFunction {
 
 
     public SqlCountAggFunction( String name ) {
@@ -68,7 +70,7 @@ public class SqlCountAggFunction extends SqlAggFunction {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
         if ( call.isCountStar() ) {
             return validator.getTypeFactory().createPolyType( PolyType.BIGINT );
@@ -79,8 +81,8 @@ public class SqlCountAggFunction extends SqlAggFunction {
 
     @Override
     public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SqlSplittableAggFunction.class ) {
-            return clazz.cast( SqlSplittableAggFunction.CountSplitter.INSTANCE );
+        if ( clazz == SplittableAggFunction.class ) {
+            return clazz.cast( SplittableAggFunction.CountSplitter.INSTANCE );
         }
         return super.unwrap( clazz );
     }

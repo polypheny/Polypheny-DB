@@ -156,7 +156,7 @@ public class SelectScope extends ListScope {
         // TODO: compare fully qualified names
         final SqlNodeList orderList = getOrderList();
         if ( orderList.size() > 0 ) {
-            SqlNode order0 = orderList.get( 0 );
+            SqlNode order0 = orderList.getSqlList().get( 0 );
             monotonicity = Monotonicity.INCREASING;
             if ( (order0 instanceof SqlCall) && (((SqlCall) order0).getOperator() == SqlStdOperatorTable.DESC) ) {
                 monotonicity = monotonicity.reverse();
@@ -222,5 +222,6 @@ public class SelectScope extends ListScope {
     public void setExpandedSelectList( List<SqlNode> selectList ) {
         expandedSelectList = selectList;
     }
+
 }
 

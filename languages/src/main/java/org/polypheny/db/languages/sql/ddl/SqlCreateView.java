@@ -93,6 +93,12 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( name, columnList, query );
+    }
+
+
+    @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
         String viewName;
@@ -120,7 +126,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
         RelRoot relRoot = sqlProcessor.translate(
                 statement,
-                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, );
+                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
 
         RelNode relNode = relRoot.rel;
         RelCollation relCollation = relRoot.collation;
@@ -181,7 +187,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
             SqlWriter.Frame frame = writer.startList( "(", ")" );
             for ( Node c : columnList ) {
                 writer.sep( "," );
-                ((SqlNode)c).unparse( writer, 0, 0 );
+                ((SqlNode) c).unparse( writer, 0, 0 );
             }
             writer.endList( frame );
         }

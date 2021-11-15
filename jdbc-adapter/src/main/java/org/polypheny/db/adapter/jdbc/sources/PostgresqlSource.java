@@ -29,9 +29,9 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.languages.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 
 
 @Slf4j

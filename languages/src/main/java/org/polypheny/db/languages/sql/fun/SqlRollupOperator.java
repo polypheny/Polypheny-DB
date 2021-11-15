@@ -44,11 +44,11 @@ public class SqlRollupOperator extends SqlInternalOperator {
     private static void unparseCube( SqlWriter writer, SqlCall call ) {
         writer.keyword( call.getOperator().getName() );
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.FUN_CALL, "(", ")" );
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( SqlNode operand : call.getSqlOperandList() ) {
             writer.sep( "," );
             if ( operand.getKind() == Kind.ROW ) {
                 final SqlWriter.Frame frame2 = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE, "(", ")" );
-                for ( SqlNode operand2 : ((SqlCall) operand).getOperandList() ) {
+                for ( SqlNode operand2 : ((SqlCall) operand).getSqlOperandList() ) {
                     writer.sep( "," );
                     operand2.unparse( writer, 0, 0 );
                 }

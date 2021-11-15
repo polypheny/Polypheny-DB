@@ -28,6 +28,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Window;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -185,6 +186,12 @@ public class SqlWindow extends SqlCall implements Window {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( declName, refName, partitionList, orderList, isRows, (SqlNode) lowerBound, (SqlNode) upperBound, allowPartial );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
@@ -225,7 +232,7 @@ public class SqlWindow extends SqlCall implements Window {
         }
 
         // Override, so we don't print extra parentheses.
-        getOperator().unparse( writer, this, 0, 0 );
+        ((SqlOperator) getOperator()).unparse( writer, this, 0, 0 );
     }
 
 
@@ -337,7 +344,7 @@ public class SqlWindow extends SqlCall implements Window {
                     throw validator.newValidationError( lowerBound, Static.RESOURCE.badLowerBoundary() );
                 }
             } else if ( lowerBound instanceof SqlCall ) {
-                lowerOp = ((SqlCall) lowerBound).getOperator();
+                lowerOp = (SqlOperator) ((SqlCall) lowerBound).getOperator();
             }
         }
         if ( null != upperBound ) {
@@ -347,7 +354,7 @@ public class SqlWindow extends SqlCall implements Window {
                     throw validator.newValidationError( upperBound, Static.RESOURCE.badUpperBoundary() );
                 }
             } else if ( upperBound instanceof SqlCall ) {
-                upperOp = ((SqlCall) upperBound).getOperator();
+                upperOp = (SqlOperator) ((SqlCall) upperBound).getOperator();
             }
         }
 
@@ -389,12 +396,12 @@ public class SqlWindow extends SqlCall implements Window {
 
 
     public static SqlNode createFollowing( SqlNode e, ParserPos pos ) {
-        return FOLLOWING_OPERATOR.createCall( pos, e );
+        return (SqlNode) FOLLOWING_OPERATOR.createCall( pos, e );
     }
 
 
     public static SqlNode createPreceding( SqlNode e, ParserPos pos ) {
-        return PRECEDING_OPERATOR.createCall( pos, e );
+        return (SqlNode) PRECEDING_OPERATOR.createCall( pos, e );
     }
 
 
@@ -544,7 +551,7 @@ public class SqlWindow extends SqlCall implements Window {
             allowPartial = win.allowPartial;
         }
 
-        for ( SqlNode partitionItem : partitionList ) {
+        for ( SqlNode partitionItem : partitionList.getSqlList() ) {
             try {
                 partitionItem.accept( Util.OverFinder.INSTANCE );
             } catch ( ControlFlowException e ) {
@@ -554,7 +561,7 @@ public class SqlWindow extends SqlCall implements Window {
             partitionItem.validateExpr( validator, operandScope );
         }
 
-        for ( SqlNode orderItem : orderList ) {
+        for ( SqlNode orderItem : orderList.getSqlList() ) {
             boolean savedColumnReferenceExpansion = validator.getColumnReferenceExpansion();
             validator.setColumnReferenceExpansion( false );
             try {
@@ -581,7 +588,7 @@ public class SqlWindow extends SqlCall implements Window {
         // Run framing checks if there are any
         if ( upperBound != null || lowerBound != null ) {
             // 6.10 Rule 6a RANK & DENSE_RANK do not allow ROWS or RANGE
-            if ( windowCall != null && !windowCall.getOperator().allowsFraming() ) {
+            if ( windowCall != null && !((SqlOperator) windowCall.getOperator()).allowsFraming() ) {
                 throw validator.newValidationError( isRows, Static.RESOURCE.rankWithFrame() );
             }
             PolyTypeFamily orderTypeFam = null;
@@ -783,7 +790,7 @@ public class SqlWindow extends SqlCall implements Window {
 
 
         @Override
-        public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+        public <R> void acceptCall( NodeVisitor<R> visitor, Call call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
             if ( onlyExpressions ) {
                 for ( Ord<Node> operand : Ord.zip( call.getOperandList() ) ) {
                     // If the second param is an Identifier then it's supposed to be a name from a window clause and isn't part of the group by check
@@ -794,7 +801,7 @@ public class SqlWindow extends SqlCall implements Window {
                         // skip refName
                         continue;
                     }
-                    argHandler.visitChild( visitor, call, operand.i, (SqlNode) operand.e );
+                    argHandler.visitChild( visitor, call, operand.i, operand.e );
                 }
             } else {
                 super.acceptCall( visitor, call, onlyExpressions, argHandler );
@@ -836,9 +843,9 @@ public class SqlWindow extends SqlCall implements Window {
                 } else {
                     writer.sep( "RANGE BETWEEN" );
                 }
-                ((SqlNode)window.lowerBound).unparse( writer, 0, 0 );
+                ((SqlNode) window.lowerBound).unparse( writer, 0, 0 );
                 writer.keyword( "AND" );
-                ((SqlNode)window.upperBound).unparse( writer, 0, 0 );
+                ((SqlNode) window.upperBound).unparse( writer, 0, 0 );
             }
 
             // ALLOW PARTIAL/DISALLOW PARTIAL

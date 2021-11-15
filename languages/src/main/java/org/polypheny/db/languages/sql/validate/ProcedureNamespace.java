@@ -17,10 +17,11 @@
 package org.polypheny.db.languages.sql.validate;
 
 
+import java.util.stream.Collectors;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyType;
 
@@ -46,16 +47,16 @@ public class ProcedureNamespace extends AbstractNamespace {
     public RelDataType validateImpl( RelDataType targetRowType ) {
         validator.inferUnknownTypes( validator.unknownType, scope, call );
         final RelDataType type = validator.deriveTypeImpl( scope, call );
-        final SqlOperator operator = call.getOperator();
+        final Operator operator = call.getOperator();
         final SqlCallBinding callBinding = new SqlCallBinding( validator, scope, call );
         if ( operator instanceof SqlUserDefinedTableFunction ) {
             assert type.getPolyType() == PolyType.CURSOR : "User-defined table function should have CURSOR type, not " + type;
             final SqlUserDefinedTableFunction udf = (SqlUserDefinedTableFunction) operator;
-            return udf.getRowType( validator.typeFactory, callBinding.operands() );
+            return udf.getRowType( validator.typeFactory, callBinding.operands().stream().map( e -> (SqlNode) e ).collect( Collectors.toList() ) );
         } else if ( operator instanceof SqlUserDefinedTableMacro ) {
             assert type.getPolyType() == PolyType.CURSOR : "User-defined table macro should have CURSOR type, not " + type;
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
-            return udf.getTable( validator.typeFactory, callBinding.operands() ).getRowType( validator.typeFactory );
+            return udf.getTable( validator.typeFactory, callBinding.operands().stream().map( e -> (SqlNode) e ).collect( Collectors.toList() ) ).getRowType( validator.typeFactory );
         }
         return type;
     }
@@ -65,5 +66,6 @@ public class ProcedureNamespace extends AbstractNamespace {
     public SqlNode getNode() {
         return call;
     }
+
 }
 

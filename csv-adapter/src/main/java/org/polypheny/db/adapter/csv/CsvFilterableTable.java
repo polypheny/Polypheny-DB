@@ -40,13 +40,13 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.sql.Kind;
 import org.polypheny.db.util.Source;
 
 
@@ -103,5 +103,6 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
         }
         return false;
     }
+
 }
 

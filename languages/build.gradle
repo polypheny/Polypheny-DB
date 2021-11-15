@@ -60,8 +60,28 @@ task generateParserDocument (type: CompileJavaccTask) {
     outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/mql/parser/impl")
 }
 
+/**
+ * Compile Pipeline
+ */
+task generateFmppSources {
+    inputs.dir("src/main/codegen/templates/sql")
+    outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
+    doLast {
+        ant.fmpp(configuration: "src/main/codegen/config.fmpp",
+                sourceRoot: "src/main/codegen/templates/sql",
+                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/sql")
+    }
+}
+task generateParser (type: CompileJavaccTask) {
+    dependsOn("generateFmppSources")
+    getConventionMapping().map("classpath", { configurations.javacc })
+    arguments = [static: "false", lookahead: "2"]
+    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/sql/javacc")
+    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/languages/sql/parser/impl")
+}
+
 compileJava {
-    dependsOn("generateParserDocument")
+    dependsOn("generateParserDocument", "generateParser")
 }
 
 sourceSets {

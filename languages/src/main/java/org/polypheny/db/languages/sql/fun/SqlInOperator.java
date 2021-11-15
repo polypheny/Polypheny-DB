@@ -20,8 +20,11 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.Call;
+import org.polypheny.db.core.ExplicitOperatorBinding;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.ExplicitOperatorBinding;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -80,8 +83,8 @@ public class SqlInOperator extends SqlBinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
-        final List<SqlNode> operands = call.getOperandList();
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+        final List<SqlNode> operands = ((SqlCall) call).getSqlOperandList();
         assert operands.size() == 2;
         final SqlNode left = operands.get( 0 );
         final SqlNode right = operands.get( 1 );
@@ -96,7 +99,7 @@ public class SqlInOperator extends SqlBinaryOperator {
             List<RelDataType> rightTypeList = new ArrayList<>();
             SqlNodeList nodeList = (SqlNodeList) right;
             for ( int i = 0; i < nodeList.size(); i++ ) {
-                SqlNode node = nodeList.get( i );
+                SqlNode node = nodeList.getSqlList().get( i );
                 RelDataType nodeType = validator.deriveType( scope, node );
                 rightTypeList.add( nodeType );
             }
@@ -120,7 +123,7 @@ public class SqlInOperator extends SqlBinaryOperator {
         RelDataType rightRowType = PolyTypeUtil.promoteToRowType( typeFactory, rightType, null );
 
         final ComparableOperandTypeChecker checker = (ComparableOperandTypeChecker) OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;
-        if ( !checker.checkOperandTypes( new ExplicitOperatorBinding( new SqlCallBinding( validator, scope, call ), ImmutableList.of( leftRowType, rightRowType ) ) ) ) {
+        if ( !checker.checkOperandTypes( new ExplicitOperatorBinding( new SqlCallBinding( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call ), ImmutableList.of( leftRowType, rightRowType ) ) ) ) {
             throw validator.newValidationError( call, Static.RESOURCE.incompatibleValueType( SqlStdOperatorTable.IN.getName() ) );
         }
 
@@ -149,5 +152,6 @@ public class SqlInOperator extends SqlBinaryOperator {
         // we should coerce the LHS to a scalar.
         return ordinal == 0;
     }
+
 }
 

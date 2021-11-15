@@ -306,7 +306,7 @@ public interface SqlValidator extends Validator {
      * @param node Parse tree node
      * @return namespace of node
      */
-    SqlValidatorNamespace getNamespace( SqlNode node );
+    SqlValidatorNamespace getSqlNamespace( SqlNode node );
 
     /**
      * Derives an alias for an expression. If no alias can be derived, returns null if <code>ordinal</code> is less than zero, otherwise generates an alias <code>EXPR$<i>ordinal</i></code>.
@@ -341,13 +341,6 @@ public interface SqlValidator extends Validator {
      * @param node node to be removed
      */
     void removeValidatedNodeType( SqlNode node );
-
-    /**
-     * Returns an object representing the "unknown" type.
-     *
-     * @return unknown type
-     */
-    RelDataType getUnknownType();
 
     /**
      * Returns the appropriate scope for validating a particular clause of a SELECT statement.

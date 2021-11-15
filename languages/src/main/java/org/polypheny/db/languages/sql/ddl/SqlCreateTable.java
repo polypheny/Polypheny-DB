@@ -125,6 +125,12 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( name, columnList, query );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "CREATE" );
         writer.keyword( "TABLE" );

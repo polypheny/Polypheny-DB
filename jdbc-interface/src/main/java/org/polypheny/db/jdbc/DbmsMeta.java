@@ -1231,13 +1231,13 @@ public class DbmsMeta implements ProtobufMeta {
 
         PolyphenyDbSignature signature;
         if ( parsed.isA( Kind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, );
+            signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, null );
         } else {
             Pair<Node, RelDataType> validated = sqlProcessor.validate(
                     statementHandle.getStatement().getTransaction(),
                     parsed,
                     RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            RelRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, );
+            RelRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, null );
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare

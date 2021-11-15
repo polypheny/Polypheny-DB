@@ -42,8 +42,13 @@ import java.util.Map;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.fun.AnyValueAggFunction;
+import org.polypheny.db.core.fun.BitOpAggFunction;
+import org.polypheny.db.core.fun.CountAggFunction;
+import org.polypheny.db.core.fun.MinMaxAggFunction;
+import org.polypheny.db.core.fun.SumAggFunction;
+import org.polypheny.db.core.fun.SumEmptyIsZeroAggFunction;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelNode;
@@ -56,13 +61,6 @@ import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.metadata.RelMdUtil;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.fun.SqlAnyValueAggFunction;
-import org.polypheny.db.sql.fun.SqlBitOpAggFunction;
-import org.polypheny.db.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.sql.fun.SqlMinMaxAggFunction;
-import org.polypheny.db.sql.fun.SqlSumAggFunction;
-import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 
@@ -78,12 +76,12 @@ public class AggregateUnionTransposeRule extends RelOptRule {
 
 
     static {
-        SUPPORTED_AGGREGATES.put( SqlMinMaxAggFunction.class, true );
-        SUPPORTED_AGGREGATES.put( SqlCountAggFunction.class, true );
-        SUPPORTED_AGGREGATES.put( SqlSumAggFunction.class, true );
-        SUPPORTED_AGGREGATES.put( SqlSumEmptyIsZeroAggFunction.class, true );
-        SUPPORTED_AGGREGATES.put( SqlAnyValueAggFunction.class, true );
-        SUPPORTED_AGGREGATES.put( SqlBitOpAggFunction.class, true );
+        SUPPORTED_AGGREGATES.put( MinMaxAggFunction.class, true );
+        SUPPORTED_AGGREGATES.put( CountAggFunction.class, true );
+        SUPPORTED_AGGREGATES.put( SumAggFunction.class, true );
+        SUPPORTED_AGGREGATES.put( SumEmptyIsZeroAggFunction.class, true );
+        SUPPORTED_AGGREGATES.put( AnyValueAggFunction.class, true );
+        SUPPORTED_AGGREGATES.put( BitOpAggFunction.class, true );
     }
 
 

@@ -81,6 +81,12 @@ public class SqlExplain extends SqlCall implements Explain {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( explicandum, detailLevel, depth, format );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:

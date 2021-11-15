@@ -17,7 +17,10 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -67,8 +70,9 @@ public class SqlInternalOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
-        return validateOperands( validator, scope, call );
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+        return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }
+
 }
 

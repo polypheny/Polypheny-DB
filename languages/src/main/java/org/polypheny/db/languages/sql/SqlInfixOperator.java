@@ -64,7 +64,7 @@ public class SqlInfixOperator extends SqlSpecialOperator {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() == names.length + 1;
         final boolean needWhitespace = needsSpace();
-        for ( Ord<SqlNode> operand : Ord.zip( call.getOperandList() ) ) {
+        for ( Ord<SqlNode> operand : Ord.zip( call.getSqlOperandList() ) ) {
             if ( operand.i > 0 ) {
                 writer.setNeedWhitespace( needWhitespace );
                 writer.keyword( names[operand.i - 1] );

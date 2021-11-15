@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -60,7 +61,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
@@ -357,6 +357,8 @@ public class CassandraFilter extends Filter implements CassandraRel {
                     throw new AssertionError( "cannot translate op " + op + " name " + name + " valuestring " + valueString );
             }
         }
+
     }
+
 }
 

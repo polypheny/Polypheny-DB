@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql;
 import java.util.List;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -74,17 +75,23 @@ public class SqlMerge extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( targetTable, condition, source, updateCall, insertCall, sourceSelect, alias );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
                 assert operand instanceof SqlIdentifier;
-                targetTable = operand;
+                targetTable = (SqlNode) operand;
                 break;
             case 1:
-                condition = operand;
+                condition = (SqlNode) operand;
                 break;
             case 2:
-                source = operand;
+                source = (SqlNode) operand;
                 break;
             case 3:
                 updateCall = (SqlUpdate) operand;
@@ -176,8 +183,8 @@ public class SqlMerge extends SqlCall {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SELECT, "MERGE INTO", "" );
-        final int opLeft = getOperator().getLeftPrec();
-        final int opRight = getOperator().getRightPrec();
+        final int opLeft = ((SqlOperator) getOperator()).getLeftPrec();
+        final int opRight = ((SqlOperator) getOperator()).getRightPrec();
         targetTable.unparse( writer, opLeft, opRight );
         if ( alias != null ) {
             writer.keyword( "AS" );
@@ -201,7 +208,7 @@ public class SqlMerge extends SqlCall {
                             "SET",
                             "" );
 
-            for ( Pair<SqlNode, SqlNode> pair : Pair.zip( updateCall.targetColumnList, updateCall.sourceExpressionList ) ) {
+            for ( Pair<SqlNode, SqlNode> pair : Pair.zip( updateCall.targetColumnList.getSqlList(), updateCall.sourceExpressionList.getSqlList() ) ) {
                 writer.sep( "," );
                 SqlIdentifier id = (SqlIdentifier) pair.left;
                 id.unparse( writer, opLeft, opRight );
@@ -229,5 +236,6 @@ public class SqlMerge extends SqlCall {
     public void validate( SqlValidator validator, SqlValidatorScope scope ) {
         validator.validateMerge( this );
     }
+
 }
 

@@ -19,8 +19,9 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SplittableAggFunction;
+import org.polypheny.db.core.fun.SumEmptyIsZeroAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlSplittableAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
@@ -30,7 +31,7 @@ import org.polypheny.db.util.Optionality;
  * <code>Sum0</code> is an aggregator which returns the sum of the values which go into it like <code>Sum</code>. It differs in that when no non null values are applied zero is returned instead of null.
  * Can be used along with <code>Count</code> to implement <code>Sum</code>.
  */
-public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction {
+public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction implements SumEmptyIsZeroAggFunction {
 
 
     public SqlSumEmptyIsZeroAggFunction() {
@@ -50,8 +51,8 @@ public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction {
 
     @Override
     public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SqlSplittableAggFunction.class ) {
-            return clazz.cast( SqlSplittableAggFunction.Sum0Splitter.INSTANCE );
+        if ( clazz == SplittableAggFunction.class ) {
+            return clazz.cast( SplittableAggFunction.Sum0Splitter.INSTANCE );
         }
         return super.unwrap( clazz );
     }

@@ -45,16 +45,20 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.function.Predicate;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.NameMatchers;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerImpl;
 import org.polypheny.db.core.SqlMonikerType;
 import org.polypheny.db.core.Syntax;
 import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -95,7 +99,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, RelDataTypeFactory typeFactory ) {
         this(
                 rootSchema,
-                SqlNameMatchers.withCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() ),
+                NameMatchers.withCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() ),
                 ImmutableList.of( Objects.requireNonNull( defaultSchema ), ImmutableList.of() ),
                 typeFactory );
     }
@@ -277,9 +281,17 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         final FamilyOperandTypeChecker typeChecker = OperandTypes.family( typeFamilies, i -> function.getParameters().get( i ).isOptional() );
         final List<RelDataType> paramTypes = toSql( typeFactory, argTypes );
         if ( function instanceof ScalarFunction ) {
-            return new SqlUserDefinedFunction( name, infer( (ScalarFunction) function ), InferTypes.explicit( argTypes ), typeChecker, paramTypes, function );
+            return LanguageManager.getInstance().createUserDefinedFunction(
+                    QueryLanguage.SQL,
+                    name,
+                    infer( (ScalarFunction) function ),
+                    InferTypes.explicit( argTypes ),
+                    typeChecker,
+                    paramTypes,
+                    function );
         } else if ( function instanceof AggregateFunction ) {
-            return new SqlUserDefinedAggFunction(
+            return LanguageManager.getInstance().createUserDefinedAggFunction(
+                    QueryLanguage.SQL,
                     name,
                     infer( (AggregateFunction) function ),
                     InferTypes.explicit( argTypes ),
@@ -290,9 +302,9 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
                     Optionality.FORBIDDEN,
                     typeFactory );
         } else if ( function instanceof TableMacro ) {
-            return new SqlUserDefinedTableMacro( name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableMacro) function );
+            return LanguageManager.getInstance().createUserDefinedTableMacro( QueryLanguage.SQL, name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableMacro) function );
         } else if ( function instanceof TableFunction ) {
-            return new SqlUserDefinedTableFunction( name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableFunction) function );
+            return LanguageManager.getInstance().createUserDefinedTableFunction( QueryLanguage.SQL, name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableFunction) function );
         } else {
             throw new AssertionError( "unknown function type " + function );
         }
@@ -371,5 +383,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         }
         return null;
     }
+
 }
 

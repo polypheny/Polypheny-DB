@@ -55,6 +55,7 @@ import org.polypheny.db.adapter.enumerable.impl.AggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -212,7 +213,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
             for ( int i = 0; i < state.size(); i++ ) {
                 String aggName = "a" + agg.aggIdx;
                 if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                    aggName = Util.toJavaId( agg.call.getAggregation().getName(), 0 ).substring( "ID$0$".length() ) + aggName;
+                    aggName = Util.toJavaId( ((Operator) agg.call.getAggregation()).getName(), 0 ).substring( "ID$0$".length() ) + aggName;
                 }
                 Type type = state.get( i );
                 ParameterExpression pe = Expressions.parameter( type, initBlock.newName( aggName + "s" + i ) );
@@ -507,6 +508,8 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
         public List<? extends Type> keyTypes() {
             return EnumUtils.fieldTypes( typeFactory, keyRelTypes() );
         }
+
     }
+
 }
 

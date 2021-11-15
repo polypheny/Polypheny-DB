@@ -19,7 +19,9 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -27,7 +29,6 @@ import org.polypheny.db.languages.sql.SqlCharStringLiteral;
 import org.polypheny.db.languages.sql.SqlCollation;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -74,7 +75,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
             return true; // nothing to compare
         }
         RelDataType firstType = null;
-        for ( Ord<SqlNode> operand : Ord.zip( callBinding.operands() ) ) {
+        for ( Ord<SqlNode> operand : Ord.zip( callBinding.sqlOperands() ) ) {
             RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), operand.e );
             if ( operand.i == 0 ) {
                 firstType = type;
@@ -103,7 +104,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     // Result type is the same as all the args, but its size is the total size.
     // REVIEW mb: Possibly this can be achieved by combining the strategy useFirstArgType with a new transformer.
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         // Here we know all the operands have the same type, which has a size (precision), but not a scale.
         RelDataType ret = opBinding.getOperandType( 0 );
         PolyType typeName = ret.getPolyType();
@@ -126,7 +127,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         // per the SQL std, each string fragment must be on a different line
-        final List<SqlNode> operandList = call.getOperandList();
+        final List<SqlNode> operandList = call.getSqlOperandList();
         for ( int i = 1; i < operandList.size(); i++ ) {
             ParserPos prevPos = operandList.get( i - 1 ).getPos();
             final SqlNode operand = operandList.get( i );
@@ -141,8 +142,8 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( "", "" );
-        SqlCollation collation = null;
-        for ( Ord<SqlNode> operand : Ord.zip( call.getOperandList() ) ) {
+        Collation collation = null;
+        for ( Ord<SqlNode> operand : Ord.zip( call.getSqlOperandList() ) ) {
             SqlLiteral rand = (SqlLiteral) operand.e;
             if ( operand.i > 0 ) {
                 // SQL:2003 says there must be a newline between string fragments.
@@ -173,7 +174,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
             }
         }
         if ( collation != null ) {
-            collation.unparse( writer, 0, 0 );
+            ((SqlCollation) collation).unparse( writer, 0, 0 );
         }
         writer.endList( frame );
     }
@@ -183,10 +184,11 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
      * Concatenates the operands of a call to this operator.
      */
     public static SqlLiteral concatenateOperands( SqlCall call ) {
-        final List<SqlNode> operandList = call.getOperandList();
+        final List<SqlNode> operandList = call.getSqlOperandList();
         assert operandList.size() > 0;
         assert operandList.get( 0 ) instanceof SqlLiteral : operandList.get( 0 ).getClass();
         return SqlUtil.concatenateLiterals( Util.cast( operandList, SqlLiteral.class ) );
     }
+
 }
 

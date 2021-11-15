@@ -19,12 +19,12 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.Arrays;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.rel.type.RelDataType;
@@ -66,7 +66,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
             return new ReduceResult(
                     ordinal - 1,
                     ordinal + 3,
-                    createCall(
+                    (SqlNode) createCall(
                             ParserPos.sum(
                                     Arrays.asList(
                                             left.getPos(),
@@ -78,7 +78,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
         return new ReduceResult(
                 ordinal - 1,
                 ordinal + 2,
-                createCall(
+                (SqlNode) createCall(
                         ParserPos.sum(
                                 Arrays.asList(
                                         left.getPos(),
@@ -91,12 +91,12 @@ public class SqlItemOperator extends SqlSpecialOperator {
 
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        call.operand( 0 ).unparse( writer, leftPrec, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, 0 );
         final SqlWriter.Frame frame = writer.startList( "[", "]" );
-        call.operand( 1 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 1 )).unparse( writer, 0, 0 );
         if ( call.operandCount() > 2 ) {
             writer.literal( ":" );
-            call.operand( 2 ).unparse( writer, 0, 0 );
+            ((SqlNode) call.operand( 2 )).unparse( writer, 0, 0 );
         }
         writer.endList( frame );
     }
@@ -110,8 +110,8 @@ public class SqlItemOperator extends SqlSpecialOperator {
 
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        final SqlNode left = callBinding.operand( 0 );
-        final SqlNode right = callBinding.operand( 1 );
+        final SqlNode left = (SqlNode) callBinding.operand( 0 );
+        final SqlNode right = (SqlNode) callBinding.operand( 1 );
         if ( !ARRAY_OR_MAP.checkSingleOperandType( callBinding, left, 0, throwOnFailure ) ) {
             return false;
         }
@@ -145,7 +145,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType operandType = opBinding.getOperandType( 0 );
         switch ( operandType.getPolyType() ) {

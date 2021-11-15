@@ -19,8 +19,12 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -30,7 +34,6 @@ import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.rel.type.RelDataType;
@@ -68,28 +71,28 @@ public class SqlJsonValueFunction extends SqlFunction {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         List<SqlNode> operandList = new ArrayList<>();
-        operandList.add( operands[0] );
+        operandList.add( (SqlNode) operands[0] );
         if ( operands[1] == null ) {
             operandList.add( SqlLiteral.createSymbol( JsonValueEmptyOrErrorBehavior.NULL, pos ) );
             operandList.add( SqlLiteral.createNull( pos ) );
         } else {
-            operandList.add( operands[1] );
-            operandList.add( operands[2] );
+            operandList.add( (SqlNode) operands[1] );
+            operandList.add( (SqlNode) operands[2] );
         }
         if ( operands[3] == null ) {
             operandList.add( SqlLiteral.createSymbol( JsonValueEmptyOrErrorBehavior.NULL, pos ) );
             operandList.add( SqlLiteral.createNull( pos ) );
         } else {
-            operandList.add( operands[3] );
-            operandList.add( operands[4] );
+            operandList.add( (SqlNode) operands[3] );
+            operandList.add( (SqlNode) operands[4] );
         }
         if ( operands.length == 6 && operands[5] != null ) {
             if ( returnAny ) {
                 throw new IllegalArgumentException( "illegal returning clause in json_value_any function" );
             }
-            operandList.add( operands[5] );
+            operandList.add( (SqlNode) operands[5] );
         } else if ( !returnAny ) {
             SqlDataTypeSpec defaultTypeSpec =
                     new SqlDataTypeSpec(
@@ -128,7 +131,7 @@ public class SqlJsonValueFunction extends SqlFunction {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         assert opBinding.getOperandCount() == 5 || opBinding.getOperandCount() == 6;
         RelDataType ret;
         if ( opBinding.getOperandCount() == 6 ) {
@@ -154,20 +157,20 @@ public class SqlJsonValueFunction extends SqlFunction {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() == 5 || call.operandCount() == 6;
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         if ( !returnAny ) {
             writer.keyword( "RETURNING" );
-            call.operand( 5 ).unparse( writer, 0, 0 );
+            ((SqlNode) call.operand( 5 )).unparse( writer, 0, 0 );
         }
         unparseEnum( writer, call.operand( 1 ) );
         if ( isDefaultLiteral( call.operand( 1 ) ) ) {
-            call.operand( 2 ).unparse( writer, 0, 0 );
+            ((SqlNode) call.operand( 2 )).unparse( writer, 0, 0 );
         }
         writer.keyword( "ON" );
         writer.keyword( "EMPTY" );
         unparseEnum( writer, call.operand( 3 ) );
         if ( isDefaultLiteral( call.operand( 3 ) ) ) {
-            call.operand( 4 ).unparse( writer, 0, 0 );
+            ((SqlNode) call.operand( 4 )).unparse( writer, 0, 0 );
         }
         writer.keyword( "ON" );
         writer.keyword( "ERROR" );

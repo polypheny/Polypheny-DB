@@ -21,6 +21,7 @@ import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 
 
@@ -43,9 +44,9 @@ public class SqlConvertFunction extends SqlFunction {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
         writer.sep( "USING" );
-        call.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
         writer.endFunCall( frame );
     }
 
@@ -59,5 +60,6 @@ public class SqlConvertFunction extends SqlFunction {
         assert false;
         return null;
     }
+
 }
 

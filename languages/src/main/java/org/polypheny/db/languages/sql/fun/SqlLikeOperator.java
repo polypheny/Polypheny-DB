@@ -115,13 +115,13 @@ public class SqlLikeOperator extends SqlSpecialOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( "", "" );
-        call.operand( 0 ).unparse( writer, getLeftPrec(), getRightPrec() );
+        ((SqlNode) call.operand( 0 )).unparse( writer, getLeftPrec(), getRightPrec() );
         writer.sep( getName() );
 
-        call.operand( 1 ).unparse( writer, getLeftPrec(), getRightPrec() );
+        ((SqlNode) call.operand( 1 )).unparse( writer, getLeftPrec(), getRightPrec() );
         if ( call.operandCount() == 3 ) {
             writer.sep( "ESCAPE" );
-            call.operand( 2 ).unparse( writer, getLeftPrec(), getRightPrec() );
+            ((SqlNode) call.operand( 2 )).unparse( writer, getLeftPrec(), getRightPrec() );
         }
         writer.endList( frame );
     }
@@ -163,7 +163,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
             operands = new SqlNode[]{ exp0, exp1 };
             end = opOrdinal + 2;
         }
-        SqlCall call = createCall( ParserPos.ZERO, operands );
+        SqlCall call = (SqlCall) createCall( ParserPos.ZERO, operands );
         return new ReduceResult( opOrdinal - 1, end, call );
     }
 

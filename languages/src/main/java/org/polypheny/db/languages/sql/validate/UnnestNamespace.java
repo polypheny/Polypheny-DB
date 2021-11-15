@@ -21,6 +21,7 @@ import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlUnnestOperator;
 import org.polypheny.db.rel.type.RelDataType;
 
@@ -60,7 +61,7 @@ class UnnestNamespace extends AbstractNamespace {
     protected RelDataType validateImpl( RelDataType targetRowType ) {
         // Validate the call and its arguments, and infer the return type.
         validator.validateCall( unnest, scope );
-        RelDataType type = unnest.getOperator().validateOperands( validator, scope, unnest );
+        RelDataType type = ((SqlOperator) unnest.getOperator()).validateOperands( validator, scope, unnest );
 
         return toStruct( type, unnest );
     }
@@ -70,5 +71,6 @@ class UnnestNamespace extends AbstractNamespace {
     public SqlNode getNode() {
         return unnest;
     }
+
 }
 

@@ -64,7 +64,7 @@ public class OrderByScope extends DelegatingScope {
 
     @Override
     public void findAllColumnNames( List<SqlMoniker> result ) {
-        final SqlValidatorNamespace ns = validator.getNamespace( select );
+        final SqlValidatorNamespace ns = validator.getSqlNamespace( select );
         addColumnNames( ns, result );
     }
 
@@ -74,7 +74,7 @@ public class OrderByScope extends DelegatingScope {
         // If it's a simple identifier, look for an alias.
         if ( identifier.isSimple() && validator.getConformance().isSortByAlias() ) {
             final String name = identifier.names.get( 0 );
-            final SqlValidatorNamespace selectNs = validator.getNamespace( select );
+            final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
             final RelDataType rowType = selectNs.getRowType();
 
             final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
@@ -98,7 +98,7 @@ public class OrderByScope extends DelegatingScope {
      */
     private int aliasCount( NameMatcher nameMatcher, String name ) {
         int n = 0;
-        for ( SqlNode s : select.getSelectList() ) {
+        for ( SqlNode s : select.getSqlSelectList().getSqlList() ) {
             final String alias = SqlValidatorUtil.getAlias( s, -1 );
             if ( alias != null && nameMatcher.matches( alias, name ) ) {
                 n++;
@@ -110,7 +110,7 @@ public class OrderByScope extends DelegatingScope {
 
     @Override
     public RelDataType resolveColumn( String name, SqlNode ctx ) {
-        final SqlValidatorNamespace selectNs = validator.getNamespace( select );
+        final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
         final RelDataType rowType = selectNs.getRowType();
         final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
         final RelDataTypeField field = nameMatcher.field( rowType, name );
@@ -129,5 +129,6 @@ public class OrderByScope extends DelegatingScope {
         // expression needs to be valid in parent scope too
         parent.validateExpr( expanded );
     }
+
 }
 

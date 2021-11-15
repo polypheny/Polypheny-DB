@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
@@ -484,7 +485,7 @@ public class Rest {
                 inputFields.add( column.getLogicalIndex() );
                 String fieldName = column.getAlias();
                 AggregateCall aggregateCall = AggregateCall.create(
-                        column.getAggregate(),
+                        (Operator & AggFunction) column.getAggregate(),
                         false,
                         false,
                         inputFields,

@@ -16,6 +16,6 @@
 
 package org.polypheny.db.core;
 
-public interface DynamicParam extends Visitable{
+public interface DynamicParam extends Visitable, Node {
 
 }

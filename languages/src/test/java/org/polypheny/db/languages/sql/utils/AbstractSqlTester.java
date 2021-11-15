@@ -494,7 +494,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         SqlValidator validator = getValidator();
         SqlNode n = parseAndValidate( validator, query );
         final RelDataType rowType = validator.getValidatedNodeType( n );
-        final SqlValidatorNamespace selectNamespace = validator.getNamespace( n );
+        final SqlValidatorNamespace selectNamespace = validator.getSqlNamespace( n );
         final String field0 = rowType.getFieldList().get( 0 ).getName();
         final Monotonicity monotonicity = selectNamespace.getMonotonicity( field0 );
         assertThat( monotonicity, equalTo( expectedMonotonicity ) );
@@ -540,7 +540,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         final SqlValidator validator = getValidator();
         final SqlNode node = parseAndValidate( validator, sql );
         final SqlSelect select = (SqlSelect) node;
-        final SqlNode selectItem0 = select.getSelectList().getSqlList().get( 0 );
+        final SqlNode selectItem0 = select.getSqlSelectList().getSqlList().get( 0 );
         final SqlValidatorScope scope = validator.getSelectScope( select );
         return selectItem0.getMonotonicity( scope );
     }

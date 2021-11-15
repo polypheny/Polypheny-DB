@@ -31,6 +31,7 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
@@ -55,6 +56,12 @@ public class SqlAlterTableDropForeignKey extends SqlAlterTable {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableNullableList.of( table, foreignKeyName );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableNullableList.of( table, foreignKeyName );
     }
 

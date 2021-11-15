@@ -19,10 +19,13 @@ package org.polypheny.db.languages.sql;
 
 import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -79,17 +82,17 @@ public class SqlAsOperator extends SqlSpecialOperator {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() >= 2;
         final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE );
-        call.operand( 0 ).unparse( writer, leftPrec, getLeftPrec() );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, getLeftPrec() );
         final boolean needsSpace = true;
         writer.setNeedWhitespace( needsSpace );
         if ( writer.getDialect().allowsAs() ) {
             writer.sep( "AS" );
             writer.setNeedWhitespace( needsSpace );
         }
-        call.operand( 1 ).unparse( writer, getRightPrec(), rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, getRightPrec(), rightPrec );
         if ( call.operandCount() > 2 ) {
             final SqlWriter.Frame frame1 = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE, "(", ")" );
-            for ( SqlNode operand : Util.skip( call.getOperandList(), 2 ) ) {
+            for ( SqlNode operand : Util.skip( call.getSqlOperandList(), 2 ) ) {
                 writer.sep( ",", false );
                 operand.unparse( writer, 0, 0 );
             }
@@ -102,7 +105,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
     @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         // The base method validates all operands. We override because we don't want to validate the identifier.
-        final List<SqlNode> operands = call.getOperandList();
+        final List<SqlNode> operands = call.getSqlOperandList();
         assert operands.size() == 2;
         assert operands.get( 1 ) instanceof SqlIdentifier;
         operands.get( 0 ).validateExpr( validator, scope );
@@ -114,7 +117,7 @@ public class SqlAsOperator extends SqlSpecialOperator {
 
 
     @Override
-    public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+    public <R> void acceptCall( NodeVisitor<R> visitor, Call call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
         if ( onlyExpressions ) {
             // Do not visit operands[1] -- it is not an expression.
             argHandler.visitChild( visitor, call, 0, call.operand( 0 ) );
@@ -125,17 +128,18 @@ public class SqlAsOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // special case for AS:  never try to derive type for alias
         RelDataType nodeType = validator.deriveType( scope, call.operand( 0 ) );
         assert nodeType != null;
-        return validateOperands( validator, scope, call );
+        return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }
 
 
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
-        return call.getOperandMonotonicity( 0 );
+        return ((SqlOperatorBinding) call).getOperandMonotonicity( 0 );
     }
+
 }
 

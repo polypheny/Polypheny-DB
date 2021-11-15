@@ -83,7 +83,8 @@ class AggChecker extends BasicNodeVisitor<Void> {
 
 
     @Override
-    public Void visit( Identifier id ) {
+    public Void visit( Identifier rawId ) {
+        SqlIdentifier id = (SqlIdentifier) rawId;
         if ( isGroupExpr( id ) || id.isStar() ) {
             // Star may validly occur in "SELECT COUNT(*) OVER w"
             return null;
@@ -117,10 +118,10 @@ class AggChecker extends BasicNodeVisitor<Void> {
         if ( call.getOperator().isAggregator() ) {
             if ( distinct ) {
                 if ( scope instanceof AggregatingSelectScope ) {
-                    SqlNodeList selectList = ((SqlSelect) scope.getNode()).getSelectList();
+                    SqlNodeList selectList = ((SqlSelect) scope.getNode()).getSqlSelectList();
 
                     // Check if this aggregation function is just an element in the select
-                    for ( SqlNode sqlNode : selectList ) {
+                    for ( SqlNode sqlNode : selectList.getSqlList() ) {
                         if ( sqlNode.getKind() == Kind.AS ) {
                             sqlNode = ((SqlCall) sqlNode).operand( 0 );
                         }
@@ -132,7 +133,7 @@ class AggChecker extends BasicNodeVisitor<Void> {
                 }
 
                 // Cannot use agg fun in ORDER BY clause if have SELECT DISTINCT.
-                SqlNode originalExpr = validator.getOriginal( call );
+                SqlNode originalExpr = validator.getOriginal( (SqlNode) call );
                 final String exprString = originalExpr.toString();
                 throw validator.newValidationError( call, RESOURCE.notSelectDistinctExpr( exprString ) );
             }
@@ -150,7 +151,7 @@ class AggChecker extends BasicNodeVisitor<Void> {
         }
         // Visit the operand in window function
         if ( call.getKind() == Kind.OVER ) {
-            for ( SqlNode operand : call.<SqlCall>operand( 0 ).getOperandList() ) {
+            for ( SqlNode operand : call.<SqlCall>operand( 0 ).getSqlOperandList() ) {
                 operand.accept( this );
             }
             // Check the OVER clause
@@ -164,12 +165,12 @@ class AggChecker extends BasicNodeVisitor<Void> {
                 window.getOrderList().accept( this );
             }
         }
-        if ( isGroupExpr( call ) ) {
+        if ( isGroupExpr( (SqlNode) call ) ) {
             // This call matches an expression in the GROUP BY clause.
             return null;
         }
 
-        final SqlCall groupCall = SqlStdOperatorTable.convertAuxiliaryToGroupCall( call );
+        final SqlCall groupCall = SqlStdOperatorTable.convertAuxiliaryToGroupCall( (SqlCall) call );
         if ( groupCall != null ) {
             if ( isGroupExpr( groupCall ) ) {
                 // This call is an auxiliary function that matches a group call in the GROUP BY clause.
@@ -192,7 +193,7 @@ class AggChecker extends BasicNodeVisitor<Void> {
         }
 
         // Switch to new scope.
-        SqlValidatorScope newScope = scope.getOperandScope( call );
+        SqlValidatorScope newScope = scope.getOperandScope( (SqlCall) call );
         scopes.push( newScope );
 
         // Visit the operands (only expressions).

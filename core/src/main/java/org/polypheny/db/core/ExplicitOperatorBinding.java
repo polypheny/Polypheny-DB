@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.core;
 
 
 import java.util.List;
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -28,15 +25,15 @@ import org.polypheny.db.runtime.Resources;
 
 
 /**
- * <code>ExplicitOperatorBinding</code> implements {@link SqlOperatorBinding} via an underlying array of known operand types.
+ * <code>ExplicitOperatorBinding</code> implements {@link OperatorBinding} via an underlying array of known operand types.
  */
-public class ExplicitOperatorBinding extends SqlOperatorBinding {
+public class ExplicitOperatorBinding extends OperatorBinding {
 
     private final List<RelDataType> types;
-    private final SqlOperatorBinding delegate;
+    private final OperatorBinding delegate;
 
 
-    public ExplicitOperatorBinding( SqlOperatorBinding delegate, List<RelDataType> types ) {
+    public ExplicitOperatorBinding( OperatorBinding delegate, List<RelDataType> types ) {
         this(
                 delegate,
                 delegate.getTypeFactory(),
@@ -45,12 +42,12 @@ public class ExplicitOperatorBinding extends SqlOperatorBinding {
     }
 
 
-    public ExplicitOperatorBinding( RelDataTypeFactory typeFactory, SqlOperator operator, List<RelDataType> types ) {
+    public ExplicitOperatorBinding( RelDataTypeFactory typeFactory, Operator operator, List<RelDataType> types ) {
         this( null, typeFactory, operator, types );
     }
 
 
-    private ExplicitOperatorBinding( SqlOperatorBinding delegate, RelDataTypeFactory typeFactory, SqlOperator operator, List<RelDataType> types ) {
+    private ExplicitOperatorBinding( OperatorBinding delegate, RelDataTypeFactory typeFactory, Operator operator, List<RelDataType> types ) {
         super( typeFactory, operator );
         this.types = types;
         this.delegate = delegate;
@@ -86,6 +83,7 @@ public class ExplicitOperatorBinding extends SqlOperatorBinding {
         // NOTE jvs 1-May-2006:  This call is only relevant for SQL validation, so anywhere else, just say everything's OK.
         return false;
     }
+
 }
 
 

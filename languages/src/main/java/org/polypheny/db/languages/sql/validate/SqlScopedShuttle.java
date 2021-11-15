@@ -44,9 +44,9 @@ public abstract class SqlScopedShuttle extends SqlShuttle {
     @Override
     public final SqlNode visit( Call call ) {
         SqlValidatorScope oldScope = scopes.peek();
-        SqlValidatorScope newScope = oldScope.getOperandScope( call );
+        SqlValidatorScope newScope = oldScope.getOperandScope( (SqlCall) call );
         scopes.push( newScope );
-        SqlNode result = visitScoped( call );
+        SqlNode result = visitScoped( (SqlCall) call );
         scopes.pop();
         return result;
     }

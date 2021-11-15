@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.dialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
@@ -31,7 +32,6 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.fun.SqlCase;
 import org.polypheny.db.languages.sql.fun.SqlFloorFunction;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 
 
@@ -144,7 +144,7 @@ public class HsqldbSqlDialect extends SqlDialect {
     public SqlNode rewriteSingleValueExpr( SqlNode aggCall ) {
         final SqlNode operand = ((SqlBasicCall) aggCall).operand( 0 );
         final SqlLiteral nullLiteral = SqlLiteral.createNull( ParserPos.ZERO );
-        final SqlNode unionOperand = SqlStdOperatorTable.VALUES.createCall( ParserPos.ZERO, SqlLiteral.createApproxNumeric( "0", ParserPos.ZERO ) );
+        final SqlNode unionOperand = (SqlNode) StdOperatorRegistry.get( "VALUES" ).createCall( ParserPos.ZERO, SqlLiteral.createApproxNumeric( "0", ParserPos.ZERO ) );
         // For hsqldb, generate
         //   CASE COUNT(*)
         //   WHEN 0 THEN NULL
@@ -152,16 +152,17 @@ public class HsqldbSqlDialect extends SqlDialect {
         //   ELSE (VALUES 1 UNION ALL VALUES 1)
         //   END
         final SqlNode caseExpr =
-                new SqlCase( ParserPos.ZERO,
-                        SqlStdOperatorTable.COUNT.createCall( ParserPos.ZERO, operand ),
+                new SqlCase(
+                        ParserPos.ZERO,
+                        (SqlNode) StdOperatorRegistry.get( "COUNT" ).createCall( ParserPos.ZERO, operand ),
                         SqlNodeList.of(
                                 SqlLiteral.createExactNumeric( "0", ParserPos.ZERO ),
                                 SqlLiteral.createExactNumeric( "1", ParserPos.ZERO ) ),
                         SqlNodeList.of(
                                 nullLiteral,
-                                SqlStdOperatorTable.MIN.createCall( ParserPos.ZERO, operand ) ),
-                        SqlStdOperatorTable.SCALAR_QUERY.createCall( ParserPos.ZERO,
-                                SqlStdOperatorTable.UNION_ALL.createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
+                                (SqlNode) StdOperatorRegistry.get( "MIN" ).createCall( ParserPos.ZERO, operand ) ),
+                        (SqlNode) StdOperatorRegistry.get( "SCALAR_QUERY" ).createCall( ParserPos.ZERO,
+                                StdOperatorRegistry.get( "UNION_ALL" ).createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
 
         log.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
 

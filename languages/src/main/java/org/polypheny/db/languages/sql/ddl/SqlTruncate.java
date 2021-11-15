@@ -29,6 +29,7 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlDdl;
 import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -56,6 +57,12 @@ public class SqlTruncate extends SqlDdl implements ExecutableStatement {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableList.of( name );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableList.of( name );
     }
 

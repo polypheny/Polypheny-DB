@@ -1160,7 +1160,7 @@ public abstract class SqlImplementor {
             }
             clauseList.appendAll( clauses );
             Context newContext;
-            final SqlNodeList selectList = select.getSelectList();
+            final SqlNodeList selectList = select.getSqlSelectList();
             if ( selectList != null ) {
                 newContext = new Context( dialect, selectList.size() ) {
                     @Override
@@ -1190,7 +1190,7 @@ public abstract class SqlImplementor {
 
         private boolean hasNestedAggregations( LogicalAggregate rel ) {
             if ( node instanceof SqlSelect ) {
-                final SqlNodeList selectList = ((SqlSelect) node).getSelectList();
+                final SqlNodeList selectList = ((SqlSelect) node).getSqlSelectList();
                 if ( selectList != null ) {
                     final Set<Integer> aggregatesArgs = new HashSet<>();
                     for ( AggregateCall aggregateCall : rel.getAggCallList() ) {

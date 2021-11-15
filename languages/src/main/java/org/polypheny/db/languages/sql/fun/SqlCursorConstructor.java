@@ -17,8 +17,12 @@
 package org.polypheny.db.languages.sql.fun;
 
 
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -47,10 +51,10 @@ public class SqlCursorConstructor extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         SqlSelect subSelect = call.operand( 0 );
-        validator.declareCursor( subSelect, scope );
-        subSelect.validateExpr( validator, scope );
+        ((SqlValidator) validator).declareCursor( subSelect, (SqlValidatorScope) scope );
+        subSelect.validateExpr( (SqlValidator) validator, (SqlValidatorScope) scope );
         return super.deriveType( validator, scope, call );
     }
 
@@ -60,7 +64,7 @@ public class SqlCursorConstructor extends SqlSpecialOperator {
         writer.keyword( "CURSOR" );
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
         assert call.operandCount() == 1;
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
         writer.endList( frame );
     }
 
@@ -69,5 +73,6 @@ public class SqlCursorConstructor extends SqlSpecialOperator {
     public boolean argumentMustBeScalar( int ordinal ) {
         return false;
     }
+
 }
 

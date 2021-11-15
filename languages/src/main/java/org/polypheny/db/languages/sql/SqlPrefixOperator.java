@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.OperatorBinding;
@@ -70,7 +71,7 @@ public class SqlPrefixOperator extends SqlOperator {
                 throw new AssertionError( "operand's type should have been derived" );
             }
             if ( PolyTypeUtil.inCharFamily( operandType ) ) {
-                SqlCollation collation = operandType.getCollation();
+                Collation collation = operandType.getCollation();
                 assert null != collation : "An implicit or explicit collation should have been set";
                 type = validator.getTypeFactory()
                         .createTypeWithCharsetAndCollation( type, type.getCharset(), collation );
@@ -83,7 +84,7 @@ public class SqlPrefixOperator extends SqlOperator {
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
         if ( getName().equals( "-" ) ) {
-            return call.getOperandMonotonicity( 0 ).reverse();
+            return ((SqlOperatorBinding) call).getOperandMonotonicity( 0 ).reverse();
         }
 
         return super.getMonotonicity( call );
@@ -97,5 +98,6 @@ public class SqlPrefixOperator extends SqlOperator {
         }
         return litmus.succeed();
     }
+
 }
 

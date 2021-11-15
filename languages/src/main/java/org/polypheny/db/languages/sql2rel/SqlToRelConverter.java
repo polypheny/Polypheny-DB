@@ -606,7 +606,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
      * Implementation of {@link #convertSelect(SqlSelect, boolean)}; derived class may override.
      */
     protected void convertSelectImpl( final Blackboard bb, SqlSelect select ) {
-        convertFrom( bb, select.getFrom() );
+        convertFrom( bb, select.getSqlFrom() );
         convertWhere( bb, select.getWhere() );
 
         final List<SqlNode> orderExprList = new ArrayList<>();
@@ -1266,7 +1266,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
         // Check whether query is guaranteed to produce a single value.
         if ( query instanceof SqlSelect ) {
             SqlSelect select = (SqlSelect) query;
-            SqlNodeList selectList = select.getSelectList();
+            SqlNodeList selectList = select.getSqlSelectList();
             SqlNodeList groupList = select.getGroup();
 
             if ( (selectList.size() == 1) && ((groupList == null) || (groupList.size() == 0)) ) {
@@ -1830,8 +1830,8 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 RelNode rightRel = rightBlackboard.root;
                 JoinRelType convertedJoinType = convertJoinType( joinType );
                 RexNode conditionExp;
-                final SqlValidatorNamespace leftNamespace = validator.getNamespace( left );
-                final SqlValidatorNamespace rightNamespace = validator.getNamespace( right );
+                final SqlValidatorNamespace leftNamespace = validator.getSqlNamespace( left );
+                final SqlValidatorNamespace rightNamespace = validator.getSqlNamespace( right );
                 if ( isNatural ) {
                     final RelDataType leftRowType = leftNamespace.getRowType();
                     final RelDataType rightRowType = rightNamespace.getRowType();
@@ -1913,7 +1913,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
     protected void convertMatchRecognize( Blackboard bb, SqlCall call ) {
         final SqlMatchRecognize matchRecognize = (SqlMatchRecognize) call;
-        final SqlValidatorNamespace ns = validator.getNamespace( matchRecognize );
+        final SqlValidatorNamespace ns = validator.getSqlNamespace( matchRecognize );
         final SqlValidatorScope scope = validator.getMatchRecognizeScope( matchRecognize );
 
         final Blackboard matchBb = createBlackboard( scope, null, false );
@@ -2079,7 +2079,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
 
     private void convertIdentifier( Blackboard bb, SqlIdentifier id, SqlNodeList extendedColumns ) {
-        final SqlValidatorNamespace fromNamespace = validator.getNamespace( id ).resolve();
+        final SqlValidatorNamespace fromNamespace = validator.getSqlNamespace( id ).resolve();
         if ( fromNamespace.getNode() != null ) {
             convertFrom( bb, fromNamespace.getNode() );
             return;
@@ -2427,7 +2427,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
     protected void convertAgg( Blackboard bb, SqlSelect select, List<SqlNode> orderExprList ) {
         assert bb.root != null : "precondition: child != null";
         SqlNodeList groupList = select.getGroup();
-        SqlNodeList selectList = select.getSelectList();
+        SqlNodeList selectList = select.getSqlSelectList();
         SqlNode having = select.getHaving();
 
         final AggConverter aggConverter = new AggConverter( bb, select );
@@ -2553,7 +2553,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
             // validator. This is especially the case when there are system fields; system fields appear in the relnode's rowtype but do not (yet) appear in the validator type.
             final SelectScope selectScope = SqlValidatorUtil.getEnclosingSelectScope( bb.scope );
             assert selectScope != null;
-            final SqlValidatorNamespace selectNamespace = validator.getNamespace( selectScope.getNode() );
+            final SqlValidatorNamespace selectNamespace = validator.getSqlNamespace( selectScope.getNode() );
             final List<String> names = selectNamespace.getRowType().getFieldNames();
             int sysFieldCount = selectList.size() - names.size();
             for ( SqlNode expr : selectList.getSqlList() ) {
@@ -2963,7 +2963,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
 
     protected RelOptTable getTargetTable( SqlNode call ) {
-        final SqlValidatorNamespace targetNs = validator.getNamespace( call );
+        final SqlValidatorNamespace targetNs = validator.getSqlNamespace( call );
         if ( targetNs.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
             final SqlValidatorImpl.DmlNamespace dmlNamespace = targetNs.unwrap( SqlValidatorImpl.DmlNamespace.class );
             return SqlValidatorUtil.getRelOptTable( dmlNamespace, catalogReader, null, null );
@@ -3005,7 +3005,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
             fieldNames = new ArrayList<>( Collections.nCopies( size, null ) );
         }
 
-        final InitializerExpressionFactory initializerFactory = getInitializerFactory( validator.getNamespace( call ).getTable() );
+        final InitializerExpressionFactory initializerFactory = getInitializerFactory( validator.getSqlNamespace( call ).getTable() );
 
         // Walk the name list and place the associated value in the expression list according to the ordinal value returned from the table construct, leaving nulls in the list for columns
         // that are not referenced.
@@ -3412,7 +3412,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 case MULTISET_VALUE_CONSTRUCTOR:
                 case ARRAY_VALUE_CONSTRUCTOR:
                     final SqlNodeList list = new SqlNodeList( call.getOperandList(), call.getPos() );
-                    CollectNamespace nss = (CollectNamespace) validator.getNamespace( call );
+                    CollectNamespace nss = (CollectNamespace) validator.getSqlNamespace( call );
                     Blackboard usedBb;
                     if ( null != nss ) {
                         usedBb = createBlackboard( nss.getScope(), null, false );
@@ -3492,7 +3492,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
 
     private void convertSelectList( Blackboard bb, SqlSelect select, List<SqlNode> orderList ) {
-        SqlNodeList selectList = select.getSelectList();
+        SqlNodeList selectList = select.getSqlSelectList();
         selectList = validator.expandStar( selectList, select, false );
 
         replaceSubQueries( bb, selectList, RelOptUtil.Logic.TRUE_FALSE_UNKNOWN );
@@ -4458,7 +4458,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
             this.aggregatingSelectScope = (AggregatingSelectScope) bb.getValidator().getSelectScope( select );
 
             // Collect all expressions used in the select list so that aggregate calls can be named correctly.
-            final SqlNodeList selectList = select.getSelectList();
+            final SqlNodeList selectList = select.getSqlSelectList();
             for ( int i = 0; i < selectList.size(); i++ ) {
                 SqlNode selectItem = selectList.getSqlList().get( i );
                 String name = null;

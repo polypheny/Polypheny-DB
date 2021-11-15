@@ -29,6 +29,8 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.core.ArrayValueConstructor;
+import org.polypheny.db.languages.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -43,8 +45,6 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -237,7 +237,7 @@ public class CottontailProject extends Project implements CottontailRel {
                 source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) pair.left, columnTypes.get( i ) );
             } else if ( pair.left instanceof RexDynamicParam ) {
                 source_ = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) pair.left, dynamicParameterMap_, columnTypes.get( i ) );
-            } else if ( (pair.left instanceof RexCall) && (((RexCall) pair.left).getOperator() instanceof SqlArrayValueConstructor) ) {
+            } else if ( (pair.left instanceof RexCall) && (((RexCall) pair.left).getOperator() instanceof ArrayValueConstructor) ) {
                 source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) pair.left, columnTypes.get( i ) );
             } else {
                 // Skip this item!

@@ -20,7 +20,10 @@ package org.polypheny.db.languages.sql;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -59,19 +62,19 @@ public class SqlSelectOperator extends SqlOperator {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+    public SqlCall createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         assert functionQualifier == null;
         return new SqlSelect( pos,
                 (SqlNodeList) operands[0],
                 (SqlNodeList) operands[1],
-                operands[2],
-                operands[3],
+                (SqlNode) operands[2],
+                (SqlNode) operands[3],
                 (SqlNodeList) operands[4],
-                operands[5],
+                (SqlNode) operands[5],
                 (SqlNodeList) operands[6],
                 (SqlNodeList) operands[7],
-                operands[8],
-                operands[9] );
+                (SqlNode) operands[8],
+                (SqlNode) operands[9] );
     }
 
 
@@ -119,7 +122,7 @@ public class SqlSelectOperator extends SqlOperator {
 
 
     @Override
-    public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+    public <R> void acceptCall( NodeVisitor<R> visitor, Call call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
         if ( !onlyExpressions ) {
             // None of the arguments to the SELECT operator are expressions.
             super.acceptCall( visitor, call, onlyExpressions, argHandler );
@@ -133,7 +136,7 @@ public class SqlSelectOperator extends SqlOperator {
         final SqlWriter.Frame selectFrame = writer.startList( SqlWriter.FrameTypeEnum.SELECT );
         writer.sep( "SELECT" );
         for ( int i = 0; i < select.keywordList.size(); i++ ) {
-            final SqlNode keyword = select.keywordList.get( i );
+            final SqlNode keyword = select.keywordList.getSqlList().get( i );
             keyword.unparse( writer, 0, 0 );
         }
         SqlNode selectClause = select.selectList;
@@ -208,7 +211,7 @@ public class SqlSelectOperator extends SqlOperator {
         if ( select.windowDecls.size() > 0 ) {
             writer.sep( "WINDOW" );
             final SqlWriter.Frame windowFrame = writer.startList( SqlWriter.FrameTypeEnum.WINDOW_DECL_LIST );
-            for ( SqlNode windowDecl : select.windowDecls ) {
+            for ( SqlNode windowDecl : select.windowDecls.getSqlList() ) {
                 writer.sep( "," );
                 windowDecl.unparse( writer, 0, 0 );
             }
@@ -229,5 +232,6 @@ public class SqlSelectOperator extends SqlOperator {
     public boolean argumentMustBeScalar( int ordinal ) {
         return ordinal == SqlSelect.WHERE_OPERAND;
     }
+
 }
 

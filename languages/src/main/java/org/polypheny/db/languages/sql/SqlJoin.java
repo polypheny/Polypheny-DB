@@ -23,7 +23,9 @@ import java.util.Objects;
 import org.polypheny.db.core.JoinConditionType;
 import org.polypheny.db.core.JoinType;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -91,10 +93,16 @@ public class SqlJoin extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( left, natural, joinType, right, conditionType, condition );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
-                left = operand;
+                left = (SqlNode) operand;
                 break;
             case 1:
                 natural = (SqlLiteral) operand;
@@ -103,13 +111,13 @@ public class SqlJoin extends SqlCall {
                 joinType = (SqlLiteral) operand;
                 break;
             case 3:
-                right = operand;
+                right = (SqlNode) operand;
                 break;
             case 4:
                 conditionType = (SqlLiteral) operand;
                 break;
             case 5:
-                condition = operand;
+                condition = (SqlNode) operand;
                 break;
             default:
                 throw new AssertionError( i );
@@ -198,16 +206,16 @@ public class SqlJoin extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
             assert functionQualifier == null;
             return new SqlJoin(
                     pos,
-                    operands[0],
+                    (SqlNode) operands[0],
                     (SqlLiteral) operands[1],
                     (SqlLiteral) operands[2],
-                    operands[3],
+                    (SqlNode) operands[3],
                     (SqlLiteral) operands[4],
-                    operands[5] );
+                    (SqlNode) operands[5] );
         }
 
 
@@ -269,5 +277,7 @@ public class SqlJoin extends SqlCall {
             }
             writer.endList( joinFrame );
         }
+
     }
+
 }

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -73,6 +74,12 @@ public class SqlCreateType extends SqlCreate implements ExecutableStatement {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( name, attributeDefs );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         if ( getReplace() ) {
             writer.keyword( "CREATE OR REPLACE" );
@@ -84,7 +91,7 @@ public class SqlCreateType extends SqlCreate implements ExecutableStatement {
         writer.keyword( "AS" );
         if ( attributeDefs != null ) {
             SqlWriter.Frame frame = writer.startList( "(", ")" );
-            for ( SqlNode a : attributeDefs ) {
+            for ( SqlNode a : attributeDefs.getSqlList() ) {
                 writer.sep( "," );
                 a.unparse( writer, 0, 0 );
             }

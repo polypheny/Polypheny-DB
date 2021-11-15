@@ -38,6 +38,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
@@ -45,8 +47,6 @@ import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -308,14 +308,14 @@ public class StatisticQueryProcessor {
         PolyphenyDbSignature signature;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
 
-        SqlNode parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql );
 
         if ( parsed.isA( Kind.DDL ) ) {
             // statistics module should not execute any ddls
             throw new RuntimeException( "No DDL expected here" );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
-            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left, );
+            Pair<Node, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
+            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );

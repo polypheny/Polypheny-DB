@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.cassandra.rules;
 
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraProject;
+import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
@@ -28,7 +29,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
@@ -78,4 +78,5 @@ public class CassandraProjectRule extends CassandraConverterRule {
                 project.getRowType(),
                 arrayValueProject );
     }
+
 }

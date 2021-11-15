@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlAsOperator;
 import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
@@ -43,9 +44,10 @@ public class SqlArgumentAssignmentOperator extends SqlAsOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         // Arguments are held in reverse order to be consistent with base class (AS).
-        call.operand( 1 ).unparse( writer, leftPrec, getLeftPrec() );
+        ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, getLeftPrec() );
         writer.keyword( getName() );
-        call.operand( 0 ).unparse( writer, getRightPrec(), rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, getRightPrec(), rightPrec );
     }
+
 }
 

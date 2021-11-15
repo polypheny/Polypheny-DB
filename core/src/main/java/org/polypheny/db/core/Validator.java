@@ -105,4 +105,13 @@ public interface Validator {
      */
     RelDataType getParameterRowType( Node sqlQuery );
 
+    /**
+     * Returns an object representing the "unknown" type.
+     *
+     * @return unknown type
+     */
+    RelDataType getUnknownType();
+
+    ValidatorNamespace getNamespace( Node node );
+
 }

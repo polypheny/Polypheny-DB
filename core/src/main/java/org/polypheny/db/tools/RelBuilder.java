@@ -1742,7 +1742,7 @@ public class RelBuilder {
                                 .collect( Collectors.toList() ) );
                 aggregateCall =
                         AggregateCall.create(
-                                aggCall1.aggFunction,
+                                (Operator & AggFunction) aggCall1.aggFunction,
                                 aggCall1.distinct,
                                 aggCall1.approximate,
                                 args,

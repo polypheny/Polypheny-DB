@@ -52,7 +52,7 @@ public class SqlTranslate3Function extends SqlFunction {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( "TRANSLATE" );
-        for ( SqlNode sqlNode : call.getOperandList() ) {
+        for ( SqlNode sqlNode : call.getSqlOperandList() ) {
             writer.sep( "," );
             sqlNode.unparse( writer, leftPrec, rightPrec );
         }

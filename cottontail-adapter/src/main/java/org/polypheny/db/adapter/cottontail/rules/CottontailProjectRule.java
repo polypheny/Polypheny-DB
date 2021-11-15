@@ -26,6 +26,8 @@ import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.cottontail.rel.CottontailProject;
 import org.polypheny.db.document.rules.DocumentRules;
+import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.languages.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
@@ -39,8 +41,6 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyType;
 

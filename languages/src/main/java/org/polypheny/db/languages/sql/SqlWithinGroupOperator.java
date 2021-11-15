@@ -17,7 +17,10 @@
 package org.polypheny.db.languages.sql;
 
 
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
@@ -53,7 +56,7 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         assert call.operandCount() == 2;
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         writer.keyword( "WITHIN GROUP" );
         final SqlWriter.Frame orderFrame = writer.startList( SqlWriter.FrameTypeEnum.ORDER_BY_LIST, "(", ")" );
         writer.keyword( "ORDER BY" );
@@ -71,7 +74,7 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
             throw validator.newValidationError( call, Static.RESOURCE.withinGroupNotAllowed( aggCall.getOperator().getName() ) );
         }
         final SqlNodeList orderList = call.operand( 1 );
-        for ( SqlNode order : orderList ) {
+        for ( SqlNode order : orderList.getSqlList() ) {
             RelDataType nodeType = validator.deriveType( scope, order );
             assert nodeType != null;
         }
@@ -80,8 +83,9 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // Validate type of the inner aggregate call
-        return validateOperands( validator, scope, call );
+        return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }
+
 }

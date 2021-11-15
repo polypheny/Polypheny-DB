@@ -20,16 +20,14 @@ package org.polypheny.db.type.checker;
 import java.util.AbstractList;
 import java.util.List;
 import org.polypheny.db.core.CallBinding;
+import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.Select;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Static;
@@ -75,7 +73,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
                 if ( throwOnFailure ) {
                     Node node = callBinding.operand( i );
                     if ( node.getKind() == Kind.SELECT ) {
-                        node = ((SqlSelect) node).getSelectList();
+                        node = ((Select) node).getSelectList();
                     }
                     throw validator.newValidationError( node, Static.RESOURCE.columnCountMismatchInSetop( callBinding.getOperator().getName() ) );
                 } else {
@@ -103,7 +101,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
                             } );
             if ( type == null ) {
                 if ( throwOnFailure ) {
-                    Node field = SqlUtil.getSelectListItem( callBinding.operand( 0 ), i );
+                    Node field = CoreUtil.getSelectListItem( callBinding.operand( 0 ), i );
                     throw validator.newValidationError(
                             field,
                             Static.RESOURCE.columnTypeMismatchInSetop(

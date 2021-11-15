@@ -39,6 +39,7 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.dialect.JethroDataSqlDialect;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.util.SqlBuilder;
@@ -269,7 +270,7 @@ public class SqlDialect {
 
 
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        call.getOperator().unparse( writer, call, leftPrec, rightPrec );
+        ((SqlOperator) call.getOperator()).unparse( writer, call, leftPrec, rightPrec );
     }
 
 
@@ -280,14 +281,14 @@ public class SqlDialect {
 
     public void unparseSqlDatetimeArithmetic( SqlWriter writer, SqlCall call, Kind Kind, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
         writer.sep( (Kind.PLUS == Kind) ? "+" : "-" );
-        call.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
         writer.endList( frame );
         //Only two parameters are present normally
         //Checking parameter count to prevent errors
         if ( call.getOperandList().size() > 2 ) {
-            call.operand( 2 ).unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) call.operand( 2 )).unparse( writer, leftPrec, rightPrec );
         }
     }
 
@@ -594,7 +595,7 @@ public class SqlDialect {
                     null,
                     ParserPos.ZERO );
         }
-        return PolyTypeUtil.convertTypeToSpec( type );
+        return (SqlNode) PolyTypeUtil.convertTypeToSpec( type );
     }
 
 
@@ -634,9 +635,9 @@ public class SqlDialect {
             return null;
         }
 
-        node = SqlStdOperatorTable.IS_NULL.createCall( ParserPos.ZERO, node );
+        node = (SqlNode) StdOperatorRegistry.get( "IS_NULL" ).createCall( ParserPos.ZERO, node );
         if ( nullsFirst ) {
-            node = SqlStdOperatorTable.DESC.createCall( ParserPos.ZERO, node );
+            node = (SqlNode) StdOperatorRegistry.get( "DESC" ).createCall( ParserPos.ZERO, node );
         }
         return node;
     }

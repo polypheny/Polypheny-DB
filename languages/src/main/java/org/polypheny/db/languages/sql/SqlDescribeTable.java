@@ -18,8 +18,11 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -32,7 +35,7 @@ public class SqlDescribeTable extends SqlCall {
     public static final SqlSpecialOperator OPERATOR =
             new SqlSpecialOperator( "DESCRIBE_TABLE", Kind.DESCRIBE_TABLE ) {
                 @Override
-                public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+                public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
                     return new SqlDescribeTable( pos, (SqlIdentifier) operands[0], (SqlIdentifier) operands[1] );
                 }
             };
@@ -89,6 +92,12 @@ public class SqlDescribeTable extends SqlCall {
     }
 
 
+    @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, column );
+    }
+
+
     public SqlIdentifier getTable() {
         return table;
     }
@@ -97,5 +106,6 @@ public class SqlDescribeTable extends SqlCall {
     public SqlIdentifier getColumn() {
         return column;
     }
+
 }
 

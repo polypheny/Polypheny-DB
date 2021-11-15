@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -57,18 +58,19 @@ public class SqlJsonApiCommonSyntaxOperator extends SqlSpecialOperator {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.SIMPLE );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         writer.sep( ",", true );
-        call.operand( 1 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 1 )).unparse( writer, 0, 0 );
         if ( call.operandCount() > 2 ) {
             writer.keyword( "PASSING" );
             for ( int i = 2; i < call.getOperandList().size(); i += 2 ) {
-                call.operand( i ).unparse( writer, 0, 0 );
+                ((SqlNode) call.operand( i )).unparse( writer, 0, 0 );
                 writer.keyword( "AS" );
-                call.operand( i + 1 ).unparse( writer, 0, 0 );
+                ((SqlNode) call.operand( i + 1 )).unparse( writer, 0, 0 );
             }
         }
         writer.endFunCall( frame );
     }
+
 }
 

@@ -25,6 +25,7 @@ import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -102,7 +103,7 @@ public class SqlSubstringFunction extends SqlFunction {
         SqlValidator validator = callBinding.getValidator();
         SqlValidatorScope scope = callBinding.getScope();
 
-        final List<SqlNode> operands = callBinding.operands();
+        final List<Node> operands = callBinding.operands();
         int n = operands.size();
         assert (3 == n) || (2 == n);
         if ( !OperandTypes.STRING.checkSingleOperandType( callBinding, operands.get( 0 ), 0, throwOnFailure ) ) {
@@ -156,13 +157,13 @@ public class SqlSubstringFunction extends SqlFunction {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
         writer.sep( "FROM" );
-        call.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
 
         if ( 3 == call.operandCount() ) {
             writer.sep( "FOR" );
-            call.operand( 2 ).unparse( writer, leftPrec, rightPrec );
+            ((SqlNode) call.operand( 2 )).unparse( writer, leftPrec, rightPrec );
         }
 
         writer.endFunCall( frame );

@@ -21,7 +21,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
-            srcDirs = ["src/main/resources"]
+            srcDirs = ["src/main/resources", "$buildDir/webapp"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }

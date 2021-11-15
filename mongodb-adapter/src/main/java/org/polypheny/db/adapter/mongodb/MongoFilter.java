@@ -57,6 +57,9 @@ import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.core.BsonUtil;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.languages.sql.fun.SqlItemOperator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -70,9 +73,6 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.JsonBuilder;
 
@@ -906,7 +906,7 @@ public class MongoFilter extends Filter implements MongoRel {
          * @param operands the fields, which have to match the given operation
          * @return the operations as a single value
          */
-        private BsonValue getOperation( SqlOperator op, ImmutableList<RexNode> operands ) {
+        private BsonValue getOperation( Operator op, ImmutableList<RexNode> operands ) {
             String operator = getOp( op );
 
             return new BsonDocument( operator, new BsonArray( operands.stream().map( this::getSingle ).collect( Collectors.toList() ) ) );
@@ -939,7 +939,7 @@ public class MongoFilter extends Filter implements MongoRel {
          * @param op the operation to transform e.g. Kind.PLUS
          * @return The operation translated
          */
-        private String getOp( SqlOperator op ) {
+        private String getOp( Operator op ) {
             switch ( op.kind ) {
                 case PLUS:
                     return "$add";

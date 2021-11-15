@@ -21,8 +21,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -70,7 +73,11 @@ public class SqlOverOperator extends SqlBinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator rawValidator, ValidatorScope rawScope, Call rawCall ) {
+        SqlValidator validator = (SqlValidator) rawValidator;
+        SqlValidatorScope scope = (SqlValidatorScope) rawScope;
+        SqlCall call = (SqlCall) rawCall;
+
         // Validate type of the inner aggregate call
         validateOperands( validator, scope, call );
 
@@ -111,9 +118,9 @@ public class SqlOverOperator extends SqlBinaryOperator {
      * @param visitor Visitor
      */
     @Override
-    public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+    public <R> void acceptCall( NodeVisitor<R> visitor, Call call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
         if ( onlyExpressions ) {
-            for ( Ord<SqlNode> operand : Ord.zip( call.getOperandList() ) ) {
+            for ( Ord<SqlNode> operand : Ord.zip( ((SqlCall) call).getSqlOperandList() ) ) {
                 // If the second param is an Identifier then it's supposed to be a name from a window clause and isn't part of the group by check
                 if ( operand == null ) {
                     continue;
@@ -127,5 +134,6 @@ public class SqlOverOperator extends SqlBinaryOperator {
             super.acceptCall( visitor, call, onlyExpressions, argHandler );
         }
     }
+
 }
 

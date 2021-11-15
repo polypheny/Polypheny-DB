@@ -159,6 +159,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     /**
      * Returns a particular operand.
      */
+    @Override
     public Node operand( int i ) {
         return operands().get( i );
     }
@@ -216,7 +217,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     public RelDataType getOperandType( int ordinal ) {
         final SqlNode operand = call.operand( ordinal );
         final RelDataType type = validator.deriveType( scope, operand );
-        final SqlValidatorNamespace namespace = validator.getNamespace( operand );
+        final SqlValidatorNamespace namespace = validator.getSqlNamespace( operand );
         if ( namespace != null ) {
             return namespace.getType();
         }

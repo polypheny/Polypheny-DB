@@ -1546,8 +1546,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
                 boolean isSpecialCast = false;
                 if ( operator instanceof Function ) {
-                    Function function = (Function) operator;
-                    if ( function.getKind() == Kind.CAST ) {
+                    if ( operator.getKind() == Kind.CAST ) {
                         if ( call.operands.size() < 2 ) {
                             isSpecialCast = true;
                         }
@@ -1607,7 +1606,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             // check singleAggRel is single_value agg
             if ( (!singleAggregate.getGroupSet().isEmpty())
                     || (singleAggregate.getAggCallList().size() != 1)
-                    || !(singleAggregate.getAggCallList().get( 0 ).getAggregation().getFunctionCategory() == FunctionType.SINGLE_VALUE) ) {
+                    || !(singleAggregate.getAggCallList().get( 0 ).getAggregation().getFunctionType() == FunctionType.SINGLE_VALUE) ) {
                 return;
             }
 
@@ -1680,7 +1679,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             // doing a single_value() on the entire input
             if ( (!aggregate.getGroupSet().isEmpty())
                     || (aggregate.getAggCallList().size() != 1)
-                    || !(aggregate.getAggCallList().get( 0 ).getAggregation().getFunctionCategory() == FunctionType.SINGLE_VALUE) ) {
+                    || !(aggregate.getAggCallList().get( 0 ).getAggregation().getFunctionType() == FunctionType.SINGLE_VALUE) ) {
                 return;
             }
 
@@ -1875,7 +1874,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             int k = -1;
             for ( AggregateCall aggCall : aggCalls ) {
                 ++k;
-                if ( (aggCall.getAggregation().getFunctionCategory() == FunctionType.COUNT) && (aggCall.getArgList().size() == 0) ) {
+                if ( (aggCall.getAggregation().getFunctionType() == FunctionType.COUNT) && (aggCall.getArgList().size() == 0) ) {
                     isCountStar.add( k );
                 }
             }
@@ -2232,7 +2231,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             int i = -1;
             for ( AggregateCall aggCall : aggCalls ) {
                 ++i;
-                if ( aggCall.getAggregation().getFunctionCategory() == FunctionType.COUNT ) {
+                if ( aggCall.getAggregation().getFunctionType() == FunctionType.COUNT ) {
                     isCount.add( i );
                 }
             }

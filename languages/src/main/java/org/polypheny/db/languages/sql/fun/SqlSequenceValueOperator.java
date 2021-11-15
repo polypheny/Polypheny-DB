@@ -18,7 +18,10 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.List;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -57,12 +60,12 @@ public class SqlSequenceValueOperator extends SqlSpecialOperator {
                 kind == Kind.NEXT_VALUE
                         ? "NEXT VALUE FOR"
                         : "CURRENT VALUE FOR" );
-        call.getOperandList().get( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.getOperandList().get( 0 )).unparse( writer, 0, 0 );
     }
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         final RelDataTypeFactory typeFactory = validator.getTypeFactory();
         return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), false );
     }
@@ -70,11 +73,12 @@ public class SqlSequenceValueOperator extends SqlSpecialOperator {
 
     @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
-        List<SqlNode> operands = call.getOperandList();
+        List<SqlNode> operands = call.getSqlOperandList();
         assert operands.size() == 1;
         assert operands.get( 0 ) instanceof SqlIdentifier;
         SqlIdentifier id = (SqlIdentifier) operands.get( 0 );
         validator.validateSequenceValue( scope, id );
     }
+
 }
 

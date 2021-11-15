@@ -95,7 +95,7 @@ public abstract class SqlUtil {
      * Returns the <code>n</code>th (0-based) input to a join expression.
      */
     public static SqlNode getFromNode( SqlSelect query, int ordinal ) {
-        ArrayList<SqlNode> list = flatten( query.getFrom() );
+        ArrayList<SqlNode> list = flatten( query.getSqlFrom() );
         return list.get( ordinal );
     }
 
@@ -510,40 +510,6 @@ public abstract class SqlUtil {
             }
         }
         return bestMatch;
-    }
-
-
-    /**
-     * Returns the <code>i</code>th select-list item of a query.
-     */
-    public static SqlNode getSelectListItem( SqlNode query, int i ) {
-        switch ( query.getKind() ) {
-            case SELECT:
-                SqlSelect select = (SqlSelect) query;
-                final SqlNode from = stripAs( select.getFrom() );
-                if ( from.getKind() == Kind.VALUES ) {
-                    // They wrote "VALUES (x, y)", but the validator has converted this into "SELECT * FROM VALUES (x, y)".
-                    return getSelectListItem( from, i );
-                }
-                final SqlNodeList fields = select.getSelectList();
-
-                // Range check the index to avoid index out of range.  This could be expanded to actually check to see if the select list is a "*"
-                if ( i >= fields.size() ) {
-                    i = 0;
-                }
-                return (SqlNode) fields.get( i );
-
-            case VALUES:
-                SqlCall call = (SqlCall) query;
-                assert call.operandCount() > 0 : "VALUES must have at least one operand";
-                final SqlCall row = call.operand( 0 );
-                assert row.operandCount() > i : "VALUES has too few columns";
-                return row.operand( i );
-
-            default:
-                // Unexpected type of query.
-                throw Util.needToImplement( query );
-        }
     }
 
 

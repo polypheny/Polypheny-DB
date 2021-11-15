@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -79,6 +80,12 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public List<Node> getOperandList() {
+        return ImmutableNullableList.of( table, column, type );
+    }
+
+
+    @Override
+    public List<SqlNode> getSqlOperandList() {
         return ImmutableNullableList.of( table, column, type );
     }
 

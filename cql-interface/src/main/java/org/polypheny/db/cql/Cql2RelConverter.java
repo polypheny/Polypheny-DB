@@ -25,7 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
@@ -40,7 +41,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
@@ -250,25 +250,25 @@ public class Cql2RelConverter {
                         if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.AND ) {
                             log.debug( "Found 'AND'." );
                             rexNode = rexBuilder.makeCall(
-                                    SqlStdOperatorTable.AND,
+                                    StdOperatorRegistry.get( "AND" ),
                                     secondToLastRexNode.get(),
                                     lastRexNode.get()
                             );
                         } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.OR ) {
                             log.debug( "Found 'OR'." );
                             rexNode = rexBuilder.makeCall(
-                                    SqlStdOperatorTable.OR,
+                                    StdOperatorRegistry.get( "OR" ),
                                     secondToLastRexNode.get(),
                                     lastRexNode.get()
                             );
                         } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.NOT ) {
                             log.debug( "Found 'NOT'." );
                             rexNode = rexBuilder.makeCall(
-                                    SqlStdOperatorTable.NOT,
+                                    StdOperatorRegistry.get( "NOT" ),
                                     lastRexNode.get()
                             );
                             rexNode = rexBuilder.makeCall(
-                                    SqlStdOperatorTable.AND,
+                                    StdOperatorRegistry.get( "AND" ),
                                     secondToLastRexNode.get(),
                                     rexNode
                             );

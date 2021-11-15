@@ -22,15 +22,17 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.core.ArrayValueConstructor;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
@@ -40,13 +42,14 @@ import org.polypheny.db.type.PolyTypeUtil;
 /**
  * Definition of the SQL:2003 standard ARRAY constructor, <code>ARRAY[&lt;expr&gt;, ...]</code>.
  */
-public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
+public class SqlArrayValueConstructor extends SqlMultisetValueConstructor implements ArrayValueConstructor {
 
     private static final Gson gson = new Gson();
 
     public final int dimension;
     public final int maxCardinality;
     public boolean outermost = true;
+
 
     public SqlArrayValueConstructor() {
         this( 0, 0, 0 );
@@ -67,7 +70,7 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         RelDataType type = getComponentType( opBinding.getTypeFactory(), opBinding.collectOperandTypes() );
         if ( null == type ) {
             return null;
@@ -75,10 +78,11 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
         return PolyTypeUtil.createArrayType( opBinding.getTypeFactory(), type, false, dimension, maxCardinality );
     }
 
+
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         RelDataType type = super.deriveType( validator, scope, call );
-        if( type instanceof ArrayType ) {
+        if ( type instanceof ArrayType ) {
             ((ArrayType) type).setCardinality( maxCardinality ).setDimension( dimension );
         }
         //set the operator again, because SqlOperator.deriveType will clear the dimension & cardinality of this constructor
@@ -90,7 +94,7 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         if ( !writer.getDialect().supportsNestedArrays() ) {
-            List<Object> list = createListForArrays( call.getOperandList() );
+            List<Object> list = createListForArrays( call.getSqlOperandList() );
             writer.literal( "'" + gson.toJson( list ) + "'" );
         } else {
             super.unparse( writer, call, leftPrec, rightPrec );
@@ -119,7 +123,7 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
                 }
                 list.add( value );
             } else if ( node instanceof SqlCall ) {
-                list.add( createListForArrays( ((SqlCall) node).getOperandList() ) );
+                list.add( createListForArrays( ((SqlCall) node).getSqlOperandList() ) );
             } else {
                 throw new RuntimeException( "Invalid array" );
             }

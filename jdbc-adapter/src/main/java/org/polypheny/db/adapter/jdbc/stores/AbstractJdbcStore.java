@@ -39,10 +39,10 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 

@@ -37,17 +37,17 @@ package org.polypheny.db.adapter.mongodb;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.fun.SqlSingleValueAggFunction;
+import org.polypheny.db.languages.sql.fun.SqlSumAggFunction;
+import org.polypheny.db.languages.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.InvalidRelException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.fun.SqlSingleValueAggFunction;
-import org.polypheny.db.sql.fun.SqlSumAggFunction;
-import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
 
@@ -147,8 +147,8 @@ public class MongoAggregate extends Aggregate implements MongoRel {
     }
 
 
-    private String toMongo( SqlAggFunction aggregation, List<String> inNames, List<Integer> args, Implementor implementor ) {
-        if ( aggregation == SqlStdOperatorTable.COUNT ) {
+    private String toMongo( AggFunction aggregation, List<String> inNames, List<Integer> args, Implementor implementor ) {
+        if ( aggregation == StdOperatorRegistry.getAgg( "COUNT" ) ) {
             if ( args.size() == 0 ) {
                 return "{$sum: 1}";
             } else {
@@ -162,17 +162,17 @@ public class MongoAggregate extends Aggregate implements MongoRel {
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$sum: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == SqlStdOperatorTable.MIN ) {
+        } else if ( aggregation == StdOperatorRegistry.getAgg( "MIN" ) ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$min: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == SqlStdOperatorTable.MAX ) {
+        } else if ( aggregation == StdOperatorRegistry.getAgg( "MAX" ) ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$max: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == SqlStdOperatorTable.AVG || aggregation.kind == SqlStdOperatorTable.AVG.kind ) {
+        } else if ( aggregation == StdOperatorRegistry.getAgg( "AVG" ) || aggregation.getKind() == StdOperatorRegistry.getAgg( "AVG" ).kind ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );

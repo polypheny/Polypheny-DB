@@ -20,10 +20,14 @@ package org.polypheny.db.languages.sql.fun;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -61,7 +65,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         RelDataType type =
                 getComponentType(
                         opBinding.getTypeFactory(),
@@ -103,10 +107,10 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         SqlSelect subSelect = call.operand( 0 );
-        subSelect.validateExpr( validator, scope );
-        SqlValidatorNamespace ns = validator.getNamespace( subSelect );
+        subSelect.validateExpr( (SqlValidator) validator, (SqlValidatorScope) scope );
+        SqlValidatorNamespace ns = ((SqlValidator) validator).getSqlNamespace( subSelect );
         assert null != ns.getRowType();
         return PolyTypeUtil.createMultisetType(
                 validator.getTypeFactory(),
@@ -120,7 +124,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
         writer.keyword( getName() );
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
         assert call.operandCount() == 1;
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
         writer.endList( frame );
     }
 
@@ -129,5 +133,6 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
     public boolean argumentMustBeScalar( int ordinal ) {
         return false;
     }
+
 }
 

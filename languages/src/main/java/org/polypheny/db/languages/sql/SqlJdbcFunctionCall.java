@@ -27,6 +27,8 @@ import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlTrimFunction;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -427,7 +429,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // Override SqlFunction.deriveType, because function-resolution is not relevant to a JDBC function call.
         // REVIEW: jhyde: Should SqlJdbcFunctionCall even be a subclass of SqlFunction?
 
@@ -435,7 +437,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             RelDataType nodeType = validator.deriveType( scope, operand );
             ((SqlValidatorImpl) validator).setValidatedNodeType( (SqlNode) operand, nodeType );
         }
-        return validateOperands( validator, scope, call );
+        return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }
 
 

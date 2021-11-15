@@ -23,6 +23,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
+import org.polypheny.db.util.NlsString;
 
 public abstract class OperatorBinding {
 
@@ -151,13 +152,45 @@ public abstract class OperatorBinding {
     /**
      * Returns the rowtype of the <code>ordinal</code>th operand, which is a cursor.
      *
-     * This is only implemented for {@link SqlCallBinding}.
+     * This is only implemented for {@link CallBinding}.
      *
      * @param ordinal Ordinal of the operand
      * @return Rowtype of the query underlying the cursor
      */
     public RelDataType getCursorOperand( int ordinal ) {
         throw new UnsupportedOperationException();
+    }
+
+
+    /**
+     * Gets the value of a literal operand.
+     *
+     * Cases:
+     * <ul>
+     * <li>If the operand is not a literal, the value is null.</li>
+     * <li>If the operand is a string literal, the value will be of type {@link NlsString}.</li>
+     * <li>If the operand is a numeric literal, the value will be of type {@link java.math.BigDecimal}.</li>
+     * <li>If the operand is an interval qualifier, the value will be of type {@link IntervalQualifier}</li>
+     * <li>Otherwise the type is undefined, and the value may be null.</li>
+     * </ul>
+     *
+     * @param ordinal zero-based ordinal of operand of interest
+     * @param clazz Desired valued type
+     * @return value of operand
+     */
+    public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    /**
+     * Gets the monotonicity of a bound operand.
+     *
+     * @param ordinal zero-based ordinal of operand of interest
+     * @return monotonicity of operand
+     */
+    public Monotonicity getOperandMonotonicity( int ordinal ) {
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 }

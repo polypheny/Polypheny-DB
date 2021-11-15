@@ -36,16 +36,13 @@ package org.polypheny.db.type;
 
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.util.SqlString;
 
 
 /**
@@ -70,21 +67,13 @@ public class IntervalPolyType extends AbstractPolyType {
 
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
-        sb.append( "INTERVAL " );
-        final SqlDialect dialect = AnsiSqlDialect.DEFAULT;
-        final SqlPrettyWriter writer = new SqlPrettyWriter( dialect );
-        writer.setAlwaysUseParentheses( false );
-        writer.setSelectListItemsOnSeparateLines( false );
-        writer.setIndentation( 0 );
-        new SqlIntervalQualifier( intervalQualifier ).unparse( writer, 0, 0 );
-        final String sql = writer.toString();
-        sb.append( new SqlString( dialect, sql ).getSql() );
+        LanguageManager.getInstance().createIntervalTypeString( sb, intervalQualifier );
     }
 
 
     @Override
     public IntervalQualifier getIntervalQualifier() {
-        return new SqlIntervalQualifier( intervalQualifier );
+        return LanguageManager.getInstance().createIntervalQualifier( QueryLanguage.SQL, intervalQualifier.timeUnitRange.startUnit, intervalQualifier.startPrecision, intervalQualifier.timeUnitRange.endUnit, intervalQualifier.fractionalSecondPrecision, ParserPos.ZERO );
     }
 
 
@@ -130,7 +119,7 @@ public class IntervalPolyType extends AbstractPolyType {
             }
         }
 
-        RelDataType intervalType = typeFactory.createSqlIntervalType( new SqlIntervalQualifier( thisStart, secondPrec, thisEnd, fracPrec, ParserPos.ZERO ) );
+        RelDataType intervalType = typeFactory.createSqlIntervalType( LanguageManager.getInstance().createIntervalQualifier( QueryLanguage.SQL, thisStart, secondPrec, thisEnd, fracPrec, ParserPos.ZERO ) );
         intervalType = typeFactory.createTypeWithNullability( intervalType, nullable );
         return (IntervalPolyType) intervalType;
     }

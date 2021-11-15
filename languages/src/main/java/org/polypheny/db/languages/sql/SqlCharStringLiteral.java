@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
@@ -48,7 +49,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
     /**
      * @return the collation
      */
-    public SqlCollation getCollation() {
+    public Collation getCollation() {
         return getNlsString().getCollation();
     }
 

@@ -22,9 +22,12 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -136,8 +139,14 @@ public class SqlMatchRecognize extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( tableRef, pattern, strictStart, strictEnd, patternDefList, measureList, after, subsetList, partitionList, orderList );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        getOperator().unparse( writer, this, 0, 0 );
+        ((SqlOperator) getOperator()).unparse( writer, this, 0, 0 );
     }
 
 
@@ -151,10 +160,10 @@ public class SqlMatchRecognize extends SqlCall {
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case OPERAND_TABLE_REF:
-                tableRef = Objects.requireNonNull( operand );
+                tableRef = (SqlNode) Objects.requireNonNull( operand );
                 break;
             case OPERAND_PATTERN:
-                pattern = operand;
+                pattern = (SqlNode) operand;
                 break;
             case OPERAND_STRICT_START:
                 strictStart = (SqlLiteral) operand;
@@ -170,7 +179,7 @@ public class SqlMatchRecognize extends SqlCall {
                 measureList = Objects.requireNonNull( (SqlNodeList) operand );
                 break;
             case OPERAND_AFTER:
-                after = operand;
+                after = (SqlNode) operand;
                 break;
             case OPERAND_SUBSET:
                 subsetList = (SqlNodeList) operand;
@@ -341,19 +350,19 @@ public class SqlMatchRecognize extends SqlCall {
 
 
         @Override
-        public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+        public SqlCall createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
             assert functionQualifier == null;
             assert operands.length == 12;
 
             return new SqlMatchRecognize(
                     pos,
-                    operands[0],
-                    operands[1],
+                    (SqlNode) operands[0],
+                    (SqlNode) operands[1],
                     (SqlLiteral) operands[2],
                     (SqlLiteral) operands[3],
                     (SqlNodeList) operands[4],
                     (SqlNodeList) operands[5],
-                    operands[6],
+                    (SqlNode) operands[6],
                     (SqlNodeList) operands[7],
                     (SqlLiteral) operands[8],
                     (SqlNodeList) operands[9],
@@ -363,9 +372,9 @@ public class SqlMatchRecognize extends SqlCall {
 
 
         @Override
-        public <R> void acceptCall( NodeVisitor<R> visitor, SqlCall call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
+        public <R> void acceptCall( NodeVisitor<R> visitor, Call call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
             if ( onlyExpressions ) {
-                List<SqlNode> operands = call.getOperandList();
+                List<SqlNode> operands = ((SqlCall) call).getSqlOperandList();
                 for ( int i = 0; i < operands.size(); i++ ) {
                     SqlNode operand = operands.get( i );
                     if ( operand == null ) {
@@ -457,7 +466,7 @@ public class SqlMatchRecognize extends SqlCall {
 
             final SqlWriter.Frame patternDefFrame = writer.startList( "", "" );
             final SqlNodeList newDefineList = new SqlNodeList( ParserPos.ZERO );
-            for ( SqlNode node : pattern.getPatternDefList() ) {
+            for ( SqlNode node : pattern.getPatternDefList().getSqlList() ) {
                 final SqlCall call2 = (SqlCall) node;
                 // swap the position of alias position in AS operator
                 newDefineList.add( call2.getOperator().createCall( ParserPos.ZERO, call2.operand( 1 ), call2.operand( 0 ) ) );
@@ -466,6 +475,8 @@ public class SqlMatchRecognize extends SqlCall {
             writer.endList( patternDefFrame );
             writer.endList( mrFrame );
         }
+
     }
+
 }
 

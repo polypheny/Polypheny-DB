@@ -78,8 +78,8 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.languages.sql.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
@@ -281,7 +281,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.MULTIPLICATION ) {
                 preparedStatement.setInt( i, ((BigDecimal) value).intValue() );
             } else if ( connectionHandler.getDialect().getIntervalParameterStrategy() == IntervalParameterStrategy.CAST ) {
-                preparedStatement.setString( i, value.toString() + " " + type.getIntervalQualifier().timeUnitRange.name() );
+                preparedStatement.setString( i, value.toString() + " " + type.getIntervalQualifier().getTimeUnitRange().name() );
             } else {
                 throw new RuntimeException( "Unknown IntervalParameterStrategy: " + connectionHandler.getDialect().getIntervalParameterStrategy().name() );
             }

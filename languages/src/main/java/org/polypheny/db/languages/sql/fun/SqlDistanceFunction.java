@@ -20,12 +20,12 @@ package org.polypheny.db.languages.sql.fun;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
+import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlCallBinding;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -68,7 +68,7 @@ public class SqlDistanceFunction extends SqlFunction {
 
     private static PolyOperandTypeChecker DISTANCE_ARG_CHECKER = new PolyOperandTypeChecker() {
         @Override
-        public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+        public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
 
             int nOperandsActual = callBinding.getOperandCount();
             RelDataType[] types = new RelDataType[nOperandsActual];
@@ -165,7 +165,7 @@ public class SqlDistanceFunction extends SqlFunction {
 
 
         @Override
-        public String getAllowedSignatures( SqlOperator op, String opName ) {
+        public String getAllowedSignatures( Operator op, String opName ) {
             return "'DISTANCE(<ARRAY>, <ARRAY>, <STRING>)'" + "\n" +
                     "'DISTANCE(<ARRAY>, <ARRAY>, <STRING>, <ARRAY>)'";
         }

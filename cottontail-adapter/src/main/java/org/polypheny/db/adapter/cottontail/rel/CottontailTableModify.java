@@ -30,6 +30,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.cottontail.CottontailTable;
 import org.polypheny.db.adapter.cottontail.rel.CottontailRel.CottontailImplementContext.QueryType;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -45,7 +46,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 

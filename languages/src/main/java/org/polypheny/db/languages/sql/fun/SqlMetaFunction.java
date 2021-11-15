@@ -18,11 +18,11 @@ package org.polypheny.db.languages.sql.fun;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.languages.sql.SqlCallBinding;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -60,7 +60,7 @@ public class SqlMetaFunction extends SqlFunction {
     private static final PolyOperandTypeChecker META_ARG_CHECKER = new PolyOperandTypeChecker() {
 
         @Override
-        public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+        public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
             if ( callBinding.getOperandType( 0 ).getPolyType().getFamily() != PolyTypeFamily.MULTIMEDIA ) {
                 throw callBinding.getValidator().newValidationError( callBinding.operand( 0 ), RESOURCE.expectedMultimedia() );
             }
@@ -80,7 +80,7 @@ public class SqlMetaFunction extends SqlFunction {
 
 
         @Override
-        public String getAllowedSignatures( SqlOperator op, String opName ) {
+        public String getAllowedSignatures( Operator op, String opName ) {
             return "'META(<MULTIMEDIA>)'\n'META(<MULTIMEDIA>, <STRING>)'\n'META(<MULTIMEDIA>, <STRING>, <STRING>)'";
         }
 

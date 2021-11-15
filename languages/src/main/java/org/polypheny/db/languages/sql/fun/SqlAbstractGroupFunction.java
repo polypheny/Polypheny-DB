@@ -70,7 +70,7 @@ public class SqlAbstractGroupFunction extends SqlAggFunction {
             // We're probably in the GROUP BY clause
             throw validator.newValidationError( call, Static.RESOURCE.groupingInWrongClause( getName() ) );
         }
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( SqlNode operand : call.getSqlOperandList() ) {
             if ( scope instanceof OrderByScope ) {
                 operand = validator.expandOrderExpr( select, operand );
             } else {

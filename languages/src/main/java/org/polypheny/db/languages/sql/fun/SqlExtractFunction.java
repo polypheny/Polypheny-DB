@@ -24,6 +24,7 @@ import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -58,9 +59,9 @@ public class SqlExtractFunction extends SqlFunction {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         writer.sep( "FROM" );
-        call.operand( 1 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 1 )).unparse( writer, 0, 0 );
         writer.endFunCall( frame );
     }
 
@@ -74,5 +75,6 @@ public class SqlExtractFunction extends SqlFunction {
                 return Monotonicity.NOT_MONOTONIC;
         }
     }
+
 }
 

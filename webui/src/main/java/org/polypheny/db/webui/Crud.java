@@ -143,6 +143,7 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.BsonUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
@@ -160,7 +161,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
@@ -3961,16 +3961,16 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
-        PolyphenyDbSignature signature;
+    private PolyphenyDbSignature<?> processQuery( Statement statement, String sql ) {
+        PolyphenyDbSignature<?> signature;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-        SqlNode parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql );
         RelRoot logicalRoot = null;
         if ( parsed.isA( Kind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statement, parsed, );
+            signature = sqlProcessor.prepareDdl( statement, parsed, null );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            logicalRoot = sqlProcessor.translate( statement, validated.left, );
+            Pair<Node, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            logicalRoot = sqlProcessor.translate( statement, validated.left, null );
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
         }
         return signature;

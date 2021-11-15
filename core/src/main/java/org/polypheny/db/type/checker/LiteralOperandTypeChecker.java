@@ -19,10 +19,9 @@ package org.polypheny.db.type.checker;
 
 import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Static;
@@ -58,11 +57,11 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
                 return true;
             }
             if ( throwOnFailure ) {
-                throw callBinding.newError( Static.RESOURCE.argumentMustNotBeNull(  callBinding.getOperator().getName() ) );
+                throw callBinding.newError( Static.RESOURCE.argumentMustNotBeNull( callBinding.getOperator().getName() ) );
             }
             return false;
         }
-        if ( !RexLiteral.isLiteral( node ) && !CoreUtil.isLiteralChain( node ) ) {
+        if ( node.getKind() != Kind.LITERAL && node.getKind() != Kind.LITERAL_CHAIN ) {
             if ( throwOnFailure ) {
                 throw callBinding.newError( Static.RESOURCE.argumentMustBeLiteral( callBinding.getOperator().getName() ) );
             }

@@ -47,10 +47,10 @@ public class WithNamespace extends AbstractNamespace {
 
     @Override
     protected RelDataType validateImpl( RelDataType targetRowType ) {
-        for ( SqlNode withItem : with.withList ) {
+        for ( SqlNode withItem : with.withList.getSqlList() ) {
             validator.validateWithItem( (SqlWithItem) withItem );
         }
-        final SqlValidatorScope scope2 = validator.getWithScope( Util.last( with.withList.getList() ) );
+        final SqlValidatorScope scope2 = validator.getWithScope( Util.last( with.withList.getSqlList() ) );
         validator.validateQuery( with.body, scope2, targetRowType );
         final RelDataType rowType = validator.getValidatedNodeType( with.body );
         validator.setValidatedNodeType( with, rowType );
@@ -62,5 +62,6 @@ public class WithNamespace extends AbstractNamespace {
     public SqlNode getNode() {
         return with;
     }
+
 }
 

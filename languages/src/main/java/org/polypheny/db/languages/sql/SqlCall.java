@@ -193,6 +193,7 @@ public abstract class SqlCall extends SqlNode implements Call {
      *
      * @return boolean true if function call to COUNT(*)
      */
+    @Override
     public boolean isCountStar() {
         if ( ((SqlOperator) getOperator()).isName( "COUNT" ) && operandCount() == 1 ) {
             final SqlNode parm = operand( 0 );

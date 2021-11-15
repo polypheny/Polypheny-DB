@@ -24,12 +24,12 @@ import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.core.BsonUtil;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
 
 public class BsonFunctionHelper extends BsonDocument {
 

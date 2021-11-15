@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -79,6 +80,12 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, constraintName, columnList, referencesList );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
@@ -116,8 +123,8 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
             DdlManager.getInstance().addForeignKey(
                     catalogTable,
                     refTable,
-                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
-                    referencesList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
+                    referencesList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                     constraintName.getSimple(),
                     onUpdate,
                     onDelete );

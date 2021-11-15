@@ -17,13 +17,13 @@
 package org.polypheny.db.languages.rex;
 
 
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlLiteral;
 
 
 /**
@@ -62,5 +62,6 @@ public interface RexToSqlNodeConverter {
      * @return SqlNode, or null if no translation was available
      */
     SqlNode convertInputRef( RexInputRef ref );
+
 }
 

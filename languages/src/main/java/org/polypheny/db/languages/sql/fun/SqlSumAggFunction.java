@@ -19,8 +19,9 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SplittableAggFunction;
+import org.polypheny.db.core.fun.SumAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlSplittableAggFunction;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -31,7 +32,7 @@ import org.polypheny.db.util.Optionality;
  * <code>Sum</code> is an aggregator which returns the sum of the values which go into it. It has precisely one argument of numeric type (<code>int</code>, <code>long</code>, <code>float</code>, <code>double</code>),
  * and the result is the same type.
  */
-public class SqlSumAggFunction extends SqlAggFunction {
+public class SqlSumAggFunction extends SqlAggFunction implements SumAggFunction {
 
 
     public SqlSumAggFunction( RelDataType type ) {
@@ -51,8 +52,8 @@ public class SqlSumAggFunction extends SqlAggFunction {
 
     @Override
     public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SqlSplittableAggFunction.class ) {
-            return clazz.cast( SqlSplittableAggFunction.SumSplitter.INSTANCE );
+        if ( clazz == SplittableAggFunction.class ) {
+            return clazz.cast( SplittableAggFunction.SumSplitter.INSTANCE );
         }
         return super.unwrap( clazz );
     }

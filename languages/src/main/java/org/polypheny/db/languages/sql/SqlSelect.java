@@ -22,8 +22,10 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Select;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -32,7 +34,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * A <code>SqlSelect</code> is a node of a parse tree which represents a select statement. It warrants its own node type just because we have a lot of methods to put somewhere.
  */
-public class SqlSelect extends SqlCall {
+public class SqlSelect extends SqlCall implements Select {
 
     // constants representing operand positions
     public static final int FROM_OPERAND = 2;
@@ -102,6 +104,12 @@ public class SqlSelect extends SqlCall {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch );
+    }
+
+
+    @Override
     public void setOperand( int i, Node operand ) {
         switch ( i ) {
             case 0:
@@ -156,7 +164,13 @@ public class SqlSelect extends SqlCall {
     }
 
 
-    public final SqlNode getFrom() {
+    @Override
+    public final Node getFrom() {
+        return from;
+    }
+
+
+    public final SqlNode getSqlFrom() {
         return from;
     }
 
@@ -186,7 +200,13 @@ public class SqlSelect extends SqlCall {
     }
 
 
-    public  final SqlNodeList getSelectList() {
+    public final SqlNodeList getSqlSelectList() {
+        return selectList;
+    }
+
+
+    @Override
+    public final NodeList getSelectList() {
         return selectList;
     }
 

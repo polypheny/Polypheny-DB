@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
@@ -80,6 +81,12 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
 
     @Override
+    public List<SqlNode> getSqlOperandList() {
+        return ImmutableNullableList.of( table, columnList, storeName );
+    }
+
+
+    @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
@@ -123,7 +130,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         }
 
         List<Long> columnIds = new LinkedList<>();
-        for ( SqlNode node : columnList.getList() ) {
+        for ( SqlNode node : columnList.getSqlList() ) {
             CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
             columnIds.add( catalogColumn.id );
         }

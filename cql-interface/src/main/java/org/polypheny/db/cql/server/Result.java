@@ -42,9 +42,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.Kind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import spark.Response;
@@ -68,7 +68,7 @@ public class Result {
     ZipOutputStream zipOut;
 
 
-    public Result( Kind Kind, Iterator<Object> iterator, RelDataType dataType, List<ColumnMetaData> columns ) {
+    public Result( org.polypheny.db.core.Kind Kind, Iterator<Object> iterator, RelDataType dataType, List<ColumnMetaData> columns ) {
         this.Kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;

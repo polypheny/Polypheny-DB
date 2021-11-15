@@ -20,8 +20,9 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.base.Preconditions;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.SplittableAggFunction;
+import org.polypheny.db.core.fun.MinMaxAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlSplittableAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
@@ -43,7 +44,7 @@ import org.polypheny.db.util.Optionality;
  * <dd>the {@link java.util.Comparator#compare} method of the comparator is used to compare pairs of objects. The comparator is a startup argument, and must therefore be constant for the duration of the aggregation.</dd>
  * </dl>
  */
-public class SqlMinMaxAggFunction extends SqlAggFunction {
+public class SqlMinMaxAggFunction extends SqlAggFunction implements MinMaxAggFunction {
 
     /**
      * Creates a SqlMinMaxAggFunction.
@@ -66,8 +67,8 @@ public class SqlMinMaxAggFunction extends SqlAggFunction {
 
     @Override
     public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SqlSplittableAggFunction.class ) {
-            return clazz.cast( SqlSplittableAggFunction.SelfSplitter.INSTANCE );
+        if ( clazz == SplittableAggFunction.class ) {
+            return clazz.cast( SplittableAggFunction.SelfSplitter.INSTANCE );
         }
         return super.unwrap( clazz );
     }

@@ -43,7 +43,13 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
+import org.polypheny.db.core.Function;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.document.rules.DocumentRules;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.fun.SqlItemOperator;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -90,11 +96,6 @@ import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlFunction;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -724,7 +725,7 @@ public class JdbcRules {
             assert !this.indicator;
             final SqlDialect dialect = ((JdbcConvention) getConvention()).dialect;
             for ( AggregateCall aggCall : aggCalls ) {
-                if ( !canImplement( aggCall.getAggregation(), dialect ) ) {
+                if ( !canImplement( (SqlAggFunction) aggCall.getAggregation(), dialect ) ) {
                     throw new InvalidRelException( "cannot implement aggregate function " + aggCall.getAggregation() );
                 }
             }
@@ -1159,9 +1160,9 @@ public class JdbcRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            SqlOperator operator = call.getOperator();
-            if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isUserDefined() ) {
-                containsUsedDefinedFunction |= true;
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isUserDefined() ) {
+                containsUsedDefinedFunction = true;
             }
             return super.visitCall( call );
         }
@@ -1186,9 +1187,9 @@ public class JdbcRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            SqlOperator operator = call.getOperator();
-            if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isKnn() ) {
-                containsKnnFunction |= true;
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isKnn() ) {
+                containsKnnFunction = true;
             }
             return super.visitCall( call );
         }
@@ -1213,8 +1214,8 @@ public class JdbcRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            SqlOperator operator = call.getOperator();
-            if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isMultimedia() ) {
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isMultimedia() ) {
                 containsMultimediaFunction = true;
             }
             return super.visitCall( call );
@@ -1240,9 +1241,9 @@ public class JdbcRules {
 
         @Override
         public Void visitCall( RexCall call ) {
-            SqlOperator operator = call.getOperator();
+            Operator operator = call.getOperator();
             if ( operator instanceof SqlItemOperator ) {
-                containsItemOperator |= true;
+                containsItemOperator = true;
             }
             return super.visitCall( call );
         }

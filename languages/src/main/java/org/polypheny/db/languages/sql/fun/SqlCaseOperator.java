@@ -22,16 +22,20 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Literal;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -126,10 +130,10 @@ public class SqlCaseOperator extends SqlOperator {
         final SqlNodeList whenOperands = sqlCase.getWhenOperands();
         final SqlNodeList thenOperands = sqlCase.getThenOperands();
         final SqlNode elseOperand = sqlCase.getElseOperand();
-        for ( SqlNode operand : whenOperands ) {
+        for ( SqlNode operand : whenOperands.getSqlList() ) {
             operand.validateExpr( validator, operandScope );
         }
-        for ( SqlNode operand : thenOperands ) {
+        for ( SqlNode operand : thenOperands.getSqlList() ) {
             operand.validateExpr( validator, operandScope );
         }
         if ( elseOperand != null ) {
@@ -139,9 +143,9 @@ public class SqlCaseOperator extends SqlOperator {
 
 
     @Override
-    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // Do not try to derive the types of the operands. We will do that later, top down.
-        return validateOperands( validator, scope, call );
+        return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }
 
 
@@ -153,7 +157,7 @@ public class SqlCaseOperator extends SqlOperator {
         assert whenList.size() == thenList.size();
 
         // checking that search conditions are ok...
-        for ( SqlNode node : whenList ) {
+        for ( SqlNode node : whenList.getSqlList() ) {
             // should throw validation error if something wrong...
             RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
             if ( !PolyTypeUtil.inBooleanFamily( type ) ) {
@@ -165,7 +169,7 @@ public class SqlCaseOperator extends SqlOperator {
         }
 
         boolean foundNotNull = false;
-        for ( SqlNode node : thenList ) {
+        for ( SqlNode node : thenList.getSqlList() ) {
             if ( !CoreUtil.isNullLiteral( node, false ) ) {
                 foundNotNull = true;
             }
@@ -187,7 +191,7 @@ public class SqlCaseOperator extends SqlOperator {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         // REVIEW jvs 4-June-2005:  can't these be unified?
         if ( !(opBinding instanceof SqlCallBinding) ) {
             return inferTypeFromOperands( opBinding.getTypeFactory(), opBinding.collectOperandTypes() );
@@ -201,7 +205,7 @@ public class SqlCaseOperator extends SqlOperator {
         SqlNodeList thenList = caseCall.getThenOperands();
         ArrayList<SqlNode> nullList = new ArrayList<>();
         List<RelDataType> argTypes = new ArrayList<>();
-        for ( SqlNode node : thenList ) {
+        for ( SqlNode node : thenList.getSqlList() ) {
             argTypes.add( callBinding.getValidator().deriveType( callBinding.getScope(), node ) );
             if ( CoreUtil.isNullLiteral( node, false ) ) {
                 nullList.add( node );
@@ -251,10 +255,10 @@ public class SqlCaseOperator extends SqlOperator {
 
 
     @Override
-    public SqlCall createCall( SqlLiteral functionQualifier, ParserPos pos, SqlNode... operands ) {
+    public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         assert functionQualifier == null;
         assert operands.length == 4;
-        return new SqlCase( pos, operands[0], (SqlNodeList) operands[1], (SqlNodeList) operands[2], operands[3] );
+        return new SqlCase( pos, (SqlNode) operands[0], (SqlNodeList) operands[1], (SqlNodeList) operands[2], (SqlNode) operands[3] );
     }
 
 
@@ -266,7 +270,7 @@ public class SqlCaseOperator extends SqlOperator {
         if ( kase.value != null ) {
             kase.value.unparse( writer, 0, 0 );
         }
-        for ( Pair<SqlNode, SqlNode> pair : Pair.zip( kase.whenList, kase.thenList ) ) {
+        for ( Pair<SqlNode, SqlNode> pair : Pair.zip( kase.whenList.getSqlList(), kase.thenList.getSqlList() ) ) {
             writer.sep( "WHEN" );
             pair.left.unparse( writer, 0, 0 );
             writer.sep( "THEN" );

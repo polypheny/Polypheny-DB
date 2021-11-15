@@ -45,6 +45,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.SplittableAggFunction;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptUtil;
@@ -63,8 +64,6 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlSplittableAggFunction;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Bug;
@@ -114,7 +113,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
         // If any aggregate functions do not support splitting, bail out
         // If any aggregate call has a filter or is distinct, bail out
         for ( AggregateCall aggregateCall : aggregate.getAggCallList() ) {
-            if ( aggregateCall.getAggregation().unwrap( SqlSplittableAggFunction.class ) == null ) {
+            if ( aggregateCall.getAggregation().unwrap( SplittableAggFunction.class ) == null ) {
                 return false;
             }
             if ( aggregateCall.filterArg >= 0 || aggregateCall.isDistinct() ) {
@@ -194,7 +193,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
                 }
                 for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
                     final AggFunction aggregation = aggCall.e.getAggregation();
-                    final SqlSplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SqlSplittableAggFunction.class ) );
+                    final SplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SplittableAggFunction.class ) );
                     if ( !aggCall.e.getArgList().isEmpty() && fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
                         final RexNode singleton = splitter.singleton( rexBuilder, joinInput.getRowType(), aggCall.e.transform( mapping ) );
 
@@ -215,12 +214,12 @@ public class AggregateJoinTransposeRule extends RelOptRule {
             } else {
                 side.aggregate = true;
                 List<AggregateCall> belowAggCalls = new ArrayList<>();
-                final SqlSplittableAggFunction.Registry<AggregateCall> belowAggCallRegistry = registry( belowAggCalls );
+                final SplittableAggFunction.Registry<AggregateCall> belowAggCallRegistry = registry( belowAggCalls );
                 final int oldGroupKeyCount = aggregate.getGroupCount();
                 final int newGroupKeyCount = belowAggregateKey.cardinality();
                 for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
                     final AggFunction aggregation = aggCall.e.getAggregation();
-                    final SqlSplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SqlSplittableAggFunction.class ) );
+                    final SplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SplittableAggFunction.class ) );
                     final AggregateCall call1;
                     if ( fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
                         final AggregateCall splitCall = splitter.split( aggCall.e, mapping );
@@ -262,7 +261,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
         final List<RexNode> projects = new ArrayList<>( rexBuilder.identityProjects( relBuilder.peek().getRowType() ) );
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggregate.getAggCallList() ) ) {
             final AggFunction aggregation = aggCall.e.getAggregation();
-            final SqlSplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SqlSplittableAggFunction.class ) );
+            final SplittableAggFunction splitter = Objects.requireNonNull( aggregation.unwrap( SplittableAggFunction.class ) );
             final Integer leftSubTotal = sides.get( 0 ).split.get( aggCall.i );
             final Integer rightSubTotal = sides.get( 1 ).split.get( aggCall.i );
             newAggCalls.add(
@@ -286,7 +285,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
                 projects2.add( relBuilder.field( key ) );
             }
             for ( AggregateCall newAggCall : newAggCalls ) {
-                final SqlSplittableAggFunction splitter = newAggCall.getAggregation().unwrap( SqlSplittableAggFunction.class );
+                final SplittableAggFunction splitter = newAggCall.getAggregation().unwrap( SplittableAggFunction.class );
                 if ( splitter != null ) {
                     final RelDataType rowType = relBuilder.peek().getRowType();
                     projects2.add( splitter.singleton( rexBuilder, rowType, newAggCall ) );
@@ -356,9 +355,9 @@ public class AggregateJoinTransposeRule extends RelOptRule {
 
 
     /**
-     * Creates a {@link org.polypheny.db.sql.SqlSplittableAggFunction.Registry} that is a view of a list.
+     * Creates a {@link SplittableAggFunction.Registry} that is a view of a list.
      */
-    private static <E> SqlSplittableAggFunction.Registry<E> registry( final List<E> list ) {
+    private static <E> SplittableAggFunction.Registry<E> registry( final List<E> list ) {
         return e -> {
             int i = list.indexOf( e );
             if ( i < 0 ) {
@@ -378,5 +377,7 @@ public class AggregateJoinTransposeRule extends RelOptRule {
         final Map<Integer, Integer> split = new HashMap<>();
         RelNode newInput;
         boolean aggregate;
+
     }
+
 }

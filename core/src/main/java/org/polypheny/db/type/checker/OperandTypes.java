@@ -30,9 +30,6 @@ import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -550,7 +547,7 @@ public abstract class OperandTypes {
 
                 @Override
                 public String getAllowedSignatures( Operator op, String opName ) {
-                    return SqlUtil.getAliasedSignature( op, opName, ImmutableList.of( "RECORDTYPE(SINGLE FIELD)" ) );
+                    return CoreUtil.getAliasedSignature( op, opName, ImmutableList.of( "RECORDTYPE(SINGLE FIELD)" ) );
                 }
 
 

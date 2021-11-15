@@ -21,8 +21,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -43,7 +43,7 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         Pair<RelDataType, RelDataType> type = getComponentTypes( opBinding.getTypeFactory(), opBinding.collectOperandTypes() );
         if ( null == type ) {
             return null;

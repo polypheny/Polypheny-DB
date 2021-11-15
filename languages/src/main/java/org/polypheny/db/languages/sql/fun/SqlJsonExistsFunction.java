@@ -21,6 +21,7 @@ import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
+import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -55,11 +56,12 @@ public class SqlJsonExistsFunction extends SqlFunction {
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
-        call.operand( 0 ).unparse( writer, 0, 0 );
+        ((SqlNode) call.operand( 0 )).unparse( writer, 0, 0 );
         if ( call.operandCount() == 2 ) {
-            call.operand( 1 ).unparse( writer, 0, 0 );
+            ((SqlNode) call.operand( 1 )).unparse( writer, 0, 0 );
             writer.keyword( "ON ERROR" );
         }
         writer.endFunCall( frame );
     }
+
 }

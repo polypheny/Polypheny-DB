@@ -26,6 +26,7 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.util.CassandraUtils;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -38,7 +39,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
 
@@ -124,9 +124,9 @@ public class CassandraFilterRule extends CassandraConverterRule {
     /**
      * Check if the node is a supported predicate (primary key equality).
      *
-     * @param node           Condition node to check
-     * @param fieldNames     Names of all columns in the table
-     * @param partitionKeys  Names of primary key columns
+     * @param node Condition node to check
+     * @param fieldNames Names of all columns in the table
+     * @param partitionKeys Names of primary key columns
      * @param clusteringKeys Names of primary key columns
      * @return True if the node represents an equality predicate on a primary key
      */
@@ -158,8 +158,8 @@ public class CassandraFilterRule extends CassandraConverterRule {
     /**
      * Check if an equality operation is comparing a primary key column with a literal.
      *
-     * @param left       Left operand of the equality
-     * @param right      Right operand of the equality
+     * @param left Left operand of the equality
+     * @param right Right operand of the equality
      * @param fieldNames Names of all columns in the table
      * @return The field being compared or null if there is no key equality
      */
@@ -177,4 +177,5 @@ public class CassandraFilterRule extends CassandraConverterRule {
         }
         return null;
     }
+
 }

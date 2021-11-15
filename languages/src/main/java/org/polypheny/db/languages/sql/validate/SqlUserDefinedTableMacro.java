@@ -132,13 +132,13 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
         switch ( right.getKind() ) {
             case ARRAY_VALUE_CONSTRUCTOR:
                 final List<Object> list = new ArrayList<>();
-                for ( SqlNode o : ((SqlCall) right).getOperandList() ) {
+                for ( SqlNode o : ((SqlCall) right).getSqlOperandList() ) {
                     list.add( getValue( o ) );
                 }
                 return ImmutableNullableList.copyOf( list );
             case MAP_VALUE_CONSTRUCTOR:
                 final ImmutableMap.Builder<Object, Object> builder2 = ImmutableMap.builder();
-                final List<SqlNode> operands = ((SqlCall) right).getOperandList();
+                final List<SqlNode> operands = ((SqlCall) right).getSqlOperandList();
                 for ( int i = 0; i < operands.size(); i += 2 ) {
                     final SqlNode key = operands.get( i );
                     final SqlNode value = operands.get( i + 1 );

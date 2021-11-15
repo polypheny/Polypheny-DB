@@ -19,10 +19,10 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.List;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.rel.type.RelDataType;
@@ -61,7 +61,7 @@ public class SqlMultisetValueConstructor extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public RelDataType inferReturnType( OperatorBinding opBinding ) {
         RelDataType type =
                 getComponentType(
                         opBinding.getTypeFactory(),
@@ -106,7 +106,7 @@ public class SqlMultisetValueConstructor extends SqlSpecialOperator {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.keyword( getName() ); // "MULTISET" or "ARRAY"
         final SqlWriter.Frame frame = writer.startList( "[", "]" );
-        for ( SqlNode operand : call.getOperandList() ) {
+        for ( SqlNode operand : call.getSqlOperandList() ) {
             writer.sep( "," );
             operand.unparse( writer, leftPrec, rightPrec );
         }

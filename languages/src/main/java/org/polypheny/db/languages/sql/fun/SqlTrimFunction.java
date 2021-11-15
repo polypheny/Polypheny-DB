@@ -107,10 +107,10 @@ public class SqlTrimFunction extends SqlFunction implements TrimFunction {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startFunCall( getName() );
         assert call.operand( 0 ) instanceof SqlLiteral : call.operand( 0 );
-        call.operand( 0 ).unparse( writer, leftPrec, rightPrec );
-        call.operand( 1 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 1 )).unparse( writer, leftPrec, rightPrec );
         writer.sep( "FROM" );
-        call.operand( 2 ).unparse( writer, leftPrec, rightPrec );
+        ((SqlNode) call.operand( 2 )).unparse( writer, leftPrec, rightPrec );
         writer.endFunCall( frame );
     }
 
@@ -166,5 +166,6 @@ public class SqlTrimFunction extends SqlFunction implements TrimFunction {
                 return true;
         }
     }
+
 }
 
