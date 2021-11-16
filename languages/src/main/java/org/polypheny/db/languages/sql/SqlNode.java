@@ -70,7 +70,7 @@ public abstract class SqlNode implements Node {
 
     @Override
     public QueryLanguage getLanguage() {
-        return QueryLanguage.MONGOQL;
+        return QueryLanguage.SQL;
     }
 
 

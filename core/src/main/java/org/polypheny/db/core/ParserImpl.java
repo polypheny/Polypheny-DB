@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.core;
 
-import org.polypheny.db.languages.ParserFactory;
-import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
-
-public interface SqlFactoryProvider {
-
-    static ParserFactory getSqlParserFactory() {
-        return SqlParserImpl.FACTORY;
-    }
+public interface ParserImpl {
 
 }

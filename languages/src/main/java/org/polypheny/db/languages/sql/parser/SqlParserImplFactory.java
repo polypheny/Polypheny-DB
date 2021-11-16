@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.parser;
 
 
 import java.io.Reader;
-import org.polypheny.db.languages.Parser;
+import org.polypheny.db.core.ParserImpl;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.tools.Planner;
 
@@ -35,7 +35,7 @@ public interface SqlParserImplFactory extends ParserFactory {
      *
      * @return {@link SqlAbstractParserImpl} object.
      */
-    Parser getParser( Reader stream );
+    ParserImpl getParser( Reader stream );
 
 }
 

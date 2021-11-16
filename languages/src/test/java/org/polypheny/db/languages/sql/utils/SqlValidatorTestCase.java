@@ -28,7 +28,7 @@ import org.polypheny.db.core.Collation.Coercibility;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.Monotonicity;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
@@ -215,7 +215,7 @@ public class SqlValidatorTestCase {
      */
     public interface Tester {
 
-        SqlNode parseQuery( String sql ) throws ParseException;
+        SqlNode parseQuery( String sql ) throws NodeParseException;
 
         SqlNode parseAndValidate( SqlValidator validator, String sql );
 

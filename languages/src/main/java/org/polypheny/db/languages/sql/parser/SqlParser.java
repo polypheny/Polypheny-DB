@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.parser;
 
 import java.io.StringReader;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -59,9 +59,9 @@ public class SqlParser implements Parser {
     /**
      * Parses a SQL expression.
      *
-     * @throws ParseException if there is a parse error
+     * @throws NodeParseException if there is a parse error
      */
-    public SqlNode parseExpression() throws ParseException {
+    public SqlNode parseExpression() throws NodeParseException {
         try {
             return parser.parseSqlExpressionEof();
         } catch ( Throwable ex ) {
@@ -80,10 +80,10 @@ public class SqlParser implements Parser {
      * Parses a <code>SELECT</code> statement.
      *
      * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
-     * @throws ParseException if there is a parse error
+     * @throws NodeParseException if there is a parse error
      */
     @Override
-    public Node parseQuery() throws ParseException {
+    public Node parseQuery() throws NodeParseException {
         try {
             return parser.parseSqlStmtEof();
         } catch ( Throwable ex ) {
@@ -103,10 +103,10 @@ public class SqlParser implements Parser {
      *
      * @param sql sql to parse
      * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
-     * @throws ParseException if there is a parse error
+     * @throws NodeParseException if there is a parse error
      */
     @Override
-    public Node parseQuery( String sql ) throws ParseException {
+    public Node parseQuery( String sql ) throws NodeParseException {
         parser.ReInit( new StringReader( sql ) );
         return parseQuery();
     }
@@ -116,10 +116,10 @@ public class SqlParser implements Parser {
      * Parses an SQL statement.
      *
      * @return top-level SqlNode representing stmt
-     * @throws ParseException if there is a parse error
+     * @throws NodeParseException if there is a parse error
      */
     @Override
-    public Node parseStmt() throws ParseException {
+    public Node parseStmt() throws NodeParseException {
         return parseQuery();
     }
 

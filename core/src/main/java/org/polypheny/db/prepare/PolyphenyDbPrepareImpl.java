@@ -90,8 +90,8 @@ import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.ParseException;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.interpreter.BindableConvention;
@@ -311,7 +311,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         Node sqlNode;
         try {
             sqlNode = parser.parseStmt();
-        } catch ( ParseException e ) {
+        } catch ( NodeParseException e ) {
             throw new RuntimeException( "parse failed", e );
         }
         final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
@@ -803,7 +803,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             try {
                 sqlNode = parser.parseStmt();
                 statementType = getStatementType( sqlNode.getKind() );
-            } catch ( ParseException e ) {
+            } catch ( NodeParseException e ) {
                 throw new RuntimeException( "parse failed: " + e.getMessage(), e );
             }
 
@@ -1185,7 +1185,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             Node sqlNode;
             try {
                 sqlNode = parser.parseQuery();
-            } catch ( ParseException e ) {
+            } catch ( NodeParseException e ) {
                 throw new RuntimeException( "parse failed", e );
             }
             // View may have different schema path than current connection.

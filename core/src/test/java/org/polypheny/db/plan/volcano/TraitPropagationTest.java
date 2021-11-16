@@ -47,7 +47,9 @@ import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.jdbc.PolyphenyDbServerStatement;
 import org.polypheny.db.plan.Convention;
@@ -90,8 +92,6 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.sql.ExplainLevel;
-import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RuleSet;
@@ -116,7 +116,7 @@ public class TraitPropagationTest {
     public void testOne() throws Exception {
         RelNode planned = run( new PropAction(), RULES );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
-            System.out.println( RelOptUtil.dumpPlan( "LOGICAL PLAN", planned, SqlExplainFormat.TEXT, ExplainLevel.ALL_ATTRIBUTES ) );
+            System.out.println( RelOptUtil.dumpPlan( "LOGICAL PLAN", planned, ExplainFormat.TEXT, ExplainLevel.ALL_ATTRIBUTES ) );
         }
         final RelMetadataQuery mq = RelMetadataQuery.instance();
         assertEquals( "Sortedness was not propagated", 3, mq.getCumulativeCost( planned ).getRows(), 0 );
@@ -170,18 +170,19 @@ public class TraitPropagationTest {
                     typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build() );
 
             // aggregate on s, count
-            AggregateCall aggCall = AggregateCall.create( SqlStdOperatorTable.COUNT, false, false, Collections.singletonList( 1 ), -1, RelCollations.EMPTY, sqlBigInt, "cnt" );
+            AggregateCall aggCall = AggregateCall.create( StdOperatorRegistry.getAgg( "COUNT" ), false, false, Collections.singletonList( 1 ), -1, RelCollations.EMPTY, sqlBigInt, "cnt" );
             RelNode agg = new LogicalAggregate( cluster, cluster.traitSetOf( Convention.NONE ), project, false, ImmutableBitSet.of( 0 ), null, Collections.singletonList( aggCall ) );
 
             final RelNode rootRel = agg;
 
-            RelOptUtil.dumpPlan( "LOGICAL PLAN", rootRel, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
+            RelOptUtil.dumpPlan( "LOGICAL PLAN", rootRel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
 
             RelTraitSet desiredTraits = rootRel.getTraitSet().replace( PHYSICAL );
             final RelNode rootRel2 = planner.changeTraits( rootRel, desiredTraits );
             planner.setRoot( rootRel2 );
             return planner.findBestExp();
         }
+
     }
 
     // RULES
@@ -211,6 +212,7 @@ public class TraitPropagationTest {
             RelNode convertedInput = convert( rel.getInput(), desiredTraits );
             call.transformTo( new PhysAgg( rel.getCluster(), empty.replace( PHYSICAL ), convertedInput, rel.indicator, rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList() ) );
         }
+
     }
 
 
@@ -251,6 +253,7 @@ public class TraitPropagationTest {
                 call.transformTo( PhysProj.create( input, rel.getChildExps(), rel.getRowType() ) );
             }
         }
+
     }
 
 
@@ -273,6 +276,7 @@ public class TraitPropagationTest {
             final RelNode input = convert( sort.getInput(), rel.getCluster().traitSetOf( PHYSICAL ) );
             return new PhysSort( rel.getCluster(), input.getTraitSet().plus( sort.getCollation() ), convert( input, input.getTraitSet().replace( PHYSICAL ) ), sort.getCollation(), null, null );
         }
+
     }
 
 
@@ -294,6 +298,7 @@ public class TraitPropagationTest {
             EnumerableTableScan rel = call.rel( 0 );
             call.transformTo( new PhysTable( rel.getCluster() ) );
         }
+
     }
 
     /* RELS */
@@ -327,6 +332,7 @@ public class TraitPropagationTest {
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
+
     }
 
 
@@ -361,6 +367,7 @@ public class TraitPropagationTest {
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
+
     }
 
 
@@ -384,6 +391,7 @@ public class TraitPropagationTest {
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
+
     }
 
 
@@ -412,6 +420,7 @@ public class TraitPropagationTest {
             // Compare makes no sense here. Use hashCode() to avoid errors.
             return this.getClass().getSimpleName() + "$" + hashCode() + "&";
         }
+
     }
 
 
@@ -448,5 +457,6 @@ public class TraitPropagationTest {
         final RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
         return action.apply( cluster, catalogReader, prepareContext.getRootSchema().plus() );
     }
+
 }
 

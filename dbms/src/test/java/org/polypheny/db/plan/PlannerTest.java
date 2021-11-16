@@ -68,8 +68,8 @@ import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.ParseException;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
@@ -154,7 +154,7 @@ public class PlannerTest {
     }
 
 
-    @Test(expected = ParseException.class)
+    @Test(expected = NodeParseException.class)
     public void testParseIdentiferMaxLengthWithDefault() throws Exception {
         Planner planner = getPlanner( null, Parser.configBuilder().build() );
         planner.parse( "select name as " + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from \"emps\"" );
@@ -193,19 +193,19 @@ public class PlannerTest {
 
 
     @Test
-    public void testParseFails() throws ParseException {
+    public void testParseFails() throws NodeParseException {
         Planner planner = getPlanner( null );
         try {
             Node parse = planner.parse( "select * * from \"emps\"" );
             fail( "expected error, got " + parse );
-        } catch ( ParseException e ) {
+        } catch ( NodeParseException e ) {
             assertThat( e.getMessage(), containsString( "Encountered \"*\" at line 1, column 10." ) );
         }
     }
 
 
     @Test
-    public void testValidateFails() throws ParseException {
+    public void testValidateFails() throws NodeParseException {
         Planner planner = getPlanner( null );
         Node parse = planner.parse( "select * from \"emps\" where \"Xname\" like '%e%'" );
         assertThat( Util.toLinux( parse.toString() ),
@@ -687,7 +687,7 @@ public class PlannerTest {
      * Tests that Hive dialect does not generate "AS".
      */
     @Test
-    public void testHiveDialect() throws ParseException {
+    public void testHiveDialect() throws NodeParseException {
         Planner planner = getPlanner( null );
         Node parse = planner.parse( "select * from (select * from \"emps\") as t\n" + "where \"name\" like '%e%'" );
         final SqlDialect hiveDialect = SqlDialect.DatabaseProduct.HIVE.getDialect();
@@ -1286,7 +1286,7 @@ public class PlannerTest {
     }
 
 
-    private void checkView( String sql, Matcher<String> matcher ) throws ParseException, ValidationException, RelConversionException {
+    private void checkView( String sql, Matcher<String> matcher ) throws NodeParseException, ValidationException, RelConversionException {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );

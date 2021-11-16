@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.core.Advisor;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.SqlMonikerImpl;
@@ -339,7 +339,7 @@ public class SqlAdvisor implements Advisor {
     private SqlNode tryParse( String sql, List<SqlMoniker> hintList ) {
         try {
             return parseQuery( sql );
-        } catch ( ParseException e ) {
+        } catch ( NodeParseException e ) {
             for ( String tokenName : e.getExpectedTokenNames() ) {
                 // Only add tokens which are keywords, like '"BY"'; ignore symbols such as '<Identifier>'.
                 if ( tokenName.startsWith( "\"" ) && tokenName.endsWith( "\"" ) ) {
@@ -502,13 +502,13 @@ public class SqlAdvisor implements Advisor {
 
 
     /**
-     * Wrapper function to parse a SQL query (SELECT or VALUES, but not INSERT, UPDATE, DELETE, CREATE, DROP etc.), throwing a {@link ParseException} if the statement is not syntactically valid.
+     * Wrapper function to parse a SQL query (SELECT or VALUES, but not INSERT, UPDATE, DELETE, CREATE, DROP etc.), throwing a {@link NodeParseException} if the statement is not syntactically valid.
      *
      * @param sql SQL statement
      * @return parse tree
-     * @throws ParseException if not syntactically valid
+     * @throws NodeParseException if not syntactically valid
      */
-    protected SqlNode parseQuery( String sql ) throws ParseException {
+    protected SqlNode parseQuery( String sql ) throws NodeParseException {
         Parser parser = Parser.create( sql, parserConfig );
         return (SqlNode) parser.parseStmt();
     }
@@ -524,7 +524,7 @@ public class SqlAdvisor implements Advisor {
     protected SqlNode collectParserError( String sql, List<ValidateErrorInfo> errorList ) {
         try {
             return parseQuery( sql );
-        } catch ( ParseException e ) {
+        } catch ( NodeParseException e ) {
             ValidateErrorInfo errInfo = new ValidateErrorInfo( e.getPos(), e.getMessage() );
 
             // parser only returns 1 exception now

@@ -36,7 +36,7 @@ package org.polypheny.db.tools;
 
 import java.io.Reader;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -60,9 +60,9 @@ public interface Planner extends AutoCloseable {
      *
      * @param sql The SQL statement to parse.
      * @return The root node of the SQL parse tree.
-     * @throws ParseException on parse error
+     * @throws NodeParseException on parse error
      */
-    default Node parse( String sql ) throws ParseException {
+    default Node parse( String sql ) throws NodeParseException {
         return parse( new SourceStringReader( sql ) );
     }
 
@@ -71,9 +71,9 @@ public interface Planner extends AutoCloseable {
      *
      * @param source A reader which will provide the SQL statement to parse.
      * @return The root node of the SQL parse tree.
-     * @throws ParseException on parse error
+     * @throws NodeParseException on parse error
      */
-    Node parse( Reader source ) throws ParseException;
+    Node parse( Reader source ) throws NodeParseException;
 
     /**
      * Validates a SQL statement.

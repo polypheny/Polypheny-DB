@@ -22,7 +22,7 @@ import lombok.Getter;
 public interface Function {
 
     default FunctionType getFunctionType() {
-        throw new RuntimeException( "Not Implemented Yet" );
+        return FunctionType.OTHER;
     }
 
     @Nonnull
@@ -33,7 +33,8 @@ public interface Function {
         SINGLE_VALUE( true ),
         JSON_VALUE( false ),
         DOC_EQUAL( false ),
-        CAST( false );
+        CAST( false ),
+        OTHER( false );
 
         @Getter
         private final boolean isAgg;

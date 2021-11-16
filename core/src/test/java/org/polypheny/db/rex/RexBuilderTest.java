@@ -49,10 +49,10 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Test;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.DateString;
@@ -528,30 +528,30 @@ public class RexBuilderTest {
         final RelDataType varchar = typeFactory.createPolyType( PolyType.VARCHAR );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
-        final NlsString latin1 = new NlsString( "foobar", "LATIN1", SqlCollation.IMPLICIT );
-        final NlsString utf8 = new NlsString( "foobar", "UTF8", SqlCollation.IMPLICIT );
+        final NlsString latin1 = new NlsString( "foobar", "LATIN1", Collation.IMPLICIT );
+        final NlsString utf8 = new NlsString( "foobar", "UTF8", Collation.IMPLICIT );
 
         RexNode literal = builder.makePreciseStringLiteral( "foobar" );
         assertEquals( "'foobar'", literal.toString() );
-        literal = builder.makePreciseStringLiteral( new ByteString( new byte[]{ 'f', 'o', 'o', 'b', 'a', 'r' } ), "UTF8", SqlCollation.IMPLICIT );
+        literal = builder.makePreciseStringLiteral( new ByteString( new byte[]{ 'f', 'o', 'o', 'b', 'a', 'r' } ), "UTF8", Collation.IMPLICIT );
         assertEquals( "_UTF8'foobar'", literal.toString() );
         assertEquals( "_UTF8'foobar':CHAR(6) CHARACTER SET \"UTF-8\"", ((RexLiteral) literal).computeDigest( RexDigestIncludeType.ALWAYS ) );
         literal = builder.makePreciseStringLiteral(
                 new ByteString( "\u82f1\u56fd".getBytes( StandardCharsets.UTF_8 ) ),
                 "UTF8",
-                SqlCollation.IMPLICIT );
+                Collation.IMPLICIT );
         assertEquals( "_UTF8'\u82f1\u56fd'", literal.toString() );
         // Test again to check decode cache.
         literal = builder.makePreciseStringLiteral(
                 new ByteString( "\u82f1".getBytes( StandardCharsets.UTF_8 ) ),
                 "UTF8",
-                SqlCollation.IMPLICIT );
+                Collation.IMPLICIT );
         assertEquals( "_UTF8'\u82f1'", literal.toString() );
         try {
             literal = builder.makePreciseStringLiteral(
                     new ByteString( "\u82f1\u56fd".getBytes( StandardCharsets.UTF_8 ) ),
                     "GB2312",
-                    SqlCollation.IMPLICIT );
+                    Collation.IMPLICIT );
             fail( "expected exception, got " + literal );
         } catch ( RuntimeException e ) {
             assertThat( e.getMessage(), containsString( "Failed to encode" ) );

@@ -42,9 +42,9 @@ import org.polypheny.db.core.Lex;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.ParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -144,7 +144,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     protected void checkParseEx( Throwable e, String expectedMsgPattern, String sql ) {
         try {
             throw e;
-        } catch ( ParseException spe ) {
+        } catch ( NodeParseException spe ) {
             String errMessage = spe.getMessage();
             if ( expectedMsgPattern == null ) {
                 throw new RuntimeException( "Error while parsing query:" + sql, spe );
@@ -191,7 +191,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public SqlNode parseQuery( String sql ) throws ParseException {
+    public SqlNode parseQuery( String sql ) throws NodeParseException {
         SqlParser parser = factory.createParser( sql );
         return parser.parseQuery();
     }
@@ -580,7 +580,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         final String sql = "values (" + expression + ")";
         try {
             x = parseQuery( sql );
-        } catch ( ParseException e ) {
+        } catch ( NodeParseException e ) {
             throw new RuntimeException( e );
         }
         final Collection<SqlNode> literalSet = new LinkedHashSet<>();

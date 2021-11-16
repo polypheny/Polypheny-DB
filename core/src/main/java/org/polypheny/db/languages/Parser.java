@@ -25,7 +25,7 @@ import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.Lex;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.util.SourceStringReader;
 
 public interface Parser {
@@ -80,11 +80,11 @@ public interface Parser {
         return LanguageManager.getInstance().getParser( QueryLanguage.SQL, reader, sqlParserConfig );
     }
 
-    Node parseQuery() throws ParseException;
+    Node parseQuery() throws NodeParseException;
 
-    Node parseQuery( String sql ) throws ParseException;
+    Node parseQuery( String sql ) throws NodeParseException;
 
-    Node parseStmt() throws ParseException;
+    Node parseStmt() throws NodeParseException;
 
     /**
      * Interface to define the configuration for a SQL parser.

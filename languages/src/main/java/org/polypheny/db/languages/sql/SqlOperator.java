@@ -208,7 +208,13 @@ public abstract class SqlOperator extends Operator {
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         pos = pos.plusAll( Arrays.asList( operands ) );
-        return new SqlBasicCall( this, (SqlNode[]) operands, pos, false, (SqlLiteral) functionQualifier );
+        SqlNode[] nodes = new SqlNode[operands.length];
+        int i = 0;
+        for ( Node operand : operands ) {
+            nodes[i] = (SqlNode) operand;
+            i++;
+        }
+        return new SqlBasicCall( this, nodes, pos, false, (SqlLiteral) functionQualifier );
     }
 
 

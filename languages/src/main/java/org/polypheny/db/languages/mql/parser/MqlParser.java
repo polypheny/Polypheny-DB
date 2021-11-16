@@ -22,6 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
+import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.core.ParserImpl;
+import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.mql.parser.impl.MqlParserImpl;
@@ -32,7 +35,7 @@ import org.polypheny.db.util.SourceStringReader;
 /**
  * A <code>MqlParser</code> parses a MQL statement.
  */
-public class MqlParser {
+public class MqlParser implements Parser {
 
     public static final int DEFAULT_IDENTIFIER_MAX_LENGTH = 128;
     private static final Pattern pattern = Pattern.compile( "limit\\(\\s*[0-9]*\\s*\\)" );
@@ -64,18 +67,18 @@ public class MqlParser {
                     .replace( ")", "" )
                     .trim() );
         }
-        MqlAbstractParserImpl parser = mqlParserConfig.parserFactory().getParser( new SourceStringReader( mql ) );
+        ParserImpl parser = mqlParserConfig.parserFactory().getParser( new SourceStringReader( mql ) );
 
-        return new MqlParser( parser, limit );
+        return new MqlParser( (MqlAbstractParserImpl) parser, limit );
     }
 
 
     /**
      * Parses a SQL expression.
      *
-     * @throws MqlParseException if there is a parse error
+     * @throws NodeParseException if there is a parse error
      */
-    public MqlNode parseExpression() throws MqlParseException {
+    public MqlNode parseExpression() throws NodeParseException {
         try {
             MqlNode node = parser.parseMqlExpressionEof();
             if ( node instanceof MqlCollectionStatement && limit != null ) {
@@ -97,9 +100,9 @@ public class MqlParser {
     /**
      * Parses a <code>SELECT</code> statement.
      *
-     * @throws MqlParseException if there is a parse error
+     * @throws NodeParseException if there is a parse error
      */
-    public MqlNode parseQuery() throws MqlParseException {
+    public MqlNode parseQuery() throws NodeParseException {
         try {
             MqlNode node = parser.parseMqlStmtEof();
             if ( node instanceof MqlCollectionStatement && limit != null ) {
@@ -121,7 +124,7 @@ public class MqlParser {
     /**
      * Parses a <code>SELECT</code> statement and reuses parser.
      */
-    public MqlNode parseQuery( String mql ) throws MqlParseException {
+    public MqlNode parseQuery( String mql ) throws NodeParseException {
         parser.ReInit( new StringReader( mql ) );
         return parseQuery();
     }
@@ -132,7 +135,7 @@ public class MqlParser {
      *
      * @return top-level SqlNode representing stmt
      */
-    public MqlNode parseStmt() throws MqlParseException {
+    public MqlNode parseStmt() throws NodeParseException {
         return parseQuery();
     }
 

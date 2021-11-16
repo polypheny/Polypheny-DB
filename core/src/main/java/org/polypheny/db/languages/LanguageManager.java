@@ -130,4 +130,6 @@ public abstract class LanguageManager {
 
     public abstract Operator createUserDefinedTableFunction( QueryLanguage sql, Identifier name, PolyReturnTypeInference cursor, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, List<RelDataType> paramTypes, TableFunction function );
 
+    public abstract Class<?> getArrayValueConstructorClass();
+
 }

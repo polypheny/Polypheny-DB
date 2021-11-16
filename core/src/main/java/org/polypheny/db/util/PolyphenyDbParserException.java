@@ -34,11 +34,11 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 
 
 /**
- * Tagging interface to allow a {@link ParseException} to be identified without adding a dependency on it from client-side code.
+ * Tagging interface to allow a {@link NodeParseException} to be identified without adding a dependency on it from client-side code.
  */
 public interface PolyphenyDbParserException {
 

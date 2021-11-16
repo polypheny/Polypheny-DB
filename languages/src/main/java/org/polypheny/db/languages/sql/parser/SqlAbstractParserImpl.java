@@ -33,8 +33,9 @@ import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.ParserImpl;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Syntax;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -49,7 +50,8 @@ import org.polypheny.db.util.Glossary;
 /**
  * Abstract base for parsers generated from CommonParser.jj.
  */
-public abstract class SqlAbstractParserImpl {
+public abstract class SqlAbstractParserImpl implements ParserImpl {
+
 
     private static final ImmutableSet<String> SQL_92_RESERVED_WORD_SET =
             ImmutableSet.of(
@@ -393,12 +395,12 @@ public abstract class SqlAbstractParserImpl {
     public abstract Metadata getMetadata();
 
     /**
-     * Removes or transforms misleading information from a parse exception or error, and converts to {@link ParseException}.
+     * Removes or transforms misleading information from a parse exception or error, and converts to {@link NodeParseException}.
      *
      * @param ex dirty excn
      * @return clean excn
      */
-    public abstract ParseException normalizeException( Throwable ex );
+    public abstract NodeParseException normalizeException( Throwable ex );
 
     protected abstract ParserPos getPos() throws Exception;
 
@@ -583,7 +585,7 @@ public abstract class SqlAbstractParserImpl {
             try {
                 Object o = virtualCall( parserImpl, name );
                 throw new AssertionError( "expected call to fail, got " + o );
-            } catch ( ParseException parseException ) {
+            } catch ( NodeParseException parseException ) {
                 // First time through, build the list of all tokens.
                 final String[] tokenImages = parseException.getTokenImages();
                 if ( tokenSet.isEmpty() ) {

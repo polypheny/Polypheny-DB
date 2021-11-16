@@ -31,9 +31,10 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.Parser;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -44,7 +45,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.ScottSchema;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.type.PolyType;
@@ -68,7 +68,7 @@ public class RelOptUtilTest {
                 .add( "scott", new ReflectiveSchema( new ScottSchema() ), SchemaType.RELATIONAL );
 
         return Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
+                .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( schema )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( schema ),
@@ -154,7 +154,7 @@ public class RelOptUtilTest {
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexNode joinCond = REL_BUILDER.call(
-                SqlStdOperatorTable.EQUALS,
+                StdOperatorRegistry.get( "EQUALS" ),
                 RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
                 RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
@@ -177,7 +177,7 @@ public class RelOptUtilTest {
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexNode joinCond = REL_BUILDER.call(
-                SqlStdOperatorTable.IS_NOT_DISTINCT_FROM,
+                StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ),
                 RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
                 RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
@@ -202,12 +202,12 @@ public class RelOptUtilTest {
         RexInputRef leftKeyInputRef = RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
         RexInputRef rightKeyInputRef = RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
         RexNode joinCond = REL_BUILDER.call(
-                SqlStdOperatorTable.OR,
-                REL_BUILDER.call( SqlStdOperatorTable.EQUALS, leftKeyInputRef, rightKeyInputRef ),
+                StdOperatorRegistry.get( "OR" ),
+                REL_BUILDER.call( StdOperatorRegistry.get( "EQUALS" ), leftKeyInputRef, rightKeyInputRef ),
                 REL_BUILDER.call(
-                        SqlStdOperatorTable.AND,
-                        REL_BUILDER.call( SqlStdOperatorTable.IS_NULL, leftKeyInputRef ),
-                        REL_BUILDER.call( SqlStdOperatorTable.IS_NULL, rightKeyInputRef ) ) );
+                        StdOperatorRegistry.get( "AND" ),
+                        REL_BUILDER.call( StdOperatorRegistry.get( "IS_NULL" ), leftKeyInputRef ),
+                        REL_BUILDER.call( StdOperatorRegistry.get( "IS_NULL" ), rightKeyInputRef ) ) );
 
         splitJoinConditionHelper(
                 joinCond,

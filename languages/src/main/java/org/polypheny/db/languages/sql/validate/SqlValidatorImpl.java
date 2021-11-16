@@ -5063,8 +5063,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             a = aggOrOverFinder;
         }
 
-        for ( Node param : aggCall.getOperandList() ) {
-            if ( a.findAgg( (List<SqlNode>) param ) != null ) {
+        for ( SqlNode param : aggCall.getSqlOperandList() ) {
+            if ( a.findAgg( param ) != null ) {
                 throw newValidationError( aggCall, RESOURCE.nestedAggIllegal() );
             }
         }
@@ -5074,8 +5074,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
         }
         if ( orderList != null ) {
-            for ( Node param : orderList ) {
-                if ( a.findAgg( (List<SqlNode>) param ) != null ) {
+            for ( SqlNode param : orderList.getSqlList() ) {
+                if ( a.findAgg( param ) != null ) {
                     throw newValidationError( aggCall, RESOURCE.aggregateInWithinGroupIllegal() );
                 }
             }

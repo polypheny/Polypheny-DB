@@ -23,7 +23,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -60,7 +60,7 @@ public class SqlPrettyWriterTest {
         SqlNode node;
         try {
             node = (SqlNode) Parser.create( sql ).parseQuery();
-        } catch ( ParseException e ) {
+        } catch ( NodeParseException e ) {
             String message = "Received error while parsing SQL '" + sql + "'; error is:" + NL + e.toString();
             throw new AssertionError( message );
         }

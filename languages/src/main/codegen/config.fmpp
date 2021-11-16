@@ -16,7 +16,7 @@
 data: {
     parser: {
         # Generated parser implementation package and class name.
-        package: "org.polypheny.db.sql.parser.impl",
+        package: "org.polypheny.db.languages.sql.parser.impl",
         class: "SqlParserImpl",
 
         # List of additional classes and packages to import.

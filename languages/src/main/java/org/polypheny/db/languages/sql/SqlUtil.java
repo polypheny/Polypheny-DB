@@ -571,6 +571,16 @@ public abstract class SqlUtil {
     }
 
 
+    public static List<List<Node>> toNodeListList( List<List<SqlNode>> sqlList ) {
+        return sqlList.stream().map( CoreUtil::toNodeList ).collect( Collectors.toList() );
+    }
+
+
+    public static SqlLiteral symbol( Enum<?> o, ParserPos parserPos ) {
+        return SqlLiteral.createSymbol( o, parserPos );
+    }
+
+
     /**
      * Handles particular {@link DatabaseMetaData} methods; invocations of other methods will fall through to the base class,
      * {@link org.polypheny.db.util.BarfingInvocationHandler}, which will throw an error.
@@ -697,6 +707,26 @@ public abstract class SqlUtil {
             return check( (SqlNode) type );
         }
 
+    }
+
+
+    static public List<List<SqlNode>> toSqlListList( List<List<? extends Node>> nodes ) {
+        return nodes.stream().map( SqlUtil::toSqlList ).collect( Collectors.toList() );
+    }
+
+
+    static public <T extends Node> List<List<? extends Node>> toSqlListList( List<List<? extends Node>> nodes, Class<? extends Node> clazz ) {
+        return nodes.stream().map( e -> toSqlList( e, clazz ) ).collect( Collectors.toList() );
+    }
+
+
+    static public List<SqlNode> toSqlList( List<? extends Node> nodes ) {
+        return toSqlList( nodes, SqlNode.class );
+    }
+
+
+    static public <T extends Node> List<T> toSqlList( List<? extends Node> nodes, Class<T> clazz ) {
+        return nodes.stream().map( clazz::cast ).collect( Collectors.toList() );
     }
 
 }

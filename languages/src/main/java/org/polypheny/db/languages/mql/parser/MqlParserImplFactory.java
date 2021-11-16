@@ -17,6 +17,8 @@
 package org.polypheny.db.languages.mql.parser;
 
 import java.io.Reader;
+import org.polypheny.db.core.ParserImpl;
+import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.tools.Planner;
 
 
@@ -25,13 +27,13 @@ import org.polypheny.db.tools.Planner;
  *
  * A parser factory allows you to include a custom parser in {@link Planner} created through {@code Frameworks}.
  */
-public interface MqlParserImplFactory {
+public interface MqlParserImplFactory extends ParserFactory {
 
     /**
      * Get the underlying parser implementation.
      *
      * @return {@link MqlAbstractParserImpl} object.
      */
-    MqlAbstractParserImpl getParser( Reader stream );
+    ParserImpl getParser( Reader stream );
 
 }

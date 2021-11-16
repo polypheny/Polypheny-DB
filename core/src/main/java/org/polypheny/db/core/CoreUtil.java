@@ -24,6 +24,7 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -349,6 +350,17 @@ public class CoreUtil {
         public String getStrength() {
             return strength;
         }
+
+    }
+
+
+    static public List<Node> toNodeList( List<? extends Node> nodes ) {
+        return toNodeList( nodes, Node.class );
+    }
+
+
+    static public <T extends Node> List<T> toNodeList( List<? extends Node> nodes, Class<T> clazz ) {
+        return nodes.stream().map( clazz::cast ).collect( Collectors.toList() );
     }
 
 }

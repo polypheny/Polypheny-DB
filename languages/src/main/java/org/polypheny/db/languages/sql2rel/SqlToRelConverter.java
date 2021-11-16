@@ -4015,7 +4015,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
 
         @Override
-        public RexNode convertExpression( Node expr ) {
+        public RexNode convertExpression( SqlNode expr ) {
             // If we're in aggregation mode and this is an expression in the GROUP BY clause, return a reference to the field.
             if ( agg != null ) {
                 final SqlNode expandedGroupExpr = validator.expand( (SqlNode) expr, scope );
@@ -4220,8 +4220,8 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
 
         @Override
-        public RexNode convertExpression( SqlNode expr ) {
-            return null;
+        public RexNode convertExpression( Node expr ) {
+            return convertExpression( (SqlNode) expr );
         }
 
 

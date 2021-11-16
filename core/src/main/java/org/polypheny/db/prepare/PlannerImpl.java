@@ -42,8 +42,8 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.ParseException;
 import org.polypheny.db.core.RelDecorrelator;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.languages.LanguageManager;
@@ -198,7 +198,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public Node parse( final Reader reader ) throws ParseException {
+    public Node parse( final Reader reader ) throws NodeParseException {
         switch ( state ) {
             case STATE_0_CLOSED:
             case STATE_1_RESET:
@@ -280,7 +280,7 @@ public class PlannerImpl implements Planner, ViewExpander {
         Node sqlNode;
         try {
             sqlNode = parser.parseQuery();
-        } catch ( ParseException e ) {
+        } catch ( NodeParseException e ) {
             throw new RuntimeException( "parse failed", e );
         }
 

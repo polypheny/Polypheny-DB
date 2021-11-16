@@ -28,13 +28,14 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.core.ParserImpl;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 
 
-public abstract class MqlAbstractParserImpl {
+public abstract class MqlAbstractParserImpl implements ParserImpl {
 
     @Setter
     @Getter
@@ -55,7 +56,7 @@ public abstract class MqlAbstractParserImpl {
 
 
     /**
-     * Removes or transforms misleading information from a parse exception or error, and converts to {@link ParseException}.
+     * Removes or transforms misleading information from a parse exception or error, and converts to {@link NodeParseException}.
      *
      * @param ex dirty excn
      * @return clean excn
@@ -168,7 +169,7 @@ public abstract class MqlAbstractParserImpl {
             try {
                 Object o = virtualCall( parserImpl, name );
                 throw new AssertionError( "expected call to fail, got " + o );
-            } catch ( ParseException parseException ) {
+            } catch ( NodeParseException parseException ) {
                 // First time through, build the list of all tokens.
                 final String[] tokenImages = parseException.getTokenImages();
                 if ( tokenSet.isEmpty() ) {

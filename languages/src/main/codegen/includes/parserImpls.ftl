@@ -601,8 +601,8 @@ SqlAlterTable SqlAlterTable(Span s) :
                                                                     ((RawTemperaturePartitionInformation)rawPartitionInfo).setInternalPartitionFunction( tmpIdent ); tmpIdent = null;
                                                             } <PARTITIONS>
                                                                     {
-                                                                    rawPartitionInfo.setPartitionNamesList( partitionNamesList );
-                                                                    rawPartitionInfo.setPartitionQualifierList( partitionQualifierList );
+                                                                    rawPartitionInfo.setPartitionNamesList( CoreUtil.toNodeList( partitionNamesList, Identifier.class ) );
+                                                                    rawPartitionInfo.setPartitionQualifierList( SqlUtil.toNodeListList( partitionQualifierList ) );
 
                                                                 return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
                                                                             }

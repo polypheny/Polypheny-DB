@@ -28,7 +28,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -40,8 +42,6 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.schema.HrSchema;
-import org.polypheny.db.sql.ExplainLevel;
-import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.type.PolyType;
@@ -105,7 +105,7 @@ public class RelWriterTest {
                     LogicalFilter filter =
                             LogicalFilter.create( scan,
                                     rexBuilder.makeCall(
-                                            SqlStdOperatorTable.EQUALS,
+                                            StdOperatorRegistry.get( "EQUALS" ),
                                             rexBuilder.makeFieldAccess( rexBuilder.makeRangeReference( scan ), "deptno", true ),
                                             rexBuilder.makeExactLiteral( BigDecimal.TEN ) ) );
                     final RelJsonWriter writer = new RelJsonWriter();
@@ -113,8 +113,8 @@ public class RelWriterTest {
                     LogicalAggregate aggregate =
                             LogicalAggregate.create( filter, ImmutableBitSet.of( 0 ), null,
                                     ImmutableList.of(
-                                            AggregateCall.create( SqlStdOperatorTable.COUNT, true, false, ImmutableList.of( 1 ), -1, RelCollations.EMPTY, bigIntType, "c" ),
-                                            AggregateCall.create( SqlStdOperatorTable.COUNT, false, false, ImmutableList.of(), -1, RelCollations.EMPTY, bigIntType, "d" ) ) );
+                                            AggregateCall.create( StdOperatorRegistry.getAgg( "COUNT" ), true, false, ImmutableList.of( 1 ), -1, RelCollations.EMPTY, bigIntType, "c" ),
+                                            AggregateCall.create( StdOperatorRegistry.getAgg( "COUNT" ), false, false, ImmutableList.of(), -1, RelCollations.EMPTY, bigIntType, "d" ) ) );
                     aggregate.explain( writer );
                     return writer.asString();
                 } );
@@ -138,7 +138,7 @@ public class RelWriterTest {
                     } catch ( IOException e ) {
                         throw new RuntimeException( e );
                     }
-                    return RelOptUtil.dumpPlan( "", node, SqlExplainFormat.TEXT, ExplainLevel.EXPPLAN_ATTRIBUTES );
+                    return RelOptUtil.dumpPlan( "", node, ExplainFormat.TEXT, ExplainLevel.EXPPLAN_ATTRIBUTES );
                 } );
 
         assertThat( s,

@@ -46,8 +46,12 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -58,10 +62,6 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schemas.HrClusteredSchema;
-import org.polypheny.db.sql.ExplainLevel;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
@@ -83,7 +83,7 @@ public final class SortRemoveRuleTest {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
         final SchemaPlus defSchema = rootSchema.add( "hr", new HrClusteredSchema(), SchemaType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
+                .parserConfig( ParserConfig.DEFAULT )
                 .defaultSchema( defSchema )
                 .traitDefs( ConventionTraitDef.INSTANCE, RelCollationTraitDef.INSTANCE )
                 .programs( Programs.of( prepareRules ), Programs.ofRules( SortRemoveRule.INSTANCE ) )
@@ -101,8 +101,8 @@ public final class SortRemoveRuleTest {
                         null ) )
                 .build();
         Planner planner = Frameworks.getPlanner( config );
-        SqlNode parse = planner.parse( sql );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( sql );
+        Node validate = planner.validate( parse );
         RelRoot planRoot = planner.rel( validate );
         RelNode planBefore = planRoot.rel;
         RelTraitSet desiredTraits = planBefore.getTraitSet()
@@ -216,7 +216,7 @@ public final class SortRemoveRuleTest {
 
 
     private String toString( RelNode rel ) {
-        return Util.toLinux( RelOptUtil.dumpPlan( "", rel, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+        return Util.toLinux( RelOptUtil.dumpPlan( "", rel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
     }
 
 }

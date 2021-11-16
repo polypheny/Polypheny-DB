@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.calcite.avatica.ColumnMetaData;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
 import org.polypheny.db.languages.sql.utils.SqlTester.ParameterChecker;
@@ -344,10 +344,10 @@ public abstract class SqlTests {
         }
 
         // Search for a SqlParseException -- with its position set -- somewhere in the stack.
-        ParseException spe = null;
+        NodeParseException spe = null;
         for ( Throwable x = ex; x != null; x = x.getCause() ) {
-            if ( (x instanceof ParseException) && (((ParseException) x).getPos() != null) ) {
-                spe = (ParseException) x;
+            if ( (x instanceof NodeParseException) && (((NodeParseException) x).getPos() != null) ) {
+                spe = (NodeParseException) x;
                 break;
             }
             if ( x.getCause() == x ) {

@@ -45,5 +45,6 @@ public enum ExplainLevel {
      * Display all attributes, including cost.
      */
     ALL_ATTRIBUTES;
+
 }
 

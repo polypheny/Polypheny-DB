@@ -48,13 +48,16 @@ import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.fun.OracleSqlOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlBitOpAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlMinMaxAggFunction;
+import org.polypheny.db.languages.sql.fun.SqlRegisterer;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
 import org.polypheny.db.languages.sql.parser.SqlParser;
+import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.languages.sql.util.SqlString;
 import org.polypheny.db.languages.sql.validate.PolyphenyDbSqlValidator;
@@ -92,6 +95,10 @@ import org.polypheny.db.util.Util;
 import org.slf4j.Logger;
 
 public class LanguageManagerImpl extends LanguageManager {
+
+    static {
+        new SqlRegisterer();
+    }
 
 
     @Override
@@ -142,7 +149,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
     @Override
     public ParserFactory getFactory( QueryLanguage sql ) {
-        return;
+        return SqlParserImpl.FACTORY;
     }
 
 
@@ -338,6 +345,12 @@ public class LanguageManagerImpl extends LanguageManager {
             List<RelDataType> paramTypes,
             TableFunction function ) {
         return new SqlUserDefinedTableFunction( (SqlIdentifier) name, ReturnTypes.CURSOR, explicit, typeChecker, paramTypes, function );
+    }
+
+
+    @Override
+    public Class<?> getArrayValueConstructorClass() {
+        return SqlArrayValueConstructor.class;
     }
 
 

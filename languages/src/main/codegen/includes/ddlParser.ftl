@@ -333,8 +333,8 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
                                                         ((RawTemperaturePartitionInformation)rawPartitionInfo).setInternalPartitionFunction( tmpIdent ); tmpIdent = null;
                                                 } <PARTITIONS>
                                         {
-                                            rawPartitionInfo.setPartitionNamesList( partitionNamesList );
-                                            rawPartitionInfo.setPartitionQualifierList( partitionQualifierList );
+                                            rawPartitionInfo.setPartitionNamesList( CoreUtil.toNodeList( partitionNamesList, Identifier.class ) );
+                                            rawPartitionInfo.setPartitionQualifierList( SqlUtil.toNodeListList( partitionQualifierList ) );
 
                                             return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitionGroups, numPartitions, partitionNamesList, partitionQualifierList, rawPartitionInfo);
                                         }

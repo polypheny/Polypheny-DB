@@ -50,7 +50,9 @@ import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
@@ -72,8 +74,6 @@ import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.util.DateString;
@@ -435,20 +435,20 @@ public class RexImplicationCheckerTest {
         final RexNode literalTs = f.timestampLiteral( new TimestampString( "2010-10-10 00:00:00" ) );
         for ( int i = 0; i < timeUnitRanges.size(); i++ ) {
             final RexNode innerFloorCall = f.rexBuilder.makeCall(
-                    SqlStdOperatorTable.FLOOR,
+                    StdOperatorRegistry.get( "FLOOR" ),
                     literalTs,
                     f.rexBuilder.makeFlag( timeUnitRanges.get( i ) ) );
             final RexNode innerCeilCall = f.rexBuilder.makeCall(
-                    SqlStdOperatorTable.CEIL,
+                    StdOperatorRegistry.get( "CEIL" ),
                     literalTs,
                     f.rexBuilder.makeFlag( timeUnitRanges.get( i ) ) );
             for ( int j = 0; j <= i; j++ ) {
                 final RexNode outerFloorCall = f.rexBuilder.makeCall(
-                        SqlStdOperatorTable.FLOOR,
+                        StdOperatorRegistry.get( "FLOOR" ),
                         innerFloorCall,
                         f.rexBuilder.makeFlag( timeUnitRanges.get( j ) ) );
                 final RexNode outerCeilCall = f.rexBuilder.makeCall(
-                        SqlStdOperatorTable.CEIL,
+                        StdOperatorRegistry.get( "CEIL" ),
                         innerCeilCall,
                         f.rexBuilder.makeFlag( timeUnitRanges.get( j ) ) );
                 final RexCall floorSimplifiedExpr = (RexCall) f.simplify.simplifyPreservingType(
@@ -468,20 +468,20 @@ public class RexImplicationCheckerTest {
         // Negative test
         for ( int i = timeUnitRanges.size() - 1; i >= 0; i-- ) {
             final RexNode innerFloorCall = f.rexBuilder.makeCall(
-                    SqlStdOperatorTable.FLOOR,
+                    StdOperatorRegistry.get( "FLOOR" ),
                     literalTs,
                     f.rexBuilder.makeFlag( timeUnitRanges.get( i ) ) );
             final RexNode innerCeilCall = f.rexBuilder.makeCall(
-                    SqlStdOperatorTable.CEIL,
+                    StdOperatorRegistry.get( "CEIL" ),
                     literalTs,
                     f.rexBuilder.makeFlag( timeUnitRanges.get( i ) ) );
             for ( int j = timeUnitRanges.size() - 1; j > i; j-- ) {
                 final RexNode outerFloorCall = f.rexBuilder.makeCall(
-                        SqlStdOperatorTable.FLOOR,
+                        StdOperatorRegistry.get( "FLOOR" ),
                         innerFloorCall,
                         f.rexBuilder.makeFlag( timeUnitRanges.get( j ) ) );
                 final RexNode outerCeilCall = f.rexBuilder.makeCall(
-                        SqlStdOperatorTable.CEIL,
+                        StdOperatorRegistry.get( "CEIL" ),
                         innerCeilCall,
                         f.rexBuilder.makeFlag( timeUnitRanges.get( j ) ) );
                 final RexCall floorSimplifiedExpr = (RexCall) f.simplify.simplifyPreservingType(
@@ -630,52 +630,52 @@ public class RexImplicationCheckerTest {
 
 
         public RexNode gt( RexNode node1, RexNode node2 ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.GREATER_THAN, node1, node2 );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "GREATER_THAN" ), node1, node2 );
         }
 
 
         public RexNode ge( RexNode node1, RexNode node2 ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, node1, node2 );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ), node1, node2 );
         }
 
 
         public RexNode eq( RexNode node1, RexNode node2 ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.EQUALS, node1, node2 );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), node1, node2 );
         }
 
 
         public RexNode ne( RexNode node1, RexNode node2 ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.NOT_EQUALS, node1, node2 );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "NOT_EQUALS" ), node1, node2 );
         }
 
 
         public RexNode lt( RexNode node1, RexNode node2 ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.LESS_THAN, node1, node2 );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "LESS_THAN" ), node1, node2 );
         }
 
 
         public RexNode le( RexNode node1, RexNode node2 ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, node1, node2 );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ), node1, node2 );
         }
 
 
         public RexNode notNull( RexNode node1 ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_NULL, node1 );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), node1 );
         }
 
 
         public RexNode isNull( RexNode node2 ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, node2 );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), node2 );
         }
 
 
         public RexNode and( RexNode... nodes ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.AND, nodes );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), nodes );
         }
 
 
         public RexNode or( RexNode... nodes ) {
-            return rexBuilder.makeCall( SqlStdOperatorTable.OR, nodes );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( "OR" ), nodes );
         }
 
 
@@ -695,7 +695,7 @@ public class RexImplicationCheckerTest {
 
 
         public RexLiteral charLiteral( String z ) {
-            return rexBuilder.makeCharLiteral( new NlsString( z, null, SqlCollation.COERCIBLE ) );
+            return rexBuilder.makeCharLiteral( new NlsString( z, null, Collation.COERCIBLE ) );
         }
 
 
@@ -734,6 +734,8 @@ public class RexImplicationCheckerTest {
             final String message = node1 + " does implies " + node2 + " when it should not";
             assertFalse( message, checker.implies( node1, node2 ) );
         }
+
     }
+
 }
 

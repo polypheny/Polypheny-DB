@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.core.RelDecorrelator;
@@ -42,7 +43,6 @@ import org.polypheny.db.languages.mql.MqlCreateCollection;
 import org.polypheny.db.languages.mql.MqlExecutableStatement;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
-import org.polypheny.db.languages.mql.parser.MqlParseException;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2rel.MqlToRelConverter;
@@ -98,7 +98,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         try {
             final MqlParser parser = MqlParser.create( new SourceStringReader( mql ), parserConfig );
             parsed = parser.parseStmt();
-        } catch ( MqlParseException e ) {
+        } catch ( NodeParseException e ) {
             log.error( "Caught exception", e );
             throw new RuntimeException( e );
         }

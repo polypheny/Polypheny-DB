@@ -47,7 +47,7 @@ import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.core.ParseException;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.core.RelDecorrelator;
@@ -133,7 +133,7 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
         try {
             final Parser parser = Parser.create( new SourceStringReader( query ), parserConfig );
             parsed = parser.parseStmt();
-        } catch ( ParseException e ) {
+        } catch ( NodeParseException e ) {
             log.error( "Caught exception", e );
             throw new RuntimeException( e );
         }
