@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.tools;
+package org.polypheny.db.languages.core;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -41,9 +41,17 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.ExplainFormat;
+import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptAbstractTable;
 import org.polypheny.db.plan.RelOptCluster;
@@ -79,13 +87,13 @@ import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.sql.ExplainLevel;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.tools.FrameworkConfig;
+import org.polypheny.db.tools.Frameworks;
+import org.polypheny.db.tools.Planner;
+import org.polypheny.db.tools.Programs;
+import org.polypheny.db.tools.RelConversionException;
+import org.polypheny.db.tools.RuleSets;
+import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
@@ -137,7 +145,7 @@ public class FrameworksTest {
                     // Now, plan.
                     return planner.findBestExp();
                 } );
-        String s = RelOptUtil.dumpPlan( "", x, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
+        String s = RelOptUtil.dumpPlan( "", x, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
         assertThat(
                 Util.toLinux( s ),
                 equalTo( "EnumerableFilter(condition=[>($1, 1)])\n  EnumerableTableScan(table=[[myTable]])\n" ) );
@@ -250,10 +258,10 @@ public class FrameworksTest {
                         null ) )
                 .build();
         final Planner planner = Frameworks.getPlanner( config );
-        SqlNode parse = planner.parse( "select * from \"emps\" " );
-        SqlNode val = planner.validate( parse );
+        Node parse = planner.parse( "select * from \"emps\" " );
+        Node val = planner.validate( parse );
 
-        String valStr = val.toSqlString( AnsiSqlDialect.DEFAULT, false ).getSql();
+        String valStr = ((SqlNode) val).toSqlString( AnsiSqlDialect.DEFAULT, false ).getSql();
 
         String expandedStr = "SELECT `emps`.`empid`, `emps`.`deptno`, `emps`.`name`, `emps`.`salary`, `emps`.`commission`\n" + "FROM `hr`.`emps` AS `emps`";
         assertThat( Util.toLinux( valStr ), equalTo( expandedStr ) );
@@ -308,8 +316,8 @@ public class FrameworksTest {
         List<RelTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( RelDistributionTraitDef.INSTANCE );
-        SqlParserConfig parserConfig =
-                SqlParser.configBuilder( SqlParserConfig.DEFAULT )
+        ParserConfig parserConfig =
+                Parser.configBuilder( ParserConfig.DEFAULT )
                         .setCaseSensitive( false )
                         .build();
 
@@ -337,16 +345,16 @@ public class FrameworksTest {
     }
 
 
-    private void executeQuery( FrameworkConfig config, @SuppressWarnings("SameParameterValue") String query, boolean debug ) throws RelConversionException, SqlParseException, ValidationException {
+    private void executeQuery( FrameworkConfig config, @SuppressWarnings("SameParameterValue") String query, boolean debug ) throws RelConversionException, NodeParseException, ValidationException {
         Planner planner = Frameworks.getPlanner( config );
         if ( debug ) {
             System.out.println( "Query:" + query );
         }
-        SqlNode n = planner.parse( query );
+        Node n = planner.parse( query );
         n = planner.validate( n );
         RelNode root = planner.rel( n ).project();
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Logical Plan", root, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( RelOptUtil.dumpPlan( "-- Logical Plan", root, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         RelOptCluster cluster = root.getCluster();
         final RelOptPlanner optPlanner = cluster.getPlanner();
@@ -354,12 +362,12 @@ public class FrameworksTest {
         RelTraitSet desiredTraits = cluster.traitSet().replace( EnumerableConvention.INSTANCE );
         final RelNode newRoot = optPlanner.changeTraits( root, desiredTraits );
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Mid Plan", newRoot, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( RelOptUtil.dumpPlan( "-- Mid Plan", newRoot, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         optPlanner.setRoot( newRoot );
         RelNode bestExp = optPlanner.findBestExp();
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Best Plan", bestExp, SqlExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( RelOptUtil.dumpPlan( "-- Best Plan", bestExp, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
     }
 

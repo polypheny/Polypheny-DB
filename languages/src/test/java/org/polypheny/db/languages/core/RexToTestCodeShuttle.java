@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,31 +12,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.test.fuzzer;
+package org.polypheny.db.languages.core;
 
 
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
@@ -44,7 +28,6 @@ import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 
 
@@ -53,8 +36,8 @@ import org.polypheny.db.type.PolyType;
  */
 public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
 
-    private static final Map<SqlOperator, String> OP_METHODS =
-            ImmutableMap.<SqlOperator, String>builder()
+    private static final Map<Operator, String> OP_METHODS =
+            ImmutableMap.<Operator, String>builder()
                     .put( StdOperatorRegistry.get( "AND" ), "and" )
                     .put( StdOperatorRegistry.get( "OR" ), "or" )
                     .put( StdOperatorRegistry.get( "CASE" ), "case_" )
@@ -90,7 +73,7 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall( RexCall call ) {
-        SqlOperator operator = call.getOperator();
+        Operator operator = call.getOperator();
         String method = OP_METHODS.get( operator );
 
         StringBuilder sb = new StringBuilder();
@@ -165,5 +148,6 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
         sb.append( ")" );
         return sb.toString();
     }
+
 }
 

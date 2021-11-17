@@ -69,12 +69,12 @@ public abstract class RexSlot extends RexVariable {
      * Thread-safe list that populates itself if you make a reference beyond the end of the list. Useful if you are using the same entries repeatedly.
      * Once populated, accesses are very efficient.
      */
-    protected static class SelfPopulatingList extends CopyOnWriteArrayList<String> {
+    public static class SelfPopulatingList extends CopyOnWriteArrayList<String> {
 
         private final String prefix;
 
 
-        SelfPopulatingList( final String prefix, final int initialSize ) {
+        public SelfPopulatingList( final String prefix, final int initialSize ) {
             super( fromTo( prefix, 0, initialSize ) );
             this.prefix = prefix;
         }

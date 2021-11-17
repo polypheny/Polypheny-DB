@@ -62,7 +62,6 @@ import java.lang.management.MemoryType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -104,14 +103,11 @@ import org.hamcrest.StringDescription;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.polypheny.db.core.Collation;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.util.SqlBuilder;
-import org.polypheny.db.sql.util.SqlString;
 import org.polypheny.db.test.DiffTestCase;
 import org.polypheny.db.test.Matchers;
 
@@ -620,50 +616,6 @@ public class UtilTest {
         assertEquals( "HEAP", Util.enumVal( MemoryType.class, "HEAP" ).name() );
         assertNull( Util.enumVal( MemoryType.class, "heap" ) );
         assertNull( Util.enumVal( MemoryType.class, "nonexistent" ) );
-    }
-
-
-    /**
-     * Tests SQL builders.
-     */
-    @Test
-    public void testSqlBuilder() {
-        final SqlBuilder buf = new SqlBuilder( PolyphenyDbSqlDialect.DEFAULT );
-        assertEquals( 0, buf.length() );
-        buf.append( "select " );
-        assertEquals( "select ", buf.getSql() );
-
-        buf.identifier( "x" );
-        assertEquals( "select \"x\"", buf.getSql() );
-
-        buf.append( ", " );
-        buf.identifier( "y", "a b" );
-        assertEquals( "select \"x\", \"y\".\"a b\"", buf.getSql() );
-
-        final SqlString sqlString = buf.toSqlString();
-        assertEquals( PolyphenyDbSqlDialect.DEFAULT, sqlString.getDialect() );
-        assertEquals( buf.getSql(), sqlString.getSql() );
-
-        assertTrue( buf.getSql().length() > 0 );
-        assertEquals( buf.getSqlAndClear(), sqlString.getSql() );
-        assertEquals( 0, buf.length() );
-
-        buf.clear();
-        assertEquals( 0, buf.length() );
-
-        buf.literal( "can't get no satisfaction" );
-        assertEquals( "'can''t get no satisfaction'", buf.getSqlAndClear() );
-
-        buf.literal( new Timestamp( 0 ) );
-        assertEquals( "TIMESTAMP '1970-01-01 00:00:00'", buf.getSqlAndClear() );
-
-        buf.clear();
-        assertEquals( 0, buf.length() );
-
-        buf.append( "hello world" );
-        assertEquals( 2, buf.indexOf( "l" ) );
-        assertEquals( -1, buf.indexOf( "z" ) );
-        assertEquals( 9, buf.indexOf( "l", 5 ) );
     }
 
 
@@ -2284,7 +2236,7 @@ public class UtilTest {
 
     @Test
     public void testNlsStringClone() {
-        final NlsString s = new NlsString( "foo", "LATIN1", SqlCollation.IMPLICIT );
+        final NlsString s = new NlsString( "foo", "LATIN1", Collation.IMPLICIT );
         assertThat( s.toString(), is( "_LATIN1'foo'" ) );
         final Object s2 = s.clone();
         assertThat( s2, instanceOf( NlsString.class ) );
@@ -2473,5 +2425,6 @@ public class UtilTest {
         m.describeTo( d );
         return d.toString();
     }
+
 }
 

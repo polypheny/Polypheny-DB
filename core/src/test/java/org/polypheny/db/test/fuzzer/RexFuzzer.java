@@ -39,11 +39,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.test.RexProgramBuilderBase;
 import org.polypheny.db.type.PolyType;
 
@@ -55,7 +56,7 @@ public class RexFuzzer extends RexProgramBuilderBase {
 
     private static final int MAX_VARS = 2;
 
-    private static final SqlOperator[] BOOL_TO_BOOL = {
+    private static final Operator[] BOOL_TO_BOOL = {
             StdOperatorRegistry.get( "NOT" ),
             StdOperatorRegistry.get( "IS_TRUE" ),
             StdOperatorRegistry.get( "IS_FALSE" ),
@@ -63,14 +64,14 @@ public class RexFuzzer extends RexProgramBuilderBase {
             StdOperatorRegistry.get( "IS_NOT_FALSE" ),
     };
 
-    private static final SqlOperator[] ANY_TO_BOOL = {
+    private static final Operator[] ANY_TO_BOOL = {
             StdOperatorRegistry.get( "IS_NULL" ),
             StdOperatorRegistry.get( "IS_NOT_NULL" ),
             StdOperatorRegistry.get( "IS_UNKNOWN" ),
             StdOperatorRegistry.get( "IS_NOT_UNKNOWN" ),
     };
 
-    private static final SqlOperator[] COMPARABLE_TO_BOOL = {
+    private static final Operator[] COMPARABLE_TO_BOOL = {
             StdOperatorRegistry.get( "EQUALS" ),
             StdOperatorRegistry.get( "NOT_EQUALS" ),
             StdOperatorRegistry.get( "GREATER_THAN" ),
@@ -81,24 +82,24 @@ public class RexFuzzer extends RexProgramBuilderBase {
             StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ),
     };
 
-    private static final SqlOperator[] BOOL_TO_BOOL_MULTI_ARG = {
+    private static final Operator[] BOOL_TO_BOOL_MULTI_ARG = {
             StdOperatorRegistry.get( "OR" ),
             StdOperatorRegistry.get( "AND" ),
             StdOperatorRegistry.get( "COALESCE" ),
     };
 
-    private static final SqlOperator[] ANY_SAME_TYPE_MULTI_ARG = {
+    private static final Operator[] ANY_SAME_TYPE_MULTI_ARG = {
             StdOperatorRegistry.get( "COALESCE" ),
     };
 
-    private static final SqlOperator[] NUMERIC_TO_NUMERIC = {
+    private static final Operator[] NUMERIC_TO_NUMERIC = {
             StdOperatorRegistry.get( "PLUS" ),
             StdOperatorRegistry.get( "MINUS" ),
             StdOperatorRegistry.get( "MULTIPLY" ),
             // Divide by zero is not allowed, so we do not generate divide StdOperatorRegistry.get( "DIVIDE" ), StdOperatorRegistry.get( "DIVIDE_INTEGER" ),
     };
 
-    private static final SqlOperator[] UNARY_NUMERIC = {
+    private static final Operator[] UNARY_NUMERIC = {
             StdOperatorRegistry.get( "UNARY_MINUS" ),
             StdOperatorRegistry.get( "UNARY_PLUS" ),
     };
@@ -131,17 +132,17 @@ public class RexFuzzer extends RexProgramBuilderBase {
     }
 
 
-    private RexNode fuzzOperator( Random r, SqlOperator[] operators, RexNode... args ) {
-        return rexBuilder.makeCall( operators[r.nextInt( operators.length )], args );
+    private RexNode fuzzOperator( Random r, Node[] operators, RexNode... args ) {
+        return rexBuilder.makeCall( (Operator) operators[r.nextInt( operators.length )], args );
     }
 
 
-    private RexNode fuzzOperator( Random r, SqlOperator[] operators, int length, Function<Random, RexNode> factory ) {
+    private RexNode fuzzOperator( Random r, Node[] operators, int length, Function<Random, RexNode> factory ) {
         List<RexNode> args = new ArrayList<>( length );
         for ( int i = 0; i < length; i++ ) {
             args.add( factory.apply( r ) );
         }
-        return rexBuilder.makeCall( operators[r.nextInt( operators.length )], args );
+        return rexBuilder.makeCall( (Operator) operators[r.nextInt( operators.length )], args );
     }
 
 
@@ -179,15 +180,15 @@ public class RexFuzzer extends RexProgramBuilderBase {
             case 0:
                 return getSimpleBool( r );
             case 1:
-                return fuzzOperator( r, ANY_TO_BOOL, getExpression( r, depth - 1 ) );
+                return fuzzOperator( r, (Node[]) ANY_TO_BOOL, getExpression( r, depth - 1 ) );
             case 2:
-                return fuzzOperator( r, BOOL_TO_BOOL, getBoolExpression( r, depth - 1 ) );
+                return fuzzOperator( r, (Node[]) BOOL_TO_BOOL, getBoolExpression( r, depth - 1 ) );
             case 3:
-                return fuzzOperator( r, COMPARABLE_TO_BOOL, getBoolExpression( r, depth - 1 ), getBoolExpression( r, depth - 1 ) );
+                return fuzzOperator( r, (Node[]) COMPARABLE_TO_BOOL, getBoolExpression( r, depth - 1 ), getBoolExpression( r, depth - 1 ) );
             case 4:
-                return fuzzOperator( r, COMPARABLE_TO_BOOL, getIntExpression( r, depth - 1 ), getIntExpression( r, depth - 1 ) );
+                return fuzzOperator( r, (Node[]) COMPARABLE_TO_BOOL, getIntExpression( r, depth - 1 ), getIntExpression( r, depth - 1 ) );
             case 5:
-                return fuzzOperator( r, BOOL_TO_BOOL_MULTI_ARG, r.nextInt( 3 ) + 2, x -> getBoolExpression( x, depth - 1 ) );
+                return fuzzOperator( r, (Node[]) BOOL_TO_BOOL_MULTI_ARG, r.nextInt( 3 ) + 2, x -> getBoolExpression( x, depth - 1 ) );
             case 6:
                 return fuzzCase( r, depth - 1, x -> getBoolExpression( x, depth - 1 ) );
         }
@@ -220,11 +221,11 @@ public class RexFuzzer extends RexProgramBuilderBase {
             case 0:
                 return getSimpleInt( r );
             case 1:
-                return fuzzOperator( r, UNARY_NUMERIC, getIntExpression( r, depth - 1 ) );
+                return fuzzOperator( r, (Node[]) UNARY_NUMERIC, getIntExpression( r, depth - 1 ) );
             case 2:
-                return fuzzOperator( r, NUMERIC_TO_NUMERIC, getIntExpression( r, depth - 1 ), getIntExpression( r, depth - 1 ) );
+                return fuzzOperator( r, (Node[]) NUMERIC_TO_NUMERIC, getIntExpression( r, depth - 1 ), getIntExpression( r, depth - 1 ) );
             case 3:
-                return fuzzOperator( r, ANY_SAME_TYPE_MULTI_ARG, r.nextInt( 3 ) + 2, x -> getIntExpression( x, depth - 1 ) );
+                return fuzzOperator( r, (Node[]) ANY_SAME_TYPE_MULTI_ARG, r.nextInt( 3 ) + 2, x -> getIntExpression( x, depth - 1 ) );
             case 4:
                 return fuzzCase( r, depth - 1, x -> getIntExpression( x, depth - 1 ) );
         }

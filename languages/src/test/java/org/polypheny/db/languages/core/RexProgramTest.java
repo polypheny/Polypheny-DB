@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test;
+package org.polypheny.db.languages.core;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -40,7 +40,10 @@ import java.util.TreeMap;
 import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Before;
 import org.junit.Test;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.sql.SqlOperator;
+import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.Strong;
@@ -59,9 +62,8 @@ import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUnknownAs;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.test.PolyphenyDbAssert;
+import org.polypheny.db.test.RexProgramBuilderBase;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeAssignmentRules;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -1582,7 +1584,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         assertThat( "The case should be nonNullable", caseNode.getType().isNullable(), is( false ) );
         assertThat( "Expected a nonNullable type", result.getType().isNullable(), is( false ) );
         assertThat( result.getType().getPolyType(), is( PolyType.BOOLEAN ) );
-        assertThat( result.getOperator(), is( (SqlOperator) StdOperatorRegistry.get( "IS_TRUE" ) ) );
+        assertThat( result.getOperator(), is( StdOperatorRegistry.get( "IS_TRUE" ) ) );
         assertThat( result.getOperands().get( 0 ), is( condition ) );
     }
 
@@ -2167,8 +2169,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexNode isFalse = isFalse( booleanInput );
         final RexCall result = (RexCall) simplify( isFalse );
         assertThat( result.getType().isNullable(), is( false ) );
-        assertThat( result.getOperator(), is( StdOperatorRegistry.get( "IS_FALSE ) );
-                assertThat( result.getOperands().size(), is( 1 ) );
+        assertThat( result.getOperator(), is( StdOperatorRegistry.get( "IS_FALSE" ) ) );
+        assertThat( result.getOperands().size(), is( 1 ) );
         assertThat( result.getOperands().get( 0 ), is( booleanInput ) );
 
         // Make sure that IS_FALSE(IS_FALSE(nullable boolean)) != IS_TRUE(nullable boolean)
@@ -2177,8 +2179,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexNode isFalseIsFalse = isFalse( isFalse );
         final RexCall result2 = (RexCall) simplify( isFalseIsFalse );
         assertThat( result2.getType().isNullable(), is( false ) );
-        assertThat( result2.getOperator(), is( StdOperatorRegistry.get( "IS_NOT_FALSE ) );
-                assertThat( result2.getOperands().size(), is( 1 ) );
+        assertThat( result2.getOperator(), is( StdOperatorRegistry.get( "IS_NOT_FALSE" ) ) );
+        assertThat( result2.getOperands().size(), is( 1 ) );
         assertThat( result2.getOperands().get( 0 ), is( booleanInput ) );
     }
 
@@ -2351,5 +2353,6 @@ public class RexProgramTest extends RexProgramBuilderBase {
     private Comparable eval( RexNode e ) {
         return RexInterpreter.evaluate( e, ImmutableMap.of() );
     }
+
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.test.fuzzer;
+package org.polypheny.db.languages.core;
 
 
 import static org.junit.Assert.assertEquals;
@@ -53,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.rex.RexLiteral;
@@ -60,8 +44,9 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUnknownAs;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.test.RexProgramBuilderBase;
+import org.polypheny.db.test.fuzzer.RexFuzzer;
+import org.polypheny.db.test.fuzzer.SimplifyTask;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -128,6 +113,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
         public Iterator<E> iterator() {
             throw new UnsupportedOperationException( "Order of elements is not defined, please use .peek" );
         }
+
     }
 
 
@@ -152,7 +138,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
 
 
     private void nestedCalls( RexNode arg ) {
-        SqlOperator[] operators = {
+        Operator[] operators = {
                 StdOperatorRegistry.get( "NOT" ),
                 StdOperatorRegistry.get( "IS_FALSE" ),
                 StdOperatorRegistry.get( "IS_NOT_FALSE" ),
@@ -163,16 +149,16 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
                 StdOperatorRegistry.get( "IS_UNKNOWN" ),
                 StdOperatorRegistry.get( "IS_NOT_UNKNOWN" )
         };
-        for ( SqlOperator op1 : operators ) {
+        for ( Operator op1 : operators ) {
             RexNode n1 = rexBuilder.makeCall( op1, arg );
             checkUnknownAs( n1 );
-            for ( SqlOperator op2 : operators ) {
+            for ( Operator op2 : operators ) {
                 RexNode n2 = rexBuilder.makeCall( op2, n1 );
                 checkUnknownAs( n2 );
-                for ( SqlOperator op3 : operators ) {
+                for ( Operator op3 : operators ) {
                     RexNode n3 = rexBuilder.makeCall( op3, n2 );
                     checkUnknownAs( n3 );
-                    for ( SqlOperator op4 : operators ) {
+                    for ( Operator op4 : operators ) {
                         RexNode n4 = rexBuilder.makeCall( op4, n3 );
                         checkUnknownAs( n4 );
                     }
@@ -426,5 +412,6 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
         RexFuzzer fuzzer = new RexFuzzer( rexBuilder, typeFactory );
         generateRexAndCheckTrueFalse( fuzzer, r );
     }
+
 }
 

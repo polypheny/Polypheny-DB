@@ -98,7 +98,7 @@ public abstract class SqlToRelTestBase {
     }
 
 
-    protected Tester createTester() {
+    public Tester createTester() {
         return new TesterImpl( getDiffRepos(), false, false, true, false, null, null, Config.DEFAULT, ConformanceEnum.DEFAULT, Contexts.empty() );
     }
 

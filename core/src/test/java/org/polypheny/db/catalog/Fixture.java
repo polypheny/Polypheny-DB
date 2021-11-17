@@ -24,7 +24,6 @@ import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
 import org.polypheny.db.rel.type.StructKind;
-import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -114,7 +113,7 @@ final class Fixture {
         empListType = typeFactory.createArrayType( empRecordType, -1 );
         addressType =
                 new ObjectPolyType( PolyType.STRUCTURED,
-                        new SqlIdentifier( "ADDRESS", ParserPos.ZERO ),
+                        new MockIdentifier( "ADDRESS", ParserPos.ZERO ),
                         false,
                         Arrays.asList(
                                 new RelDataTypeFieldImpl( "STREET", 0, varchar20Type ),
@@ -123,5 +122,6 @@ final class Fixture {
                                 new RelDataTypeFieldImpl( "STATE", 3, varchar20Type ) ),
                         RelDataTypeComparability.NONE );
     }
+
 }
 

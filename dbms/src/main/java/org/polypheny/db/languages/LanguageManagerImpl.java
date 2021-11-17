@@ -45,7 +45,6 @@ import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
-import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
@@ -108,12 +107,6 @@ public class LanguageManagerImpl extends LanguageManager {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Conformance conformance = context.config().conformance();
         return new PolyphenyDbSqlValidator( opTab, catalogReader, typeFactory, conformance );
-    }
-
-
-    @Override
-    public Operator createSpecialOperator( String get, Kind otherFunction ) {
-        return new SqlSpecialOperator( get, Kind.OTHER_FUNCTION );
     }
 
 

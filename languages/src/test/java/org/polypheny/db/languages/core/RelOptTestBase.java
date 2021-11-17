@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.test;
+package org.polypheny.db.languages.core;
 
 
 import static org.hamcrest.CoreMatchers.is;
@@ -46,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.polypheny.db.core.RelDecorrelator;
+import org.polypheny.db.languages.sql.SqlToRelTestBase;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -62,7 +47,7 @@ import org.polypheny.db.rel.metadata.DefaultRelMetadataProvider;
 import org.polypheny.db.rel.metadata.RelMetadataProvider;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.sql2rel.RelDecorrelator;
+import org.polypheny.db.test.DiffRepository;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.Closer;
 
@@ -73,7 +58,7 @@ import org.polypheny.db.util.Closer;
 abstract class RelOptTestBase extends SqlToRelTestBase {
 
     @Override
-    protected Tester createTester() {
+    public Tester createTester() {
         return super.createTester().withDecorrelation( false );
     }
 
@@ -346,6 +331,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
                 checkPlanning( t, preProgram, hepPlanner, sql, unchanged );
             }
         }
+
     }
 
 }

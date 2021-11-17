@@ -51,17 +51,17 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
@@ -152,7 +152,7 @@ public class InterpreterTest {
         rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
+                .parserConfig( ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( rootSchema ),
@@ -185,9 +185,9 @@ public class InterpreterTest {
      */
     @Test
     public void testInterpretProjectFilterValues() throws Exception {
-        SqlNode parse = planner.parse( "select y, x\n" + "from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)\n" + "where x > 1" );
+        Node parse = planner.parse( "select y, x\n" + "from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)\n" + "where x > 1" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -201,8 +201,8 @@ public class InterpreterTest {
     @Test
     public void testInterpretOrder() throws Exception {
         final String sql = "select y\n" + "from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)\n" + "order by -x";
-        SqlNode parse = planner.parse( sql );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( sql );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).project();
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -239,9 +239,9 @@ public class InterpreterTest {
      */
     @Test
     public void testInterpretTable() throws Exception {
-        SqlNode parse = planner.parse( "select * from \"hr\".\"emps\" order by \"empid\"" );
+        Node parse = planner.parse( "select * from \"hr\".\"emps\" order by \"empid\"" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -255,9 +255,9 @@ public class InterpreterTest {
     @Test
     public void testInterpretScannableTable() throws Exception {
         rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
-        SqlNode parse = planner.parse( "select * from \"beatles\" order by \"i\"" );
+        Node parse = planner.parse( "select * from \"beatles\" order by \"i\"" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -268,9 +268,9 @@ public class InterpreterTest {
     @Test
     public void testAggregateCount() throws Exception {
         rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
-        SqlNode parse = planner.parse( "select  count(*) from \"beatles\"" );
+        Node parse = planner.parse( "select  count(*) from \"beatles\"" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -281,9 +281,9 @@ public class InterpreterTest {
     @Test
     public void testAggregateMax() throws Exception {
         rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
-        SqlNode parse = planner.parse( "select  max(\"i\") from \"beatles\"" );
+        Node parse = planner.parse( "select  max(\"i\") from \"beatles\"" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -294,9 +294,9 @@ public class InterpreterTest {
     @Test
     public void testAggregateMin() throws Exception {
         rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
-        SqlNode parse = planner.parse( "select  min(\"i\") from \"beatles\"" );
+        Node parse = planner.parse( "select  min(\"i\") from \"beatles\"" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -307,9 +307,9 @@ public class InterpreterTest {
     @Test
     public void testAggregateGroup() throws Exception {
         rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
-        SqlNode parse = planner.parse( "select \"j\", count(*) from \"beatles\" group by \"j\"" );
+        Node parse = planner.parse( "select \"j\", count(*) from \"beatles\" group by \"j\"" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -321,8 +321,8 @@ public class InterpreterTest {
     public void testAggregateGroupFilter() throws Exception {
         rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
         final String sql = "select \"j\",\n" + "  count(*) filter (where char_length(\"j\") > 4)\n" + "from \"beatles\" group by \"j\"";
-        SqlNode parse = planner.parse( sql );
-        SqlNode validate = planner.validate( parse );
+        Node parse = planner.parse( sql );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -336,9 +336,9 @@ public class InterpreterTest {
     @Test
     public void testInterpretSimpleScannableTable() throws Exception {
         rootSchema.add( "simple", new ScannableTableTest.SimpleTable() );
-        SqlNode parse = planner.parse( "select * from \"simple\" limit 2" );
+        Node parse = planner.parse( "select * from \"simple\" limit 2" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -352,9 +352,9 @@ public class InterpreterTest {
     @Test
     public void testInterpretUnionAll() throws Exception {
         rootSchema.add( "simple", new ScannableTableTest.SimpleTable() );
-        SqlNode parse = planner.parse( "select * from \"simple\"\n" + "union all\n" + "select * from \"simple\"\n" );
+        Node parse = planner.parse( "select * from \"simple\"\n" + "union all\n" + "select * from \"simple\"\n" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
@@ -368,9 +368,9 @@ public class InterpreterTest {
     @Test
     public void testInterpretUnion() throws Exception {
         rootSchema.add( "simple", new ScannableTableTest.SimpleTable() );
-        SqlNode parse = planner.parse( "select * from \"simple\"\n" + "union\n" + "select * from \"simple\"\n" );
+        Node parse = planner.parse( "select * from \"simple\"\n" + "union\n" + "select * from \"simple\"\n" );
 
-        SqlNode validate = planner.validate( parse );
+        Node validate = planner.validate( parse );
         RelNode convert = planner.rel( validate ).rel;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );

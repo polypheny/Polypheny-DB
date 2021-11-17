@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.rex;
+package org.polypheny.db.languages.core;
 
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -55,21 +38,28 @@ import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.BinaryOperator;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.sql.SqlBinaryOperator;
+import org.polypheny.db.languages.sql.fun.SqlMonotonicBinaryOperator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexExecutable;
+import org.polypheny.db.rex.RexExecutorImpl;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexSlot.SelfPopulatingList;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.fun.SqlMonotonicBinaryOperator;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.transaction.Statement;
@@ -273,8 +263,7 @@ public class RexExecutorTest {
     }
 
 
-    private static final Operator &
-    BinaryOperator PLUS_RANDOM =
+    private static final SqlBinaryOperator PLUS_RANDOM =
             new SqlMonotonicBinaryOperator(
                     "+",
                     Kind.PLUS,
@@ -297,7 +286,7 @@ public class RexExecutorTest {
     public void testSelfPopulatingList() {
         final List<Thread> threads = new ArrayList<>();
         //noinspection MismatchedQueryAndUpdateOfCollection
-        final List<String> list = new RexSlot.SelfPopulatingList( "$", 1 );
+        final List<String> list = new SelfPopulatingList( "$", 1 );
         final Random random = new Random();
         for ( int i = 0; i < 10; i++ ) {
             threads.add(
@@ -329,7 +318,7 @@ public class RexExecutorTest {
     @Test
     public void testSelfPopulatingList30() {
         //noinspection MismatchedQueryAndUpdateOfCollection
-        final List<String> list = new RexSlot.SelfPopulatingList( "$", 30 );
+        final List<String> list = new SelfPopulatingList( "$", 30 );
         final String s = list.get( 30 );
         assertThat( s, is( "$30" ) );
     }
@@ -341,6 +330,7 @@ public class RexExecutorTest {
     interface Action {
 
         void check( RexBuilder rexBuilder, RexExecutorImpl executor );
+
     }
 
 
@@ -414,6 +404,8 @@ public class RexExecutorTest {
         public List<Map<Long, Object>> getParameterValues() {
             throw new UnsupportedOperationException();
         }
+
     }
+
 }
 

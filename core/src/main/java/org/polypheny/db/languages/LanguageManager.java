@@ -74,8 +74,6 @@ public abstract class LanguageManager {
 
     public abstract Validator createValidator( QueryLanguage language, Context context, PolyphenyDbCatalogReader catalogReader );
 
-    public abstract Operator createSpecialOperator( String get, Kind otherFunction );
-
     public abstract NodeToRelConverter createToRelConverter( QueryLanguage sql,
             ViewExpander polyphenyDbPreparingStmt,
             Validator validator,

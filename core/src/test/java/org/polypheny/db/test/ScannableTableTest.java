@@ -418,7 +418,7 @@ public class ScannableTableTest {
             final RexNode node = filterIter.next();
             if ( cooperative
                     && node instanceof RexCall
-                    && ((RexCall) node).getOperator() == StdOperatorRegistry.get( " EQUALS
+                    && ((RexCall) node).getOperator() == StdOperatorRegistry.get( "EQUALS" )
                     && ((RexCall) node).getOperands().get( 0 ) instanceof RexInputRef
                     && ((RexInputRef) ((RexCall) node).getOperands().get( 0 )).getIndex() == 0
                     && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ){
