@@ -17,26 +17,33 @@
 package org.polypheny.db.languages.core;
 
 import com.google.common.collect.ImmutableList;
+import java.io.Reader;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;
+import org.polypheny.db.languages.sql.fun.SqlRegisterer;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
+import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
+import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.tools.Frameworks.ConfigBuilder;
 import org.polypheny.db.tools.Frameworks.StdFrameworkConfig;
 import org.polypheny.db.tools.Program;
+import org.polypheny.db.util.SourceStringReader;
 
 public class MockConfigBuilder {
 
 
     public static ConfigBuilder build() {
-        RexConvertletTable convertletTable = LanguageManager.getInstance().getStandardConvertlet();
-        OperatorTable operatorTable = LanguageManager.getInstance().getStdOperatorTable();
+        new SqlRegisterer();
+        RexConvertletTable convertletTable = StandardConvertletTable.INSTANCE;
+        OperatorTable operatorTable = SqlStdOperatorTable.instance();
         ImmutableList<Program> programs = ImmutableList.of();
-        ParserConfig parserConfig = ParserConfig.DEFAULT;
+        ParserConfig parserConfig = mockParserConfig().build();
         Config sqlToRelConverterConfig = Config.DEFAULT;
         RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
         return new ConfigBuilder( new StdFrameworkConfig( null,
@@ -56,7 +63,31 @@ public class MockConfigBuilder {
 
 
     public static Parser.ConfigBuilder mockParserConfig() {
-        return Parser.createTestingConfig( SqlParserImpl.FACTORY );
+        new SqlRegisterer();
+        return new Parser.ConfigBuilder( SqlParserImpl.FACTORY );
+    }
+
+
+    public static SqlParser createMockParser( String query ) {
+        return createMockParser( query, mockParserConfig().build() );
+    }
+
+
+    public static SqlParser createMockParser( Reader reader ) {
+        return createMockParser( reader, mockParserConfig().build() );
+    }
+
+
+    public static SqlParser createMockParser( String query, ParserConfig config ) {
+        return createMockParser( new SourceStringReader( query ), config );
+    }
+
+
+    public static SqlParser createMockParser( Reader reader, ParserConfig config ) {
+        new SqlRegisterer();
+        SqlAbstractParserImpl parser = (SqlAbstractParserImpl) SqlParserImpl.FACTORY.getParser( reader );
+
+        return new SqlParser( parser, config );
     }
 
 

@@ -31,11 +31,11 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.core.DiffRepository;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.test.DiffRepository;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 

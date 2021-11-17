@@ -24,13 +24,13 @@ import java.io.StringWriter;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.core.NodeParseException;
-import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.core.DiffRepository;
+import org.polypheny.db.languages.core.MockConfigBuilder;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.test.DiffRepository;
 import org.polypheny.db.util.Litmus;
 
 
@@ -59,7 +59,7 @@ public class SqlPrettyWriterTest {
     protected SqlNode parseQuery( String sql ) {
         SqlNode node;
         try {
-            node = (SqlNode) Parser.create( sql ).parseQuery();
+            node = (SqlNode) MockConfigBuilder.createMockParser( sql ).parseQuery();
         } catch ( NodeParseException e ) {
             String message = "Received error while parsing SQL '" + sql + "'; error is:" + NL + e.toString();
             throw new AssertionError( message );

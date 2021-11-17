@@ -33,8 +33,8 @@ import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.MockSqlOperatorTable;
-import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.core.MockConfigBuilder;
 import org.polypheny.db.languages.sql.advise.SqlAdvisor;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -105,12 +105,12 @@ public class SqlTestFactory {
 
 
     public SqlParser createParser( String sql ) {
-        return (SqlParser) Parser.create( new SourceStringReader( sql ), parserConfig.get() );
+        return MockConfigBuilder.createMockParser( new SourceStringReader( sql ), parserConfig.get() );
     }
 
 
     public static ParserConfig createParserConfig( ImmutableMap<String, Object> options ) {
-        return Parser.configBuilder()
+        return MockConfigBuilder.mockParserConfig()
                 .setQuoting( (Quoting) options.get( "quoting" ) )
                 .setUnquotedCasing( (Casing) options.get( "unquotedCasing" ) )
                 .setQuotedCasing( (Casing) options.get( "quotedCasing" ) )

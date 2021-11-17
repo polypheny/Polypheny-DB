@@ -115,10 +115,6 @@ public interface Parser {
 
     }
 
-    static ConfigBuilder createTestingConfig( ParserFactory parserFactory ) {
-        return new ConfigBuilder( parserFactory );
-    }
-
     /**
      * Builder for a {@link ParserConfig}.
      */
@@ -133,7 +129,7 @@ public interface Parser {
         private ParserFactory parserFactory = null;
 
 
-        private ConfigBuilder( ParserFactory parserFactory ) {
+        public ConfigBuilder( ParserFactory parserFactory ) {
             this.parserFactory = parserFactory;
         }
 

@@ -38,6 +38,7 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests" )
 
     testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
 }
 
 
@@ -138,7 +139,21 @@ jar {
         attributes "Version": "$project.version"
     }
 }
-java {
-    withJavadocJar()
-    withSourcesJar()
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier "sources"
+    from sourceSets.main.allSource
+}
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier "javadoc"
+    from javadoc.destinationDir
+}
+task testJar(type: Jar, dependsOn: testClasses) {
+    classifier 'tests'
+    from sourceSets.test.output
+}
+artifacts {
+    //archives jar // regular jar containing only the compiled source
+    archives sourcesJar // jar file containing the java doc files
+    archives javadocJar // jar file containing the source files
+    tests testJar // jar file containing the test classes
 }

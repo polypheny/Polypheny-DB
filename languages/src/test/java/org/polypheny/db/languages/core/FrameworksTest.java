@@ -48,7 +48,6 @@ import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
@@ -317,7 +316,7 @@ public class FrameworksTest {
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( RelDistributionTraitDef.INSTANCE );
         ParserConfig parserConfig =
-                Parser.configBuilder( ParserConfig.DEFAULT )
+                MockConfigBuilder.mockParserConfig()
                         .setCaseSensitive( false )
                         .build();
 

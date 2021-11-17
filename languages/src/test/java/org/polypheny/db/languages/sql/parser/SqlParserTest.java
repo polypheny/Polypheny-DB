@@ -54,7 +54,8 @@ import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeParseException;
-import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.core.DiffTestCase;
+import org.polypheny.db.languages.core.MockConfigBuilder;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSetOption;
@@ -63,7 +64,6 @@ import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase;
-import org.polypheny.db.test.DiffTestCase;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.SourceStringReader;
@@ -614,8 +614,9 @@ public class SqlParserTest {
 
 
     protected SqlParser getSqlParser( Reader source ) {
-        return (SqlParser) Parser.create( source,
-                Parser.configBuilder()
+        return MockConfigBuilder.createMockParser( source,
+                MockConfigBuilder
+                        .mockParserConfig()
                         .setParserFactory( parserImplFactory() )
                         .setQuoting( quoting )
                         .setUnquotedCasing( unquotedCasing )

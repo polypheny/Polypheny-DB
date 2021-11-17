@@ -113,7 +113,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * If true, the planner keeps applying rules as long as they continue to reduce the cost. If false, the planner
      * terminates as soon as it has found any implementation, no matter how expensive.
      */
-    protected boolean ambitious = true;
+    public boolean ambitious = true;
 
     /**
      * If true, and if {@link #ambitious} is true, the planner waits a finite number of iterations for the cost to improve.

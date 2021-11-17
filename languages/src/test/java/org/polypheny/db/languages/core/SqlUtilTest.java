@@ -16,14 +16,18 @@
 
 package org.polypheny.db.languages.core;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.Timestamp;
+import java.util.Arrays;
 import org.junit.Test;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.languages.sql.util.SqlBuilder;
 import org.polypheny.db.languages.sql.util.SqlString;
+import org.polypheny.db.util.Util;
 
 public class SqlUtilTest {
 
@@ -31,7 +35,7 @@ public class SqlUtilTest {
      * Tests SQL builders.
      */
     @Test
-    public static void testSqlBuilder() {
+    public void testSqlBuilder() {
         final SqlBuilder buf = new SqlBuilder( PolyphenyDbSqlDialect.DEFAULT );
         assertEquals( 0, buf.length() );
         buf.append( "select " );
@@ -68,6 +72,40 @@ public class SqlUtilTest {
         assertEquals( 2, buf.indexOf( "l" ) );
         assertEquals( -1, buf.indexOf( "z" ) );
         assertEquals( 9, buf.indexOf( "l", 5 ) );
+    }
+
+
+    /**
+     * Tests the difference engine, {@link DiffTestCase#diff}.
+     */
+    @Test
+    public void testDiffLines() {
+        String[] before = {
+                "Get a dose of her in jackboots and kilt",
+                "She's killer-diller when she's dressed to the hilt",
+                "She's the kind of a girl that makes The News of The World",
+                "Yes you could say she was attractively built.",
+                "Yeah yeah yeah."
+        };
+        String[] after = {
+                "Get a dose of her in jackboots and kilt",
+                "(they call her \"Polythene Pam\")",
+                "She's killer-diller when she's dressed to the hilt",
+                "She's the kind of a girl that makes The Sunday Times",
+                "seem more interesting.",
+                "Yes you could say she was attractively built."
+        };
+        String diff = DiffTestCase.diffLines( Arrays.asList( before ), Arrays.asList( after ) );
+        assertThat( Util.toLinux( diff ),
+                equalTo( "1a2\n"
+                        + "> (they call her \"Polythene Pam\")\n"
+                        + "3c4,5\n"
+                        + "< She's the kind of a girl that makes The News of The World\n"
+                        + "---\n"
+                        + "> She's the kind of a girl that makes The Sunday Times\n"
+                        + "> seem more interesting.\n"
+                        + "5d6\n"
+                        + "< Yeah yeah yeah.\n" ) );
     }
 
 }

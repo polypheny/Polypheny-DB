@@ -39,7 +39,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -95,22 +94,6 @@ public class RexBuilderTest {
         RexNode ensuredNode = builder.ensureType( typeFactory.createPolyType( PolyType.BOOLEAN ), node, true );
 
         assertEquals( node, ensuredNode );
-    }
-
-
-    /**
-     * Test RexBuilder.ensureType()
-     */
-    @Test
-    public void testEnsureTypeWithDifference() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        RexBuilder builder = new RexBuilder( typeFactory );
-
-        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
-        RexNode ensuredNode = builder.ensureType( typeFactory.createPolyType( PolyType.INTEGER ), node, true );
-
-        assertNotEquals( node, ensuredNode );
-        assertEquals( ensuredNode.getType(), typeFactory.createPolyType( PolyType.INTEGER ) );
     }
 
 

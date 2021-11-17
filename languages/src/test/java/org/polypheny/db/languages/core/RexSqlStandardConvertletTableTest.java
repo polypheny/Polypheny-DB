@@ -26,7 +26,6 @@ import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.rex.RexSqlStandardConvertletTable;
 import org.polypheny.db.languages.rex.RexToSqlNodeConverter;
 import org.polypheny.db.languages.rex.RexToSqlNodeConverterImpl;
@@ -85,7 +84,7 @@ public class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
         PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( "" );
         final FrameworkConfig config = MockConfigBuilder.build()
                 .defaultSchema( rootSchema.plus() )
-                .parserConfig( Parser.configBuilder().build() )
+                .parserConfig( MockConfigBuilder.mockParserConfig().build() )
                 .prepareContext( new ContextImpl(
                         rootSchema,
                         new SlimDataContext() {

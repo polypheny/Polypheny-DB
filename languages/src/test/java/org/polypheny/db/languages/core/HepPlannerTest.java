@@ -41,7 +41,6 @@ import org.polypheny.db.rel.rules.ProjectRemoveRule;
 import org.polypheny.db.rel.rules.ProjectToCalcRule;
 import org.polypheny.db.rel.rules.ReduceExpressionsRule;
 import org.polypheny.db.rel.rules.UnionToDistinctRule;
-import org.polypheny.db.test.DiffRepository;
 
 
 /**

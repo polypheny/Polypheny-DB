@@ -43,6 +43,8 @@ import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.core.DiffRepository;
+import org.polypheny.db.languages.core.MockConfigBuilder;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -73,7 +75,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.test.DiffRepository;
 import org.polypheny.db.test.MockRelOptPlanner;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -713,8 +714,8 @@ public abstract class SqlToRelTestBase {
 
         @Override
         public SqlNode parseQuery( String sql ) throws Exception {
-            final ParserConfig sqlParserConfig = Parser.configBuilder().setConformance( getConformance() ).build();
-            Parser parser = Parser.create( sql, sqlParserConfig );
+            final ParserConfig sqlParserConfig = MockConfigBuilder.mockParserConfig().setConformance( getConformance() ).build();
+            Parser parser = MockConfigBuilder.createMockParser( sql, sqlParserConfig );
             return (SqlNode) parser.parseQuery();
         }
 

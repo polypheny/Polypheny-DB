@@ -47,7 +47,6 @@ import org.polypheny.db.rel.metadata.DefaultRelMetadataProvider;
 import org.polypheny.db.rel.metadata.RelMetadataProvider;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.test.DiffRepository;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.util.Closer;
 
