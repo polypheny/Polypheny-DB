@@ -312,9 +312,7 @@ public class CottontailStore extends DataStore {
 
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), catalogTable.id );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
-
-        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogTable.id );
-
+        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogTable.id );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
             //Since only one partition is available
@@ -333,7 +331,7 @@ public class CottontailStore extends DataStore {
                     .build();
 
             final CreateEntityMessage message = CreateEntityMessage.newBuilder()
-                    .setMetadata( Metadata.newBuilder().setTransactionId(txId).build() )
+                    .setMetadata( Metadata.newBuilder().setTransactionId(txId) )
                     .setDefinition( EntityDefinition.newBuilder()
                             .setEntity( newTableEntity )
                             .addAllColumns( columns ) ).build();
@@ -353,13 +351,13 @@ public class CottontailStore extends DataStore {
                 defaultValue = null;
                 actualDefaultType = null;
             }
-            CottontailGrpc.Literal defaultData = CottontailTypeUtil.toData( defaultValue, actualDefaultType, null );
-
-            final QueryMessage query = QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ) ).build();
+            final CottontailGrpc.Literal defaultData = CottontailTypeUtil.toData( defaultValue, actualDefaultType, null );
+            final QueryMessage query = QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId) ).setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ) ).build();
             final TupleIterator iterator = this.wrapper.query( query );
-            final List<String> columnNames = iterator.getColumnNames();
+            final List<String> columnNames = iterator.getSimpleNames();
+
             iterator.forEachRemaining( t ->  {
-                final InsertMessage.Builder insert = InsertMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setFrom(
+                final InsertMessage.Builder insert = InsertMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId) ).setFrom(
                     From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ) )
                 );
                 int i = 0;
@@ -377,7 +375,7 @@ public class CottontailStore extends DataStore {
             catalog.updatePartitionPlacementPhysicalNames( getAdapterId(), partitionPlacement.partitionId, partitionPlacement.physicalSchemaName, newPhysicalTableName );
 
             // Delete old table
-            this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setEntity( tableEntity ).build() );
+            this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId) ).setEntity( tableEntity ).build() );
 
         }
         // Update column placement physical table names
@@ -402,14 +400,12 @@ public class CottontailStore extends DataStore {
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), columnPlacement.tableId );
         placements.removeIf( it -> it.columnId == columnPlacement.columnId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
-        CatalogTable catalogTable = catalog.getTable( placements.get( 0 ).tableId );
-
-        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogTable.id );
+        final CatalogTable catalogTable = catalog.getTable( placements.get( 0 ).tableId );
+        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogTable.id );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
             final String currentPhysicalTableName = partitionPlacement.physicalTableName;
-
             final String newPhysicalTableName = CottontailNameUtil.incrementNameRevision( currentPhysicalTableName );
             final String oldPhysicalColumnName = columnPlacement.physicalColumnName;
 
@@ -422,16 +418,16 @@ public class CottontailStore extends DataStore {
                     .setName( newPhysicalTableName )
                     .build();
 
-            final CreateEntityMessage message = CreateEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setDefinition(
+            final CreateEntityMessage message = CreateEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId) ).setDefinition(
                     EntityDefinition.newBuilder().setEntity( newTableEntity ).addAllColumns( columns )
             ).build();
 
             if ( !this.wrapper.createEntityBlocking( message ) ) {
                 throw new RuntimeException( "Unable to create table." );
             }
-            final QueryMessage query =  QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ) ).build();
+            final QueryMessage query =  QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId) ).setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ) ).build();
             final TupleIterator iterator = this.wrapper.query( query );
-            final List<String> columnNames = iterator.getColumnNames();
+            final List<String> columnNames = iterator.getSimpleNames();
 
             /* Determine which column was dropped. */
             int idx = 0;
@@ -445,7 +441,7 @@ public class CottontailStore extends DataStore {
 
             /* Create insert messages for remaining columns- */
             iterator.forEachRemaining( t -> {
-                final InsertMessage.Builder insert = InsertMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ) ) );
+                final InsertMessage.Builder insert = InsertMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId) ).setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ) ) );
                 int i = 0;
                 for ( Literal l : t.getRaw().getDataList() ) {
                     if ( i != droppedIndex ) {
@@ -460,7 +456,7 @@ public class CottontailStore extends DataStore {
             catalog.updatePartitionPlacementPhysicalNames( getAdapterId(), partitionPlacement.partitionId, partitionPlacement.physicalSchemaName, newPhysicalTableName );
 
             // Delete old table
-            this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setEntity( tableEntity ).build() );
+            this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId) ).setEntity( tableEntity ).build() );
         }
 
         // Update column placement physical table names
