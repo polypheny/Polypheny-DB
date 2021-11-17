@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.test.catalog;
+package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;
@@ -40,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.Identifier;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -264,11 +247,11 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                         final RelDataTypeField salField = tableRowType.getFieldList().get( 5 );
                         final List<RexNode> nodes = Arrays.asList(
                                 rexBuilder.makeCall(
-                                        SqlStdOperatorTable.EQUALS,
+                                        StdOperatorRegistry.get( "EQUALS" ),
                                         rexBuilder.makeInputRef( deptnoField.getType(), deptnoField.getIndex() ),
                                         rexBuilder.makeExactLiteral( BigDecimal.valueOf( 20L ), deptnoField.getType() ) ),
                                 rexBuilder.makeCall(
-                                        SqlStdOperatorTable.GREATER_THAN,
+                                        StdOperatorRegistry.get( "GREATER_THAN" ),
                                         rexBuilder.makeInputRef( salField.getType(), salField.getIndex() ),
                                         rexBuilder.makeExactLiteral( BigDecimal.valueOf( 1000L ), salField.getType() ) ) );
                         return RexUtil.composeConjunction( rexBuilder, nodes );
@@ -291,10 +274,10 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                 final RelDataTypeField deptnoField = tableRowType.getFieldList().get( 7 );
                 final RelDataTypeField salField = tableRowType.getFieldList().get( 5 );
                 final List<RexNode> nodes = Arrays.asList(
-                        rexBuilder.makeCall( SqlStdOperatorTable.EQUALS,
+                        rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ),
                                 rexBuilder.makeInputRef( deptnoField.getType(), deptnoField.getIndex() ),
                                 rexBuilder.makeExactLiteral( BigDecimal.valueOf( 20L ), deptnoField.getType() ) ),
-                        rexBuilder.makeCall( SqlStdOperatorTable.GREATER_THAN,
+                        rexBuilder.makeCall( StdOperatorRegistry.get( "GREATER_THAN" ),
                                 rexBuilder.makeInputRef( salField.getType(), salField.getIndex() ),
                                 rexBuilder.makeExactLiteral( BigDecimal.valueOf( 1000L ), salField.getType() ) ) );
                 return RexUtil.composeConjunction( rexBuilder, nodes );
@@ -357,7 +340,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
             @Override
             public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
                 final RelDataTypeField c0Field = tableRowType.getFieldList().get( 4 );
-                return rexBuilder.makeCall( SqlStdOperatorTable.EQUALS,
+                return rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ),
                         rexBuilder.makeInputRef( c0Field.getType(), c0Field.getIndex() ),
                         rexBuilder.makeExactLiteral( BigDecimal.valueOf( 10L ), c0Field.getType() ) );
             }

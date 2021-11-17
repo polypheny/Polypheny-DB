@@ -16,9 +16,9 @@
 
 package org.polypheny.db.languages.mql2rel;
 
+import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.test.catalog.MockCatalog;
 
 
 public class MqlMockCatalog extends MockCatalog {

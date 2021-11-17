@@ -22,11 +22,11 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
-import org.polypheny.db.languages.mql.parser.MqlParseException;
+import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2rel.MqlMockCatalog;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.SourceStringReader;
 
@@ -35,16 +35,16 @@ public abstract class MqlTest {
 
     private static final MqlParserConfig parserConfig;
     @Getter
-    private static final Map<String, SqlOperator> biComparisons;
+    private static final Map<String, Operator> biComparisons;
     @Getter
     private static final Map<String, Kind> logicalOperators;
 
-    public static final SqlOperator eq = MqlStdOperatorTable.DOC_EQ;
-    public static final SqlOperator ne = SqlStdOperatorTable.NOT_EQUALS;
-    public static final SqlOperator gt = MqlStdOperatorTable.DOC_GT;
-    public static final SqlOperator gte = MqlStdOperatorTable.DOC_GTE;
-    public static final SqlOperator lt = MqlStdOperatorTable.DOC_LT;
-    public static final SqlOperator lte = MqlStdOperatorTable.DOC_LTE;
+    public static final Operator eq = MqlStdOperatorTable.DOC_EQ;
+    public static final Operator ne = SqlStdOperatorTable.NOT_EQUALS;
+    public static final Operator gt = MqlStdOperatorTable.DOC_GT;
+    public static final Operator gte = MqlStdOperatorTable.DOC_GTE;
+    public static final Operator lt = MqlStdOperatorTable.DOC_LT;
+    public static final Operator lte = MqlStdOperatorTable.DOC_LTE;
 
 
     static {
@@ -64,8 +64,8 @@ public abstract class MqlTest {
 
         logicalOperators.put( "$and", Kind.AND );
         logicalOperators.put( "$or", Kind.OR );
-        //logicalOperators.put( "nor", Kind.N);
-        //logicalOperators.put( "not", Kind.NOT );
+        // logicalOperators.put( "nor", Kind.N);
+        // logicalOperators.put( "not", Kind.NOT );
     }
 
 
@@ -73,7 +73,7 @@ public abstract class MqlTest {
         final MqlParser parser = MqlParser.create( new SourceStringReader( mql ), parserConfig );
         try {
             return parser.parseStmt();
-        } catch ( MqlParseException e ) {
+        } catch ( NodeParseException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -37,7 +37,7 @@ package org.polypheny.db.test.fuzzer;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -55,31 +55,31 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
 
     private static final Map<SqlOperator, String> OP_METHODS =
             ImmutableMap.<SqlOperator, String>builder()
-                    .put( SqlStdOperatorTable.AND, "and" )
-                    .put( SqlStdOperatorTable.OR, "or" )
-                    .put( SqlStdOperatorTable.CASE, "case_" )
-                    .put( SqlStdOperatorTable.COALESCE, "coalesce" )
-                    .put( SqlStdOperatorTable.IS_NULL, "isNull" )
-                    .put( SqlStdOperatorTable.IS_NOT_NULL, "isNotNull" )
-                    .put( SqlStdOperatorTable.IS_UNKNOWN, "isUnknown" )
-                    .put( SqlStdOperatorTable.IS_TRUE, "isTrue" )
-                    .put( SqlStdOperatorTable.IS_NOT_TRUE, "isNotTrue" )
-                    .put( SqlStdOperatorTable.IS_FALSE, "isFalse" )
-                    .put( SqlStdOperatorTable.IS_NOT_FALSE, "isNotFalse" )
-                    .put( SqlStdOperatorTable.IS_DISTINCT_FROM, "isDistinctFrom" )
-                    .put( SqlStdOperatorTable.IS_NOT_DISTINCT_FROM, "isNotDistinctFrom" )
-                    .put( SqlStdOperatorTable.NULLIF, "nullIf" )
-                    .put( SqlStdOperatorTable.NOT, "not" )
-                    .put( SqlStdOperatorTable.GREATER_THAN, "gt" )
-                    .put( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, "ge" )
-                    .put( SqlStdOperatorTable.LESS_THAN, "lt" )
-                    .put( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, "le" )
-                    .put( SqlStdOperatorTable.EQUALS, "eq" )
-                    .put( SqlStdOperatorTable.NOT_EQUALS, "ne" )
-                    .put( SqlStdOperatorTable.PLUS, "plus" )
-                    .put( SqlStdOperatorTable.UNARY_PLUS, "unaryPlus" )
-                    .put( SqlStdOperatorTable.MINUS, "sub" )
-                    .put( SqlStdOperatorTable.UNARY_MINUS, "unaryMinus" )
+                    .put( StdOperatorRegistry.get( "AND" ), "and" )
+                    .put( StdOperatorRegistry.get( "OR" ), "or" )
+                    .put( StdOperatorRegistry.get( "CASE" ), "case_" )
+                    .put( StdOperatorRegistry.get( "COALESCE" ), "coalesce" )
+                    .put( StdOperatorRegistry.get( "IS_NULL" ), "isNull" )
+                    .put( StdOperatorRegistry.get( "IS_NOT_NULL" ), "isNotNull" )
+                    .put( StdOperatorRegistry.get( "IS_UNKNOWN" ), "isUnknown" )
+                    .put( StdOperatorRegistry.get( "IS_TRUE" ), "isTrue" )
+                    .put( StdOperatorRegistry.get( "IS_NOT_TRUE" ), "isNotTrue" )
+                    .put( StdOperatorRegistry.get( "IS_FALSE" ), "isFalse" )
+                    .put( StdOperatorRegistry.get( "IS_NOT_FALSE" ), "isNotFalse" )
+                    .put( StdOperatorRegistry.get( "IS_DISTINCT_FROM" ), "isDistinctFrom" )
+                    .put( StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ), "isNotDistinctFrom" )
+                    .put( StdOperatorRegistry.get( "NULLIF" ), "nullIf" )
+                    .put( StdOperatorRegistry.get( "NOT" ), "not" )
+                    .put( StdOperatorRegistry.get( "GREATER_THAN" ), "gt" )
+                    .put( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ), "ge" )
+                    .put( StdOperatorRegistry.get( "LESS_THAN" ), "lt" )
+                    .put( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ), "le" )
+                    .put( StdOperatorRegistry.get( "EQUALS" ), "eq" )
+                    .put( StdOperatorRegistry.get( "NOT_EQUALS" ), "ne" )
+                    .put( StdOperatorRegistry.get( "PLUS" ), "plus" )
+                    .put( StdOperatorRegistry.get( "UNARY_PLUS" ), "unaryPlus" )
+                    .put( StdOperatorRegistry.get( "MINUS" ), "sub" )
+                    .put( StdOperatorRegistry.get( "UNARY_MINUS" ), "unaryMinus" )
                     .build();
 
 

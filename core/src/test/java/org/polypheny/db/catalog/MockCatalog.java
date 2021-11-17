@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.catalog;
+package org.polypheny.db.catalog;
 
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.NotImplementedException;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;

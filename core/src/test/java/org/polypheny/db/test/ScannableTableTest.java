@@ -49,7 +49,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
@@ -418,10 +418,10 @@ public class ScannableTableTest {
             final RexNode node = filterIter.next();
             if ( cooperative
                     && node instanceof RexCall
-                    && ((RexCall) node).getOperator() == SqlStdOperatorTable.EQUALS
+                    && ((RexCall) node).getOperator() == StdOperatorRegistry.get( " EQUALS
                     && ((RexCall) node).getOperands().get( 0 ) instanceof RexInputRef
                     && ((RexInputRef) ((RexCall) node).getOperands().get( 0 )).getIndex() == 0
-                    && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ) {
+                    && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ){
                 final RexNode op1 = ((RexCall) node).getOperands().get( 1 );
                 filterIter.remove();
                 return ((BigDecimal) ((RexLiteral) op1).getValue()).intValue();

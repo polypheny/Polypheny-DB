@@ -53,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -153,15 +153,15 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
 
     private void nestedCalls( RexNode arg ) {
         SqlOperator[] operators = {
-                SqlStdOperatorTable.NOT,
-                SqlStdOperatorTable.IS_FALSE,
-                SqlStdOperatorTable.IS_NOT_FALSE,
-                SqlStdOperatorTable.IS_TRUE,
-                SqlStdOperatorTable.IS_NOT_TRUE,
-                SqlStdOperatorTable.IS_NULL,
-                SqlStdOperatorTable.IS_NOT_NULL,
-                SqlStdOperatorTable.IS_UNKNOWN,
-                SqlStdOperatorTable.IS_NOT_UNKNOWN
+                StdOperatorRegistry.get( "NOT" ),
+                StdOperatorRegistry.get( "IS_FALSE" ),
+                StdOperatorRegistry.get( "IS_NOT_FALSE" ),
+                StdOperatorRegistry.get( "IS_TRUE" ),
+                StdOperatorRegistry.get( "IS_NOT_TRUE" ),
+                StdOperatorRegistry.get( "IS_NULL" ),
+                StdOperatorRegistry.get( "IS_NOT_NULL" ),
+                StdOperatorRegistry.get( "IS_UNKNOWN" ),
+                StdOperatorRegistry.get( "IS_NOT_UNKNOWN" )
         };
         for ( SqlOperator op1 : operators ) {
             RexNode n1 = rexBuilder.makeCall( op1, arg );

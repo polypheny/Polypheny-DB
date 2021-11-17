@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.catalog.MockCatalogReader;
+import org.polypheny.db.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.OperatorTable;
@@ -41,8 +43,6 @@ import org.polypheny.db.languages.sql.validate.SqlValidatorWithHints;
 import org.polypheny.db.rel.type.DelegatingTypeSystem;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.test.catalog.MockCatalogReader;
-import org.polypheny.db.test.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.util.SourceStringReader;
 
 

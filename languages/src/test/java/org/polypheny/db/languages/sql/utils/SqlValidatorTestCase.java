@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
+import org.polypheny.db.catalog.MockCatalogReaderExtended;
 import org.polypheny.db.core.Collation.Coercibility;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
@@ -34,7 +35,6 @@ import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.test.catalog.MockCatalogReaderExtended;
 
 
 /**

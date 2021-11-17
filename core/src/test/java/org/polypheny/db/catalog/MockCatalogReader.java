@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.catalog;
+package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;

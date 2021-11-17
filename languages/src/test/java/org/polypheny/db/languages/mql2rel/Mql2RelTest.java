@@ -16,6 +16,8 @@
 
 package org.polypheny.db.languages.mql2rel;
 
+import org.polypheny.db.catalog.MockCatalogReader;
+import org.polypheny.db.catalog.MockCatalogReaderDocument;
 import org.polypheny.db.languages.mql.MqlTest;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
@@ -24,8 +26,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.test.MockRelOptPlanner;
-import org.polypheny.db.test.catalog.MockCatalogReader;
-import org.polypheny.db.test.catalog.MockCatalogReaderDocument;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.catalog;
+package org.polypheny.db.catalog;
 
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;

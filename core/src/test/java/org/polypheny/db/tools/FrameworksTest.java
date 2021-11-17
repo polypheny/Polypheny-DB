@@ -41,7 +41,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -122,7 +122,7 @@ public class FrameworksTest {
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
                     final RexNode condition =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.GREATER_THAN,
+                                    StdOperatorRegistry.get( "GREATER_THAN" ),
                                     rexBuilder.makeFieldAccess( rexBuilder.makeRangeReference( tableRel ), "i", true ),
                                     rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
                     final LogicalFilter filter = LogicalFilter.create( tableRel, condition );
@@ -215,7 +215,7 @@ public class FrameworksTest {
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.DECIMAL, 30, 2 );
                         final RexLiteral literal = cluster.getRexBuilder().makeExactLiteral( BigDecimal.ONE, type );
-                        final RexNode call = cluster.getRexBuilder().makeCall( SqlStdOperatorTable.PLUS, literal, literal );
+                        final RexNode call = cluster.getRexBuilder().makeCall( StdOperatorRegistry.get( "PLUS" ), literal, literal );
                         assertEquals( expected, call.getType().getPrecision() );
                         return null;
                     }
