@@ -19,6 +19,7 @@ package org.polypheny.db.core;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.Function.FunctionType;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -27,6 +28,11 @@ import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Litmus;
 
 public abstract class Operator {
+
+    public FunctionType getFunctionType() {
+        return FunctionType.OTHER;
+    }
+
 
     public static final String NL = System.getProperty( "line.separator" );
     /**

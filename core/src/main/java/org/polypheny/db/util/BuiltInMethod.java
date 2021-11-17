@@ -128,13 +128,14 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.type.PolyType;
 
 
 /**
  * Built-in methods.
  */
 public enum BuiltInMethod {
-    //PARSE_ARRAY_FROM_TEXT( LanguageManager.getInstance().getArrayValueConstructorClass(), "reparse", PolyType.class, Long.class, String.class ),
+    PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
     QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),

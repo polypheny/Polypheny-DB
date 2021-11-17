@@ -18,7 +18,6 @@ package org.polypheny.db.document.rules;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.core.Function;
 import org.polypheny.db.core.Function.FunctionType;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
@@ -77,9 +76,9 @@ public class DocumentRules {
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
             if ( operator.kind == Kind.JSON_VALUE_EXPRESSION
-                    || ((Function) operator).getFunctionType() == FunctionType.JSON_VALUE
+                    || operator.getFunctionType() == FunctionType.JSON_VALUE
                     || operator.kind == Kind.JSON_API_COMMON_SYNTAX
-                    || ((Function) operator).getFunctionType() == FunctionType.DOC_EQUAL ) {
+                    || operator.getFunctionType() == FunctionType.DOC_EQUAL ) {
                 containsJson = true;
             }
             return super.visitCall( call );

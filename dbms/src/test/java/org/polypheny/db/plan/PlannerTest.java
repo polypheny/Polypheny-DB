@@ -62,27 +62,27 @@ import org.polypheny.db.adapter.jdbc.JdbcImplementor;
 import org.polypheny.db.adapter.jdbc.JdbcRel;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.Call;
 import org.polypheny.db.core.ChainedOperatorTable;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.interpreter.Node;
+import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -1188,7 +1188,7 @@ public class PlannerTest {
 
 
         @Override
-        public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+        public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
             // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
             if ( call.isCountStar() ) {
                 return validator.getTypeFactory().createPolyType( PolyType.BIGINT );

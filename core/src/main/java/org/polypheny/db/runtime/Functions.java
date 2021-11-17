@@ -54,6 +54,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -105,6 +106,8 @@ import org.polypheny.db.core.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.core.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists.ComparableList;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Static;
@@ -124,6 +127,8 @@ import org.polypheny.db.util.TimestampWithTimeZoneString;
 @Deterministic
 @Slf4j
 public class Functions {
+
+    private static final Gson gson = new Gson();
 
     private static final DecimalFormat DOUBLE_FORMAT = NumberUtil.decimalFormat( "0.0E0" );
 
@@ -2881,6 +2886,15 @@ public class Functions {
             return null;
         }
         return item( object, index );
+    }
+
+
+    public static Object reparse( PolyType innerType, Long dimension, String stringValue ) {
+        Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
+        if ( stringValue == null ) {
+            return null;
+        }
+        return gson.fromJson( stringValue.trim(), conversionType );
     }
 
 

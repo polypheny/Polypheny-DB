@@ -47,7 +47,6 @@ import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.fun.OracleSqlOperatorTable;
-import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlBitOpAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlMinMaxAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlRegisterer;
@@ -338,12 +337,6 @@ public class LanguageManagerImpl extends LanguageManager {
             List<RelDataType> paramTypes,
             TableFunction function ) {
         return new SqlUserDefinedTableFunction( (SqlIdentifier) name, ReturnTypes.CURSOR, explicit, typeChecker, paramTypes, function );
-    }
-
-
-    @Override
-    public Class<?> getArrayValueConstructorClass() {
-        return SqlArrayValueConstructor.class;
     }
 
 
