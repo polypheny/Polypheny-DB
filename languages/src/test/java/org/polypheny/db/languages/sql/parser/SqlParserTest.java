@@ -49,17 +49,20 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlSetOption;
-import org.polypheny.db.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.parser.impl.SqlParserImpl;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.utils.SqlValidatorTestCase;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
+import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Node;
+import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlSetOption;
+import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
+import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
+import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase;
 import org.polypheny.db.test.DiffTestCase;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ConversionUtil;
@@ -571,7 +574,7 @@ public class SqlParserTest {
     private Quoting quoting = Quoting.DOUBLE_QUOTE;
     private Casing unquotedCasing = Casing.TO_UPPER;
     private Casing quotedCasing = Casing.UNCHANGED;
-    private SqlConformance conformance = SqlConformanceEnum.DEFAULT;
+    private Conformance conformance = ConformanceEnum.DEFAULT;
     /**
      * Similar to the null dialect in SqlNode.toSqlString(), but it claims to be able to parse nested arrays, which is needed for some of the tests
      */
@@ -611,8 +614,8 @@ public class SqlParserTest {
 
 
     protected SqlParser getSqlParser( Reader source ) {
-        return SqlParser.create( source,
-                SqlParser.configBuilder()
+        return (SqlParser) Parser.create( source,
+                Parser.configBuilder()
                         .setParserFactory( parserImplFactory() )
                         .setQuoting( quoting )
                         .setUnquotedCasing( unquotedCasing )
@@ -648,8 +651,8 @@ public class SqlParserTest {
     /**
      * Returns a {@link Matcher} that succeeds if the given {@link SqlNode} is a DDL statement.
      */
-    public static Matcher<SqlNode> isDdl() {
-        return new BaseMatcher<SqlNode>() {
+    public static Matcher<Node> isDdl() {
+        return new BaseMatcher<Node>() {
             @Override
             public boolean matches( Object item ) {
                 return item instanceof SqlNode && Kind.DDL.contains( ((SqlNode) item).getKind() );
@@ -1061,39 +1064,39 @@ public class SqlParserTest {
                         + "FROM `SALES`.`DEPTS`) AS `T`" );
 
         // Conformance DEFAULT and LENIENT support explicit row value constructor
-        conformance = SqlConformanceEnum.DEFAULT;
+        conformance = ConformanceEnum.DEFAULT;
         final String selectRow = "select ^row(t1a, t2a)^ from t1";
         final String expected = "SELECT (ROW(`T1A`, `T2A`))\n" + "FROM `T1`";
         sql( selectRow ).sansCarets().ok( expected );
-        conformance = SqlConformanceEnum.LENIENT;
+        conformance = ConformanceEnum.LENIENT;
         sql( selectRow ).sansCarets().ok( expected );
 
         final String pattern = "ROW expression encountered in illegal context";
-        conformance = SqlConformanceEnum.MYSQL_5;
+        conformance = ConformanceEnum.MYSQL_5;
         sql( selectRow ).fails( pattern );
-        conformance = SqlConformanceEnum.ORACLE_12;
+        conformance = ConformanceEnum.ORACLE_12;
         sql( selectRow ).fails( pattern );
-        conformance = SqlConformanceEnum.STRICT_2003;
+        conformance = ConformanceEnum.STRICT_2003;
         sql( selectRow ).fails( pattern );
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         sql( selectRow ).fails( pattern );
 
         final String whereRow = "select 1 from t2 where ^row (x, y)^ < row (a, b)";
         final String whereExpected = "SELECT 1\n"
                 + "FROM `T2`\n"
                 + "WHERE ((ROW(`X`, `Y`)) < (ROW(`A`, `B`)))";
-        conformance = SqlConformanceEnum.DEFAULT;
+        conformance = ConformanceEnum.DEFAULT;
         sql( whereRow ).sansCarets().ok( whereExpected );
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         sql( whereRow ).fails( pattern );
 
         final String whereRow2 = "select 1 from t2 where ^(x, y)^ < (a, b)";
-        conformance = SqlConformanceEnum.DEFAULT;
+        conformance = ConformanceEnum.DEFAULT;
         sql( whereRow2 ).sansCarets().ok( whereExpected );
 
         // After this point, SqlUnparserTest has problems. We generate ROW in a dialect that does not allow ROW in all contexts. So bail out.
         assumeFalse( isUnparserTest() );
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         sql( whereRow2 ).sansCarets().ok( whereExpected );
     }
 
@@ -2140,7 +2143,7 @@ public class SqlParserTest {
         final String sql = "select col1 from table1 MINUS select col1 from table2";
         sql( sql ).fails( pattern );
 
-        conformance = SqlConformanceEnum.ORACLE_10;
+        conformance = ConformanceEnum.ORACLE_10;
         final String expected = "(SELECT `COL1`\n"
                 + "FROM `TABLE1`\n"
                 + "EXCEPT\n"
@@ -2370,17 +2373,17 @@ public class SqlParserTest {
                 + "cross apply table(ramp(deptno)) as t(a)";
         sql( sql ).fails( pattern );
 
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         final String expected = "SELECT *\n"
                 + "FROM `DEPT`\n"
                 + "CROSS JOIN LATERAL TABLE(`RAMP`(`DEPTNO`)) AS `T` (`A`)";
         sql( sql ).ok( expected );
 
         // Supported in Oracle 12 but not Oracle 10
-        conformance = SqlConformanceEnum.ORACLE_10;
+        conformance = ConformanceEnum.ORACLE_10;
         sql( sql ).fails( pattern );
 
-        conformance = SqlConformanceEnum.ORACLE_12;
+        conformance = ConformanceEnum.ORACLE_12;
         sql( sql ).ok( expected );
     }
 
@@ -2390,7 +2393,7 @@ public class SqlParserTest {
      */
     @Test
     public void testOuterApply() {
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         final String sql = "select * from dept outer apply table(ramp(deptno))";
         final String expected = "SELECT *\n"
                 + "FROM `DEPT`\n"
@@ -2401,7 +2404,7 @@ public class SqlParserTest {
 
     @Test
     public void testOuterApplySubQuery() {
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         final String sql = "select * from dept\n"
                 + "outer apply (select * from emp where emp.deptno = dept.deptno)";
         final String expected = "SELECT *\n"
@@ -2415,7 +2418,7 @@ public class SqlParserTest {
 
     @Test
     public void testOuterApplyValues() {
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         final String sql = "select * from dept\n"
                 + "outer apply (select * from emp where emp.deptno = dept.deptno)";
         final String expected = "SELECT *\n"
@@ -2432,7 +2435,7 @@ public class SqlParserTest {
      */
     @Test
     public void testOuterApplyFunctionFails() {
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         final String sql = "select * from dept outer apply ramp(deptno^)^)";
         sql( sql ).fails( "(?s).*Encountered \"\\)\" at .*" );
     }
@@ -2440,7 +2443,7 @@ public class SqlParserTest {
 
     @Test
     public void testCrossOuterApply() {
-        conformance = SqlConformanceEnum.SQL_SERVER_2008;
+        conformance = ConformanceEnum.SQL_SERVER_2008;
         final String sql = "select * from dept\n"
                 + "cross apply table(ramp(deptno)) as t(a)\n"
                 + "outer apply table(ramp2(a))";
@@ -2743,7 +2746,7 @@ public class SqlParserTest {
 
     @Test
     public void testLimitStartCount() {
-        conformance = SqlConformanceEnum.DEFAULT;
+        conformance = ConformanceEnum.DEFAULT;
         final String error = "'LIMIT start, count' is not allowed under the current SQL conformance level";
         sql( "select a from foo limit 1,2" ).fails( error );
 
@@ -2757,7 +2760,7 @@ public class SqlParserTest {
                 + "ORDER BY `X`";
         sql( "select a from foo order by x limit all" ).ok( expected1 );
 
-        conformance = SqlConformanceEnum.LENIENT;
+        conformance = ConformanceEnum.LENIENT;
         final String expected2 = "SELECT `A`\n"
                 + "FROM `FOO`\n"
                 + "OFFSET 2 ROWS\n"
@@ -3588,7 +3591,7 @@ public class SqlParserTest {
                 + "(SELECT *\n"
                 + "FROM `EMPS`)";
         sql( "insert into emps(z boolean)(x,y) select * from emps" ).ok( expected );
-        conformance = SqlConformanceEnum.LENIENT;
+        conformance = ConformanceEnum.LENIENT;
         expected = "INSERT INTO `EMPS` EXTEND (`Z` BOOLEAN) (`X`, `Y`, `Z`)\n"
                 + "(SELECT *\n"
                 + "FROM `EMPS`)";
@@ -3631,7 +3634,7 @@ public class SqlParserTest {
                 + "(SELECT *\n"
                 + "FROM `EMPS`)";
         sql( "insert into \"emps\"(\"z\" boolean)(\"x\",\"y\") select * from emps" ).ok( expected );
-        conformance = SqlConformanceEnum.LENIENT;
+        conformance = ConformanceEnum.LENIENT;
         expected = "INSERT INTO `emps` EXTEND (`z` BOOLEAN) (`x`, `y`, `z`)\n"
                 + "(SELECT *\n"
                 + "FROM `EMPS`)";
@@ -5789,7 +5792,7 @@ public class SqlParserTest {
     @Test
     public void testGeometry() {
         checkExpFails( "cast(null as geometry)", "Geo-spatial extensions and the GEOMETRY data type are not enabled" );
-        conformance = SqlConformanceEnum.LENIENT;
+        conformance = ConformanceEnum.LENIENT;
         checkExp( "cast(null as geometry)", "CAST(NULL AS GEOMETRY)" );
     }
 
@@ -6240,8 +6243,8 @@ public class SqlParserTest {
 
 
     @Test
-    public void testSqlOptions() throws SqlParseException {
-        SqlNode node = getSqlParser( "alter system set schema = true" ).parseStmt();
+    public void testSqlOptions() throws NodeParseException {
+        Node node = getSqlParser( "alter system set schema = true" ).parseStmt();
         SqlSetOption opt = (SqlSetOption) node;
         assertThat( opt.getScope(), equalTo( "SYSTEM" ) );
         SqlPrettyWriter writer = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT );
@@ -7276,9 +7279,9 @@ public class SqlParserTest {
     public void testParseWithReader() throws Exception {
         String query = "select * from dual";
         SqlParser sqlParserReader = getSqlParser( new StringReader( query ) );
-        SqlNode node1 = sqlParserReader.parseQuery();
+        Node node1 = sqlParserReader.parseQuery();
         SqlParser sqlParserString = getSqlParser( query );
-        SqlNode node2 = sqlParserString.parseQuery();
+        Node node2 = sqlParserString.parseQuery();
         assertEquals( node2.toString(), node1.toString() );
     }
 
@@ -7296,7 +7299,7 @@ public class SqlParserTest {
 
         void checkExpFails( String sql, String expectedMsgPattern );
 
-        void checkNode( String sql, Matcher<SqlNode> matcher );
+        void checkNode( String sql, Matcher<Node> matcher );
 
     }
 
@@ -7322,8 +7325,8 @@ public class SqlParserTest {
         protected SqlNode parseStmtAndHandleEx( String sql ) {
             final SqlNode sqlNode;
             try {
-                sqlNode = getSqlParser( sql ).parseStmt();
-            } catch ( SqlParseException e ) {
+                sqlNode = (SqlNode) getSqlParser( sql ).parseStmt();
+            } catch ( NodeParseException e ) {
                 throw new RuntimeException( "Error while parsing SQL: " + sql, e );
             }
             return sqlNode;
@@ -7345,7 +7348,7 @@ public class SqlParserTest {
             final SqlNode sqlNode;
             try {
                 sqlNode = getSqlParser( sql ).parseExpression();
-            } catch ( SqlParseException e ) {
+            } catch ( NodeParseException e ) {
                 throw new RuntimeException( "Error while parsing expression: " + sql, e );
             }
             return sqlNode;
@@ -7357,7 +7360,7 @@ public class SqlParserTest {
             SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
             Throwable thrown = null;
             try {
-                final SqlNode sqlNode = getSqlParser( sap.sql ).parseStmt();
+                final Node sqlNode = getSqlParser( sap.sql ).parseStmt();
                 Util.discard( sqlNode );
             } catch ( Throwable ex ) {
                 thrown = ex;
@@ -7368,12 +7371,12 @@ public class SqlParserTest {
 
 
         @Override
-        public void checkNode( String sql, Matcher<SqlNode> matcher ) {
+        public void checkNode( String sql, Matcher<Node> matcher ) {
             SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
             try {
-                final SqlNode sqlNode = getSqlParser( sap.sql ).parseStmt();
+                final Node sqlNode = getSqlParser( sap.sql ).parseStmt();
                 assertThat( sqlNode, matcher );
-            } catch ( SqlParseException e ) {
+            } catch ( NodeParseException e ) {
                 throw new RuntimeException( e );
             }
         }
@@ -7534,7 +7537,7 @@ public class SqlParserTest {
         }
 
 
-        public Sql node( Matcher<SqlNode> matcher ) {
+        public Sql node( Matcher<Node> matcher ) {
             getTester().checkNode( sql, matcher );
             return this;
         }

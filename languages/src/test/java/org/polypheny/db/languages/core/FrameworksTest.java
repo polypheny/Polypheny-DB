@@ -171,7 +171,7 @@ public class FrameworksTest {
      */
     @Test
     public void testTypeSystem() {
-        checkTypeSystem( 19, Frameworks.newConfigBuilder()
+        checkTypeSystem( 19, MockConfigBuilder.build()
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
                         new SlimDataContext() {
@@ -185,7 +185,7 @@ public class FrameworksTest {
                         0,
                         null ) )
                 .build() );
-        checkTypeSystem( 25, Frameworks.newConfigBuilder().typeSystem( HiveLikeTypeSystem.INSTANCE )
+        checkTypeSystem( 25, MockConfigBuilder.build().typeSystem( HiveLikeTypeSystem.INSTANCE )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
                         new SlimDataContext() {
@@ -199,7 +199,7 @@ public class FrameworksTest {
                         0,
                         null ) )
                 .build() );
-        checkTypeSystem( 31, Frameworks.newConfigBuilder().typeSystem( new HiveLikeTypeSystem2() )
+        checkTypeSystem( 31, MockConfigBuilder.build().typeSystem( new HiveLikeTypeSystem2() )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
                         new SlimDataContext() {
@@ -242,7 +242,7 @@ public class FrameworksTest {
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
-        final FrameworkConfig config = Frameworks.newConfigBuilder()
+        final FrameworkConfig config = MockConfigBuilder.build()
                 .defaultSchema( schema )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( schema ),
@@ -277,7 +277,7 @@ public class FrameworksTest {
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
-        final FrameworkConfig config = Frameworks.newConfigBuilder()
+        final FrameworkConfig config = MockConfigBuilder.build()
                 .defaultSchema( schema )
                 .build();
         final Path path = Schemas.path( config.getDefaultSchema() );
@@ -321,7 +321,7 @@ public class FrameworksTest {
                         .setCaseSensitive( false )
                         .build();
 
-        final FrameworkConfig config = Frameworks.newConfigBuilder()
+        final FrameworkConfig config = MockConfigBuilder.build()
                 .parserConfig( parserConfig )
                 .defaultSchema( schema )
                 .traitDefs( traitDefs )

@@ -32,12 +32,12 @@ import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeParseException;
-import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.core.MockConfigBuilder;
 import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
@@ -60,7 +60,7 @@ public class LexCaseSensitiveTest {
 
     private static Planner getPlanner( List<RelTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
-        final FrameworkConfig config = Frameworks.newConfigBuilder()
+        final FrameworkConfig config = MockConfigBuilder.build()
                 .parserConfig( parserConfig )
                 .defaultSchema( schema )
                 .traitDefs( traitDefs )
@@ -84,7 +84,7 @@ public class LexCaseSensitiveTest {
     private static void runProjectQueryWithLex( Lex lex, String sql ) throws NodeParseException, ValidationException, RelConversionException {
         boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
         try {
-            ParserConfig javaLex = Parser.configBuilder().setLex( lex ).build();
+            ParserConfig javaLex = MockConfigBuilder.mockParserConfig().setLex( lex ).build();
             RuntimeConfig.CASE_SENSITIVE.setBoolean( lex.caseSensitive );
             Planner planner = getPlanner( null, javaLex, Programs.ofRules( Programs.RULE_SET ) );
             Node parse = planner.parse( sql );

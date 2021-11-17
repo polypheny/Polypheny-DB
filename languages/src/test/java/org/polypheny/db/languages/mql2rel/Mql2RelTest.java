@@ -18,6 +18,7 @@ package org.polypheny.db.languages.mql2rel;
 
 import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDocument;
+import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.MqlTest;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
@@ -48,7 +49,7 @@ public abstract class Mql2RelTest extends MqlTest {
 
 
     public RelRoot translate( String mql ) {
-        return mqlToRelConverter.convert( parse( mql ), "private" );
+        return mqlToRelConverter.convert( parse( mql ), new MqlQueryParameters( mql, "private" ) );
     }
 
 }

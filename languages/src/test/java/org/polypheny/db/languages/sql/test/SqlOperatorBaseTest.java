@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlAggFunction;
@@ -55,7 +56,6 @@ import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
@@ -296,10 +296,10 @@ public abstract class SqlOperatorBaseTest {
     @Test
     public void testSqlOperatorOverloading() {
         final SqlStdOperatorTable operatorTable = SqlStdOperatorTable.instance();
-        for ( SqlOperator sqlOperator : operatorTable.getOperatorList() ) {
+        for ( Operator sqlOperator : operatorTable.getOperatorList() ) {
             String operatorName = sqlOperator.getName();
-            List<SqlOperator> routines = new ArrayList<>();
-            operatorTable.lookupOperatorOverloads( new SqlIdentifier( operatorName, ParserPos.ZERO ), null, SqlSyntax.fromSyntax( sqlOperator.getSyntax() ), routines );
+            List<Operator> routines = new ArrayList<>();
+            operatorTable.lookupOperatorOverloads( new SqlIdentifier( operatorName, ParserPos.ZERO ), null, sqlOperator.getSyntax(), routines );
 
             routines.removeIf( operator -> !sqlOperator.getClass().isInstance( operator ) );
             assertThat( routines.size(), equalTo( 1 ) );
@@ -7760,7 +7760,7 @@ public abstract class SqlOperatorBaseTest {
         builder.add1( PolyType.VARCHAR, 11, "", " ", "hello world" );
         builder.add1( PolyType.CHAR, 5, "", "e", "hello" );
         builder.add0( PolyType.TIMESTAMP, 0L, DateTimeUtils.MILLIS_PER_DAY );
-        for ( SqlOperator op : SqlStdOperatorTable.instance().getOperatorList() ) {
+        for ( Operator op : SqlStdOperatorTable.instance().getOperatorList() ) {
             switch ( op.getKind() ) {
                 case TRIM: // can't handle the flag argument
                 case EXISTS:
@@ -7770,7 +7770,7 @@ public abstract class SqlOperatorBaseTest {
                 case SPECIAL:
                     continue;
             }
-            final PolyOperandTypeChecker typeChecker = op.getOperandTypeChecker();
+            final PolyOperandTypeChecker typeChecker = ((SqlOperator) op).getOperandTypeChecker();
             if ( typeChecker == null ) {
                 continue;
             }
@@ -7792,7 +7792,7 @@ public abstract class SqlOperatorBaseTest {
                         continue;
                     }
                     final SqlPrettyWriter writer = new SqlPrettyWriter( PolyphenyDbSqlDialect.DEFAULT );
-                    op.unparse( writer, call, 0, 0 );
+                    ((SqlOperator) op).unparse( writer, call, 0, 0 );
                     final String s = writer.toSqlString().toString();
                     if ( s.startsWith( "OVERLAY(" )
                             || s.contains( " / 0" )

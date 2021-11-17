@@ -83,7 +83,7 @@ public class RexExecutorTest {
 
     protected void check( final Action action ) throws Exception {
         PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( "" );
-        FrameworkConfig config = Frameworks.newConfigBuilder()
+        FrameworkConfig config = MockConfigBuilder.build()
                 .defaultSchema( rootSchema.plus() )
                 .prepareContext( new ContextImpl(
                         rootSchema,

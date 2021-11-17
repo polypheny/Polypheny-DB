@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.languages.sql;
+package org.polypheny.db.sql;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -22,8 +22,12 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
+import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.sql.SqlCall;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlSetOption;
 
 
 /**
@@ -33,24 +37,24 @@ public class SqlSetOptionOperatorTest {
 
     @Test
     public void testSqlSetOptionOperatorScopeSet() throws NodeParseException {
-        SqlNode node = parse( "alter system set optionA.optionB.optionC = true" );
+        Node node = parse( "alter system set optionA.optionB.optionC = true" );
         checkSqlSetOptionSame( node );
     }
 
 
-    public SqlNode parse( String s ) throws NodeParseException {
+    public Node parse( String s ) throws NodeParseException {
         return Parser.create( s ).parseStmt();
     }
 
 
     @Test
     public void testSqlSetOptionOperatorScopeReset() throws NodeParseException {
-        SqlNode node = parse( "alter session reset param1.param2.param3" );
+        Node node = parse( "alter session reset param1.param2.param3" );
         checkSqlSetOptionSame( node );
     }
 
 
-    private static void checkSqlSetOptionSame( SqlNode node ) {
+    private static void checkSqlSetOptionSame( Node node ) {
         SqlSetOption opt = (SqlSetOption) node;
         SqlNode[] sqlNodes = new SqlNode[opt.getOperandList().size()];
         SqlCall returned = (SqlCall) opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getPos(), opt.getOperandList().toArray( sqlNodes ) );

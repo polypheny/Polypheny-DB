@@ -153,7 +153,7 @@ public abstract class DateRangeRules {
      * The result is an immutable set in natural order. This is important, because code relies on the collection being sorted (so YEAR comes before MONTH before HOUR) and unique.
      * A predicate on MONTH is not useful if there is no predicate on YEAR. Then when we apply the predicate on DAY it doesn't generate hundreds of ranges we'll later throw away.
      */
-    static ImmutableSortedSet<TimeUnitRange> extractTimeUnits( RexNode e ) {
+    public static ImmutableSortedSet<TimeUnitRange> extractTimeUnits( RexNode e ) {
         try ( ExtractFinder finder = ExtractFinder.THREAD_INSTANCES.get() ) {
             assert finder.timeUnits.isEmpty() && finder.opKinds.isEmpty() : "previous user did not clean up";
             e.accept( finder );

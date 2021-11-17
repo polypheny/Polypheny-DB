@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.parser;
+package org.polypheny.db.languages.sql.parser;
 
 
 import org.junit.Test;
-import org.polypheny.db.languages.sql.parser.SqlParserImplFactory;
-import org.polypheny.db.languages.sql.parser.SqlParserTest;
-import org.polypheny.db.sql.parser.impl.SqlParserImpl;
+import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 
 
 /**

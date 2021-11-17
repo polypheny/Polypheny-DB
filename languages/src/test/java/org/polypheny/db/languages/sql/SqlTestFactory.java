@@ -105,7 +105,7 @@ public class SqlTestFactory {
 
 
     public SqlParser createParser( String sql ) {
-        return Parser.create( new SourceStringReader( sql ), parserConfig.get() );
+        return (SqlParser) Parser.create( new SourceStringReader( sql ), parserConfig.get() );
     }
 
 

@@ -29,9 +29,9 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.languages.mql.MqlTest;
 import org.polypheny.db.languages.mql2rel.Mql2RelTest;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rel.core.Project;
@@ -185,7 +185,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     @Test
     public void testBiComparisons() {
         // some make no sense, maybe fix in the future TODO DL
-        for ( Entry<String, SqlOperator> entry : MqlTest.getBiComparisons().entrySet() ) {
+        for ( Entry<String, Operator> entry : MqlTest.getBiComparisons().entrySet() ) {
             RelRoot root = translate( find( "\"key\": { \"" + entry.getKey() + "\": \"value\"}" ) );
 
             RexCall condition = getConditionTestFilter( root );

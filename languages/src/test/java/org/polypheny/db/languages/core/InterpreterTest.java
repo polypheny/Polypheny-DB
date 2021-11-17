@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.test;
+package org.polypheny.db.languages.core;
 
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -62,6 +45,8 @@ import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.test.ScannableTableTest.BeatlesTable;
+import org.polypheny.db.test.ScannableTableTest.SimpleTable;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
@@ -151,7 +136,7 @@ public class InterpreterTest {
     public void setUp() {
         rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
-        final FrameworkConfig config = Frameworks.newConfigBuilder()
+        final FrameworkConfig config = MockConfigBuilder.build()
                 .parserConfig( ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema )
                 .prepareContext( new ContextImpl(
@@ -254,7 +239,7 @@ public class InterpreterTest {
      */
     @Test
     public void testInterpretScannableTable() throws Exception {
-        rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesTable() );
         Node parse = planner.parse( "select * from \"beatles\" order by \"i\"" );
 
         Node validate = planner.validate( parse );
@@ -267,7 +252,7 @@ public class InterpreterTest {
 
     @Test
     public void testAggregateCount() throws Exception {
-        rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesTable() );
         Node parse = planner.parse( "select  count(*) from \"beatles\"" );
 
         Node validate = planner.validate( parse );
@@ -280,7 +265,7 @@ public class InterpreterTest {
 
     @Test
     public void testAggregateMax() throws Exception {
-        rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesTable() );
         Node parse = planner.parse( "select  max(\"i\") from \"beatles\"" );
 
         Node validate = planner.validate( parse );
@@ -293,7 +278,7 @@ public class InterpreterTest {
 
     @Test
     public void testAggregateMin() throws Exception {
-        rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesTable() );
         Node parse = planner.parse( "select  min(\"i\") from \"beatles\"" );
 
         Node validate = planner.validate( parse );
@@ -306,7 +291,7 @@ public class InterpreterTest {
 
     @Test
     public void testAggregateGroup() throws Exception {
-        rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesTable() );
         Node parse = planner.parse( "select \"j\", count(*) from \"beatles\" group by \"j\"" );
 
         Node validate = planner.validate( parse );
@@ -319,7 +304,7 @@ public class InterpreterTest {
 
     @Test
     public void testAggregateGroupFilter() throws Exception {
-        rootSchema.add( "beatles", new ScannableTableTest.BeatlesTable() );
+        rootSchema.add( "beatles", new BeatlesTable() );
         final String sql = "select \"j\",\n" + "  count(*) filter (where char_length(\"j\") > 4)\n" + "from \"beatles\" group by \"j\"";
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
@@ -335,7 +320,7 @@ public class InterpreterTest {
      */
     @Test
     public void testInterpretSimpleScannableTable() throws Exception {
-        rootSchema.add( "simple", new ScannableTableTest.SimpleTable() );
+        rootSchema.add( "simple", new SimpleTable() );
         Node parse = planner.parse( "select * from \"simple\" limit 2" );
 
         Node validate = planner.validate( parse );
@@ -351,7 +336,7 @@ public class InterpreterTest {
      */
     @Test
     public void testInterpretUnionAll() throws Exception {
-        rootSchema.add( "simple", new ScannableTableTest.SimpleTable() );
+        rootSchema.add( "simple", new SimpleTable() );
         Node parse = planner.parse( "select * from \"simple\"\n" + "union all\n" + "select * from \"simple\"\n" );
 
         Node validate = planner.validate( parse );
@@ -367,7 +352,7 @@ public class InterpreterTest {
      */
     @Test
     public void testInterpretUnion() throws Exception {
-        rootSchema.add( "simple", new ScannableTableTest.SimpleTable() );
+        rootSchema.add( "simple", new SimpleTable() );
         Node parse = planner.parse( "select * from \"simple\"\n" + "union\n" + "select * from \"simple\"\n" );
 
         Node validate = planner.validate( parse );

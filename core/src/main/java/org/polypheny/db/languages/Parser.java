@@ -98,6 +98,7 @@ public interface Parser {
          */
         ParserConfig DEFAULT = configBuilder().build();
 
+
         int identifierMaxLength();
 
         Casing quotedCasing();
@@ -114,6 +115,9 @@ public interface Parser {
 
     }
 
+    static ConfigBuilder createTestingConfig( ParserFactory parserFactory ) {
+        return new ConfigBuilder( parserFactory );
+    }
 
     /**
      * Builder for a {@link ParserConfig}.
@@ -126,10 +130,16 @@ public interface Parser {
         private int identifierMaxLength = DEFAULT_IDENTIFIER_MAX_LENGTH;
         private boolean caseSensitive = Lex.POLYPHENY.caseSensitive;
         private Conformance conformance = ConformanceEnum.LENIENT;
-        private ParserFactory parserFactory = LanguageManager.getInstance().getFactory( QueryLanguage.SQL );
+        private ParserFactory parserFactory = null;
+
+
+        private ConfigBuilder( ParserFactory parserFactory ) {
+            this.parserFactory = parserFactory;
+        }
 
 
         private ConfigBuilder() {
+            parserFactory = LanguageManager.getInstance().getFactory( QueryLanguage.SQL );
         }
 
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.plan;
+package org.polypheny.db.languages.core;
 
 
 import static org.hamcrest.CoreMatchers.is;
@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;

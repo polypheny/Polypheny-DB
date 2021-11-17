@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.test;
+package org.polypheny.db.languages.sql.test;
 
 
 import static org.junit.Assert.assertNotNull;
@@ -36,21 +36,21 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.MethodRule;
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.advise.SqlAdvisor;
-import org.polypheny.db.sql.advise.SqlAdvisorValidator;
-import org.polypheny.db.sql.advise.SqlSimpleParser.Token;
-import org.polypheny.db.sql.advise.SqlSimpleParser.Tokenizer;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
-import org.polypheny.db.sql.utils.SqlTester;
-import org.polypheny.db.sql.utils.SqlValidatorTestCase;
-import org.polypheny.db.sql.utils.SqlValidatorTester;
-import org.polypheny.db.sql.utils.WithLex;
-import org.polypheny.db.sql.validate.SqlMoniker;
-import org.polypheny.db.sql.validate.SqlMonikerType;
-import org.polypheny.db.test.SqlTestFactory;
+import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.SqlMonikerType;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.sql.SqlTestFactory;
+import org.polypheny.db.languages.sql.advise.SqlAdvisor;
+import org.polypheny.db.languages.sql.advise.SqlAdvisorValidator;
+import org.polypheny.db.languages.sql.advise.SqlSimpleParser.Token;
+import org.polypheny.db.languages.sql.advise.SqlSimpleParser.Tokenizer;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
+import org.polypheny.db.languages.sql.utils.SqlTester;
+import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase;
+import org.polypheny.db.languages.sql.utils.SqlValidatorTester;
+import org.polypheny.db.languages.sql.utils.WithLex;
 
 
 /**
@@ -1135,7 +1135,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
 
-    private String replaceQuotes( SqlParserConfig parserConfig, String sql ) {
+    private String replaceQuotes( ParserConfig parserConfig, String sql ) {
         char openQuote = parserConfig.quoting().string.charAt( 0 );
         char closeQuote = openQuote == '[' ? ']' : openQuote;
         return sql.replace( '[', openQuote ).replace( ']', closeQuote );
@@ -1143,7 +1143,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
 
     private void testSimpleParserQuotedIdImpl() {
-        SqlParserConfig parserConfig = tester.getFactory().getParserConfig();
+        ParserConfig parserConfig = tester.getFactory().getParserConfig();
         String sql;
         String expected;
 

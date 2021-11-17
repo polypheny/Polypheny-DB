@@ -260,7 +260,7 @@ public class Frameworks {
         /**
          * Creates a ConfigBuilder, initializing from an existing config.
          */
-        private ConfigBuilder( FrameworkConfig config ) {
+        public ConfigBuilder( FrameworkConfig config ) {
             convertletTable = config.getConvertletTable();
             operatorTable = config.getOperatorTable();
             programs = config.getPrograms();
@@ -403,7 +403,7 @@ public class Frameworks {
     /**
      * An implementation of {@link FrameworkConfig} that uses standard Polypheny-DB classes to provide basic planner functionality.
      */
-    static class StdFrameworkConfig implements FrameworkConfig {
+    public static class StdFrameworkConfig implements FrameworkConfig {
 
         private final Context context;
         private final RexConvertletTable convertletTable;
@@ -420,7 +420,7 @@ public class Frameworks {
         private final org.polypheny.db.jdbc.Context prepareContext;
 
 
-        StdFrameworkConfig(
+        public StdFrameworkConfig(
                 Context context,
                 RexConvertletTable convertletTable,
                 OperatorTable operatorTable,

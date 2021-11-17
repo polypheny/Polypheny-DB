@@ -19,6 +19,7 @@ package org.polypheny.db.languages.mql.dql;
 import java.util.Map;
 import org.bson.BsonValue;
 import org.junit.Test;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlFind;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -38,7 +39,8 @@ public class MqlFindTest extends MqlTest {
 
 
     private void defaultTests( MqlNode parsed ) {
-        assert (parsed.getKind() == Type.FIND);
+        assert (parsed.getMqlKind() == Type.FIND);
+        assert (parsed.getLanguage() == QueryLanguage.MONGOQL);
         assert (parsed.getPrimary().isEmpty());
         assert (parsed.getStores().isEmpty());
     }

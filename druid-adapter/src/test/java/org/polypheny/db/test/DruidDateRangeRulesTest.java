@@ -49,7 +49,6 @@ import org.polypheny.db.adapter.druid.DruidDateTimeUtils;
 import org.polypheny.db.core.SqlStdOperatorTable;
 import org.polypheny.db.rel.rules.DateRangeRules;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.test.RexImplicationCheckerTest.Fixture;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 
@@ -167,7 +166,7 @@ public class DruidDateRangeRulesTest {
 
 
     // For testFilterWithCast we need to no simplify the expression, which would remove the CAST, in order to match the way expressions are presented when HiveRexExecutorImpl is used in Hive
-    private void checkDateRangeNoSimplify( Fixture f, RexNode e, Matcher<String> intervalMatcher ) {
+    private void checkDateRangeNoSimplify( TestFixture f, RexNode e, Matcher<String> intervalMatcher ) {
         e = DateRangeRules.replaceTimeUnits( f.rexBuilder, e, "UTC" );
         final List<Interval> intervals = DruidDateTimeUtils.createInterval( e );
         assertThat( intervals, notNullValue() );
@@ -175,7 +174,7 @@ public class DruidDateRangeRulesTest {
     }
 
 
-    private void checkDateRange( Fixture f, RexNode e, Matcher<String> intervalMatcher ) {
+    private void checkDateRange( TestFixture f, RexNode e, Matcher<String> intervalMatcher ) {
         e = DateRangeRules.replaceTimeUnits( f.rexBuilder, e, "UTC" );
         final RexNode e2 = f.simplify.simplify( e );
         List<Interval> intervals = DruidDateTimeUtils.createInterval( e2 );
@@ -189,7 +188,7 @@ public class DruidDateRangeRulesTest {
     /**
      * Common expressions across tests.
      */
-    private static class Fixture2 extends Fixture {
+    private static class Fixture2 extends TestFixture {
 
         private final RexNode exYear;
         private final RexNode exMonth;

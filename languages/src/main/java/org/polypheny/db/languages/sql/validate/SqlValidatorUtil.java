@@ -199,7 +199,7 @@ public class SqlValidatorUtil {
     /**
      * Checks that there are no duplicates in a list of {@link SqlIdentifier}.
      */
-    static void checkIdentifierListForDuplicates( List<SqlNode> columnList, SqlValidatorImpl.ValidationErrorFunction validationErrorFunction ) {
+    public static void checkIdentifierListForDuplicates( List<SqlNode> columnList, SqlValidatorImpl.ValidationErrorFunction validationErrorFunction ) {
         final List<List<String>> names = columnList.stream().map( o -> ((SqlIdentifier) o).names ).collect( Collectors.toList() );
         final int i = Util.firstDuplicate( names );
         if ( i >= 0 ) {

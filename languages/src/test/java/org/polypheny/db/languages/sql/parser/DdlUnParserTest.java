@@ -31,13 +31,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.parser;
+package org.polypheny.db.languages.sql.parser;
 
 
 /**
- * Extension to {@link org.polypheny.db.sql.parser.DdlParserTest} that ensures that every expression can un-parse successfully.
+ * Extension to {@link DdlParserTest} that ensures that every expression can un-parse successfully.
  */
-public class DdlUnParserTest extends org.polypheny.db.sql.parser.DdlParserTest {
+public class DdlUnParserTest extends DdlParserTest {
 
 
     public DdlUnParserTest() {

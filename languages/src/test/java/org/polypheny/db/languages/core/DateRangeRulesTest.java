@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,26 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.rel.rules;
+package org.polypheny.db.languages.core;
 
 
 import static org.hamcrest.core.Is.is;
@@ -46,8 +29,8 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.rel.rules.DateRangeRules;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.test.RexImplicationCheckerTest.Fixture;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -676,12 +659,12 @@ public class DateRangeRulesTest {
     }
 
 
-    private void checkDateRange( Fixture f, RexNode e, Matcher<String> matcher ) {
+    private void checkDateRange( TestFixture f, RexNode e, Matcher<String> matcher ) {
         checkDateRange( f, e, "UTC", matcher, CoreMatchers.any( String.class ) );
     }
 
 
-    private void checkDateRange( Fixture f, RexNode e, String timeZone, Matcher<String> matcher, Matcher<String> simplifyMatcher ) {
+    private void checkDateRange( TestFixture f, RexNode e, String timeZone, Matcher<String> matcher, Matcher<String> simplifyMatcher ) {
         e = DateRangeRules.replaceTimeUnits( f.rexBuilder, e, timeZone );
         assertThat( e.toString(), matcher );
         final RexNode e2 = f.simplify.simplify( e );
@@ -692,7 +675,7 @@ public class DateRangeRulesTest {
     /**
      * Common expressions across tests.
      */
-    private static class Fixture2 extends Fixture {
+    private static class Fixture2 extends TestFixture {
 
         private final RexNode exYearTs; // EXTRACT YEAR from TIMESTAMP field
         private final RexNode exMonthTs; // EXTRACT MONTH from TIMESTAMP field

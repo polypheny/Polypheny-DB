@@ -47,6 +47,7 @@ import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -56,17 +57,16 @@ import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
 import org.polypheny.db.languages.sql.util.SqlShuttle;
+import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.sql.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TestUtil;
@@ -137,7 +137,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
             thrown = ex;
         }
 
-        org.polypheny.db.sql.utils.SqlValidatorTestCase.checkEx( thrown, expectedMsgPattern, sap );
+        SqlValidatorTestCase.checkEx( thrown, expectedMsgPattern, sap );
     }
 
 
@@ -192,15 +192,15 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
     @Override
     public SqlNode parseQuery( String sql ) throws NodeParseException {
-        SqlParser parser = factory.createParser( sql );
-        return parser.parseQuery();
+        Parser parser = factory.createParser( sql );
+        return (SqlNode) parser.parseQuery();
     }
 
 
     @Override
     public void checkColumnType( String sql, String expected ) {
         RelDataType actualType = getColumnType( sql );
-        String actual = org.polypheny.db.sql.utils.SqlTests.getTypeString( actualType );
+        String actual = SqlTests.getTypeString( actualType );
         assertEquals( expected, actual );
     }
 
@@ -236,7 +236,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public void checkResultType( String sql, String expected ) {
         RelDataType actualType = getResultType( sql );
-        String actual = org.polypheny.db.sql.utils.SqlTests.getTypeString( actualType );
+        String actual = SqlTests.getTypeString( actualType );
         assertEquals( expected, actual );
     }
 
@@ -378,22 +378,22 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
     @Override
     public void checkAgg( String expr, String[] inputValues, Object result, double delta ) {
-        String query = org.polypheny.db.sql.utils.SqlTests.generateAggQuery( expr, inputValues );
-        check( query, org.polypheny.db.sql.utils.SqlTests.ANY_TYPE_CHECKER, result, delta );
+        String query = SqlTests.generateAggQuery( expr, inputValues );
+        check( query, SqlTests.ANY_TYPE_CHECKER, result, delta );
     }
 
 
     @Override
     public void checkAggWithMultipleArgs( String expr, String[][] inputValues, Object result, double delta ) {
-        String query = org.polypheny.db.sql.utils.SqlTests.generateAggQueryWithMultipleArgs( expr, inputValues );
-        check( query, org.polypheny.db.sql.utils.SqlTests.ANY_TYPE_CHECKER, result, delta );
+        String query = SqlTests.generateAggQueryWithMultipleArgs( expr, inputValues );
+        check( query, SqlTests.ANY_TYPE_CHECKER, result, delta );
     }
 
 
     @Override
     public void checkWinAgg( String expr, String[] inputValues, String windowSpec, String type, Object result, double delta ) {
-        String query = org.polypheny.db.sql.utils.SqlTests.generateWinAggQuery( expr, windowSpec, inputValues );
-        check( query, org.polypheny.db.sql.utils.SqlTests.ANY_TYPE_CHECKER, result, delta );
+        String query = SqlTests.generateWinAggQuery( expr, windowSpec, inputValues );
+        check( query, SqlTests.ANY_TYPE_CHECKER, result, delta );
     }
 
 
@@ -401,7 +401,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     public void checkScalar( String expression, Object result, String resultType ) {
         checkType( expression, resultType );
         for ( String sql : buildQueries( expression ) ) {
-            check( sql, org.polypheny.db.sql.utils.SqlTests.ANY_TYPE_CHECKER, result, 0 );
+            check( sql, SqlTests.ANY_TYPE_CHECKER, result, 0 );
         }
     }
 
@@ -409,7 +409,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public void checkScalarExact( String expression, String result ) {
         for ( String sql : buildQueries( expression ) ) {
-            check( sql, org.polypheny.db.sql.utils.SqlTests.INTEGER_TYPE_CHECKER, result, 0 );
+            check( sql, SqlTests.INTEGER_TYPE_CHECKER, result, 0 );
         }
     }
 
@@ -417,7 +417,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public void checkScalarExact( String expression, String expectedType, String result ) {
         for ( String sql : buildQueries( expression ) ) {
-            TypeChecker typeChecker = new org.polypheny.db.sql.utils.SqlTests.StringTypeChecker( expectedType );
+            TypeChecker typeChecker = new SqlTests.StringTypeChecker( expectedType );
             check( sql, typeChecker, result, 0 );
         }
     }
@@ -426,7 +426,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public void checkScalarApprox( String expression, String expectedType, double expectedResult, double delta ) {
         for ( String sql : buildQueries( expression ) ) {
-            TypeChecker typeChecker = new org.polypheny.db.sql.utils.SqlTests.StringTypeChecker( expectedType );
+            TypeChecker typeChecker = new SqlTests.StringTypeChecker( expectedType );
             check( sql, typeChecker, expectedResult, delta );
         }
     }
@@ -438,7 +438,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
             if ( null == result ) {
                 checkNull( expression );
             } else {
-                check( sql, org.polypheny.db.sql.utils.SqlTests.BOOLEAN_TYPE_CHECKER, result.toString(), 0 );
+                check( sql, SqlTests.BOOLEAN_TYPE_CHECKER, result.toString(), 0 );
             }
         }
     }
@@ -447,7 +447,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public void checkString( String expression, String result, String expectedType ) {
         for ( String sql : buildQueries( expression ) ) {
-            TypeChecker typeChecker = new org.polypheny.db.sql.utils.SqlTests.StringTypeChecker( expectedType );
+            TypeChecker typeChecker = new SqlTests.StringTypeChecker( expectedType );
             check( sql, typeChecker, result, 0 );
         }
     }
@@ -456,14 +456,14 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public void checkNull( String expression ) {
         for ( String sql : buildQueries( expression ) ) {
-            check( sql, org.polypheny.db.sql.utils.SqlTests.ANY_TYPE_CHECKER, null, 0 );
+            check( sql, SqlTests.ANY_TYPE_CHECKER, null, 0 );
         }
     }
 
 
     @Override
     public final void check( String query, TypeChecker typeChecker, Object result, double delta ) {
-        check( query, typeChecker, org.polypheny.db.sql.utils.SqlTests.ANY_PARAMETER_CHECKER, org.polypheny.db.sql.utils.SqlTests.createChecker( result, delta ) );
+        check( query, typeChecker, SqlTests.ANY_PARAMETER_CHECKER, SqlTests.createChecker( result, delta ) );
     }
 
 
