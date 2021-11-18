@@ -83,7 +83,7 @@ public class GeodeRules {
      * Returns 'string' if it is a call to item['string'], null otherwise.
      */
     static String isItem( RexCall call ) {
-        if ( call.getOperator() != StdOperatorRegistry.get( "ITEM" ) ) {
+        if ( !call.getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
             return null;
         }
         final RexNode op0 = call.getOperands().get( 0 );

@@ -148,7 +148,7 @@ public class MongoAggregate extends Aggregate implements MongoRel {
 
 
     private String toMongo( AggFunction aggregation, List<String> inNames, List<Integer> args, Implementor implementor ) {
-        if ( aggregation == StdOperatorRegistry.getAgg( "COUNT" ) ) {
+        if ( aggregation.equals( StdOperatorRegistry.getAgg( "COUNT" ) ) ) {
             if ( args.size() == 0 ) {
                 return "{$sum: 1}";
             } else {
@@ -162,17 +162,17 @@ public class MongoAggregate extends Aggregate implements MongoRel {
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$sum: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == StdOperatorRegistry.getAgg( "MIN" ) ) {
+        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( "MIN" ) ) ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$min: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == StdOperatorRegistry.getAgg( "MAX" ) ) {
+        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( "MAX" ) ) ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$max: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == StdOperatorRegistry.getAgg( "AVG" ) || aggregation.getKind() == StdOperatorRegistry.getAgg( "AVG" ).kind ) {
+        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( "AVG" ) ) || aggregation.getKind() == StdOperatorRegistry.getAgg( "AVG" ).kind ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );

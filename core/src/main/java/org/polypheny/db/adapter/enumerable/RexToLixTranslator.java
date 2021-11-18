@@ -99,7 +99,7 @@ public class RexToLixTranslator {
                     findMethod( Functions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), StdOperatorRegistry.get( "SUBSTRING" ),
                     findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHARACTER_LENGTH" ),
                     findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHAR_LENGTH" ),
-                    findMethod( Functions.class, "translate3", String.class, String.class, String.class ), StdOperatorRegistry.get( "0_TRANSLATE3" ) );
+                    findMethod( Functions.class, "translate3", String.class, String.class, String.class ), StdOperatorRegistry.get( "ORACLE_TRANSLATE3" ) );
 
     final JavaTypeFactory typeFactory;
     final RexBuilder builder;

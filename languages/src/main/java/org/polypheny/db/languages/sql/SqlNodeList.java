@@ -51,7 +51,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
 
     private final List<Node> list;
-    private final List<SqlNode> sqllist;
+    private final List<SqlNode> sqlList;
 
 
     /**
@@ -60,7 +60,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
     public SqlNodeList( ParserPos pos ) {
         super( pos );
         list = new ArrayList<>();
-        sqllist = new ArrayList<>();
+        sqlList = new ArrayList<>();
     }
 
 
@@ -70,7 +70,8 @@ public class SqlNodeList extends SqlNode implements NodeList {
     public SqlNodeList( Collection<? extends Node> collection, ParserPos pos ) {
         super( pos );
         list = new ArrayList<>( collection );
-        sqllist = list.stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
+        // todo dl this is dangerous
+        sqlList = collection.stream().map( e -> (SqlNode) e ).collect( Collectors.toList() );
     }
 
 
@@ -88,14 +89,14 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
 
     public List<SqlNode> getSqlList() {
-        return sqllist;
+        return sqlList;
     }
 
 
     @Override
     public void add( Node node ) {
         list.add( node );
-        sqllist.add( (SqlNode) node );
+        sqlList.add( (SqlNode) node );
     }
 
 
@@ -113,7 +114,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
     @Override
     public Node set( int n, Node node ) {
-        sqllist.set( n, (SqlNode) node );
+        sqlList.set( n, (SqlNode) node );
         return list.set( n, node );
     }
 

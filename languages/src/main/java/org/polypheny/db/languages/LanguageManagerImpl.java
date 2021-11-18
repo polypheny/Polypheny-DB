@@ -84,7 +84,6 @@ import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
-import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.TimeString;
@@ -178,25 +177,49 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public DataTypeSpec createDataTypeSpec( QueryLanguage sql, Identifier typeIdentifier, int precision, int scale, String charSetName, TimeZone o, ParserPos zero ) {
+    public DataTypeSpec createDataTypeSpec( QueryLanguage sql, Identifier typeIdentifier, int precision, int scale, String charSetName, TimeZone o, ParserPos pos ) {
         return new SqlDataTypeSpec(
                 (SqlIdentifier) typeIdentifier,
                 precision,
                 scale,
                 charSetName,
                 o,
-                ParserPos.ZERO );
+                pos );
     }
 
 
     @Override
-    public DataTypeSpec createDataTypeSpec( QueryLanguage sql, Identifier typeIdentifier, Identifier componentTypeIdentifier, int precision, int scale, int dimension, int cardinality, String charSetName, TimeZone o, boolean nullable, ParserPos zero ) {
-        return new SqlDataTypeSpec( (SqlIdentifier) typeIdentifier, (SqlIdentifier) componentTypeIdentifier, precision, scale, dimension, cardinality, charSetName, o, nullable, zero );
+    public DataTypeSpec createDataTypeSpec( QueryLanguage sql,
+            Identifier typeIdentifier,
+            Identifier componentTypeIdentifier,
+            int precision,
+            int scale,
+            int dimension,
+            int cardinality,
+            String charSetName,
+            TimeZone o,
+            boolean nullable,
+            ParserPos zero ) {
+        return new SqlDataTypeSpec( (SqlIdentifier) typeIdentifier,
+                (SqlIdentifier) componentTypeIdentifier,
+                precision,
+                scale,
+                dimension,
+                cardinality,
+                charSetName,
+                o,
+                nullable,
+                zero );
     }
 
 
     @Override
-    public IntervalQualifier createIntervalQualifier( QueryLanguage sql, TimeUnit startUnit, int startPrecision, TimeUnit endUnit, int fractionalSecondPrecision, ParserPos zero ) {
+    public IntervalQualifier createIntervalQualifier( QueryLanguage sql,
+            TimeUnit startUnit,
+            int startPrecision,
+            TimeUnit endUnit,
+            int fractionalSecondPrecision,
+            ParserPos zero ) {
         return new SqlIntervalQualifier( startUnit, startPrecision, endUnit, fractionalSecondPrecision, zero );
     }
 
@@ -270,7 +293,12 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Operator createFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference o, PolySingleOperandTypeChecker typeChecker, FunctionCategory system ) {
+    public Operator createFunction( String name,
+            Kind kind,
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference o,
+            PolySingleOperandTypeChecker typeChecker,
+            FunctionCategory system ) {
         return new SqlFunction(
                 name,
                 kind,
@@ -296,22 +324,37 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Operator createUserDefinedFunction( QueryLanguage sql, Identifier name, PolyReturnTypeInference infer, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, List<RelDataType> paramTypes, Function function ) {
+    public Operator createUserDefinedFunction( QueryLanguage sql,
+            Identifier name,
+            PolyReturnTypeInference infer,
+            PolyOperandTypeInference explicit,
+            FamilyOperandTypeChecker typeChecker,
+            List<RelDataType> paramTypes,
+            Function function ) {
         return new SqlUserDefinedFunction( (SqlIdentifier) name, infer, explicit, typeChecker, paramTypes, function );
     }
 
 
     @Override
-    public Operator createUserDefinedAggFunction( QueryLanguage queryLanguage, Identifier name, PolyReturnTypeInference infer, PolyOperandTypeInference explicit, FamilyOperandTypeChecker typeChecker, AggregateFunction function, boolean b, boolean b1, Optionality forbidden, RelDataTypeFactory typeFactory ) {
+    public Operator createUserDefinedAggFunction( QueryLanguage queryLanguage,
+            Identifier name,
+            PolyReturnTypeInference infer,
+            PolyOperandTypeInference explicit,
+            FamilyOperandTypeChecker typeChecker,
+            AggregateFunction function,
+            boolean requiresOrder,
+            boolean requiresOver,
+            Optionality optionality,
+            RelDataTypeFactory typeFactory ) {
         return new SqlUserDefinedAggFunction(
                 (SqlIdentifier) name,
                 infer,
                 explicit,
                 typeChecker,
                 function,
-                false,
-                false,
-                Optionality.FORBIDDEN,
+                requiresOrder,
+                requiresOver,
+                optionality,
                 typeFactory );
     }
 
@@ -319,24 +362,24 @@ public class LanguageManagerImpl extends LanguageManager {
     @Override
     public Operator createUserDefinedTableMacro( QueryLanguage sql,
             Identifier name,
-            PolyReturnTypeInference cursor,
+            PolyReturnTypeInference typeInference,
             PolyOperandTypeInference explicit,
             FamilyOperandTypeChecker typeChecker,
             List<RelDataType> paramTypes,
             TableMacro function ) {
-        return new SqlUserDefinedTableMacro( (SqlIdentifier) name, ReturnTypes.CURSOR, explicit, typeChecker, paramTypes, function );
+        return new SqlUserDefinedTableMacro( (SqlIdentifier) name, typeInference, explicit, typeChecker, paramTypes, function );
     }
 
 
     @Override
     public Operator createUserDefinedTableFunction( QueryLanguage sql,
             Identifier name,
-            PolyReturnTypeInference cursor,
+            PolyReturnTypeInference typeInference,
             PolyOperandTypeInference explicit,
             FamilyOperandTypeChecker typeChecker,
             List<RelDataType> paramTypes,
             TableFunction function ) {
-        return new SqlUserDefinedTableFunction( (SqlIdentifier) name, ReturnTypes.CURSOR, explicit, typeChecker, paramTypes, function );
+        return new SqlUserDefinedTableFunction( (SqlIdentifier) name, typeInference, explicit, typeChecker, paramTypes, function );
     }
 
 

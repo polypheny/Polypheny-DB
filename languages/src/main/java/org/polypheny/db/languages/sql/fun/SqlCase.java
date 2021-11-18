@@ -80,7 +80,7 @@ public class SqlCase extends SqlCall {
                 } else {
                     call = (SqlCall) StdOperatorRegistry.get( "EQUALS" ).createCall( pos, value, e );
                 }
-                list.set( i, call );
+                whenList.set( i, call );
             }
         }
 
@@ -100,7 +100,7 @@ public class SqlCase extends SqlCall {
 
     @Override
     public Operator getOperator() {
-        return SqlStdOperatorTable.CASE;
+        return StdOperatorRegistry.get( "CASE" );
     }
 
 

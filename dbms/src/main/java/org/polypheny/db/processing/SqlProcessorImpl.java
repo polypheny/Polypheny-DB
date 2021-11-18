@@ -303,7 +303,7 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
             int size = (int) catalogTable.columnIds.size();
             if ( schemaType == SchemaType.DOCUMENT ) {
                 List<String> columnNames = catalogTable.getColumnNames();
-                size += oldColumnList.getList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
+                size += oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
             }
 
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][size];
@@ -367,8 +367,8 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
             // add doc values back TODO DL: change
             if ( schemaType == SchemaType.DOCUMENT ) {
                 List<SqlIdentifier> documentColumns = new ArrayList<>();
-                for ( Node column : oldColumnList.getList() ) {
-                    if ( newColumnList.getList()
+                for ( Node column : oldColumnList.getSqlList() ) {
+                    if ( newColumnList.getSqlList()
                             .stream()
                             .filter( c -> c instanceof SqlIdentifier )
                             .map( c -> ((SqlIdentifier) c).names.get( 0 ) )

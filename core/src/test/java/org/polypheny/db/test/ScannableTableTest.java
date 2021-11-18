@@ -418,10 +418,10 @@ public class ScannableTableTest {
             final RexNode node = filterIter.next();
             if ( cooperative
                     && node instanceof RexCall
-                    && ((RexCall) node).getOperator() == StdOperatorRegistry.get( "EQUALS" )
+                    && ((RexCall) node).getOperator().equals( StdOperatorRegistry.get( "EQUALS" ) )
                     && ((RexCall) node).getOperands().get( 0 ) instanceof RexInputRef
                     && ((RexInputRef) ((RexCall) node).getOperands().get( 0 )).getIndex() == 0
-                    && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ){
+                    && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ) {
                 final RexNode op1 = ((RexCall) node).getOperands().get( 1 );
                 filterIter.remove();
                 return ((BigDecimal) ((RexLiteral) op1).getValue()).intValue();
@@ -478,6 +478,7 @@ public class ScannableTableTest {
                 }
             };
         }
+
     }
 
 
@@ -516,6 +517,7 @@ public class ScannableTableTest {
                 }
             };
         }
+
     }
 
 
@@ -554,6 +556,7 @@ public class ScannableTableTest {
                 }
             };
         }
+
     }
 
 
@@ -656,5 +659,6 @@ public class ScannableTableTest {
             }
         };
     }
+
 }
 

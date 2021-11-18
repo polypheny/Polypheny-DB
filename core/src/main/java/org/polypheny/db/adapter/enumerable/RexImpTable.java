@@ -98,6 +98,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.ImplementableAggFunction;
 import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
@@ -565,7 +566,7 @@ public class RexImpTable {
 
     public CallImplementor get( final Operator operator ) {
         if ( operator instanceof UserDefined ) {
-            org.polypheny.db.schema.Function udf = ((UserDefined) operator).getFunction();
+            Function udf = ((UserDefined) operator).getFunction();
             if ( !(udf instanceof ImplementableFunction) ) {
                 throw new IllegalStateException( "User defined function " + operator + " must implement ImplementableFunction" );
             }
@@ -1026,7 +1027,7 @@ public class RexImpTable {
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
             Expression acc = reset.accumulator().get( 0 );
             Primitive p = Primitive.of( acc.getType() );
-            boolean isMin = StdOperatorRegistry.get( "MIN", AggFunction.class ) == info.aggregation();
+            boolean isMin = StdOperatorRegistry.get( "MIN", AggFunction.class ).equals( info.aggregation() );
             Object inf = p == null ? null : (isMin ? p.max : p.min);
             reset.currentBlock().add( Expressions.statement( Expressions.assign( acc, Expressions.constant( inf, acc.getType() ) ) ) );
         }
@@ -1037,7 +1038,7 @@ public class RexImpTable {
             Expression acc = add.accumulator().get( 0 );
             Expression arg = add.arguments().get( 0 );
             AggFunction aggregation = info.aggregation();
-            final Method method = (aggregation == StdOperatorRegistry.get( "MIN", AggFunction.class )
+            final Method method = (aggregation.equals( StdOperatorRegistry.get( "MIN" ) )
                     ? BuiltInMethod.LESSER
                     : BuiltInMethod.GREATER).method;
             Expression next = Expressions.call( method.getDeclaringClass(), method.getName(), acc, Expressions.unbox( arg ) );

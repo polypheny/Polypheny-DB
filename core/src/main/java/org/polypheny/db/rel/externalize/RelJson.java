@@ -46,7 +46,7 @@ import org.apache.calcite.avatica.AvaticaUtils;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Function;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationImpl;
@@ -453,8 +453,11 @@ public class RelJson {
     private Operator toOp( String op, Map<String, Object> map ) {
         // TODO: build a map, for more efficient lookup
         // TODO: look up based on Kind
-        if ( StdOperatorRegistry.get( op ) != null ) { // todo dl this should now work, maybe implement kind lookup...
-            return StdOperatorRegistry.get( op );
+        final List<Operator> operatorList = LanguageManager.getInstance().getStdOperatorTable().getOperatorList();
+        for ( Operator operator : operatorList ) {
+            if ( operator.getName().equals( op ) ) {
+                return operator;
+            }
         }
 
         String class_ = (String) map.get( "class" );

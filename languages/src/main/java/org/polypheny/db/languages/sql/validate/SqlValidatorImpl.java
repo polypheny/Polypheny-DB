@@ -1131,7 +1131,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 SqlNode operand = (SqlNode) list.get( i );
                 newOperand = performUnconditionalRewrites( operand, false );
                 if ( newOperand != null ) {
-                    list.getSqlList().set( i, newOperand );
+                    list.set( i, newOperand );
                 }
             }
         }
@@ -4596,7 +4596,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             for ( Node operand : operands ) {
                 SqlCall thisRow = (SqlCall) operand;
                 if ( columnCount != thisRow.operandCount() ) {
-                    throw newValidationError( node, RESOURCE.incompatibleValueType( SqlStdOperatorTable.VALUES.getName() ) );
+                    throw newValidationError( node, RESOURCE.incompatibleValueType( StdOperatorRegistry.get( "VALUES" ).getName() ) );
                 }
             }
 
@@ -4620,7 +4620,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                                 } );
 
                 if ( null == type ) {
-                    throw newValidationError( node, RESOURCE.incompatibleValueType( SqlStdOperatorTable.VALUES.getName() ) );
+                    throw newValidationError( node, RESOURCE.incompatibleValueType( StdOperatorRegistry.get( "VALUES" ).getName() ) );
                 }
             }
         }
@@ -4963,10 +4963,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         Util.discard( prefix );
         final List<Node> ops = ((SqlCall) node).getOperandList();
 
-        final SqlOperator defaultOp =
+        final Operator defaultOp =
                 allRows
-                        ? SqlStdOperatorTable.RUNNING
-                        : SqlStdOperatorTable.FINAL;
+                        ? StdOperatorRegistry.get( "RUNNING" )
+                        : StdOperatorRegistry.get( "FINAL" );
         final Node op0 = ops.get( 0 );
         if ( !isRunningOrFinal( op0.getKind() ) || !allRows && op0.getKind() == Kind.RUNNING ) {
             Node newNode = defaultOp.createCall( ParserPos.ZERO, op0 );
@@ -5942,10 +5942,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     if ( isPhysicalNavigation( innerKind ) ) {
                         List<Node> innerOperands = ((SqlCall) inner).getOperandList();
                         Node innerOffset = innerOperands.get( 1 );
-                        SqlOperator newOperator =
+                        Operator newOperator =
                                 innerKind == kind
-                                        ? SqlStdOperatorTable.PLUS
-                                        : SqlStdOperatorTable.MINUS;
+                                        ? StdOperatorRegistry.get( "PLUS" )
+                                        : StdOperatorRegistry.get( "MINUS" );
                         offset = newOperator.createCall( ParserPos.ZERO, offset, innerOffset );
                         inner = call.getOperator().createCall( ParserPos.ZERO, innerOperands.get( 0 ), offset );
                     }
@@ -6022,7 +6022,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         String name = ((SqlIdentifier) operands.get( 0 )).names.get( 0 );
                         return (SqlNode) (name.equals( alpha )
                                 ? call
-                                : SqlStdOperatorTable.LAST.createCall( ParserPos.ZERO, operands ));
+                                : StdOperatorRegistry.get( "LAST" ).createCall( ParserPos.ZERO, operands ));
                     }
             }
             return super.visit( call );
@@ -6034,9 +6034,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( id.isSimple() ) {
                 return (SqlNode) id;
             }
-            SqlOperator operator = id.getNames().get( 0 ).equals( alpha )
-                    ? SqlStdOperatorTable.PREV
-                    : SqlStdOperatorTable.LAST;
+            Operator operator = id.getNames().get( 0 ).equals( alpha )
+                    ? StdOperatorRegistry.get( "PREV" )
+                    : StdOperatorRegistry.get( "LAST" );
 
             return (SqlNode) operator.createCall(
                     ParserPos.ZERO,
@@ -6131,7 +6131,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     default:
                         if ( operands.size() == 0
                                 || !(operands.get( 0 ) instanceof SqlCall)
-                                || !((SqlCall) operands.get( 0 )).getOperator().equals( SqlStdOperatorTable.CLASSIFIER ) ) {
+                                || !((SqlCall) operands.get( 0 )).getOperator().equals( StdOperatorRegistry.get( "CLASSIFIER" ) ) ) {
                             if ( vars.isEmpty() ) {
                                 throw newValidationError( call, Static.RESOURCE.patternFunctionNullCheck( call.toString() ) );
                             }
@@ -6307,7 +6307,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     selectItem =
                             (SqlNode) StdOperatorRegistry.get( "AS" ).createCall(
                                     ParserPos.ZERO,
-                                    SqlStdOperatorTable.COALESCE.createCall(
+                                    StdOperatorRegistry.get( "COALESCE" ).createCall(
                                             ParserPos.ZERO,
                                             maybeCast( selectItem, type, type2 ),
                                             maybeCast( selectItem1, type1, type2 ) ),

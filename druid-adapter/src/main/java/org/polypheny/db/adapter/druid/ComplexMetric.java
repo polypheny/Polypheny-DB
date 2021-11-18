@@ -34,8 +34,8 @@
 package org.polypheny.db.adapter.druid;
 
 
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -102,5 +102,6 @@ public class ComplexMetric {
                 return false;
         }
     }
+
 }
 

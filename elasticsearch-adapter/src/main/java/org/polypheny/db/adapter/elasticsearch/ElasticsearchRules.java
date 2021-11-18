@@ -90,7 +90,7 @@ class ElasticsearchRules {
      * @return literal value
      */
     static String isItem( RexCall call ) {
-        if ( call.getOperator() != StdOperatorRegistry.get( "ITEM" ) ) {
+        if ( !call.getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
             return null;
         }
         final RexNode op0 = call.getOperands().get( 0 );

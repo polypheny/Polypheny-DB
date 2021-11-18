@@ -4697,7 +4697,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 collation = RelCollations.EMPTY;
             } else {
                 collation = RelCollations.of(
-                        orderList.getList()
+                        orderList.getSqlList()
                                 .stream()
                                 .map( order ->
                                         bb.convertSortExpression(
@@ -4953,7 +4953,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
                 return histogramCall;
             } else {
-                boolean needSum0 = aggOp == StdOperatorRegistry.get( "SUM" ) && type.isNullable();
+                boolean needSum0 = aggOp.equals( StdOperatorRegistry.get( "SUM" ) ) && type.isNullable();
                 AggFunction aggOpToUse =
                         needSum0
                                 ? StdOperatorRegistry.getAgg( "SUM0" )

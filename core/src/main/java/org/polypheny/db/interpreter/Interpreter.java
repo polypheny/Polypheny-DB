@@ -238,7 +238,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                                         throw new AssertionError( "unknown expression " + call );
                                 }
                             default:
-                                if ( call.getOperator() == StdOperatorRegistry.get( "UPPER" ) ) {
+                                if ( call.getOperator().equals( StdOperatorRegistry.get( "UPPER" ) ) ) {
                                     argScalar.execute( context, args );
                                     String s0 = (String) args[0];
                                     if ( s0 == null ) {
@@ -246,7 +246,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                                     }
                                     return s0.toUpperCase( Locale.ROOT );
                                 }
-                                if ( call.getOperator() == StdOperatorRegistry.getAgg( "SUBSTRING" ) ) {
+                                if ( call.getOperator().equals( StdOperatorRegistry.getAgg( "SUBSTRING" ) ) ) {
                                     argScalar.execute( context, args );
                                     String s0 = (String) args[0];
                                     Number i1 = (Number) args[1];

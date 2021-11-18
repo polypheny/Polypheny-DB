@@ -74,6 +74,8 @@ public class SqlRegisterer {
 
     static {
 
+        register( "ORACLE_TRANSLATE3", new SqlTranslate3Function() );
+
         //-------------------------------------------------------------
         //                   SET OPERATORS
         //-------------------------------------------------------------

@@ -22,18 +22,28 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.NameMatchers;
+import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.languages.sql.SqlIdentifier;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.SqlTestFactory;
+import org.polypheny.db.languages.sql.utils.SqlTester;
+import org.polypheny.db.languages.sql.utils.SqlValidatorTester;
+import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
 
 
 /**
@@ -122,7 +132,7 @@ public class SqlValidatorUtilTest {
 
     @Ignore // todo dl why is this happening
     @SuppressWarnings("resource")
-    /*
+
     @Test
     public void testCheckingDuplicatesWithCompoundIdentifiers() {
         final List<SqlNode> newList = new ArrayList<>( 2 );
@@ -139,7 +149,7 @@ public class SqlValidatorUtilTest {
         // should not throw
         newList.set( 1, new SqlIdentifier( Arrays.asList( "f0", "c1" ), ParserPos.ZERO ) );
         SqlValidatorUtil.checkIdentifierListForDuplicates( newList, null );
-    }*/
+    }
 
 
     @Test

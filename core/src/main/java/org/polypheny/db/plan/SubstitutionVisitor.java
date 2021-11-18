@@ -1352,13 +1352,13 @@ public class SubstitutionVisitor {
 
 
     public static AggFunction getRollup( AggFunction aggregation ) {
-        if ( aggregation == StdOperatorRegistry.getAgg( "SUM" )
-                || aggregation == StdOperatorRegistry.getAgg( "MIN" )
-                || aggregation == StdOperatorRegistry.getAgg( "MAX" )
-                || aggregation == StdOperatorRegistry.getAgg( "SUM0" )
-                || aggregation == StdOperatorRegistry.getAgg( ".ANY_VALUE" ) ) {
+        if ( aggregation.equals( StdOperatorRegistry.getAgg( "SUM" ) )
+                || aggregation.equals( StdOperatorRegistry.getAgg( "MIN" ) )
+                || aggregation.equals( StdOperatorRegistry.getAgg( "MAX" ) )
+                || aggregation.equals( StdOperatorRegistry.getAgg( "SUM0" ) )
+                || aggregation.equals( StdOperatorRegistry.getAgg( ".ANY_VALUE" ) ) ) {
             return aggregation;
-        } else if ( aggregation == StdOperatorRegistry.getAgg( "COUNT" ) ) {
+        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( "COUNT" ) ) ) {
             return StdOperatorRegistry.getAgg( "SUM0" );
         } else {
             return null;

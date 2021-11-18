@@ -52,8 +52,8 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
         registerEquivOp( StdOperatorRegistry.get( "GREATER_THAN" ) );
         registerEquivOp( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ) );
         registerEquivOp( StdOperatorRegistry.get( "LESS_THAN" ) );
-        registerEquivOp( StdOperatorRegistry.get( "EQUAL" ) );
-        registerEquivOp( StdOperatorRegistry.get( "NOT_EQUAL" ) );
+        registerEquivOp( StdOperatorRegistry.get( "EQUALS" ) );
+        registerEquivOp( StdOperatorRegistry.get( "NOT_EQUALS" ) );
         registerEquivOp( StdOperatorRegistry.get( "AND" ) );
         registerEquivOp( StdOperatorRegistry.get( "OR" ) );
         registerEquivOp( StdOperatorRegistry.get( "NOT_IN" ) );
@@ -104,7 +104,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
         registerEquivOp( StdOperatorRegistry.get( "TRANSLATE" ) );
         registerEquivOp( StdOperatorRegistry.get( "OVERLAY" ) );
         registerEquivOp( StdOperatorRegistry.get( "TRIM" ) );
-        registerEquivOp( StdOperatorRegistry.get( "O_TRANSLATE3" ) );
+        registerEquivOp( StdOperatorRegistry.get( "ORACLE_TRANSLATE3" ) );
         registerEquivOp( StdOperatorRegistry.get( "POSITION" ) );
         registerEquivOp( StdOperatorRegistry.get( "CHAR_LENGTH" ) );
         registerEquivOp( StdOperatorRegistry.get( "CHARACTER_LENGTH" ) );

@@ -55,7 +55,7 @@ class MapProjectionFieldVisitor extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall( RexCall call ) {
-        if ( call.op == StdOperatorRegistry.get( "ITEM" ) ) {
+        if ( call.op.equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
             return ((RexLiteral) call.getOperands().get( 1 )).getValueAs( String.class );
         }
         return super.visitCall( call );
