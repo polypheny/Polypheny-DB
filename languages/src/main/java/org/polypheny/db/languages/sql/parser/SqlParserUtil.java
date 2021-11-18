@@ -517,12 +517,12 @@ public final class SqlParserUtil {
                     list.add( convert( arg ) );
                 }
                 final ToTreeListItem item = (ToTreeListItem) call.op.o;
-                if ( item.op == SqlStdOperatorTable.UNARY_MINUS
+                if ( item.op.equals( SqlStdOperatorTable.UNARY_MINUS )
                         && list.size() == 1
                         && list.get( 0 ) instanceof SqlNumericLiteral ) {
                     return SqlLiteral.createNegative( (SqlNumericLiteral) list.get( 0 ), item.pos.plusAll( list ) );
                 }
-                if ( item.op == SqlStdOperatorTable.UNARY_PLUS
+                if ( item.op.equals( SqlStdOperatorTable.UNARY_PLUS )
                         && list.size() == 1
                         && list.get( 0 ) instanceof SqlNumericLiteral ) {
                     return list.get( 0 );
@@ -585,6 +585,7 @@ public final class SqlParserUtil {
         public ParserPos getPos() {
             return pos;
         }
+
     }
 
 
@@ -603,6 +604,7 @@ public final class SqlParserUtil {
             this.cursor = cursor;
             this.pos = pos;
         }
+
     }
 
 
@@ -678,6 +680,7 @@ public final class SqlParserUtil {
         public void replaceSublist( int start, int end, SqlNode e ) {
             SqlParserUtil.replaceSublist( list, start, end, parser.atom( e ) );
         }
+
     }
 
 
@@ -766,6 +769,7 @@ public final class SqlParserUtil {
         public void replaceSublist( int start, int end, SqlNode e ) {
             SqlParserUtil.replaceSublist( list, start, end, e );
         }
+
     }
 
 
@@ -778,6 +782,8 @@ public final class SqlParserUtil {
         final DateFormat timestamp = new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT );
         final DateFormat time = new SimpleDateFormat( DateTimeUtils.TIME_FORMAT_STRING, Locale.ROOT );
         final DateFormat date = new SimpleDateFormat( DateTimeUtils.DATE_FORMAT_STRING, Locale.ROOT );
+
     }
+
 }
 

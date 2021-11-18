@@ -139,9 +139,9 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     final RelDataType type = cx.getValidator().getValidatedNodeType( call );
                     return rexBuilder.makeCall(
                             type,
-                            SqlStdOperatorTable.CASE,
+                            StdOperatorRegistry.get( "CASE" ),
                             ImmutableList.of(
-                                    rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_NULL, operand0 ),
+                                    rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), operand0 ),
                                     rexBuilder.makeCast( type, operand0 ),
                                     rexBuilder.makeCast( type, operand1 ) ) );
                 } );
@@ -161,7 +161,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     } else {
                         exprs.add( rexBuilder.makeNullLiteral( type ) );
                     }
-                    return rexBuilder.makeCall( type, SqlStdOperatorTable.CASE, exprs );
+                    return rexBuilder.makeCall( type, StdOperatorRegistry.get( "CASE" ), exprs );
                 } );
 
         // Expand "x NOT LIKE y" into "NOT (x LIKE y)"
@@ -318,7 +318,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
 
     private RexNode case_( RexBuilder rexBuilder, RexNode... args ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.CASE, args );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( "CASE" ), args );
     }
 
     // SqlNode helpers
@@ -361,7 +361,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         for ( int i : elseArgs( exprList.size() ) ) {
             exprList.set( i, rexBuilder.ensureType( type, exprList.get( i ), false ) );
         }
-        return rexBuilder.makeCall( type, SqlStdOperatorTable.CASE, exprList );
+        return rexBuilder.makeCall( type, StdOperatorRegistry.get( "CASE" ), exprList );
     }
 
 
@@ -1296,7 +1296,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 list.add( expr );
             }
             list.add( exprs.get( exprs.size() - 1 ) );
-            return rexBuilder.makeCall( type, SqlStdOperatorTable.CASE, list );
+            return rexBuilder.makeCall( type, StdOperatorRegistry.get( "CASE" ), list );
         }
 
     }

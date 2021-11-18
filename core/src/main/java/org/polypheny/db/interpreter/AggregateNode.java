@@ -130,9 +130,9 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                 return new FilterAccumulator( accumulator, call.filterArg );
             };
         }
-        if ( call.getAggregation() == StdOperatorRegistry.getAgg( "COUNT" ) ) {
+        if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( "COUNT" ) ) ) {
             return () -> new CountAccumulator( call );
-        } else if ( call.getAggregation() == StdOperatorRegistry.getAgg( "SUM" ) || call.getAggregation() == StdOperatorRegistry.getAgg( "SUM0" ) ) {
+        } else if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( "SUM" ) ) || call.getAggregation().equals( StdOperatorRegistry.getAgg( "SUM0" ) ) ) {
             final Class<?> clazz;
             switch ( call.type.getPolyType() ) {
                 case DOUBLE:
@@ -148,12 +148,12 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                     clazz = LongSum.class;
                     break;
             }
-            if ( call.getAggregation() == StdOperatorRegistry.getAgg( "SUM" ) ) {
+            if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( "SUM" ) ) ) {
                 return new UdaAccumulatorFactory( AggregateFunctionImpl.create( clazz ), call, true );
             } else {
                 return new UdaAccumulatorFactory( AggregateFunctionImpl.create( clazz ), call, false );
             }
-        } else if ( call.getAggregation() == StdOperatorRegistry.getAgg( "MIN" ) ) {
+        } else if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( "MIN" ) ) ) {
             final Class<?> clazz;
             switch ( call.getType().getPolyType() ) {
                 case INTEGER:
@@ -171,7 +171,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                     break;
             }
             return new UdaAccumulatorFactory( AggregateFunctionImpl.create( clazz ), call, true );
-        } else if ( call.getAggregation() == StdOperatorRegistry.getAgg( "MAX" ) ) {
+        } else if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( "MAX" ) ) ) {
             final Class<?> clazz;
             switch ( call.getType().getPolyType() ) {
                 case INTEGER:

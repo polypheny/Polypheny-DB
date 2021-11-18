@@ -847,7 +847,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 }
 
                 // if this cast expression can't be reduced to a literal, then see if we can remove the cast
-                if ( call.getOperator() == StdOperatorRegistry.get( "CAST" ) ) {
+                if ( call.getOperator().equals( StdOperatorRegistry.get( "CAST" ) ) ) {
                     reduceCasts( call );
                 }
             }
@@ -884,7 +884,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 return;
             }
             RexCall innerCast = (RexCall) operands.get( 0 );
-            if ( innerCast.getOperator() != StdOperatorRegistry.get( "CAST" ) ) {
+            if ( !innerCast.getOperator().equals( StdOperatorRegistry.get( "CAST" ) ) ) {
                 return;
             }
             if ( innerCast.getOperands().size() != 1 ) {

@@ -85,6 +85,7 @@ import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Syntax;
 import org.polypheny.db.core.ValidatorCatalogReader;
+import org.polypheny.db.core.ValidatorException;
 import org.polypheny.db.core.ValidatorNamespace;
 import org.polypheny.db.core.ValidatorScope;
 import org.polypheny.db.core.ValidatorTable;
@@ -3128,7 +3129,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return;
         }
         final Operator op = agg.getOperator();
-        if ( op == SqlStdOperatorTable.OVER ) {
+        if ( op.equals( SqlStdOperatorTable.OVER ) ) {
             throw newValidationError( agg, RESOURCE.windowedAggregateIllegalInClause( clause ) );
         } else if ( op.isGroup() || op.isGroupAuxiliary() ) {
             throw newValidationError( agg, RESOURCE.groupFunctionMustAppearInGroupByClause( op.getName() ) );
@@ -4680,7 +4681,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public <T extends Exception & org.polypheny.db.core.ValidatorException> PolyphenyDbContextException newValidationError( Node node, ExInst<T> e ) {
+    public <T extends Exception & ValidatorException> PolyphenyDbContextException newValidationError( Node node, ExInst<T> e ) {
         assert node != null;
         final ParserPos pos = node.getPos();
         return CoreUtil.newContextException( pos, e );
@@ -5636,7 +5637,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 SqlNode[] inputs = new SqlNode[2];
                 inputs[0] = fqId;
                 inputs[1] = SqlLiteral.createCharString( Util.last( id.names ), id.getPos() );
-                return new SqlBasicCall( SqlStdOperatorTable.ITEM, inputs, id.getPos() );
+                return new SqlBasicCall( StdOperatorRegistry.get( "ITEM", SqlOperator.class ), inputs, id.getPos() );
             }
             return fqId;
         }
@@ -6130,7 +6131,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     default:
                         if ( operands.size() == 0
                                 || !(operands.get( 0 ) instanceof SqlCall)
-                                || ((SqlCall) operands.get( 0 )).getOperator() != SqlStdOperatorTable.CLASSIFIER ) {
+                                || !((SqlCall) operands.get( 0 )).getOperator().equals( SqlStdOperatorTable.CLASSIFIER ) ) {
                             if ( vars.isEmpty() ) {
                                 throw newValidationError( call, Static.RESOURCE.patternFunctionNullCheck( call.toString() ) );
                             }

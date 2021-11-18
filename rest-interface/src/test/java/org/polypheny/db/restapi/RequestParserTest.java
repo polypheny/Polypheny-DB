@@ -31,9 +31,10 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.util.Pair;
 
 
@@ -96,7 +97,7 @@ public class RequestParserTest {
         operationMap.put( "!%10", new Pair<>( SqlStdOperatorTable.NOT_LIKE, "10" ) );
 
         operationMap.forEach( ( k, v ) -> {
-            Pair<SqlOperator, String> operationPair = requestParser.parseFilterOperation( k );
+            Pair<Operator, String> operationPair = requestParser.parseFilterOperation( k );
             assertEquals( v, operationPair );
         } );
     }

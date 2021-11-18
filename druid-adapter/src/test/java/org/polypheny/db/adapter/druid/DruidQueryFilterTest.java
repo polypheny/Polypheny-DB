@@ -49,7 +49,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -81,7 +81,7 @@ public class DruidQueryFilterTest {
         final Fixture f = new Fixture();
         final List<? extends RexNode> listRexNodes = ImmutableList.of( f.rexBuilder.makeInputRef( f.varcharRowType, 0 ), f.rexBuilder.makeExactLiteral( BigDecimal.valueOf( 1 ) ), f.rexBuilder.makeExactLiteral( BigDecimal.valueOf( 5 ) ), f.rexBuilder.makeLiteral( "value1" ) );
 
-        RexNode inRexNode = f.rexBuilder.makeCall( SqlStdOperatorTable.IN, listRexNodes );
+        RexNode inRexNode = f.rexBuilder.makeCall( StdOperatorRegistry.get( "IN" ), listRexNodes );
         DruidJsonFilter returnValue = DruidJsonFilter.toDruidFilters( inRexNode, f.varcharRowType, druidQuery );
         Assert.assertNotNull( "Filter is null", returnValue );
         JsonFactory jsonFactory = new JsonFactory();
@@ -99,7 +99,7 @@ public class DruidQueryFilterTest {
         final Fixture f = new Fixture();
         final List<RexNode> listRexNodes = ImmutableList.of( f.rexBuilder.makeLiteral( false ), f.rexBuilder.makeInputRef( f.varcharRowType, 0 ), f.rexBuilder.makeLiteral( "lower-bound" ), f.rexBuilder.makeLiteral( "upper-bound" ) );
         RelDataType relDataType = f.typeFactory.createPolyType( PolyType.BOOLEAN );
-        RexNode betweenRexNode = f.rexBuilder.makeCall( relDataType, SqlStdOperatorTable.BETWEEN, listRexNodes );
+        RexNode betweenRexNode = f.rexBuilder.makeCall( relDataType, StdOperatorRegistry.get( "BETWEEN" ), listRexNodes );
 
         DruidJsonFilter returnValue = DruidJsonFilter.toDruidFilters( betweenRexNode, f.varcharRowType, druidQuery );
         Assert.assertNotNull( "Filter is null", returnValue );
@@ -122,5 +122,7 @@ public class DruidQueryFilterTest {
         final DruidTable druidTable = new DruidTable( Mockito.mock( DruidSchema.class ), "dataSource", null, ImmutableSet.of(), "timestamp", null, null, null );
         final RelDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
         final RelDataType varcharRowType = typeFactory.builder().add( "dimensionName", null, varcharType ).build();
+
     }
+
 }

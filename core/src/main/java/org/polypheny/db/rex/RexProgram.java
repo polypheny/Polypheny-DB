@@ -629,7 +629,7 @@ public class RexProgram {
         int index = project.index;
         while ( true ) {
             RexNode expr = exprs.get( index );
-            if ( expr instanceof RexCall && ((RexCall) expr).getOperator() == StdOperatorRegistry.get( "IN_FENNEL" ) ) {
+            if ( expr instanceof RexCall && ((RexCall) expr).getOperator().equals( StdOperatorRegistry.get( "IN_FENNEL" ) ) ) {
                 // drill through identity function
                 expr = ((RexCall) expr).getOperands().get( 0 );
             }

@@ -135,7 +135,7 @@ public class MongoRules {
      * Returns 'string' if it is a call to item['string'], null otherwise.
      */
     static String isItem( RexCall call ) {
-        if ( call.getOperator() != StdOperatorRegistry.get( "ITEM" ) ) {
+        if ( !call.getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
             return null;
         }
         final RexNode op0 = call.operands.get( 0 );
@@ -339,7 +339,7 @@ public class MongoRules {
                     return "{$arrayElemAt:[" + strings.get( 0 ) + ", {$subtract:[" + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + ", 1]}]}";
                 }
             }
-            if ( call.getOperator() == StdOperatorRegistry.get( "CASE" ) ) {
+            if ( call.getOperator().equals( StdOperatorRegistry.get( "CASE" ) ) ) {
                 StringBuilder sb = new StringBuilder();
                 StringBuilder finish = new StringBuilder();
                 // case(a, b, c)  -> $cond:[a, b, c]

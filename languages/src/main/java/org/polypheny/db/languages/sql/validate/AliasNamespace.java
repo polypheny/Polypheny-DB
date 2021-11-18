@@ -52,7 +52,7 @@ public class AliasNamespace extends AbstractNamespace {
     protected AliasNamespace( SqlValidatorImpl validator, SqlCall call, SqlNode enclosingNode ) {
         super( validator, enclosingNode );
         this.call = call;
-        assert call.getOperator() == SqlStdOperatorTable.AS;
+        assert call.getOperator().equals( SqlStdOperatorTable.AS );
     }
 
 
@@ -120,5 +120,6 @@ public class AliasNamespace extends AbstractNamespace {
         }
         throw new AssertionError( "unknown field '" + name + "' in rowtype " + underlyingRowType );
     }
+
 }
 

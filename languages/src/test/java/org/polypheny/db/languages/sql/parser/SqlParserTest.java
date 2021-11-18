@@ -54,8 +54,9 @@ import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.core.DiffTestCase;
-import org.polypheny.db.languages.core.MockConfigBuilder;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSetOption;
@@ -77,7 +78,7 @@ import org.polypheny.db.util.Util;
  *
  * To reuse this test for an extension parser, implement the {@link #parserImplFactory()} method to return the extension parser implementation.
  */
-public class SqlParserTest {
+public class SqlParserTest extends LanguageManagerDependant {
 
     /**
      * List of reserved keywords.
@@ -614,9 +615,9 @@ public class SqlParserTest {
 
 
     protected SqlParser getSqlParser( Reader source ) {
-        return MockConfigBuilder.createMockParser( source,
-                MockConfigBuilder
-                        .mockParserConfig()
+        return (SqlParser) Parser.create( source,
+                Parser
+                        .configBuilder()
                         .setParserFactory( parserImplFactory() )
                         .setQuoting( quoting )
                         .setUnquotedCasing( unquotedCasing )

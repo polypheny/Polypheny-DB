@@ -46,6 +46,7 @@ import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -123,7 +124,7 @@ import org.polypheny.db.util.Util;
  * <li>Executing the function. Pay particular attention to corner cases such as null arguments or null results.</li>
  * </ul>
  */
-public abstract class SqlOperatorBaseTest {
+public abstract class SqlOperatorBaseTest extends LanguageManagerDependant {
 
     // TODO: Change message when Fnl3Fixed to something like "Invalid character for cast: PC=0 Code=22018"
     public static final String INVALID_CHAR_MESSAGE = Bug.FNL3_FIXED ? null : "(?s).*";

@@ -36,10 +36,10 @@ package org.polypheny.db.adapter.druid;
 
 import com.google.common.collect.Iterables;
 import java.util.List;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 
 
 /**
@@ -47,11 +47,11 @@ import org.polypheny.db.sql.SqlOperator;
  */
 public class UnarySuffixOperatorConversion implements DruidSqlOperatorConverter {
 
-    private final SqlOperator operator;
+    private final Operator operator;
     private final String druidOperator;
 
 
-    public UnarySuffixOperatorConversion( SqlOperator operator, String druidOperator ) {
+    public UnarySuffixOperatorConversion( Operator operator, String druidOperator ) {
         this.operator = operator;
         this.druidOperator = druidOperator;
     }
@@ -75,5 +75,6 @@ public class UnarySuffixOperatorConversion implements DruidSqlOperatorConverter 
 
         return DruidQuery.format( "(%s %s)", Iterables.getOnlyElement( druidExpressions ), druidOperator );
     }
+
 }
 

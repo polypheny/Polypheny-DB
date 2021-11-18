@@ -56,7 +56,6 @@ import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Function.FunctionType;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.SpecialOperator;
 import org.polypheny.db.core.StdOperatorRegistry;
@@ -330,7 +329,7 @@ public class RexBuilder {
                             StdOperatorRegistry.get( "GREATER_THAN" ),
                             new RexOver(
                                     bigintType,
-                                    StdOperatorRegistry.get( "COUNT", Node.class ),
+                                    StdOperatorRegistry.get( "COUNT" ),
                                     exprs,
                                     window,
                                     distinct ),

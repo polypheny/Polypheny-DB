@@ -24,8 +24,9 @@ import java.io.StringWriter;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.core.DiffRepository;
-import org.polypheny.db.languages.core.MockConfigBuilder;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
@@ -39,7 +40,7 @@ import org.polypheny.db.util.Litmus;
  *
  * You must provide the system property "source.dir".
  */
-public class SqlPrettyWriterTest {
+public class SqlPrettyWriterTest extends LanguageManagerDependant {
 
     public static final String NL = System.getProperty( "line.separator" );
 
@@ -59,7 +60,7 @@ public class SqlPrettyWriterTest {
     protected SqlNode parseQuery( String sql ) {
         SqlNode node;
         try {
-            node = (SqlNode) MockConfigBuilder.createMockParser( sql ).parseQuery();
+            node = (SqlNode) Parser.create( sql ).parseQuery();
         } catch ( NodeParseException e ) {
             String message = "Received error while parsing SQL '" + sql + "'; error is:" + NL + e.toString();
             throw new AssertionError( message );

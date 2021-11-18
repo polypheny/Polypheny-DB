@@ -44,7 +44,7 @@ import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.core.DiffRepository;
-import org.polypheny.db.languages.core.MockConfigBuilder;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -87,7 +87,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  * SQL statements to be translated can use the schema defined in {@link MockCatalogReader}; note that this is slightly different from Farrago's SALES schema. If you get a parser or validator
  * error from your test SQL, look down in the stack until you see "Caused by", which will usually tell you the real error.
  */
-public abstract class SqlToRelTestBase {
+public abstract class SqlToRelTestBase extends LanguageManagerDependant {
 
     protected static final String NL = System.getProperty( "line.separator" );
 
@@ -714,8 +714,8 @@ public abstract class SqlToRelTestBase {
 
         @Override
         public SqlNode parseQuery( String sql ) throws Exception {
-            final ParserConfig sqlParserConfig = MockConfigBuilder.mockParserConfig().setConformance( getConformance() ).build();
-            Parser parser = MockConfigBuilder.createMockParser( sql, sqlParserConfig );
+            final ParserConfig sqlParserConfig = Parser.configBuilder().setConformance( getConformance() ).build();
+            Parser parser = Parser.create( sql, sqlParserConfig );
             return (SqlNode) parser.parseQuery();
         }
 

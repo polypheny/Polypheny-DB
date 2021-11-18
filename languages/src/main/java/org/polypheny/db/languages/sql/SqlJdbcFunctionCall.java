@@ -400,7 +400,13 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
-        thisOperands = (SqlNode[]) operands;
+        SqlNode[] nodes = new SqlNode[operands.length];
+        int i = 0;
+        for ( Node operand : operands ) {
+            nodes[i] = (SqlNode) operand;
+            i++;
+        } //todo dl change
+        thisOperands = nodes;
         return super.createCall( functionQualifier, pos, operands );
     }
 

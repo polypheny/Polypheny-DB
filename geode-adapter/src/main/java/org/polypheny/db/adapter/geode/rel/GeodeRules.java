@@ -38,7 +38,9 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -57,8 +59,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 
 
@@ -83,7 +83,7 @@ public class GeodeRules {
      * Returns 'string' if it is a call to item['string'], null otherwise.
      */
     static String isItem( RexCall call ) {
-        if ( call.getOperator() != SqlStdOperatorTable.ITEM ) {
+        if ( call.getOperator() != StdOperatorRegistry.get( "ITEM" ) ) {
             return null;
         }
         final RexNode op0 = call.getOperands().get( 0 );
@@ -114,7 +114,7 @@ public class GeodeRules {
             }
         };
 
-        return SqlValidatorUtil.uniquify( fieldNames, true );
+        return ValidatorUtil.uniquify( fieldNames, true );
     }
 
 
@@ -141,7 +141,7 @@ public class GeodeRules {
         @Override
         public String visitCall( RexCall call ) {
             final List<String> strings = visitList( call.operands );
-            if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
+            if ( call.getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
                 final RexNode op1 = call.getOperands().get( 1 );
                 if ( op1 instanceof RexLiteral ) {
                     if ( op1.getType().getPolyType() == PolyType.INTEGER ) {
@@ -168,6 +168,7 @@ public class GeodeRules {
             }
             return strings;
         }
+
     }
 
 
@@ -203,6 +204,7 @@ public class GeodeRules {
             final RelTraitSet traitSet = project.getTraitSet().replace( out );
             return new GeodeProject( project.getCluster(), traitSet, convert( project.getInput(), out ), project.getProjects(), project.getRowType() );
         }
+
     }
 
 
@@ -225,6 +227,7 @@ public class GeodeRules {
             final RelTraitSet traitSet = aggregate.getTraitSet().replace( out );
             return new GeodeAggregate( aggregate.getCluster(), traitSet, convert( aggregate.getInput(), traitSet.simplify() ), aggregate.indicator, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList() );
         }
+
     }
 
 
@@ -253,6 +256,7 @@ public class GeodeRules {
 
             call.transformTo( geodeSort );
         }
+
     }
 
 
@@ -348,7 +352,7 @@ public class GeodeRules {
                 return (leftName != null) && (rightName != null);
             }
             if ( left.isA( Kind.OTHER_FUNCTION ) && right.isA( Kind.LITERAL ) ) {
-                if ( ((RexCall) left).getOperator() != SqlStdOperatorTable.ITEM ) {
+                if ( !((RexCall) left).getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
                     return false;
                 }
                 // Should be ITEM
@@ -374,6 +378,7 @@ public class GeodeRules {
             final RelTraitSet traitSet = filter.getTraitSet().replace( GeodeRel.CONVENTION );
             return new GeodeFilter( filter.getCluster(), traitSet, convert( filter.getInput(), GeodeRel.CONVENTION ), filter.getCondition() );
         }
+
     }
 
 
@@ -389,6 +394,8 @@ public class GeodeRules {
             super( clazz, Convention.NONE, GeodeRel.CONVENTION, description );
             this.out = GeodeRel.CONVENTION;
         }
+
     }
+
 }
 

@@ -213,7 +213,7 @@ public abstract class SqlOperator extends Operator {
         for ( Node operand : operands ) {
             nodes[i] = (SqlNode) operand;
             i++;
-        }
+        } //todo dl change
         return new SqlBasicCall( this, nodes, pos, false, (SqlLiteral) functionQualifier );
     }
 

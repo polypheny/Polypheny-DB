@@ -27,7 +27,6 @@ import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Modality;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlAsOperator;
@@ -79,24 +78,6 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
      * The standard operator table.
      */
     private static SqlStdOperatorTable instance;
-
-
-    static {
-        StdOperatorRegistry.register( "DEFAULT", new SqlDefaultOperator() );
-
-        /**
-         * Logical greater-than operator, '<code>&gt;</code>'.
-         */
-        StdOperatorRegistry.register( "GREATER_THAN", new SqlBinaryOperator(
-                ">",
-                Kind.GREATER_THAN,
-                30,
-                true,
-                ReturnTypes.BOOLEAN_NULLABLE,
-                InferTypes.FIRST_KNOWN,
-                OperandTypes.COMPARABLE_ORDERED_COMPARABLE_ORDERED ) );
-
-    }
 
 
     //-------------------------------------------------------------

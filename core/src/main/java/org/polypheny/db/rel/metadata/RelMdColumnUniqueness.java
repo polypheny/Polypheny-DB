@@ -198,7 +198,7 @@ public class RelMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
                 // If the expression is a cast such that the types are the same except for the nullability, then if we're ignoring nulls, it doesn't matter whether the underlying column reference
                 // is nullable.  Check that the types are the same by making a nullable copy of both types and then comparing them.
                 RexCall call = (RexCall) projExpr;
-                if ( call.getOperator() != StdOperatorRegistry.get( "CAST" ) ) {
+                if ( !call.getOperator().equals( StdOperatorRegistry.get( "CAST" ) ) ) {
                     continue;
                 }
                 RexNode castOperand = call.getOperands().get( 0 );

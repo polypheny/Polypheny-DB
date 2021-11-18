@@ -48,6 +48,7 @@ import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
@@ -101,7 +102,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for methods in {@link Frameworks}.
  */
-public class FrameworksTest {
+public class FrameworksTest extends LanguageManagerDependant {
 
     @Test
     public void testOptimize() {
@@ -170,7 +171,7 @@ public class FrameworksTest {
      */
     @Test
     public void testTypeSystem() {
-        checkTypeSystem( 19, MockConfigBuilder.build()
+        checkTypeSystem( 19, Frameworks.newConfigBuilder()
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
                         new SlimDataContext() {
@@ -184,7 +185,7 @@ public class FrameworksTest {
                         0,
                         null ) )
                 .build() );
-        checkTypeSystem( 25, MockConfigBuilder.build().typeSystem( HiveLikeTypeSystem.INSTANCE )
+        checkTypeSystem( 25, Frameworks.newConfigBuilder().typeSystem( HiveLikeTypeSystem.INSTANCE )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
                         new SlimDataContext() {
@@ -198,7 +199,7 @@ public class FrameworksTest {
                         0,
                         null ) )
                 .build() );
-        checkTypeSystem( 31, MockConfigBuilder.build().typeSystem( new HiveLikeTypeSystem2() )
+        checkTypeSystem( 31, Frameworks.newConfigBuilder().typeSystem( new HiveLikeTypeSystem2() )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( Frameworks.createRootSchema( false ) ),
                         new SlimDataContext() {
@@ -241,7 +242,7 @@ public class FrameworksTest {
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
-        final FrameworkConfig config = MockConfigBuilder.build()
+        final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( schema ),
@@ -276,7 +277,7 @@ public class FrameworksTest {
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
-        final FrameworkConfig config = MockConfigBuilder.build()
+        final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( schema )
                 .build();
         final Path path = Schemas.path( config.getDefaultSchema() );
@@ -316,11 +317,11 @@ public class FrameworksTest {
         traitDefs.add( ConventionTraitDef.INSTANCE );
         traitDefs.add( RelDistributionTraitDef.INSTANCE );
         ParserConfig parserConfig =
-                MockConfigBuilder.mockParserConfig()
+                Parser.configBuilder( ParserConfig.DEFAULT )
                         .setCaseSensitive( false )
                         .build();
 
-        final FrameworkConfig config = MockConfigBuilder.build()
+        final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
                 .defaultSchema( schema )
                 .traitDefs( traitDefs )

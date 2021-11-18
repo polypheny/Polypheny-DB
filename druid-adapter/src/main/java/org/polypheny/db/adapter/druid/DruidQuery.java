@@ -64,7 +64,10 @@ import org.joda.time.Interval;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.interpreter.BindableRel;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Compiler;
@@ -97,9 +100,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -118,47 +118,47 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      */
     public static final List<DruidSqlOperatorConverter> DEFAULT_OPERATORS_LIST =
             ImmutableList.<DruidSqlOperatorConverter>builder()
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.EXP, "exp" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.CONCAT, "concat" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.DIVIDE_INTEGER, "div" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.LIKE, "like" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.LN, "log" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.SQRT, "sqrt" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.LOWER, "lower" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.LOG10, "log10" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.REPLACE, "replace" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.UPPER, "upper" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.POWER, "pow" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.ABS, "abs" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.SIN, "sin" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.COS, "cos" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.TAN, "tan" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.CASE, "case_searched" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.CHAR_LENGTH, "strlen" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.CHARACTER_LENGTH, "strlen" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.EQUALS, "==" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.NOT_EQUALS, "!=" ) )
-                    .add( new NaryOperatorConverter( SqlStdOperatorTable.OR, "||" ) )
-                    .add( new NaryOperatorConverter( SqlStdOperatorTable.AND, "&&" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.LESS_THAN, "<" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, "<=" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.GREATER_THAN, ">" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, ">=" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.PLUS, "+" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.MINUS, "-" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.MULTIPLY, "*" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.DIVIDE, "/" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.MOD, "%" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "EXP" ), "exp" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "CONCAT" ), "concat" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "DIVIDE_INTEGER" ), "div" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "LIKE" ), "like" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "LN" ), "log" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "SQRT" ), "sqrt" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "LOWER" ), "lower" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "LOG10" ), "log10" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "REPLACE" ), "replace" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "UPPER" ), "upper" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "POWER" ), "pow" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "ABS" ), "abs" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "SIN" ), "sin" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "COS" ), "cos" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "TAN" ), "tan" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "CASE" ), "case_searched" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "CHAR_LENGTH" ), "strlen" ) )
+                    .add( new DirectOperatorConversion( StdOperatorRegistry.get( "CHARACTER_LENGTH" ), "strlen" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "EQUALS" ), "==" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "NOT_EQUALS" ), "!=" ) )
+                    .add( new NaryOperatorConverter( StdOperatorRegistry.get( "OR" ), "||" ) )
+                    .add( new NaryOperatorConverter( StdOperatorRegistry.get( "AND" ), "&&" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "LESS_THAN" ), "<" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ), "<=" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "GREATER_THAN" ), ">" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ), ">=" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "PLUS" ), "+" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "MINUS" ), "-" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "MULTIPLY" ), "*" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "DIVIDE" ), "/" ) )
+                    .add( new BinaryOperatorConversion( StdOperatorRegistry.get( "MOD" ), "%" ) )
                     .add( new DruidSqlCastConverter() )
                     .add( new ExtractOperatorConversion() )
-                    .add( new UnaryPrefixOperatorConversion( SqlStdOperatorTable.NOT, "!" ) )
-                    .add( new UnaryPrefixOperatorConversion( SqlStdOperatorTable.UNARY_MINUS, "-" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_FALSE, "<= 0" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_NOT_TRUE, "<= 0" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_TRUE, "> 0" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_NOT_FALSE, "> 0" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_NULL, "== null" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_NOT_NULL, "!= null" ) )
+                    .add( new UnaryPrefixOperatorConversion( StdOperatorRegistry.get( "NOT" ), "!" ) )
+                    .add( new UnaryPrefixOperatorConversion( StdOperatorRegistry.get( "UNARY_MINUS" ), "-" ) )
+                    .add( new UnarySuffixOperatorConversion( StdOperatorRegistry.get( "IS_FALSE" ), "<= 0" ) )
+                    .add( new UnarySuffixOperatorConversion( StdOperatorRegistry.get( "IS_NOT_TRUE" ), "<= 0" ) )
+                    .add( new UnarySuffixOperatorConversion( StdOperatorRegistry.get( "IS_TRUE" ), "> 0" ) )
+                    .add( new UnarySuffixOperatorConversion( StdOperatorRegistry.get( "IS_NOT_FALSE" ), "> 0" ) )
+                    .add( new UnarySuffixOperatorConversion( StdOperatorRegistry.get( "IS_NULL" ), "== null" ) )
+                    .add( new UnarySuffixOperatorConversion( StdOperatorRegistry.get( "IS_NOT_NULL" ), "!= null" ) )
                     .add( new FloorOperatorConversion() )
                     .add( new CeilOperatorConversion() )
                     .add( new SubstringOperatorConversion() )
@@ -172,7 +172,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     /**
      * This operator map provides DruidSqlOperatorConverter instance to convert a Polypheny-DB RexNode to Druid Expression when possible.
      */
-    final Map<SqlOperator, DruidSqlOperatorConverter> converterOperatorMap;
+    final Map<Operator, DruidSqlOperatorConverter> converterOperatorMap;
 
     private static final Pattern VALID_SIG = Pattern.compile( "sf?p?(a?|ah|ah?o)l?" );
     private static final String EXTRACT_COLUMN_NAME_PREFIX = "extract";
@@ -192,7 +192,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * @param rels Internal relational expressions
      * @param converterOperatorMap mapping of Polypheny-DB Sql Operator to Druid Expression API.
      */
-    protected DruidQuery( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<Interval> intervals, List<RelNode> rels, Map<SqlOperator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    protected DruidQuery( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<Interval> intervals, List<RelNode> rels, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         super( cluster, traitSet );
         this.table = table;
         this.druidTable = druidTable;
@@ -215,7 +215,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * Creates a DruidQuery.
      */
     public static DruidQuery create( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<RelNode> rels ) {
-        final ImmutableMap.Builder<SqlOperator, DruidSqlOperatorConverter> mapBuilder = ImmutableMap.builder();
+        final ImmutableMap.Builder<Operator, DruidSqlOperatorConverter> mapBuilder = ImmutableMap.builder();
         for ( DruidSqlOperatorConverter converter : DEFAULT_OPERATORS_LIST ) {
             mapBuilder.put( converter.polyphenyDbOperator(), converter );
         }
@@ -226,7 +226,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<RelNode> rels, Map<SqlOperator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    public static DruidQuery create( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<RelNode> rels, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         return create( cluster, traitSet, table, druidTable, druidTable.intervals, rels, converterOperatorMap );
     }
 
@@ -234,7 +234,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     /**
      * Creates a DruidQuery.
      */
-    private static DruidQuery create( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<Interval> intervals, List<RelNode> rels, Map<SqlOperator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    private static DruidQuery create( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<Interval> intervals, List<RelNode> rels, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         return new DruidQuery( cluster, traitSet, table, druidTable, intervals, rels, converterOperatorMap );
     }
 
@@ -493,7 +493,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     }
 
 
-    protected Map<SqlOperator, DruidSqlOperatorConverter> getOperatorConversionMap() {
+    protected Map<Operator, DruidSqlOperatorConverter> getOperatorConversionMap() {
         return converterOperatorMap;
     }
 
@@ -776,7 +776,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 if ( expression == null ) {
                     return null;
                 }
-                final String virColName = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                final String virColName = ValidatorUtil.uniquify( "vc", usedFieldNames, ValidatorUtil.EXPR_SUGGESTER );
                 virtualColumnsBuilder.add( VirtualColumn.builder()
                         .withName( virColName )
                         .withExpression( expression ).withType( DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) )
@@ -786,7 +786,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             } else {
                 // simple inputRef or extractable function
                 if ( usedFieldNames.contains( druidColumn.left ) ) {
-                    final String virColName = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                    final String virColName = ValidatorUtil.uniquify( "vc", usedFieldNames, ValidatorUtil.EXPR_SUGGESTER );
                     virtualColumnsBuilder.add( VirtualColumn.builder()
                             .withName( virColName )
                             .withExpression( DruidExpressions.fromColumn( druidColumn.left ) ).withType( DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) )
@@ -849,7 +849,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 } else {
                     columnPrefix = "extract";
                 }
-                final String uniqueExtractColumnName = SqlValidatorUtil.uniquify( columnPrefix, usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                final String uniqueExtractColumnName = ValidatorUtil.uniquify( columnPrefix, usedFieldNames, ValidatorUtil.EXPR_SUGGESTER );
                 dimensionSpec = new ExtractionDimensionSpec( druidColumn.left, druidColumn.right, uniqueExtractColumnName );
                 usedFieldNames.add( uniqueExtractColumnName );
             } else {
@@ -858,7 +858,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 if ( Strings.isNullOrEmpty( expression ) ) {
                     return null;
                 }
-                final String name = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                final String name = ValidatorUtil.uniquify( "vc", usedFieldNames, ValidatorUtil.EXPR_SUGGESTER );
                 VirtualColumn vc = new VirtualColumn( name, expression, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) );
                 virtualColumnList.add( vc );
                 dimensionSpec = new DefaultDimensionSpec( name, name, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) );
@@ -1018,7 +1018,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     // simple input ref or Druid runtime identity cast will skip it, since it is here already
                     postProjectDimListBuilder.add( existingFieldName );
                 } else {
-                    final String uniquelyProjectFieldName = SqlValidatorUtil.uniquify( pair.right, existingAggFieldsNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                    final String uniquelyProjectFieldName = ValidatorUtil.uniquify( pair.right, existingAggFieldsNames, ValidatorUtil.EXPR_SUGGESTER );
                     postAggs.add( new JsonExpressionPostAgg( uniquelyProjectFieldName, expression, null ) );
                     postProjectDimListBuilder.add( uniquelyProjectFieldName );
                     existingAggFieldsNames.add( uniquelyProjectFieldName );
@@ -1299,6 +1299,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             }
             return sw.toString();
         }
+
     }
 
 
@@ -1505,6 +1506,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             return queryString.replace( "\"threshold\":",
                     "\"pagingIdentifiers\":{\"" + pagingIdentifier + "\":" + offset + "},\"threshold\":" );
         }
+
     }
 
 
@@ -1569,6 +1571,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     return null;
             }
         }
+
     }
 
 
@@ -1600,6 +1603,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "expression", expression );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1626,6 +1630,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "ordering", ordering );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1654,6 +1659,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "columns", collations );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1682,6 +1688,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "dimensionOrder", dimensionOrder );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1708,6 +1715,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "fieldNames", fieldNames );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1736,6 +1744,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeField( generator, "aggregator", aggregation );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1776,5 +1785,6 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     protected int getTimestampFieldIndex() {
         return Iterables.indexOf( this.getRowType().getFieldList(), input -> druidTable.timestampFieldName.equals( input.getName() ) );
     }
+
 }
 

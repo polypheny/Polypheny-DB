@@ -48,84 +48,84 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
 
         // Register convertlets
 
-        registerEquivOp( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUA" ) );
-        registerEquivOp( StdOperatorRegistry.get( "GREATER_THA" ) );
-        registerEquivOp( StdOperatorRegistry.get( "LESS_THAN_OR_EQUA" ) );
-        registerEquivOp( StdOperatorRegistry.get( "LESS_THA" ) );
+        registerEquivOp( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ) );
+        registerEquivOp( StdOperatorRegistry.get( "GREATER_THAN" ) );
+        registerEquivOp( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ) );
+        registerEquivOp( StdOperatorRegistry.get( "LESS_THAN" ) );
         registerEquivOp( StdOperatorRegistry.get( "EQUAL" ) );
         registerEquivOp( StdOperatorRegistry.get( "NOT_EQUAL" ) );
-        registerEquivOp( StdOperatorRegistry.get( "AN" ) );
-        registerEquivOp( StdOperatorRegistry.get( "O" ) );
-        registerEquivOp( StdOperatorRegistry.get( "NOT_I" ) );
-        registerEquivOp( StdOperatorRegistry.get( "I" ) );
-        registerEquivOp( StdOperatorRegistry.get( "LIK" ) );
-        registerEquivOp( StdOperatorRegistry.get( "NOT_LIK" ) );
-        registerEquivOp( StdOperatorRegistry.get( "SIMILAR_T" ) );
-        registerEquivOp( StdOperatorRegistry.get( "NOT_SIMILAR_T" ) );
-        registerEquivOp( StdOperatorRegistry.get( "PLU" ) );
-        registerEquivOp( StdOperatorRegistry.get( "MINU" ) );
-        registerEquivOp( StdOperatorRegistry.get( "MULTIPL" ) );
-        registerEquivOp( StdOperatorRegistry.get( "DIVID" ) );
+        registerEquivOp( StdOperatorRegistry.get( "AND" ) );
+        registerEquivOp( StdOperatorRegistry.get( "OR" ) );
+        registerEquivOp( StdOperatorRegistry.get( "NOT_IN" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IN" ) );
+        registerEquivOp( StdOperatorRegistry.get( "LIKE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "NOT_LIKE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "SIMILAR_TO" ) );
+        registerEquivOp( StdOperatorRegistry.get( "NOT_SIMILAR_TO" ) );
+        registerEquivOp( StdOperatorRegistry.get( "PLUS" ) );
+        registerEquivOp( StdOperatorRegistry.get( "MINUS" ) );
+        registerEquivOp( StdOperatorRegistry.get( "MULTIPLE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "DIVIDE" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "NO" ) );
+        registerEquivOp( StdOperatorRegistry.get( "NOT" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_NUL" ) );
-        registerEquivOp( StdOperatorRegistry.get( "IS_NUL" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_NULL" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_NULL" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_TRU" ) );
-        registerEquivOp( StdOperatorRegistry.get( "IS_TRU" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_TRUE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_TRUE" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_FALS" ) );
-        registerEquivOp( StdOperatorRegistry.get( "IS_FALS" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_FALSE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_FALSE" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_UNKNOW" ) );
-        registerEquivOp( StdOperatorRegistry.get( "IS_UNKNOW" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_UNKNOWN" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_UNKNOWN" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "UNARY_MINU" ) );
-        registerEquivOp( StdOperatorRegistry.get( "UNARY_PLU" ) );
+        registerEquivOp( StdOperatorRegistry.get( "UNARY_MINUS" ) );
+        registerEquivOp( StdOperatorRegistry.get( "UNARY_PLUS" ) );
 
-        registerCaseOp( StdOperatorRegistry.get( "CAS" ) );
-        registerEquivOp( StdOperatorRegistry.get( "CONCA" ) );
+        registerCaseOp( StdOperatorRegistry.get( "CASE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "CONCAT" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "BETWEE" ) );
-        registerEquivOp( StdOperatorRegistry.get( "SYMMETRIC_BETWEE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "BETWEEN" ) );
+        registerEquivOp( StdOperatorRegistry.get( "SYMMETRIC_BETWEEN" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "NOT_BETWEE" ) );
-        registerEquivOp( StdOperatorRegistry.get( "SYMMETRIC_NOT_BETWEE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "NOT_BETWEEN" ) );
+        registerEquivOp( StdOperatorRegistry.get( "SYMMETRIC_NOT_BETWEEN" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_DISTINCT_FRO" ) );
-        registerEquivOp( StdOperatorRegistry.get( "IS_DISTINCT_FRO" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ) );
+        registerEquivOp( StdOperatorRegistry.get( "IS_DISTINCT_FROM" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "MINUS_DAT" ) );
-        registerEquivOp( StdOperatorRegistry.get( "EXTRAC" ) );
+        registerEquivOp( StdOperatorRegistry.get( "MINUS_DATE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "EXTRACT" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "SUBSTRIN" ) );
-        registerEquivOp( StdOperatorRegistry.get( "CONVER" ) );
-        registerEquivOp( StdOperatorRegistry.get( "TRANSLAT" ) );
-        registerEquivOp( StdOperatorRegistry.get( "OVERLA" ) );
-        registerEquivOp( StdOperatorRegistry.get( "TRI" ) );
+        registerEquivOp( StdOperatorRegistry.get( "SUBSTRING" ) );
+        registerEquivOp( StdOperatorRegistry.get( "CONVERT" ) );
+        registerEquivOp( StdOperatorRegistry.get( "TRANSLATE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "OVERLAY" ) );
+        registerEquivOp( StdOperatorRegistry.get( "TRIM" ) );
         registerEquivOp( StdOperatorRegistry.get( "O_TRANSLATE3" ) );
-        registerEquivOp( StdOperatorRegistry.get( "POSITIO" ) );
-        registerEquivOp( StdOperatorRegistry.get( "CHAR_LENGT" ) );
-        registerEquivOp( StdOperatorRegistry.get( "CHARACTER_LENGT" ) );
-        registerEquivOp( StdOperatorRegistry.get( "UPPE" ) );
-        registerEquivOp( StdOperatorRegistry.get( "LOWE" ) );
-        registerEquivOp( StdOperatorRegistry.get( "INITCA" ) );
+        registerEquivOp( StdOperatorRegistry.get( "POSITION" ) );
+        registerEquivOp( StdOperatorRegistry.get( "CHAR_LENGTH" ) );
+        registerEquivOp( StdOperatorRegistry.get( "CHARACTER_LENGTH" ) );
+        registerEquivOp( StdOperatorRegistry.get( "UPPER" ) );
+        registerEquivOp( StdOperatorRegistry.get( "LOWER" ) );
+        registerEquivOp( StdOperatorRegistry.get( "INITCAP" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "POWE" ) );
-        registerEquivOp( StdOperatorRegistry.get( "SQR" ) );
-        registerEquivOp( StdOperatorRegistry.get( "MO" ) );
-        registerEquivOp( StdOperatorRegistry.get( "L" ) );
+        registerEquivOp( StdOperatorRegistry.get( "POWER" ) );
+        registerEquivOp( StdOperatorRegistry.get( "SQRT" ) );
+        registerEquivOp( StdOperatorRegistry.get( "MOD" ) );
+        registerEquivOp( StdOperatorRegistry.get( "LN" ) );
         registerEquivOp( StdOperatorRegistry.get( "LOG10" ) );
-        registerEquivOp( StdOperatorRegistry.get( "AB" ) );
-        registerEquivOp( StdOperatorRegistry.get( "EX" ) );
-        registerEquivOp( StdOperatorRegistry.get( "FLOO" ) );
-        registerEquivOp( StdOperatorRegistry.get( "CEI" ) );
+        registerEquivOp( StdOperatorRegistry.get( "ABS" ) );
+        registerEquivOp( StdOperatorRegistry.get( "EXP" ) );
+        registerEquivOp( StdOperatorRegistry.get( "FLOOR" ) );
+        registerEquivOp( StdOperatorRegistry.get( "CEIL" ) );
 
-        registerEquivOp( StdOperatorRegistry.get( "NULLI" ) );
-        registerEquivOp( StdOperatorRegistry.get( "COALESC" ) );
+        registerEquivOp( StdOperatorRegistry.get( "NULLIF" ) );
+        registerEquivOp( StdOperatorRegistry.get( "COALESCE" ) );
 
-        registerTypeAppendOp( StdOperatorRegistry.get( "CAS" ) );
+        registerTypeAppendOp( StdOperatorRegistry.get( "CASE" ) );
     }
 
 

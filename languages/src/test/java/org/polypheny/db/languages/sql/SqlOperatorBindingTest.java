@@ -26,6 +26,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
@@ -40,7 +41,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 /**
  * Unit tests for {@link RexProgram} and {@link RexProgramBuilder}.
  */
-public class SqlOperatorBindingTest {
+public class SqlOperatorBindingTest extends LanguageManagerDependant {
 
     private RexBuilder rexBuilder;
     private RelDataType integerDataType;

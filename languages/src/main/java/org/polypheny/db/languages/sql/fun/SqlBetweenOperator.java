@@ -229,7 +229,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
         @Override
         public Void visit( Call call ) {
             final Operator operator = call.getOperator();
-            if ( operator == SqlStdOperatorTable.AND ) {
+            if ( operator.equals( SqlStdOperatorTable.AND ) ) {
                 throw Util.FoundOne.NULL;
             }
             return super.visit( call );

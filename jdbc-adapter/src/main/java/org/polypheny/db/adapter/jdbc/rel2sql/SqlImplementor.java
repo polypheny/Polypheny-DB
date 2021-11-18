@@ -441,8 +441,8 @@ public abstract class SqlImplementor {
                 || node instanceof SqlMatchRecognize
                 || node instanceof SqlCall
                 && (((SqlCall) node).getOperator() instanceof SqlSetOperator
-                || ((SqlCall) node).getOperator() == StdOperatorRegistry.get( "AS" )
-                || ((SqlCall) node).getOperator() == StdOperatorRegistry.get( "VALUES" ))
+                || ((SqlCall) node).getOperator().equals( StdOperatorRegistry.get( "AS" ) )
+                || ((SqlCall) node).getOperator().equals( StdOperatorRegistry.get( "VALUES" ) ))
                 : node;
         return new SqlSelect(
                 POS,

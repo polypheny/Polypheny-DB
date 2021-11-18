@@ -32,11 +32,11 @@ import org.polypheny.db.core.ConformanceEnum;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.MockSqlOperatorTable;
+import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.core.MockConfigBuilder;
 import org.polypheny.db.languages.sql.advise.SqlAdvisor;
-import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidatorWithHints;
@@ -60,7 +60,7 @@ public class SqlTestFactory {
                     .put( "unquotedCasing", Casing.TO_UPPER )
                     .put( "caseSensitive", true )
                     .put( "conformance", ConformanceEnum.DEFAULT )
-                    //.put( "operatorTable", StdOperatorRegistry )
+                    .put( "operatorTable", LanguageManager.getInstance().getStdOperatorTable() )
                     .build();
 
     public static final SqlTestFactory INSTANCE = new SqlTestFactory();
@@ -104,13 +104,13 @@ public class SqlTestFactory {
     }
 
 
-    public SqlParser createParser( String sql ) {
-        return MockConfigBuilder.createMockParser( new SourceStringReader( sql ), parserConfig.get() );
+    public Parser createParser( String sql ) {
+        return Parser.create( new SourceStringReader( sql ), parserConfig.get() );
     }
 
 
     public static ParserConfig createParserConfig( ImmutableMap<String, Object> options ) {
-        return MockConfigBuilder.mockParserConfig()
+        return Parser.configBuilder()
                 .setQuoting( (Quoting) options.get( "quoting" ) )
                 .setUnquotedCasing( (Casing) options.get( "unquotedCasing" ) )
                 .setQuotedCasing( (Casing) options.get( "quotedCasing" ) )
@@ -194,6 +194,7 @@ public class SqlTestFactory {
     public interface ValidatorFactory {
 
         SqlValidator create( OperatorTable opTab, ValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance );
+
     }
 
 
@@ -204,6 +205,8 @@ public class SqlTestFactory {
     public interface MockCatalogReaderFactory {
 
         MockCatalogReader create( RelDataTypeFactory typeFactory, boolean caseSensitive );
+
     }
+
 }
 

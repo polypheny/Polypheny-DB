@@ -606,7 +606,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
                     @Override
                     public SqlNode visit( Call call ) {
                         final SqlOperator operator = (SqlOperator) call.getOperator();
-                        if ( operator == StdOperatorRegistry.get( "CAST" ) && isNull( call.operand( 0 ) ) ) {
+                        if ( operator.equals( StdOperatorRegistry.get( "CAST" ) ) && isNull( call.operand( 0 ) ) ) {
                             literalSet.add( (SqlNode) call );
                             return (SqlNode) call;
                         } else if ( ops.contains( operator ) ) {

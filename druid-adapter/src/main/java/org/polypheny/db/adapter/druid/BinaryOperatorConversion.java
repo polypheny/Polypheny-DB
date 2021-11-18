@@ -35,10 +35,10 @@ package org.polypheny.db.adapter.druid;
 
 
 import java.util.List;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 
 
 /**
@@ -46,11 +46,11 @@ import org.polypheny.db.sql.SqlOperator;
  */
 public class BinaryOperatorConversion implements DruidSqlOperatorConverter {
 
-    private final SqlOperator operator;
+    private final Operator operator;
     private final String druidOperator;
 
 
-    public BinaryOperatorConversion( final SqlOperator operator, final String druidOperator ) {
+    public BinaryOperatorConversion( final Operator operator, final String druidOperator ) {
         this.operator = operator;
         this.druidOperator = druidOperator;
     }
@@ -77,4 +77,5 @@ public class BinaryOperatorConversion implements DruidSqlOperatorConverter {
 
         return DruidQuery.format( "(%s %s %s)", druidExpressions.get( 0 ), druidOperator, druidExpressions.get( 1 ) );
     }
+
 }

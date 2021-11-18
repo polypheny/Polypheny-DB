@@ -56,7 +56,7 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Unit tests for {@link Interpreter}.
  */
-public class InterpreterTest {
+public class InterpreterTest extends LanguageManagerDependant {
 
     private SchemaPlus rootSchema;
     private Planner planner;
@@ -136,7 +136,7 @@ public class InterpreterTest {
     public void setUp() {
         rootSchema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
 
-        final FrameworkConfig config = MockConfigBuilder.build()
+        final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema )
                 .prepareContext( new ContextImpl(

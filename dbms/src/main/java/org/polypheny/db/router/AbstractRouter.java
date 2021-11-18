@@ -1345,7 +1345,7 @@ public abstract class AbstractRouter implements Router {
             super.visitCall( call );
 
             if ( call.operands.size() == 2 ) {
-                if ( call.op.getKind().equals( Kind.EQUALS ) ) {
+                if ( call.op.getKind() == Kind.EQUALS ) {
                     if ( call.operands.get( 0 ) instanceof RexInputRef ) {
                         if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
                             if ( call.operands.get( 1 ) instanceof RexLiteral ) {
