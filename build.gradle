@@ -59,10 +59,6 @@ allprojects {
             url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
         }
         maven {
-            url "https://clojars.org/repo/"
-        }
-        mavenCentral()
-        maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
     }
