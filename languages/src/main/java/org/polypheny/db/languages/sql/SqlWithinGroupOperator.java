@@ -67,7 +67,7 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
 
     @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
-        assert call.getOperator() == this;
+        assert call.getOperator().equals( this );
         assert call.operandCount() == 2;
         SqlCall aggCall = call.operand( 0 );
         if ( !aggCall.getOperator().isAggregator() ) {

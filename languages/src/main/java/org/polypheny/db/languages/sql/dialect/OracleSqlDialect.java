@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql.dialect;
 
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -25,7 +26,6 @@ import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlFloorFunction;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 
 
 /**
@@ -67,7 +67,7 @@ public class OracleSqlDialect extends SqlDialect {
 
     @Override
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        if ( call.getOperator() == SqlStdOperatorTable.SUBSTRING ) {
+        if ( call.getOperator().equals( StdOperatorRegistry.get( "SUBSTRING" ) ) ) {
             SqlUtil.unparseFunctionSyntax( OracleSqlOperatorTable.SUBSTR, writer, call );
         } else {
             switch ( call.getKind() ) {
@@ -89,5 +89,6 @@ public class OracleSqlDialect extends SqlDialect {
             }
         }
     }
+
 }
 

@@ -17,6 +17,7 @@
 package org.polypheny.db.core;
 
 import javax.annotation.Nonnull;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 public interface Function {
@@ -28,21 +29,17 @@ public interface Function {
     @Nonnull
     FunctionCategory getFunctionCategory();
 
+    @AllArgsConstructor
     enum FunctionType {
         COUNT( true ),
         SINGLE_VALUE( true ),
         JSON_VALUE( false ),
-        DOC_EQUAL( false ),
         CAST( false ),
         OTHER( false );
 
         @Getter
         private final boolean isAgg;
 
-
-        FunctionType( boolean isAgg ) {
-            this.isAgg = isAgg;
-        }
     }
 
 }

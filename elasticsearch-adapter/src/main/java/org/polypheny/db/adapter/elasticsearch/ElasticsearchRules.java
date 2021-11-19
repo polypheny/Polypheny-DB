@@ -190,7 +190,7 @@ class ElasticsearchRules {
             if ( call.getKind() == Kind.CAST ) {
                 return strings.get( 0 ).startsWith( "$" ) ? strings.get( 0 ).substring( 1 ) : strings.get( 0 );
             }
-            if ( call.getOperator() == StdOperatorRegistry.get( "ITEM" ) ) {
+            if ( call.getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
                 final RexNode op1 = call.getOperands().get( 1 );
                 if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                     return stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]";

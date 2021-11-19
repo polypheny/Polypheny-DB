@@ -83,7 +83,7 @@ public class SqlKeyConstraint extends SqlCall {
 
 
     public ConstraintType getConstraintType() {
-        if ( getOperator() == PRIMARY ) {
+        if ( getOperator().equals( PRIMARY ) ) {
             return ConstraintType.PRIMARY;
         } else {
             return ConstraintType.UNIQUE;

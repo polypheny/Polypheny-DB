@@ -115,7 +115,7 @@ public class RelMdUtil {
     public static double getSelectivityValue( RexNode artificialSelectivityFuncNode ) {
         assert artificialSelectivityFuncNode instanceof RexCall;
         RexCall call = (RexCall) artificialSelectivityFuncNode;
-        assert call.getOperator() == ARTIFICIAL_SELECTIVITY_FUNC;
+        assert call.getOperator().equals( ARTIFICIAL_SELECTIVITY_FUNC );
         RexNode operand = call.getOperands().get( 0 );
         return ((RexLiteral) operand).getValueAs( Double.class );
     }
@@ -372,7 +372,7 @@ public class RelMdUtil {
         for ( RexNode pred : RelOptUtil.conjunctions( predicate ) ) {
             if ( pred.getKind() == Kind.IS_NOT_NULL ) {
                 sel *= .9;
-            } else if ( (pred instanceof RexCall) && (((RexCall) pred).getOperator() == RelMdUtil.ARTIFICIAL_SELECTIVITY_FUNC) ) {
+            } else if ( (pred instanceof RexCall) && (((RexCall) pred).getOperator().equals( RelMdUtil.ARTIFICIAL_SELECTIVITY_FUNC )) ) {
                 artificialSel *= RelMdUtil.getSelectivityValue( pred );
             } else if ( pred.isA( Kind.EQUALS ) ) {
                 sel *= .15;

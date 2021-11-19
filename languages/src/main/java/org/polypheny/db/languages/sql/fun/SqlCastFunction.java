@@ -34,7 +34,6 @@ import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -52,6 +51,12 @@ import org.polypheny.db.type.inference.InferTypes;
  * and hence the return type data is maintained in operand[1] through the validation phase.
  */
 public class SqlCastFunction extends SqlFunction {
+
+    @Override
+    public FunctionType getFunctionType() {
+        return FunctionType.CAST;
+    }
+
 
     /**
      * Map of all casts that do not preserve monotonicity.
@@ -177,7 +182,7 @@ public class SqlCastFunction extends SqlFunction {
         if ( castFrom instanceof PolyTypeFamily && castTo instanceof PolyTypeFamily && nonMonotonicCasts.containsEntry( castFrom, castTo ) ) {
             return Monotonicity.NOT_MONOTONIC;
         } else {
-            return ((SqlOperatorBinding) call).getOperandMonotonicity( 0 );
+            return call.getOperandMonotonicity( 0 );
         }
     }
 

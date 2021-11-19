@@ -4208,7 +4208,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
             }
             if ( rex instanceof RexCall ) {
                 RexCall call = (RexCall) rex;
-                if ( call.getOperator() == StdOperatorRegistry.get( "CAST" ) ) {
+                if ( call.getOperator().equals( StdOperatorRegistry.get( "CAST" ) ) ) {
                     RexNode operand = call.getOperands().get( 0 );
                     if ( operand instanceof RexLiteral ) {
                         return true;

@@ -64,7 +64,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
         registerEquivOp( StdOperatorRegistry.get( "NOT_SIMILAR_TO" ) );
         registerEquivOp( StdOperatorRegistry.get( "PLUS" ) );
         registerEquivOp( StdOperatorRegistry.get( "MINUS" ) );
-        registerEquivOp( StdOperatorRegistry.get( "MULTIPLE" ) );
+        registerEquivOp( StdOperatorRegistry.get( "MULTIPLY" ) );
         registerEquivOp( StdOperatorRegistry.get( "DIVIDE" ) );
 
         registerEquivOp( StdOperatorRegistry.get( "NOT" ) );
@@ -125,7 +125,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
         registerEquivOp( StdOperatorRegistry.get( "NULLIF" ) );
         registerEquivOp( StdOperatorRegistry.get( "COALESCE" ) );
 
-        registerTypeAppendOp( StdOperatorRegistry.get( "CASE" ) );
+        registerTypeAppendOp( StdOperatorRegistry.get( "CAST" ) );
     }
 
 

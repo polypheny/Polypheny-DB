@@ -2674,7 +2674,7 @@ public abstract class RelOptUtil {
                     new RexVisitorImpl<Void>( true ) {
                         @Override
                         public Void visitCall( RexCall call ) {
-                            if ( call.getOperator() == RexBuilder.GET_OPERATOR ) {
+                            if ( call.getOperator().equals( RexBuilder.GET_OPERATOR ) ) {
                                 throw Util.FoundOne.NULL;
                             }
                             return super.visitCall( call );
@@ -2995,7 +2995,7 @@ public abstract class RelOptUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
-            if ( call.getOperator() == RexBuilder.GET_OPERATOR ) {
+            if ( call.getOperator().equals( RexBuilder.GET_OPERATOR ) ) {
                 RexLiteral literal = (RexLiteral) call.getOperands().get( 1 );
                 extraFields.add( new RelDataTypeFieldImpl( (String) literal.getValue2(), -1, call.getType() ) );
             }

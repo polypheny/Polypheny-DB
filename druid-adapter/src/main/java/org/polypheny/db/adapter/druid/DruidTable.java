@@ -50,11 +50,11 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelectKeyword;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
@@ -180,7 +180,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
         // Our rolled up columns are only allowed in COUNT(DISTINCT ...) aggregate functions. We only allow this when approximate results are acceptable.
         return ((approximateDistinctCount
                 && isCountDistinct( (SqlCall) call ))
-                || call.getOperator() == SqlStdOperatorTable.APPROX_COUNT_DISTINCT)
+                || call.getOperator().equals( StdOperatorRegistry.get( "APPROX_COUNT_DISTINCT" ) ))
                 && call.getOperandList().size() == 1 // for COUNT(a_1, a_2, ... a_n). n should be 1
                 && isValidParentKind( (SqlNode) parent );
     }

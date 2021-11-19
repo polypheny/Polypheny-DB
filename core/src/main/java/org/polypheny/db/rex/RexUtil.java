@@ -890,7 +890,7 @@ public class RexUtil {
      * Returns whether a {@link RexNode node} is a {@link RexCall call} to a given {@link Operator operator}.
      */
     public static boolean isCallTo( RexNode expr, Operator op ) {
-        return (expr instanceof RexCall) && (((RexCall) expr).getOperator() == op);
+        return (expr instanceof RexCall) && (((RexCall) expr).getOperator().equals( op ));
     }
 
 
@@ -1349,7 +1349,7 @@ public class RexUtil {
 
     private static void flattenRecurse( List<RexNode> list, List<? extends RexNode> exprs, Operator op ) {
         for ( RexNode expr : exprs ) {
-            if ( expr instanceof RexCall && ((RexCall) expr).getOperator() == op ) {
+            if ( expr instanceof RexCall && ((RexCall) expr).getOperator().equals( op ) ) {
                 flattenRecurse( list, ((RexCall) expr).getOperands(), op );
             } else {
                 list.add( expr );

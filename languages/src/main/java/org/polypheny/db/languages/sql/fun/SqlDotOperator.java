@@ -127,7 +127,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
     @Override
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
-        assert call.getOperator() == this;
+        assert call.getOperator().equals( this );
         // Do not visit call.getOperandList().get(1) here.
         // call.getOperandList().get(1) will be validated when deriveType() is called.
         ((SqlNode) call.getOperandList().get( 0 )).validateExpr( validator, operandScope );

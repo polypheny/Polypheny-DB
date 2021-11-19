@@ -6095,13 +6095,13 @@ public class SqlParserTest extends LanguageManagerDependant {
         // inUrl = "file:/.../core/target/test-classes/hsqldb-model.json"
         String path = "hsqldb-model.json";
         File hsqlDbModel = Sources.of( SqlParserTest.class.getResource( "/" + path ) ).file();
-        assert hsqlDbModel.getAbsolutePath().endsWith( Paths.get( "core", "build", "test-classes", "hsqldb-model.json" ).toString() )
-                : hsqlDbModel.getAbsolutePath() + " should end with core/build/test-classes/hsqldb-model.json";
+        assert hsqlDbModel.getAbsolutePath().endsWith( Paths.get( "languages", "build", "test-classes", "hsqldb-model.json" ).toString() )
+                : hsqlDbModel.getAbsolutePath() + " should end with languages/build/test-classes/hsqldb-model.json";
         // skip hsqldb-model.json, test-classes, target, core
         // The assertion above protects us from walking over unrelated paths
         final File base = hsqlDbModel.getAbsoluteFile().getParentFile().getParentFile().getParentFile().getParentFile();
-        final File inFile = new File( base, "core/_docs/reference.md" );
-        final File outFile = new File( base, "core/build/tmp/reference.md" );
+        final File inFile = new File( base, "languages/_docs/reference.md" );
+        final File outFile = new File( base, "languages/build/tmp/reference.md" );
         outFile.getParentFile().mkdirs();
         try (
                 BufferedReader r = Util.reader( inFile );

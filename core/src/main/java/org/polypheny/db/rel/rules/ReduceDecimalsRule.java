@@ -811,7 +811,7 @@ public class ReduceDecimalsRule extends RelOptRule {
                 return expandTimes( call, operands );
             } else if ( call.isA( Kind.COMPARISON ) ) {
                 return expandComparison( call, operands );
-            } else if ( call.getOperator() == StdOperatorRegistry.get( "MOD" ) ) {
+            } else if ( call.getOperator().equals( StdOperatorRegistry.get( "MOD" ) ) ) {
                 return expandMod( call, operands );
             } else {
                 throw new AssertionError( "ReduceDecimalsRule could not expand " + call.getOperator() );
@@ -961,7 +961,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         @Override
         public RexNode expand( RexCall call ) {
-            assert call.getOperator() == StdOperatorRegistry.get( "FLOOR" );
+            assert call.getOperator().equals( StdOperatorRegistry.get( "FLOOR" ) );
             RexNode decValue = call.operands.get( 0 );
             int scale = decValue.getType().getScale();
             RexNode value = decodeValue( decValue );
@@ -1012,7 +1012,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         @Override
         public RexNode expand( RexCall call ) {
-            assert call.getOperator() == StdOperatorRegistry.get( "CEIL" );
+            assert call.getOperator().equals( StdOperatorRegistry.get( "CEIL" ) );
             RexNode decValue = call.operands.get( 0 );
             int scale = decValue.getType().getScale();
             RexNode value = decodeValue( decValue );

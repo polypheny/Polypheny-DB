@@ -178,10 +178,11 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
         map.put(
                 alias, (SqlRexConvertlet) ( cx, call ) -> {
                     Preconditions.checkArgument(
-                            call.getOperator() == alias,
+                            call.getOperator().equals( alias ),
                             "call to wrong operator" );
                     final SqlCall newCall = (SqlCall) target.createCall( ParserPos.ZERO, call.getOperandList() );
                     return cx.convertExpression( newCall );
                 } );
     }
+
 }

@@ -315,7 +315,7 @@ public class MongoRules {
             }
             String stdOperator = MONGO_OPERATORS.get( call.getOperator() );
             if ( stdOperator != null ) {
-                if ( call.getOperator() == StdOperatorRegistry.get( "SUBSTRING" ) ) {
+                if ( call.getOperator().equals( StdOperatorRegistry.get( "SUBSTRING" ) ) ) {
                     String first = strings.get( 1 );
                     first = "{\"$subtract\":[" + first + ", 1]}";
                     strings.remove( 1 );
@@ -326,7 +326,7 @@ public class MongoRules {
                 }
                 return "{" + stdOperator + ": [" + Util.commaList( strings ) + "]}";
             }
-            if ( call.getOperator() == StdOperatorRegistry.get( "ITEM" ) ) {
+            if ( call.getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
                 final RexNode op1 = call.operands.get( 1 );
                 // normal
                 if ( op1 instanceof RexLiteral && op1.getType().

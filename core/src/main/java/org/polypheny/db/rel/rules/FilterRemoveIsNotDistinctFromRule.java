@@ -116,7 +116,7 @@ public final class FilterRemoveIsNotDistinctFromRule extends RelOptRule {
         public RexNode visitCall( RexCall call ) {
             RexNode newCall = super.visitCall( call );
 
-            if ( call.getOperator() == StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ) ) {
+            if ( call.getOperator().equals( StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ) ) ) {
                 RexCall tmpCall = (RexCall) newCall;
                 newCall = RelOptUtil.isDistinctFrom(
                         rexBuilder,

@@ -165,8 +165,8 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
         if ( getName().equals( "/" ) ) {
-            final Monotonicity mono0 = ((SqlOperatorBinding) call).getOperandMonotonicity( 0 );
-            final Monotonicity mono1 = ((SqlOperatorBinding) call).getOperandMonotonicity( 1 );
+            final Monotonicity mono0 = call.getOperandMonotonicity( 0 );
+            final Monotonicity mono1 = call.getOperandMonotonicity( 1 );
             if ( mono1 == Monotonicity.CONSTANT ) {
                 if ( call.isOperandLiteral( 1, false ) ) {
                     switch ( ((SqlOperatorBinding) call).getOperandLiteralValue( 1, BigDecimal.class ).signum() ) {

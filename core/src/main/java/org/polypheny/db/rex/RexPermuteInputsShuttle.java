@@ -100,7 +100,7 @@ public class RexPermuteInputsShuttle extends RexShuttle {
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.getOperator() == RexBuilder.GET_OPERATOR ) {
+        if ( call.getOperator().equals( RexBuilder.GET_OPERATOR ) ) {
             final String name = (String) ((RexLiteral) call.getOperands().get( 1 )).getValue2();
             final int i = lookup( fields, name );
             if ( i >= 0 ) {
@@ -120,5 +120,6 @@ public class RexPermuteInputsShuttle extends RexShuttle {
         }
         return -1;
     }
+
 }
 

@@ -53,6 +53,12 @@ public class SqlJsonValueFunction extends SqlFunction {
     private final boolean returnAny;
 
 
+    @Override
+    public FunctionType getFunctionType() {
+        return FunctionType.JSON_VALUE;
+    }
+
+
     public SqlJsonValueFunction( String name, boolean returnAny ) {
         super(
                 name,

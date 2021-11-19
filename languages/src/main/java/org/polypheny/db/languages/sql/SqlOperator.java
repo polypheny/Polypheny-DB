@@ -302,7 +302,7 @@ public abstract class SqlOperator extends Operator {
      * @see #deriveType(Validator, ValidatorScope, Call)
      */
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
-        assert call.getOperator() == this;
+        assert call.getOperator().equals( this );
         for ( Node operand : call.getOperandList() ) {
             ((SqlNode) operand).validateExpr( validator, operandScope );
         }
