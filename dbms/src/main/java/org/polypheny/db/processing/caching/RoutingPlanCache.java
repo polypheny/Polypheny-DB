@@ -23,6 +23,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.val;
 import org.polypheny.db.config.RuntimeConfig;
@@ -38,6 +39,8 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
+import org.polypheny.db.util.Pair;
+
 
 /**
  * Routing plan cache.
@@ -45,7 +48,7 @@ import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 public class RoutingPlanCache {
 
     public static final RoutingPlanCache INSTANCE = new RoutingPlanCache();
-    private final Cache<String, List<CachedProposedRoutingPlan>> planCache;
+    private final Cache<Pair<String, Set<Long>>, List<CachedProposedRoutingPlan>> planCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
@@ -59,13 +62,13 @@ public class RoutingPlanCache {
     }
 
 
-    public boolean isKeyPresent( String queryId ) {
-        return planCache.getIfPresent( queryId ) != null;
+    public boolean isKeyPresent( String queryId, Set<Long> partitionIds ) {
+        return planCache.getIfPresent( new Pair( queryId, partitionIds ) ) != null;
     }
 
 
-    public List<CachedProposedRoutingPlan> getIfPresent( String queryId ) {
-        List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( queryId );
+    public List<CachedProposedRoutingPlan> getIfPresent( String queryId, Set<Long> partitionIds ) {
+        List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( new Pair( queryId, partitionIds ) );
         if ( routingPlans == null ) {
             missesCounter.incrementAndGet();
         } else {
@@ -76,8 +79,8 @@ public class RoutingPlanCache {
     }
 
 
-    public void put( String queryId, List<CachedProposedRoutingPlan> routingPlans ) {
-        planCache.put( queryId, routingPlans );
+    public void put( String queryId, Set<Long> partitionIds, List<CachedProposedRoutingPlan> routingPlans ) {
+        planCache.put( new Pair( queryId, partitionIds ), routingPlans );
     }
 
 

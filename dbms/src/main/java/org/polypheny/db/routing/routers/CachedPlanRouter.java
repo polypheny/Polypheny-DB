@@ -63,12 +63,15 @@ public class CachedPlanRouter extends BaseRouter {
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
+            //val partitionIds = cachedPlan.physicalPlacementsOfPartitions.keySet();
             val partitionIds = catalogTable.partitionProperty.partitionIds;
             val placement = new HashMap<Long, List<CatalogColumnPlacement>>();
             for ( val partition : partitionIds ) {
-                val colPlacements =
-                        cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream().map( placementInfo -> catalog.getColumnPlacement( placementInfo.left, placementInfo.right ) ).collect( Collectors.toList() );
-                placement.put( partition, colPlacements );
+                if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {
+                    val colPlacements =
+                            cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream().map( placementInfo -> catalog.getColumnPlacement( placementInfo.left, placementInfo.right ) ).collect( Collectors.toList() );
+                    placement.put( partition, colPlacements );
+                }
             }
 
             return builder.push( super.buildJoinedTableScan( statement, cluster, placement ) );

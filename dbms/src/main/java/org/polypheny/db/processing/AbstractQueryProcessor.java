@@ -360,7 +360,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() &&
                     !indexLookupRoot.kind.belongsTo( SqlKind.DML )
             ) {
-                val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryClass() );
+                val routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryClass(),
+                        logicalQueryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() ) );
                 if ( !routingPlansCached.isEmpty() ) {
                     proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
                 }
@@ -1344,7 +1345,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     // Get placements of this table
                     CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
 
-                    if ( !aggregatedPartitionValues.containsKey( scanId ) ) {
+                    if ( aggregatedPartitionValues.containsKey( scanId ) ) {
 
                         if ( aggregatedPartitionValues.get( scanId ) != null ) {
                             if ( !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
@@ -1417,7 +1418,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void monitorResult( ProposedRoutingPlan selectedPlan ) {
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
             StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
-            eventData.setDurations( statement.getTotalDuration().asJson() );
+            //eventData.setDurations( statement.getTotalDuration().asJson() );
             eventData.setRelCompareString( selectedPlan.getRoutedRoot().rel.relCompareString() );
             if ( selectedPlan.getOptionalPhysicalQueryClass().isPresent() ) {
                 eventData.setPhysicalQueryId( selectedPlan.getOptionalPhysicalQueryClass().get() );
@@ -1462,10 +1463,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<RelOptCost> approximatedCosts, String queryId ) {
+    private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<RelOptCost> approximatedCosts, String queryId, Set<Long> partitionIds ) {
         val cachedPlans = new ArrayList<CachedProposedRoutingPlan>();
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            if ( proposedRoutingPlans.get( i ).isCacheable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId ) ) {
+            if ( proposedRoutingPlans.get( i ).isCacheable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId, partitionIds ) ) {
                 cachedPlans.add(
                         new CachedProposedRoutingPlan( proposedRoutingPlans.get( i ), approximatedCosts.get( i ) )
                 );
@@ -1473,7 +1474,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( !cachedPlans.isEmpty() ) {
-            RoutingPlanCache.INSTANCE.put( queryId, cachedPlans );
+            RoutingPlanCache.INSTANCE.put( queryId, partitionIds, cachedPlans );
         }
     }
 
@@ -1493,7 +1494,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() ) {
             // get approximated costs and cache routing plans
             approximatedCosts = optimalRels.stream().map( rel -> rel.computeSelfCost( getPlanner(), rel.getCluster().getMetadataQuery() ) ).collect( Collectors.toList() );
-            this.cacheRouterPlans( proposedRoutingPlans, approximatedCosts, queryInformation.getQueryClass() );
+            this.cacheRouterPlans( proposedRoutingPlans, approximatedCosts, queryInformation.getQueryClass()
+                    , queryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() ) );
         }
 
         if ( signatures.size() == 1 ) {
