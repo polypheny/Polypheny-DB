@@ -278,7 +278,7 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
                 LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
             }
         } else {
-            throw new RuntimeException( "All DDL queries should be of a type that inherits SqlExecutableStatement. But this one is of type " + parsed.getClass() );
+            throw new RuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
         }
     }
 

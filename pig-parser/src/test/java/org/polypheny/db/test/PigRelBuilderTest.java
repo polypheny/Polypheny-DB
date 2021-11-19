@@ -27,12 +27,12 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.PigRelBuilder;
 import org.polypheny.db.tools.Programs;
@@ -54,7 +54,7 @@ public class PigRelBuilderTest {
 
         final SchemaPlus rootSchema = transaction.getSchema().plus();
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
-                .parserConfig( SqlParserConfig.DEFAULT )
+                .parserConfig( ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
                 .traitDefs( (List<RelTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
@@ -262,5 +262,6 @@ public class PigRelBuilderTest {
     @Test
     public void testUnion() {
     }
+
 }
 

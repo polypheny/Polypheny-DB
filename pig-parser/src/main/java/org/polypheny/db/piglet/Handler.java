@@ -39,7 +39,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -47,7 +48,6 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.tools.PigRelBuilder;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.type.PolyType;
@@ -387,30 +387,30 @@ public class Handler {
     }
 
 
-    private static SqlOperator op( Ast.Op op ) {
+    private static Operator op( Ast.Op op ) {
         switch ( op ) {
             case EQ:
-                return SqlStdOperatorTable.EQUALS;
+                return StdOperatorRegistry.get( "EQUALS" );
             case NE:
-                return SqlStdOperatorTable.NOT_EQUALS;
+                return StdOperatorRegistry.get( "NOT_EQUALS" );
             case GT:
-                return SqlStdOperatorTable.GREATER_THAN;
+                return StdOperatorRegistry.get( "GREATER_THAN" );
             case GTE:
-                return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+                return StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" );
             case LT:
-                return SqlStdOperatorTable.LESS_THAN;
+                return StdOperatorRegistry.get( "LESS_THAN" );
             case LTE:
-                return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+                return StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" );
             case AND:
-                return SqlStdOperatorTable.AND;
+                return StdOperatorRegistry.get( "AND" );
             case OR:
-                return SqlStdOperatorTable.OR;
+                return StdOperatorRegistry.get( "OR" );
             case NOT:
-                return SqlStdOperatorTable.NOT;
+                return StdOperatorRegistry.get( "NOT" );
             case PLUS:
-                return SqlStdOperatorTable.PLUS;
+                return StdOperatorRegistry.get( "PLUS" );
             case MINUS:
-                return SqlStdOperatorTable.MINUS;
+                return StdOperatorRegistry.get( "MINUS" );
             default:
                 throw new AssertionError( "unknown: " + op );
         }
@@ -432,5 +432,6 @@ public class Handler {
     private void register( String name ) {
         map.put( name, builder.peek() );
     }
+
 }
 

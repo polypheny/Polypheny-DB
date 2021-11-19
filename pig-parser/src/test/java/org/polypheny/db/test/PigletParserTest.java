@@ -36,7 +36,7 @@ package org.polypheny.db.test;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.piglet.parser.ParseException;
+import org.polypheny.db.mql.parser.impl.ParseException;
 
 
 /**
@@ -331,4 +331,5 @@ public class PigletParserTest {
         final String expected = "LogicalValues(tuples=[[{ 1, [['a', true], ['b', false]] }, { 2, [] }]])\n";
         pig( s ).explainContains( expected );
     }
+
 }

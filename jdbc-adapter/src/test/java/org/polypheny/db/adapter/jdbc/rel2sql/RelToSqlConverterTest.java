@@ -39,6 +39,7 @@ import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
@@ -81,7 +82,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Tests for {@link RelToSqlConverter}.
  */
-public class RelToSqlConverterTest {
+public class RelToSqlConverterTest extends LanguageManagerDependant {
 
     static final Config DEFAULT_REL_CONFIG =
             NodeToRelConverter.configBuilder()

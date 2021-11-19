@@ -80,7 +80,7 @@ public class RexCallBinding extends OperatorBinding {
         return new RexCallBinding( typeFactory, call.getOperator(), call.getOperands(), inputCollations );
     }
 
-    /*
+
     @Override
     public <T> T getOperandLiteralValue( int ordinal, Class<T> clazz ) {
         final RexNode node = operands.get( ordinal );
@@ -116,7 +116,6 @@ public class RexCallBinding extends OperatorBinding {
 
         return Monotonicity.NOT_MONOTONIC;
     }
-    */
 
     @Override
     public boolean isOperandNull( int ordinal, boolean allowCast ) {

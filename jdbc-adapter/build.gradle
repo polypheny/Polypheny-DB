@@ -16,6 +16,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":languages", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 }

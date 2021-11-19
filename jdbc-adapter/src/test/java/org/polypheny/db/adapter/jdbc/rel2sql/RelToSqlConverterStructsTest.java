@@ -44,6 +44,8 @@ import org.junit.Test;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
+import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelReferentialConstraint;
@@ -57,7 +59,6 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -65,7 +66,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Tests for {@link RelToSqlConverter} on a schema that has nested structures of multiple levels.
  */
-public class RelToSqlConverterStructsTest {
+public class RelToSqlConverterStructsTest extends LanguageManagerDependant {
 
     private static final Schema SCHEMA = new Schema() {
         @Override

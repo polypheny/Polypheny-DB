@@ -26,6 +26,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Node;
@@ -40,7 +41,6 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
-import org.polypheny.db.languages.mql.MqlExecutableStatement;
 import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.parser.MqlParser;
@@ -188,12 +188,12 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
     @Override
     public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
-        if ( parsed instanceof MqlExecutableStatement ) {
+        if ( parsed instanceof ExecutableStatement ) {
             try { // TODO DL merge with sql processor
                 // Acquire global schema lock
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 // Execute statement
-                ((MqlExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
+                ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
                 statement.getTransaction().commit();
                 Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
@@ -218,7 +218,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
                 LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
             }
         } else {
-            throw new RuntimeException( "All DDL queries should be of a type that inherits SqlExecutableStatement. But this one is of type " + parsed.getClass() );
+            throw new RuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
         }
     }
 

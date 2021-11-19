@@ -41,7 +41,7 @@ import java.util.Objects;
 import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -161,6 +161,7 @@ public class Ast {
             this.op = Objects.requireNonNull( op );
             this.pos = Objects.requireNonNull( pos );
         }
+
     }
 
 
@@ -172,6 +173,7 @@ public class Ast {
         protected Stmt( ParserPos pos, Op op ) {
             super( pos, op );
         }
+
     }
 
 
@@ -187,6 +189,7 @@ public class Ast {
             super( pos, op );
             this.target = Objects.requireNonNull( target );
         }
+
     }
 
 
@@ -202,6 +205,7 @@ public class Ast {
             super( pos, Op.LOAD, target );
             this.name = Objects.requireNonNull( name );
         }
+
     }
 
 
@@ -221,6 +225,7 @@ public class Ast {
             this.schema = schema;
             this.tupleList = ImmutableList.copyOf( tupleList );
         }
+
     }
 
 
@@ -236,6 +241,7 @@ public class Ast {
             super( pos, op, target );
             this.source = source;
         }
+
     }
 
 
@@ -259,6 +265,7 @@ public class Ast {
             this.expList = expList;
             assert schema == null; // not supported yet
         }
+
     }
 
 
@@ -290,6 +297,7 @@ public class Ast {
             this.expList = expList;
             assert schema == null; // not supported yet
         }
+
     }
 
 
@@ -307,6 +315,7 @@ public class Ast {
             super( pos, Op.FILTER, target, source );
             this.condition = condition;
         }
+
     }
 
 
@@ -320,6 +329,7 @@ public class Ast {
         public DistinctStmt( ParserPos pos, Identifier target, Identifier source ) {
             super( pos, Op.DISTINCT, target, source );
         }
+
     }
 
 
@@ -338,6 +348,7 @@ public class Ast {
             super( pos, Op.LIMIT, target, source );
             this.count = count;
         }
+
     }
 
 
@@ -355,6 +366,7 @@ public class Ast {
             super( pos, Op.ORDER, target, source );
             this.fields = fields;
         }
+
     }
 
 
@@ -376,6 +388,7 @@ public class Ast {
             this.keys = keys;
             assert keys == null || keys.size() >= 1;
         }
+
     }
 
 
@@ -391,6 +404,7 @@ public class Ast {
             super( pos, Op.DUMP );
             this.relation = Objects.requireNonNull( relation );
         }
+
     }
 
 
@@ -406,6 +420,7 @@ public class Ast {
             super( pos, Op.DESCRIBE );
             this.relation = Objects.requireNonNull( relation );
         }
+
     }
 
 
@@ -471,6 +486,7 @@ public class Ast {
             BigDecimal value = (BigDecimal) this.value;
             return new NumericLiteral( pos, value.negate(), prec, scale, exact );
         }
+
     }
 
 
@@ -491,6 +507,7 @@ public class Ast {
         public boolean isStar() {
             return false;
         }
+
     }
 
 
@@ -508,6 +525,7 @@ public class Ast {
         public boolean isStar() {
             return true;
         }
+
     }
 
 
@@ -533,6 +551,7 @@ public class Ast {
         public Call( ParserPos pos, Op op, Node... operands ) {
             this( pos, op, ImmutableList.copyOf( operands ) );
         }
+
     }
 
 
@@ -548,6 +567,7 @@ public class Ast {
             super( pos, Op.PROGRAM );
             this.stmtList = stmtList;
         }
+
     }
 
 
@@ -567,6 +587,7 @@ public class Ast {
             this.id = Objects.requireNonNull( id );
             this.type = Objects.requireNonNull( type );
         }
+
     }
 
 
@@ -584,6 +605,7 @@ public class Ast {
             super( pos, Op.SCHEMA );
             this.fieldSchemaList = ImmutableList.copyOf( fieldSchemaList );
         }
+
     }
 
 
@@ -595,6 +617,7 @@ public class Ast {
         protected Type( ParserPos pos, Op op ) {
             super( pos, op );
         }
+
     }
 
 
@@ -610,6 +633,7 @@ public class Ast {
             super( pos, Op.SCALAR_TYPE );
             this.name = name;
         }
+
     }
 
 
@@ -625,6 +649,7 @@ public class Ast {
             super( pos, Op.BAG_TYPE );
             this.componentType = componentType;
         }
+
     }
 
 
@@ -640,6 +665,7 @@ public class Ast {
             super( pos, Op.TUPLE_TYPE );
             this.fieldSchemaList = ImmutableList.copyOf( fieldSchemaList );
         }
+
     }
 
 
@@ -658,6 +684,7 @@ public class Ast {
             this.keyType = new ScalarType( pos, "int" );
             this.valueType = new ScalarType( pos, "int" );
         }
+
     }
 
 
@@ -710,6 +737,7 @@ public class Ast {
             }
             return out().append( "]" );
         }
+
     }
 
 
@@ -721,4 +749,5 @@ public class Ast {
         DESC,
         NOT_SPECIFIED
     }
+
 }
