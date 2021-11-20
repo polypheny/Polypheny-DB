@@ -202,7 +202,7 @@ public class RexImpTable {
         defineMethod( StdOperatorRegistry.get( "ACOS" ), "acos", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "ASIN" ), "asin", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "ATAN" ), "atan", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( "ATAN20" ), "atan2", NullPolicy.STRICT );
+        defineMethod( StdOperatorRegistry.get( "ATAN2" ), "atan2", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "COS" ), "cos", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "COT" ), "cot", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "DEGREES" ), "degrees", NullPolicy.STRICT );
