@@ -46,7 +46,9 @@ import org.hamcrest.Matcher;
 import org.joda.time.Interval;
 import org.junit.Test;
 import org.polypheny.db.adapter.druid.DruidDateTimeUtils;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
+import org.polypheny.db.languages.core.TestFixture;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rel.rules.DateRangeRules;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.TimestampString;
@@ -56,7 +58,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link DateRangeRules} algorithms.
  */
-public class DruidDateRangeRulesTest {
+public class DruidDateRangeRulesTest extends LanguageManagerDependant {
 
     @Test
     public void testExtractYearAndMonthFromDateColumn() {
@@ -209,6 +211,8 @@ public class DruidDateRangeRulesTest {
             final TimestampString ts = TimestampString.fromCalendarFields( c );
             return timestampLiteral( ts );
         }
+
     }
+
 }
 

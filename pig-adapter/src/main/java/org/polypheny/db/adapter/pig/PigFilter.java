@@ -34,8 +34,8 @@
 package org.polypheny.db.adapter.pig;
 
 
-import static org.polypheny.db.sql.Kind.INPUT_REF;
-import static org.polypheny.db.sql.Kind.LITERAL;
+import static org.polypheny.db.core.Kind.INPUT_REF;
+import static org.polypheny.db.core.Kind.LITERAL;
 
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
@@ -161,5 +161,6 @@ public class PigFilter extends Filter implements PigRel {
     private String getLiteralAsString( RexLiteral literal ) {
         return '\'' + RexLiteral.stringValue( literal ) + '\'';
     }
+
 }
 

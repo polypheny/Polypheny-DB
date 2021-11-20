@@ -36,7 +36,7 @@ package org.polypheny.db.test;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.mql.parser.impl.ParseException;
+import org.polypheny.db.piglet.parser.ParseException;
 
 
 /**

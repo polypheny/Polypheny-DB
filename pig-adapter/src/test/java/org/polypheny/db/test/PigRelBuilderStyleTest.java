@@ -54,7 +54,7 @@ import org.polypheny.db.adapter.pig.PigRel;
 import org.polypheny.db.adapter.pig.PigRelFactories;
 import org.polypheny.db.adapter.pig.PigRules;
 import org.polypheny.db.adapter.pig.PigTable;
-import org.polypheny.db.core.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.rel.RelNode;

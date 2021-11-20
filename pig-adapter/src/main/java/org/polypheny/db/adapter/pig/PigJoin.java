@@ -37,6 +37,7 @@ package org.polypheny.db.adapter.pig;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import org.polypheny.db.core.Kind;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
@@ -46,7 +47,6 @@ import org.polypheny.db.rel.core.Join;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
 
 
 /**
@@ -128,4 +128,5 @@ public class PigJoin extends Join implements PigRel {
                 return getJoinType().name();
         }
     }
+
 }

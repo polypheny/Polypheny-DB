@@ -45,13 +45,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
 import javax.annotation.Nullable;
+import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.Kind;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -132,7 +132,7 @@ public class DruidExpressions {
         }
 
         if ( rexNode instanceof RexCall ) {
-            final SqlOperator operator = ((RexCall) rexNode).getOperator();
+            final Operator operator = ((RexCall) rexNode).getOperator();
             final DruidSqlOperatorConverter conversion = druidRel.getOperatorConversionMap().get( operator );
             if ( conversion == null ) {
                 //unknown operator can not translate

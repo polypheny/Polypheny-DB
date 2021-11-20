@@ -43,8 +43,9 @@ package org.polypheny.db.piglet.parser;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParserUtil;
+import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.piglet.parser.ParseException;
+import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.piglet.Ast.*;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -68,7 +69,6 @@ public class PigletParser
   public void setTabSize(int tabSize) {
     jj_input_stream.setTabSize(tabSize);
   }
-}}
 }
 
 PARSER_END(PigletParser)
@@ -116,9 +116,9 @@ JAVACODE ParserPos pos3(Node n) {
  * Converts a ParseException (local to this particular instantiation
  * of the parser) into a SqlParseException (common to all parsers).
  */
-JAVACODE SqlParseException convertException(Throwable ex) {
-  if (ex instanceof SqlParseException) {
-    return (SqlParseException) ex;
+JAVACODE NodeParseException convertException(Throwable ex) {
+  if (ex instanceof NodeParseException) {
+    return (NodeParseException) ex;
   }
   ParserPos pos = null;
   int[][] expectedTokenSequences = null;
@@ -163,7 +163,7 @@ JAVACODE SqlParseException convertException(Throwable ex) {
     ex = ece.getCause();
   }
 
-  return new SqlParseException(ex.getMessage(), pos, expectedTokenSequences,
+  return new NodeParseException(ex.getMessage(), pos, expectedTokenSequences,
       tokenImage, ex);
 }
 

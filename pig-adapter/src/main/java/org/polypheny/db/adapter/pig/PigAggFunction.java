@@ -34,7 +34,7 @@
 package org.polypheny.db.adapter.pig;
 
 
-import org.polypheny.db.sql.Kind;
+import org.polypheny.db.core.Kind;
 
 
 /**
