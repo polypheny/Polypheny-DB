@@ -90,7 +90,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RelRoot root = translate( find( "\"key\":\"value\",\"key1\":\"value1\"" ) );
 
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( Kind.AND, condition.op.kind );
+        assertEquals( Kind.AND, condition.op.getKind() );
 
         assertEquals( 2, condition.operands.size() );
 
@@ -107,7 +107,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RelRoot root = translate( find( "\"key\":{\"key1\":\"value1\"}" ) );
 
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( Kind.EQUALS, condition.op.kind );
+        assertEquals( Kind.EQUALS, condition.op.getKind() );
 
         testJsonValueCond( condition, "key.key1", "value1", Kind.EQUALS );
 
@@ -120,7 +120,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RelRoot root = translate( find( "\"key\":{\"key1\":\"value1\"}, \"key1\":{\"key2\":\"value2\"}" ) );
 
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( Kind.AND, condition.op.kind );
+        assertEquals( Kind.AND, condition.op.getKind() );
 
         assertEquals( 2, condition.operands.size() );
 
@@ -161,7 +161,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( Kind.AND, condition.op.kind );
+        assertEquals( Kind.AND, condition.op.getKind() );
         assertEquals( 2, condition.operands.size() );
         RexCall left = assertRexCall( condition, 0 );
         testJsonExists( left, "key" );
@@ -201,7 +201,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( Kind.OR, condition.op.kind );
+        assertEquals( Kind.OR, condition.op.getKind() );
         assertEquals( 2, condition.operands.size() );
 
         RexCall left = assertRexCall( condition, 0 );
@@ -218,7 +218,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( Kind.AND, condition.op.kind );
+        assertEquals( Kind.AND, condition.op.getKind() );
         assertEquals( 2, condition.operands.size() );
 
         RexCall left = assertRexCall( condition, 0 );
@@ -236,7 +236,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RexCall condition = getConditionTestFilter( root );
 
         assertEquals( 2, condition.operands.size() );
-        assertEquals( Kind.AND, condition.op.kind );
+        assertEquals( Kind.AND, condition.op.getKind() );
 
         RexCall left = assertRexCall( condition, 0 );
         testJsonValueCond( left, "key", "value", Kind.EQUALS );
@@ -251,7 +251,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
         condition = getConditionTestFilter( root );
 
         assertEquals( 2, condition.operands.size() );
-        assertEquals( Kind.AND, condition.op.kind );
+        assertEquals( Kind.AND, condition.op.getKind() );
 
         left = assertRexCall( condition, 0 );
         testJsonValueCond( left, "key", "value", Kind.EQUALS );
@@ -274,7 +274,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RexCall lt = assertRexCall( condition, 2 );
 
         testJsonValueCond( gt, "key", 3, Kind.GREATER_THAN );
-        assertEquals( Kind.NOT, not.op.kind );
+        assertEquals( Kind.NOT, not.op.getKind() );
         assertEquals( 1, not.operands.size() );
         RexCall subNot = assertRexCall( not, 0 );
         testJsonValueCond( subNot, "key.sub", 4, Kind.EQUALS );
@@ -290,13 +290,13 @@ public class Mql2RelFindTest extends Mql2RelTest {
         RexCall condition = getConditionTestFilter( root );
 
         assertEquals( 2, condition.operands.size() );
-        assertEquals( Kind.EQUALS, condition.op.kind );
+        assertEquals( Kind.EQUALS, condition.op.getKind() );
 
         RexCall calc = assertRexCall( condition, 1 );
 
         testJsonValue( assertRexCall( condition, 0 ), "key" );
 
-        assertEquals( Kind.PLUS, calc.op.kind );
+        assertEquals( Kind.PLUS, calc.op.getKind() );
         assertEquals( 2, calc.operands.size() );
 
         testCastLiteral( calc.operands.get( 0 ), 2, Integer.class );
@@ -304,7 +304,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         assertEquals( 2, mult.operands.size() );
 
-        assertEquals( Kind.TIMES, mult.op.kind );
+        assertEquals( Kind.TIMES, mult.op.getKind() );
         testCastLiteral( mult.operands.get( 0 ), 3, Integer.class );
         testCastLiteral( mult.operands.get( 1 ), 10, Integer.class );
     }
@@ -359,7 +359,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( Kind.LESS_THAN, condition.op.kind );
+        assertEquals( Kind.LESS_THAN, condition.op.getKind() );
 
         assertEquals( 2, condition.operands.size() );
 
@@ -561,7 +561,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getUnderlyingProjection( root, 1 );
 
-        assertEquals( Kind.TIMES, condition.op.kind );
+        assertEquals( Kind.TIMES, condition.op.getKind() );
         assertEquals( 2, condition.operands.size() );
 
         testCastLiteral( condition.operands.get( 0 ), 1, Integer.class );
@@ -578,7 +578,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall arrayArray = assertRexCall( projection, 1 );
 
-        assertEquals( Kind.ARRAY_VALUE_CONSTRUCTOR, arrayArray.op.kind );
+        assertEquals( Kind.ARRAY_VALUE_CONSTRUCTOR, arrayArray.op.getKind() );
 
         List<List<String>> excludedKeys = excludes
                 .stream()
@@ -588,7 +588,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
         int pos = 0;
         for ( RexNode array : arrayArray.operands ) {
             assertTrue( array instanceof RexCall );
-            assertEquals( Kind.ARRAY_VALUE_CONSTRUCTOR, ((RexCall) array).op.kind );
+            assertEquals( Kind.ARRAY_VALUE_CONSTRUCTOR, ((RexCall) array).op.getKind() );
             int innerPos = 0;
             for ( RexNode operand : ((RexCall) array).operands ) {
                 testCastLiteral( operand, excludedKeys.get( pos ).get( innerPos ), String.class );
@@ -606,7 +606,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testNot( RexCall condition ) {
-        assertEquals( Kind.NOT, condition.op.kind );
+        assertEquals( Kind.NOT, condition.op.getKind() );
         assertEquals( 1, condition.operands.size() );
     }
 
@@ -620,7 +620,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonExists( RexCall condition, String key ) {
-        assertEquals( Kind.DOC_EXISTS, condition.op.kind );
+        assertEquals( Kind.DOC_EXISTS, condition.op.getKind() );
         assertEquals( 2, condition.operands.size() );
 
         assertEquals(
@@ -661,7 +661,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonCommon( String key, RexCall jsonApi, List<String> excludes ) {
-        assertEquals( Kind.JSON_API_COMMON_SYNTAX, jsonApi.op.kind );
+        assertEquals( Kind.JSON_API_COMMON_SYNTAX, jsonApi.op.getKind() );
         assertEquals( 2, jsonApi.operands.size() );
 
         RexCall jsonExpr = assertRexCall( jsonApi, 0 );
@@ -683,14 +683,14 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonExpressionExcludes( RexCall jsonExpr, List<String> excludes ) {
-        assertEquals( Kind.JSON_VALUE_EXPRESSION, jsonExpr.op.kind );
+        assertEquals( Kind.JSON_VALUE_EXPRESSION, jsonExpr.op.getKind() );
         assertEquals( "JSON_VALUE_EXPRESSION_EXCLUDE", jsonExpr.op.getName() );
         assertEquals( 2, jsonExpr.operands.size() );
         assertTrue( jsonExpr.operands.get( 0 ).isA( Kind.INPUT_REF ) );
 
         // test exclusion array
         RexCall excluded = assertRexCall( jsonExpr, 1 );
-        assertEquals( Kind.ARRAY_VALUE_CONSTRUCTOR, excluded.op.kind );
+        assertEquals( Kind.ARRAY_VALUE_CONSTRUCTOR, excluded.op.getKind() );
         assertEquals( excludes.size(), excluded.operands.size() );
         List<String> names = excluded.operands.stream()
                 .map( e -> ((RexLiteral) e).getValueAs( String.class ) )
@@ -700,7 +700,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonExpression( RexCall jsonExpr ) {
-        assertEquals( Kind.JSON_VALUE_EXPRESSION, jsonExpr.op.kind );
+        assertEquals( Kind.JSON_VALUE_EXPRESSION, jsonExpr.op.getKind() );
         assertEquals( 1, jsonExpr.operands.size() );
         assertTrue( jsonExpr.operands.get( 0 ).isA( Kind.INPUT_REF ) );
     }
@@ -713,7 +713,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonValueCond( RexCall condition, String key, Object value, Kind kind ) {
-        assertEquals( kind, condition.op.kind );
+        assertEquals( kind, condition.op.getKind() );
 
        /*if ( Arrays.asList(
                 Kind.GREATER_THAN,

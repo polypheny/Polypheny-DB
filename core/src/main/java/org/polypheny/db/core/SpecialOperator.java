@@ -23,7 +23,7 @@ import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
-public class SpecialOperator extends Operator {
+public class SpecialOperator extends OperatorImpl {
 
     public SpecialOperator( String name, Kind kind ) {
         this( name, kind, null, null, null );

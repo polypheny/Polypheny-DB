@@ -16,7 +16,7 @@
 
 package org.polypheny.db.core;
 
-public interface QuantifyOperator {
+public interface QuantifyOperator extends Operator {
 
     Kind getComparisonKind();
 

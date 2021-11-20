@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -110,7 +109,7 @@ public class GeodeAggregate extends Aggregate implements GeodeRel {
             for ( int i : aggCall.getArgList() ) {
                 aggCallFieldNames.add( inputFields.get( i ) );
             }
-            String functionName = ((Operator) aggCall.getAggregation()).getName();
+            String functionName = aggCall.getAggregation().getName();
 
             // Workaround to handle count(*) case. Geode doesn't allow "AS" aliases on 'count(*)' but allows it for count('any column name'). So we are converting the count(*) into count (first input ColumnName).
             if ( "COUNT".equalsIgnoreCase( functionName ) && aggCallFieldNames.isEmpty() ) {

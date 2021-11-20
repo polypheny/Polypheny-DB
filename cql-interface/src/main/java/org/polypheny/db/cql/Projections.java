@@ -20,10 +20,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.cql.utils.ExclusiveComparisons;
-import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -233,6 +234,7 @@ public class Projections {
     }
 
 
+    @Getter
     public enum AggregationFunctions {
         COUNT( StdOperatorRegistry.getAgg( "COUNT" ) ),
         MAX( StdOperatorRegistry.getAgg( "MAX" ) ),
@@ -241,11 +243,11 @@ public class Projections {
         AVG( StdOperatorRegistry.getAgg( "AVG" ) );
 
 
-        private final SqlAggFunction sqlAggFunction;
+        private final AggFunction aggFunction;
 
 
-        AggregationFunctions( SqlAggFunction sqlAggFunction ) {
-            this.sqlAggFunction = sqlAggFunction;
+        AggregationFunctions( AggFunction aggFunction ) {
+            this.aggFunction = aggFunction;
         }
 
 
@@ -266,13 +268,8 @@ public class Projections {
         }
 
 
-        SqlAggFunction getSqlAggFunction() {
-            return this.sqlAggFunction;
-        }
-
-
         public String getAliasWithColumnName( String fullyQualifiedName ) {
-            return sqlAggFunction.getName() + "( " + fullyQualifiedName + " )";
+            return aggFunction.getName() + "( " + fullyQualifiedName + " )";
         }
 
     }
@@ -331,7 +328,7 @@ public class Projections {
             List<Integer> inputFields = new ArrayList<>();
             inputFields.add( ordinality );
             return AggregateCall.create(
-                    aggregationFunction.getSqlAggFunction(),
+                    aggregationFunction.getAggFunction(),
                     false,
                     false,
                     inputFields,

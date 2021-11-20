@@ -80,7 +80,7 @@ public class ListSqlOperatorTable implements OperatorTable {
 
     @Override
     public List<Operator> getOperatorList() {
-        return operatorList.stream().map( o -> (Operator) o ).collect( Collectors.toList() );
+        return operatorList.stream().map( o -> o ).collect( Collectors.toList() );
     }
 
 }

@@ -1428,7 +1428,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
-        private <T extends Operator & BinaryOperator> RexNode binary( Expression expression, T op ) {
+        private RexNode binary( Expression expression, BinaryOperator op ) {
             BinaryExpression call = (BinaryExpression) expression;
             return rexBuilder.makeCall( type( call ), op, toRex( ImmutableList.of( call.expression0, call.expression1 ) ) );
         }

@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
@@ -280,7 +279,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
                 ImmutableIntList.of( argOrdinal ),
                 filter,
                 oldCall.collation,
-                ((Operator) aggFunction).inferReturnType( binding ),
+                aggFunction.inferReturnType( binding ),
                 null );
     }
 

@@ -52,6 +52,7 @@ import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.NameMatchers;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorImpl;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.SqlMonikerImpl;
 import org.polypheny.db.core.SqlMonikerType;
@@ -266,7 +267,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     /**
-     * Converts a function to a {@link Operator}.
+     * Converts a function to a {@link OperatorImpl}.
      *
      * The {@code typeFactory} argument is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
      */

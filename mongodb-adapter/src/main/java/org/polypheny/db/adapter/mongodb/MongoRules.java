@@ -852,11 +852,11 @@ public class MongoRules {
                                     rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                     BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
                         } else if ( el instanceof RexCall ) {
-                            if ( ((RexCall) el).op.kind == Kind.PLUS ) {
+                            if ( ((RexCall) el).op.getKind() == Kind.PLUS ) {
                                 doc.append(
                                         rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                         visitCall( implementor, (RexCall) el, Kind.PLUS, el.getType().getPolyType() ) );
-                            } else if ( ((RexCall) el).op.kind.belongsTo( Kind.DOC_KIND ) ) {
+                            } else if ( ((RexCall) el).op.getKind().belongsTo( Kind.DOC_KIND ) ) {
                                 docDocs.add( handleDocumentUpdate( (RexCall) el, bucket, rowType ) );
                             } else {
                                 doc.append(
@@ -917,7 +917,7 @@ public class MongoRules {
 
         private void attachUpdateStep( BsonDocument doc, RexCall el, MongoRowType rowType, String key ) {
             List<String> keys = getDocUpdateKey( (RexInputRef) el.operands.get( 0 ), (RexCall) el.operands.get( 1 ), rowType );
-            switch ( el.op.kind ) {
+            switch ( el.op.getKind() ) {
                 case DOC_UPDATE_REPLACE:
                     assert el.getOperands().size() == 3;
                     assert el.getOperands().get( 2 ) instanceof RexCall;
@@ -1136,7 +1136,7 @@ public class MongoRules {
 
 
         private BsonValue getBsonArray( RexCall el, PolyType type, GridFSBucket bucket ) {
-            if ( el.op.kind == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
+            if ( el.op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
                 BsonArray array = new BsonArray();
                 array.addAll( el.operands.stream().map( operand -> {
                     if ( operand instanceof RexLiteral ) {

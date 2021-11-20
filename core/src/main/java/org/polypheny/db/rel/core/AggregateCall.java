@@ -103,8 +103,8 @@ public class AggregateCall {
     /**
      * Creates an AggregateCall, inferring its type if {@code type} is null.
      */
-    public static <T extends Operator & AggFunction> AggregateCall create(
-            T aggFunction,
+    public static AggregateCall create(
+            AggFunction aggFunction,
             boolean distinct,
             boolean approximate,
             List<Integer> argList,

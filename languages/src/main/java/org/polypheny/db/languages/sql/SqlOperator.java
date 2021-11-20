@@ -27,8 +27,8 @@ import org.polypheny.db.core.ExplicitOperatorBinding;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.OperatorImpl;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.Syntax;
 import org.polypheny.db.core.Validator;
@@ -62,7 +62,7 @@ import org.polypheny.db.util.Util;
  *
  * In many cases, the formal/actual distinction is clear from context, in which case we drop these qualifiers.
  */
-public abstract class SqlOperator extends Operator {
+public abstract class SqlOperator extends OperatorImpl {
 
     /**
      * Maximum precedence.

@@ -46,7 +46,6 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Function;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlValidatorException;
@@ -306,7 +305,7 @@ public abstract class Aggregate extends SingleRel {
         // Aggregates with more aggregate functions cost a bit more
         float multiplier = 1f + (float) aggCalls.size() * 0.125f;
         for ( AggregateCall aggCall : aggCalls ) {
-            if ( ((Operator) aggCall.getAggregation()).getName().equals( "SUM" ) ) {
+            if ( aggCall.getAggregation().getName().equals( "SUM" ) ) {
                 // Pretend that SUM costs a little bit more than $SUM0, to make things deterministic.
                 multiplier += 0.0125f;
             }
@@ -404,7 +403,7 @@ public abstract class Aggregate extends SingleRel {
     private boolean typeMatchesInferred( final AggregateCall aggCall, final Litmus litmus ) {
         Function aggFunction = aggCall.getAggregation();
         AggCallBinding callBinding = aggCall.createBinding( this );
-        RelDataType type = ((Operator) aggFunction).inferReturnType( callBinding );
+        RelDataType type = aggFunction.inferReturnType( callBinding );
         RelDataType expectedType = aggCall.type;
         return RelOptUtil.eq( "aggCall type", expectedType, "inferred type", type, litmus );
     }
@@ -504,7 +503,7 @@ public abstract class Aggregate extends SingleRel {
          * @param filter Whether the aggregate function has a FILTER clause
          */
         public AggCallBinding( RelDataTypeFactory typeFactory, AggFunction aggFunction, List<RelDataType> operands, int groupCount, boolean filter ) {
-            super( typeFactory, (Operator) aggFunction );
+            super( typeFactory, aggFunction );
             this.operands = operands;
             this.groupCount = groupCount;
             this.filter = filter;

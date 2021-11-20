@@ -55,6 +55,7 @@ import org.apache.calcite.linq4j.function.Predicate1;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorImpl;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.ValidatorUtil;
 import org.polypheny.db.core.ValidatorUtil.Suggester;
@@ -887,7 +888,7 @@ public class RexUtil {
 
 
     /**
-     * Returns whether a {@link RexNode node} is a {@link RexCall call} to a given {@link Operator operator}.
+     * Returns whether a {@link RexNode node} is a {@link RexCall call} to a given {@link OperatorImpl operator}.
      */
     public static boolean isCallTo( RexNode expr, Operator op ) {
         return (expr instanceof RexCall) && (((RexCall) expr).getOperator().equals( op ));

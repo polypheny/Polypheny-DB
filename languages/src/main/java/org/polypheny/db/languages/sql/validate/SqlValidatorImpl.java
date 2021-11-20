@@ -4377,9 +4377,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 if ( query instanceof SqlInsert && ((SqlInsert) query).getSource() instanceof SqlBasicCall ) {
                     needsCheck = true;
                     SqlBasicCall source = (SqlBasicCall) ((SqlInsert) query).getSource();
-                    if ( source.getOperator().kind == Kind.VALUES
+                    if ( source.getOperator().getKind() == Kind.VALUES
                             && source.operands[0] instanceof SqlBasicCall
-                            && ((SqlBasicCall) source.operands[0]).getOperator().kind == Kind.ROW ) {
+                            && ((SqlBasicCall) source.operands[0]).getOperator().getKind() == Kind.ROW ) {
                         SqlNode charNode = ((SqlBasicCall) source.operands[0]).operands[i];
                         if ( charNode instanceof SqlCharStringLiteral ) {
                             value = ((SqlCharStringLiteral) charNode).getValueAs( String.class );

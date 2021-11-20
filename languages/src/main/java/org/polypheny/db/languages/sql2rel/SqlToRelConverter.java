@@ -999,7 +999,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                                 typeFactory,
                                 validator.getValidatedNodeType( leftKeyNode ),
                                 null );
-                final boolean notIn = call.getOperator().kind == Kind.NOT_IN;
+                final boolean notIn = call.getOperator().getKind() == Kind.NOT_IN;
                 converted = convertExists(
                         query,
                         RelOptUtil.SubQueryType.IN,

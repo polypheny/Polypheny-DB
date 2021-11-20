@@ -38,7 +38,7 @@ public interface NodeVisitor<R> {
     R visit( Literal literal );
 
     /**
-     * Visits a call to a {@link Operator}.
+     * Visits a call to a {@link OperatorImpl}.
      *
      * @param call Call
      * @see Call#accept(NodeVisitor)

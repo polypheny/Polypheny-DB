@@ -7800,7 +7800,7 @@ public abstract class SqlOperatorBaseTest extends LanguageManagerDependant {
                             || s.matches( "MOD\\(.*, 0\\)" ) ) {
                         continue;
                     }
-                    final Policy policy = Strong.policy( op.kind );
+                    final Policy policy = Strong.policy( op.getKind() );
                     try {
                         if ( nullCount > 0 && policy == Strong.Policy.ANY ) {
                             tester.checkNull( s );

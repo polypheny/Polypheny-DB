@@ -238,7 +238,7 @@ public class RexCall extends RexNode {
 
     @Override
     public Kind getKind() {
-        return op.kind;
+        return op.getKind();
     }
 
 

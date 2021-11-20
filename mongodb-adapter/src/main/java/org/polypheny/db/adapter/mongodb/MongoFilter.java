@@ -562,7 +562,7 @@ public class MongoFilter extends Filter implements MongoRel {
         private void translateTypeMatch( RexCall node ) {
             if ( node.operands.size() != 2
                     || !(node.operands.get( 1 ) instanceof RexCall)
-                    || ((RexCall) node.operands.get( 1 )).op.kind != Kind.ARRAY_VALUE_CONSTRUCTOR ) {
+                    || ((RexCall) node.operands.get( 1 )).op.getKind() != Kind.ARRAY_VALUE_CONSTRUCTOR ) {
                 return;
             }
 
@@ -888,7 +888,7 @@ public class MongoFilter extends Filter implements MongoRel {
                     throw new RuntimeException( "Input in array is not translatable." );
                 }
             } ).collect( Collectors.toList() ) );
-            if ( right.op.kind == Kind.CAST ) {
+            if ( right.op.getKind() == Kind.CAST ) {
                 if ( array.size() == 1 ) {
                     return (BsonDocument) array.get( 0 );
                 } else {
@@ -925,7 +925,7 @@ public class MongoFilter extends Filter implements MongoRel {
                 return BsonUtil.getAsBson( (RexLiteral) node, bucket );
             } else if ( node.isA( Kind.DYNAMIC_PARAM ) ) {
                 return new BsonDynamic( (RexDynamicParam) node );
-            } else if ( node instanceof RexCall && ((RexCall) node).op.kind == Kind.CAST ) {
+            } else if ( node instanceof RexCall && ((RexCall) node).op.getKind() == Kind.CAST ) {
                 return getSingle( ((RexCall) node).operands.get( 0 ) );
             } else {
                 throw new RuntimeException( "operations need to consist of literals" );
@@ -940,7 +940,7 @@ public class MongoFilter extends Filter implements MongoRel {
          * @return The operation translated
          */
         private String getOp( Operator op ) {
-            switch ( op.kind ) {
+            switch ( op.getKind() ) {
                 case PLUS:
                     return "$add";
                 case MINUS:

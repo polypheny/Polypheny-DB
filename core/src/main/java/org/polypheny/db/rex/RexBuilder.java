@@ -316,7 +316,7 @@ public class RexBuilder {
         assert partitionKeys != null;
         assert orderKeys != null;
         final RexWindow window = makeWindow( partitionKeys, orderKeys, lowerBound, upperBound, physical );
-        final RexOver over = new RexOver( type, (Operator) operator, exprs, window, distinct );
+        final RexOver over = new RexOver( type, operator, exprs, window, distinct );
         RexNode result = over;
 
         // This should be correct but need time to go over test results.
@@ -341,7 +341,7 @@ public class RexBuilder {
                             type, // SUM0 is non-nullable, thus need a cast
                             new RexOver(
                                     typeFactory.createTypeWithNullability( type, false ),
-                                    (Operator) operator,
+                                    operator,
                                     exprs,
                                     window,
                                     distinct ),
@@ -978,7 +978,7 @@ public class RexBuilder {
         }
 
         // Special handling for arrays
-        if ( node instanceof RexCall && ((RexCall) node).op.kind == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
+        if ( node instanceof RexCall && ((RexCall) node).op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             List<RexNode> newRexNodes = new ArrayList<>( ((RexCall) node).operands.size() );
             for ( RexNode n : ((RexCall) node).operands ) {
                 newRexNodes.add( makeCast( targetType.getComponentType(), n ) );

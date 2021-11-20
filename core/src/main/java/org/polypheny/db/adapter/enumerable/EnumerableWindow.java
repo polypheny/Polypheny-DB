@@ -59,7 +59,6 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -735,7 +734,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                     };
             String aggName = "a" + agg.aggIdx;
             if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                aggName = Util.toJavaId( ((Operator) agg.call.getAggregation()).getName(), 0 ).substring( "ID$0$".length() ) + aggName;
+                aggName = Util.toJavaId( agg.call.getAggregation().getName(), 0 ).substring( "ID$0$".length() ) + aggName;
             }
             List<Type> state = agg.implementor.getStateType( agg.context );
             final List<Expression> decls = new ArrayList<>( state.size() );

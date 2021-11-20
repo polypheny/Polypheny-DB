@@ -20,7 +20,7 @@ import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 
-public class LangFunctionOperator extends Operator {
+public class LangFunctionOperator extends OperatorImpl {
 
     public LangFunctionOperator( String name, Kind kind ) {
         super( name, kind, null, null, null );

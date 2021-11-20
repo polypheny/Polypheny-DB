@@ -20,6 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -99,7 +100,7 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
         StringBuilder ret = new StringBuilder();
         for ( int y = 0; y < typeNames.length; y += 2 ) {
             if ( y > 0 ) {
-                ret.append( NL );
+                ret.append( Operator.NL );
             }
             ret.append( CoreUtil.getAliasedSignature( this, opName, ImmutableList.of( d, typeNames[y], d, typeNames[y + 1] ) ) );
         }

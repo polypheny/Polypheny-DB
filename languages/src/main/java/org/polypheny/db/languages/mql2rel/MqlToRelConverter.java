@@ -1731,7 +1731,7 @@ public class MqlToRelConverter {
 
     private RexNode getFixedCall( List<RexNode> operands, Operator op, PolyType polyType ) {
         if ( operands.size() == 1 ) {
-            if ( op.kind == Kind.NOT && operands.get( 0 ) instanceof RexCall && ((RexCall) operands.get( 0 )).op.kind == Kind.NOT ) {
+            if ( op.getKind() == Kind.NOT && operands.get( 0 ) instanceof RexCall && ((RexCall) operands.get( 0 )).op.getKind() == Kind.NOT ) {
                 // we have a nested NOT, which can be removed
                 return ((RexCall) operands.get( 0 )).operands.get( 0 );
             }
@@ -1776,7 +1776,7 @@ public class MqlToRelConverter {
         Operator op;
         List<RexNode> nodes = new ArrayList<>();
         op = mappings.get( key );
-        switch ( op.kind ) {
+        switch ( op.getKind() ) {
             case IN:
             case NOT_IN:
                 return convertIn( bsonValue, op, parentKey, rowType );

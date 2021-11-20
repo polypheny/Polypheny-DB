@@ -26,6 +26,7 @@ import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -80,14 +81,14 @@ public class SqlSubstringFunction extends SqlFunction {
         StringBuilder ret = new StringBuilder();
         for ( Ord<PolyType> typeName : Ord.zip( PolyType.STRING_TYPES ) ) {
             if ( typeName.i > 0 ) {
-                ret.append( NL );
+                ret.append( Operator.NL );
             }
             ret.append(
                     CoreUtil.getAliasedSignature(
                             this,
                             opName,
                             ImmutableList.of( typeName.e, PolyType.INTEGER ) ) );
-            ret.append( NL );
+            ret.append( Operator.NL );
             ret.append(
                     CoreUtil.getAliasedSignature(
                             this,

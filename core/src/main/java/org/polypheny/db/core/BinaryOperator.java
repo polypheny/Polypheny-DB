@@ -16,6 +16,6 @@
 
 package org.polypheny.db.core;
 
-public interface BinaryOperator {
+public interface BinaryOperator extends Operator {
 
 }

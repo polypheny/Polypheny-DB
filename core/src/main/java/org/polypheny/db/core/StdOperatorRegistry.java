@@ -40,13 +40,13 @@ public class StdOperatorRegistry {
     }
 
 
-    public static <T extends Operator & AggFunction> T getAgg( String key ) {
-        return (T) get( key );
+    public static AggFunction getAgg( String key ) {
+        return (AggFunction) get( key );
     }
 
 
-    public static <T extends Operator & BinaryOperator> T getBinary( String key ) {
-        return (T) get( key );
+    public static BinaryOperator getBinary( String key ) {
+        return (BinaryOperator) get( key );
     }
 
 }

@@ -49,7 +49,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.polypheny.db.core.AggFunction;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptCluster;
@@ -395,7 +394,7 @@ public abstract class Match extends SingleRel {
 
 
         RexMRAggCall( AggFunction aggFun, RelDataType type, List<RexNode> operands, int ordinal ) {
-            super( type, (Operator) aggFun, operands );
+            super( type, aggFun, operands );
             this.ordinal = ordinal;
             digest = toString(); // can compute here because class is final
         }

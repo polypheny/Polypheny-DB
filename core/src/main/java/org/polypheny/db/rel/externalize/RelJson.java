@@ -46,6 +46,7 @@ import org.apache.calcite.avatica.AvaticaUtils;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Function;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.OperatorImpl;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelCollation;
@@ -462,7 +463,7 @@ public class RelJson {
 
         String class_ = (String) map.get( "class" );
         if ( class_ != null ) {
-            return AvaticaUtils.instantiatePlugin( Operator.class, class_ );
+            return AvaticaUtils.instantiatePlugin( OperatorImpl.class, class_ );
         }
         return null;
     }

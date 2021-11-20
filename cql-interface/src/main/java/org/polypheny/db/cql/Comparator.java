@@ -16,8 +16,8 @@
 
 package org.polypheny.db.cql;
 
+import org.polypheny.db.core.BinaryOperator;
 import org.polypheny.db.core.StdOperatorRegistry;
-import org.polypheny.db.languages.sql.SqlBinaryOperator;
 
 
 public enum Comparator {
@@ -70,7 +70,7 @@ public enum Comparator {
     }
 
 
-    public SqlBinaryOperator toSqlStdOperatorTable( SqlBinaryOperator fallback ) {
+    public BinaryOperator toSqlStdOperatorTable( BinaryOperator fallback ) {
         if ( this == SERVER_CHOICE ) {
             return fallback;
         } else if ( this == EQUALS ) {

@@ -79,8 +79,8 @@ public class RexSubQuery extends RexCall {
      * There is no ALL. For {@code x comparison ALL (sub-query)} use instead {@code NOT (x inverse-comparison SOME (sub-query))}.
      * If {@code comparison} is {@code >} then {@code negated-comparison} is {@code <=}, and so forth.
      */
-    public static <T extends Operator & QuantifyOperator> RexSubQuery some( RelNode rel, ImmutableList<RexNode> nodes, T op ) {
-        assert op.kind == Kind.SOME;
+    public static RexSubQuery some( RelNode rel, ImmutableList<RexNode> nodes, QuantifyOperator op ) {
+        assert op.getKind() == Kind.SOME;
         final RelDataType type = type( rel, nodes );
         return new RexSubQuery( type, op, nodes, rel );
     }

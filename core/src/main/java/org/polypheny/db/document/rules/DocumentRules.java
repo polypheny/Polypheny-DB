@@ -75,9 +75,9 @@ public class DocumentRules {
         @Override
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
-            if ( operator.kind == Kind.JSON_VALUE_EXPRESSION
+            if ( operator.getKind() == Kind.JSON_VALUE_EXPRESSION
                     || operator.getFunctionType() == FunctionType.JSON_VALUE
-                    || operator.kind == Kind.JSON_API_COMMON_SYNTAX ) {
+                    || operator.getKind() == Kind.JSON_API_COMMON_SYNTAX ) {
                 containsJson = true;
             }
             return super.visitCall( call );

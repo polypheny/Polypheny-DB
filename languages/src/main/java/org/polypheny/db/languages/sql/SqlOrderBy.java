@@ -62,7 +62,7 @@ public class SqlOrderBy extends SqlCall {
 
 
     @Override
-    public Operator getOperator() {
+    public org.polypheny.db.core.Operator getOperator() {
         return (Operator) OPERATOR;
     }
 

@@ -686,61 +686,61 @@ class PredicateAnalyzer {
 
         @Override
         public QueryExpression exists() {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['exists'] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['exists'] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression notExists() {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['notExists'] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['notExists'] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression like( LiteralExpression literal ) {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['like'] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['like'] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression notLike( LiteralExpression literal ) {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['notLike'] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['notLike'] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression equals( LiteralExpression literal ) {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['='] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['='] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression notEquals( LiteralExpression literal ) {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['not'] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['not'] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression gt( LiteralExpression literal ) {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['>'] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['>'] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression gte( LiteralExpression literal ) {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['>='] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['>='] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression lt( LiteralExpression literal ) {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['<'] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['<'] " + "cannot be applied to a compound expression" );
         }
 
 
         @Override
         public QueryExpression lte( LiteralExpression literal ) {
-            throw new PredicateAnalyzerException( "SqlOperatorImpl ['<='] " + "cannot be applied to a compound expression" );
+            throw new PredicateAnalyzerException( "SqlOperator ['<='] " + "cannot be applied to a compound expression" );
         }
 
 

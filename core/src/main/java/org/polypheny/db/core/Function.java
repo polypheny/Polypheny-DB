@@ -20,7 +20,7 @@ import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-public interface Function {
+public interface Function extends Operator {
 
     default FunctionType getFunctionType() {
         return FunctionType.OTHER;
