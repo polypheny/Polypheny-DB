@@ -40,7 +40,6 @@ import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
-import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlDialect.Context;
@@ -379,7 +378,7 @@ public class RelToSqlConverterTest extends LanguageManagerDependant {
         final RelBuilder builder = relBuilder();
         final RelNode root = builder
                 .scan( "emp" )
-                .aggregate( builder.groupKey(), builder.aggregateCall( StdOperatorRegistry.get( "SUM0", SqlAggFunction.class ), builder.field( 3 ) ).as( "s" ) )
+                .aggregate( builder.groupKey(), builder.aggregateCall( StdOperatorRegistry.getAgg( "SUM0" ), builder.field( 3 ) ).as( "s" ) )
                 .build();
         final String expectedMysql = "SELECT COALESCE(SUM(`mgr`), 0) AS `s`\n"
                 + "FROM `scott`.`emp`";

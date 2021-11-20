@@ -23,8 +23,8 @@ import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.Lex;
 import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.rel.type.RelDataType;
@@ -234,11 +234,10 @@ public interface SqlTester extends AutoCloseable, Tester {
 
     /**
      * Declares that this test is for a given operator. So we can check that all operators are tested.
-     *
-     * @param operator Operator
+     *  @param operator Operator
      * @param unimplementedVmNames Names of virtual machines for which this
      */
-    void setFor( SqlOperator operator, VmName... unimplementedVmNames );
+    void setFor( Operator operator, VmName... unimplementedVmNames );
 
     /**
      * Checks that an aggregate expression returns the expected result.

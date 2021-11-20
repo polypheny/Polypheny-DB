@@ -125,7 +125,6 @@ import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.languages.sql.SqlWith;
 import org.polypheny.db.languages.sql.SqlWithItem;
 import org.polypheny.db.languages.sql.fun.SqlCase;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.util.SqlShuttle;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
@@ -3129,7 +3128,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return;
         }
         final Operator op = agg.getOperator();
-        if ( op.equals( SqlStdOperatorTable.OVER ) ) {
+        if ( op.equals( StdOperatorRegistry.get( "OVER" ) ) ) {
             throw newValidationError( agg, RESOURCE.windowedAggregateIllegalInClause( clause ) );
         } else if ( op.isGroup() || op.isGroupAuxiliary() ) {
             throw newValidationError( agg, RESOURCE.groupFunctionMustAppearInGroupByClause( op.getName() ) );

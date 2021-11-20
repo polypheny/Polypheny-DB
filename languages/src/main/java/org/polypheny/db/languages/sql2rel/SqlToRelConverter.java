@@ -4462,7 +4462,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
             for ( int i = 0; i < selectList.size(); i++ ) {
                 SqlNode selectItem = selectList.getSqlList().get( i );
                 String name = null;
-                if ( SqlUtil.isCallTo( selectItem, SqlStdOperatorTable.AS ) ) {
+                if ( SqlUtil.isCallTo( selectItem, StdOperatorRegistry.get( "AS" ) ) ) {
                     final SqlCall call = (SqlCall) selectItem;
                     selectItem = call.operand( 0 );
                     name = call.operand( 1 ).toString();

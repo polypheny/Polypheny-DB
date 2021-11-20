@@ -264,7 +264,7 @@ public class MongoRules {
             MONGO_OPERATORS.put( StdOperatorRegistry.get( "ASIN" ), "$asin" );
             MONGO_OPERATORS.put( StdOperatorRegistry.get( "SIN" ), "$sin" );
             MONGO_OPERATORS.put( StdOperatorRegistry.get( "ATAN" ), "$atan" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( "ATAN2" ), "$atan2" );
+            MONGO_OPERATORS.put( StdOperatorRegistry.get( "ATAN20" ), "$atan2" );
 
             MONGO_OPERATORS.put( StdOperatorRegistry.get( "POWER" ), "$pow" );
         }

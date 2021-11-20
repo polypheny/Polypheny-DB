@@ -25,11 +25,12 @@ import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.Node;
+import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.core.ValidatorScope;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.fun.SqlTrimFunction;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
@@ -546,8 +547,8 @@ public class SqlJdbcFunctionCall extends SqlFunction {
         final SqlOperator operator;
 
 
-        public SimpleMakeCall( SqlOperator operator ) {
-            this.operator = operator;
+        public SimpleMakeCall( Operator operator ) {
+            this.operator = (SqlOperator) operator;
         }
 
 
@@ -587,7 +588,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
          * @param operator Operator
          * @param order Order
          */
-        PermutingMakeCall( SqlOperator operator, int[] order ) {
+        PermutingMakeCall( Operator operator, int[] order ) {
             super( operator );
             this.order = Objects.requireNonNull( order );
         }
@@ -659,38 +660,38 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             // A table of all functions can be found at http://java.sun.com/products/jdbc/driverdevs.html which is also provided in the javadoc for this class.
             // See also SqlOperatorTests.testJdbcFn, which contains the list.
             ImmutableMap.Builder<String, MakeCall> map = ImmutableMap.builder();
-            map.put( "ABS", simple( SqlStdOperatorTable.ABS ) );
-            map.put( "ACOS", simple( SqlStdOperatorTable.ACOS ) );
-            map.put( "ASIN", simple( SqlStdOperatorTable.ASIN ) );
-            map.put( "ATAN", simple( SqlStdOperatorTable.ATAN ) );
-            map.put( "ATAN2", simple( SqlStdOperatorTable.ATAN2 ) );
-            map.put( "CEILING", simple( SqlStdOperatorTable.CEIL ) );
-            map.put( "COS", simple( SqlStdOperatorTable.COS ) );
-            map.put( "COT", simple( SqlStdOperatorTable.COT ) );
-            map.put( "DEGREES", simple( SqlStdOperatorTable.DEGREES ) );
-            map.put( "EXP", simple( SqlStdOperatorTable.EXP ) );
-            map.put( "FLOOR", simple( SqlStdOperatorTable.FLOOR ) );
-            map.put( "LOG", simple( SqlStdOperatorTable.LN ) );
-            map.put( "LOG10", simple( SqlStdOperatorTable.LOG10 ) );
-            map.put( "MOD", simple( SqlStdOperatorTable.MOD ) );
-            map.put( "PI", simple( SqlStdOperatorTable.PI ) );
-            map.put( "POWER", simple( SqlStdOperatorTable.POWER ) );
-            map.put( "RADIANS", simple( SqlStdOperatorTable.RADIANS ) );
-            map.put( "RAND", simple( SqlStdOperatorTable.RAND ) );
-            map.put( "ROUND", simple( SqlStdOperatorTable.ROUND ) );
-            map.put( "SIGN", simple( SqlStdOperatorTable.SIGN ) );
-            map.put( "SIN", simple( SqlStdOperatorTable.SIN ) );
-            map.put( "SQRT", simple( SqlStdOperatorTable.SQRT ) );
-            map.put( "TAN", simple( SqlStdOperatorTable.TAN ) );
-            map.put( "TRUNCATE", simple( SqlStdOperatorTable.TRUNCATE ) );
+            map.put( "ABS", simple( StdOperatorRegistry.get( "ABS" ) ) );
+            map.put( "ACOS", simple( StdOperatorRegistry.get( "ACOS" ) ) );
+            map.put( "ASIN", simple( StdOperatorRegistry.get( "ASIN" ) ) );
+            map.put( "ATAN", simple( StdOperatorRegistry.get( "ATAN" ) ) );
+            map.put( "ATAN2", simple( StdOperatorRegistry.get( "ATAN2" ) ) );
+            map.put( "CEILING", simple( StdOperatorRegistry.get( "CEIL" ) ) );
+            map.put( "COS", simple( StdOperatorRegistry.get( "COS" ) ) );
+            map.put( "COT", simple( StdOperatorRegistry.get( "COT" ) ) );
+            map.put( "DEGREES", simple( StdOperatorRegistry.get( "DEGREES" ) ) );
+            map.put( "EXP", simple( StdOperatorRegistry.get( "EXP" ) ) );
+            map.put( "FLOOR", simple( StdOperatorRegistry.get( "FLOOR" ) ) );
+            map.put( "LOG", simple( StdOperatorRegistry.get( "LN" ) ) );
+            map.put( "LOG10", simple( StdOperatorRegistry.get( "LOG10" ) ) );
+            map.put( "MOD", simple( StdOperatorRegistry.get( "MOD" ) ) );
+            map.put( "PI", simple( StdOperatorRegistry.get( "PI" ) ) );
+            map.put( "POWER", simple( StdOperatorRegistry.get( "POWER" ) ) );
+            map.put( "RADIANS", simple( StdOperatorRegistry.get( "RADIANS" ) ) );
+            map.put( "RAND", simple( StdOperatorRegistry.get( "RAND" ) ) );
+            map.put( "ROUND", simple( StdOperatorRegistry.get( "ROUND" ) ) );
+            map.put( "SIGN", simple( StdOperatorRegistry.get( "SIGN" ) ) );
+            map.put( "SIN", simple( StdOperatorRegistry.get( "SIN" ) ) );
+            map.put( "SQRT", simple( StdOperatorRegistry.get( "SQRT" ) ) );
+            map.put( "TAN", simple( StdOperatorRegistry.get( "TAN" ) ) );
+            map.put( "TRUNCATE", simple( StdOperatorRegistry.get( "TRUNCATE" ) ) );
 
-            map.put( "CONCAT", simple( SqlStdOperatorTable.CONCAT ) );
-            map.put( "INSERT", new PermutingMakeCall( SqlStdOperatorTable.OVERLAY, new int[]{ 0, 2, 3, 1 } ) );
-            map.put( "LCASE", simple( SqlStdOperatorTable.LOWER ) );
-            map.put( "LENGTH", simple( SqlStdOperatorTable.CHARACTER_LENGTH ) );
-            map.put( "LOCATE", simple( SqlStdOperatorTable.POSITION ) );
+            map.put( "CONCAT", simple( StdOperatorRegistry.get( "CONCAT" ) ) );
+            map.put( "INSERT", new PermutingMakeCall( StdOperatorRegistry.get( "OVERLAY" ), new int[]{ 0, 2, 3, 1 } ) );
+            map.put( "LCASE", simple( StdOperatorRegistry.get( "LOWER" ) ) );
+            map.put( "LENGTH", simple( StdOperatorRegistry.get( "CHARACTER_LENGTH" ) ) );
+            map.put( "LOCATE", simple( StdOperatorRegistry.get( "POSITION" ) ) );
             map.put( "LTRIM",
-                    new SimpleMakeCall( SqlStdOperatorTable.TRIM ) {
+                    new SimpleMakeCall( StdOperatorRegistry.get( "TRIM" ) ) {
                         @Override
                         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
                             assert 1 == operands.length;
@@ -701,19 +702,19 @@ public class SqlJdbcFunctionCall extends SqlFunction {
                                     operands[0] );
                         }
                     } );
-            map.put( "YEAR", simple( SqlStdOperatorTable.YEAR ) );
-            map.put( "QUARTER", simple( SqlStdOperatorTable.QUARTER ) );
-            map.put( "MONTH", simple( SqlStdOperatorTable.MONTH ) );
-            map.put( "WEEK", simple( SqlStdOperatorTable.WEEK ) );
-            map.put( "DAYOFYEAR", simple( SqlStdOperatorTable.DAYOFYEAR ) );
-            map.put( "DAYOFMONTH", simple( SqlStdOperatorTable.DAYOFMONTH ) );
-            map.put( "DAYOFWEEK", simple( SqlStdOperatorTable.DAYOFWEEK ) );
-            map.put( "HOUR", simple( SqlStdOperatorTable.HOUR ) );
-            map.put( "MINUTE", simple( SqlStdOperatorTable.MINUTE ) );
-            map.put( "SECOND", simple( SqlStdOperatorTable.SECOND ) );
+            map.put( "YEAR", simple( StdOperatorRegistry.get( "YEAR" ) ) );
+            map.put( "QUARTER", simple( StdOperatorRegistry.get( "QUARTER" ) ) );
+            map.put( "MONTH", simple( StdOperatorRegistry.get( "MONTH" ) ) );
+            map.put( "WEEK", simple( StdOperatorRegistry.get( "WEEK" ) ) );
+            map.put( "DAYOFYEAR", simple( StdOperatorRegistry.get( "DAYOFYEAR" ) ) );
+            map.put( "DAYOFMONTH", simple( StdOperatorRegistry.get( "DAYOFMONTH" ) ) );
+            map.put( "DAYOFWEEK", simple( StdOperatorRegistry.get( "DAYOFWEEK" ) ) );
+            map.put( "HOUR", simple( StdOperatorRegistry.get( "HOUR" ) ) );
+            map.put( "MINUTE", simple( StdOperatorRegistry.get( "MINUTE" ) ) );
+            map.put( "SECOND", simple( StdOperatorRegistry.get( "SECOND" ) ) );
 
             map.put( "RTRIM",
-                    new SimpleMakeCall( SqlStdOperatorTable.TRIM ) {
+                    new SimpleMakeCall( StdOperatorRegistry.get( "TRIM" ) ) {
                         @Override
                         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
                             assert 1 == operands.length;
@@ -724,27 +725,27 @@ public class SqlJdbcFunctionCall extends SqlFunction {
                                     operands[0] );
                         }
                     } );
-            map.put( "SUBSTRING", simple( SqlStdOperatorTable.SUBSTRING ) );
-            map.put( "REPLACE", simple( SqlStdOperatorTable.REPLACE ) );
-            map.put( "UCASE", simple( SqlStdOperatorTable.UPPER ) );
-            map.put( "CURDATE", simple( SqlStdOperatorTable.CURRENT_DATE ) );
-            map.put( "CURTIME", simple( SqlStdOperatorTable.LOCALTIME ) );
-            map.put( "NOW", simple( SqlStdOperatorTable.CURRENT_TIMESTAMP ) );
-            map.put( "TIMESTAMPADD", simple( SqlStdOperatorTable.TIMESTAMP_ADD ) );
-            map.put( "TIMESTAMPDIFF", simple( SqlStdOperatorTable.TIMESTAMP_DIFF ) );
+            map.put( "SUBSTRING", simple( StdOperatorRegistry.get( "SUBSTRING" ) ) );
+            map.put( "REPLACE", simple( StdOperatorRegistry.get( "REPLACE" ) ) );
+            map.put( "UCASE", simple( StdOperatorRegistry.get( "UPPER" ) ) );
+            map.put( "CURDATE", simple( StdOperatorRegistry.get( "CURRENT_DATE" ) ) );
+            map.put( "CURTIME", simple( StdOperatorRegistry.get( "LOCALTIME" ) ) );
+            map.put( "NOW", simple( StdOperatorRegistry.get( "CURRENT_TIMESTAMP" ) ) );
+            map.put( "TIMESTAMPADD", simple( StdOperatorRegistry.get( "TIMESTAMP_ADD" ) ) );
+            map.put( "TIMESTAMPDIFF", simple( StdOperatorRegistry.get( "TIMESTAMP_DIFF" ) ) );
 
-            map.put( "DATABASE", simple( SqlStdOperatorTable.CURRENT_CATALOG ) );
+            map.put( "DATABASE", simple( StdOperatorRegistry.get( "CURRENT_CATALOG" ) ) );
             map.put( "IFNULL",
-                    new SimpleMakeCall( SqlStdOperatorTable.COALESCE ) {
+                    new SimpleMakeCall( StdOperatorRegistry.get( "COALESCE" ) ) {
                         @Override
                         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
                             assert 2 == operands.length;
                             return super.createCall( pos, operands );
                         }
                     } );
-            map.put( "USER", simple( SqlStdOperatorTable.CURRENT_USER ) );
+            map.put( "USER", simple( StdOperatorRegistry.get( "CURRENT_USER" ) ) );
             map.put( "CONVERT",
-                    new SimpleMakeCall( SqlStdOperatorTable.CAST ) {
+                    new SimpleMakeCall( StdOperatorRegistry.get( "CAST" ) ) {
                         @Override
                         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
                             assert 2 == operands.length;
@@ -760,7 +761,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
         }
 
 
-        private MakeCall simple( SqlOperator operator ) {
+        private MakeCall simple( Operator operator ) {
             return new SimpleMakeCall( operator );
         }
 

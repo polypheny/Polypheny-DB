@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.sql2rel;
 
 
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rex.RexBuilder;
@@ -63,9 +64,9 @@ public interface AuxiliaryConverter {
                 case SESSION_END: // TODO: ?
                     return e;
                 case TUMBLE_END:
-                    return rexBuilder.makeCall( SqlStdOperatorTable.PLUS, e, ((RexCall) groupCall).operands.get( 1 ) );
+                    return rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ), e, ((RexCall) groupCall).operands.get( 1 ) );
                 case HOP_END:
-                    return rexBuilder.makeCall( SqlStdOperatorTable.PLUS, e, ((RexCall) groupCall).operands.get( 2 ) );
+                    return rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ), e, ((RexCall) groupCall).operands.get( 2 ) );
                 default:
                     throw new AssertionError( "unknown: " + f );
             }

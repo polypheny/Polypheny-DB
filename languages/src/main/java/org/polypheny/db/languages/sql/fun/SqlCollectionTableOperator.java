@@ -19,6 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlFunctionalOperator;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -27,7 +28,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 /**
  * SqlCollectionTableOperator is the "table function derived table" operator. It converts a table-valued function into a relation, e.g. "<code>SELECT * FROM TABLE(ramp(5))</code>".
  *
- * This operator has function syntax (with one argument), whereas {@link SqlStdOperatorTable#EXPLICIT_TABLE} is a prefix operator.
+ * This operator has function syntax (with one argument), whereas {@link StdOperatorRegistry.get( "EXPLICIT_TABLE" )} is a prefix operator.
  */
 public class SqlCollectionTableOperator extends SqlFunctionalOperator {
 

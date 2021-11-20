@@ -2035,9 +2035,9 @@ public class DruidAdapterIT {
 //                    // select product_id from foodmart.foodmart where product_id < cast(10 as varchar)
 //                    final RelDataType intType = b.getTypeFactory().createSqlType( PolyType.INTEGER );
 //                    return b.scan( "foodmart", "foodmart" )
-//                            .filter( b.call( SqlStdOperatorTable.LESS_THAN,
-//                                    b.getRexBuilder().makeCall( intType, SqlStdOperatorTable.CAST, ImmutableList.of( b.field( "product_id" ) ) ),
-//                                    b.getRexBuilder().makeCall( intType, SqlStdOperatorTable.CAST, ImmutableList.of( b.literal( "10" ) ) ) ) )
+//                            .filter( b.call( StdOperatorRegistry.get( "LESS_THAN" ),
+//                                    b.getRexBuilder().makeCall( intType, StdOperatorRegistry.get( "CAST" ), ImmutableList.of( b.field( "product_id" ) ) ),
+//                                    b.getRexBuilder().makeCall( intType, StdOperatorRegistry.get( "CAST" ), ImmutableList.of( b.literal( "10" ) ) ) ) )
 //                            .project( b.field( "product_id" ) )
 //                            .build();
 //                } )
@@ -2051,7 +2051,7 @@ public class DruidAdapterIT {
 //                .withRel( b -> {
 //                    // select count(*) as c from foodmart.foodmart where product_id = 'id'
 //                    return b.scan( "foodmart", "foodmart" )
-//                            .filter( b.call( SqlStdOperatorTable.EQUALS, b.field( "product_id" ), b.literal( "id" ) ) )
+//                            .filter( b.call( StdOperatorRegistry.get( "EQUALS" ), b.field( "product_id" ), b.literal( "id" ) ) )
 //                            .aggregate( b.groupKey(), b.countStar( "c" ) )
 //                            .build();
 //                } )

@@ -62,7 +62,7 @@ public class RexOver extends RexCall {
      *
      * <ul>
      * <li>type = Integer,</li>
-     * <li>op = {#@link SqlStdOperatorTable#SUM},</li>
+     * <li>op = {#@link StdOperatorRegistry.get( "SUM" )},</li>
      * <li>operands = { {@link RexFieldAccess}("x") }</li>
      * <li>window = {#@link SqlWindow}(ROWS 3 PRECEDING)</li>
      * </ul>

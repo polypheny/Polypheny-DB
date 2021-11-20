@@ -20,8 +20,8 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import org.apache.commons.lang.math.NumberUtils;
-import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.RelBuilder;
@@ -193,21 +193,21 @@ public class QueryPlanBuilder {
      * @param operator operator for a filter condition
      * @return parsed operator as SqlOperator
      */
-    private static SqlOperator getOperator( final String operator ) {
+    private static Operator getOperator( final String operator ) {
         switch ( operator ) {
             case "=":
-                return SqlStdOperatorTable.EQUALS;
+                return StdOperatorRegistry.get( "EQUALS" );
             case "!=":
             case "<>":
-                return SqlStdOperatorTable.NOT_EQUALS;
+                return StdOperatorRegistry.get( "NOT_EQUALS" );
             case "<":
-                return SqlStdOperatorTable.LESS_THAN;
+                return StdOperatorRegistry.get( "LESS_THAN" );
             case "<=":
-                return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+                return StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" );
             case ">":
-                return SqlStdOperatorTable.GREATER_THAN;
+                return StdOperatorRegistry.get( "GREATER_THAN" );
             case ">=":
-                return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+                return StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" );
             default:
                 throw new IllegalArgumentException( "Operator '" + operator + "' is not supported." );
         }

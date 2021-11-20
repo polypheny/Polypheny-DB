@@ -1388,7 +1388,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                             ((MemberExpression) expression).field.getName(),
                             true );
                 case GreaterThan:
-                    return binary( expression, StdOperatorRegistry.get( "GREATER_THAN", BinaryOperator.class ) );
+                    return binary( expression, StdOperatorRegistry.get( "GREATER_THAN" , BinaryOperator.class ) );
                 case LessThan:
                     return binary( expression, StdOperatorRegistry.get( "LESS_THAN", BinaryOperator.class ) );
                 case Parameter:

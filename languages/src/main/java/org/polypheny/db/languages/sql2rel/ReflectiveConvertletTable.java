@@ -163,7 +163,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
      * @param op Operator instance, say {@link SqlStdOperatorTable#MINUS}
      * @param convertlet Convertlet
      */
-    protected void registerOp( SqlOperator op, SqlRexConvertlet convertlet ) {
+    protected void registerOp( Operator op, SqlRexConvertlet convertlet ) {
         map.put( op, convertlet );
     }
 
@@ -174,7 +174,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
      * @param alias Operator which is alias
      * @param target Operator to translate calls to
      */
-    protected void addAlias( final SqlOperator alias, final SqlOperator target ) {
+    protected void addAlias( final Operator alias, final Operator target ) {
         map.put(
                 alias, (SqlRexConvertlet) ( cx, call ) -> {
                     Preconditions.checkArgument(

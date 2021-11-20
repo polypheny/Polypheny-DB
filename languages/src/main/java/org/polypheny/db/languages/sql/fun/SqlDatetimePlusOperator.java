@@ -21,6 +21,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
@@ -76,7 +77,7 @@ public class SqlDatetimePlusOperator extends SqlSpecialOperator {
 
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
-        return SqlStdOperatorTable.PLUS.getMonotonicity( call );
+        return StdOperatorRegistry.get( "PLUS" ).getMonotonicity( call );
     }
 
 }

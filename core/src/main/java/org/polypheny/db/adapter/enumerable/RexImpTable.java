@@ -202,7 +202,7 @@ public class RexImpTable {
         defineMethod( StdOperatorRegistry.get( "ACOS" ), "acos", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "ASIN" ), "asin", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "ATAN" ), "atan", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( "ATAN2" ), "atan2", NullPolicy.STRICT );
+        defineMethod( StdOperatorRegistry.get( "ATAN20" ), "atan2", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "COS" ), "cos", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "COT" ), "cot", NullPolicy.STRICT );
         defineMethod( StdOperatorRegistry.get( "DEGREES" ), "degrees", NullPolicy.STRICT );
@@ -1027,7 +1027,7 @@ public class RexImpTable {
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
             Expression acc = reset.accumulator().get( 0 );
             Primitive p = Primitive.of( acc.getType() );
-            boolean isMin = StdOperatorRegistry.get( "MIN", AggFunction.class ).equals( info.aggregation() );
+            boolean isMin = StdOperatorRegistry.get( "MIN" , AggFunction.class ).equals( info.aggregation() );
             Object inf = p == null ? null : (isMin ? p.max : p.min);
             reset.currentBlock().add( Expressions.statement( Expressions.assign( acc, Expressions.constant( inf, acc.getType() ) ) ) );
         }
@@ -1958,10 +1958,10 @@ public class RexImpTable {
 
         private static final List<BinaryOperator> COMPARISON_OPERATORS =
                 ImmutableList.of(
-                        StdOperatorRegistry.get( "LESS_THAN", BinaryOperator.class ),
-                        StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL", BinaryOperator.class ),
-                        StdOperatorRegistry.get( "GREATER_THAN", BinaryOperator.class ),
-                        StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL", BinaryOperator.class ) );
+                        StdOperatorRegistry.get( "LESS_THAN" , BinaryOperator.class ),
+                        StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" , BinaryOperator.class ),
+                        StdOperatorRegistry.get( "GREATER_THAN" , BinaryOperator.class ),
+                        StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" , BinaryOperator.class ) );
         public static final String METHOD_POSTFIX_FOR_ANY_TYPE = "Any";
 
         private final ExpressionType expressionType;

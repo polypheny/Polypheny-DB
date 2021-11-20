@@ -24,10 +24,10 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.MqlStdOperatorTable;
 import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2rel.MqlMockCatalog;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.SourceStringReader;
 
 
@@ -40,7 +40,7 @@ public abstract class MqlTest {
     private static final Map<String, Kind> logicalOperators;
 
     public static final Operator eq = MqlStdOperatorTable.DOC_EQ;
-    public static final Operator ne = SqlStdOperatorTable.NOT_EQUALS;
+    public static final Operator ne = StdOperatorRegistry.get( "NOT_EQUALS" );
     public static final Operator gt = MqlStdOperatorTable.DOC_GT;
     public static final Operator gte = MqlStdOperatorTable.DOC_GTE;
     public static final Operator lt = MqlStdOperatorTable.DOC_LT;

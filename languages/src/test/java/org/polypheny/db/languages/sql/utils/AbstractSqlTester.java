@@ -371,7 +371,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public void setFor( SqlOperator operator, VmName... unimplementedVmNames ) {
+    public void setFor( Operator operator, VmName... unimplementedVmNames ) {
         // do nothing
     }
 

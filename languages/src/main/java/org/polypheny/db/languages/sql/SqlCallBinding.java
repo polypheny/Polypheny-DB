@@ -32,7 +32,6 @@ import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.StdOperatorRegistry;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SelectScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
@@ -228,7 +227,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     @Override
     public RelDataType getCursorOperand( int ordinal ) {
         final SqlNode operand = call.operand( ordinal );
-        if ( !SqlUtil.isCallTo( operand, SqlStdOperatorTable.CURSOR ) ) {
+        if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( "CURSOR" ) ) ) {
             return null;
         }
         final SqlCall cursorCall = (SqlCall) operand;
@@ -240,7 +239,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     @Override
     public String getColumnListParamInfo( int ordinal, String paramName, List<String> columnList ) {
         final SqlNode operand = call.operand( ordinal );
-        if ( !SqlUtil.isCallTo( operand, SqlStdOperatorTable.ROW ) ) {
+        if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( "ROW" ) ) ) {
             return null;
         }
         for ( Node id : ((SqlCall) operand).getOperandList() ) {

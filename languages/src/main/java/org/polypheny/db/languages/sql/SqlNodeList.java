@@ -27,7 +27,7 @@ import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeList;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
@@ -148,8 +148,8 @@ public class SqlNodeList extends SqlNode implements NodeList {
     void andOrList( SqlWriter writer, Kind sepKind ) {
         SqlBinaryOperator sepOp =
                 sepKind == Kind.AND
-                        ? SqlStdOperatorTable.AND
-                        : SqlStdOperatorTable.OR;
+                        ? StdOperatorRegistry.get( "AND", SqlBinaryOperator.class )
+                        : StdOperatorRegistry.get( "OR", SqlBinaryOperator.class );
         for ( int i = 0; i < list.size(); i++ ) {
             Node node = list.get( i );
             writer.sep( sepKind.name(), false );

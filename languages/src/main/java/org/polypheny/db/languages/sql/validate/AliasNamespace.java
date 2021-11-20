@@ -22,11 +22,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.util.Util;
@@ -52,7 +52,7 @@ public class AliasNamespace extends AbstractNamespace {
     protected AliasNamespace( SqlValidatorImpl validator, SqlCall call, SqlNode enclosingNode ) {
         super( validator, enclosingNode );
         this.call = call;
-        assert call.getOperator().equals( SqlStdOperatorTable.AS );
+        assert call.getOperator().equals( StdOperatorRegistry.get( "AS" ) );
     }
 
 

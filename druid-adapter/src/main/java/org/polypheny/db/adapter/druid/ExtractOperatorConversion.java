@@ -40,7 +40,7 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
@@ -70,7 +70,7 @@ public class ExtractOperatorConversion implements DruidSqlOperatorConverter {
 
     @Override
     public Operator polyphenyDbOperator() {
-        return SqlStdOperatorTable.EXTRACT;
+        return StdOperatorRegistry.get( "EXTRACT" );
     }
 
 

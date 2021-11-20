@@ -45,11 +45,11 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
@@ -1228,7 +1228,7 @@ public abstract class AbstractRouter implements Router {
                         List<RexNode> joinConditions = new LinkedList<>();
                         for ( int i = 0; i < pkColumnIds.size(); i++ ) {
                             joinConditions.add( builder.call(
-                                    SqlStdOperatorTable.EQUALS,
+                                    StdOperatorRegistry.get( "EQUALS" ),
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ),
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ) ) );
                         }

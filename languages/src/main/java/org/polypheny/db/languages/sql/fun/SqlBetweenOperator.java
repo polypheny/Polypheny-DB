@@ -26,6 +26,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlInfixOperator;
@@ -229,7 +230,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
         @Override
         public Void visit( Call call ) {
             final Operator operator = call.getOperator();
-            if ( operator.equals( SqlStdOperatorTable.AND ) ) {
+            if ( operator.equals( StdOperatorRegistry.get( "AND" ) ) ) {
                 throw Util.FoundOne.NULL;
             }
             return super.visit( call );

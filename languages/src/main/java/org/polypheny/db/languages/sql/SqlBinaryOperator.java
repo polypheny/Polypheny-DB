@@ -25,9 +25,9 @@ import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.core.ValidatorScope;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -194,7 +194,7 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
     public boolean validRexOperands( int count, Litmus litmus ) {
         if ( count != 2 ) {
             // Special exception for AND and OR.
-            if ( (this.equals( SqlStdOperatorTable.AND ) || this.equals( SqlStdOperatorTable.OR )) && count > 2 ) {
+            if ( (this.equals( StdOperatorRegistry.get( "AND" ) ) || this.equals( StdOperatorRegistry.get( "OR" ) )) && count > 2 ) {
                 return true;
             }
             return litmus.fail( "wrong operand count {} for {}", count, this );

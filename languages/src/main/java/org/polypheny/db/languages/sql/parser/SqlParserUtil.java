@@ -34,6 +34,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlDateLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
@@ -49,7 +50,6 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator.TokenSequence;
 import org.polypheny.db.languages.sql.SqlTimeLiteral;
 import org.polypheny.db.languages.sql.SqlTimestampLiteral;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.util.DateString;
@@ -517,12 +517,12 @@ public final class SqlParserUtil {
                     list.add( convert( arg ) );
                 }
                 final ToTreeListItem item = (ToTreeListItem) call.op.o;
-                if ( item.op.equals( SqlStdOperatorTable.UNARY_MINUS )
+                if ( item.op.equals( StdOperatorRegistry.get( "UNARY_MINUS" ) )
                         && list.size() == 1
                         && list.get( 0 ) instanceof SqlNumericLiteral ) {
                     return SqlLiteral.createNegative( (SqlNumericLiteral) list.get( 0 ), item.pos.plusAll( list ) );
                 }
-                if ( item.op.equals( SqlStdOperatorTable.UNARY_PLUS )
+                if ( item.op.equals( StdOperatorRegistry.get( "UNARY_PLUS" ) )
                         && list.size() == 1
                         && list.get( 0 ) instanceof SqlNumericLiteral ) {
                     return list.get( 0 );

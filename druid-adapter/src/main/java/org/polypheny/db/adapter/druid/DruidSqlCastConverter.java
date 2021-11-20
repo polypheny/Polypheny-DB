@@ -40,7 +40,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.joda.time.Period;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Operator;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -54,7 +54,7 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
 
     @Override
     public Operator polyphenyDbOperator() {
-        return SqlStdOperatorTable.CAST;
+        return StdOperatorRegistry.get( "CAST" );
     }
 
 

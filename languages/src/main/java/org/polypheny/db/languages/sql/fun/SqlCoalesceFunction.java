@@ -22,6 +22,7 @@ import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -71,7 +72,7 @@ public class SqlCoalesceFunction extends SqlFunction {
         // todo: optimize when know operand is not null.
 
         for ( SqlNode operand : Util.skipLast( operands ) ) {
-            whenList.add( SqlStdOperatorTable.IS_NOT_NULL.createCall( pos, operand ) );
+            whenList.add( StdOperatorRegistry.get( "IS_NOT_NULL" ).createCall( pos, operand ) );
             thenList.add( Node.clone( operand ) );
         }
         SqlNode elseExpr = Util.last( operands );

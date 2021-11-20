@@ -35,8 +35,8 @@ public class StdOperatorRegistry {
     }
 
 
-    public static <E extends Operator, T> E get( String key, Class<T> clazz ) {
-        return (E) clazz.cast( get( key ) );
+    public static <T extends Operator> T get( String key, Class<T> clazz ) {
+        return (T) clazz.cast( get( key ) );
     }
 
 

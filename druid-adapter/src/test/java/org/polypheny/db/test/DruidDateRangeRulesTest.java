@@ -46,9 +46,9 @@ import org.hamcrest.Matcher;
 import org.joda.time.Interval;
 import org.junit.Test;
 import org.polypheny.db.adapter.druid.DruidDateTimeUtils;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.core.TestFixture;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rel.rules.DateRangeRules;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.TimestampString;
@@ -198,9 +198,9 @@ public class DruidDateRangeRulesTest extends LanguageManagerDependant {
 
 
         Fixture2() {
-            exYear = rexBuilder.makeCall( SqlStdOperatorTable.EXTRACT, ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.YEAR ), ts ) );
-            exMonth = rexBuilder.makeCall( intRelDataType, SqlStdOperatorTable.EXTRACT, ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.MONTH ), ts ) );
-            exDay = rexBuilder.makeCall( intRelDataType, SqlStdOperatorTable.EXTRACT, ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.DAY ), ts ) );
+            exYear = rexBuilder.makeCall( StdOperatorRegistry.get( "EXTRACT" ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.YEAR ), ts ) );
+            exMonth = rexBuilder.makeCall( intRelDataType, StdOperatorRegistry.get( "EXTRACT" ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.MONTH ), ts ) );
+            exDay = rexBuilder.makeCall( intRelDataType, StdOperatorRegistry.get( "EXTRACT" ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.DAY ), ts ) );
         }
 
 

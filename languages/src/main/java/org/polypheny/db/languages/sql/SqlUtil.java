@@ -539,7 +539,7 @@ public abstract class SqlUtil {
     /**
      * Returns whether a {@link SqlNode node} is a {@link SqlCall call} to a given {@link SqlOperator operator}.
      */
-    public static boolean isCallTo( SqlNode node, SqlOperator operator ) {
+    public static boolean isCallTo( SqlNode node, Operator operator ) {
         return (node instanceof SqlCall) && (((SqlCall) node).getOperator().equals( operator ));
     }
 
