@@ -366,7 +366,7 @@ public class MongoRules {
                 sb.append( finish );
                 return sb.toString();
             }
-            if ( call.op == StdOperatorRegistry.get( "UNARY_MINUS" ) ) {
+            if ( call.op.equals( StdOperatorRegistry.get( "UNARY_MINUS" ) ) ) {
                 if ( strings.size() == 1 ) {
                     return "{\"$multiply\":[" + strings.get( 0 ) + ",-1]}";
                 }
@@ -382,7 +382,7 @@ public class MongoRules {
                 return call.operands.get( 0 ).accept( this );
             }
 
-            if ( call.op == StdOperatorRegistry.get( "SIGN" ) ) {
+            if ( call.op.equals( StdOperatorRegistry.get( "SIGN" ) ) ) {
                 // x < 0, -1
                 // x == 0, 0
                 // x > 0, 1
@@ -410,7 +410,7 @@ public class MongoRules {
                 return sb.toString();
             }
 
-            if ( call.op == StdOperatorRegistry.get( "IS_NOT_NULL" ) ) {
+            if ( call.op.equals( StdOperatorRegistry.get( "IS_NOT_NULL" ) ) ) {
                 return call.operands.get( 0 ).
 
                         accept( this );
