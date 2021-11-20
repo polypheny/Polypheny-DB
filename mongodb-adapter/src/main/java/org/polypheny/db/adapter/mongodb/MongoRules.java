@@ -647,12 +647,13 @@ public class MongoRules {
         @Override
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
-            if ( operator == StdOperatorRegistry.get( "COALESCE" )
-                    || operator == StdOperatorRegistry.get( "EXTRACT" )
-                    || operator == StdOperatorRegistry.get( "OVERLAY" )
-                    || operator == StdOperatorRegistry.get( "COT" )
-                    || operator == StdOperatorRegistry.get( "FLOOR" )
-                    || (operator == StdOperatorRegistry.get( "CAST" ) && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
+            if ( operator.equals( StdOperatorRegistry.get( "COALESCE" ) )
+                    || operator.equals( StdOperatorRegistry.get( "EXTRACT" ) )
+                    || operator.equals( StdOperatorRegistry.get( "OVERLAY" ) )
+                    || operator.equals( StdOperatorRegistry.get( "COT" ) )
+                    || operator.equals( StdOperatorRegistry.get( "FLOOR" ) )
+                    || (operator.equals( StdOperatorRegistry.get( "CAST" ) )
+                    && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {
                 containsIncompatible = true;
