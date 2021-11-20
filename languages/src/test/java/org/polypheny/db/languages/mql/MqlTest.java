@@ -25,13 +25,14 @@ import org.polypheny.db.core.MqlStdOperatorTable;
 import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2rel.MqlMockCatalog;
 import org.polypheny.db.util.SourceStringReader;
 
 
-public abstract class MqlTest {
+public abstract class MqlTest extends LanguageManagerDependant {
 
     private static final MqlParserConfig parserConfig;
     @Getter
