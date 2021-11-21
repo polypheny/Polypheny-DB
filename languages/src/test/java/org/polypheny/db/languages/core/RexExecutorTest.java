@@ -40,6 +40,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
@@ -127,7 +128,7 @@ public class RexExecutorTest {
             // which eventually leads to a RexInputRef. So we are good.
             final RexInputRef input = rexBuilder.makeInputRef( varchar, 0 );
             final RexNode lengthArg = rexBuilder.makeLiteral( 3, integer, true );
-            final RexNode substr = rexBuilder.makeCall( StdOperatorRegistry.get( "SUBSTRING" ), input, lengthArg );
+            final RexNode substr = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.SUBSTRING ), input, lengthArg );
             ImmutableList<RexNode> constExps = ImmutableList.of( substr );
 
             final RelDataType rowType = typeFactory.builder()
@@ -169,16 +170,16 @@ public class RexExecutorTest {
         // Same as testConstant; 10 -> 10
         checkConstant( 10L, rexBuilder -> rexBuilder.makeExactLiteral( BigDecimal.TEN ) );
         // 10 + 1 -> 11
-        checkConstant( 11L, rexBuilder -> rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ), rexBuilder.makeExactLiteral( BigDecimal.TEN ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) ) );
+        checkConstant( 11L, rexBuilder -> rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), rexBuilder.makeExactLiteral( BigDecimal.TEN ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) ) );
         // date 'today' <= date 'today' -> true
         checkConstant( true, rexBuilder -> {
             final DateString d = DateString.fromCalendarFields( Util.calendar() );
-            return rexBuilder.makeCall( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ), rexBuilder.makeDateLiteral( d ), rexBuilder.makeDateLiteral( d ) );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), rexBuilder.makeDateLiteral( d ), rexBuilder.makeDateLiteral( d ) );
         } );
         // date 'today' < date 'today' -> false
         checkConstant( false, rexBuilder -> {
             final DateString d = DateString.fromCalendarFields( Util.calendar() );
-            return rexBuilder.makeCall( StdOperatorRegistry.get( "LESS_THAN" ), rexBuilder.makeDateLiteral( d ), rexBuilder.makeDateLiteral( d ) );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.LESS_THAN ), rexBuilder.makeDateLiteral( d ), rexBuilder.makeDateLiteral( d ) );
         } );
     }
 
@@ -201,9 +202,9 @@ public class RexExecutorTest {
         check( ( rexBuilder, executor ) -> {
             final List<RexNode> reducedValues = new ArrayList<>();
             final RexLiteral hello = rexBuilder.makeCharLiteral( new NlsString( "Hello world!", null, null ) );
-            final RexNode plus = rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ), rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
+            final RexNode plus = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
             RexLiteral four = rexBuilder.makeExactLiteral( BigDecimal.valueOf( 4 ) );
-            final RexNode substring = rexBuilder.makeCall( StdOperatorRegistry.get( "SUBSTRING" ), hello, plus, four );
+            final RexNode substring = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.SUBSTRING ), hello, plus, four );
             executor.reduce( rexBuilder, ImmutableList.of( substring, plus ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 2 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
@@ -220,9 +221,9 @@ public class RexExecutorTest {
             final List<RexNode> reducedValues = new ArrayList<>();
             // hello world! -> 48656c6c6f20776f726c6421
             final RexLiteral binaryHello = rexBuilder.makeBinaryLiteral( new ByteString( "Hello world!".getBytes( UTF_8 ) ) );
-            final RexNode plus = rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ), rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
+            final RexNode plus = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
             RexLiteral four = rexBuilder.makeExactLiteral( BigDecimal.valueOf( 4 ) );
-            final RexNode substring = rexBuilder.makeCall( StdOperatorRegistry.get( "SUBSTRING" ), binaryHello, plus, four );
+            final RexNode substring = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.SUBSTRING ), binaryHello, plus, four );
             executor.reduce( rexBuilder, ImmutableList.of( substring, plus ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 2 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
@@ -236,7 +237,7 @@ public class RexExecutorTest {
     @Test
     public void testDeterministic1() throws Exception {
         check( ( rexBuilder, executor ) -> {
-            final RexNode plus = rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ), rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
+            final RexNode plus = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
             assertThat( RexUtil.isDeterministic( plus ), equalTo( true ) );
         } );
     }
@@ -255,7 +256,7 @@ public class RexExecutorTest {
     public void testDeterministic3() throws Exception {
         check( ( rexBuilder, executor ) -> {
             final RexNode plus =
-                    rexBuilder.makeCall( StdOperatorRegistry.get( "PLUS" ),
+                    rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ),
                             rexBuilder.makeCall( PLUS_RANDOM, rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) ),
                             rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
             assertThat( RexUtil.isDeterministic( plus ), equalTo( false ) );

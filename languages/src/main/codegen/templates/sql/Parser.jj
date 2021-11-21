@@ -49,6 +49,7 @@ package ${parser.package};
 import ${importStr};
 </#list>
 
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.apache.calcite.avatica.util.Casing;
@@ -259,7 +260,7 @@ public class ${parser.class} extends SqlAbstractParserImpl
     }
 
     private SqlNode extend(SqlNode table, SqlNodeList extendList) {
-        return (SqlNode) StdOperatorRegistry.get( "EXTEND" ).createCall(Span.of(table, extendList).pos(), table, extendList);
+        return (SqlNode) StdOperatorRegistry.get( OperatorName.EXTEND ).createCall(Span.of(table, extendList).pos(), table, extendList);
     }
 }
 
@@ -910,7 +911,7 @@ void Arg0(List list, ExprContext exprContext) :
     {
         if (e != null) {
             if (name != null) {
-                e = (SqlCall)StdOperatorRegistry.get( "ARGUMENT_ASSIGNMENT" ).createCall(
+                e = (SqlCall)StdOperatorRegistry.get( OperatorName.ARGUMENT_ASSIGNMENT ).createCall(
                     Span.of(name, e).pos(), e, name);
             }
             list.add(e);
@@ -935,7 +936,7 @@ void Arg(List list, ExprContext exprContext) :
     {
         if (e != null) {
             if (name != null) {
-                e = (SqlCall) StdOperatorRegistry.get( "ARGUMENT_ASSIGNMENT" ).createCall( Span.of(name, e).pos(), e, name );
+                e = (SqlCall) StdOperatorRegistry.get( OperatorName.ARGUMENT_ASSIGNMENT ).createCall( Span.of(name, e).pos(), e, name );
             }
             list.add(e);
         }
@@ -945,7 +946,7 @@ void Arg(List list, ExprContext exprContext) :
 SqlNode Default() : {}
 {
     <DEFAULT_> {
-        return (SqlCall) StdOperatorRegistry.get( "DEFAULT" ).createCall(getPos());
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.DEFAULT ).createCall(getPos());
     }
 }
 
@@ -1271,7 +1272,7 @@ SqlNode SqlProcedureCall() :
     }
     routineCall = NamedRoutineCall(FunctionCategory.USER_DEFINED_PROCEDURE, ExprContext.ACCEPT_SUB_QUERY)
     {
-        return (SqlCall) StdOperatorRegistry.get( "PROCEDURE_CALL" ).createCall(s.end(routineCall), routineCall);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.PROCEDURE_CALL ).createCall(s.end(routineCall), routineCall);
     }
 }
 
@@ -1533,7 +1534,7 @@ SqlInsert WhenNotMatchedClause(SqlNode table) :
     {
         // TODO zfong 5/26/06: note that extra parentheses are accepted above around the VALUES clause as a hack for unparse, but this is
         // actually invalid SQL; should fix unparse
-        insertValues = (SqlCall) StdOperatorRegistry.get( "VALUES" ).createCall(valuesSpan.end(this), rowConstructor);
+        insertValues = (SqlCall) StdOperatorRegistry.get( OperatorName.VALUES ).createCall(valuesSpan.end(this), rowConstructor);
         return new SqlInsert(insertSpan.end(this), keywordList, table, insertValues, insertColumnList);
     }
 }
@@ -1573,7 +1574,7 @@ SqlNode SelectItem() :
     [
         [ <AS> ]
         id = SimpleIdentifier() {
-            e = (SqlCall) StdOperatorRegistry.get( "AS" ).createCall(span().end(e), e, id);
+            e = (SqlCall) StdOperatorRegistry.get( OperatorName.AS ).createCall(span().end(e), e, id);
         }
     ]
     {
@@ -1829,7 +1830,7 @@ SqlNode TableRef2(boolean lateral) :
     boolean isRepeatable = false;
     int repeatableSeed = 0;
     SqlNodeList columnAliasList = null;
-    SqlUnnestOperator unnestOp = StdOperatorRegistry.get( "UNNEST", SqlUnnestOperator.class );
+    SqlUnnestOperator unnestOp = StdOperatorRegistry.get( OperatorName.UNNEST, SqlUnnestOperator.class );
 }
 {
     (
@@ -1844,7 +1845,7 @@ SqlNode TableRef2(boolean lateral) :
         over = TableOverOpt()
         {
             if (over != null) {
-                tableRef = (SqlCall) StdOperatorRegistry.get( "OVER" ).createCall(
+                tableRef = (SqlCall) StdOperatorRegistry.get( OperatorName.OVER ).createCall(
                     getPos(), tableRef, over);
             }
         }
@@ -1862,11 +1863,11 @@ SqlNode TableRef2(boolean lateral) :
         over = TableOverOpt()
         {
             if (over != null) {
-                tableRef = (SqlCall) StdOperatorRegistry.get( "OVER" ).createCall(
+                tableRef = (SqlCall) StdOperatorRegistry.get( OperatorName.OVER ).createCall(
                     getPos(), tableRef, over);
             }
             if (lateral) {
-                tableRef = (SqlCall) StdOperatorRegistry.get( "LATERAL" ).createCall(
+                tableRef = (SqlCall) StdOperatorRegistry.get( OperatorName.LATERAL ).createCall(
                     getPos(), tableRef);
             }
         }
@@ -1883,7 +1884,7 @@ SqlNode TableRef2(boolean lateral) :
         args = ParenthesizedQueryOrCommaList(ExprContext.ACCEPT_SUB_QUERY)
         [
             <WITH> <ORDINALITY> {
-                unnestOp = StdOperatorRegistry.get( "UNNEST_WITH_ORDINALITY", SqlUnnestOperator.class );
+                unnestOp = StdOperatorRegistry.get( OperatorName.UNNEST_WITH_ORDINALITY, SqlUnnestOperator.class );
             }
         ]
         {
@@ -1896,7 +1897,7 @@ SqlNode TableRef2(boolean lateral) :
         <RPAREN>
         {
             if (lateral) {
-                tableRef = (SqlCall) StdOperatorRegistry.get( "LATERAL" ).createCall(
+                tableRef = (SqlCall) StdOperatorRegistry.get( OperatorName.LATERAL ).createCall(
                     s.end(this), tableRef);
             }
         }
@@ -1910,13 +1911,13 @@ SqlNode TableRef2(boolean lateral) :
         [ columnAliasList = ParenthesizedSimpleIdentifierList() ]
         {
             if (columnAliasList == null) {
-                tableRef = (SqlCall) StdOperatorRegistry.get( "AS" ).createCall( Span.of(tableRef).end(this), tableRef, id );
+                tableRef = (SqlCall) StdOperatorRegistry.get( OperatorName.AS ).createCall( Span.of(tableRef).end(this), tableRef, id );
             } else {
                 List<SqlNode> idList = new ArrayList<SqlNode>();
                 idList.add(tableRef);
                 idList.add(id);
                 idList.addAll(columnAliasList.getSqlList());
-                tableRef = (SqlCall) StdOperatorRegistry.get( "AS" ).createCall( Span.of(tableRef).end(this), idList );
+                tableRef = (SqlCall) StdOperatorRegistry.get( OperatorName.AS ).createCall( Span.of(tableRef).end(this), idList );
             }
         }
     ]
@@ -1928,7 +1929,7 @@ SqlNode TableRef2(boolean lateral) :
                 String sampleName = SqlLiteral.unchain(sample).getValueAs(String.class);
                 SqlSampleSpec sampleSpec = SqlSampleSpec.createNamed(sampleName);
                 final SqlLiteral sampleLiteral = SqlLiteral.createSample(sampleSpec, s2.end(this));
-                tableRef = (SqlCall) StdOperatorRegistry.get( "TABLESAMPLE" ).createCall(s2.add(tableRef).end(this), tableRef, sampleLiteral);
+                tableRef = (SqlCall) StdOperatorRegistry.get( OperatorName.TABLESAMPLE ).createCall(s2.add(tableRef).end(this), tableRef, sampleLiteral);
             }
         |
             (
@@ -1971,7 +1972,7 @@ SqlNode TableRef2(boolean lateral) :
                         : SqlSampleSpec.createTableSample(isBernoulli, fRate);
 
                     SqlLiteral tableSampleLiteral = SqlLiteral.createSample(tableSampleSpec, s2.end(this));
-                    tableRef = (SqlCall) StdOperatorRegistry.get( "TABLESAMPLE" ).createCall(s2.end(this), tableRef, tableSampleLiteral);
+                    tableRef = (SqlCall) StdOperatorRegistry.get( OperatorName.TABLESAMPLE ).createCall(s2.end(this), tableRef, tableSampleLiteral);
                 }
             }
         )
@@ -2063,7 +2064,7 @@ SqlNode TableFunctionCall(ParserPos pos) :
     ]
     call = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)
     {
-        return (SqlCall) StdOperatorRegistry.get( "COLLECTION_TABLE" ).createCall(pos, call);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.COLLECTION_TABLE ).createCall(pos, call);
     }
 }
 
@@ -2094,7 +2095,7 @@ SqlNode ExplicitTable(ParserPos pos) :
 {
     <TABLE> tableRef = CompoundIdentifier()
     {
-        return (SqlCall) StdOperatorRegistry.get( "EXPLICIT_TABLE" ).createCall(pos, tableRef);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.EXPLICIT_TABLE ).createCall(pos, tableRef);
     }
 }
 
@@ -2110,7 +2111,7 @@ SqlNode TableConstructor() :
     <VALUES> { s = span(); }
     rowConstructorList = RowConstructorList(s)
     {
-        return (SqlCall) StdOperatorRegistry.get( "VALUES" ).createCall(s.end(this), rowConstructorList.toArray());
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.VALUES ).createCall(s.end(this), rowConstructorList.toArray());
     }
 }
 
@@ -2178,7 +2179,7 @@ SqlNode RowConstructor() :
         // REVIEW jvs: Should we discriminate between scalar
         // sub-queries inside of ROW and row sub-queries?  The standard does,
         // but the distinction seems to be purely syntactic.
-        return (SqlCall) StdOperatorRegistry.get( "ROW" ).createCall(s.end(valueList),valueList.toArray());
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.ROW ).createCall(s.end(valueList),valueList.toArray());
     }
 }
 
@@ -2243,17 +2244,17 @@ SqlNode GroupingElement() :
 {
     <GROUPING> { s = span(); }
     <SETS> <LPAREN> list = GroupingElementList() <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "GROUPING_SETS" ).createCall(s.end(this), list);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.GROUPING_SETS ).createCall(s.end(this), list);
     }
 |   <ROLLUP> { s = span(); }
     <LPAREN> nodes = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "ROLLUP" ).createCall(s.end(this), nodes.getList());
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.ROLLUP ).createCall(s.end(this), nodes.getList());
     }
 |   <CUBE> { s = span(); }
     <LPAREN> nodes = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "CUBE" ).createCall(s.end(this), nodes.getList());
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.CUBE ).createCall(s.end(this), nodes.getList());
     }
 |   LOOKAHEAD(3)
     <LPAREN> <RPAREN> {
@@ -2477,16 +2478,16 @@ SqlNode OrderItem() :
     (
         <ASC>
     |   <DESC> {
-            e = (SqlCall) StdOperatorRegistry.get( "DESC" ).createCall(getPos(), e);
+            e = (SqlCall) StdOperatorRegistry.get( OperatorName.DESC ).createCall(getPos(), e);
         }
     )?
     (
         <NULLS> <FIRST> {
-            e = (SqlCall) StdOperatorRegistry.get( "NULLS_FIRST" ).createCall(getPos(), e);
+            e = (SqlCall) StdOperatorRegistry.get( OperatorName.NULLS_FIRST ).createCall(getPos(), e);
         }
     |
         <NULLS> <LAST> {
-            e = (SqlCall) StdOperatorRegistry.get( "NULLS_LAST" ).createCall(getPos(), e);
+            e = (SqlCall) StdOperatorRegistry.get( OperatorName.NULLS_LAST ).createCall(getPos(), e);
         }
     )?
     {
@@ -2630,7 +2631,7 @@ SqlNode MeasureColumn() :
     e = Expression(ExprContext.ACCEPT_NON_QUERY)
     <AS>
     alias = SimpleIdentifier() {
-        return (SqlCall) StdOperatorRegistry.get( "AS" ).createCall(Span.of(e).end(this), e, alias);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.AS ).createCall(Span.of(e).end(this), e, alias);
     }
 }
 
@@ -2644,7 +2645,7 @@ SqlNode PatternExpression() :
     (
         <VERTICAL_BAR>
         right = PatternTerm() {
-            left = (SqlCall) StdOperatorRegistry.get( "PATTERN_ALTER" ).createCall(Span.of(left).end(right), left, right);
+            left = (SqlCall) StdOperatorRegistry.get( OperatorName.PATTERN_ALTER ).createCall(Span.of(left).end(right), left, right);
         }
     )*
     {
@@ -2661,7 +2662,7 @@ SqlNode PatternTerm() :
     left = PatternFactor()
     (
         right = PatternFactor() {
-            left = (SqlCall) StdOperatorRegistry.get( "PATTERN_CONCAT" ).createCall(
+            left = (SqlCall) StdOperatorRegistry.get( OperatorName.PATTERN_CONCAT ).createCall(
                 Span.of(left).end(right), left, right);
         }
     )*
@@ -2718,9 +2719,9 @@ SqlNode PatternFactor() :
                 <RBRACE>
             |
                 <MINUS> extra = PatternExpression() <MINUS> <RBRACE> {
-                    extra = (SqlCall) StdOperatorRegistry.get( "PATTERN_EXCLUDE" ).createCall(
+                    extra = (SqlCall) StdOperatorRegistry.get( OperatorName.PATTERN_EXCLUDE ).createCall(
                         Span.of(extra).end(this), extra);
-                    e = (SqlCall) StdOperatorRegistry.get( "PATTERN_CONCAT" ).createCall(
+                    e = (SqlCall) StdOperatorRegistry.get( OperatorName.PATTERN_CONCAT ).createCall(
                         Span.of(e).end(this), e, extra);
                     return e;
                 }
@@ -2739,7 +2740,7 @@ SqlNode PatternFactor() :
         if (startNum == null) {
             return e;
         } else {
-            return (SqlCall) StdOperatorRegistry.get( "PATTERN_QUANTIFIER" ).createCall(
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.PATTERN_QUANTIFIER ).createCall(
                 span().end(e), e, startNum, endNum, reluctant);
         }
     }
@@ -2760,7 +2761,7 @@ SqlNode PatternPrimary() :
         <LBRACE> { s = span(); }
         <MINUS> e = PatternExpression()
         <MINUS> <RBRACE> {
-            e = (SqlCall) StdOperatorRegistry.get( "PATTERN_EXCLUDE" ).createCall(s.end(this), e);
+            e = (SqlCall) StdOperatorRegistry.get( OperatorName.PATTERN_EXCLUDE ).createCall(s.end(this), e);
         }
     |
         (
@@ -2778,7 +2779,7 @@ SqlNode PatternPrimary() :
                 }
             )*
             <RPAREN> {
-                e = (SqlCall) StdOperatorRegistry.get( "PATTERN_PERMUTE" ).createCall(
+                e = (SqlCall) StdOperatorRegistry.get( OperatorName.PATTERN_PERMUTE ).createCall(
                     s.end(this), eList);
             }
         )
@@ -2819,7 +2820,7 @@ SqlNode SubsetDefinition() :
     <LPAREN>
     varList = ExpressionCommaList(span(), ExprContext.ACCEPT_NON_QUERY)
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "EQUALS" ).createCall(span().end(var), var,
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.EQUALS ).createCall(span().end(var), var,
             varList);
     }
 }
@@ -2853,7 +2854,7 @@ SqlNode PatternDefinition() :
     var = SimpleIdentifier()
     <AS>
     e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-        return (SqlCall) StdOperatorRegistry.get( "AS" ).createCall(Span.of(var, e).pos(), e, var);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.AS ).createCall(Span.of(var, e).pos(), e, var);
     }
 }
 
@@ -3011,7 +3012,7 @@ void Expression2b(ExprContext exprContext, List<Object> list) :
         p = Identifier() {
             list.add(
                 new SqlParserUtil.ToTreeListItem(
-                    StdOperatorRegistry.get( "DOT", SqlOperator.class ), getPos()));
+                    StdOperatorRegistry.get( OperatorName.DOT, SqlOperator.class ), getPos()));
             list.add(new SqlIdentifier(p, getPos()));
         }
     )*
@@ -3055,9 +3056,9 @@ List<Object> Expression2(ExprContext exprContext) :
                     checkNonQueryExpression(exprContext);
                 }
                 (
-                    <NOT> <IN> { op = StdOperatorRegistry.get( "NOT_IN", SqlOperator.class ); }
+                    <NOT> <IN> { op = StdOperatorRegistry.get( OperatorName.NOT_IN, SqlOperator.class ); }
                 |
-                    <IN> { op = StdOperatorRegistry.get( "IN", SqlOperator.class ); }
+                    <IN> { op = StdOperatorRegistry.get( OperatorName.IN, SqlOperator.class ); }
                 |
                     { final Kind k; }
                     k = comp()
@@ -3092,22 +3093,22 @@ List<Object> Expression2(ExprContext exprContext) :
                 }
                 (
                     <NOT> <BETWEEN> {
-                        op = StdOperatorRegistry.get( "NOT_BETWEEN", SqlOperator.class );
+                        op = StdOperatorRegistry.get( OperatorName.NOT_BETWEEN, SqlOperator.class );
                         s.clear().add(this);
                     }
                     [
-                        <SYMMETRIC> { op = StdOperatorRegistry.get( "SYMMETRIC_NOT_BETWEEN", SqlOperator.class ); }
+                        <SYMMETRIC> { op = StdOperatorRegistry.get( OperatorName.SYMMETRIC_NOT_BETWEEN, SqlOperator.class ); }
                     |
                         <ASYMMETRIC>
                     ]
                 |
                     <BETWEEN>
                     {
-                        op = StdOperatorRegistry.get( "BETWEEN", SqlOperator.class );
+                        op = StdOperatorRegistry.get( OperatorName.BETWEEN, SqlOperator.class );
                         s.clear().add(this);
                     }
                     [
-                        <SYMMETRIC> { op = StdOperatorRegistry.get( "SYMMETRIC_BETWEEN", SqlOperator.class ); }
+                        <SYMMETRIC> { op = StdOperatorRegistry.get( OperatorName.SYMMETRIC_BETWEEN, SqlOperator.class ); }
                     |
                         <ASYMMETRIC>
                     ]
@@ -3125,14 +3126,14 @@ List<Object> Expression2(ExprContext exprContext) :
                 (
                     <NOT>
                     (
-                        <LIKE> { op = StdOperatorRegistry.get( "NOT_LIKE", SqlOperator.class ); }
+                        <LIKE> { op = StdOperatorRegistry.get( OperatorName.NOT_LIKE, SqlOperator.class ); }
                     |
-                        <SIMILAR> <TO> { op = StdOperatorRegistry.get( "NOT_SIMILAR_TO", SqlOperator.class ); }
+                        <SIMILAR> <TO> { op = StdOperatorRegistry.get( OperatorName.NOT_SIMILAR_TO, SqlOperator.class ); }
                     )
                 |
-                    <LIKE> { op = StdOperatorRegistry.get( "LIKE", SqlOperator.class ); }
+                    <LIKE> { op = StdOperatorRegistry.get( OperatorName.LIKE, SqlOperator.class ); }
                 |
-                    <SIMILAR> <TO> { op = StdOperatorRegistry.get( "SIMILAR_TO", SqlOperator.class ); }
+                    <SIMILAR> <TO> { op = StdOperatorRegistry.get( OperatorName.SIMILAR_TO, SqlOperator.class ); }
                 )
                 list2 = Expression2(ExprContext.ACCEPT_SUB_QUERY) {
                     list.add(new SqlParserUtil.ToTreeListItem(op, s.pos()));
@@ -3144,7 +3145,7 @@ List<Object> Expression2(ExprContext exprContext) :
                         s.clear().add(this);
                         list.add(
                             new SqlParserUtil.ToTreeListItem(
-                                StdOperatorRegistry.get( "ESCAPE", SqlOperator.class ), s.pos()));
+                                StdOperatorRegistry.get( OperatorName.ESCAPE, SqlOperator.class ), s.pos()));
                         list.add(e);
                     }
                 ]
@@ -3162,7 +3163,7 @@ List<Object> Expression2(ExprContext exprContext) :
                     p = Identifier() {
                         list.add(
                             new SqlParserUtil.ToTreeListItem(
-                                StdOperatorRegistry.get( "DOT", SqlOperator.class ), getPos()));
+                                StdOperatorRegistry.get( OperatorName.DOT, SqlOperator.class ), getPos()));
                         list.add(new SqlIdentifier(p, getPos()));
                     }
                 )*
@@ -3246,7 +3247,7 @@ SqlNode Expression3(ExprContext exprContext) :
             throw CoreUtil.newContextException(s.end(list),
                 RESOURCE.illegalRowExpression());
         }
-        return (SqlCall) StdOperatorRegistry.get( "ROW", SqlOperator.class ).createCall(list);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.ROW, SqlOperator.class ).createCall(list);
     }
 |
     [
@@ -3255,7 +3256,7 @@ SqlNode Expression3(ExprContext exprContext) :
     list1 = ParenthesizedQueryOrCommaList(exprContext) {
         if (rowSpan != null) {
             // interpret as row constructor
-            return (SqlCall) StdOperatorRegistry.get( "ROW", SqlOperator.class ).createCall(rowSpan.end(list1),
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.ROW, SqlOperator.class ).createCall(rowSpan.end(list1),
                 list1.toArray());
         }
     }
@@ -3294,7 +3295,7 @@ SqlNode Expression3(ExprContext exprContext) :
                         List<SqlNode> list3 = startList(call.operand(0));
                         list3.add(call.operand(1));
                         list3.add(e);
-                        return (SqlCall) StdOperatorRegistry.get( "MINUS_DATE" ).createCall(
+                        return (SqlCall) StdOperatorRegistry.get( OperatorName.MINUS_DATE ).createCall(
                             Span.of(list1).end(this), list3);
                      }
                 }
@@ -3309,7 +3310,7 @@ SqlNode Expression3(ExprContext exprContext) :
             return list1.getSqlList().get(0);
         } else {
             // interpret as row constructor
-            return (SqlCall) StdOperatorRegistry.get( "ROW" ).createCall(span().end(list1),
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.ROW ).createCall(span().end(list1),
                 list1.toArray());
         }
     }
@@ -3319,17 +3320,17 @@ SqlOperator periodOperator() :
 {
 }
 {
-     <OVERLAPS> { return StdOperatorRegistry.get( "OVERLAPS", SqlOperator.class ); }
+     <OVERLAPS> { return StdOperatorRegistry.get( OperatorName.OVERLAPS, SqlOperator.class ); }
 |
-     <IMMEDIATELY> <PRECEDES> { return StdOperatorRegistry.get( "IMMEDIATELY_PRECEDES", SqlOperator.class ); }
+     <IMMEDIATELY> <PRECEDES> { return StdOperatorRegistry.get( OperatorName.IMMEDIATELY_PRECEDES, SqlOperator.class ); }
 |
-     <PRECEDES> { return StdOperatorRegistry.get( "PRECEDES", SqlOperator.class ); }
+     <PRECEDES> { return StdOperatorRegistry.get( OperatorName.PRECEDES, SqlOperator.class ); }
 |
-     <IMMEDIATELY> <SUCCEEDS> { return StdOperatorRegistry.get( "IMMEDIATELY_SUCCEEDS", SqlOperator.class ); }
+     <IMMEDIATELY> <SUCCEEDS> { return StdOperatorRegistry.get( OperatorName.IMMEDIATELY_SUCCEEDS, SqlOperator.class ); }
 |
-     <SUCCEEDS> { return StdOperatorRegistry.get( "SUCCEEDS", SqlOperator.class ); }
+     <SUCCEEDS> { return StdOperatorRegistry.get( OperatorName.SUCCEEDS, SqlOperator.class ); }
 |
-     <EQUALS> { return StdOperatorRegistry.get( "PERIOD_EQUALS", SqlOperator.class ); }
+     <EQUALS> { return StdOperatorRegistry.get( OperatorName.PERIOD_EQUALS, SqlOperator.class ); }
 }
 
 /**
@@ -3455,9 +3456,9 @@ SqlCall SequenceExpression() :
 }
 {
     (
-        <NEXT> { f = StdOperatorRegistry.get( "NEXT_VALUE", SqlOperator.class ); s = span(); }
+        <NEXT> { f = StdOperatorRegistry.get( OperatorName.NEXT_VALUE, SqlOperator.class ); s = span(); }
     |
-        <CURRENT> { f = StdOperatorRegistry.get( "CURRENT_VALUE", SqlOperator.class ); s = span(); }
+        <CURRENT> { f = StdOperatorRegistry.get( OperatorName.CURRENT_VALUE, SqlOperator.class ); s = span(); }
     )
     <VALUE> <FOR> sequenceRef = CompoundIdentifier() {
         return (SqlCall) f.createCall(s.end(sequenceRef), sequenceRef);
@@ -3739,7 +3740,7 @@ SqlNode StringLiteral() :
             return frags.get(0); // just the head fragment
         } else {
             ParserPos pos2 = ParserPos.sum(frags);
-            return (SqlCall) StdOperatorRegistry.get( "LITERAL_CHAIN" ).createCall(pos2, frags);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.LITERAL_CHAIN ).createCall(pos2, frags);
         }
     }
     |
@@ -3807,7 +3808,7 @@ SqlNode StringLiteral() :
                     unicodeEscapeChar);
             }
             ParserPos pos2 = ParserPos.sum(rands);
-            return (SqlCall) StdOperatorRegistry.get( "LITERAL_CHAIN" ).createCall(pos2, rands);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.LITERAL_CHAIN ).createCall(pos2, rands);
         }
     }
 }
@@ -3871,7 +3872,7 @@ SqlNode MultisetConstructor() :
         // by sub query "MULTISET(SELECT * FROM T)"
         e = LeafQueryOrExpr(ExprContext.ACCEPT_QUERY)
         <RPAREN> {
-            return (SqlCall) StdOperatorRegistry.get( "MULTISET_QUERY" ).createCall(
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.MULTISET_QUERY ).createCall(
                 s.end(this), e);
         }
     |
@@ -3883,7 +3884,7 @@ SqlNode MultisetConstructor() :
         )*
         <RBRACKET>
         {
-            return (SqlCall) StdOperatorRegistry.get( "MULTISET_VALUE" ).createCall(
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.MULTISET_VALUE ).createCall(
                 s.end(this), args);
         }
     )
@@ -3905,7 +3906,7 @@ SqlNode ArrayConstructor() :
         e = LeafQueryOrExpr(ExprContext.ACCEPT_QUERY)
         <RPAREN>
         {
-            return (SqlCall) StdOperatorRegistry.get( "ARRAY_QUERY" ).createCall(
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.ARRAY_QUERY ).createCall(
                 s.end(this), e);
         }
     |
@@ -3990,7 +3991,7 @@ List<Object> ArrayItem(Span s) :
     <RBRACKET> {
         list.add(
             new SqlParserUtil.ToTreeListItem(
-                StdOperatorRegistry.get( "ITEM", SqlOperator.class ), getPos()));
+                StdOperatorRegistry.get( OperatorName.ITEM, SqlOperator.class ), getPos()));
         list.add(e1);
         if(e2!=null){list.add(e2);}
         return list;
@@ -4013,7 +4014,7 @@ SqlNode MapConstructor() :
         e = LeafQueryOrExpr(ExprContext.ACCEPT_QUERY)
         <RPAREN>
         {
-            return (SqlCall) StdOperatorRegistry.get( "MAP_QUERY" ).createCall(
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.MAP_QUERY ).createCall(
                 s.end(this), e);
         }
     |
@@ -4026,7 +4027,7 @@ SqlNode MapConstructor() :
         )
         <RBRACKET>
         {
-            return (SqlCall) StdOperatorRegistry.get( "MAP_VALUE_CONSTRUCTOR" ).createCall(
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.MAP_VALUE_CONSTRUCTOR ).createCall(
                 s.end(this), args.getList());
         }
     )
@@ -4045,7 +4046,7 @@ SqlNode PeriodConstructor() :
     <COMMA>
     e1 = Expression(ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "ROW" ).createCall(s.end(this), e0, e1);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.ROW ).createCall(s.end(this), e0, e1);
     }
 }
 
@@ -4396,7 +4397,7 @@ SqlNode NewSpecification() :
     routineCall =
         NamedRoutineCall(FunctionCategory.USER_DEFINED_CONSTRUCTOR,
             ExprContext.ACCEPT_SUB_QUERY) {
-        return (SqlCall) StdOperatorRegistry.get( "NEW" ).createCall(s.end(routineCall), routineCall);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.NEW ).createCall(s.end(routineCall), routineCall);
     }
 }
 
@@ -4688,7 +4689,7 @@ SqlNode CursorExpression(ExprContext exprContext) :
         }
     }
     e = Expression(ExprContext.ACCEPT_QUERY) {
-        return (SqlCall) StdOperatorRegistry.get( "CURSOR" ).createCall(s.end(e), e);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.CURSOR ).createCall(s.end(e), e);
     }
 }
 
@@ -4717,7 +4718,7 @@ SqlNode BuiltinFunctionCall() :
             <INTERVAL> e = IntervalQualifier() { args.add(e); }
         )
         <RPAREN> {
-            return (SqlCall) StdOperatorRegistry.get( "CAST" ).createCall(s.end(this), args);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.CAST ).createCall(s.end(this), args);
         }
     |
         <EXTRACT> {
@@ -4730,7 +4731,7 @@ SqlNode BuiltinFunctionCall() :
         <FROM>
         e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
         <RPAREN> {
-            return (SqlCall) StdOperatorRegistry.get( "EXTRACT" ).createCall(s.end(this), args);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.EXTRACT ).createCall(s.end(this), args);
         }
     |
         <POSITION> { s = span(); }
@@ -4746,7 +4747,7 @@ SqlNode BuiltinFunctionCall() :
             e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
         ]
         <RPAREN> {
-            return (SqlCall) StdOperatorRegistry.get( "POSITION" ).createCall(s.end(this), args);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.POSITION ).createCall(s.end(this), args);
         }
     |
         <CONVERT> { s = span(); }
@@ -4758,7 +4759,7 @@ SqlNode BuiltinFunctionCall() :
             args.add(name);
         }
         <RPAREN> {
-            return (SqlCall) StdOperatorRegistry.get( "CONVERT" ).createCall(s.end(this), args);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.CONVERT ).createCall(s.end(this), args);
         }
     |
         <TRANSLATE> { s = span(); }
@@ -4771,7 +4772,7 @@ SqlNode BuiltinFunctionCall() :
                 args.add(name);
             }
             <RPAREN> {
-                return (SqlCall) StdOperatorRegistry.get( "TRANSLATE" ).createCall(s.end(this),
+                return (SqlCall) StdOperatorRegistry.get( OperatorName.TRANSLATE ).createCall(s.end(this),
                     args);
             }
         |
@@ -4802,7 +4803,7 @@ SqlNode BuiltinFunctionCall() :
             }
         ]
         <RPAREN> {
-            return (SqlCall) StdOperatorRegistry.get( "OVERLAY" ).createCall(s.end(this), args);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.OVERLAY ).createCall(s.end(this), args);
         }
     |
         <FLOOR> { s = span(); }
@@ -4828,7 +4829,7 @@ SqlNode BuiltinFunctionCall() :
             { args.add(e); }
         ]
         <RPAREN> {
-            return (SqlCall) StdOperatorRegistry.get( "SUBSTRING" ).createCall(
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.SUBSTRING ).createCall(
                 s.end(this), args);
         }
     |
@@ -4874,7 +4875,7 @@ SqlNode BuiltinFunctionCall() :
                     args = startList(flag);
                     args.add(null); // no trim chars
                     args.add(trimChars); // reinterpret trimChars as source
-                    return (SqlCall) StdOperatorRegistry.get( "TRIM" ).createCall(s.end(this),
+                    return (SqlCall) StdOperatorRegistry.get( OperatorName.TRIM ).createCall(s.end(this),
                         args);
                 }
             )
@@ -4888,7 +4889,7 @@ SqlNode BuiltinFunctionCall() :
             args.add(e);
         }
         <RPAREN> {
-            return (SqlCall) StdOperatorRegistry.get( "TRIM" ).createCall(s.end(this), args);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.TRIM ).createCall(s.end(this), args);
         }
     |
         node = TimestampAddFunctionCall() { return node; }
@@ -4980,14 +4981,14 @@ SqlNode JsonValueExpression(boolean implicitFormatJson) :
     }
     [
         JsonInputClause() {
-            return (SqlCall) StdOperatorRegistry.get( "JSON_VALUE_EXPRESSION" ).createCall(span.end(this), args);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION ).createCall(span.end(this), args);
         }
     ]
     {
         if (implicitFormatJson) {
-            return (SqlCall) StdOperatorRegistry.get( "JSON_VALUE_EXPRESSION" ).createCall(span.end(this), args);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION ).createCall(span.end(this), args);
         }
-        return (SqlCall) StdOperatorRegistry.get( "JSON_STRUCTURED_VALUE_EXPRESSION" ).createCall(span.end(this), args);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_STRUCTURED_VALUE_EXPRESSION ).createCall(span.end(this), args);
     }
 }
 
@@ -5034,7 +5035,7 @@ SqlNode JsonApiCommonSyntax() :
         )*
     ]
     {
-        return (SqlCall) StdOperatorRegistry.get( "JSON_API_COMMON_SYNTAX" ).createCall(span.end(this), args);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_API_COMMON_SYNTAX ).createCall(span.end(this), args);
     }
 
 }
@@ -5071,7 +5072,7 @@ SqlCall JsonExistsFunctionCall() :
         <ON> <ERROR>
     ]
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "JSON_EXISTS" ).createCall(span.end(this), args);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_EXISTS ).createCall(span.end(this), args);
     }
 }
 
@@ -5144,7 +5145,7 @@ SqlCall JsonValueFunctionCall() :
         }
     )*
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "JSON_VALUE" ).createCall(span.end(this), args);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_VALUE ).createCall(span.end(this), args);
     }
 }
 
@@ -5235,7 +5236,7 @@ SqlCall JsonQueryFunctionCall() :
         }
     )*
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "JSON_QUERY" ).createCall(span.end(this), args);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_QUERY ).createCall(span.end(this), args);
     }
 }
 
@@ -5322,7 +5323,7 @@ SqlCall JsonObjectFunctionCall() :
         final List<SqlNode> args = new ArrayList();
         args.addAll(Arrays.asList(otherArgs));
         args.addAll(nvArgs);
-        return (SqlCall) StdOperatorRegistry.get( "JSON_OBJECT" ).createCall(span.end(this), args);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_OBJECT ).createCall(span.end(this), args);
     }
 }
 
@@ -5347,7 +5348,7 @@ SqlCall JsonObjectAggFunctionCall() :
         }
     ]
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "JSON_OBJECTAGG", SqlJsonObjectAggAggFunction.class  ).with(nullClause)
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_OBJECTAGG, SqlJsonObjectAggAggFunction.class  ).with(nullClause)
             .createCall(span.end(this), args);
     }
 }
@@ -5381,7 +5382,7 @@ SqlCall JsonArrayFunctionCall() :
         final List<SqlNode> args = new ArrayList();
         args.addAll(Arrays.asList(otherArgs));
         args.addAll(elements);
-        return (SqlCall) StdOperatorRegistry.get( "JSON_ARRAY" ).createCall(span.end(this), args);
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_ARRAY ).createCall(span.end(this), args);
     }
 }
 
@@ -5405,7 +5406,7 @@ SqlCall JsonArrayAggFunctionCall() :
         }
     ]
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "JSON_ARRAYAGG", SqlJsonArrayAggAggFunction.class ).with(nullClause)
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.JSON_ARRAYAGG, SqlJsonArrayAggAggFunction.class ).with(nullClause)
             .createCall(span.end(this), args);
     }
 }
@@ -5432,7 +5433,7 @@ SqlCall TimestampAddFunctionCall() :
     <COMMA>
     e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "TIMESTAMP_ADD" ).createCall(
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.TIMESTAMP_ADD ).createCall(
             s.end(this), args);
     }
 }
@@ -5459,7 +5460,7 @@ SqlCall TimestampDiffFunctionCall() :
     <COMMA>
     e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
     <RPAREN> {
-        return (SqlCall) StdOperatorRegistry.get( "TIMESTAMP_DIFF" ).createCall(
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.TIMESTAMP_DIFF ).createCall(
             s.end(this), args);
     }
 }
@@ -5472,11 +5473,11 @@ SqlCall MatchRecognizeFunctionCall() :
 {
     (
         <CLASSIFIER> { s = span(); } <LPAREN> <RPAREN> {
-            func = (SqlCall) StdOperatorRegistry.get( "CLASSIFIER" ).createCall(s.end(this));
+            func = (SqlCall) StdOperatorRegistry.get( OperatorName.CLASSIFIER ).createCall(s.end(this));
         }
     |
         <MATCH_NUMBER> { s = span(); } <LPAREN> <RPAREN> {
-            func = (SqlCall) StdOperatorRegistry.get( "MATCH_NUMBER" ).createCall(s.end(this));
+            func = (SqlCall) StdOperatorRegistry.get( OperatorName.MATCH_NUMBER ).createCall(s.end(this));
         }
     |
         func = MatchRecognizeNavigationLogical()
@@ -5496,9 +5497,9 @@ SqlCall MatchRecognizeCallWithModifier() :
 }
 {
     (
-        <RUNNING> { runningOp = StdOperatorRegistry.get( "RUNNING", SqlOperator.class ); }
+        <RUNNING> { runningOp = StdOperatorRegistry.get( OperatorName.RUNNING, SqlOperator.class ); }
     |
-        <FINAL> { runningOp = StdOperatorRegistry.get( "FINAL", SqlOperator.class ); }
+        <FINAL> { runningOp = StdOperatorRegistry.get( OperatorName.FINAL, SqlOperator.class ); }
     )
     { s = span(); }
     func = NamedFunctionCall() {
@@ -5517,16 +5518,16 @@ SqlCall MatchRecognizeNavigationLogical() :
 }
 {
     (
-        <RUNNING> { runningOp = StdOperatorRegistry.get( "RUNNING", SqlOperator.class ); s.add(this); }
+        <RUNNING> { runningOp = StdOperatorRegistry.get( OperatorName.RUNNING, SqlOperator.class ); s.add(this); }
     |
-        <FINAL> { runningOp = StdOperatorRegistry.get( "FINAL", SqlOperator.class ); s.add(this); }
+        <FINAL> { runningOp = StdOperatorRegistry.get( OperatorName.FINAL, SqlOperator.class ); s.add(this); }
     |
         { runningOp = null; }
     )
     (
-        <FIRST> { funcOp = StdOperatorRegistry.get( "FIRST", SqlOperator.class ); }
+        <FIRST> { funcOp = StdOperatorRegistry.get( OperatorName.FIRST, SqlOperator.class ); }
     |
-        <LAST> { funcOp = StdOperatorRegistry.get( "LAST", SqlOperator.class ); }
+        <LAST> { funcOp = StdOperatorRegistry.get( OperatorName.LAST, SqlOperator.class ); }
     )
     { s.add(this); }
     <LPAREN>
@@ -5552,9 +5553,9 @@ SqlCall MatchRecognizeNavigationPhysical() :
 }
 {
     (
-        <PREV> { funcOp = StdOperatorRegistry.get( "PREV", SqlOperator.class ); }
+        <PREV> { funcOp = StdOperatorRegistry.get( OperatorName.PREV, SqlOperator.class ); }
     |
-        <NEXT> { funcOp = StdOperatorRegistry.get( "NEXT", SqlOperator.class ); }
+        <NEXT> { funcOp = StdOperatorRegistry.get( OperatorName.NEXT, SqlOperator.class ); }
     )
     { s = span(); }
     <LPAREN>
@@ -5629,7 +5630,7 @@ SqlNode NamedFunctionCall() :
         <LPAREN>
         orderList = OrderBy(true)
         <RPAREN> {
-            call = (SqlCall) StdOperatorRegistry.get( "WITHIN_GROUP" ).createCall(
+            call = (SqlCall) StdOperatorRegistry.get( OperatorName.WITHIN_GROUP ).createCall(
                 withinGroupSpan.end(this), call, orderList);
         }
     ]
@@ -5639,7 +5640,7 @@ SqlNode NamedFunctionCall() :
         <WHERE>
         filter = Expression(ExprContext.ACCEPT_SUB_QUERY)
         <RPAREN> {
-            call = (SqlCall) StdOperatorRegistry.get( "FILTER" ).createCall(
+            call = (SqlCall) StdOperatorRegistry.get( OperatorName.FILTER ).createCall(
                 filterSpan.end(this), call, filter);
         }
     ]
@@ -5651,7 +5652,7 @@ SqlNode NamedFunctionCall() :
             over = WindowSpecification()
         )
         {
-            call = (SqlCall) StdOperatorRegistry.get( "OVER" ).createCall(s.end(over), call, over);
+            call = (SqlCall) StdOperatorRegistry.get( OperatorName.OVER ).createCall(s.end(over), call, over);
         }
     ]
     {
@@ -5683,8 +5684,8 @@ SqlNode StandardFloorCeilOptions(Span s, boolean floorFlag) :
     )?
     <RPAREN> {
         SqlOperator op = floorFlag
-            ? StdOperatorRegistry.get( "FLOOR", SqlOperator.class )
-            : StdOperatorRegistry.get( "CEIL", SqlOperator.class );
+            ? StdOperatorRegistry.get( OperatorName.FLOOR, SqlOperator.class )
+            : StdOperatorRegistry.get( OperatorName.CEIL, SqlOperator.class );
         function =  (SqlCall) op.createCall(s.end(this), args);
     }
     (
@@ -5695,7 +5696,7 @@ SqlNode StandardFloorCeilOptions(Span s, boolean floorFlag) :
             e = WindowSpecification()
         )
         {
-            return (SqlCall) StdOperatorRegistry.get( "OVER" ).createCall(s1.end(this), function, e);
+            return (SqlCall) StdOperatorRegistry.get( OperatorName.OVER ).createCall(s1.end(this), function, e);
         }
     |
         { return function; }
@@ -5916,16 +5917,16 @@ SqlBinaryOperator BinaryQueryOperator() :
     (
         <UNION>
         (
-            <ALL> { return StdOperatorRegistry.get( "UNION_ALL", SqlBinaryOperator.class ); }
-        |   <DISTINCT> { return StdOperatorRegistry.get( "UNION", SqlBinaryOperator.class ); }
-        |   { return StdOperatorRegistry.get( "UNION", SqlBinaryOperator.class ); }
+            <ALL> { return StdOperatorRegistry.get( OperatorName.UNION_ALL, SqlBinaryOperator.class ); }
+        |   <DISTINCT> { return StdOperatorRegistry.get( OperatorName.UNION, SqlBinaryOperator.class ); }
+        |   { return StdOperatorRegistry.get( OperatorName.UNION, SqlBinaryOperator.class ); }
         )
     |
         <INTERSECT>
         (
-            <ALL> { return StdOperatorRegistry.get( "INTERSECT_ALL", SqlBinaryOperator.class ); }
-        |   <DISTINCT> { return StdOperatorRegistry.get( "INTERSECT", SqlBinaryOperator.class ); }
-        |   { return StdOperatorRegistry.get( "INTERSECT", SqlBinaryOperator.class ); }
+            <ALL> { return StdOperatorRegistry.get( OperatorName.INTERSECT_ALL, SqlBinaryOperator.class ); }
+        |   <DISTINCT> { return StdOperatorRegistry.get( OperatorName.INTERSECT, SqlBinaryOperator.class ); }
+        |   { return StdOperatorRegistry.get( OperatorName.INTERSECT, SqlBinaryOperator.class ); }
         )
     |
         (
@@ -5938,9 +5939,9 @@ SqlBinaryOperator BinaryQueryOperator() :
             }
         )
         (
-            <ALL> { return StdOperatorRegistry.get( "EXCEPT_ALL", SqlBinaryOperator.class ); }
-        |   <DISTINCT> { return StdOperatorRegistry.get( "EXCEPT", SqlBinaryOperator.class ); }
-        |   { return StdOperatorRegistry.get( "EXCEPT", SqlBinaryOperator.class ); }
+            <ALL> { return StdOperatorRegistry.get( OperatorName.EXCEPT_ALL, SqlBinaryOperator.class ); }
+        |   <DISTINCT> { return StdOperatorRegistry.get( OperatorName.EXCEPT, SqlBinaryOperator.class ); }
+        |   { return StdOperatorRegistry.get( OperatorName.EXCEPT, SqlBinaryOperator.class ); }
         )
     )
 }
@@ -5958,23 +5959,23 @@ SqlBinaryOperator BinaryMultisetOperator() :
         <UNION>
         [
             <ALL>
-        |   <DISTINCT> { return StdOperatorRegistry.get( "MULTISET_UNION_DISTINCT", SqlBinaryOperator.class ); }
+        |   <DISTINCT> { return StdOperatorRegistry.get( OperatorName.MULTISET_UNION_DISTINCT, SqlBinaryOperator.class ); }
         ]
-        { return StdOperatorRegistry.get( "MULTISET_UNION", SqlBinaryOperator.class  ); }
+        { return StdOperatorRegistry.get( OperatorName.MULTISET_UNION, SqlBinaryOperator.class  ); }
     |
         <INTERSECT>
         [
             <ALL>
-        |   <DISTINCT> { return StdOperatorRegistry.get( "MULTISET_INTERSECT_DISTINCT", SqlBinaryOperator.class ); }
+        |   <DISTINCT> { return StdOperatorRegistry.get( OperatorName.MULTISET_INTERSECT_DISTINCT, SqlBinaryOperator.class ); }
         ]
-        { return StdOperatorRegistry.get( "MULTISET_INTERSECT", SqlBinaryOperator.class ); }
+        { return StdOperatorRegistry.get( OperatorName.MULTISET_INTERSECT, SqlBinaryOperator.class ); }
     |
         <EXCEPT>
         [
             <ALL>
-        |   <DISTINCT> { return StdOperatorRegistry.get( "MULTISET_EXCEPT_DISTINCT", SqlBinaryOperator.class ); }
+        |   <DISTINCT> { return StdOperatorRegistry.get( OperatorName.MULTISET_EXCEPT_DISTINCT, SqlBinaryOperator.class ); }
         ]
-        { return StdOperatorRegistry.get( "MULTISET_EXCEPT", SqlBinaryOperator.class ); }
+        { return StdOperatorRegistry.get( OperatorName.MULTISET_EXCEPT, SqlBinaryOperator.class ); }
     )
 }
 
@@ -5987,43 +5988,43 @@ SqlBinaryOperator BinaryRowOperator() :
 }
 {
     // <IN> is handled as a special case
-    <EQ> { return StdOperatorRegistry.get( "EQUALS", SqlBinaryOperator.class ); }
-|   <GT> { return StdOperatorRegistry.get( "GREATER_THAN", SqlBinaryOperator.class ); }
-|   <LT> { return StdOperatorRegistry.get( "LESS_THAN", SqlBinaryOperator.class ); }
-|   <LE> { return StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL", SqlBinaryOperator.class ); }
-|   <GE> { return StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL", SqlBinaryOperator.class ); }
-|   <NE> { return StdOperatorRegistry.get( "NOT_EQUALS", SqlBinaryOperator.class ); }
+    <EQ> { return StdOperatorRegistry.get( OperatorName.EQUALS, SqlBinaryOperator.class ); }
+|   <GT> { return StdOperatorRegistry.get( OperatorName.GREATER_THAN, SqlBinaryOperator.class ); }
+|   <LT> { return StdOperatorRegistry.get( OperatorName.LESS_THAN, SqlBinaryOperator.class ); }
+|   <LE> { return StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL, SqlBinaryOperator.class ); }
+|   <GE> { return StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL, SqlBinaryOperator.class ); }
+|   <NE> { return StdOperatorRegistry.get( OperatorName.NOT_EQUALS, SqlBinaryOperator.class ); }
 |   <NE2> {
         if (!this.conformance.isBangEqualAllowed()) {
             throw new ParseException(RESOURCE.bangEqualNotAllowed().str());
         }
-        return StdOperatorRegistry.get( "NOT_EQUALS", SqlBinaryOperator.class );
+        return StdOperatorRegistry.get( OperatorName.NOT_EQUALS, SqlBinaryOperator.class );
     }
-|   <PLUS> { return StdOperatorRegistry.get( "PLUS", SqlBinaryOperator.class ); }
-|   <MINUS> { return StdOperatorRegistry.get( "MINUS", SqlBinaryOperator.class ); }
-|   <STAR> { return StdOperatorRegistry.get( "MULTIPLY", SqlBinaryOperator.class ); }
-|   <SLASH> { return StdOperatorRegistry.get( "DIVIDE", SqlBinaryOperator.class ); }
+|   <PLUS> { return StdOperatorRegistry.get( OperatorName.PLUS, SqlBinaryOperator.class ); }
+|   <MINUS> { return StdOperatorRegistry.get( OperatorName.MINUS, SqlBinaryOperator.class ); }
+|   <STAR> { return StdOperatorRegistry.get( OperatorName.MULTIPLY, SqlBinaryOperator.class ); }
+|   <SLASH> { return StdOperatorRegistry.get( OperatorName.DIVIDE, SqlBinaryOperator.class ); }
 |   <PERCENT_REMAINDER> {
         if (!this.conformance.isPercentRemainderAllowed()) {
             throw new ParseException(RESOURCE.percentRemainderNotAllowed().str());
         }
-        return StdOperatorRegistry.get( "PERCENT_REMAINDER", SqlBinaryOperator.class );
+        return StdOperatorRegistry.get( OperatorName.PERCENT_REMAINDER, SqlBinaryOperator.class );
     }
-|   <CONCAT> { return StdOperatorRegistry.get( "CONCAT", SqlBinaryOperator.class ); }
-|   <AND> { return StdOperatorRegistry.get( "AND", SqlBinaryOperator.class ); }
-|   <OR> { return StdOperatorRegistry.get( "OR", SqlBinaryOperator.class ); }
-|   LOOKAHEAD(2) <IS> <DISTINCT> <FROM> { return StdOperatorRegistry.get( "IS_DISTINCT_FROM", SqlBinaryOperator.class ); }
-|   <IS> <NOT> <DISTINCT> <FROM> { return StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM", SqlBinaryOperator.class ); }
-|   <MEMBER> <OF> { return StdOperatorRegistry.get( "MEMBER_OF", SqlBinaryOperator.class ); }
-|   LOOKAHEAD(2) <SUBMULTISET> <OF> { return StdOperatorRegistry.get( "SUBMULTISET_OF", SqlBinaryOperator.class ); }
-|   <NOT> <SUBMULTISET> <OF> { return StdOperatorRegistry.get( "NOT_SUBMULTISET_OF", SqlBinaryOperator.class ); }
-|   <CONTAINS> { return StdOperatorRegistry.get( "CONTAINS", SqlBinaryOperator.class ); }
-|   <OVERLAPS> { return StdOperatorRegistry.get( "OVERLAPS", SqlBinaryOperator.class ); }
-|   <EQUALS> { return StdOperatorRegistry.get( "PERIOD_EQUALS", SqlBinaryOperator.class ); }
-|   <PRECEDES> { return StdOperatorRegistry.get( "PRECEDES", SqlBinaryOperator.class ); }
-|   <SUCCEEDS> { return StdOperatorRegistry.get( "SUCCEEDS", SqlBinaryOperator.class ); }
-|   <IMMEDIATELY> <PRECEDES> { return StdOperatorRegistry.get( "IMMEDIATELY_PRECEDES", SqlBinaryOperator.class ); }
-|   <IMMEDIATELY> <SUCCEEDS> { return StdOperatorRegistry.get( "IMMEDIATELY_SUCCEEDS", SqlBinaryOperator.class ); }
+|   <CONCAT> { return StdOperatorRegistry.get( OperatorName.CONCAT, SqlBinaryOperator.class ); }
+|   <AND> { return StdOperatorRegistry.get( OperatorName.AND, SqlBinaryOperator.class ); }
+|   <OR> { return StdOperatorRegistry.get( OperatorName.OR, SqlBinaryOperator.class ); }
+|   LOOKAHEAD(2) <IS> <DISTINCT> <FROM> { return StdOperatorRegistry.get( OperatorName.IS_DISTINCT_FROM, SqlBinaryOperator.class ); }
+|   <IS> <NOT> <DISTINCT> <FROM> { return StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM, SqlBinaryOperator.class ); }
+|   <MEMBER> <OF> { return StdOperatorRegistry.get( OperatorName.MEMBER_OF, SqlBinaryOperator.class ); }
+|   LOOKAHEAD(2) <SUBMULTISET> <OF> { return StdOperatorRegistry.get( OperatorName.SUBMULTISET_OF, SqlBinaryOperator.class ); }
+|   <NOT> <SUBMULTISET> <OF> { return StdOperatorRegistry.get( OperatorName.NOT_SUBMULTISET_OF, SqlBinaryOperator.class ); }
+|   <CONTAINS> { return StdOperatorRegistry.get( OperatorName.CONTAINS, SqlBinaryOperator.class ); }
+|   <OVERLAPS> { return StdOperatorRegistry.get( OperatorName.OVERLAPS, SqlBinaryOperator.class ); }
+|   <EQUALS> { return StdOperatorRegistry.get( OperatorName.PERIOD_EQUALS, SqlBinaryOperator.class ); }
+|   <PRECEDES> { return StdOperatorRegistry.get( OperatorName.PRECEDES, SqlBinaryOperator.class ); }
+|   <SUCCEEDS> { return StdOperatorRegistry.get( OperatorName.SUCCEEDS, SqlBinaryOperator.class ); }
+|   <IMMEDIATELY> <PRECEDES> { return StdOperatorRegistry.get( OperatorName.IMMEDIATELY_PRECEDES, SqlBinaryOperator.class ); }
+|   <IMMEDIATELY> <SUCCEEDS> { return StdOperatorRegistry.get( OperatorName.IMMEDIATELY_SUCCEEDS, SqlBinaryOperator.class ); }
 |   op = BinaryMultisetOperator() { return op; }
 }
 
@@ -6033,10 +6034,10 @@ SqlBinaryOperator BinaryRowOperator() :
 SqlPrefixOperator PrefixRowOperator() :
 {}
 {
-    <PLUS> { return StdOperatorRegistry.get( "UNARY_PLUS", SqlPrefixOperator.class ); }
-|   <MINUS> { return StdOperatorRegistry.get( "UNARY_MINUS", SqlPrefixOperator.class ); }
-|   <NOT> { return StdOperatorRegistry.get( "NOT", SqlPrefixOperator.class ); }
-|   <EXISTS> { return StdOperatorRegistry.get( "EXISTS", SqlPrefixOperator.class ); }
+    <PLUS> { return StdOperatorRegistry.get( OperatorName.UNARY_PLUS, SqlPrefixOperator.class ); }
+|   <MINUS> { return StdOperatorRegistry.get( OperatorName.UNARY_MINUS, SqlPrefixOperator.class ); }
+|   <NOT> { return StdOperatorRegistry.get( OperatorName.NOT, SqlPrefixOperator.class ); }
+|   <EXISTS> { return StdOperatorRegistry.get( OperatorName.EXISTS, SqlPrefixOperator.class ); }
 }
 
 /**
@@ -6047,34 +6048,34 @@ SqlPostfixOperator PostfixRowOperator() :
 {
     <IS>
     (
-        <A> <SET> { return StdOperatorRegistry.get( "IS_A_SET", SqlPostfixOperator.class ); }
+        <A> <SET> { return StdOperatorRegistry.get( OperatorName.IS_A_SET, SqlPostfixOperator.class ); }
     |
         <NOT>
         (
-            <NULL> { return StdOperatorRegistry.get( "IS_NOT_NULL", SqlPostfixOperator.class ); }
-        |   <TRUE> { return StdOperatorRegistry.get( "IS_NOT_TRUE", SqlPostfixOperator.class ); }
-        |   <FALSE> { return StdOperatorRegistry.get( "IS_NOT_FALSE", SqlPostfixOperator.class ); }
-        |   <UNKNOWN> { return StdOperatorRegistry.get( "IS_NOT_UNKNOWN", SqlPostfixOperator.class ); }
-        |   <A> <SET> { return StdOperatorRegistry.get( "IS_NOT_A_SET", SqlPostfixOperator.class ); }
-        |   <EMPTY> { return StdOperatorRegistry.get( "IS_NOT_EMPTY", SqlPostfixOperator.class ); }
-        |   LOOKAHEAD(2) <JSON> <VALUE> { return StdOperatorRegistry.get( "IS_NOT_JSON_VALUE", SqlPostfixOperator.class ); }
-        |   LOOKAHEAD(2) <JSON> <OBJECT> { return StdOperatorRegistry.get( "IS_NOT_JSON_OBJECT", SqlPostfixOperator.class ); }
-        |   LOOKAHEAD(2) <JSON> <ARRAY> { return StdOperatorRegistry.get( "IS_NOT_JSON_ARRAY", SqlPostfixOperator.class ); }
-        |   LOOKAHEAD(2) <JSON> <SCALAR> { return StdOperatorRegistry.get( "IS_NOT_JSON_SCALAR", SqlPostfixOperator.class ); }
-        |   <JSON> { return StdOperatorRegistry.get( "IS_NOT_JSON_VALUE", SqlPostfixOperator.class ); }
+            <NULL> { return StdOperatorRegistry.get( OperatorName.IS_NOT_NULL, SqlPostfixOperator.class ); }
+        |   <TRUE> { return StdOperatorRegistry.get( OperatorName.IS_NOT_TRUE, SqlPostfixOperator.class ); }
+        |   <FALSE> { return StdOperatorRegistry.get( OperatorName.IS_NOT_FALSE, SqlPostfixOperator.class ); }
+        |   <UNKNOWN> { return StdOperatorRegistry.get( OperatorName.IS_NOT_UNKNOWN, SqlPostfixOperator.class ); }
+        |   <A> <SET> { return StdOperatorRegistry.get( OperatorName.IS_NOT_A_SET, SqlPostfixOperator.class ); }
+        |   <EMPTY> { return StdOperatorRegistry.get( OperatorName.IS_NOT_EMPTY, SqlPostfixOperator.class ); }
+        |   LOOKAHEAD(2) <JSON> <VALUE> { return StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_VALUE, SqlPostfixOperator.class ); }
+        |   LOOKAHEAD(2) <JSON> <OBJECT> { return StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_OBJECT, SqlPostfixOperator.class ); }
+        |   LOOKAHEAD(2) <JSON> <ARRAY> { return StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_ARRAY, SqlPostfixOperator.class ); }
+        |   LOOKAHEAD(2) <JSON> <SCALAR> { return StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_SCALAR, SqlPostfixOperator.class ); }
+        |   <JSON> { return StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_VALUE, SqlPostfixOperator.class ); }
         )
     |
         (
-            <NULL> { return StdOperatorRegistry.get( "IS_NULL", SqlPostfixOperator.class ); }
-        |   <TRUE> { return StdOperatorRegistry.get( "IS_TRUE", SqlPostfixOperator.class ); }
-        |   <FALSE> { return StdOperatorRegistry.get( "IS_FALSE", SqlPostfixOperator.class ); }
-        |   <UNKNOWN> { return StdOperatorRegistry.get( "IS_UNKNOWN", SqlPostfixOperator.class ); }
-        |   <EMPTY> { return StdOperatorRegistry.get( "IS_EMPTY", SqlPostfixOperator.class ); }
-        |   LOOKAHEAD(2) <JSON> <VALUE> { return StdOperatorRegistry.get( "IS_JSON_VALUE", SqlPostfixOperator.class ); }
-        |   LOOKAHEAD(2) <JSON> <OBJECT> { return StdOperatorRegistry.get( "IS_JSON_OBJECT", SqlPostfixOperator.class ); }
-        |   LOOKAHEAD(2) <JSON> <ARRAY> { return StdOperatorRegistry.get( "IS_JSON_ARRAY", SqlPostfixOperator.class ); }
-        |   LOOKAHEAD(2) <JSON> <SCALAR> { return StdOperatorRegistry.get( "IS_JSON_SCALAR", SqlPostfixOperator.class ); }
-        |   <JSON> { return StdOperatorRegistry.get( "IS_JSON_VALUE", SqlPostfixOperator.class ); }
+            <NULL> { return StdOperatorRegistry.get( OperatorName.IS_NULL, SqlPostfixOperator.class ); }
+        |   <TRUE> { return StdOperatorRegistry.get( OperatorName.IS_TRUE, SqlPostfixOperator.class ); }
+        |   <FALSE> { return StdOperatorRegistry.get( OperatorName.IS_FALSE, SqlPostfixOperator.class ); }
+        |   <UNKNOWN> { return StdOperatorRegistry.get( OperatorName.IS_UNKNOWN, SqlPostfixOperator.class ); }
+        |   <EMPTY> { return StdOperatorRegistry.get( OperatorName.IS_EMPTY, SqlPostfixOperator.class ); }
+        |   LOOKAHEAD(2) <JSON> <VALUE> { return StdOperatorRegistry.get( OperatorName.IS_JSON_VALUE, SqlPostfixOperator.class ); }
+        |   LOOKAHEAD(2) <JSON> <OBJECT> { return StdOperatorRegistry.get( OperatorName.IS_JSON_OBJECT, SqlPostfixOperator.class ); }
+        |   LOOKAHEAD(2) <JSON> <ARRAY> { return StdOperatorRegistry.get( OperatorName.IS_JSON_ARRAY, SqlPostfixOperator.class ); }
+        |   LOOKAHEAD(2) <JSON> <SCALAR> { return StdOperatorRegistry.get( OperatorName.IS_JSON_SCALAR, SqlPostfixOperator.class ); }
+        |   <JSON> { return StdOperatorRegistry.get( OperatorName.IS_JSON_VALUE, SqlPostfixOperator.class ); }
         )
     )
 }

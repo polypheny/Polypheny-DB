@@ -41,6 +41,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.QuantifyOperator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
@@ -69,7 +70,7 @@ public class RexSubQuery extends RexCall {
      */
     public static RexSubQuery in( RelNode rel, ImmutableList<RexNode> nodes ) {
         final RelDataType type = type( rel, nodes );
-        return new RexSubQuery( type, StdOperatorRegistry.get( "IN" ), nodes, rel );
+        return new RexSubQuery( type, StdOperatorRegistry.get( OperatorName.IN ), nodes, rel );
     }
 
 
@@ -110,7 +111,7 @@ public class RexSubQuery extends RexCall {
     public static RexSubQuery exists( RelNode rel ) {
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
         final RelDataType type = typeFactory.createPolyType( PolyType.BOOLEAN );
-        return new RexSubQuery( type, StdOperatorRegistry.get( "EXISTS" ), ImmutableList.of(), rel );
+        return new RexSubQuery( type, StdOperatorRegistry.get( OperatorName.EXISTS ), ImmutableList.of(), rel );
     }
 
 
@@ -122,7 +123,7 @@ public class RexSubQuery extends RexCall {
         assert fieldList.size() == 1;
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
         final RelDataType type = typeFactory.createTypeWithNullability( fieldList.get( 0 ).getType(), true );
-        return new RexSubQuery( type, StdOperatorRegistry.get( "SCALAR_QUERY" ), ImmutableList.of(), rel );
+        return new RexSubQuery( type, StdOperatorRegistry.get( OperatorName.SCALAR_QUERY ), ImmutableList.of(), rel );
     }
 
 

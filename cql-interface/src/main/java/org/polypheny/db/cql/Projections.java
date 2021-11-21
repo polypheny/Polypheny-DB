@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.cql.utils.ExclusiveComparisons;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -236,11 +237,11 @@ public class Projections {
 
     @Getter
     public enum AggregationFunctions {
-        COUNT( StdOperatorRegistry.getAgg( "COUNT" ) ),
-        MAX( StdOperatorRegistry.getAgg( "MAX" ) ),
-        MIN( StdOperatorRegistry.getAgg( "MIN" ) ),
-        SUM( StdOperatorRegistry.getAgg( "SUM" ) ),
-        AVG( StdOperatorRegistry.getAgg( "AVG" ) );
+        COUNT( StdOperatorRegistry.getAgg( OperatorName.COUNT ) ),
+        MAX( StdOperatorRegistry.getAgg( OperatorName.MAX ) ),
+        MIN( StdOperatorRegistry.getAgg( OperatorName.MIN ) ),
+        SUM( StdOperatorRegistry.getAgg( OperatorName.SUM ) ),
+        AVG( StdOperatorRegistry.getAgg( OperatorName.AVG ) );
 
 
         private final AggFunction aggFunction;

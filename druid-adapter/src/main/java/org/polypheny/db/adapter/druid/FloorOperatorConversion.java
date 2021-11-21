@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -52,7 +53,7 @@ public class FloorOperatorConversion implements DruidSqlOperatorConverter {
 
     @Override
     public Operator polyphenyDbOperator() {
-        return StdOperatorRegistry.get( "FLOOR" );
+        return StdOperatorRegistry.get( OperatorName.FLOOR );
     }
 
 

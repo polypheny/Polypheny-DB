@@ -62,6 +62,7 @@ import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelHomogeneousShuttle;
 import org.polypheny.db.rel.RelNode;
@@ -420,7 +421,7 @@ public abstract class RelOptUtil {
 
             final AggregateCall aggCall =
                     AggregateCall.create(
-                            StdOperatorRegistry.getAgg( "MIN" ),
+                            StdOperatorRegistry.getAgg( OperatorName.MIN ),
                             false,
                             false,
                             ImmutableList.of( 0 ),
@@ -493,7 +494,7 @@ public abstract class RelOptUtil {
 
         final AggregateCall aggCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "MIN" ),
+                        StdOperatorRegistry.getAgg( OperatorName.MIN ),
                         false,
                         false,
                         ImmutableList.of( projectedKeyCount ),
@@ -604,14 +605,14 @@ public abstract class RelOptUtil {
             }
             RexNode newCondition =
                     rexBuilder.makeCall(
-                            StdOperatorRegistry.get( "IS_NOT_NULL" ),
+                            StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                             rexBuilder.makeInputRef( type, iField ) );
             if ( condition == null ) {
                 condition = newCondition;
             } else {
                 condition =
                         rexBuilder.makeCall(
-                                StdOperatorRegistry.get( "AND" ),
+                                StdOperatorRegistry.get( OperatorName.AND ),
                                 condition,
                                 newCondition );
             }
@@ -680,7 +681,7 @@ public abstract class RelOptUtil {
         for ( int i = 0; i < aggCallCnt; i++ ) {
             aggCalls.add(
                     AggregateCall.create(
-                            StdOperatorRegistry.getAgg( "SINGLE_VALUE" ),
+                            StdOperatorRegistry.getAgg( OperatorName.SINGLE_VALUE ),
                             false,
                             false,
                             ImmutableList.of( i ),
@@ -968,7 +969,7 @@ public abstract class RelOptUtil {
                     public RexNode get( int index ) {
                         final int leftKey = leftKeys.get( index );
                         final int rightKey = rightKeys.get( index );
-                        return rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ),
+                        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ),
                                 rexBuilder.makeInputRef( leftTypes.get( leftKey ), leftKey ),
                                 rexBuilder.makeInputRef( rightTypes.get( rightKey ), leftTypes.size() + rightKey ) );
                     }
@@ -985,21 +986,21 @@ public abstract class RelOptUtil {
     public static Operator op( Kind kind, Operator operator ) {
         switch ( kind ) {
             case EQUALS:
-                return StdOperatorRegistry.get( "EQUALS" );
+                return StdOperatorRegistry.get( OperatorName.EQUALS );
             case NOT_EQUALS:
-                return StdOperatorRegistry.get( "NOT_EQUALS" );
+                return StdOperatorRegistry.get( OperatorName.NOT_EQUALS );
             case GREATER_THAN:
-                return StdOperatorRegistry.get( "GREATER_THAN" );
+                return StdOperatorRegistry.get( OperatorName.GREATER_THAN );
             case GREATER_THAN_OR_EQUAL:
-                return StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" );
+                return StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
             case LESS_THAN:
-                return StdOperatorRegistry.get( "LESS_THAN" );
+                return StdOperatorRegistry.get( OperatorName.LESS_THAN );
             case LESS_THAN_OR_EQUAL:
-                return StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" );
+                return StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
             case IS_DISTINCT_FROM:
-                return StdOperatorRegistry.get( "IS_DISTINCT_FROM" );
+                return StdOperatorRegistry.get( OperatorName.IS_DISTINCT_FROM );
             case IS_NOT_DISTINCT_FROM:
-                return StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" );
+                return StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM );
             default:
                 return operator;
         }
@@ -1202,7 +1203,7 @@ public abstract class RelOptUtil {
                 && isNullInput1Digest.equals( equalsInput1Digest ))
                 || (isNullInput1Digest.equals( equalsInput0Digest )
                 && isNullInput0Digest.equals( equalsInput1Digest )) ) {
-            return (RexCall) rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ), ImmutableList.of( isNullInput0, isNullInput1 ) );
+            return (RexCall) rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ), ImmutableList.of( isNullInput0, isNullInput1 ) );
         }
 
         return call;
@@ -1511,7 +1512,7 @@ public abstract class RelOptUtil {
                 if ( ret == null ) {
                     ret = newCall;
                 } else {
-                    ret = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), ret, newCall );
+                    ret = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), ret, newCall );
                 }
             }
         } else {
@@ -1531,21 +1532,21 @@ public abstract class RelOptUtil {
         if ( neg ) {
             // x is not distinct from y
             // x=y IS TRUE or ((x is null) and (y is null)),
-            return rexBuilder.makeCall( StdOperatorRegistry.get( "OR" ),
-                    rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ),
-                            rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), x ),
-                            rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), y ) ),
-                    rexBuilder.makeCall( StdOperatorRegistry.get( "IS_TRUE" ),
-                            rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), x, y ) ) );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.OR ),
+                    rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ),
+                            rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), x ),
+                            rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), y ) ),
+                    rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_TRUE ),
+                            rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), x, y ) ) );
         } else {
             // x is distinct from y
             // x=y IS NOT TRUE and ((x is not null) or (y is not null)),
-            return rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ),
-                    rexBuilder.makeCall( StdOperatorRegistry.get( "OR" ),
-                            rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), x ),
-                            rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), y ) ),
-                    rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_TRUE" ),
-                            rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), x, y ) ) );
+            return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ),
+                    rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.OR ),
+                            rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), x ),
+                            rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), y ) ),
+                    rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_TRUE ),
+                            rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), x, y ) ) );
         }
     }
 
@@ -1754,7 +1755,7 @@ public abstract class RelOptUtil {
         // don't bother AND'ing in expressions that always evaluate to true
         if ( (left != null) && !left.isAlwaysTrue() ) {
             if ( (right != null) && !right.isAlwaysTrue() ) {
-                left = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), left, right );
+                left = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), left, right );
             }
         } else {
             left = right;
@@ -2767,7 +2768,7 @@ public abstract class RelOptUtil {
         final RelMetadataQuery mq = r.getCluster().getMetadataQuery();
         for ( RelDataTypeField field : rowType.getFieldList() ) {
             if ( field.getType().isNullable() ) {
-                list.add( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
+                list.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
             }
         }
         if ( list.isEmpty() ) {

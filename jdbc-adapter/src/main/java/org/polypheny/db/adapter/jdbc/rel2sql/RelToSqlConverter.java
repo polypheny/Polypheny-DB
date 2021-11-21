@@ -51,6 +51,7 @@ import org.polypheny.db.core.JoinType;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDelete;
 import org.polypheny.db.languages.sql.SqlDialect;
@@ -286,8 +287,8 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
     public Result visit( Union e ) {
         isUnion = true;
         Result result = setOpToSql( (SqlSetOperator) (e.all
-                ? StdOperatorRegistry.get( "UNION_ALL" )
-                : StdOperatorRegistry.get( "UNION" )), e );
+                ? StdOperatorRegistry.get( OperatorName.UNION_ALL )
+                : StdOperatorRegistry.get( OperatorName.UNION )), e );
         isUnion = false;
         return result;
     }
@@ -298,8 +299,8 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      */
     public Result visit( Intersect e ) {
         return setOpToSql( (SqlSetOperator) (e.all
-                ? StdOperatorRegistry.get( "INTERSECT_ALL" )
-                : StdOperatorRegistry.get( "INTERSECT" )), e );
+                ? StdOperatorRegistry.get( OperatorName.INTERSECT_ALL )
+                : StdOperatorRegistry.get( OperatorName.INTERSECT )), e );
     }
 
 
@@ -308,8 +309,8 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
      */
     public Result visit( Minus e ) {
         return setOpToSql( (SqlSetOperator) (e.all
-                ? StdOperatorRegistry.get( "EXCEPT_ALL" )
-                : StdOperatorRegistry.get( "EXCEPT" )), e );
+                ? StdOperatorRegistry.get( OperatorName.EXCEPT_ALL )
+                : StdOperatorRegistry.get( OperatorName.EXCEPT )), e );
     }
 
 
@@ -362,7 +363,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
                 final List<SqlNode> values2 = new ArrayList<>();
                 final SqlNodeList exprList = exprList( context, tuple );
                 for ( Pair<Node, String> value : Pair.zip( exprList, fieldNames ) ) {
-                    values2.add( (SqlNode) StdOperatorRegistry.get( "AS" ).createCall( POS, value.left, new SqlIdentifier( value.right, POS ) ) );
+                    values2.add( (SqlNode) StdOperatorRegistry.get( OperatorName.AS ).createCall( POS, value.left, new SqlIdentifier( value.right, POS ) ) );
                 }
                 list.add(
                         new SqlSelect(
@@ -381,7 +382,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
             if ( list.size() == 1 ) {
                 query = list.get( 0 );
             } else {
-                query = (SqlNode) StdOperatorRegistry.get( "UNION_ALL" ).createCall( new SqlNodeList( list, POS ) );
+                query = (SqlNode) StdOperatorRegistry.get( OperatorName.UNION_ALL ).createCall( new SqlNodeList( list, POS ) );
             }
         } else {
             // Generate ANSI syntax
@@ -392,7 +393,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
             for ( List<RexLiteral> tuple : e.getTuples() ) {
                 selects.add( ANONYMOUS_ROW.createCall( exprList( context, tuple ) ) );
             }
-            query = (SqlNode) StdOperatorRegistry.get( "VALUES" ).createCall( selects );
+            query = (SqlNode) StdOperatorRegistry.get( OperatorName.VALUES ).createCall( selects );
             if ( rename ) {
                 final List<SqlNode> list = new ArrayList<>();
                 list.add( query );
@@ -400,7 +401,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
                 for ( String fieldName : fieldNames ) {
                     list.add( new SqlIdentifier( fieldName, POS ) );
                 }
-                query = (SqlNode) StdOperatorRegistry.get( "AS" ).createCall( POS, list );
+                query = (SqlNode) StdOperatorRegistry.get( OperatorName.AS ).createCall( POS, list );
             }
         }
         return result( query, clauses, e, null );
@@ -589,7 +590,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
             for ( String right : entry.getValue() ) {
                 rhl.add( new SqlIdentifier( right, POS ) );
             }
-            subsetList.add( StdOperatorRegistry.get( "EQUALS" ).createCall( POS, left, new SqlNodeList( rhl, POS ) ) );
+            subsetList.add( StdOperatorRegistry.get( OperatorName.EQUALS ).createCall( POS, left, new SqlNodeList( rhl, POS ) ) );
         }
 
         final SqlNodeList measureList = new SqlNodeList( POS );
@@ -626,7 +627,7 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
 
 
     private SqlCall as( SqlNode e, String alias ) {
-        return (SqlCall) StdOperatorRegistry.get( "AS" ).createCall( POS, e, new SqlIdentifier( alias, POS ) );
+        return (SqlCall) StdOperatorRegistry.get( OperatorName.AS ).createCall( POS, e, new SqlIdentifier( alias, POS ) );
     }
 
 

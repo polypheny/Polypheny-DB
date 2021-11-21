@@ -36,6 +36,7 @@ import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
@@ -540,10 +541,10 @@ public class Rest {
                 RexNode inputRef = rexBuilder.makeInputRef( baseNodeForSorts, inputField );
                 RexNode sortingNode;
                 if ( sort.right ) {
-                    RexNode innerNode = rexBuilder.makeCall( StdOperatorRegistry.get( "DESC" ), inputRef );
-                    sortingNode = rexBuilder.makeCall( StdOperatorRegistry.get( "NULLS_FIRST" ), innerNode );
+                    RexNode innerNode = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.DESC ), inputRef );
+                    sortingNode = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NULLS_FIRST ), innerNode );
                 } else {
-                    sortingNode = rexBuilder.makeCall( StdOperatorRegistry.get( "NULLS_FIRST" ), inputRef );
+                    sortingNode = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NULLS_FIRST ), inputRef );
                 }
 
                 sortingNodes.add( sortingNode );

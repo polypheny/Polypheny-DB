@@ -56,6 +56,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -1352,14 +1353,14 @@ public class SubstitutionVisitor {
 
 
     public static AggFunction getRollup( AggFunction aggregation ) {
-        if ( aggregation.equals( StdOperatorRegistry.getAgg( "SUM" ) )
-                || aggregation.equals( StdOperatorRegistry.getAgg( "MIN" ) )
-                || aggregation.equals( StdOperatorRegistry.getAgg( "MAX" ) )
-                || aggregation.equals( StdOperatorRegistry.getAgg( "SUM0" ) )
-                || aggregation.equals( StdOperatorRegistry.getAgg( ".ANY_VALUE" ) ) ) {
+        if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.SUM ) )
+                || aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.MIN ) )
+                || aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.MAX ) )
+                || aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.SUM0 ) )
+                || aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.ANY_VALUE ) ) ) {
             return aggregation;
-        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( "COUNT" ) ) ) {
-            return StdOperatorRegistry.getAgg( "SUM0" );
+        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.COUNT ) ) ) {
+            return StdOperatorRegistry.getAgg( OperatorName.SUM0 );
         } else {
             return null;
         }

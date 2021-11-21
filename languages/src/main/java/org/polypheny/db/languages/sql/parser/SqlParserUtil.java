@@ -35,6 +35,7 @@ import org.polypheny.db.core.CoreUtil;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlDateLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
@@ -517,12 +518,12 @@ public final class SqlParserUtil {
                     list.add( convert( arg ) );
                 }
                 final ToTreeListItem item = (ToTreeListItem) call.op.o;
-                if ( item.op.equals( StdOperatorRegistry.get( "UNARY_MINUS" ) )
+                if ( item.op.equals( StdOperatorRegistry.get( OperatorName.UNARY_MINUS ) )
                         && list.size() == 1
                         && list.get( 0 ) instanceof SqlNumericLiteral ) {
                     return SqlLiteral.createNegative( (SqlNumericLiteral) list.get( 0 ), item.pos.plusAll( list ) );
                 }
-                if ( item.op.equals( StdOperatorRegistry.get( "UNARY_PLUS" ) )
+                if ( item.op.equals( StdOperatorRegistry.get( OperatorName.UNARY_PLUS ) )
                         && list.size() == 1
                         && list.get( 0 ) instanceof SqlNumericLiteral ) {
                     return list.get( 0 );

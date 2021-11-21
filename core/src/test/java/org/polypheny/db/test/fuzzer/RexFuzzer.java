@@ -42,6 +42,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -57,51 +58,51 @@ public class RexFuzzer extends RexProgramBuilderBase {
     private static final int MAX_VARS = 2;
 
     private static final Operator[] BOOL_TO_BOOL = {
-            StdOperatorRegistry.get( "NOT" ),
-            StdOperatorRegistry.get( "IS_TRUE" ),
-            StdOperatorRegistry.get( "IS_FALSE" ),
-            StdOperatorRegistry.get( "IS_NOT_TRUE" ),
-            StdOperatorRegistry.get( "IS_NOT_FALSE" ),
+            StdOperatorRegistry.get( OperatorName.NOT ),
+            StdOperatorRegistry.get( OperatorName.IS_TRUE ),
+            StdOperatorRegistry.get( OperatorName.IS_FALSE ),
+            StdOperatorRegistry.get( OperatorName.IS_NOT_TRUE ),
+            StdOperatorRegistry.get( OperatorName.IS_NOT_FALSE ),
     };
 
     private static final Operator[] ANY_TO_BOOL = {
-            StdOperatorRegistry.get( "IS_NULL" ),
-            StdOperatorRegistry.get( "IS_NOT_NULL" ),
-            StdOperatorRegistry.get( "IS_UNKNOWN" ),
-            StdOperatorRegistry.get( "IS_NOT_UNKNOWN" ),
+            StdOperatorRegistry.get( OperatorName.IS_NULL ),
+            StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ),
+            StdOperatorRegistry.get( OperatorName.IS_UNKNOWN ),
+            StdOperatorRegistry.get( OperatorName.IS_NOT_UNKNOWN ),
     };
 
     private static final Operator[] COMPARABLE_TO_BOOL = {
-            StdOperatorRegistry.get( "EQUALS" ),
-            StdOperatorRegistry.get( "NOT_EQUALS" ),
-            StdOperatorRegistry.get( "GREATER_THAN" ),
-            StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ),
-            StdOperatorRegistry.get( "LESS_THAN" ),
-            StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ),
-            StdOperatorRegistry.get( "IS_DISTINCT_FROM" ),
-            StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ),
+            StdOperatorRegistry.get( OperatorName.EQUALS ),
+            StdOperatorRegistry.get( OperatorName.NOT_EQUALS ),
+            StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
+            StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ),
+            StdOperatorRegistry.get( OperatorName.LESS_THAN ),
+            StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ),
+            StdOperatorRegistry.get( OperatorName.IS_DISTINCT_FROM ),
+            StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ),
     };
 
     private static final Operator[] BOOL_TO_BOOL_MULTI_ARG = {
-            StdOperatorRegistry.get( "OR" ),
-            StdOperatorRegistry.get( "AND" ),
-            StdOperatorRegistry.get( "COALESCE" ),
+            StdOperatorRegistry.get( OperatorName.OR ),
+            StdOperatorRegistry.get( OperatorName.AND ),
+            StdOperatorRegistry.get( OperatorName.COALESCE ),
     };
 
     private static final Operator[] ANY_SAME_TYPE_MULTI_ARG = {
-            StdOperatorRegistry.get( "COALESCE" ),
+            StdOperatorRegistry.get( OperatorName.COALESCE ),
     };
 
     private static final Operator[] NUMERIC_TO_NUMERIC = {
-            StdOperatorRegistry.get( "PLUS" ),
-            StdOperatorRegistry.get( "MINUS" ),
-            StdOperatorRegistry.get( "MULTIPLY" ),
-            // Divide by zero is not allowed, so we do not generate divide StdOperatorRegistry.get( "DIVIDE" ), StdOperatorRegistry.get( "DIVIDE_INTEGER" ),
+            StdOperatorRegistry.get( OperatorName.PLUS ),
+            StdOperatorRegistry.get( OperatorName.MINUS ),
+            StdOperatorRegistry.get( OperatorName.MULTIPLY ),
+            // Divide by zero is not allowed, so we do not generate divide StdOperatorRegistry.get( OperatorName.DIVIDE ), StdOperatorRegistry.get( OperatorName.DIVIDE_INTEGER ),
     };
 
     private static final Operator[] UNARY_NUMERIC = {
-            StdOperatorRegistry.get( "UNARY_MINUS" ),
-            StdOperatorRegistry.get( "UNARY_PLUS" ),
+            StdOperatorRegistry.get( OperatorName.UNARY_MINUS ),
+            StdOperatorRegistry.get( OperatorName.UNARY_PLUS ),
     };
 
 

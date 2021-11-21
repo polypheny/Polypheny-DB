@@ -41,6 +41,7 @@ import java.util.function.Predicate;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -83,7 +84,7 @@ public class GeodeRules {
      * Returns 'string' if it is a call to item['string'], null otherwise.
      */
     static String isItem( RexCall call ) {
-        if ( !call.getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
+        if ( !call.getOperator().equals( StdOperatorRegistry.get( OperatorName.ITEM ) ) ) {
             return null;
         }
         final RexNode op0 = call.getOperands().get( 0 );
@@ -141,7 +142,7 @@ public class GeodeRules {
         @Override
         public String visitCall( RexCall call ) {
             final List<String> strings = visitList( call.operands );
-            if ( call.getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
+            if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.ITEM ) ) ) {
                 final RexNode op1 = call.getOperands().get( 1 );
                 if ( op1 instanceof RexLiteral ) {
                     if ( op1.getType().getPolyType() == PolyType.INTEGER ) {
@@ -352,7 +353,7 @@ public class GeodeRules {
                 return (leftName != null) && (rightName != null);
             }
             if ( left.isA( Kind.OTHER_FUNCTION ) && right.isA( Kind.LITERAL ) ) {
-                if ( !((RexCall) left).getOperator().equals( StdOperatorRegistry.get( "ITEM" ) ) ) {
+                if ( !((RexCall) left).getOperator().equals( StdOperatorRegistry.get( OperatorName.ITEM ) ) ) {
                     return false;
                 }
                 // Should be ITEM

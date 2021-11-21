@@ -16,7 +16,7 @@
 
 package org.polypheny.db.core;
 
-public interface TrimFunction {
+public interface TrimFunction extends Operator {
 
     enum Flag {
         BOTH, LEADING, TRAILING;

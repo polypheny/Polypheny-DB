@@ -67,6 +67,7 @@ import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
@@ -95,11 +96,11 @@ public class RexToLixTranslator {
 
     public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
             Util.mapOf(
-                    findMethod( String.class, "toUpperCase" ), StdOperatorRegistry.get( "UPPER" ),
-                    findMethod( Functions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), StdOperatorRegistry.get( "SUBSTRING" ),
-                    findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHARACTER_LENGTH" ),
-                    findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( "CHAR_LENGTH" ),
-                    findMethod( Functions.class, "translate3", String.class, String.class, String.class ), StdOperatorRegistry.get( "ORACLE_TRANSLATE3" ) );
+                    findMethod( String.class, "toUpperCase" ), StdOperatorRegistry.get( OperatorName.UPPER ),
+                    findMethod( Functions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), StdOperatorRegistry.get( OperatorName.SUBSTRING ),
+                    findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( OperatorName.CHARACTER_LENGTH ),
+                    findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( OperatorName.CHAR_LENGTH ),
+                    findMethod( Functions.class, "translate3", String.class, String.class, String.class ), StdOperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ) );
 
     final JavaTypeFactory typeFactory;
     final RexBuilder builder;
@@ -669,7 +670,7 @@ public class RexToLixTranslator {
                     default:
                         RexNode rxIndex = builder.makeLiteral( fieldIndex, typeFactory.createType( int.class ), true );
                         RexNode rxName = builder.makeLiteral( fieldName, typeFactory.createType( String.class ), true );
-                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), StdOperatorRegistry.get( "STRUCT_ACCESS" ), ImmutableList.of( target, rxIndex, rxName ) );
+                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), StdOperatorRegistry.get( OperatorName.STRUCT_ACCESS ), ImmutableList.of( target, rxIndex, rxName ) );
                         return translateCall( accessCall, nullAs );
                 }
             }

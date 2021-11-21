@@ -26,6 +26,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Validator;
 import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -125,7 +126,7 @@ public class SqlInOperator extends SqlBinaryOperator {
 
         final ComparableOperandTypeChecker checker = (ComparableOperandTypeChecker) OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;
         if ( !checker.checkOperandTypes( new ExplicitOperatorBinding( new SqlCallBinding( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call ), ImmutableList.of( leftRowType, rightRowType ) ) ) ) {
-            throw validator.newValidationError( call, Static.RESOURCE.incompatibleValueType( StdOperatorRegistry.get( "IN" ).getName() ) );
+            throw validator.newValidationError( call, Static.RESOURCE.incompatibleValueType( StdOperatorRegistry.get( OperatorName.IN ).getName() ) );
         }
 
         // Result is a boolean, nullable if there are any nullable types on either side.

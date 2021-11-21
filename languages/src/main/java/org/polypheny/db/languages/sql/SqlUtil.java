@@ -50,6 +50,7 @@ import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -80,7 +81,7 @@ public abstract class SqlUtil {
         } else {
             list.add( node2 );
         }
-        return (SqlNode) StdOperatorRegistry.get( "AND" ).createCall( ParserPos.ZERO, list );
+        return (SqlNode) StdOperatorRegistry.get( OperatorName.AND ).createCall( ParserPos.ZERO, list );
     }
 
 

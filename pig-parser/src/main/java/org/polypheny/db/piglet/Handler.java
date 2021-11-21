@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -390,27 +391,27 @@ public class Handler {
     private static Operator op( Ast.Op op ) {
         switch ( op ) {
             case EQ:
-                return StdOperatorRegistry.get( "EQUALS" );
+                return StdOperatorRegistry.get( OperatorName.EQUALS );
             case NE:
-                return StdOperatorRegistry.get( "NOT_EQUALS" );
+                return StdOperatorRegistry.get( OperatorName.NOT_EQUALS );
             case GT:
-                return StdOperatorRegistry.get( "GREATER_THAN" );
+                return StdOperatorRegistry.get( OperatorName.GREATER_THAN );
             case GTE:
-                return StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" );
+                return StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
             case LT:
-                return StdOperatorRegistry.get( "LESS_THAN" );
+                return StdOperatorRegistry.get( OperatorName.LESS_THAN );
             case LTE:
-                return StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" );
+                return StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
             case AND:
-                return StdOperatorRegistry.get( "AND" );
+                return StdOperatorRegistry.get( OperatorName.AND );
             case OR:
-                return StdOperatorRegistry.get( "OR" );
+                return StdOperatorRegistry.get( OperatorName.OR );
             case NOT:
-                return StdOperatorRegistry.get( "NOT" );
+                return StdOperatorRegistry.get( OperatorName.NOT );
             case PLUS:
-                return StdOperatorRegistry.get( "PLUS" );
+                return StdOperatorRegistry.get( OperatorName.PLUS );
             case MINUS:
-                return StdOperatorRegistry.get( "MINUS" );
+                return StdOperatorRegistry.get( OperatorName.MINUS );
             default:
                 throw new AssertionError( "unknown: " + op );
         }

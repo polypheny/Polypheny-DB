@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -106,7 +107,7 @@ public class RelWriterTest {
                     LogicalFilter filter =
                             LogicalFilter.create( scan,
                                     rexBuilder.makeCall(
-                                            StdOperatorRegistry.get( "EQUALS" ),
+                                            StdOperatorRegistry.get( OperatorName.EQUALS ),
                                             rexBuilder.makeFieldAccess( rexBuilder.makeRangeReference( scan ), "deptno", true ),
                                             rexBuilder.makeExactLiteral( BigDecimal.TEN ) ) );
                     final RelJsonWriter writer = new RelJsonWriter();
@@ -114,8 +115,8 @@ public class RelWriterTest {
                     LogicalAggregate aggregate =
                             LogicalAggregate.create( filter, ImmutableBitSet.of( 0 ), null,
                                     ImmutableList.of(
-                                            AggregateCall.create( StdOperatorRegistry.getAgg( "COUNT" ), true, false, ImmutableList.of( 1 ), -1, RelCollations.EMPTY, bigIntType, "c" ),
-                                            AggregateCall.create( StdOperatorRegistry.getAgg( "COUNT" ), false, false, ImmutableList.of(), -1, RelCollations.EMPTY, bigIntType, "d" ) ) );
+                                            AggregateCall.create( StdOperatorRegistry.getAgg( OperatorName.COUNT ), true, false, ImmutableList.of( 1 ), -1, RelCollations.EMPTY, bigIntType, "c" ),
+                                            AggregateCall.create( StdOperatorRegistry.getAgg( OperatorName.COUNT ), false, false, ImmutableList.of(), -1, RelCollations.EMPTY, bigIntType, "d" ) ) );
                     aggregate.explain( writer );
                     return writer.asString();
                 } );

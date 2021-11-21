@@ -55,6 +55,7 @@ import org.polypheny.db.adapter.pig.PigRelFactories;
 import org.polypheny.db.adapter.pig.PigRules;
 import org.polypheny.db.adapter.pig.PigTable;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.rel.RelNode;
@@ -87,7 +88,7 @@ public class PigRelBuilderStyleTest extends AbstractPigTest {
     public void testScanAndFilter() throws Exception {
         final SchemaPlus schema = createTestSchema();
         final RelBuilder builder = createRelBuilder( schema );
-        final RelNode node = builder.scan( "t" ).filter( builder.call( StdOperatorRegistry.get( "GREATER_THAN" ), builder.field( "tc0" ), builder.literal( "abc" ) ) ).build();
+        final RelNode node = builder.scan( "t" ).filter( builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "tc0" ), builder.literal( "abc" ) ) ).build();
         final RelNode optimized = optimizeWithVolcano( node );
         assertScriptAndResults( "t", getPigScript( optimized, schema ),
                 "t = LOAD 'build/test-classes/data.txt' USING PigStorage() AS (tc0:chararray, tc1:chararray);\n" + "t = FILTER t BY (tc0 > 'abc');",
@@ -101,7 +102,7 @@ public class PigRelBuilderStyleTest extends AbstractPigTest {
         final SchemaPlus schema = createTestSchema();
         final RelBuilder builder = createRelBuilder( schema );
         final RelNode node = builder.scan( "t" )
-                .filter( builder.and( builder.call( StdOperatorRegistry.get( "GREATER_THAN" ), builder.field( "tc0" ), builder.literal( "abc" ) ), builder.call( StdOperatorRegistry.get( "EQUALS" ), builder.field( "tc1" ), builder.literal( "3" ) ) ) )
+                .filter( builder.and( builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "tc0" ), builder.literal( "abc" ) ), builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ), builder.field( "tc1" ), builder.literal( "3" ) ) ) )
                 .build();
         final RelNode optimized = optimizeWithVolcano( node );
         assertScriptAndResults( "t", getPigScript( optimized, schema ),
@@ -192,7 +193,7 @@ public class PigRelBuilderStyleTest extends AbstractPigTest {
         final RelBuilder builder = createRelBuilder( schema );
         final RelNode node = builder.scan( "t" ).scan( "s" )
                 .join( JoinRelType.INNER, builder.equals( builder.field( 2, 0, "tc1" ), builder.field( 2, 1, "sc0" ) ) )
-                .filter( builder.call( StdOperatorRegistry.get( "GREATER_THAN" ), builder.field( "tc0" ), builder.literal( "a" ) ) )
+                .filter( builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "tc0" ), builder.literal( "a" ) ) )
                 .build();
         final RelNode optimized = optimizeWithVolcano( node );
         assertScriptAndResults( "t", getPigScript( optimized, schema ),
@@ -211,7 +212,7 @@ public class PigRelBuilderStyleTest extends AbstractPigTest {
         final RelBuilder builder = createRelBuilder( schema );
         final RelNode node = builder.scan( "t" ).scan( "s" )
                 .join( JoinRelType.LEFT, builder.equals( builder.field( 2, 0, "tc1" ), builder.field( 2, 1, "sc0" ) ) )
-                .filter( builder.call( StdOperatorRegistry.get( "GREATER_THAN" ), builder.field( "tc0" ), builder.literal( "abc" ) ) )
+                .filter( builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "tc0" ), builder.literal( "abc" ) ) )
                 .aggregate( builder.groupKey( "tc1" ), builder.count( false, "c", builder.field( "sc1" ) ) )
                 .build();
         final RelNode optimized = optimizeWithVolcano( node );

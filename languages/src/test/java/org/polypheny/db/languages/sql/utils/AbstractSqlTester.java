@@ -47,6 +47,7 @@ import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
@@ -587,11 +588,11 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         x.accept(
                 new SqlShuttle() {
                     private final List<Operator> ops = ImmutableList.of(
-                            StdOperatorRegistry.get( "LITERAL_CHAIN" ),
-                            StdOperatorRegistry.get( "LOCALTIME" ),
-                            StdOperatorRegistry.get( "LOCALTIMESTAMP" ),
-                            StdOperatorRegistry.get( "CURRENT_TIME" ),
-                            StdOperatorRegistry.get( "CURRENT_TIMESTAMP" ) );
+                            StdOperatorRegistry.get( OperatorName.LITERAL_CHAIN ),
+                            StdOperatorRegistry.get( OperatorName.LOCALTIME ),
+                            StdOperatorRegistry.get( OperatorName.LOCALTIMESTAMP ),
+                            StdOperatorRegistry.get( OperatorName.CURRENT_TIME ),
+                            StdOperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ) );
 
 
                     @Override
@@ -606,7 +607,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
                     @Override
                     public SqlNode visit( Call call ) {
                         final SqlOperator operator = (SqlOperator) call.getOperator();
-                        if ( operator.equals( StdOperatorRegistry.get( "CAST" ) ) && isNull( call.operand( 0 ) ) ) {
+                        if ( operator.equals( StdOperatorRegistry.get( OperatorName.CAST ) ) && isNull( call.operand( 0 ) ) ) {
                             literalSet.add( (SqlNode) call );
                             return (SqlNode) call;
                         } else if ( ops.contains( operator ) ) {

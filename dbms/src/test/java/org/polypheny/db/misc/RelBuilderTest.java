@@ -44,6 +44,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.Parser;
@@ -309,7 +310,7 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .filter(
                                 builder.call(
-                                        StdOperatorRegistry.get( "OR" ), builder.call( StdOperatorRegistry.get( "EQUALS" ), builder.field( "deptno" ), builder.literal( 20 ) ),
+                                        StdOperatorRegistry.get( OperatorName.OR ), builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ), builder.field( "deptno" ), builder.literal( 20 ) ),
                                         builder.isNull( builder.field( 6 ) ) ),
                                 builder.isNotNull( builder.field( 3 ) ) )
                         .build();
@@ -333,11 +334,11 @@ public class RelBuilderTest {
         RelNode root =
                 builder.scan( "employee" )
                         .filter(
-                                builder.call( StdOperatorRegistry.get( "OR" ),
-                                        builder.call( StdOperatorRegistry.get( "GREATER_THAN" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.OR ),
+                                        builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                                                 builder.field( "deptno" ),
                                                 builder.literal( 20 ) ),
-                                        builder.call( StdOperatorRegistry.get( "GREATER_THAN" ),
+                                        builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                                                 builder.field( "deptno" ),
                                                 builder.literal( 20 ) ) ) )
                         .build();
@@ -359,7 +360,7 @@ public class RelBuilderTest {
         RelNode root =
                 builder.scan( "employee" )
                         .filter(
-                                builder.call( StdOperatorRegistry.get( "GREATER_THAN" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                                         builder.field( "deptno" ),
                                         builder.literal( 20 ) ),
                                 builder.literal( false ) )
@@ -379,7 +380,7 @@ public class RelBuilderTest {
         RelNode root =
                 builder.scan( "employee" )
                         .filter(
-                                builder.call( StdOperatorRegistry.get( "GREATER_THAN" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                                         builder.field( "deptno" ),
                                         builder.literal( 20 ) ),
                                 builder.literal( true ) )
@@ -401,10 +402,10 @@ public class RelBuilderTest {
         //   WHERE deptno > 20 AND deptno > 20 AND deptno > 20
         final RelBuilder builder = createRelBuilder();
         builder.scan( "employee" );
-        final RexNode condition = builder.call( StdOperatorRegistry.get( "GREATER_THAN" ),
+        final RexNode condition = builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                 builder.field( "deptno" ),
                 builder.literal( 20 ) );
-        final RexNode condition2 = builder.call( StdOperatorRegistry.get( "LESS_THAN" ),
+        final RexNode condition2 = builder.call( StdOperatorRegistry.get( OperatorName.LESS_THAN ),
                 builder.field( "deptno" ),
                 builder.literal( 30 ) );
         final RelNode root = builder.filter( condition, condition, condition )
@@ -456,7 +457,7 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         try {
             builder.scan( "employee" );
-            RexNode call = builder.call( StdOperatorRegistry.get( "PLUS" ), builder.field( 1 ), builder.field( 3 ) );
+            RexNode call = builder.call( StdOperatorRegistry.get( OperatorName.PLUS ), builder.field( 1 ), builder.field( 3 ) );
             fail( "expected error, got " + call );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), is( "Cannot infer return type for +; operand types: [VARCHAR(20), INTEGER]" ) );
@@ -568,9 +569,9 @@ public class RelBuilderTest {
                                 builder.alias( builder.field( 1 ), "b" ),
                                 builder.alias( builder.field( 2 ), "c" ) )
                         .filter(
-                                builder.call( StdOperatorRegistry.get( "EQUALS" ), builder.field( "a" ), builder.literal( 20 ) ) )
+                                builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ), builder.field( "a" ), builder.literal( 20 ) ) )
                         .aggregate( builder.groupKey( 0, 1, 2 ),
-                                builder.aggregateCall( StdOperatorRegistry.getAgg( "SUM" ), builder.field( 0 ) ) )
+                                builder.aggregateCall( StdOperatorRegistry.getAgg( OperatorName.SUM ), builder.field( 0 ) ) )
                         .project( builder.field( "c" ),
                                 builder.field( "a" ) )
                         .build();
@@ -785,13 +786,13 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .aggregate(
                                 builder.groupKey( builder.field( 1 ),
-                                        builder.call( StdOperatorRegistry.get( "PLUS" ),
+                                        builder.call( StdOperatorRegistry.get( OperatorName.PLUS ),
                                                 builder.field( 4 ),
                                                 builder.field( 3 ) ),
                                         builder.field( 1 ) ),
                                 builder.countStar( "C" ),
                                 builder.sum(
-                                        builder.call( StdOperatorRegistry.get( "PLUS" ), builder.field( 3 ),
+                                        builder.call( StdOperatorRegistry.get( OperatorName.PLUS ), builder.field( 3 ),
                                                 builder.literal( 1 ) ) ).as( "S" ) )
                         .build();
         final String expected = ""
@@ -844,7 +845,7 @@ public class RelBuilderTest {
                                 builder.groupKey( builder.field( 1 ) ),
                                 builder.count().as( "C" ) )
                         .filter(
-                                builder.call( StdOperatorRegistry.get( "GREATER_THAN" ), builder.field( 1 ), builder.literal( 3 ) ) )
+                                builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( 1 ), builder.literal( 3 ) ) )
                         .aggregate(
                                 builder.groupKey( builder.field( 0 ) ) )
                         .build();
@@ -870,7 +871,7 @@ public class RelBuilderTest {
                                 builder.groupKey( ImmutableBitSet.of( 7 ), ImmutableList.of( ImmutableBitSet.of( 7 ), ImmutableBitSet.of() ) ),
                                 builder.count()
                                         .filter(
-                                                builder.call( StdOperatorRegistry.get( "GREATER_THAN" ),
+                                                builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                                                         builder.field( "empid" ),
                                                         builder.literal( 100 ) ) )
                                         .as( "C" ) )
@@ -919,7 +920,7 @@ public class RelBuilderTest {
                         .aggregate(
                                 builder.groupKey( builder.field( "deptno" ) ),
                                 builder.sum( builder.field( "salary" ) )
-                                        .filter( builder.call( StdOperatorRegistry.get( "LESS_THAN" ), builder.field( "commission" ), builder.literal( 100 ) ) )
+                                        .filter( builder.call( StdOperatorRegistry.get( OperatorName.LESS_THAN ), builder.field( "commission" ), builder.literal( 100 ) ) )
                                         .as( "C" ) )
                         .build();
         final String expected = ""
@@ -960,7 +961,7 @@ public class RelBuilderTest {
                         .aggregate(
                                 builder.groupKey(
                                         builder.alias(
-                                                builder.call( StdOperatorRegistry.get( "PLUS" ), builder.field( "deptno" ), builder.literal( 3 ) ),
+                                                builder.call( StdOperatorRegistry.get( OperatorName.PLUS ), builder.field( "deptno" ), builder.literal( 3 ) ),
                                                 "d3" ) ) )
                         .build();
         final String expected = ""
@@ -1025,7 +1026,7 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .aggregate(
                                 builder.groupKey( 6, 7 ),
-                                builder.aggregateCall( StdOperatorRegistry.getAgg( "GROUPING" ), builder.field( "deptno" ) ).as( "g" ) )
+                                builder.aggregateCall( StdOperatorRegistry.getAgg( OperatorName.GROUPING ), builder.field( "deptno" ) ).as( "g" ) )
                         .build();
         final String expected = ""
                 + "LogicalAggregate(group=[{6, 7}], g=[GROUPING($7)])\n"
@@ -1041,7 +1042,7 @@ public class RelBuilderTest {
             RelNode root =
                     builder.scan( "employee" )
                             .aggregate( builder.groupKey( 6, 7 ),
-                                    builder.aggregateCall( StdOperatorRegistry.getAgg( "GROUPING" ), builder.field( "deptno" ) )
+                                    builder.aggregateCall( StdOperatorRegistry.getAgg( OperatorName.GROUPING ), builder.field( "deptno" ) )
                                             .distinct( true )
                                             .as( "g" ) )
                             .build();
@@ -1059,8 +1060,8 @@ public class RelBuilderTest {
             RelNode root =
                     builder.scan( "employee" )
                             .aggregate( builder.groupKey( 6, 7 ),
-                                    builder.aggregateCall( StdOperatorRegistry.getAgg( "GROUPING" ),
-                                            builder.field( "deptno" ) )
+                                    builder.aggregateCall( StdOperatorRegistry.getAgg( OperatorName.GROUPING ),
+                                                    builder.field( "deptno" ) )
                                             .filter( builder.literal( true ) )
                                             .as( "g" ) )
                             .build();
@@ -1110,7 +1111,7 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         RelNode root =
                 builder.scan( "employee" )
-                        .filter( builder.call( StdOperatorRegistry.get( "IS_NULL" ), builder.field( "commission" ) ) )
+                        .filter( builder.call( StdOperatorRegistry.get( OperatorName.IS_NULL ), builder.field( "commission" ) ) )
                         .project()
                         .distinct()
                         .build();
@@ -1133,7 +1134,7 @@ public class RelBuilderTest {
                 builder.scan( "department" )
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
-                        .filter( builder.call( StdOperatorRegistry.get( "EQUALS" ), builder.field( "deptno" ), builder.literal( 20 ) ) )
+                        .filter( builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ), builder.field( "deptno" ), builder.literal( 20 ) ) )
                         .project( builder.field( "empid" ) )
                         .union( true )
                         .build();
@@ -1241,7 +1242,7 @@ public class RelBuilderTest {
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
                         .filter(
-                                builder.call( StdOperatorRegistry.get( "EQUALS" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( "deptno" ),
                                         builder.literal( 20 ) ) )
                         .project( builder.field( "empid" ) )
@@ -1301,7 +1302,7 @@ public class RelBuilderTest {
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
                         .filter(
-                                builder.call( StdOperatorRegistry.get( "EQUALS" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( "deptno" ),
                                         builder.literal( 20 ) ) )
                         .project( builder.field( "empid" ) )
@@ -1328,11 +1329,11 @@ public class RelBuilderTest {
         RelNode root =
                 builder.scan( "employee" )
                         .filter(
-                                builder.call( StdOperatorRegistry.get( "IS_NULL" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.IS_NULL ),
                                         builder.field( "commission" ) ) )
                         .scan( "department" )
                         .join( JoinRelType.INNER,
-                                builder.call( StdOperatorRegistry.get( "EQUALS" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, 0, "deptno" ),
                                         builder.field( 2, 1, "deptno" ) ) )
                         .build();
@@ -1353,7 +1354,7 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         final RelNode root2 =
                 builder.scan( "employee" )
-                        .filter( builder.call( StdOperatorRegistry.get( "IS_NULL" ), builder.field( "commission" ) ) )
+                        .filter( builder.call( StdOperatorRegistry.get( OperatorName.IS_NULL ), builder.field( "commission" ) ) )
                         .scan( "department" )
                         .join( JoinRelType.INNER, "deptno" )
                         .build();
@@ -1379,13 +1380,13 @@ public class RelBuilderTest {
                 builder.scan( "employee" )
                         .scan( "department" )
                         .join( JoinRelType.LEFT,
-                                builder.call( StdOperatorRegistry.get( "EQUALS" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, 0, "deptno" ),
                                         builder.field( 2, 1, "deptno" ) ),
-                                builder.call( StdOperatorRegistry.get( "EQUALS" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, 0, "empid" ),
                                         builder.literal( 123 ) ),
-                                builder.call( StdOperatorRegistry.get( "IS_NOT_NULL" ),
+                                builder.call( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                         builder.field( 2, 1, "deptno" ) ) )
                         .build();
         // Note that "dept.deptno IS NOT NULL" has been simplified away.
@@ -1614,7 +1615,7 @@ public class RelBuilderTest {
                                 builder.field( 0 ) ) // deptno
                         .filter(
                                 builder.call(
-                                        StdOperatorRegistry.get( "GREATER_THAN" ),
+                                        StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                                         builder.field( 1 ),
                                         builder.field( "employee_alias", "deptno" ) ) )
                         .build();
@@ -1693,7 +1694,7 @@ public class RelBuilderTest {
                         .projectPlus(
                                 builder.alias(
                                         builder.call(
-                                                StdOperatorRegistry.get( "PLUS" ),
+                                                StdOperatorRegistry.get( OperatorName.PLUS ),
                                                 builder.field( 0 ),
                                                 builder.field( 3 ) ),
                                         "x" ) )
@@ -1729,7 +1730,7 @@ public class RelBuilderTest {
                         .as( "all" )
                         .filter(
                                 builder.call(
-                                        StdOperatorRegistry.get( "GREATER_THAN" ),
+                                        StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                                         builder.field( "department", "deptno" ),
                                         builder.literal( 100 ) ) )
                         .project(
@@ -1758,7 +1759,7 @@ public class RelBuilderTest {
                         .project(
                                 builder.field( "empid" ),
                                 builder.call(
-                                        StdOperatorRegistry.get( "CONCAT" ),
+                                        StdOperatorRegistry.get( OperatorName.CONCAT ),
                                         builder.field( "ename" ),
                                         builder.literal( "-1" ) ) )
                         .scan( "employee" )
@@ -1766,7 +1767,7 @@ public class RelBuilderTest {
                         .project(
                                 builder.field( "empid" ),
                                 builder.call(
-                                        StdOperatorRegistry.get( "CONCAT" ),
+                                        StdOperatorRegistry.get( OperatorName.CONCAT ),
                                         builder.field( "ename" ),
                                         builder.literal( "-2" ) ) )
                         .union( false ) // aliases lost here
@@ -1800,11 +1801,11 @@ public class RelBuilderTest {
                         .scan( "department" )
                         .join( JoinRelType.LEFT,
                                 builder.call(
-                                        StdOperatorRegistry.get( "EQUALS" ),
+                                        StdOperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, "employee", "deptno" ),
                                         builder.field( 2, "department", "deptno" ) ),
                                 builder.call(
-                                        StdOperatorRegistry.get( "EQUALS" ),
+                                        StdOperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, "employee", "empid" ),
                                         builder.literal( 123 ) ) )
                         .build();
@@ -2063,7 +2064,7 @@ public class RelBuilderTest {
                         .sort( builder.nullsLast( builder.desc( builder.field( 1 ) ) ),
                                 builder.nullsFirst(
                                         builder.call(
-                                                StdOperatorRegistry.get( "PLUS" ),
+                                                StdOperatorRegistry.get( OperatorName.PLUS ),
                                                 builder.field( 4 ),
                                                 builder.field( 3 ) ) ) )
                         .build();
@@ -2191,7 +2192,7 @@ public class RelBuilderTest {
                         .sort(
                                 builder.desc(
                                         builder.call(
-                                                StdOperatorRegistry.get( "PLUS" ),
+                                                StdOperatorRegistry.get( OperatorName.PLUS ),
                                                 builder.field( "deptno" ),
                                                 builder.literal( 1 ) ) ) )
                         .limit( 3, 10 )
@@ -2208,7 +2209,7 @@ public class RelBuilderTest {
                         .sortLimit( 3, 10,
                                 builder.desc(
                                         builder.call(
-                                                StdOperatorRegistry.get( "PLUS" ),
+                                                StdOperatorRegistry.get( OperatorName.PLUS ),
                                                 builder.field( "deptno" ),
                                                 builder.literal( 1 ) ) ) )
                         .build();
@@ -2226,7 +2227,7 @@ public class RelBuilderTest {
         final RexNode arg0 = builder.literal( 0 );
         final RexNode arg1 = builder.literal( "xyz" );
         try {
-            builder.call( StdOperatorRegistry.get( "PLUS" ), Lists.newArrayList( arg0, arg1 ) );
+            builder.call( StdOperatorRegistry.get( OperatorName.PLUS ), Lists.newArrayList( arg0, arg1 ) );
             fail( "Invalid combination of parameter types" );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), containsString( "Cannot infer return type" ) );
@@ -2234,7 +2235,7 @@ public class RelBuilderTest {
 
         // test for b) call(operator, RexNode...)
         try {
-            builder.call( StdOperatorRegistry.get( "PLUS" ), arg0, arg1 );
+            builder.call( StdOperatorRegistry.get( OperatorName.PLUS ), arg0, arg1 );
             fail( "Invalid combination of parameter types" );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), containsString( "Cannot infer return type" ) );
@@ -2276,24 +2277,24 @@ public class RelBuilderTest {
                         builder.literal( false ) ) );
 
         ImmutableMap.Builder<String, RexNode> pdBuilder = new ImmutableMap.Builder<>();
-        RexNode downDefinition = builder.call( StdOperatorRegistry.get( "LESS_THAN" ),
+        RexNode downDefinition = builder.call( StdOperatorRegistry.get( OperatorName.LESS_THAN ),
                 builder.call(
-                        StdOperatorRegistry.get( "PREV" ),
+                        StdOperatorRegistry.get( OperatorName.PREV ),
                         builder.patternField( "DOWN", intType, 3 ),
                         builder.literal( 0 ) ),
                 builder.call(
-                        StdOperatorRegistry.get( "PREV" ),
+                        StdOperatorRegistry.get( OperatorName.PREV ),
                         builder.patternField( "DOWN", intType, 3 ),
                         builder.literal( 1 ) ) );
         pdBuilder.put( "DOWN", downDefinition );
         RexNode upDefinition = builder.call(
-                StdOperatorRegistry.get( "GREATER_THAN" ),
+                StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                 builder.call(
-                        StdOperatorRegistry.get( "PREV" ),
+                        StdOperatorRegistry.get( OperatorName.PREV ),
                         builder.patternField( "UP", intType, 3 ),
                         builder.literal( 0 ) ),
                 builder.call(
-                        StdOperatorRegistry.get( "PREV" ),
+                        StdOperatorRegistry.get( OperatorName.PREV ),
                         builder.patternField( "UP", intType, 3 ),
                         builder.literal( 1 ) ) );
         pdBuilder.put( "UP", upDefinition );
@@ -2304,7 +2305,7 @@ public class RelBuilderTest {
         measuresBuilder.add(
                 builder.alias(
                         builder.call(
-                                StdOperatorRegistry.get( "LAST" ),
+                                StdOperatorRegistry.get( OperatorName.LAST ),
                                 builder.patternField( "DOWN", intType, 3 ),
                                 builder.literal( 0 ) ),
                         "bottom_nw" ) );
@@ -2406,7 +2407,7 @@ public class RelBuilderTest {
     private void checkExpandTable( RelBuilder builder, Matcher<RelNode> matcher ) {
         final RelNode root =
                 builder.scan( "JDBC_public", "employee" )
-                        .filter( builder.call( StdOperatorRegistry.get( "GREATER_THAN" ), builder.field( 2 ), builder.literal( 10 ) ) )
+                        .filter( builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( 2 ), builder.literal( 10 ) ) )
                         .build();
         assertThat( root, matcher );
     }

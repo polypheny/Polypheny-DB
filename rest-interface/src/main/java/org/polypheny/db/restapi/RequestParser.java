@@ -48,6 +48,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.restapi.exception.ParserException;
@@ -398,15 +399,15 @@ public class RequestParser {
 
         switch ( function ) {
             case "COUNT":
-                return StdOperatorRegistry.getAgg( "COUNT" );
+                return StdOperatorRegistry.getAgg( OperatorName.COUNT );
             case "MAX":
-                return StdOperatorRegistry.getAgg( "MAX" );
+                return StdOperatorRegistry.getAgg( OperatorName.MAX );
             case "MIN":
-                return StdOperatorRegistry.getAgg( "MIN" );
+                return StdOperatorRegistry.getAgg( OperatorName.MIN );
             case "AVG":
-                return StdOperatorRegistry.getAgg( "AVG" );
+                return StdOperatorRegistry.getAgg( OperatorName.AVG );
             case "SUM":
-                return StdOperatorRegistry.getAgg( "SUM" );
+                return StdOperatorRegistry.getAgg( OperatorName.SUM );
             default:
                 return null;
         }
@@ -603,28 +604,28 @@ public class RequestParser {
         Operator callOperator;
         String rightHandSide;
         if ( filterString.startsWith( "<=" ) ) {
-            callOperator = StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" );
+            callOperator = StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( "<" ) ) {
-            callOperator = StdOperatorRegistry.get( "LESS_THAN" );
+            callOperator = StdOperatorRegistry.get( OperatorName.LESS_THAN );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( ">=" ) ) {
-            callOperator = StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" );
+            callOperator = StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( ">" ) ) {
-            callOperator = StdOperatorRegistry.get( "GREATER_THAN" );
+            callOperator = StdOperatorRegistry.get( OperatorName.GREATER_THAN );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "=" ) ) {
-            callOperator = StdOperatorRegistry.get( "EQUALS" );
+            callOperator = StdOperatorRegistry.get( OperatorName.EQUALS );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "!=" ) ) {
-            callOperator = StdOperatorRegistry.get( "NOT_EQUALS" );
+            callOperator = StdOperatorRegistry.get( OperatorName.NOT_EQUALS );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( "%" ) ) {
-            callOperator = StdOperatorRegistry.get( "LIKE" );
+            callOperator = StdOperatorRegistry.get( OperatorName.LIKE );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "!%" ) ) {
-            callOperator = StdOperatorRegistry.get( "NOT_LIKE" );
+            callOperator = StdOperatorRegistry.get( OperatorName.NOT_LIKE );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else {
             log.warn( "Unable to parse filter operation comparator. Returning null." );

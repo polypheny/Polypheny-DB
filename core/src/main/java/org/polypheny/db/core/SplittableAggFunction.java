@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.type.RelDataType;
@@ -116,7 +117,7 @@ public interface SplittableAggFunction {
         @Override
         public AggregateCall other( RelDataTypeFactory typeFactory, AggregateCall e ) {
             return AggregateCall.create(
-                    StdOperatorRegistry.getAgg( "COUNT" ),
+                    StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                     false,
                     false,
                     ImmutableIntList.of(),
@@ -142,14 +143,14 @@ public interface SplittableAggFunction {
                     node = merges.get( 0 );
                     break;
                 case 2:
-                    node = rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), merges );
+                    node = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), merges );
                     break;
                 default:
                     throw new AssertionError( "unexpected count " + merges );
             }
             int ordinal = extra.register( node );
             return AggregateCall.create(
-                    StdOperatorRegistry.getAgg( "SUM0" ),
+                    StdOperatorRegistry.getAgg( OperatorName.SUM0 ),
                     false,
                     false,
                     ImmutableList.of( ordinal ),
@@ -171,7 +172,7 @@ public interface SplittableAggFunction {
             for ( Integer arg : aggregateCall.getArgList() ) {
                 final RelDataType type = inputRowType.getFieldList().get( arg ).getType();
                 if ( type.isNullable() ) {
-                    predicates.add( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), rexBuilder.makeInputRef( type, arg ) ) );
+                    predicates.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( type, arg ) ) );
                 }
             }
             final RexNode predicate = RexUtil.composeConjunction( rexBuilder, predicates, true );
@@ -179,7 +180,7 @@ public interface SplittableAggFunction {
                 return rexBuilder.makeExactLiteral( BigDecimal.ONE );
             } else {
                 return rexBuilder.makeCall(
-                        StdOperatorRegistry.get( "CASE" ),
+                        StdOperatorRegistry.get( OperatorName.CASE ),
                         predicate,
                         rexBuilder.makeExactLiteral( BigDecimal.ONE ),
                         rexBuilder.makeExactLiteral( BigDecimal.ZERO ) );
@@ -252,7 +253,7 @@ public interface SplittableAggFunction {
         @Override
         public AggregateCall other( RelDataTypeFactory typeFactory, AggregateCall e ) {
             return AggregateCall.create(
-                    StdOperatorRegistry.getAgg( "COUNT" ),
+                    StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                     false,
                     false,
                     ImmutableIntList.of(),
@@ -281,7 +282,7 @@ public interface SplittableAggFunction {
                     node = merges.get( 0 );
                     break;
                 case 2:
-                    node = rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), merges );
+                    node = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), merges );
                     node = rexBuilder.makeAbstractCast( aggregateCall.type, node );
                     break;
                 default:
@@ -315,7 +316,7 @@ public interface SplittableAggFunction {
 
         @Override
         public AggFunction getMergeAggFunctionOfTopSplit() {
-            return StdOperatorRegistry.getAgg( "SUM" );
+            return StdOperatorRegistry.getAgg( OperatorName.SUM );
         }
 
     }
@@ -331,7 +332,7 @@ public interface SplittableAggFunction {
 
         @Override
         public AggFunction getMergeAggFunctionOfTopSplit() {
-            return StdOperatorRegistry.getAgg( "SUM0" );
+            return StdOperatorRegistry.getAgg( OperatorName.SUM0 );
         }
 
     }

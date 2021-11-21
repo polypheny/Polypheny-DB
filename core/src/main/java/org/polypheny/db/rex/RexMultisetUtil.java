@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.type.PolyType;
 
 
@@ -52,21 +53,21 @@ public class RexMultisetUtil {
      */
     private static final Set<Operator> MULTISET_OPERATORS =
             ImmutableSet.of(
-                    StdOperatorRegistry.get( "CARDINALITY" ),
-                    StdOperatorRegistry.get( "CAST" ),
-                    StdOperatorRegistry.get( "ELEMENT" ),
-                    StdOperatorRegistry.get( "ELEMENT_SLICE" ),
-                    StdOperatorRegistry.get( "MULTISET_EXCEPT_DISTINCT" ),
-                    StdOperatorRegistry.get( "MULTISET_EXCEPT" ),
-                    StdOperatorRegistry.get( "MULTISET_INTERSECT_DISTINCT" ),
-                    StdOperatorRegistry.get( "MULTISET_INTERSECT" ),
-                    StdOperatorRegistry.get( "MULTISET_UNION_DISTINCT" ),
-                    StdOperatorRegistry.get( "MULTISET_UNION" ),
-                    StdOperatorRegistry.get( "IS_A_SET" ),
-                    StdOperatorRegistry.get( "IS_NOT_A_SET" ),
-                    StdOperatorRegistry.get( "MEMBER_OF" ),
-                    StdOperatorRegistry.get( "NOT_SUBMULTISET_OF" ),
-                    StdOperatorRegistry.get( "SUBMULTISET_OF" ) );
+                    StdOperatorRegistry.get( OperatorName.CARDINALITY ),
+                    StdOperatorRegistry.get( OperatorName.CAST ),
+                    StdOperatorRegistry.get( OperatorName.ELEMENT ),
+                    StdOperatorRegistry.get( OperatorName.ELEMENT_SLICE ),
+                    StdOperatorRegistry.get( OperatorName.MULTISET_EXCEPT_DISTINCT ),
+                    StdOperatorRegistry.get( OperatorName.MULTISET_EXCEPT ),
+                    StdOperatorRegistry.get( OperatorName.MULTISET_INTERSECT_DISTINCT ),
+                    StdOperatorRegistry.get( OperatorName.MULTISET_INTERSECT ),
+                    StdOperatorRegistry.get( OperatorName.MULTISET_UNION_DISTINCT ),
+                    StdOperatorRegistry.get( OperatorName.MULTISET_UNION ),
+                    StdOperatorRegistry.get( OperatorName.IS_A_SET ),
+                    StdOperatorRegistry.get( OperatorName.IS_NOT_A_SET ),
+                    StdOperatorRegistry.get( OperatorName.MEMBER_OF ),
+                    StdOperatorRegistry.get( OperatorName.NOT_SUBMULTISET_OF ),
+                    StdOperatorRegistry.get( OperatorName.SUBMULTISET_OF ) );
 
 
     private RexMultisetUtil() {
@@ -161,7 +162,7 @@ public class RexMultisetUtil {
         for ( Operator op : MULTISET_OPERATORS ) {
             firstOne = RexUtil.findOperatorCall( op, call );
             if ( null != firstOne ) {
-                if ( firstOne.getOperator().equals( StdOperatorRegistry.get( "CAST" ) ) && !isMultisetCast( firstOne ) ) {
+                if ( firstOne.getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) && !isMultisetCast( firstOne ) ) {
                     firstOne = null;
                     continue;
                 }
@@ -202,7 +203,7 @@ public class RexMultisetUtil {
         public Void visitCall( RexCall call ) {
             ++totalCount;
             if ( MULTISET_OPERATORS.contains( call.getOperator() ) ) {
-                if ( !call.getOperator().equals( StdOperatorRegistry.get( "CAST" ) ) || isMultisetCast( call ) ) {
+                if ( !call.getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) || isMultisetCast( call ) ) {
                     ++multisetCount;
                 }
             }

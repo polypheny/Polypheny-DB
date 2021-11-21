@@ -59,6 +59,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.SpecialOperator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
 import org.polypheny.db.rel.core.CorrelationId;
@@ -324,12 +325,12 @@ public class RexBuilder {
         if ( nullWhenCountZero ) {
             final RelDataType bigintType = getTypeFactory().createPolyType( PolyType.BIGINT );
             result = makeCall(
-                    StdOperatorRegistry.get( "CASE" ),
+                    StdOperatorRegistry.get( OperatorName.CASE ),
                     makeCall(
-                            StdOperatorRegistry.get( "GREATER_THAN" ),
+                            StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                             new RexOver(
                                     bigintType,
-                                    StdOperatorRegistry.get( "COUNT" ),
+                                    StdOperatorRegistry.get( OperatorName.COUNT ),
                                     exprs,
                                     window,
                                     distinct ),
@@ -354,12 +355,12 @@ public class RexBuilder {
             // todo: read bound
             result =
                     makeCall(
-                            StdOperatorRegistry.get( "CASE" ),
+                            StdOperatorRegistry.get( OperatorName.CASE ),
                             makeCall(
-                                    StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ),
+                                    StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ),
                                     new RexOver(
                                             bigintType,
-                                            StdOperatorRegistry.get( "COUNT" ),
+                                            StdOperatorRegistry.get( OperatorName.COUNT ),
                                             ImmutableList.of(),
                                             window,
                                             distinct ),
@@ -417,7 +418,7 @@ public class RexBuilder {
      * @return Expression invoking NEW operator
      */
     public RexNode makeNewInvocation( RelDataType type, List<RexNode> exprs ) {
-        return new RexCall( type, StdOperatorRegistry.get( "NEW" ), exprs );
+        return new RexCall( type, StdOperatorRegistry.get( OperatorName.NEW ), exprs );
     }
 
 
@@ -559,14 +560,14 @@ public class RexBuilder {
 
 
     private RexNode makeCastExactToBoolean( RelDataType toType, RexNode exp ) {
-        return makeCall( toType, StdOperatorRegistry.get( "NOT_EQUALS" ), ImmutableList.of( exp, makeZeroLiteral( exp.getType() ) ) );
+        return makeCall( toType, StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), ImmutableList.of( exp, makeZeroLiteral( exp.getType() ) ) );
     }
 
 
     private RexNode makeCastBooleanToExact( RelDataType toType, RexNode exp ) {
         final RexNode casted =
                 makeCall(
-                        StdOperatorRegistry.get( "CASE" ),
+                        StdOperatorRegistry.get( OperatorName.CASE ),
                         exp,
                         makeExactLiteral( BigDecimal.ONE, toType ),
                         makeZeroLiteral( toType ) );
@@ -574,9 +575,9 @@ public class RexBuilder {
             return casted;
         }
         return makeCall( toType,
-                StdOperatorRegistry.get( "CASE" ),
+                StdOperatorRegistry.get( OperatorName.CASE ),
                 ImmutableList.of(
-                        makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), exp ),
+                        makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), exp ),
                         casted,
                         makeNullLiteral( toType ) ) );
     }
@@ -609,10 +610,10 @@ public class RexBuilder {
                 return e;
             case 1:
                 // E.g. multiplyDivide(e, 1000, 10) ==> e * 100
-                return makeCall( StdOperatorRegistry.get( "MULTIPLY" ), e, makeExactLiteral( multiplier.divide( divider, RoundingMode.UNNECESSARY ) ) );
+                return makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), e, makeExactLiteral( multiplier.divide( divider, RoundingMode.UNNECESSARY ) ) );
             case -1:
                 // E.g. multiplyDivide(e, 10, 1000) ==> e / 100
-                return makeCall( StdOperatorRegistry.get( "DIVIDE_INTEGER" ), e, makeExactLiteral( divider.divide( multiplier, RoundingMode.UNNECESSARY ) ) );
+                return makeCall( StdOperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), e, makeExactLiteral( divider.divide( multiplier, RoundingMode.UNNECESSARY ) ) );
             default:
                 throw new AssertionError( multiplier + "/" + divider );
         }
@@ -657,7 +658,7 @@ public class RexBuilder {
      * @return Call to CAST operator
      */
     public RexNode makeAbstractCast( RelDataType type, RexNode exp ) {
-        return new RexCall( type, StdOperatorRegistry.get( "CAST" ), ImmutableList.of( exp ) );
+        return new RexCall( type, StdOperatorRegistry.get( OperatorName.CAST ), ImmutableList.of( exp ) );
     }
 
 
@@ -676,7 +677,7 @@ public class RexBuilder {
         } else {
             args = ImmutableList.of( exp );
         }
-        return new RexCall( type, StdOperatorRegistry.get( "REINTERPRET" ), args );
+        return new RexCall( type, StdOperatorRegistry.get( OperatorName.REINTERPRET ), args );
     }
 
 
@@ -1271,7 +1272,7 @@ public class RexBuilder {
                     operands.add( makeLiteral( entry.getKey(), mapType.getKeyType(), allowCast ) );
                     operands.add( makeLiteral( entry.getValue(), mapType.getValueType(), allowCast ) );
                 }
-                return makeCall( StdOperatorRegistry.get( "MAP_VALUE_CONSTRUCTOR" ), operands );
+                return makeCall( StdOperatorRegistry.get( OperatorName.MAP_VALUE_CONSTRUCTOR ), operands );
             case ARRAY:
                 final ArrayType arrayType = (ArrayType) type;
                 @SuppressWarnings("unchecked") final List<Object> listValue = (List) value;
@@ -1279,7 +1280,7 @@ public class RexBuilder {
                 for ( Object entry : listValue ) {
                     operands.add( makeLiteral( entry, arrayType.getComponentType(), allowCast ) );
                 }
-                return makeCall( StdOperatorRegistry.get( "ARRAY_VALUE_CONSTRUCTOR" ), operands );
+                return makeCall( StdOperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), operands );
             case MULTISET:
                 final MultisetPolyType multisetType = (MultisetPolyType) type;
                 operands = new ArrayList<>();
@@ -1291,7 +1292,7 @@ public class RexBuilder {
                     operands.add( e );
                 }
                 if ( allowCast ) {
-                    return makeCall( StdOperatorRegistry.get( "MULTISET_VALUE" ), operands );
+                    return makeCall( StdOperatorRegistry.get( OperatorName.MULTISET_VALUE ), operands );
                 } else {
                     return new RexLiteral( (Comparable) FlatLists.of( operands ), type, type.getPolyType() );
                 }

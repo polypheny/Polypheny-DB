@@ -55,6 +55,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
@@ -192,12 +193,12 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
                 columnsMappedBuilder.set( sIdx );
                 // Project can also generate constants. We need to include them.
             } else if ( RexLiteral.isNullLiteral( expr.e ) ) {
-                projectPullUpPredicates.add( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), rexBuilder.makeInputRef( project, expr.i ) ) );
+                projectPullUpPredicates.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( project, expr.i ) ) );
             } else if ( RexUtil.isConstant( expr.e ) ) {
                 final List<RexNode> args = ImmutableList.of( rexBuilder.makeInputRef( project, expr.i ), expr.e );
                 final Operator op = args.get( 0 ).getType().isNullable() || args.get( 1 ).getType().isNullable()
-                        ? StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" )
-                        : StdOperatorRegistry.get( "EQUALS" );
+                        ? StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM )
+                        : StdOperatorRegistry.get( OperatorName.EQUALS );
                 projectPullUpPredicates.add( rexBuilder.makeCall( op, args ) );
             }
         }
@@ -246,7 +247,7 @@ public class RelMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             final List<RexNode> list = new ArrayList<>();
             for ( int c : columnsMapped.intersect( rCols ) ) {
                 if ( input.getRowType().getFieldList().get( c ).getType().isNullable() && Strong.isNull( r, ImmutableBitSet.of( c ) ) ) {
-                    list.add( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), rexBuilder.makeInputRef( input, c ) ) );
+                    list.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( input, c ) ) );
                 }
             }
             if ( !list.isEmpty() ) {

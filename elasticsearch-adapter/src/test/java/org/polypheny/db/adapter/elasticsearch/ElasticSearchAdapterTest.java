@@ -591,7 +591,7 @@ public class ElasticSearchAdapterTest {
 //
 //
 //    /**
-//     * Test of {@link org.polypheny.db.languages.sql.fun.StdOperatorRegistry.get( "APPROX_COUNT_DISTINCT" )} which will be translated to
+//     * Test of {@link org.polypheny.db.languages.sql.fun.StdOperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT )} which will be translated to
 //     * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-cardinality-aggregation.html">Cardinality Aggregation</a>
 //     * (approximate counts using HyperLogLog++ algorithm).
 //     */

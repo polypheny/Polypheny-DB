@@ -25,6 +25,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
@@ -154,14 +155,14 @@ public class MysqlSqlDialect extends SqlDialect {
         //   END
         final SqlNode caseExpr =
                 new SqlCase( ParserPos.ZERO,
-                        (SqlNode) StdOperatorRegistry.get( "COUNT" ).createCall( ParserPos.ZERO, operand ),
+                        (SqlNode) StdOperatorRegistry.get( OperatorName.COUNT ).createCall( ParserPos.ZERO, operand ),
                         SqlNodeList.of(
                                 SqlLiteral.createExactNumeric( "0", ParserPos.ZERO ),
                                 SqlLiteral.createExactNumeric( "1", ParserPos.ZERO ) ),
                         SqlNodeList.of( nullLiteral, operand ),
-                        (SqlNode) StdOperatorRegistry.get( "SCALAR_QUERY" ).createCall(
+                        (SqlNode) StdOperatorRegistry.get( OperatorName.SCALAR_QUERY ).createCall(
                                 ParserPos.ZERO,
-                                (SqlNode) StdOperatorRegistry.get( "UNION_ALL" ).createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
+                                (SqlNode) StdOperatorRegistry.get( OperatorName.UNION_ALL ).createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
 
         log.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );
 

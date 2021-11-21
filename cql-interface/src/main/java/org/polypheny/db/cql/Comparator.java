@@ -18,6 +18,7 @@ package org.polypheny.db.cql;
 
 import org.polypheny.db.core.BinaryOperator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 
 
 public enum Comparator {
@@ -74,17 +75,17 @@ public enum Comparator {
         if ( this == SERVER_CHOICE ) {
             return fallback;
         } else if ( this == EQUALS ) {
-            return StdOperatorRegistry.getBinary( "EQUALS" );
+            return StdOperatorRegistry.getBinary( OperatorName.EQUALS );
         } else if ( this == NOT_EQUALS ) {
-            return StdOperatorRegistry.getBinary( "NOT_EQUALS" );
+            return StdOperatorRegistry.getBinary( OperatorName.NOT_EQUALS );
         } else if ( this == GREATER_THAN ) {
-            return StdOperatorRegistry.getBinary( "GREATER_THAN" );
+            return StdOperatorRegistry.getBinary( OperatorName.GREATER_THAN );
         } else if ( this == LESS_THAN ) {
-            return StdOperatorRegistry.getBinary( "LESS_THAN" );
+            return StdOperatorRegistry.getBinary( OperatorName.LESS_THAN );
         } else if ( this == GREATER_THAN_OR_EQUALS ) {
-            return StdOperatorRegistry.getBinary( "GREATER_THAN_OR_EQUAL" );
+            return StdOperatorRegistry.getBinary( OperatorName.GREATER_THAN_OR_EQUAL );
         } else {
-            return StdOperatorRegistry.getBinary( "LESS_THAN_OR_EQUAL" );
+            return StdOperatorRegistry.getBinary( OperatorName.LESS_THAN_OR_EQUAL );
         }
     }
 

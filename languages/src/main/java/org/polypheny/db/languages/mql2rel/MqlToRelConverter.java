@@ -46,6 +46,7 @@ import org.polypheny.db.core.Node;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlAggregate;
@@ -124,10 +125,10 @@ public class MqlToRelConverter {
 
     static {
         gates = new HashMap<>();
-        gates.put( "$and", Collections.singletonList( StdOperatorRegistry.get( "AND" ) ) );
-        gates.put( "$or", Collections.singletonList( StdOperatorRegistry.get( "OR" ) ) );
-        gates.put( "$nor", Arrays.asList( StdOperatorRegistry.get( "AND" ), StdOperatorRegistry.get( "NOT" ) ) );
-        gates.put( "$not", Collections.singletonList( StdOperatorRegistry.get( "NOT" ) ) );
+        gates.put( "$and", Collections.singletonList( StdOperatorRegistry.get( OperatorName.AND ) ) );
+        gates.put( "$or", Collections.singletonList( StdOperatorRegistry.get( OperatorName.OR ) ) );
+        gates.put( "$nor", Arrays.asList( StdOperatorRegistry.get( OperatorName.AND ), StdOperatorRegistry.get( OperatorName.NOT ) ) );
+        gates.put( "$not", Collections.singletonList( StdOperatorRegistry.get( OperatorName.NOT ) ) );
 
         mathComparators = new HashMap<>();
 
@@ -141,43 +142,43 @@ public class MqlToRelConverter {
         mathComparators.putAll( mappings );
 
         mappings.put( "$eq", MqlStdOperatorTable.DOC_EQ );
-        mappings.put( "$ne", StdOperatorRegistry.get( "NOT_EQUALS" ) );
-        mappings.put( "$in", StdOperatorRegistry.get( "IN" ) );
-        mappings.put( "$nin", StdOperatorRegistry.get( "NOT_IN" ) );
+        mappings.put( "$ne", StdOperatorRegistry.get( OperatorName.NOT_EQUALS ) );
+        mappings.put( "$in", StdOperatorRegistry.get( OperatorName.IN ) );
+        mappings.put( "$nin", StdOperatorRegistry.get( OperatorName.NOT_IN ) );
 
-        mappings.put( "$exists", StdOperatorRegistry.get( "EXISTS" ) );
+        mappings.put( "$exists", StdOperatorRegistry.get( OperatorName.EXISTS ) );
 
         mathOperators = new HashMap<>();
-        mathOperators.put( "$subtract", StdOperatorRegistry.get( "MINUS" ) );
-        mathOperators.put( "$add", StdOperatorRegistry.get( "PLUS" ) );
-        mathOperators.put( "$multiply", StdOperatorRegistry.get( "MULTIPLY" ) );
-        mathOperators.put( "$divide", StdOperatorRegistry.get( "DIVIDE" ) );
-        mathOperators.put( "$mod", StdOperatorRegistry.get( "MOD" ) );
-        mathOperators.put( "$pow", StdOperatorRegistry.get( "POWER" ) );
-        mathOperators.put( "$sum", StdOperatorRegistry.get( "SUM" ) );
+        mathOperators.put( "$subtract", StdOperatorRegistry.get( OperatorName.MINUS ) );
+        mathOperators.put( "$add", StdOperatorRegistry.get( OperatorName.PLUS ) );
+        mathOperators.put( "$multiply", StdOperatorRegistry.get( OperatorName.MULTIPLY ) );
+        mathOperators.put( "$divide", StdOperatorRegistry.get( OperatorName.DIVIDE ) );
+        mathOperators.put( "$mod", StdOperatorRegistry.get( OperatorName.MOD ) );
+        mathOperators.put( "$pow", StdOperatorRegistry.get( OperatorName.POWER ) );
+        mathOperators.put( "$sum", StdOperatorRegistry.get( OperatorName.SUM ) );
         mathOperators.put( "$literal", null );
 
         singleMathOperators = new HashMap<>();
-        singleMathOperators.put( "$abs", StdOperatorRegistry.get( "ABS" ) );
-        singleMathOperators.put( "$acos", StdOperatorRegistry.get( "ACOS" ) );
-        //singleMathOperators.put( "$acosh", StdOperatorRegistry.get( "ACOSH" ) );
-        singleMathOperators.put( "$asin", StdOperatorRegistry.get( "ASIN" ) );
-        singleMathOperators.put( "$atan", StdOperatorRegistry.get( "ATAN" ) );
-        singleMathOperators.put( "$atan2", StdOperatorRegistry.get( "ATAN2" ) );
-        //singleMathOperators.put( "$atanh", StdOperatorRegistry.get( "ATANH" ) );
-        singleMathOperators.put( "$ceil", StdOperatorRegistry.get( "CEIL" ) );
-        singleMathOperators.put( "$cos", StdOperatorRegistry.get( "COS" ) );
-        //singleMathOperators.put( "$cosh", StdOperatorRegistry.get( "COSH" ) );
-        singleMathOperators.put( "$degreesToRadians", StdOperatorRegistry.get( "DEGREES" ) );
-        singleMathOperators.put( "$floor", StdOperatorRegistry.get( "FLOOR" ) );
-        singleMathOperators.put( "$ln", StdOperatorRegistry.get( "LN" ) );
-        singleMathOperators.put( "$log", StdOperatorRegistry.get( "LN" ) );
-        singleMathOperators.put( "$log10", StdOperatorRegistry.get( "LOG10" ) );
-        singleMathOperators.put( "$sin", StdOperatorRegistry.get( "SIN" ) );
-        //singleMathOperators.put( "$sinh", StdOperatorRegistry.get( "SINH" ) );
-        singleMathOperators.put( "$sqrt", StdOperatorRegistry.get( "SQRT" ) );
-        singleMathOperators.put( "$tan", StdOperatorRegistry.get( "TAN" ) );
-        //singleMathOperators.put( "$tanh", StdOperatorRegistry.get( "TANH" ) );
+        singleMathOperators.put( "$abs", StdOperatorRegistry.get( OperatorName.ABS ) );
+        singleMathOperators.put( "$acos", StdOperatorRegistry.get( OperatorName.ACOS ) );
+        //singleMathOperators.put( "$acosh", StdOperatorRegistry.get( OperatorName.ACOSH ) );
+        singleMathOperators.put( "$asin", StdOperatorRegistry.get( OperatorName.ASIN ) );
+        singleMathOperators.put( "$atan", StdOperatorRegistry.get( OperatorName.ATAN ) );
+        singleMathOperators.put( "$atan2", StdOperatorRegistry.get( OperatorName.ATAN2 ) );
+        //singleMathOperators.put( "$atanh", StdOperatorRegistry.get( OperatorName.ATANH ) );
+        singleMathOperators.put( "$ceil", StdOperatorRegistry.get( OperatorName.CEIL ) );
+        singleMathOperators.put( "$cos", StdOperatorRegistry.get( OperatorName.COS ) );
+        //singleMathOperators.put( "$cosh", StdOperatorRegistry.get( OperatorName.COSH ) );
+        singleMathOperators.put( "$degreesToRadians", StdOperatorRegistry.get( OperatorName.DEGREES ) );
+        singleMathOperators.put( "$floor", StdOperatorRegistry.get( OperatorName.FLOOR ) );
+        singleMathOperators.put( "$ln", StdOperatorRegistry.get( OperatorName.LN ) );
+        singleMathOperators.put( "$log", StdOperatorRegistry.get( OperatorName.LN ) );
+        singleMathOperators.put( "$log10", StdOperatorRegistry.get( OperatorName.LOG10 ) );
+        singleMathOperators.put( "$sin", StdOperatorRegistry.get( OperatorName.SIN ) );
+        //singleMathOperators.put( "$sinh", StdOperatorRegistry.get( OperatorName.SINH ) );
+        singleMathOperators.put( "$sqrt", StdOperatorRegistry.get( OperatorName.SQRT ) );
+        singleMathOperators.put( "$tan", StdOperatorRegistry.get( OperatorName.TAN ) );
+        //singleMathOperators.put( "$tanh", StdOperatorRegistry.get( OperatorName.TANH ) );
 
         operators = new ArrayList<>();
         operators.addAll( mappings.keySet() );
@@ -187,17 +188,17 @@ public class MqlToRelConverter {
 
         accumulators = new HashMap<>();
         //$addToSet
-        accumulators.put( "$avg", StdOperatorRegistry.getAgg( "AVG" ) );
-        accumulators.put( "$count", StdOperatorRegistry.getAgg( "COUNT" ) );
-        accumulators.put( "$first", StdOperatorRegistry.getAgg( "FIRST_VALUE" ) );
-        accumulators.put( "$last", StdOperatorRegistry.getAgg( "LAST_VALUE" ) );
-        accumulators.put( "$max", StdOperatorRegistry.getAgg( "MAX" ) );
+        accumulators.put( "$avg", StdOperatorRegistry.getAgg( OperatorName.AVG ) );
+        accumulators.put( "$count", StdOperatorRegistry.getAgg( OperatorName.COUNT ) );
+        accumulators.put( "$first", StdOperatorRegistry.getAgg( OperatorName.FIRST_VALUE ) );
+        accumulators.put( "$last", StdOperatorRegistry.getAgg( OperatorName.LAST_VALUE ) );
+        accumulators.put( "$max", StdOperatorRegistry.getAgg( OperatorName.MAX ) );
         //$mergeObjects
-        accumulators.put( "$min", StdOperatorRegistry.getAgg( "MIN" ) );
+        accumulators.put( "$min", StdOperatorRegistry.getAgg( OperatorName.MIN ) );
         //$push
-        accumulators.put( "$stdDevPop", StdOperatorRegistry.getAgg( "STDDEV_POP" ) );
-        accumulators.put( "$stdDevSamp", StdOperatorRegistry.getAgg( "STDDEV_SAMP" ) );
-        accumulators.put( "$sum", StdOperatorRegistry.getAgg( "SUM" ) );
+        accumulators.put( "$stdDevPop", StdOperatorRegistry.getAgg( OperatorName.STDDEV_POP ) );
+        accumulators.put( "$stdDevSamp", StdOperatorRegistry.getAgg( OperatorName.STDDEV_SAMP ) );
+        accumulators.put( "$sum", StdOperatorRegistry.getAgg( OperatorName.SUM ) );
 
         // special cases
         operators.add( "$type" );
@@ -376,7 +377,7 @@ public class MqlToRelConverter {
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$mul":
-                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, StdOperatorRegistry.get( "MULTIPLY" ) ) );
+                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, StdOperatorRegistry.get( OperatorName.MULTIPLY ) ) );
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$rename":
@@ -636,7 +637,7 @@ public class MqlToRelConverter {
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
             RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
-            updates.put( entry.getKey(), builder.makeCall( StdOperatorRegistry.get( "PLUS" ), id, literal ) );
+            updates.put( entry.getKey(), builder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), id, literal ) );
         }
         return updates;
     }
@@ -762,7 +763,7 @@ public class MqlToRelConverter {
                 Collections.singletonList( ImmutableBitSet.of() ),
                 Collections.singletonList(
                         AggregateCall.create(
-                                StdOperatorRegistry.getAgg( "COUNT" ),
+                                StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                                 false,
                                 query.isEstimate(),
                                 new ArrayList<>(),
@@ -1276,7 +1277,7 @@ public class MqlToRelConverter {
                 Collections.singletonList( ImmutableBitSet.of() ),
                 Collections.singletonList(
                         AggregateCall.create(
-                                StdOperatorRegistry.getAgg( "COUNT" ),
+                                StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                                 false,
                                 false,
                                 new ArrayList<>(),
@@ -1435,7 +1436,7 @@ public class MqlToRelConverter {
                 }
             }  // handle others
         }
-        return getFixedCall( operands, StdOperatorRegistry.get( "AND" ), PolyType.BOOLEAN );
+        return getFixedCall( operands, StdOperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
     }
 
 
@@ -1467,7 +1468,7 @@ public class MqlToRelConverter {
 
         RexNode node = new RexCall(
                 this.cluster.getTypeFactory().createPolyType( PolyType.INTEGER ),
-                StdOperatorRegistry.get( "MOD" ),
+                StdOperatorRegistry.get( OperatorName.MOD ),
                 Arrays.asList(
                         this.builder.makeCast( cluster.getTypeFactory().createPolyType( PolyType.INTEGER ), id ),
                         rexDiv ) );
@@ -1589,23 +1590,23 @@ public class MqlToRelConverter {
                 if ( notActive ) {
                     throw new RuntimeException( "$logical operations inside $not operations are not possible." );
                 }
-                op = StdOperatorRegistry.get( "AND" );
+                op = StdOperatorRegistry.get( OperatorName.AND );
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, false );
             case "$or":
                 if ( notActive ) {
                     throw new RuntimeException( "$logical operations inside $not operations are not possible." );
                 }
-                op = StdOperatorRegistry.get( "OR" );
+                op = StdOperatorRegistry.get( OperatorName.OR );
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, false );
             case "$nor":
                 if ( notActive ) {
                     throw new RuntimeException( "$logical operations inside $not operations are not possible." );
                 }
-                op = StdOperatorRegistry.get( "AND" );
+                op = StdOperatorRegistry.get( OperatorName.AND );
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, true );
             case "$not":
                 this.notActive = true;
-                op = StdOperatorRegistry.get( "NOT" );
+                op = StdOperatorRegistry.get( OperatorName.NOT );
                 if ( bsonValue.isDocument() ) {
                     RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
                     return new RexCall( type, op, Collections.singletonList( translateDocument( bsonValue.asDocument(), rowType, parentKey ) ) );
@@ -1767,7 +1768,7 @@ public class MqlToRelConverter {
                 operands.add( convertEntry( entry.getKey(), parentKey, entry.getValue(), rowType ) );
             }
         }
-        return getFixedCall( operands, StdOperatorRegistry.get( "AND" ), PolyType.BOOLEAN );
+        return getFixedCall( operands, StdOperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
     }
 
 
@@ -1977,7 +1978,7 @@ public class MqlToRelConverter {
         }
         this.elemMatchActive = false;
 
-        RexNode op = getFixedCall( nodes, StdOperatorRegistry.get( "AND" ), PolyType.BOOLEAN );
+        RexNode op = getFixedCall( nodes, StdOperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
 
         return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), MqlStdOperatorTable.DOC_ELEM_MATCH, Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
     }
@@ -2005,7 +2006,7 @@ public class MqlToRelConverter {
                 operands.add( new RexCall( type, MqlStdOperatorTable.DOC_EQ, Arrays.asList( id, rexNode ) ) );
             }
 
-            return getFixedCall( operands, StdOperatorRegistry.get( "AND" ), PolyType.BOOLEAN );
+            return getFixedCall( operands, StdOperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
         } else {
             throw new RuntimeException( "After $all there needs to follow a array" );
         }
@@ -2061,7 +2062,7 @@ public class MqlToRelConverter {
      * @return the wrapped node
      */
     private RexNode negate( RexNode node ) {
-        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), StdOperatorRegistry.get( "NOT" ), Collections.singletonList( node ) );
+        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), StdOperatorRegistry.get( OperatorName.NOT ), Collections.singletonList( node ) );
     }
 
 
@@ -2121,7 +2122,7 @@ public class MqlToRelConverter {
                 cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createArrayType(
                         cluster.getTypeFactory().createPolyType( PolyType.CHAR, 200 ),
                         -1 ), nodes.size() ),
-                StdOperatorRegistry.get( "ARRAY_VALUE_CONSTRUCTOR" ), nodes );
+                StdOperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), nodes );
     }
 
 
@@ -2154,7 +2155,7 @@ public class MqlToRelConverter {
 
 
     private RexCall getArray( List<RexNode> elements, RelDataType type ) {
-        return new RexCall( type, StdOperatorRegistry.get( "ARRAY_VALUE_CONSTRUCTOR" ), elements );
+        return new RexCall( type, StdOperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), elements );
     }
 
 
@@ -2183,8 +2184,8 @@ public class MqlToRelConverter {
         RelDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
 
         List<RexNode> operands = new ArrayList<>();
-        boolean isIn = op == StdOperatorRegistry.get( "IN" );
-        op = isIn ? StdOperatorRegistry.get( "OR" ) : StdOperatorRegistry.get( "AND" );
+        boolean isIn = op == StdOperatorRegistry.get( OperatorName.IN );
+        op = isIn ? StdOperatorRegistry.get( OperatorName.OR ) : StdOperatorRegistry.get( OperatorName.AND );
         RexNode id = getIdentifier( key, rowType );
 
         for ( BsonValue literal : bsonValue.asArray() ) {
@@ -2198,7 +2199,7 @@ public class MqlToRelConverter {
                 }
                 operands.add( filter );
             } else {
-                operands.add( new RexCall( type, isIn ? MqlStdOperatorTable.DOC_EQ : StdOperatorRegistry.get( "NOT_EQUALS" ), Arrays.asList( id, convertLiteral( literal ) ) ) );
+                operands.add( new RexCall( type, isIn ? MqlStdOperatorTable.DOC_EQ : StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), Arrays.asList( id, convertLiteral( literal ) ) ) );
             }
         }
 

@@ -32,6 +32,7 @@ import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.validate.SelectScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
@@ -47,7 +48,7 @@ import org.polypheny.db.runtime.Resources;
  */
 public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
-    private static final Call DEFAULT_CALL = StdOperatorRegistry.get( "DEFAULT" ).createCall( ParserPos.ZERO );
+    private static final Call DEFAULT_CALL = StdOperatorRegistry.get( OperatorName.DEFAULT ).createCall( ParserPos.ZERO );
 
     @Getter
     private final SqlValidator validator;
@@ -227,7 +228,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     @Override
     public RelDataType getCursorOperand( int ordinal ) {
         final SqlNode operand = call.operand( ordinal );
-        if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( "CURSOR" ) ) ) {
+        if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( OperatorName.CURSOR ) ) ) {
             return null;
         }
         final SqlCall cursorCall = (SqlCall) operand;
@@ -239,7 +240,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     @Override
     public String getColumnListParamInfo( int ordinal, String paramName, List<String> columnList ) {
         final SqlNode operand = call.operand( ordinal );
-        if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( "ROW" ) ) ) {
+        if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( OperatorName.ROW ) ) ) {
             return null;
         }
         for ( Node id : ((SqlCall) operand).getOperandList() ) {

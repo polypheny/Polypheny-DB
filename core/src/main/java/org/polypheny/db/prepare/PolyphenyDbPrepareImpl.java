@@ -94,6 +94,7 @@ import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Validator;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Interpreters;
@@ -1388,9 +1389,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                             ((MemberExpression) expression).field.getName(),
                             true );
                 case GreaterThan:
-                    return binary( expression, StdOperatorRegistry.get( "GREATER_THAN" , BinaryOperator.class ) );
+                    return binary( expression, StdOperatorRegistry.get( OperatorName.GREATER_THAN, BinaryOperator.class ) );
                 case LessThan:
-                    return binary( expression, StdOperatorRegistry.get( "LESS_THAN", BinaryOperator.class ) );
+                    return binary( expression, StdOperatorRegistry.get( OperatorName.LESS_THAN, BinaryOperator.class ) );
                 case Parameter:
                     return parameter( (ParameterExpression) expression );
                 case Call:

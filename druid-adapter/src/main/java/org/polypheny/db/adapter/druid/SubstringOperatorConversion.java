@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
@@ -51,7 +52,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
 
     @Override
     public Operator polyphenyDbOperator() {
-        return StdOperatorRegistry.get( "SUBSTRING" );
+        return StdOperatorRegistry.get( OperatorName.SUBSTRING );
     }
 
 

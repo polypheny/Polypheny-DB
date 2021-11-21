@@ -24,6 +24,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
@@ -61,7 +62,7 @@ public class SqlDatePartFunction extends SqlFunction {
     public SqlNode rewriteCall( SqlValidator validator, SqlCall call ) {
         final List<Node> operands = call.getOperandList();
         final ParserPos pos = call.getPos();
-        return (SqlNode) StdOperatorRegistry.get( "EXTRACT" ).createCall(
+        return (SqlNode) StdOperatorRegistry.get( OperatorName.EXTRACT ).createCall(
                 pos,
                 new SqlIntervalQualifier( timeUnit, null, ParserPos.ZERO ),
                 operands.get( 0 ) );

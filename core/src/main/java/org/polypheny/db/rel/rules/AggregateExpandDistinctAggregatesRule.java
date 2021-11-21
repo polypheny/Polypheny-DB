@@ -53,6 +53,7 @@ import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -348,7 +349,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
 
         final Map<ImmutableBitSet, Integer> filters = new LinkedHashMap<>();
         final int z = groupCount + distinctAggCalls.size();
-        distinctAggCalls.add( AggregateCall.create( (Operator & AggFunction) StdOperatorRegistry.getAgg( "GROUPING" ), false, false, ImmutableIntList.copyOf( fullGroupSet ), -1, RelCollations.EMPTY, groupSets.size(), relBuilder.peek(), null, "$g" ) );
+        distinctAggCalls.add( AggregateCall.create( (Operator & AggFunction) StdOperatorRegistry.getAgg( OperatorName.GROUPING ), false, false, ImmutableIntList.copyOf( fullGroupSet ), -1, RelCollations.EMPTY, groupSets.size(), relBuilder.peek(), null, "$g" ) );
         for ( Ord<ImmutableBitSet> groupSet : Ord.zip( groupSets ) ) {
             filters.put( groupSet.e, z + groupSet.i );
         }
@@ -374,7 +375,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
             final List<Integer> newArgList;
             final AggFunction aggregation;
             if ( !aggCall.isDistinct() ) {
-                aggregation = StdOperatorRegistry.getAgg( "MIN" );
+                aggregation = StdOperatorRegistry.getAgg( OperatorName.MIN );
                 newArgList = ImmutableIntList.of( x++ );
                 newFilterArg = filters.get( aggregate.getGroupSet() );
             } else {
@@ -601,7 +602,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
             // null values form its own group use "is not distinct from" so that the join condition allows null values to match.
             conditions.add(
                     rexBuilder.makeCall(
-                            StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ),
+                            StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ),
                             RexInputRef.of( i, leftFields ),
                             new RexInputRef( leftFields.size() + i, distinctFields.get( i ).getType() ) ) );
         }
@@ -693,7 +694,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
                 final Pair<RexNode, String> argRef = RexInputRef.of2( arg, childFields );
                 RexNode condition =
                         rexBuilder.makeCall(
-                                StdOperatorRegistry.get( "CASE" ),
+                                StdOperatorRegistry.get( OperatorName.CASE ),
                                 filterRef,
                                 argRef.left,
                                 rexBuilder.ensureType(

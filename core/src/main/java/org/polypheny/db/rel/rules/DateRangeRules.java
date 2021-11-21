@@ -63,6 +63,7 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.core.Filter;
@@ -507,14 +508,14 @@ public abstract class DateRangeRules {
             if ( r.hasLowerBound() ) {
                 final Operator op =
                         r.lowerBoundType() == BoundType.CLOSED
-                                ? StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" )
-                                : StdOperatorRegistry.get( "GREATER_THAN" );
+                                ? StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL )
+                                : StdOperatorRegistry.get( OperatorName.GREATER_THAN );
                 nodes.add( rexBuilder.makeCall( op, operand, dateTimeLiteral( rexBuilder, r.lowerEndpoint(), operand ) ) );
             }
             if ( r.hasUpperBound() ) {
                 final Operator op = r.upperBoundType() == BoundType.CLOSED
-                        ? StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" )
-                        : StdOperatorRegistry.get( "LESS_THAN" );
+                        ? StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL )
+                        : StdOperatorRegistry.get( OperatorName.LESS_THAN );
                 nodes.add( rexBuilder.makeCall( op, operand, dateTimeLiteral( rexBuilder, r.upperEndpoint(), operand ) ) );
             }
             return RexUtil.composeConjunction( rexBuilder, nodes );

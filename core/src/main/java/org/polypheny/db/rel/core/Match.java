@@ -50,6 +50,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -288,10 +289,10 @@ public abstract class Match extends SingleRel {
                     aggFunction = LanguageManager.getInstance().createMinMaxAggFunction( call.getKind() );
                     break;
                 case COUNT:
-                    aggFunction = StdOperatorRegistry.getAgg( "COUNT" );
+                    aggFunction = StdOperatorRegistry.getAgg( OperatorName.COUNT );
                     break;
                 case ANY_VALUE:
-                    aggFunction = StdOperatorRegistry.getAgg( "ANY_VALUE" );
+                    aggFunction = StdOperatorRegistry.getAgg( OperatorName.ANY_VALUE );
                     break;
                 case BIT_AND:
                 case BIT_OR:

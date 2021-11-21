@@ -50,6 +50,7 @@ import org.polypheny.db.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -153,7 +154,7 @@ class PredicateAnalyzer {
                             .stream()
                             .map( rexNode -> rexNode.accept( NotLikeConverter.this ) )
                             .collect( Collectors.toList() );
-                    return rexBuilder.makeCall( StdOperatorRegistry.get( "NOT_LIKE" ), operands );
+                    return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT_LIKE ), operands );
                 }
             }
             return super.visitCall( call );

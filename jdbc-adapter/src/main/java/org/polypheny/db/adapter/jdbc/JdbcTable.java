@@ -49,6 +49,7 @@ import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -204,7 +205,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
                     new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), ParserPos.ZERO ),
                     new SqlIdentifier( Arrays.asList( logicalColumnNames.get( i++ ) ), ParserPos.ZERO )
             };
-            pcnl.add( new SqlBasicCall( (SqlOperator) StdOperatorRegistry.get( "AS" ), operands, ParserPos.ZERO ) );
+            pcnl.add( new SqlBasicCall( (SqlOperator) StdOperatorRegistry.get( OperatorName.AS ), operands, ParserPos.ZERO ) );
         }
         return new SqlNodeList( pcnl, ParserPos.ZERO );
     }

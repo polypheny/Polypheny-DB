@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.type.RelDataType;
@@ -138,7 +139,7 @@ public class RexProgramBuilder {
         // Register the condition, if there is one.
         if ( condition != null ) {
             if ( simplify != null ) {
-                condition = simplify.simplify( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_TRUE" ), condition.accept( expander ) ) );
+                condition = simplify.simplify( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_TRUE ), condition.accept( expander ) ) );
                 if ( condition.isAlwaysTrue() ) {
                     condition = null;
                 }
@@ -266,7 +267,7 @@ public class RexProgramBuilder {
             // If the new condition is identical to the existing condition, skip it.
             RexLocalRef ref = registerInput( expr );
             if ( !ref.equals( conditionRef ) ) {
-                conditionRef = registerInput( rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), conditionRef, ref ) );
+                conditionRef = registerInput( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), conditionRef, ref ) );
             }
         }
     }

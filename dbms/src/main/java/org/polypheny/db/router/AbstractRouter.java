@@ -46,6 +46,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -1228,7 +1229,7 @@ public abstract class AbstractRouter implements Router {
                         List<RexNode> joinConditions = new LinkedList<>();
                         for ( int i = 0; i < pkColumnIds.size(); i++ ) {
                             joinConditions.add( builder.call(
-                                    StdOperatorRegistry.get( "EQUALS" ),
+                                    StdOperatorRegistry.get( OperatorName.EQUALS ),
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ),
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ) ) );
                         }

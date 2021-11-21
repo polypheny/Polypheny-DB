@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
@@ -250,25 +251,25 @@ public class Cql2RelConverter {
                         if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.AND ) {
                             log.debug( "Found 'AND'." );
                             rexNode = rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( "AND" ),
+                                    StdOperatorRegistry.get( OperatorName.AND ),
                                     secondToLastRexNode.get(),
                                     lastRexNode.get()
                             );
                         } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.OR ) {
                             log.debug( "Found 'OR'." );
                             rexNode = rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( "OR" ),
+                                    StdOperatorRegistry.get( OperatorName.OR ),
                                     secondToLastRexNode.get(),
                                     lastRexNode.get()
                             );
                         } else if ( booleanGroup.booleanOperator == ColumnOpsBooleanOperator.NOT ) {
                             log.debug( "Found 'NOT'." );
                             rexNode = rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( "NOT" ),
+                                    StdOperatorRegistry.get( OperatorName.NOT ),
                                     lastRexNode.get()
                             );
                             rexNode = rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( "AND" ),
+                                    StdOperatorRegistry.get( OperatorName.AND ),
                                     secondToLastRexNode.get(),
                                     rexNode
                             );

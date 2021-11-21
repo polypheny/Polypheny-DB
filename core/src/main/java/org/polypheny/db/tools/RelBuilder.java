@@ -68,6 +68,7 @@ import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.SemiJoinType;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
@@ -728,7 +729,7 @@ public class RelBuilder {
      * Creates a NOT.
      */
     public RexNode not( RexNode operand ) {
-        return call( StdOperatorRegistry.get( "NOT" ), operand );
+        return call( StdOperatorRegistry.get( OperatorName.NOT ), operand );
     }
 
 
@@ -736,7 +737,7 @@ public class RelBuilder {
      * Creates an {@code =}.
      */
     public RexNode equals( RexNode operand0, RexNode operand1 ) {
-        return call( StdOperatorRegistry.get( "EQUALS" ), operand0, operand1 );
+        return call( StdOperatorRegistry.get( OperatorName.EQUALS ), operand0, operand1 );
     }
 
 
@@ -744,7 +745,7 @@ public class RelBuilder {
      * Creates a {@code <>}.
      */
     public RexNode notEquals( RexNode operand0, RexNode operand1 ) {
-        return call( StdOperatorRegistry.get( "NOT_EQUALS" ), operand0, operand1 );
+        return call( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), operand0, operand1 );
     }
 
 
@@ -752,7 +753,7 @@ public class RelBuilder {
      * Creates a IS NULL.
      */
     public RexNode isNull( RexNode operand ) {
-        return call( StdOperatorRegistry.get( "IS_NULL" ), operand );
+        return call( StdOperatorRegistry.get( OperatorName.IS_NULL ), operand );
     }
 
 
@@ -760,7 +761,7 @@ public class RelBuilder {
      * Creates a IS NOT NULL.
      */
     public RexNode isNotNull( RexNode operand ) {
-        return call( StdOperatorRegistry.get( "IS_NOT_NULL" ), operand );
+        return call( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), operand );
     }
 
 
@@ -797,7 +798,7 @@ public class RelBuilder {
      * @see #project
      */
     public RexNode alias( RexNode expr, String alias ) {
-        return call( StdOperatorRegistry.get( "AS" ), expr, literal( alias ) );
+        return call( StdOperatorRegistry.get( OperatorName.AS ), expr, literal( alias ) );
     }
 
 
@@ -805,7 +806,7 @@ public class RelBuilder {
      * Converts a sort expression to descending.
      */
     public RexNode desc( RexNode node ) {
-        return call( StdOperatorRegistry.get( "DESC" ), node );
+        return call( StdOperatorRegistry.get( OperatorName.DESC ), node );
     }
 
 
@@ -813,7 +814,7 @@ public class RelBuilder {
      * Converts a sort expression to nulls last.
      */
     public RexNode nullsLast( RexNode node ) {
-        return call( StdOperatorRegistry.get( "NULLS_LAST" ), node );
+        return call( StdOperatorRegistry.get( OperatorName.NULLS_LAST ), node );
     }
 
 
@@ -821,7 +822,7 @@ public class RelBuilder {
      * Converts a sort expression to nulls first.
      */
     public RexNode nullsFirst( RexNode node ) {
-        return call( StdOperatorRegistry.get( "NULLS_FIRST" ), node );
+        return call( StdOperatorRegistry.get( OperatorName.NULLS_FIRST ), node );
     }
 
     // Methods that create group keys and aggregate calls
@@ -1042,7 +1043,7 @@ public class RelBuilder {
      */
     public AggCall count( boolean distinct, String alias, RexNode... operands ) {
         return aggregateCall(
-                StdOperatorRegistry.getAgg( "COUNT" ),
+                StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                 distinct,
                 false,
                 null,
@@ -1057,7 +1058,7 @@ public class RelBuilder {
      */
     public AggCall count( boolean distinct, String alias, Iterable<? extends RexNode> operands ) {
         return aggregateCall(
-                StdOperatorRegistry.getAgg( "COUNT" ),
+                StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                 distinct,
                 false,
                 null,
@@ -1088,7 +1089,7 @@ public class RelBuilder {
      */
     public AggCall sum( boolean distinct, String alias, RexNode operand ) {
         return aggregateCall(
-                StdOperatorRegistry.getAgg( "SUM" ),
+                StdOperatorRegistry.getAgg( OperatorName.SUM ),
                 distinct,
                 false,
                 null,
@@ -1111,7 +1112,7 @@ public class RelBuilder {
      */
     public AggCall avg( boolean distinct, String alias, RexNode operand ) {
         return aggregateCall(
-                StdOperatorRegistry.getAgg( "AVG" ),
+                StdOperatorRegistry.getAgg( OperatorName.AVG ),
                 distinct,
                 false,
                 null,
@@ -1134,7 +1135,7 @@ public class RelBuilder {
      */
     public AggCall min( String alias, RexNode operand ) {
         return aggregateCall(
-                StdOperatorRegistry.getAgg( "MIN" ),
+                StdOperatorRegistry.getAgg( OperatorName.MIN ),
                 false,
                 false,
                 null,
@@ -1157,7 +1158,7 @@ public class RelBuilder {
      */
     public AggCall max( String alias, RexNode operand ) {
         return aggregateCall(
-                StdOperatorRegistry.getAgg( "MAX" ),
+                StdOperatorRegistry.getAgg( OperatorName.MAX ),
                 false,
                 false,
                 null,
@@ -1192,7 +1193,7 @@ public class RelBuilder {
             return patternConcat( patternConcat( Util.skipLast( list ) ), Util.last( list ) );
         }
         final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
-        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( "PATTERN_CONCAT" ), list );
+        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( OperatorName.PATTERN_CONCAT ), list );
     }
 
 
@@ -1209,7 +1210,7 @@ public class RelBuilder {
      */
     public RexNode patternAlter( Iterable<? extends RexNode> nodes ) {
         final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
-        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( "PATTERN_ALTER" ), ImmutableList.copyOf( nodes ) );
+        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( OperatorName.PATTERN_ALTER ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -1226,7 +1227,7 @@ public class RelBuilder {
      */
     public RexNode patternQuantify( Iterable<? extends RexNode> nodes ) {
         final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
-        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( "PATTERN_QUANTIFIER" ), ImmutableList.copyOf( nodes ) );
+        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( OperatorName.PATTERN_QUANTIFIER ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -1243,7 +1244,7 @@ public class RelBuilder {
      */
     public RexNode patternPermute( Iterable<? extends RexNode> nodes ) {
         final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
-        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( "PATTERN_PERMUTE" ), ImmutableList.copyOf( nodes ) );
+        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( OperatorName.PATTERN_PERMUTE ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -1260,7 +1261,7 @@ public class RelBuilder {
      */
     public RexNode patternExclude( RexNode node ) {
         final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
-        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( "PATTERN_EXCLUDE" ), ImmutableList.of( node ) );
+        return getRexBuilder().makeCall( t, StdOperatorRegistry.get( OperatorName.PATTERN_EXCLUDE ), ImmutableList.of( node ) );
     }
 
     // Methods that create relational expressions
@@ -1966,7 +1967,7 @@ public class RelBuilder {
         for ( String fieldName : fieldNames ) {
             conditions.add(
                     call(
-                            StdOperatorRegistry.get( "EQUALS" ),
+                            StdOperatorRegistry.get( OperatorName.EQUALS ),
                             field( 2, 0, fieldName ),
                             field( 2, 1, fieldName ) ) );
         }
@@ -2600,7 +2601,7 @@ public class RelBuilder {
                     throw RESOURCE.filterMustBeBoolean().ex();
                 }
                 if ( filter.getType().isNullable() ) {
-                    filter = call( StdOperatorRegistry.get( "IS_TRUE" ), filter );
+                    filter = call( StdOperatorRegistry.get( OperatorName.IS_TRUE ), filter );
                 }
             }
             this.filter = filter;

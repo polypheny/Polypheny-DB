@@ -43,6 +43,7 @@ import java.util.Locale;
 import java.util.Set;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -82,7 +83,7 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
 
         for ( AggregateCall aggCall : aggCalls ) {
             if ( aggCall.isDistinct() && !aggCall.isApproximate() ) {
-                final String message = String.format( Locale.ROOT, "Only approximate distinct aggregations are supported in Elastic (cardinality aggregation). Use %s function", StdOperatorRegistry.get( "APPROX_COUNT_DISTINCT" ).getName() );
+                final String message = String.format( Locale.ROOT, "Only approximate distinct aggregations are supported in Elastic (cardinality aggregation). Use %s function", StdOperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT ).getName() );
                 throw new InvalidRelException( message );
             }
 

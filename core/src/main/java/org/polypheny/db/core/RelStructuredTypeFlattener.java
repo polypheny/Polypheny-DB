@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelCollation;
@@ -222,7 +223,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         RexNode[] caseOperands = new RexNode[3];
 
         // WHEN StructuredType.Indicator IS NULL
-        caseOperands[0] = rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), nullIndicator );
+        caseOperands[0] = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), nullIndicator );
 
         // THEN CAST(NULL AS StructuredType)
         caseOperands[1] = rexBuilder.makeCast( structuredType, rexBuilder.constantNull() );
@@ -230,7 +231,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         // ELSE NEW StructuredType(inputs...) END
         caseOperands[2] = newInvocation;
 
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "CASE" ), caseOperands );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.CASE ), caseOperands );
     }
 
 
@@ -851,7 +852,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             boolean negate = false;
             if ( op.getKind() == Kind.NOT_EQUALS ) {
                 negate = true;
-                op = StdOperatorRegistry.get( "EQUALS" );
+                op = StdOperatorRegistry.get( OperatorName.EQUALS );
             }
             if ( (n > 1) && op.getKind() != Kind.EQUALS ) {
                 throw Util.needToImplement( "inequality comparison for row types" );
@@ -865,11 +866,11 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                 if ( conjunction == null ) {
                     conjunction = comparison;
                 } else {
-                    conjunction = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), conjunction, comparison );
+                    conjunction = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), conjunction, comparison );
                 }
             }
             if ( negate ) {
-                return rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), conjunction );
+                return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), conjunction );
             } else {
                 return conjunction;
             }

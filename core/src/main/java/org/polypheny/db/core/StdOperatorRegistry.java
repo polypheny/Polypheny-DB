@@ -17,36 +17,38 @@
 package org.polypheny.db.core;
 
 import java.util.HashMap;
+import org.polypheny.db.core.operators.OperatorName;
 
 public class StdOperatorRegistry {
 
-    private static final HashMap<String, Operator> registry = new HashMap<>();
+    private static final HashMap<OperatorName, Operator> registry = new HashMap<>();
 
 
-    public synchronized static boolean register( String key, Operator operator ) {
+    public synchronized static boolean register( OperatorName key, Operator operator ) {
         boolean replaced = registry.containsKey( key );
         registry.put( key, operator );
         return replaced;
     }
 
 
-    public static Operator get( String key ) {
+    public static Operator get( OperatorName key ) {
         return registry.get( key );
     }
 
 
-    public static <T extends Operator> T get( String key, Class<T> clazz ) {
+    public static <T extends Operator> T get( OperatorName key, Class<T> clazz ) {
         return (T) clazz.cast( get( key ) );
     }
 
 
-    public static AggFunction getAgg( String key ) {
+    public static AggFunction getAgg( OperatorName key ) {
         return (AggFunction) get( key );
     }
 
 
-    public static BinaryOperator getBinary( String key ) {
+    public static BinaryOperator getBinary( OperatorName key ) {
         return (BinaryOperator) get( key );
     }
 
 }
+

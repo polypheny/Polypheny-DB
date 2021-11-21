@@ -44,6 +44,7 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.polypheny.db.core.Function.FunctionType;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCostImpl;
@@ -1007,7 +1008,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             final int newRightPos = rightOutput.getValue();
             conditions.add(
                     relBuilder.call(
-                            StdOperatorRegistry.get( "EQUALS" ),
+                            StdOperatorRegistry.get( OperatorName.EQUALS ),
                             RexInputRef.of( newLeftPos, newLeftOutput ),
                             new RexInputRef( newLeftFieldCount + newRightPos, newRightOutput.get( newRightPos ).getType() ) ) );
 
@@ -1451,7 +1452,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             // WHEN indicator IS NULL
             caseOperands[0] =
                     rexBuilder.makeCall(
-                            StdOperatorRegistry.get( "IS_NULL" ),
+                            StdOperatorRegistry.get( OperatorName.IS_NULL ),
                             new RexInputRef(
                                     nullInputRef.getIndex(),
                                     typeFactory.createTypeWithNullability(
@@ -1475,7 +1476,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
                             rexNode );
 
             return rexBuilder.makeCall(
-                    StdOperatorRegistry.get( "CASE" ),
+                    StdOperatorRegistry.get( OperatorName.CASE ),
                     caseOperands );
         }
 

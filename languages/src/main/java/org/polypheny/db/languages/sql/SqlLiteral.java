@@ -33,6 +33,7 @@ import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
@@ -411,7 +412,7 @@ public class SqlLiteral extends SqlNode implements Literal {
             final SqlLiteral literal = SqlLiteralChainOperator.concatenateOperands( (SqlCall) node );
             assert PolyTypeUtil.inCharFamily( literal.getTypeName() );
             return literal.value.toString();
-        } else if ( node instanceof SqlCall && ((SqlCall) node).getOperator().equals( StdOperatorRegistry.get( "CAST" ) ) ) {
+        } else if ( node instanceof SqlCall && ((SqlCall) node).getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) ) {
             return stringValue( ((SqlCall) node).operand( 0 ) );
         } else {
             throw new AssertionError( "invalid string literal: " + node );

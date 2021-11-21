@@ -41,6 +41,7 @@ import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.ValidatorCatalogReader;
 import org.polypheny.db.core.ValidatorTable;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -214,7 +215,7 @@ public class SqlValidatorUtil {
     public static Node addAlias( SqlNode expr, String alias ) {
         final ParserPos pos = expr.getPos();
         final SqlIdentifier id = new SqlIdentifier( alias, pos );
-        return StdOperatorRegistry.get( "AS" ).createCall( pos, expr, id );
+        return StdOperatorRegistry.get( OperatorName.AS ).createCall( pos, expr, id );
     }
 
 

@@ -41,6 +41,7 @@ import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.dialect.JethroDataSqlDialect;
 import org.polypheny.db.languages.sql.util.SqlBuilder;
 import org.polypheny.db.rel.RelFieldCollation;
@@ -71,52 +72,52 @@ public class SqlDialect {
      */
     protected static final Set<Operator> BUILT_IN_OPERATORS_LIST =
             ImmutableSet.<Operator>builder()
-                    .add( StdOperatorRegistry.get( "ABS" ) )
-                    .add( StdOperatorRegistry.get( "ACOS" ) )
-                    .add( StdOperatorRegistry.get( "AND" ) )
-                    .add( StdOperatorRegistry.get( "ASIN" ) )
-                    .add( StdOperatorRegistry.get( "BETWEEN" ) )
-                    .add( StdOperatorRegistry.get( "CASE" ) )
-                    .add( StdOperatorRegistry.get( "CAST" ) )
-                    .add( StdOperatorRegistry.get( "CEIL" ) )
-                    .add( StdOperatorRegistry.get( "CHAR_LENGTH" ) )
-                    .add( StdOperatorRegistry.get( "CHARACTER_LENGTH" ) )
-                    .add( StdOperatorRegistry.get( "COALESCE" ) )
-                    .add( StdOperatorRegistry.get( "CONCAT" ) )
-                    .add( StdOperatorRegistry.get( "COS" ) )
-                    .add( StdOperatorRegistry.get( "COT" ) )
-                    .add( StdOperatorRegistry.get( "DIVIDE" ) )
-                    .add( StdOperatorRegistry.get( "EQUALS" ) )
-                    .add( StdOperatorRegistry.get( "FLOOR" ) )
-                    .add( StdOperatorRegistry.get( "GREATER_THAN" ) )
-                    .add( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ) )
-                    .add( StdOperatorRegistry.get( "IN" ) )
-                    .add( StdOperatorRegistry.get( "IS_NOT_NULL" ) )
-                    .add( StdOperatorRegistry.get( "IS_NULL" ) )
-                    .add( StdOperatorRegistry.get( "LESS_THAN" ) )
-                    .add( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ) )
-                    .add( StdOperatorRegistry.get( "LIKE" ) )
-                    .add( StdOperatorRegistry.get( "LN" ) )
-                    .add( StdOperatorRegistry.get( "LOG10" ) )
-                    .add( StdOperatorRegistry.get( "MINUS" ) )
-                    .add( StdOperatorRegistry.get( "MOD" ) )
-                    .add( StdOperatorRegistry.get( "MULTIPLY" ) )
-                    .add( StdOperatorRegistry.get( "NOT" ) )
-                    .add( StdOperatorRegistry.get( "NOT_BETWEEN" ) )
-                    .add( StdOperatorRegistry.get( "NOT_EQUALS" ) )
-                    .add( StdOperatorRegistry.get( "NOT_IN" ) )
-                    .add( StdOperatorRegistry.get( "NOT_LIKE" ) )
-                    .add( StdOperatorRegistry.get( "OR" ) )
-                    .add( StdOperatorRegistry.get( "PI" ) )
-                    .add( StdOperatorRegistry.get( "PLUS" ) )
-                    .add( StdOperatorRegistry.get( "POWER" ) )
-                    .add( StdOperatorRegistry.get( "RAND" ) )
-                    .add( StdOperatorRegistry.get( "ROUND" ) )
-                    .add( StdOperatorRegistry.get( "ROW" ) )
-                    .add( StdOperatorRegistry.get( "SIN" ) )
-                    .add( StdOperatorRegistry.get( "SQRT" ) )
-                    .add( StdOperatorRegistry.get( "SUBSTRING" ) )
-                    .add( StdOperatorRegistry.get( "TAN" ) )
+                    .add( StdOperatorRegistry.get( OperatorName.ABS ) )
+                    .add( StdOperatorRegistry.get( OperatorName.ACOS ) )
+                    .add( StdOperatorRegistry.get( OperatorName.AND ) )
+                    .add( StdOperatorRegistry.get( OperatorName.ASIN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.BETWEEN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.CASE ) )
+                    .add( StdOperatorRegistry.get( OperatorName.CAST ) )
+                    .add( StdOperatorRegistry.get( OperatorName.CEIL ) )
+                    .add( StdOperatorRegistry.get( OperatorName.CHAR_LENGTH ) )
+                    .add( StdOperatorRegistry.get( OperatorName.CHARACTER_LENGTH ) )
+                    .add( StdOperatorRegistry.get( OperatorName.COALESCE ) )
+                    .add( StdOperatorRegistry.get( OperatorName.CONCAT ) )
+                    .add( StdOperatorRegistry.get( OperatorName.COS ) )
+                    .add( StdOperatorRegistry.get( OperatorName.COT ) )
+                    .add( StdOperatorRegistry.get( OperatorName.DIVIDE ) )
+                    .add( StdOperatorRegistry.get( OperatorName.EQUALS ) )
+                    .add( StdOperatorRegistry.get( OperatorName.FLOOR ) )
+                    .add( StdOperatorRegistry.get( OperatorName.GREATER_THAN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ) )
+                    .add( StdOperatorRegistry.get( OperatorName.IN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ) )
+                    .add( StdOperatorRegistry.get( OperatorName.IS_NULL ) )
+                    .add( StdOperatorRegistry.get( OperatorName.LESS_THAN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ) )
+                    .add( StdOperatorRegistry.get( OperatorName.LIKE ) )
+                    .add( StdOperatorRegistry.get( OperatorName.LN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.LOG10 ) )
+                    .add( StdOperatorRegistry.get( OperatorName.MINUS ) )
+                    .add( StdOperatorRegistry.get( OperatorName.MOD ) )
+                    .add( StdOperatorRegistry.get( OperatorName.MULTIPLY ) )
+                    .add( StdOperatorRegistry.get( OperatorName.NOT ) )
+                    .add( StdOperatorRegistry.get( OperatorName.NOT_BETWEEN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ) )
+                    .add( StdOperatorRegistry.get( OperatorName.NOT_IN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.NOT_LIKE ) )
+                    .add( StdOperatorRegistry.get( OperatorName.OR ) )
+                    .add( StdOperatorRegistry.get( OperatorName.PI ) )
+                    .add( StdOperatorRegistry.get( OperatorName.PLUS ) )
+                    .add( StdOperatorRegistry.get( OperatorName.POWER ) )
+                    .add( StdOperatorRegistry.get( OperatorName.RAND ) )
+                    .add( StdOperatorRegistry.get( OperatorName.ROUND ) )
+                    .add( StdOperatorRegistry.get( OperatorName.ROW ) )
+                    .add( StdOperatorRegistry.get( OperatorName.SIN ) )
+                    .add( StdOperatorRegistry.get( OperatorName.SQRT ) )
+                    .add( StdOperatorRegistry.get( OperatorName.SUBSTRING ) )
+                    .add( StdOperatorRegistry.get( OperatorName.TAN ) )
                     .build();
 
 
@@ -635,9 +636,9 @@ public class SqlDialect {
             return null;
         }
 
-        node = (SqlNode) StdOperatorRegistry.get( "IS_NULL" ).createCall( ParserPos.ZERO, node );
+        node = (SqlNode) StdOperatorRegistry.get( OperatorName.IS_NULL ).createCall( ParserPos.ZERO, node );
         if ( nullsFirst ) {
-            node = (SqlNode) StdOperatorRegistry.get( "DESC" ).createCall( ParserPos.ZERO, node );
+            node = (SqlNode) StdOperatorRegistry.get( OperatorName.DESC ).createCall( ParserPos.ZERO, node );
         }
         return node;
     }

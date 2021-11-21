@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelFieldCollation;
@@ -91,7 +92,7 @@ public interface ElasticsearchRel extends RelNode {
         /**
          * Keeps mapping between Polypheny-DB expression identifier (like {@code EXPR$0}) and original item call like {@code _MAP['foo.bar']} ({@code foo.bar} really). This information otherwise might be lost during query translation.
          *
-         * @see StdOperatorRegistry.get( "ITEM" )
+         * @see StdOperatorRegistry.get( OperatorName.ITEM )
          */
         final Map<String, String> expressionItemMap = new LinkedHashMap<>();
 

@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.rel.type.RelDataType;
@@ -74,11 +75,11 @@ public class SqlOperatorBindingTest extends LanguageManagerDependant {
         final SqlNode literal = SqlLiteral.createExactNumeric(
                 "0",
                 ParserPos.ZERO );
-        final SqlNode castLiteral = (SqlNode) StdOperatorRegistry.get( "CAST" ).createCall(
+        final SqlNode castLiteral = (SqlNode) StdOperatorRegistry.get( OperatorName.CAST ).createCall(
                 ParserPos.ZERO,
                 literal,
                 integerType );
-        final SqlNode castCastLiteral = (SqlNode) StdOperatorRegistry.get( "CAST" ).createCall(
+        final SqlNode castCastLiteral = (SqlNode) StdOperatorRegistry.get( OperatorName.CAST ).createCall(
                 ParserPos.ZERO,
                 castLiteral,
                 integerType );
@@ -103,12 +104,12 @@ public class SqlOperatorBindingTest extends LanguageManagerDependant {
 
         final RexNode castLiteral = rexBuilder.makeCall(
                 integerDataType,
-                StdOperatorRegistry.get( "CAST" ),
+                StdOperatorRegistry.get( OperatorName.CAST ),
                 Lists.newArrayList( literal ) );
 
         final RexNode castCastLiteral = rexBuilder.makeCall(
                 integerDataType,
-                StdOperatorRegistry.get( "CAST" ),
+                StdOperatorRegistry.get( OperatorName.CAST ),
                 Lists.newArrayList( castLiteral ) );
         // RexLiteral is considered as a Literal
         assertSame( true, RexUtil.isLiteral( literal, true ) );

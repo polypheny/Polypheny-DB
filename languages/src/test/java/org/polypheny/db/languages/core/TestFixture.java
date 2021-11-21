@@ -28,6 +28,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
@@ -186,52 +187,52 @@ public class TestFixture {
 
 
     public RexNode gt( RexNode node1, RexNode node2 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "GREATER_THAN" ), node1, node2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), node1, node2 );
     }
 
 
     public RexNode ge( RexNode node1, RexNode node2 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "GREATER_THAN_OR_EQUAL" ), node1, node2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), node1, node2 );
     }
 
 
     public RexNode eq( RexNode node1, RexNode node2 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), node1, node2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), node1, node2 );
     }
 
 
     public RexNode ne( RexNode node1, RexNode node2 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "NOT_EQUALS" ), node1, node2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), node1, node2 );
     }
 
 
     public RexNode lt( RexNode node1, RexNode node2 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "LESS_THAN" ), node1, node2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.LESS_THAN ), node1, node2 );
     }
 
 
     public RexNode le( RexNode node1, RexNode node2 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "LESS_THAN_OR_EQUAL" ), node1, node2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), node1, node2 );
     }
 
 
     public RexNode notNull( RexNode node1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), node1 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), node1 );
     }
 
 
     public RexNode isNull( RexNode node2 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), node2 );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), node2 );
     }
 
 
     public RexNode and( RexNode... nodes ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), nodes );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), nodes );
     }
 
 
     public RexNode or( RexNode... nodes ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "OR" ), nodes );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.OR ), nodes );
     }
 
 

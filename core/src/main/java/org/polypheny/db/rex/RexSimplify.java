@@ -61,6 +61,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.Strong;
@@ -297,7 +298,7 @@ public class RexSimplify {
                 case GREATER_THAN_OR_EQUAL:
                 case LESS_THAN_OR_EQUAL:
                     // "x = x" simplifies to "x is not null" (similarly <= and >=)
-                    return simplify( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), o0 ), unknownAs );
+                    return simplify( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), o0 ), unknownAs );
                 default:
                     // "x != x" simplifies to "false" (similarly < and >)
                     return rexBuilder.makeLiteral( false );
@@ -411,7 +412,7 @@ public class RexSimplify {
             }
             final RexNode t2 = simplify.simplify( t, RexUnknownAs.UNKNOWN );
             terms.set( i, t2 );
-            final RexNode inverse = simplify.simplify( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_TRUE" ), t2 ), RexUnknownAs.UNKNOWN );
+            final RexNode inverse = simplify.simplify( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_TRUE ), t2 ), RexUnknownAs.UNKNOWN );
             final RelOptPredicateList newPredicates = simplify.predicates.union( rexBuilder, RelOptPredicateList.of( rexBuilder, ImmutableList.of( inverse ) ) );
             simplify = simplify.withPredicates( newPredicates );
         }
@@ -448,18 +449,18 @@ public class RexSimplify {
             // NOT distributivity for AND
             final List<RexNode> newOperands = new ArrayList<>();
             for ( RexNode operand : ((RexCall) a).getOperands() ) {
-                newOperands.add( simplify( rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), operand ), unknownAs ) );
+                newOperands.add( simplify( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), operand ), unknownAs ) );
             }
             return simplify(
-                    rexBuilder.makeCall( StdOperatorRegistry.get( "OR" ), newOperands ), unknownAs );
+                    rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.OR ), newOperands ), unknownAs );
         }
         if ( a.getKind() == Kind.OR ) {
             // NOT distributivity for OR
             final List<RexNode> newOperands = new ArrayList<>();
             for ( RexNode operand : ((RexCall) a).getOperands() ) {
-                newOperands.add( simplify( rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), operand ), unknownAs ) );
+                newOperands.add( simplify( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), operand ), unknownAs ) );
             }
-            return simplify( rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), newOperands ), unknownAs );
+            return simplify( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), newOperands ), unknownAs );
         }
         return call;
     }
@@ -530,7 +531,7 @@ public class RexSimplify {
                 // x IS NOT TRUE ==> NOT x (if x is not nullable)
                 // x IS FALSE ==> NOT x (if x is not nullable)
                 if ( !a.getType().isNullable() ) {
-                    return simplify( rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), a ),
+                    return simplify( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), a ),
                             UNKNOWN );
                 }
                 break;
@@ -571,7 +572,7 @@ public class RexSimplify {
                 for ( RexNode operand : ((RexCall) a).getOperands() ) {
                     final RexNode simplified = simplifyIsNotNull( operand );
                     if ( simplified == null ) {
-                        operands.add( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), operand ) );
+                        operands.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), operand ) );
                     } else if ( simplified.isAlwaysFalse() ) {
                         return rexBuilder.makeLiteral( false );
                     } else {
@@ -609,7 +610,7 @@ public class RexSimplify {
                 for ( RexNode operand : ((RexCall) a).getOperands() ) {
                     final RexNode simplified = simplifyIsNull( operand );
                     if ( simplified == null ) {
-                        operands.add( rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), operand ) );
+                        operands.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), operand ) );
                     } else {
                         operands.add( simplified );
                     }
@@ -675,7 +676,7 @@ public class RexSimplify {
                 if ( lastBranch.value.equals( newValue ) && isSafeExpression( newCond ) ) {
                     // in this case, last branch and new branch have the same conclusion, hence we create a new composite condition and we do not add it to
                     // the final branches for the time being
-                    newCond = rexBuilder.makeCall( StdOperatorRegistry.get( "OR" ), lastBranch.cond, newCond );
+                    newCond = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.OR ), lastBranch.cond, newCond );
                     conditionNeedsSimplify = true;
                 } else {
                     // if we reach here, the new branch is not mergeable with the last one, hence we are going to add the last branch to the final branches.
@@ -738,7 +739,7 @@ public class RexSimplify {
         if ( newOperands.equals( call.getOperands() ) ) {
             return call;
         }
-        return rexBuilder.makeCall( StdOperatorRegistry.get( "CASE" ), newOperands );
+        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.CASE ), newOperands );
     }
 
 
@@ -955,7 +956,7 @@ public class RexSimplify {
             RexNode cond;
             RexNode value;
             if ( branch.cond.getType().isNullable() ) {
-                cond = rexBuilder.makeCall( StdOperatorRegistry.get( "IS_TRUE" ), branch.cond );
+                cond = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_TRUE ), branch.cond );
             } else {
                 cond = branch.cond;
             }
@@ -998,7 +999,7 @@ public class RexSimplify {
                 if ( branch.value.isAlwaysTrue() ) {
                     branchTerm = branch.cond;
                 } else {
-                    branchTerm = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), branch.cond, branch.value );
+                    branchTerm = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), branch.cond, branch.value );
                 }
                 terms.add( RexUtil.andNot( rexBuilder, branchTerm, notTerms ) );
             }
@@ -1076,12 +1077,12 @@ public class RexSimplify {
             // The intersection simplify to "null and x1 is null and x2 is null..."
             terms.add( rexBuilder.makeNullLiteral( notSatisfiableNullables.get( 0 ).getType() ) );
             for ( RexNode notSatisfiableNullable : notSatisfiableNullables ) {
-                terms.add( simplifyIs( (RexCall) rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NULL" ), notSatisfiableNullable ) ) );
+                terms.add( simplifyIs( (RexCall) rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), notSatisfiableNullable ) ) );
             }
         }
         // Add the NOT disjunctions back in.
         for ( RexNode notDisjunction : notTerms ) {
-            terms.add( simplify( rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), notDisjunction ), UNKNOWN ) );
+            terms.add( simplify( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), notDisjunction ), UNKNOWN ) );
         }
         return RexUtil.composeConjunction( rexBuilder, terms );
     }
@@ -1268,7 +1269,7 @@ public class RexSimplify {
         for ( RexNode operand : notNullOperands ) {
             if ( !comparedOperands.contains( operand ) ) {
                 terms.add(
-                        rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), operand ) );
+                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), operand ) );
             }
         }
         // If one of the not-disjunctions is a disjunction that is wholly contained in the disjunctions list, the expression is not satisfiable.
@@ -1288,7 +1289,7 @@ public class RexSimplify {
         }
         // Add the NOT disjunctions back in.
         for ( RexNode notDisjunction : notTerms ) {
-            final RexNode call = rexBuilder.makeCall( StdOperatorRegistry.get( "NOT" ), notDisjunction );
+            final RexNode call = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), notDisjunction );
             terms.add( simplify( call, FALSE ) );
         }
         // The negated terms: only deterministic expressions
@@ -1322,7 +1323,7 @@ public class RexSimplify {
             // Range is always satisfied given these predicates; but nullability might
             // be problematic
             return simplify(
-                    rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), comparison.ref ),
+                    rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), comparison.ref ),
                     RexUnknownAs.UNKNOWN );
         } else if ( range2.lowerEndpoint().equals( range2.upperEndpoint() ) ) {
             if ( range2.lowerBoundType() == BoundType.OPEN || range2.upperBoundType() == BoundType.OPEN ) {
@@ -1331,7 +1332,7 @@ public class RexSimplify {
             }
             // range is now a point; it's worth simplifying
             return rexBuilder.makeCall(
-                    StdOperatorRegistry.get( "EQUALS" ),
+                    StdOperatorRegistry.get( OperatorName.EQUALS ),
                     comparison.ref,
                     rexBuilder.makeLiteral( range2.lowerEndpoint(), comparison.literal.getType(), comparison.literal.getTypeName() ) );
         } else {

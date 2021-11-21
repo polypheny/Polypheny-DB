@@ -270,7 +270,7 @@ public class AggregationTest {
 //
 //
 //    /**
-//     * Validate {@link StdOperatorRegistry.get( "APPROX_COUNT_DISTINCT" )}.
+//     * Validate {@link StdOperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT )}.
 //     */
 //    @Test
 //    public void approximateCountDistinct() {

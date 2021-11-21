@@ -32,6 +32,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.Parser;
@@ -154,7 +155,7 @@ public class RelOptUtilTest {
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexNode joinCond = REL_BUILDER.call(
-                StdOperatorRegistry.get( "EQUALS" ),
+                StdOperatorRegistry.get( OperatorName.EQUALS ),
                 RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
                 RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
@@ -177,7 +178,7 @@ public class RelOptUtilTest {
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
         RexNode joinCond = REL_BUILDER.call(
-                StdOperatorRegistry.get( "IS_NOT_DISTINCT_FROM" ),
+                StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ),
                 RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
                 RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
@@ -202,12 +203,12 @@ public class RelOptUtilTest {
         RexInputRef leftKeyInputRef = RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
         RexInputRef rightKeyInputRef = RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
         RexNode joinCond = REL_BUILDER.call(
-                StdOperatorRegistry.get( "OR" ),
-                REL_BUILDER.call( StdOperatorRegistry.get( "EQUALS" ), leftKeyInputRef, rightKeyInputRef ),
+                StdOperatorRegistry.get( OperatorName.OR ),
+                REL_BUILDER.call( StdOperatorRegistry.get( OperatorName.EQUALS ), leftKeyInputRef, rightKeyInputRef ),
                 REL_BUILDER.call(
-                        StdOperatorRegistry.get( "AND" ),
-                        REL_BUILDER.call( StdOperatorRegistry.get( "IS_NULL" ), leftKeyInputRef ),
-                        REL_BUILDER.call( StdOperatorRegistry.get( "IS_NULL" ), rightKeyInputRef ) ) );
+                        StdOperatorRegistry.get( OperatorName.AND ),
+                        REL_BUILDER.call( StdOperatorRegistry.get( OperatorName.IS_NULL ), leftKeyInputRef ),
+                        REL_BUILDER.call( StdOperatorRegistry.get( OperatorName.IS_NULL ), rightKeyInputRef ) ) );
 
         splitJoinConditionHelper(
                 joinCond,

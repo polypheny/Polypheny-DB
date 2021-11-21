@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -629,7 +630,7 @@ public class RexProgram {
         int index = project.index;
         while ( true ) {
             RexNode expr = exprs.get( index );
-            if ( expr instanceof RexCall && ((RexCall) expr).getOperator().equals( StdOperatorRegistry.get( "IN_FENNEL" ) ) ) {
+            if ( expr instanceof RexCall && ((RexCall) expr).getOperator().equals( StdOperatorRegistry.get( OperatorName.IN_FENNEL ) ) ) {
                 // drill through identity function
                 expr = ((RexCall) expr).getOperands().get( 0 );
             }

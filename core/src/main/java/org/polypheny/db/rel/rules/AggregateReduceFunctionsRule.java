@@ -44,6 +44,7 @@ import java.util.Map;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -291,7 +292,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
         final RelDataType avgInputType = getFieldType( oldAggRel.getInput(), iAvgInput );
         final AggregateCall sumCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "SUM" ),
+                        StdOperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
                         oldCall.getArgList(),
@@ -303,7 +304,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
                         null );
         final AggregateCall countCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "COUNT" ),
+                        StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
                         oldCall.getArgList(),
@@ -335,7 +336,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
         final RelDataTypeFactory typeFactory = oldAggRel.getCluster().getTypeFactory();
         final RelDataType avgType = typeFactory.createTypeWithNullability( oldCall.getType(), numeratorRef.getType().isNullable() );
         numeratorRef = rexBuilder.ensureType( avgType, numeratorRef, true );
-        final RexNode divideRef = rexBuilder.makeCall( StdOperatorRegistry.get( "DIVIDE" ), numeratorRef, denominatorRef );
+        final RexNode divideRef = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.DIVIDE ), numeratorRef, denominatorRef );
         return rexBuilder.makeCast( oldCall.getType(), divideRef );
     }
 
@@ -348,7 +349,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
 
         final AggregateCall sumZeroCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "SUM0" ),
+                        StdOperatorRegistry.getAgg( OperatorName.SUM0 ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
                         oldCall.getArgList(),
@@ -360,7 +361,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
                         oldCall.name );
         final AggregateCall countCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "COUNT" ),
+                        StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
                         oldCall.getArgList(),
@@ -393,8 +394,8 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
                         aggCallMapping,
                         ImmutableList.of( argType ) );
         return rexBuilder.makeCall(
-                StdOperatorRegistry.get( "CASE" ),
-                rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), countRef, rexBuilder.makeExactLiteral( BigDecimal.ZERO ) ),
+                StdOperatorRegistry.get( OperatorName.CASE ),
+                rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), countRef, rexBuilder.makeExactLiteral( BigDecimal.ZERO ) ),
                 rexBuilder.makeCast( sumZeroRef.getType(), rexBuilder.constantNull() ), sumZeroRef );
     }
 
@@ -423,13 +424,13 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
 
         final RexNode argRef = rexBuilder.ensureType( oldCallType, inputExprs.get( argOrdinal ), true );
 
-        final RexNode argSquared = rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), argRef, argRef );
+        final RexNode argSquared = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), argRef, argRef );
         final int argSquaredOrdinal = lookupOrAdd( inputExprs, argSquared );
 
         final AggregateCall sumArgSquaredAggCall =
                 createAggregateCallWithBinding(
                         typeFactory,
-                        StdOperatorRegistry.getAgg( "SUM" ),
+                        StdOperatorRegistry.getAgg( OperatorName.SUM ),
                         argSquared.getType(),
                         oldAggRel,
                         oldCall,
@@ -447,7 +448,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
 
         final AggregateCall sumArgAggCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "SUM" ),
+                        StdOperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
                         ImmutableIntList.of( argOrdinal ),
@@ -467,11 +468,11 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
                         aggCallMapping,
                         ImmutableList.of( sumArgAggCall.getType() ) );
         final RexNode sumArgCast = rexBuilder.ensureType( oldCallType, sumArg, true );
-        final RexNode sumSquaredArg = rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), sumArgCast, sumArgCast );
+        final RexNode sumSquaredArg = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), sumArgCast, sumArgCast );
 
         final AggregateCall countArgAggCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "COUNT" ),
+                        StdOperatorRegistry.getAgg( OperatorName.COUNT ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
                         oldCall.getArgList(),
@@ -491,9 +492,9 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
                         aggCallMapping,
                         ImmutableList.of( argOrdinalType ) );
 
-        final RexNode avgSumSquaredArg = rexBuilder.makeCall( StdOperatorRegistry.get( "DIVIDE" ), sumSquaredArg, countArg );
+        final RexNode avgSumSquaredArg = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.DIVIDE ), sumSquaredArg, countArg );
 
-        final RexNode diff = rexBuilder.makeCall( StdOperatorRegistry.get( "MINUS" ), sumArgSquared, avgSumSquaredArg );
+        final RexNode diff = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MINUS ), sumArgSquared, avgSumSquaredArg );
 
         final RexNode denominator;
         if ( biased ) {
@@ -501,17 +502,17 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
         } else {
             final RexLiteral one = rexBuilder.makeExactLiteral( BigDecimal.ONE );
             final RexNode nul = rexBuilder.makeCast( countArg.getType(), rexBuilder.constantNull() );
-            final RexNode countMinusOne = rexBuilder.makeCall( StdOperatorRegistry.get( "MINUS" ), countArg, one );
-            final RexNode countEqOne = rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), countArg, one );
-            denominator = rexBuilder.makeCall( StdOperatorRegistry.get( "CASE" ), countEqOne, nul, countMinusOne );
+            final RexNode countMinusOne = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MINUS ), countArg, one );
+            final RexNode countEqOne = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), countArg, one );
+            denominator = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.CASE ), countEqOne, nul, countMinusOne );
         }
 
-        final RexNode div = rexBuilder.makeCall( StdOperatorRegistry.get( "DIVIDE" ), diff, denominator );
+        final RexNode div = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.DIVIDE ), diff, denominator );
 
         RexNode result = div;
         if ( sqrt ) {
             final RexNode half = rexBuilder.makeExactLiteral( new BigDecimal( "0.5" ) );
-            result = rexBuilder.makeCall( StdOperatorRegistry.get( "POWER" ), div, half );
+            result = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.POWER ), div, half );
         }
 
         return rexBuilder.makeCast( oldCall.getType(), result );
@@ -521,7 +522,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
     private RexNode getSumAggregatedRexNode( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, RexBuilder rexBuilder, int argOrdinal, int filterArg ) {
         final AggregateCall aggregateCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "SUM" ),
+                        StdOperatorRegistry.getAgg( OperatorName.SUM ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
                         ImmutableIntList.of( argOrdinal ),
@@ -543,7 +544,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
 
     private RexNode getSumAggregatedRexNodeWithBinding( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, RelDataType operandType, int argOrdinal, int filter ) {
         RelOptCluster cluster = oldAggRel.getCluster();
-        final AggregateCall sumArgSquaredAggCall = createAggregateCallWithBinding( cluster.getTypeFactory(), StdOperatorRegistry.getAgg( "SUM" ), operandType, oldAggRel, oldCall, argOrdinal, filter );
+        final AggregateCall sumArgSquaredAggCall = createAggregateCallWithBinding( cluster.getTypeFactory(), StdOperatorRegistry.getAgg( OperatorName.SUM ), operandType, oldAggRel, oldCall, argOrdinal, filter );
 
         return cluster.getRexBuilder().addAggCall( sumArgSquaredAggCall, oldAggRel.getGroupCount(), oldAggRel.indicator, newCalls, aggCallMapping, ImmutableList.of( sumArgSquaredAggCall.getType() ) );
     }
@@ -552,7 +553,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
     private RexNode getRegrCountRexNode( Aggregate oldAggRel, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, ImmutableIntList argOrdinals, ImmutableList<RelDataType> operandTypes, int filterArg ) {
         final AggregateCall countArgAggCall =
                 AggregateCall.create(
-                        StdOperatorRegistry.getAgg( "REGR_COUNT" ),
+                        StdOperatorRegistry.getAgg( OperatorName.REGR_COUNT ),
                         oldCall.isDistinct(),
                         oldCall.isApproximate(),
                         argOrdinals,
@@ -591,15 +592,15 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
         final RexNode argY = rexBuilder.ensureType( oldCallType, inputExprs.get( yIndex ), true );
         final RexNode argNullFilter = rexBuilder.ensureType( oldCallType, inputExprs.get( nullFilterIndex ), true );
 
-        final RexNode argXArgY = rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), argX, argY );
+        final RexNode argXArgY = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), argX, argY );
         final int argSquaredOrdinal = lookupOrAdd( inputExprs, argXArgY );
 
-        final RexNode argXAndYNotNullFilter = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ),
+        final RexNode argXAndYNotNullFilter = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ),
                 rexBuilder.makeCall(
-                        StdOperatorRegistry.get( "AND" ),
-                        rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), argX ),
-                        rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), argY ) ),
-                rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), argNullFilter ) );
+                        StdOperatorRegistry.get( OperatorName.AND ),
+                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), argX ),
+                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), argY ) ),
+                rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), argNullFilter ) );
         final int argXAndYNotNullFilterOrdinal = lookupOrAdd( inputExprs, argXAndYNotNullFilter );
         final RexNode sumXY = getSumAggregatedRexNodeWithBinding( oldAggRel, oldCall, newCalls, aggCallMapping, argXArgY.getType(), argSquaredOrdinal, argXAndYNotNullFilterOrdinal );
         final RexNode sumXYCast = rexBuilder.ensureType( oldCallType, sumXY, true );
@@ -610,19 +611,19 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
                         ? sumX
                         : getSumAggregatedRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, rexBuilder, yIndex, argXAndYNotNullFilterOrdinal );
 
-        final RexNode sumXSumY = rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), sumX, sumY );
+        final RexNode sumXSumY = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), sumX, sumY );
 
         final RexNode countArg = getRegrCountRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, ImmutableIntList.of( xIndex ), ImmutableList.of( argXType ), argXAndYNotNullFilterOrdinal );
 
         RexLiteral zero = rexBuilder.makeExactLiteral( BigDecimal.ZERO );
         RexNode nul = rexBuilder.constantNull();
         final RexNode avgSumXSumY = rexBuilder.makeCall(
-                StdOperatorRegistry.get( "CASE" ),
-                rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), countArg, zero ),
+                StdOperatorRegistry.get( OperatorName.CASE ),
+                rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), countArg, zero ),
                 nul,
-                rexBuilder.makeCall( StdOperatorRegistry.get( "DIVIDE" ), sumXSumY, countArg ) );
+                rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.DIVIDE ), sumXSumY, countArg ) );
         final RexNode avgSumXSumYCast = rexBuilder.ensureType( oldCallType, avgSumXSumY, true );
-        final RexNode result = rexBuilder.makeCall( StdOperatorRegistry.get( "MINUS" ), sumXYCast, avgSumXSumYCast );
+        final RexNode result = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MINUS ), sumXYCast, avgSumXSumYCast );
         return rexBuilder.makeCast( oldCall.getType(), result );
     }
 
@@ -646,14 +647,14 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
         final RelDataType oldCallType = typeFactory.createTypeWithNullability( oldCall.getType(), argXOrdinalType.isNullable() || argYOrdinalType.isNullable() );
         final RexNode argX = rexBuilder.ensureType( oldCallType, inputExprs.get( argXOrdinal ), true );
         final RexNode argY = rexBuilder.ensureType( oldCallType, inputExprs.get( argYOrdinal ), true );
-        final RexNode argXAndYNotNullFilter = rexBuilder.makeCall( StdOperatorRegistry.get( "AND" ), rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), argX ), rexBuilder.makeCall( StdOperatorRegistry.get( "IS_NOT_NULL" ), argY ) );
+        final RexNode argXAndYNotNullFilter = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), argX ), rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), argY ) );
         final int argXAndYNotNullFilterOrdinal = lookupOrAdd( inputExprs, argXAndYNotNullFilter );
-        final RexNode argXY = rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), argX, argY );
+        final RexNode argXY = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), argX, argY );
         final int argXYOrdinal = lookupOrAdd( inputExprs, argXY );
         final RexNode sumXY = getSumAggregatedRexNodeWithBinding( oldAggRel, oldCall, newCalls, aggCallMapping, argXY.getType(), argXYOrdinal, argXAndYNotNullFilterOrdinal );
         final RexNode sumX = getSumAggregatedRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, rexBuilder, argXOrdinal, argXAndYNotNullFilterOrdinal );
         final RexNode sumY = getSumAggregatedRexNode( oldAggRel, oldCall, newCalls, aggCallMapping, rexBuilder, argYOrdinal, argXAndYNotNullFilterOrdinal );
-        final RexNode sumXSumY = rexBuilder.makeCall( StdOperatorRegistry.get( "MULTIPLY" ), sumX, sumY );
+        final RexNode sumXSumY = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), sumX, sumY );
         final RexNode countArg = getRegrCountRexNode(
                 oldAggRel,
                 oldCall,
@@ -662,19 +663,19 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
                 ImmutableIntList.of( argXOrdinal, argYOrdinal ),
                 ImmutableList.of( argXOrdinalType, argYOrdinalType ),
                 argXAndYNotNullFilterOrdinal );
-        final RexNode avgSumSquaredArg = rexBuilder.makeCall( StdOperatorRegistry.get( "DIVIDE" ), sumXSumY, countArg );
-        final RexNode diff = rexBuilder.makeCall( StdOperatorRegistry.get( "MINUS" ), sumXY, avgSumSquaredArg );
+        final RexNode avgSumSquaredArg = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.DIVIDE ), sumXSumY, countArg );
+        final RexNode diff = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MINUS ), sumXY, avgSumSquaredArg );
         final RexNode denominator;
         if ( biased ) {
             denominator = countArg;
         } else {
             final RexLiteral one = rexBuilder.makeExactLiteral( BigDecimal.ONE );
             final RexNode nul = rexBuilder.makeCast( countArg.getType(), rexBuilder.constantNull() );
-            final RexNode countMinusOne = rexBuilder.makeCall( StdOperatorRegistry.get( "MINUS" ), countArg, one );
-            final RexNode countEqOne = rexBuilder.makeCall( StdOperatorRegistry.get( "EQUALS" ), countArg, one );
-            denominator = rexBuilder.makeCall( StdOperatorRegistry.get( "CASE" ), countEqOne, nul, countMinusOne );
+            final RexNode countMinusOne = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.MINUS ), countArg, one );
+            final RexNode countEqOne = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), countArg, one );
+            denominator = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.CASE ), countEqOne, nul, countMinusOne );
         }
-        final RexNode result = rexBuilder.makeCall( StdOperatorRegistry.get( "DIVIDE" ), diff, denominator );
+        final RexNode result = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.DIVIDE ), diff, denominator );
         return rexBuilder.makeCast( oldCall.getType(), result );
     }
 

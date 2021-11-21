@@ -54,6 +54,7 @@ import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyType;
@@ -1211,10 +1212,10 @@ public class RexLiteral extends RexNode {
         if ( node instanceof RexCall ) {
             final RexCall call = (RexCall) node;
             final Operator operator = call.getOperator();
-            if ( operator == StdOperatorRegistry.get( "CAST" ) ) {
+            if ( operator == StdOperatorRegistry.get( OperatorName.CAST ) ) {
                 return findValue( call.getOperands().get( 0 ) );
             }
-            if ( operator == StdOperatorRegistry.get( "UNARY_MINUS" ) ) {
+            if ( operator == StdOperatorRegistry.get( OperatorName.UNARY_MINUS ) ) {
                 final BigDecimal value = (BigDecimal) findValue( call.getOperands().get( 0 ) );
                 return value.negate();
             }

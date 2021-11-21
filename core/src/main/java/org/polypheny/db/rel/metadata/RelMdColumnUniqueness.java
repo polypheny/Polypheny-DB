@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.hep.HepRelVertex;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
@@ -198,7 +199,7 @@ public class RelMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
                 // If the expression is a cast such that the types are the same except for the nullability, then if we're ignoring nulls, it doesn't matter whether the underlying column reference
                 // is nullable.  Check that the types are the same by making a nullable copy of both types and then comparing them.
                 RexCall call = (RexCall) projExpr;
-                if ( !call.getOperator().equals( StdOperatorRegistry.get( "CAST" ) ) ) {
+                if ( !call.getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) ) {
                     continue;
                 }
                 RexNode castOperand = call.getOperands().get( 0 );

@@ -21,6 +21,7 @@ import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.OperatorBinding;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlSyntax;
@@ -68,7 +69,7 @@ public class SqlDatetimeSubtractionOperator extends SqlSpecialOperator {
 
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
-        return StdOperatorRegistry.get( "MINUS" ).getMonotonicity( call );
+        return StdOperatorRegistry.get( OperatorName.MINUS ).getMonotonicity( call );
     }
 }
 

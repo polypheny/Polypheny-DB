@@ -41,6 +41,7 @@ import org.joda.time.Period;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -54,7 +55,7 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
 
     @Override
     public Operator polyphenyDbOperator() {
-        return StdOperatorRegistry.get( "CAST" );
+        return StdOperatorRegistry.get( OperatorName.CAST );
     }
 
 

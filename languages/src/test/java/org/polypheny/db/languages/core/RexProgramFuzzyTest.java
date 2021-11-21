@@ -38,6 +38,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -139,15 +140,15 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
 
     private void nestedCalls( RexNode arg ) {
         Operator[] operators = {
-                StdOperatorRegistry.get( "NOT" ),
-                StdOperatorRegistry.get( "IS_FALSE" ),
-                StdOperatorRegistry.get( "IS_NOT_FALSE" ),
-                StdOperatorRegistry.get( "IS_TRUE" ),
-                StdOperatorRegistry.get( "IS_NOT_TRUE" ),
-                StdOperatorRegistry.get( "IS_NULL" ),
-                StdOperatorRegistry.get( "IS_NOT_NULL" ),
-                StdOperatorRegistry.get( "IS_UNKNOWN" ),
-                StdOperatorRegistry.get( "IS_NOT_UNKNOWN" )
+                StdOperatorRegistry.get( OperatorName.NOT ),
+                StdOperatorRegistry.get( OperatorName.IS_FALSE ),
+                StdOperatorRegistry.get( OperatorName.IS_NOT_FALSE ),
+                StdOperatorRegistry.get( OperatorName.IS_TRUE ),
+                StdOperatorRegistry.get( OperatorName.IS_NOT_TRUE ),
+                StdOperatorRegistry.get( OperatorName.IS_NULL ),
+                StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ),
+                StdOperatorRegistry.get( OperatorName.IS_UNKNOWN ),
+                StdOperatorRegistry.get( OperatorName.IS_NOT_UNKNOWN )
         };
         for ( Operator op1 : operators ) {
             RexNode n1 = rexBuilder.makeCall( op1, arg );

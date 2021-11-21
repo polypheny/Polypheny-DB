@@ -46,6 +46,7 @@ import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.Parser;
@@ -130,7 +131,7 @@ public class FrameworksTest extends LanguageManagerDependant {
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
                     final RexNode condition =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( "GREATER_THAN" ),
+                                    StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
                                     rexBuilder.makeFieldAccess( rexBuilder.makeRangeReference( tableRel ), "i", true ),
                                     rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
                     final LogicalFilter filter = LogicalFilter.create( tableRel, condition );
@@ -223,7 +224,7 @@ public class FrameworksTest extends LanguageManagerDependant {
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.DECIMAL, 30, 2 );
                         final RexLiteral literal = cluster.getRexBuilder().makeExactLiteral( BigDecimal.ONE, type );
-                        final RexNode call = cluster.getRexBuilder().makeCall( StdOperatorRegistry.get( "PLUS" ), literal, literal );
+                        final RexNode call = cluster.getRexBuilder().makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), literal, literal );
                         assertEquals( expected, call.getType().getPrecision() );
                         return null;
                     }

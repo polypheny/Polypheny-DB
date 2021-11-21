@@ -33,6 +33,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.ExplainFormat;
 import org.polypheny.db.core.ExplainLevel;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.jdbc.PolyphenyDbServerStatement;
 import org.polypheny.db.plan.Convention;
@@ -155,7 +156,7 @@ public class TraitPropagationTest {
                     typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build() );
 
             // aggregate on s, count
-            AggregateCall aggCall = AggregateCall.create( StdOperatorRegistry.getAgg( "COUNT" ), false, false, Collections.singletonList( 1 ), -1, RelCollations.EMPTY, sqlBigInt, "cnt" );
+            AggregateCall aggCall = AggregateCall.create( StdOperatorRegistry.getAgg( OperatorName.COUNT ), false, false, Collections.singletonList( 1 ), -1, RelCollations.EMPTY, sqlBigInt, "cnt" );
             RelNode agg = new LogicalAggregate( cluster, cluster.traitSetOf( Convention.NONE ), project, false, ImmutableBitSet.of( 0 ), null, Collections.singletonList( aggCall ) );
 
             final RelNode rootRel = agg;

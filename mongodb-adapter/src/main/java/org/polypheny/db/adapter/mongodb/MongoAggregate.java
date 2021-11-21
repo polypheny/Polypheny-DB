@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.AggFunction;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSumEmptyIsZeroAggFunction;
@@ -148,7 +149,7 @@ public class MongoAggregate extends Aggregate implements MongoRel {
 
 
     private String toMongo( AggFunction aggregation, List<String> inNames, List<Integer> args, Implementor implementor ) {
-        if ( aggregation.equals( StdOperatorRegistry.getAgg( "COUNT" ) ) ) {
+        if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.COUNT ) ) ) {
             if ( args.size() == 0 ) {
                 return "{$sum: 1}";
             } else {
@@ -162,17 +163,17 @@ public class MongoAggregate extends Aggregate implements MongoRel {
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$sum: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( "MIN" ) ) ) {
+        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.MIN ) ) ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$min: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( "MAX" ) ) ) {
+        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.MAX ) ) ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$max: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( "AVG" ) ) || aggregation.getKind() == StdOperatorRegistry.getAgg( "AVG" ).getKind() ) {
+        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.AVG ) ) || aggregation.getKind() == StdOperatorRegistry.getAgg( OperatorName.AVG ).getKind() ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
