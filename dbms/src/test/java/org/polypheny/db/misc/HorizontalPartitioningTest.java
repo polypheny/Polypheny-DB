@@ -653,8 +653,8 @@ public class HorizontalPartitioningTest {
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
                 Config c2 = cm.getConfig( "runtime/queueProcessingInterval" );
-                ((ConfigEnum) c1).setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS_FIXED );
-                ((ConfigEnum) c2).setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS_FIXED );
+                ((ConfigEnum) c1).setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
+                ((ConfigEnum) c2).setEnum( TaskSchedulingType.EVERY_SECOND );
 
                 statement.executeUpdate( "CREATE TABLE temperaturetest( "
                         + "tprimary INTEGER NOT NULL, "

@@ -344,19 +344,19 @@ public enum RuntimeConfig {
 
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
             "Rate of passive tracking of statistics.",
-            BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS_FIXED,
+            TaskSchedulingType.EVERY_SECOND,
             ConfigType.ENUM,
             "monitoringSettingsQueueGroup" ),
 
     QUEUE_PROCESSING_ELEMENTS( "runtime/queueProcessingElements",
             "Number of elements in workload queue to process per time.",
-            50,
+            5000,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 
     TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
             "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
-            BackgroundTask.TaskSchedulingType.EVERY_MINUTE_FIXED,
+            BackgroundTask.TaskSchedulingType.EVERY_MINUTE,
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup" );
 
