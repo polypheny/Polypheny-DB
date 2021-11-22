@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -4609,9 +4610,11 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogTable> getTablesForPeriodicProcessing() {
         List<CatalogTable> procTables = new ArrayList<>();
-
-        for ( Long tableId : frequencyDependentTables ) {
+        Iterator<Long> iterator = frequencyDependentTables.iterator();
+        while ( iterator.hasNext() ) {
+            long tableId = -1;
             try {
+                tableId = iterator.next();
                 procTables.add( getTable( tableId ) );
             } catch ( UnknownTableIdRuntimeException e ) {
                 frequencyDependentTables.remove( tableId );

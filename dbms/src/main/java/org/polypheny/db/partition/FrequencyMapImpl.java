@@ -120,9 +120,9 @@ public class FrequencyMapImpl extends FrequencyMap {
         Catalog catalog = Catalog.getInstance();
 
         long invocationTimestamp = System.currentTimeMillis();
-
+        List<CatalogTable> periodicTables = catalog.getTablesForPeriodicProcessing();
         // Retrieve all Tables which rely on periodic processing
-        for ( CatalogTable table : catalog.getTablesForPeriodicProcessing() ) {
+        for ( CatalogTable table : periodicTables ) {
             if ( table.partitionType == PartitionType.TEMPERATURE ) {
                 determinePartitionFrequency( table, invocationTimestamp );
             }
