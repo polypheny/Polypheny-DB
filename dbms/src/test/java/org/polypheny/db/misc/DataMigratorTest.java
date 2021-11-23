@@ -26,7 +26,6 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -83,7 +82,7 @@ public class DataMigratorTest {
     @Test
     public void partialPlacementsTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
-            RuntimeConfig.ROUTING_PLAN_CACHING.setBoolean( false );
+            //RuntimeConfig.ROUTING_PLAN_CACHING.setBoolean( false );
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE datamigratortest( "
