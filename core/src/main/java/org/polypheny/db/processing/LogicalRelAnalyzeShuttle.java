@@ -86,13 +86,15 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
         }
 
         Map<Long, String> result = new HashMap<>();
-        for ( int usedId : this.rexShuttle.usedIds ) {
-            if ( availableColumnKeys.size() > usedId && availableColumnNames.size() > usedId ) {
+        if ( availableColumnKeys.size() > this.rexShuttle.usedIds.size() && availableColumnNames.size() > this.rexShuttle.usedIds.size() ) {
+            for ( int usedId : this.rexShuttle.usedIds ) {
                 result.put(
                         availableColumnKeys.get( usedId ),
                         availableColumnNames.get( usedId )
                 );
             }
+        } else {
+            result = this.availableColumns;
         }
 
         return result;
@@ -222,7 +224,7 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
     private void getAvailableColumns( TableScan scan ) {
         this.tables.addAll( scan.getTable().getQualifiedName() );
-        final Table table = ((RelOptTableImpl) scan.getTable()).getTable();
+        final Table table = scan.getTable().getTable();
         LogicalTable logicalTable = (table instanceof LogicalTable) ? (LogicalTable) table : null;
         if ( logicalTable != null ) {
             final List<Long> ids = logicalTable.getColumnIds();
