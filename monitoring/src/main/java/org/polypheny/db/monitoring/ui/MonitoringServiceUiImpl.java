@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -78,8 +77,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
 
     private void initializeWorkloadInformationTable() {
-        val informationGroup = new InformationGroup( informationPage, "Workload Overview" );
-        val informationTable = new InformationTable( informationGroup, Arrays.asList( "Attribute", "Value" ) );
+        final InformationGroup informationGroup = new InformationGroup( informationPage, "Workload Overview" );
+        final InformationTable informationTable = new InformationTable( informationGroup, Arrays.asList( "Attribute", "Value" ) );
         informationGroup.setOrder( 1 );
 
         informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
@@ -93,8 +92,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         // Also build active subscription table Metric to subscribers
         // or which subscribers, exist and to which metrics they are subscribed
 
-        val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
-        val informationTable = new InformationTable( informationGroup, Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
+        final InformationGroup informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
+        final InformationTable informationTable = new InformationTable( informationGroup, Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
 
         informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable ) );
 

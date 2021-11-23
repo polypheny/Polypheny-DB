@@ -21,8 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
@@ -127,19 +127,20 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     public abstract PartitionFunctionInfo getPartitionFunctionInfo();
 
 
+    @Override
     public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Map<Integer, Map<Long, List<CatalogColumnPlacement>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
         if ( partitionIds != null ) {
 
             for ( long partitionId : partitionIds ) {
-                val adapters = catalog.getAdaptersByPartitionGroup( catalogTable.id, partitionId );
+                List<CatalogAdapter> adapters = catalog.getAdaptersByPartitionGroup( catalogTable.id, partitionId );
 
-                for ( val adapter : adapters ) {
+                for ( CatalogAdapter adapter : adapters ) {
                     if ( !adapterPlacements.containsKey( adapter.id ) ) {
                         adapterPlacements.put( adapter.id, new HashMap<>() );
                     }
 
-                    val placements = catalog.getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
+                    List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
                     adapterPlacements.get( adapter.id ).put( partitionId, placements );
                 }
             }

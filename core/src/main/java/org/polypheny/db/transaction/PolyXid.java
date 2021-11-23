@@ -18,11 +18,11 @@ package org.polypheny.db.transaction;
 
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Arrays;
 import lombok.EqualsAndHashCode;
-import lombok.val;
 import org.apache.commons.codec.binary.Hex;
 
 
@@ -289,10 +289,10 @@ public class PolyXid implements javax.transaction.xa.Xid, Serializable {
     @Override
     public PolyXid clone() {
         try {
-            val clone = (PolyXid) super.clone();
+            final PolyXid clone = (PolyXid) super.clone();
 
-            val globalTransactionId_Field = PolyXid.class.getDeclaredField( "globalTransactionId" );
-            val branchQualifier_Field = PolyXid.class.getDeclaredField( "branchQualifier" );
+            final Field globalTransactionId_Field = PolyXid.class.getDeclaredField( "globalTransactionId" );
+            final Field branchQualifier_Field = PolyXid.class.getDeclaredField( "branchQualifier" );
 
             synchronized ( CLONE_LOCK ) {
                 AccessController.doPrivileged( (PrivilegedAction<Void>) () -> {

@@ -23,18 +23,18 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
-import org.polypheny.db.monitoring.events.QueryPostCosts;
-import org.polypheny.db.monitoring.events.metrics.QueryPostCostsImpl;
+import org.polypheny.db.monitoring.events.QueryPostCost;
+import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
 import org.polypheny.db.util.FileSystemManager;
 
 
@@ -47,7 +47,7 @@ public class MapDbRepository implements MonitoringRepository {
     private static final String FOLDER_NAME = "monitoring";
     protected final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
     protected DB simpleBackendDb;
-    protected BTreeMap<String, QueryPostCostsImpl> queryPostCosts;
+    protected BTreeMap<String, QueryPostCostImpl> queryPostCosts;
 
     // endregion
 
@@ -77,7 +77,7 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <TPersistent extends MonitoringDataPoint> List<TPersistent> getAllDataPoints( @NonNull Class<TPersistent> dataPointClass ) {
-        val table = this.data.get( dataPointClass );
+        final Map<UUID, MonitoringDataPoint> table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
@@ -93,7 +93,7 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        val table = this.data.get( dataPointClass );
+        final Map<UUID, MonitoringDataPoint> table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
@@ -109,7 +109,7 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        val table = this.data.get( dataPointClass );
+        final Map<UUID, MonitoringDataPoint> table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
@@ -124,18 +124,18 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass ) {
+    public QueryPostCost getQueryPostCosts( @NonNull String physicalQueryClass ) {
         if ( queryPostCosts == null ) {
             this.initializePostCosts();
         }
 
-        val result = queryPostCosts.get( physicalQueryClass );
-        return result != null ? result : new QueryPostCostsImpl( physicalQueryClass, 0, 0 );
+        QueryPostCost result = queryPostCosts.get( physicalQueryClass );
+        return result != null ? result : new QueryPostCostImpl( physicalQueryClass, 0, 0 );
     }
 
 
     @Override
-    public List<QueryPostCosts> getAllQueryPostCosts() {
+    public List<QueryPostCost> getAllQueryPostCosts() {
         if ( queryPostCosts == null ) {
             this.initializePostCosts();
         }
@@ -151,15 +151,15 @@ public class MapDbRepository implements MonitoringRepository {
             return;
         }
 
-        val result = queryPostCosts.get( physicalQueryClass );
+        final QueryPostCostImpl result = queryPostCosts.get( physicalQueryClass );
         if ( result == null ) {
-            queryPostCosts.put( physicalQueryClass, new QueryPostCostsImpl( physicalQueryClass, executionTime, 1 ) );
+            queryPostCosts.put( physicalQueryClass, new QueryPostCostImpl( physicalQueryClass, executionTime, 1 ) );
 
         } else {
-            val newTotalTime = (result.getExecutionTime() * result.getNumberOfSamples()) + executionTime;
-            val samples = result.getNumberOfSamples() + 1;
-            val newTime = newTotalTime / samples;
-            queryPostCosts.replace( physicalQueryClass, new QueryPostCostsImpl( physicalQueryClass, newTime, samples ) );
+            long newTotalTime = (result.getExecutionTime() * result.getNumberOfSamples()) + executionTime;
+            int samples = result.getNumberOfSamples() + 1;
+            long newTime = newTotalTime / samples;
+            queryPostCosts.replace( physicalQueryClass, new QueryPostCostImpl( physicalQueryClass, newTime, samples ) );
         }
 
         this.simpleBackendDb.commit();
@@ -201,13 +201,13 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     private void initializePostCosts() {
-        queryPostCosts = simpleBackendDb.treeMap( QueryPostCosts.class.getName(), Serializer.STRING, Serializer.JAVA ).createOrOpen();
+        queryPostCosts = simpleBackendDb.treeMap( QueryPostCost.class.getName(), Serializer.STRING, Serializer.JAVA ).createOrOpen();
     }
 
 
     private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
         if ( classPersistentData != null ) {
-            val treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
+            final BTreeMap<UUID, MonitoringDataPoint> treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
             data.put( classPersistentData, treeMap );
         }
     }

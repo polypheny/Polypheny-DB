@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationPage;
@@ -91,11 +90,11 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
             throw new IllegalStateException( "Should never happen for conditional executes" );
         } else {
-            val builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
+            RoutedRelBuilder builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
 
             // Add information to query analyzer
             if ( statement.getTransaction().isAnalyze() ) {
-                val page = new InformationPage( "Routing" );
+                InformationPage page = new InformationPage( "Routing" );
                 statement.getTransaction().getQueryAnalyzer().addPage( page );
                 InformationGroup group = new InformationGroup( page, "Selected Adapters" );
                 statement.getTransaction().getQueryAnalyzer().addGroup( group );
@@ -174,7 +173,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
         builders = buildDql( node.getInput( 0 ), builders, statement, cluster, queryInformation );
 
         RoutedRelBuilder builder0 = RoutedRelBuilder.create( statement, cluster );
-        val b0 = buildDql( node.getInput( 1 ), Lists.newArrayList( builder0 ), statement, cluster, queryInformation ).get( 0 );
+        RoutedRelBuilder b0 = buildDql( node.getInput( 1 ), Lists.newArrayList( builder0 ), statement, cluster, queryInformation ).get( 0 );
 
         builders.forEach(
                 builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek(), b0.build() ) ) )

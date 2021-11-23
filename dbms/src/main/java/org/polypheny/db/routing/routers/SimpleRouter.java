@@ -16,7 +16,6 @@
 
 package org.polypheny.db.routing.routers;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.Collections;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -40,6 +38,7 @@ import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
+
 
 @Slf4j
 public class SimpleRouter extends AbstractDqlRouter {
@@ -59,9 +58,9 @@ public class SimpleRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // get placements and convert i
-        val placements = selectPlacement( catalogTable );
+        final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
 
-        // only one builder available
+        // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placements );
         builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placements ) );
 
@@ -74,14 +73,14 @@ public class SimpleRouter extends AbstractDqlRouter {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
-        //Utilize scanId to retrieve Partitions being accessed
+        // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = partitionIds != null
                 ? partitionManager.getRelevantPlacements( catalogTable, partitionIds, Collections.emptyList() )
                 : partitionManager.getRelevantPlacements( catalogTable, catalogTable.partitionProperty.partitionIds, Collections.emptyList() );
 
-        // only one builder available
+        // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );
         builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placementDistribution ) );
 
@@ -89,16 +88,8 @@ public class SimpleRouter extends AbstractDqlRouter {
     }
 
 
-    /**
-     * @param node
-     * @param builder
-     * @param statement
-     * @param cluster
-     * @param queryInformation
-     * @return
-     */
     public RoutedRelBuilder routeFirst( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        val result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster, queryInformation );
+        List<RoutedRelBuilder> result = this.buildSelect( node, Lists.newArrayList( builder ), statement, cluster, queryInformation );
         if ( result.size() > 1 ) {
             log.error( "Single build select with multiple results " );
         }
@@ -107,7 +98,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
 
     /**
-     * // Execute the table scan on the first placement of a table
+     * Execute the table scan on the first placement of a table
      */
     private Map<Long, List<CatalogColumnPlacement>> selectPlacement( CatalogTable table ) {
         // Find the adapter with the most column placements

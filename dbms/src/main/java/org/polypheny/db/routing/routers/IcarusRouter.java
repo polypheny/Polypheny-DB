@@ -21,9 +21,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
@@ -34,6 +36,7 @@ import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class IcarusRouter extends FullPlacementQueryRouter {
@@ -54,59 +57,61 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
     @Override
     protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+        }
 
-        val placements = selectPlacement( catalogTable, queryInformation );
-        val newBuilders = new ArrayList<RoutedRelBuilder>();
+        final Set<List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable, queryInformation );
+        List<RoutedRelBuilder> newBuilders = new ArrayList<>();
         if ( placements.isEmpty() ) {
             this.cancelQuery = true;
             return Collections.emptyList();
         }
 
-        // initial case with empty single builder
+        // Initial case with empty single builder
         if ( builders.size() == 1 && builders.get( 0 ).getPhysicalPlacementsOfPartitions().isEmpty() ) {
-            for ( val currentPlacement : placements ) {
-
-                val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
+            for ( List<CatalogColumnPlacement> currentPlacement : placements ) {
+                final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
                 currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), currentPlacement );
 
-                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builders.get( 0 ) );
+                final RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builders.get( 0 ) );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
         } else {
-            // already one placement added
-            // add placement in order of list to combine full placements of one store
+            // Already one placement added
+            // Add placement in order of list to combine full placements of one store
             if ( placements.size() != builders.size() ) {
-                log.error( " not allowed! icarus should not happen" );
+                log.error( "Not allowed! With Icarus, this should not happen" );
             }
 
-            for ( val currentPlacement : placements ) {
-
-                val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
+            for ( List<CatalogColumnPlacement> currentPlacement : placements ) {
+                final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
                 currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), currentPlacement );
 
-                // adapterId for all col placements same
-                val adapterId = currentPlacement.get( 0 ).adapterId;
+                // AdapterId for all col placements same
+                final int adapterId = currentPlacement.get( 0 ).adapterId;
 
-                // find corresponding builder:
-                val builder = builders.stream().filter( b -> {
-                            val listPairs = b.getPhysicalPlacementsOfPartitions().values()
-                                    .stream().flatMap( Collection::stream ).collect( Collectors.toList() );
-
-                            val found = listPairs.stream().map( elem -> elem.left ).filter( elem -> elem == adapterId ).findFirst();
-
+                // Find corresponding builder:
+                final Optional<RoutedRelBuilder> builder = builders.stream().filter( b -> {
+                            final List<Pair<Integer, Long>> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
+                                    .flatMap( Collection::stream )
+                                    .collect( Collectors.toList() );
+                            final Optional<Integer> found = listPairs.stream()
+                                    .map( elem -> elem.left )
+                                    .filter( elem -> elem == adapterId )
+                                    .findFirst();
                             return found.isPresent();
                         }
                 ).findAny();
 
                 if ( !builder.isPresent() ) {
-                    // if builder not found, adapter with id will be removed.
+                    // If builder not found, adapter with id will be removed.
                     continue;
                 }
 
-                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder.get() );
+                final RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder.get() );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
@@ -122,7 +127,6 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
 
     public static class IcarusRouterFactory extends RouterFactory {
-
 
         @Override
         public Router createInstance() {

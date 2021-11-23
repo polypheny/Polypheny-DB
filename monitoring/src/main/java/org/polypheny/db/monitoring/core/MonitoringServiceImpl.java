@@ -22,7 +22,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
-import org.polypheny.db.monitoring.events.QueryPostCosts;
+import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
@@ -81,13 +81,13 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
-    public QueryPostCosts getQueryPostCosts( String physicalQueryClass ) {
+    public QueryPostCost getQueryPostCosts( String physicalQueryClass ) {
         return this.repository.getQueryPostCosts( physicalQueryClass );
     }
 
 
     @Override
-    public List<QueryPostCosts> getAllQueryPostCosts() {
+    public List<QueryPostCost> getAllQueryPostCosts() {
         return this.repository.getAllQueryPostCosts();
     }
 

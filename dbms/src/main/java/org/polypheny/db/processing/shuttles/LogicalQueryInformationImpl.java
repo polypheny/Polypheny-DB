@@ -20,9 +20,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.val;
 import org.polypheny.db.routing.LogicalQueryInformation;
 
 public class LogicalQueryInformationImpl implements LogicalQueryInformation {
@@ -68,20 +68,20 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
     @Override
     public List<Long> getAllColumnsPerTable( Long tableId ) {
-        val usedCols = this.availableColumns;
+        final Map<Long, String> usedCols = this.availableColumns;
         return availableColumnsWithTable.entrySet().stream()
                 .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ) )
-                .map( x -> x.getKey() )
+                .map( Entry::getKey )
                 .collect( Collectors.toList() );
     }
 
 
     @Override
     public List<Long> getUsedColumnsPerTable( Long tableId ) {
-        val usedCols = getUsedColumns();
+        Map<Long, String> usedCols = getUsedColumns();
         return availableColumnsWithTable.entrySet().stream()
                 .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ) )
-                .map( x -> x.getKey() )
+                .map( Entry::getKey )
                 .collect( Collectors.toList() );
     }
 

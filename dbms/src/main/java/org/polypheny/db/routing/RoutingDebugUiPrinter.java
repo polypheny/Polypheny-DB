@@ -19,7 +19,6 @@ package org.polypheny.db.routing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
-import lombok.val;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -28,6 +27,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.transaction.Statement;
@@ -38,20 +38,19 @@ import org.polypheny.db.transaction.Statement;
 public class RoutingDebugUiPrinter {
 
     public void printDebugOutputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, Statement statement ) {
-        // print stuff in reverse order
+        // Print stuff in reverse order
         this.printExecutedPhysicalPlan( optimalRelNode, statement );
 
-        val page = this.printBaseOutput( "Routing Cached or single", 0, statement );
+        InformationPage page = this.printBaseOutput( "Routed Query Plan", 0, statement );
 
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-        val plan = (ProposedRoutingPlan) proposedRoutingPlan;
-        if ( plan != null ) {
-            val root = plan.getRoutedRoot();
-            InformationGroup physicalQueryPlan = new InformationGroup( page, "Physical Query Plan" );
-            queryAnalyzer.addGroup( physicalQueryPlan );
+        if ( proposedRoutingPlan != null ) {
+            final RelRoot root = proposedRoutingPlan.getRoutedRoot();
+            InformationGroup routedQueryPlan = new InformationGroup( page, "Routed Query Plan" );
+            queryAnalyzer.addGroup( routedQueryPlan );
             InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    physicalQueryPlan,
-                    RelOptUtil.dumpPlan( "Physical Query Plan", root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+                    routedQueryPlan,
+                    RelOptUtil.dumpPlan( "Routed Query Plan", root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
     }
@@ -70,18 +69,17 @@ public class RoutingDebugUiPrinter {
                     RelOptUtil.dumpPlan( "Physical Query Plan", optimalNode, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
-
     }
 
 
-    public InformationPage printBaseOutput( String titel, Integer numberOfPlans, Statement statement ) {
+    public InformationPage printBaseOutput( String title, Integer numberOfPlans, Statement statement ) {
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-        val page = new InformationPage( titel );
+        InformationPage page = new InformationPage( title );
         page.fullWidth();
         queryAnalyzer.addPage( page );
 
-        val ratioPre = 1 - RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
-        val ratioPost = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
+        double ratioPre = 1 - RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
+        double ratioPost = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
 
         InformationGroup overview = new InformationGroup( page, "Stats overview" );
         queryAnalyzer.addGroup( overview );
@@ -91,7 +89,6 @@ public class RoutingDebugUiPrinter {
         queryAnalyzer.registerInformation( overviewTable );
 
         return page;
-
     }
 
 
@@ -106,10 +103,10 @@ public class RoutingDebugUiPrinter {
             Optional<List<Double>> percentageCosts,
             Statement statement ) {
 
-        val page = this.printBaseOutput( "Routing", routingPlans.size(), statement );
+        InformationPage page = this.printBaseOutput( "Routing", routingPlans.size(), statement );
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
 
-        val isIcarus = icarusCosts.isPresent();
+        final boolean isIcarus = icarusCosts.isPresent();
 
         InformationGroup group = new InformationGroup( page, "Proposed Plans" );
         queryAnalyzer.addGroup( group );
@@ -118,7 +115,7 @@ public class RoutingDebugUiPrinter {
                 ImmutableList.of( "Physical QueryClass", "router", "Pre. Costs", "Post Costs", "Norm. pre Costs", "Norm. post Costs", "Total Costs", "Adapter Info", "Percentage" ) );
 
         for ( int i = 0; i < routingPlans.size(); i++ ) {
-            val routingPlan = routingPlans.get( i );
+            final RoutingPlan routingPlan = routingPlans.get( i );
             table.addRow(
                     routingPlan.getPhysicalQueryClass(),
                     routingPlan.getRouter().isPresent() ? routingPlan.getRouter().get() : "",
@@ -141,16 +138,14 @@ public class RoutingDebugUiPrinter {
                 selectedPlan.getOptionalPhysicalPlacementsOfPartitions() );
 
         if ( selectedPlan instanceof ProposedRoutingPlan ) {
-            val plan = (ProposedRoutingPlan) selectedPlan;
-            val root = plan.getRoutedRoot();
+            ProposedRoutingPlan plan = (ProposedRoutingPlan) selectedPlan;
+            RelRoot root = plan.getRoutedRoot();
             if ( statement.getTransaction().isAnalyze() ) {
                 InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
                         selected,
                         RelOptUtil.dumpPlan( "Routed Query Plan", root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
                 queryAnalyzer.registerInformation( informationQueryPlan );
             }
-
-
         }
 
         /*val plans = routingPlans.stream().map( elem -> elem instanceof ProposedRoutingPlan ? (ProposedRoutingPlan) elem : null ).collect( Collectors.toList() );
@@ -171,6 +166,5 @@ public class RoutingDebugUiPrinter {
 
         queryAnalyzer.registerInformation( table, selectedTable );
     }
-
 
 }

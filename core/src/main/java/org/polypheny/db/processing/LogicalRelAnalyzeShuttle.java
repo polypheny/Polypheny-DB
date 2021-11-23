@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.val;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -46,6 +45,7 @@ import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.Statement;
 
 /**
@@ -78,16 +78,16 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
             return Collections.emptyMap();
         }
 
-        val availableColumnNames = new ArrayList<>( this.availableColumns.values() );
-        val availableColumnKeys = new ArrayList<>( this.availableColumns.keySet() );
+        final ArrayList<String> availableColumnNames = new ArrayList<>( this.availableColumns.values() );
+        final ArrayList<Long> availableColumnKeys = new ArrayList<>( this.availableColumns.keySet() );
 
         if ( this.rexShuttle.usedIds.isEmpty() ) {
             return this.availableColumns;
         }
 
         Map<Long, String> result = new HashMap<>();
-        for ( val usedId : this.rexShuttle.usedIds ) {
-            if ( availableColumnKeys.contains( usedId ) && availableColumnNames.contains( usedId ) ) {
+        for ( int usedId : this.rexShuttle.usedIds ) {
+            if ( availableColumnKeys.size() > usedId && availableColumnNames.size() > usedId ) {
                 result.put(
                         availableColumnKeys.get( usedId ),
                         availableColumnNames.get( usedId )
@@ -222,12 +222,12 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
     private void getAvailableColumns( TableScan scan ) {
         this.tables.addAll( scan.getTable().getQualifiedName() );
-        val table = ((RelOptTableImpl) scan.getTable()).getTable();
+        final Table table = ((RelOptTableImpl) scan.getTable()).getTable();
         LogicalTable logicalTable = (table instanceof LogicalTable) ? (LogicalTable) table : null;
         if ( logicalTable != null ) {
-            val ids = logicalTable.getColumnIds();
-            val names = logicalTable.getLogicalColumnNames();
-            val baseName = logicalTable.getLogicalSchemaName() + "." + logicalTable.getLogicalTableName() + ".";
+            final List<Long> ids = logicalTable.getColumnIds();
+            final List<String> names = logicalTable.getLogicalColumnNames();
+            final String baseName = logicalTable.getLogicalSchemaName() + "." + logicalTable.getLogicalTableName() + ".";
 
             for ( int i = 0; i < ids.size(); i++ ) {
                 this.availableColumns.putIfAbsent( ids.get( i ), baseName + names.get( i ) );
@@ -238,19 +238,18 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalFilter filter ) {
-        //
         RelOptTableImpl table = (RelOptTableImpl) filter.getInput().getTable();
         if ( table == null ) {
             return;
         }
 
-        val logicalTable = table.getTable();
+        final Table logicalTable = table.getTable();
         if ( !(logicalTable instanceof LogicalTable) ) {
             return;
         }
         CatalogTable catalogTable = Catalog.getInstance().getTable( ((LogicalTable) logicalTable).getTableId() );
 
-        // only if table is partitioned
+        // Only if table is partitioned
         if ( catalogTable.isPartitioned ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
             filter.accept( whereClauseVisitor );
@@ -274,6 +273,4 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
     // endregion
 
-
 }
-

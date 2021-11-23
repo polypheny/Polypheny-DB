@@ -30,8 +30,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.util.background.BackgroundTask;
@@ -124,7 +124,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         List<HashMap<String, String>> infoList = new ArrayList<>();
 
         for ( MonitoringEvent event : monitoringJobQueue.stream().limit( 100 ).collect( Collectors.toList() ) ) {
-            HashMap<String, String> infoRow = new HashMap<String, String>();
+            HashMap<String, String> infoRow = new HashMap<>();
             infoRow.put( "type", event.getClass().toString() );
             infoRow.put( "id", event.getId().toString() );
             infoRow.put( "timestamp", event.getRecordedTimestamp().toString() );
@@ -176,13 +176,13 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 }
 
                 // returns list of metrics which was produced by this particular event
-                val dataPoints = event.get().analyze();
+                final List<MonitoringDataPoint> dataPoints = event.get().analyze();
                 if ( dataPoints.isEmpty() ) {
                     continue;
                 }
 
                 // Sends all extracted metrics to subscribers
-                for ( val dataPoint : dataPoints ) {
+                for ( MonitoringDataPoint dataPoint : dataPoints ) {
                     this.repository.persistDataPoint( dataPoint );
                 }
 

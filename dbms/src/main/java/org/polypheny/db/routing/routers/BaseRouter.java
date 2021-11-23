@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -121,7 +120,7 @@ public abstract class BaseRouter {
 
 
     public RoutedRelBuilder handleGeneric( RelNode node, RoutedRelBuilder builder ) {
-        val result = handleGeneric( node, Lists.newArrayList( builder ) );
+        final List<RoutedRelBuilder> result = handleGeneric( node, Lists.newArrayList( builder ) );
         if ( result.size() > 1 ) {
             log.error( "Single handle generic with multiple results " );
         }

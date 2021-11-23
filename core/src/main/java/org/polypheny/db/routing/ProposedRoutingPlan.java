@@ -41,6 +41,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     /**
      * @return the query class.
      */
+    @Override
     String getQueryClass();
 
     /**
@@ -61,6 +62,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     /**
      * @return gets the router class which proposed the plan.
      */
+    @Override
     Optional<Class<? extends Router>> getRouter();
 
     /**

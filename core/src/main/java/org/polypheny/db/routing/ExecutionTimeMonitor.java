@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class ExecutionTimeMonitor {
 
-    private Map<ExecutionTimeObserver, String> observers = new HashMap<>(); // Observer and their individual reference
+    private final Map<ExecutionTimeObserver, String> observers = new HashMap<>(); // Observer and their individual reference
 
 
     public void setExecutionTime( long nanoTime ) {

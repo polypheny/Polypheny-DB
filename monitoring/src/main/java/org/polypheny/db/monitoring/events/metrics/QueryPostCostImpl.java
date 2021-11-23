@@ -18,9 +18,9 @@ package org.polypheny.db.monitoring.events.metrics;
 
 import java.io.Serializable;
 import lombok.Getter;
-import org.polypheny.db.monitoring.events.QueryPostCosts;
+import org.polypheny.db.monitoring.events.QueryPostCost;
 
-public class QueryPostCostsImpl implements QueryPostCosts, Serializable {
+public class QueryPostCostImpl implements QueryPostCost, Serializable {
 
     @Getter
     private final String physicalQueryClass;
@@ -32,7 +32,7 @@ public class QueryPostCostsImpl implements QueryPostCosts, Serializable {
     private final int numberOfSamples;
 
 
-    public QueryPostCostsImpl( String physicalQueryClass, long executionTime, int numberOfSamples ) {
+    public QueryPostCostImpl( String physicalQueryClass, long executionTime, int numberOfSamples ) {
         this.physicalQueryClass = physicalQueryClass;
         this.executionTime = executionTime;
         this.numberOfSamples = numberOfSamples;

@@ -18,11 +18,11 @@ package org.polypheny.db.routing.strategies;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.val;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogTable;
 
 /**
  * Adds new columns and tables on all stores.
@@ -31,13 +31,11 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
-        val catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
-
+        CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
         return catalogTable.placementsByAdapter.keySet()
                 .stream()
                 .map( elem -> AdapterManager.getInstance().getStore( elem ) )
                 .collect( Collectors.toList() );
-
     }
 
 

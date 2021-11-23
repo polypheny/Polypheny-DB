@@ -41,17 +41,16 @@ public interface LogicalQueryInformation {
     Map<Long, String> getUsedColumns(); // column id -> schemaName.tableName.ColumnName
 
     /**
-     * @param tableId
+     * @param tableId The id of the table
      * @return a list of all columnIds.
      */
     List<Long> getAllColumnsPerTable( Long tableId );
 
     /**
-     * @param tableId
+     * @param tableId The id of the table
      * @return a list of all used columnIds in the query.
      */
     List<Long> getUsedColumnsPerTable( Long tableId );
-
 
     /**
      * @return gets the query class.

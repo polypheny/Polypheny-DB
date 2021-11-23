@@ -17,7 +17,6 @@
 package org.polypheny.db.monitoring.core;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.times;
 
 import java.sql.Timestamp;
 import lombok.val;
@@ -87,7 +86,7 @@ class MonitoringServiceImplTest {
         sut.monitorEvent( event );
 
         // assert
-        Mockito.verify( monitoringQueue, times( 1 ) ).queueEvent( event );
+        Mockito.verify( monitoringQueue, Mockito.times( 1 ) ).queueEvent( event );
     }
 
 
@@ -103,7 +102,7 @@ class MonitoringServiceImplTest {
         sut.getAllDataPoints( QueryDataPointImpl.class );
 
         // assert
-        Mockito.verify( repository, times( 1 ) ).getAllDataPoints( QueryDataPointImpl.class );
+        Mockito.verify( repository, Mockito.times( 1 ) ).getAllDataPoints( QueryDataPointImpl.class );
     }
 
 
@@ -120,7 +119,7 @@ class MonitoringServiceImplTest {
         sut.getDataPointsBefore( QueryDataPointImpl.class, time );
 
         // assert
-        Mockito.verify( repository, times( 1 ) ).getDataPointsBefore( QueryDataPointImpl.class, time );
+        Mockito.verify( repository, Mockito.times( 1 ) ).getDataPointsBefore( QueryDataPointImpl.class, time );
     }
 
 
@@ -137,7 +136,7 @@ class MonitoringServiceImplTest {
         sut.getDataPointsAfter( QueryDataPointImpl.class, time );
 
         // assert
-        Mockito.verify( repository, times( 1 ) ).getDataPointsAfter( QueryDataPointImpl.class, time );
+        Mockito.verify( repository, Mockito.times( 1 ) ).getDataPointsAfter( QueryDataPointImpl.class, time );
     }
 
 }

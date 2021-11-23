@@ -19,7 +19,7 @@ package org.polypheny.db.monitoring.events;
 /**
  * Aggregation for routing post costs.
  */
-public interface QueryPostCosts {
+public interface QueryPostCost {
 
     /**
      * @return physical query class name as string.
@@ -30,7 +30,6 @@ public interface QueryPostCosts {
      * @return average execution time in nano seconds.
      */
     long getExecutionTime();
-
 
     /**
      * @return number of samples.

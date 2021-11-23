@@ -18,9 +18,9 @@ package org.polypheny.db.routing.routers;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -45,7 +45,7 @@ public class CachedPlanRouter extends BaseRouter {
 
 
     public RoutedRelBuilder routeCached( RelRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement ) {
-        val builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
+        final RoutedRelBuilder builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
         return buildCachedSelect( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster(), routingPlanCached );
     }
 
@@ -64,12 +64,13 @@ public class CachedPlanRouter extends BaseRouter {
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
             //val partitionIds = cachedPlan.physicalPlacementsOfPartitions.keySet();
-            val partitionIds = catalogTable.partitionProperty.partitionIds;
-            val placement = new HashMap<Long, List<CatalogColumnPlacement>>();
-            for ( val partition : partitionIds ) {
+            List<Long> partitionIds = catalogTable.partitionProperty.partitionIds;
+            Map<Long, List<CatalogColumnPlacement>> placement = new HashMap<>();
+            for ( long partition : partitionIds ) {
                 if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {
-                    val colPlacements =
-                            cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream().map( placementInfo -> catalog.getColumnPlacement( placementInfo.left, placementInfo.right ) ).collect( Collectors.toList() );
+                    List<CatalogColumnPlacement> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream()
+                            .map( placementInfo -> catalog.getColumnPlacement( placementInfo.left, placementInfo.right ) )
+                            .collect( Collectors.toList() );
                     placement.put( partition, colPlacements );
                 }
             }

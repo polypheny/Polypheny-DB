@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigBoolean;
@@ -170,7 +169,7 @@ public class RoutingManager {
 
 
     private List<RouterFactory> getFactoryList( ConfigClazzList configList ) {
-        val result = new ArrayList<RouterFactory>();
+        final List<RouterFactory> result = new ArrayList<>();
         for ( Class<? extends RouterFactory> c : configList.getClazzList() ) {
             try {
                 Constructor<?> ctor = c.getConstructor();
@@ -180,9 +179,7 @@ public class RoutingManager {
                 log.error( "Exception while changing router implementation", e );
             }
         }
-
         return result;
-
     }
 
 }

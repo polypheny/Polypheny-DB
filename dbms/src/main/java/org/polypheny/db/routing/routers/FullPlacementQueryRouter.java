@@ -22,10 +22,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionManager;
@@ -43,15 +43,25 @@ import org.polypheny.db.transaction.Statement;
 public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
     @Override
-    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        log.debug( "{} is horizontally partitioned", catalogTable.name );
+    protected List<RoutedRelBuilder> handleHorizontalPartitioning(
+            RelNode node,
+            CatalogTable catalogTable,
+            Statement statement,
+            LogicalTable logicalTable,
+            List<RoutedRelBuilder> builders,
+            RelOptCluster cluster,
+            LogicalQueryInformation queryInformation ) {
 
-        val placements = selectPlacementHorizontalPartitioning( node, catalogTable, queryInformation );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "{} is horizontally partitioned", catalogTable.name );
+        }
 
-        val newBuilders = new ArrayList<RoutedRelBuilder>();
-        for ( val placementCombination : placements ) {
-            for ( val builder : builders ) {
-                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
+        Collection<Map<Long, List<CatalogColumnPlacement>>> placements = selectPlacementHorizontalPartitioning( node, catalogTable, queryInformation );
+
+        List<RoutedRelBuilder> newBuilders = new ArrayList<>();
+        for ( Map<Long, List<CatalogColumnPlacement>> placementCombination : placements ) {
+            for ( RoutedRelBuilder builder : builders ) {
+                RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, placementCombination ) );
                 newBuilders.add( newBuilder );
@@ -67,31 +77,45 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        // same as no partitioning
+    protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication(
+            RelNode node,
+            CatalogTable catalogTable,
+            Statement statement,
+            LogicalTable logicalTable,
+            List<RoutedRelBuilder> builders,
+            RelOptCluster cluster,
+            LogicalQueryInformation queryInformation ) {
+        // Same as no partitioning
         return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
     }
 
 
     @Override
-    protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+    protected List<RoutedRelBuilder> handleNonePartitioning(
+            RelNode node,
+            CatalogTable catalogTable,
+            Statement statement,
+            List<RoutedRelBuilder> builders,
+            RelOptCluster cluster,
+            LogicalQueryInformation queryInformation ) {
 
-        val placements = selectPlacement( catalogTable, queryInformation );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+        }
 
-        val newBuilders = new ArrayList<RoutedRelBuilder>();
-        for ( val placementCombination : placements ) {
+        final Set<List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable, queryInformation );
 
-            val currentPlacementDistribution = new HashMap<Long, List<CatalogColumnPlacement>>();
+        List<RoutedRelBuilder> newBuilders = new ArrayList<>();
+        for ( List<CatalogColumnPlacement> placementCombination : placements ) {
+            Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
             currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
 
-            for ( val builder : builders ) {
-                val newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
+            for ( RoutedRelBuilder builder : builders ) {
+                RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
-
         }
 
         builders.clear();
@@ -102,34 +126,32 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
 
     protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( RelNode node, CatalogTable catalogTable, LogicalQueryInformation queryInformation ) {
-
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
-        //Utilize scanId to retrieve Partitions being accessed
+        // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
-        val allPlacements = partitionManager.getAllPlacements( catalogTable, partitionIds );
+        Map<Integer, Map<Long, List<CatalogColumnPlacement>>> allPlacements = partitionManager.getAllPlacements( catalogTable, partitionIds );
 
-        val placements = allPlacements.values();
-        return placements;
+        return allPlacements.values();
     }
 
 
     protected Set<List<CatalogColumnPlacement>> selectPlacement( CatalogTable catalogTable, LogicalQueryInformation queryInformation ) {
-        // get used columns from analyze
-        val usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
+        // Get used columns from analyze
+        List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 
-        // filter for placements by adapters
-        val adapters = catalogTable.placementsByAdapter.entrySet()
+        // Filter for placements by adapters
+        List<Integer> adapters = catalogTable.placementsByAdapter.entrySet()
                 .stream()
                 .filter( elem -> elem.getValue().containsAll( usedColumns ) )
-                .map( elem -> elem.getKey() )
+                .map( Entry::getKey )
                 .collect( Collectors.toList() );
 
-        val result = new HashSet<List<CatalogColumnPlacement>>();
-        for ( val adapterId : adapters ) {
-            val placements = usedColumns.stream()
+        final Set<List<CatalogColumnPlacement>> result = new HashSet<>();
+        for ( int adapterId : adapters ) {
+            List<CatalogColumnPlacement> placements = usedColumns.stream()
                     .map( colId -> catalog.getColumnPlacement( adapterId, colId ) )
                     .collect( Collectors.toList() );
 
@@ -139,8 +161,6 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
                 // no available placements found
                 this.cancelQuery = true;
             }
-
-
         }
 
         return result;
@@ -148,7 +168,6 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
 
     public static class FullPlacementQueryRouterFactory extends RouterFactory {
-
 
         @Override
         public Router createInstance() {

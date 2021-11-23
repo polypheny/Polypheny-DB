@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.val;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.plan.Context;
@@ -57,11 +56,11 @@ public class RoutedRelBuilder extends RelBuilder {
 
 
     public static RoutedRelBuilder createCopy( Statement statement, RelOptCluster cluster, RoutedRelBuilder builder ) {
-        val newBuilder = RoutedRelBuilder.create( statement, cluster );
+        final RoutedRelBuilder newBuilder = RoutedRelBuilder.create( statement, cluster );
         newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
 
         if ( builder.stackSize() > 0 ) {
-            val node = builder.peek().accept( new RelDeepCopyShuttle() );
+            final RelNode node = builder.peek().accept( new RelDeepCopyShuttle() );
             newBuilder.push( node );
         }
 
@@ -69,24 +68,28 @@ public class RoutedRelBuilder extends RelBuilder {
     }
 
 
+    @Override
     public RoutedRelBuilder values( Iterable<? extends List<RexLiteral>> tupleList, RelDataType rowType ) {
         super.values( tupleList, rowType );
         return this;
     }
 
 
+    @Override
     public RoutedRelBuilder scan( Iterable<String> tableNames ) {
         super.scan( tableNames );
         return this;
     }
 
 
+    @Override
     public RoutedRelBuilder push( RelNode node ) {
         super.push( node );
         return this;
     }
 
 
+    @Override
     public RoutedRelBuilder documents( ImmutableList<BsonValue> tuples, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
         super.documents( tuples, rowType, normalizedTuples );
         return this;
@@ -94,10 +97,8 @@ public class RoutedRelBuilder extends RelBuilder {
 
 
     public RoutedRelBuilder addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements ) { // list<adapterId - colId>
-        val map = physicalPlacements.entrySet().stream().collect( Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> map( entry.getValue() ) ) );
-
+        final Map<Long, List<Pair<Integer, Long>>> map = physicalPlacements.entrySet().stream()
+                .collect( Collectors.toMap( Map.Entry::getKey, entry -> map( entry.getValue() ) ) );
         physicalPlacementsOfPartitions.putAll( map );
         return this;
     }

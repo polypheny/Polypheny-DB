@@ -21,7 +21,7 @@ import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
-import org.polypheny.db.monitoring.events.QueryPostCosts;
+import org.polypheny.db.monitoring.events.QueryPostCost;
 
 
 /**
@@ -64,17 +64,16 @@ public interface MonitoringService {
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
-
     /**
      * @param physicalQueryClass the physical query class string to identify aggregated post costs.
      * @return The aggregated query post costs.
      */
-    QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass );
+    QueryPostCost getQueryPostCosts( @NonNull String physicalQueryClass );
 
     /**
      * @return All query post costs for printing in ui.
      */
-    List<QueryPostCosts> getAllQueryPostCosts();
+    List<QueryPostCost> getAllQueryPostCosts();
 
     /**
      * @param physicalQueryClass the physical query class string to identify aggregated post costs.
@@ -86,6 +85,5 @@ public interface MonitoringService {
      * Removes all aggregates post costs from cache.
      */
     void resetQueryPostCosts();
-
 
 }

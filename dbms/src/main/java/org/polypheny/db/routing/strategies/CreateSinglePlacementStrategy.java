@@ -19,17 +19,17 @@ package org.polypheny.db.routing.strategies;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
-import lombok.val;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogTable;
 
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
-        val catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
+        CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
         return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.placementsByAdapter.keySet().asList().get( 0 ) ) );
     }
 

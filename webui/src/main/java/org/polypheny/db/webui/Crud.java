@@ -3070,7 +3070,7 @@ public class Crud implements InformationObserver {
             InformationGroup g1 = new InformationGroup( p1, "Execution time" );
             InformationText text;
             if ( executionTime < 1e4 ) {
-                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", signature ) );
+                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444

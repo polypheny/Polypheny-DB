@@ -57,7 +57,6 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
 
     private SchemaType schemaType;
 
-
     @Getter
     private final ExecutionTimeMonitor executionTimeMonitor;
 
@@ -98,5 +97,4 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     public List<RelCollation> getCollationList() {
         return collationList;
     }
-
 }

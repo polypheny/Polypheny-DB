@@ -125,6 +125,9 @@ allprojects {
         logLevel 'lifecycle'
     }
 
+    lombok.config['lombok.val.flagUsage'] = 'error'
+    lombok.config['lombok.var.flagUsage'] = 'error'
+
     idea {
         module {
             downloadJavadoc = true

@@ -268,16 +268,19 @@ public enum RuntimeConfig {
             1000,
             ConfigType.INTEGER,
             "implementationCachingGroup" ),
+
     ROUTING_PLAN_CACHING( "runtime/routingPlanCaching",
             "Cache routing plans.",
             true,
             ConfigType.BOOLEAN,
             "routingPlanCachingGroup" ),
+
     ROUTING_PLAN_CACHING_SIZE( "runtime/routingPlanCachingSize",
             "Size of the routing plan cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER,
             "routingPlanCachingGroup" ),
+
     PARAMETERIZE_DML( "runtime/parameterizeDML",
             "Whether DML queries should be parameterized.",
             true,
