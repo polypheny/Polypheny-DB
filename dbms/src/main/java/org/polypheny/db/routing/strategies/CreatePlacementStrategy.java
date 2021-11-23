@@ -20,6 +20,7 @@ import java.util.List;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 
+
 /**
  * Interface to define, on which store(s) tables and columns are created.
  */

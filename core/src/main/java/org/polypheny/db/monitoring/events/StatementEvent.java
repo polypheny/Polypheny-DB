@@ -87,7 +87,7 @@ public abstract class StatementEvent extends BaseEvent {
             tableId = entry.getKey();
             partitionIds = entry.getValue();
 
-            //Initialize if this is the first time accessing
+            // Initialize if this is the first time accessing
             if ( accessedPartitions == null ) {
                 accessedPartitions = new HashMap<>();
             }
@@ -97,11 +97,11 @@ public abstract class StatementEvent extends BaseEvent {
             }
 
             Set<Long> mergedPartitionIds = Stream.of( accessedPartitions.get( tableId ), partitionIds )
-                    .flatMap( Set::stream ).collect( Collectors.toSet() );
+                    .flatMap( Set::stream )
+                    .collect( Collectors.toSet() );
 
             accessedPartitions.replace( tableId, mergedPartitionIds );
         }
-
     }
 
 }

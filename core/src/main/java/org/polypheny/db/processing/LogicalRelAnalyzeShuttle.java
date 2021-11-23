@@ -48,6 +48,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.Statement;
 
+
 /**
  * Universal routing rel shuttle class to extract partition and column information from RelNode.
  */
@@ -104,8 +105,6 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
     public String getQueryName() {
         return this.hashBasis.toString();
     }
-
-    // region public overrides
 
 
     @Override
@@ -217,10 +216,6 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
         return visitChildren( other );
     }
 
-    // endregion
-
-    // region private helpers
-
 
     private void getAvailableColumns( TableScan scan ) {
         this.tables.addAll( scan.getTable().getQualifiedName() );
@@ -272,7 +267,5 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
             }
         }
     }
-
-    // endregion
 
 }

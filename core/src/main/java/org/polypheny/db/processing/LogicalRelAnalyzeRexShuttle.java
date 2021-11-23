@@ -25,6 +25,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexShuttle;
 
+
 /**
  * Universal routing rex shuttle class to extract used columns in RelNode.
  */
@@ -44,7 +45,7 @@ public class LogicalRelAnalyzeRexShuttle extends RexShuttle {
 
     @Override
     public RexNode visitInputRef( RexInputRef inputRef ) {
-        // add accessed value
+        // Add accessed value
         if ( inputRef != null ) {
             this.usedIds.add( inputRef.getIndex() );
         }
@@ -69,6 +70,5 @@ public class LogicalRelAnalyzeRexShuttle extends RexShuttle {
         }
         return super.visitDynamicParam( dynamicParam );
     }
-
 
 }

@@ -19,18 +19,19 @@ package org.polypheny.db.routing;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.transaction.Statement;
 
+
 /**
  * Interface for routing dml queries.
  */
 public interface DmlRouter {
 
     /**
-     * routes dml queries and returns a rel builder.
+     * Routes dml queries and returns a rel builder.
      */
     RelNode routeDml( RelNode node, Statement statement );
 
     /**
-     * routes conditional executes and directly returns a rel node.
+     * Routes conditional executes and directly returns a rel node.
      */
     RelNode handleConditionalExecute( RelNode node, Statement statement, LogicalQueryInformation queryInformation );
 

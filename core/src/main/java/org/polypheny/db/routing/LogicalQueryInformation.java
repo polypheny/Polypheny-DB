@@ -19,6 +19,7 @@ package org.polypheny.db.routing;
 import java.util.List;
 import java.util.Map;
 
+
 /**
  * This is the result of the analyze step in the query pipeline.
  * The class contains logical information about a query.

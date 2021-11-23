@@ -20,6 +20,7 @@ import java.io.Serializable;
 import lombok.Getter;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 
+
 public class QueryPostCostImpl implements QueryPostCost, Serializable {
 
     @Getter

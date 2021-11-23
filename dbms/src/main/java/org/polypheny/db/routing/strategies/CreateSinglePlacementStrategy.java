@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
+
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override

@@ -32,6 +32,7 @@ import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
+
 /**
  * Class which is responsible for cost calculation and plan selection.
  */
@@ -222,7 +223,7 @@ public class RoutingPlanSelector {
         Optional<Double> min = costs.stream().min( Double::compareTo );
         Optional<Double> max = costs.stream().max( Double::compareTo );
 
-        // when min == mix, set min = 0
+        // When min == mix, set min = 0
         Optional<Double> usedMin = Math.abs( min.get() - max.get() ) <= RelOptUtil.EPSILON ? Optional.of( 0.0 ) : min;
         return costs.stream()
                 .map( c -> (c - usedMin.get()) / (max.get() - usedMin.get()) )

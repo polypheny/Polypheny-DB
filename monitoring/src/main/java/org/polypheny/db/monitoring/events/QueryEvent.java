@@ -43,7 +43,6 @@ public class QueryEvent extends StatementEvent {
 
     @Override
     public List<MonitoringDataPoint> analyze() {
-
         final QueryDataPoint queryDataPoint = QueryEventAnalyzer.analyze( this );
         if ( updatePostCosts ) {
             MonitoringServiceProvider.getInstance().updateQueryPostCosts( this.physicalQueryId, this.executionTime );

@@ -36,6 +36,7 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.util.Util;
 
+
 /**
  * Some extracted helper function from AbstractQueryProcessor.
  */

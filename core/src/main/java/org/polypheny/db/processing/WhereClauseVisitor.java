@@ -28,6 +28,7 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.transaction.Statement;
 
+
 /**
  * Where clause visitor which identifies partitions.
  */
@@ -71,7 +72,6 @@ public class WhereClauseVisitor extends RexShuttle {
                         }
                     }
                 } else if ( call.operands.get( 1 ) instanceof RexInputRef ) {
-
                     if ( ((RexInputRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 0 ) instanceof RexLiteral ) {
                             value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
@@ -86,7 +86,7 @@ public class WhereClauseVisitor extends RexShuttle {
                     }
                 }
             } else {
-                //Enable worstcase routing
+                // Enable worstcase routing
                 unsupportedFilter = true;
             }
         }

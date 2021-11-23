@@ -38,6 +38,7 @@ import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
+
 @Slf4j
 public class IcarusRouter extends FullPlacementQueryRouter {
 

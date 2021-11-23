@@ -18,6 +18,7 @@ package org.polypheny.db.routing.factories;
 
 import org.polypheny.db.routing.Router;
 
+
 public abstract class RouterFactory {
 
     public abstract Router createInstance();

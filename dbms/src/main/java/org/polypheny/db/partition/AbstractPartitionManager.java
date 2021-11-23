@@ -32,12 +32,10 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 @Slf4j
 public abstract class AbstractPartitionManager implements PartitionManager {
 
-
     // Returns the Index of the partition where to place the object
     protected final Catalog catalog = Catalog.getInstance();
 
-
-    // returns the Index of the partition where to place the object
+    // Returns the Index of the partition where to place the object
     @Override
     public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
@@ -67,7 +65,6 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
-
                 CatalogPartition catalogPartition = catalog.getPartition( partitionId );
                 List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
@@ -75,7 +72,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartitionGroup( catalogTable.id, catalogPartition.partitionGroupId, columnId );
                     ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
                     if ( !ccps.isEmpty() ) {
-                        //get first column placement which contains partition
+                        // Get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );
                         if ( log.isDebugEnabled() ) {
                             log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
@@ -96,6 +93,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
             long numPartitionGroups,
             List<String> partitionGroupNames,
             CatalogColumn partitionColumn ) {
+
         if ( numPartitionGroups == 0 && partitionGroupNames.size() < 2 ) {
             throw new RuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
         }
@@ -131,7 +129,6 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Map<Integer, Map<Long, List<CatalogColumnPlacement>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
         if ( partitionIds != null ) {
-
             for ( long partitionId : partitionIds ) {
                 List<CatalogAdapter> adapters = catalog.getAdaptersByPartitionGroup( catalogTable.id, partitionId );
 
@@ -139,13 +136,11 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                     if ( !adapterPlacements.containsKey( adapter.id ) ) {
                         adapterPlacements.put( adapter.id, new HashMap<>() );
                     }
-
                     List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
                     adapterPlacements.get( adapter.id ).put( partitionId, placements );
                 }
             }
         }
-
         return adapterPlacements;
     }
 

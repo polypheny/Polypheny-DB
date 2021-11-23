@@ -61,14 +61,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     private long processedEvents;
     private long processedEventsTotal;
 
-    // endregion
-
-    // region ctors
-
-    // endregion
-
-    // region ctors
-
 
     /**
      * Ctor which automatically will start the background task based on the given boolean
@@ -144,10 +136,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return processedEvents;
     }
 
-    // endregion
-
-    // region private helper methods
-
 
     private void startBackgroundTask() {
         if ( backgroundTaskId == null ) {
@@ -204,5 +192,4 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return Optional.empty();
     }
 
-    // endregion
 }

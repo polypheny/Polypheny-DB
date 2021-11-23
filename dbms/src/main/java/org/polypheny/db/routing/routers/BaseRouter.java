@@ -48,6 +48,7 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
+
 /**
  * Base Router for all routers including DML, DQL and Cached plans.
  */
@@ -154,10 +155,9 @@ public abstract class BaseRouter {
             }
         }
 
-        for ( Entry partitionToPlacement : placements.entrySet() ) {
-
-            Long partitionId = (long) partitionToPlacement.getKey();
-            List<CatalogColumnPlacement> currentPlacements = (List<CatalogColumnPlacement>) partitionToPlacement.getValue();
+        for ( Map.Entry<Long, List<CatalogColumnPlacement>> partitionToPlacement : placements.entrySet() ) {
+            long partitionId = (long) partitionToPlacement.getKey();
+            List<CatalogColumnPlacement> currentPlacements = partitionToPlacement.getValue();
             // Sort by adapter
             Map<Integer, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
             for ( CatalogColumnPlacement placement : currentPlacements ) {
@@ -168,7 +168,6 @@ public abstract class BaseRouter {
             }
 
             if ( placementsByAdapter.size() == 1 ) {
-
                 List<CatalogColumnPlacement> ccps = placementsByAdapter.values().iterator().next();
                 CatalogColumnPlacement ccp = ccps.get( 0 );
                 CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
@@ -182,7 +181,7 @@ public abstract class BaseRouter {
                         ccp.physicalSchemaName,
                         cpp.physicalTableName,
                         cpp.partitionId );
-                // final project
+                // Final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
                         .map( col -> catalog.getColumn( col.columnId ) )
@@ -217,7 +216,6 @@ public abstract class BaseRouter {
                 Deque<String> queue = new LinkedList<>();
                 boolean first = true;
                 for ( List<CatalogColumnPlacement> ccps : placementsByAdapter.values() ) {
-
                     CatalogColumnPlacement ccp = ccps.get( 0 );
                     CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
 
@@ -253,10 +251,9 @@ public abstract class BaseRouter {
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ) ) );
                         }
                         builder.join( JoinRelType.INNER, joinConditions );
-
                     }
                 }
-                // final project
+                // Final project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 List<CatalogColumn> placementList = currentPlacements.stream()
                         .map( col -> catalog.getColumn( col.columnId ) )

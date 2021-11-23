@@ -37,6 +37,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
+
 public class LogicalViewTableScan extends TableScan {
 
     @Getter

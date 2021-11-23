@@ -23,8 +23,8 @@ import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.util.Pair;
 
-public interface ProposedRoutingPlan extends RoutingPlan {
 
+public interface ProposedRoutingPlan extends RoutingPlan {
 
     /**
      * @return the relRoot of the proposed routing plan.

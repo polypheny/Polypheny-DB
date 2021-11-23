@@ -162,7 +162,6 @@ public class CatalogImpl extends Catalog {
 
     private static Long openTable;
 
-
     private static final AtomicInteger adapterIdBuilder = new AtomicInteger( 1 );
     private static final AtomicInteger queryInterfaceIdBuilder = new AtomicInteger( 1 );
     private static final AtomicInteger userIdBuilder = new AtomicInteger( 1 );
@@ -177,7 +176,7 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Long, CatalogPartitionGroup> partitionGroups;
     private static BTreeMap<Long, CatalogPartition> partitions;
     private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionGroupPlacement; // <AdapterId.TableId, List of partitionGroupIds>
-    private static Set<Long> frequencyDependentTables = new HashSet<>(); //all tables to consider for periodic processing
+    private static Set<Long> frequencyDependentTables = new HashSet<>(); // All tables to consider for periodic processing
 
     // adapterId + Partition
     private static BTreeMap<Object[], CatalogPartitionPlacement> partitionPlacements;
@@ -290,7 +289,6 @@ public class CatalogImpl extends Catalog {
             }
 
             new CatalogValidator().startCheck();
-
         }
     }
 
@@ -650,9 +648,8 @@ public class CatalogImpl extends Catalog {
 
         partitionPlacements = db.treeMap( "partitionPlacements", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
 
-        //Restores all Tables dependent on periodic checks like TEMPERATURE Partitioning
+        // Restores all Tables dependent on periodic checks like TEMPERATURE Partitioning
         frequencyDependentTables = tables.values().stream().filter( t -> t.partitionProperty.reliesOnPeriodicChecks ).map( t -> t.id ).collect( Collectors.toSet() );
-
     }
 
 
@@ -1059,7 +1056,6 @@ public class CatalogImpl extends Catalog {
         }
 
         return new ArrayList<>();
-
     }
 
 
@@ -1119,7 +1115,6 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseName, schemaName );
         }
-
     }
 
 
@@ -1459,7 +1454,6 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( "Error when adding table " + name, e );
         }
         return id;
-
     }
 
 
@@ -1514,8 +1508,7 @@ public class CatalogImpl extends Catalog {
             nodeInfo.put( id, definition );
 
         } else {
-
-            //Should not happen, addViewTable is only called with TableType.View
+            // Should not happen, addViewTable is only called with TableType.View
             throw new RuntimeException( "addViewTable is only possible with TableType = VIEW" );
         }
         return id;
@@ -1546,10 +1539,10 @@ public class CatalogImpl extends Catalog {
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
 
-        //Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
+        // Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
         List<Long> partitionGroupIds = new ArrayList<>();
         partitionGroupIds.add( addPartitionGroup( id, "full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
-        //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        // get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
         CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
 
         PartitionProperty partitionProperty = PartitionProperty.builder()
@@ -1586,7 +1579,7 @@ public class CatalogImpl extends Catalog {
             relTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
-            //Should not happen, addViewTable is only called with TableType.View
+            // Should not happen, addViewTable is only called with TableType.View
             throw new RuntimeException( "addMaterializedViewTable is only possible with TableType = MATERIALIZED_VIEW" );
         }
         return id;
@@ -1594,7 +1587,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * update all information after the addition of all kind of tables
+     * Update all information after the addition of all kind of tables
      */
     private void updateTableLogistics( String name, long schemaId, long id, CatalogSchema schema, CatalogTable table ) {
         synchronized ( this ) {
@@ -2147,7 +2140,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteColumnPlacement( int adapterId, long columnId ) {
-
         boolean lastPlacementOnStore = false;
         CatalogTable oldTable = getTable( getColumn( columnId ).tableId );
         Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( oldTable.placementsByAdapter );
@@ -2791,7 +2783,22 @@ public class CatalogImpl extends Catalog {
         if ( old.type.getFamily() != PolyTypeFamily.CHARACTER ) {
             throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
         }
-        CatalogColumn column = new CatalogColumn( old.id, old.name, old.tableId, old.schemaId, old.databaseId, old.position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, old.nullable, collation, old.defaultValue );
+        CatalogColumn column = new CatalogColumn(
+                old.id,
+                old.name,
+                old.tableId,
+                old.schemaId,
+                old.databaseId,
+                old.position,
+                old.type,
+                old.collectionsType,
+                old.length,
+                old.scale,
+                old.dimension,
+                old.cardinality,
+                old.nullable,
+                collation,
+                old.defaultValue );
         synchronized ( this ) {
             columns.replace( columnId, column );
             columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
@@ -2833,26 +2840,40 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table;
 
-        //This is needed otherwise this would reset the already partitioned table
+        // This is needed otherwise this would reset the already partitioned table
         if ( old.isPartitioned ) {
-            table = new CatalogTable( old.id
-                    , old.name
-                    , ImmutableList.copyOf( columnIds )
-                    , old.schemaId
-                    , old.databaseId
-                    , old.ownerId
-                    , old.ownerName
-                    , old.tableType
-                    , old.primaryKey
-                    , old.placementsByAdapter
-                    , old.modifiable
-                    , old.partitionType
-                    , old.partitionColumnId
-                    , old.isPartitioned
-                    , old.partitionProperty
-                    , old.connectedViews );
+            table = new CatalogTable(
+                    old.id,
+                    old.name,
+                    ImmutableList.copyOf( columnIds ),
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    old.primaryKey,
+                    old.placementsByAdapter,
+                    old.modifiable,
+                    old.partitionType,
+                    old.partitionColumnId,
+                    old.isPartitioned,
+                    old.partitionProperty,
+                    old.connectedViews );
         } else {
-            table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.primaryKey, old.placementsByAdapter, old.modifiable, old.partitionProperty, old.connectedViews );
+            table = new CatalogTable(
+                    old.id,
+                    old.name,
+                    ImmutableList.copyOf( columnIds ),
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    old.primaryKey,
+                    old.placementsByAdapter,
+                    old.modifiable,
+                    old.partitionProperty,
+                    old.connectedViews );
         }
         synchronized ( this ) {
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
@@ -3084,7 +3105,10 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogConstraint getConstraint( long tableId, String constraintName ) throws UnknownConstraintException {
         try {
-            return constraints.values().stream().filter( c -> c.key.tableId == tableId && c.name.equals( constraintName ) ).findFirst().orElseThrow( NullPointerException::new );
+            return constraints.values().stream()
+                    .filter( c -> c.key.tableId == tableId && c.name.equals( constraintName ) )
+                    .findFirst()
+                    .orElseThrow( NullPointerException::new );
         } catch ( NullPointerException e ) {
             throw new UnknownConstraintException( tableId, constraintName );
         }
@@ -3101,7 +3125,10 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException {
         try {
-            return foreignKeys.values().stream().filter( f -> f.tableId == tableId && f.name.equals( foreignKeyName ) ).findFirst().orElseThrow( NullPointerException::new );
+            return foreignKeys.values().stream()
+                    .filter( f -> f.tableId == tableId && f.name.equals( foreignKeyName ) )
+                    .findFirst()
+                    .orElseThrow( NullPointerException::new );
         } catch ( NullPointerException e ) {
             throw new UnknownForeignKeyException( tableId, foreignKeyName );
         }
@@ -3184,7 +3211,9 @@ public class CatalogImpl extends Catalog {
         try {
             long keyId = getOrAddKey( tableId, columnIds );
             // Check if there is already a unique constraint
-            List<CatalogConstraint> catalogConstraints = constraints.values().stream().filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE ).collect( Collectors.toList() );
+            List<CatalogConstraint> catalogConstraints = constraints.values().stream()
+                    .filter( c -> c.keyId == keyId && c.type == ConstraintType.UNIQUE )
+                    .collect( Collectors.toList() );
             if ( catalogConstraints.size() > 0 ) {
                 throw new GenericCatalogException( "There is already a unique constraint!" );
             }
@@ -3226,7 +3255,10 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException {
         try {
-            return indexes.values().stream().filter( i -> i.key.tableId == tableId && i.name.equals( indexName ) ).findFirst().orElseThrow( NullPointerException::new );
+            return indexes.values().stream()
+                    .filter( i -> i.key.tableId == tableId && i.name.equals( indexName ) )
+                    .findFirst()
+                    .orElseThrow( NullPointerException::new );
         } catch ( NullPointerException e ) {
             throw new UnknownIndexException( tableId, indexName );
         }
@@ -3407,7 +3439,6 @@ public class CatalogImpl extends Catalog {
             CatalogForeignKey catalogForeignKey = Objects.requireNonNull( foreignKeys.get( foreignKeyId ) );
             synchronized ( this ) {
                 foreignKeys.remove( catalogForeignKey.id );
-
                 deleteKeyIfNoLongerUsed( catalogForeignKey.id );
             }
             listeners.firePropertyChange( "foreignKey", foreignKeyId, null );
@@ -3436,7 +3467,6 @@ public class CatalogImpl extends Catalog {
             }
             synchronized ( this ) {
                 constraints.remove( catalogConstraint.id );
-
             }
             listeners.firePropertyChange( "constraint", catalogConstraint, null );
             deleteKeyIfNoLongerUsed( catalogConstraint.keyId );
@@ -3743,8 +3773,8 @@ public class CatalogImpl extends Catalog {
                     schema.databaseId,
                     0,
                     null,
-                    ImmutableList.copyOf( partitionIds )
-                    , isUnbound );
+                    ImmutableList.copyOf( partitionIds ),
+                    isUnbound );
 
             synchronized ( this ) {
                 partitionGroups.put( id, partitionGroup );
@@ -3824,19 +3854,16 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addPartitionToGroup( long partitionGroupId, Long partitionId ) {
-
         // Check whether there this partition id exists
+        getPartition( partitionId );
+
         CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
         List<Long> newPartitionIds = new ArrayList<>( partitionGroup.partitionIds );
 
-        CatalogPartition partition = getPartition( partitionId );
-
         if ( !newPartitionIds.contains( partitionId ) ) {
             newPartitionIds.add( partitionId );
-
             updatePartitionGroup( partitionGroupId, newPartitionIds );
         }
-
     }
 
 
@@ -3854,9 +3881,7 @@ public class CatalogImpl extends Catalog {
 
         if ( newPartitionIds.contains( partitionId ) ) {
             newPartitionIds.remove( partitionId );
-
             updatePartitionGroup( partitionGroupId, newPartitionIds );
-
         }
     }
 
@@ -3869,7 +3894,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
-
         // Check whether there this partition id exists
         CatalogPartitionGroup partitionGroup = getPartitionGroup( partitionGroupId );
         List<Long> newPartitionIds = new ArrayList<>( partitionGroup.partitionIds );
@@ -3897,8 +3921,6 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "partition", oldPartition, updatedPartition );
         }
-
-
     }
 
 
@@ -4002,12 +4024,10 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogPartition> getPartitionsByTable( long tableId ) {
-
         return partitions.values()
                 .stream()
                 .filter( p -> p.tableId == tableId )
                 .collect( Collectors.toList() );
-
     }
 
 
@@ -4076,7 +4096,7 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( e );
         }
 
-        //get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        // get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
         CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
         PartitionProperty partitionProperty = PartitionProperty.builder()
                 .partitionType( PartitionType.NONE )
@@ -4371,7 +4391,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
         List<Long> tempPartitionIds = new ArrayList<>();
-        //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        // Get all PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
         getPartitionGroupsOnDataPlacement( adapterId, tableId ).forEach( pgId -> getPartitionGroup( pgId ).partitionIds.forEach( tempPartitionIds::add ) );
 
         return tempPartitionIds;
@@ -4488,7 +4508,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
-
         if ( !checkIfExistsPartitionPlacement( adapterId, partitionId ) ) {
             CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
             CatalogPartitionPlacement partitionPlacement = new CatalogPartitionPlacement(
@@ -4632,15 +4651,14 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void addTableToPeriodicProcessing( long tableId ) {
-
         int beforeSize = frequencyDependentTables.size();
         getTable( tableId );
         if ( !frequencyDependentTables.contains( tableId ) ) {
             frequencyDependentTables.add( tableId );
         }
-        //Initially starts the periodic job if this was the first table to enable periodic processing
+        // Initially starts the periodic job if this was the first table to enable periodic processing
         if ( beforeSize == 0 && frequencyDependentTables.size() == 1 ) {
-            //Start Job for periodic processing
+            // Start Job for periodic processing
             FrequencyMap.INSTANCE.initialize();
         }
     }
@@ -4658,9 +4676,9 @@ public class CatalogImpl extends Catalog {
             frequencyDependentTables.remove( tableId );
         }
 
-        //Terminates the periodic job if this was the last table with periodic processing
+        // Terminates the periodic job if this was the last table with periodic processing
         if ( frequencyDependentTables.size() == 0 ) {
-            //Terminate Job for periodic processing
+            // Terminate Job for periodic processing
             FrequencyMap.INSTANCE.terminate();
         }
     }

@@ -30,15 +30,9 @@ import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 @Slf4j
 public class MonitoringServiceImpl implements MonitoringService {
 
-    // region private fields
-
     private final MonitoringQueue monitoringQueue;
     private final MonitoringRepository repository;
     private final MonitoringServiceUi monitoringServiceUi;
-
-    // endregion
-
-    // region ctors
 
 
     public MonitoringServiceImpl(
@@ -50,10 +44,6 @@ public class MonitoringServiceImpl implements MonitoringService {
         this.repository = repository;
         this.monitoringServiceUi = monitoringServiceUi;
     }
-
-    // endregion
-
-    // region public methods
 
 
     @Override
@@ -103,5 +93,4 @@ public class MonitoringServiceImpl implements MonitoringService {
         this.repository.resetQueryPostCosts();
     }
 
-    // endregion
 }

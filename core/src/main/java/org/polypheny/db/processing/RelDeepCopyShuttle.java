@@ -39,6 +39,7 @@ import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
 
+
 /**
  * RelShuttle for creating a deep copy for rel.
  */
@@ -73,21 +74,40 @@ public class RelDeepCopyShuttle extends RelShuttleImpl {
     @Override
     public RelNode visit( LogicalFilter filter ) {
         final LogicalFilter node = (LogicalFilter) super.visit( filter );
-        return new LogicalFilter( node.getCluster(), copy( node.getTraitSet() ), node.getInput().accept( this ), node.getCondition(), node.getVariablesSet() );
+        return new LogicalFilter(
+                node.getCluster(),
+                copy( node.getTraitSet() ),
+                node.getInput().accept( this ),
+                node.getCondition(),
+                node.getVariablesSet() );
     }
 
 
     @Override
     public RelNode visit( LogicalProject project ) {
         final Project node = (Project) super.visit( project );
-        return new LogicalProject( node.getCluster(), copy( node.getTraitSet() ), node.getInput(), node.getProjects(), node.getRowType() );
+        return new LogicalProject(
+                node.getCluster(),
+                copy( node.getTraitSet() ),
+                node.getInput(),
+                node.getProjects(),
+                node.getRowType() );
     }
 
 
     @Override
     public RelNode visit( LogicalJoin join ) {
         final RelNode node = super.visit( join );
-        return new LogicalJoin( node.getCluster(), copy( node.getTraitSet() ), this.visit( join.getLeft() ), this.visit( join.getRight() ), join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone(), ImmutableList.copyOf( join.getSystemFieldList() ) );
+        return new LogicalJoin(
+                node.getCluster(),
+                copy( node.getTraitSet() ),
+                this.visit( join.getLeft() ),
+                this.visit( join.getRight() ),
+                join.getCondition(),
+                join.getVariablesSet(),
+                join.getJoinType(),
+                join.isSemiJoinDone(),
+                ImmutableList.copyOf( join.getSystemFieldList() ) );
     }
 
 
@@ -122,7 +142,14 @@ public class RelDeepCopyShuttle extends RelShuttleImpl {
     @Override
     public RelNode visit( LogicalAggregate aggregate ) {
         final RelNode node = super.visit( aggregate );
-        return new LogicalAggregate( node.getCluster(), copy( node.getTraitSet() ), visit( aggregate.getInput() ), aggregate.indicator, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
+        return new LogicalAggregate(
+                node.getCluster(),
+                copy( node.getTraitSet() ),
+                visit( aggregate.getInput() ),
+                aggregate.indicator,
+                aggregate.getGroupSet(),
+                aggregate.groupSets,
+                aggregate.getAggCallList() );
     }
 
 
@@ -149,7 +176,14 @@ public class RelDeepCopyShuttle extends RelShuttleImpl {
 
     @Override
     public RelNode visit( LogicalConditionalExecute lce ) {
-        return new LogicalConditionalExecute( lce.getCluster(), copy( lce.getTraitSet() ), visit( lce.getLeft() ), visit( lce.getRight() ), lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
+        return new LogicalConditionalExecute(
+                lce.getCluster(),
+                copy( lce.getTraitSet() ),
+                visit( lce.getLeft() ),
+                visit( lce.getRight() ),
+                lce.getCondition(),
+                lce.getExceptionClass(),
+                lce.getExceptionMessage() );
     }
 
 

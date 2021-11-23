@@ -16,7 +16,6 @@
 
 package org.polypheny.db.routing.routers;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.Collections;
@@ -69,11 +68,31 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
      * Abstract methods which will determine routing strategy. Not implemented in abstract class.
      * If implementing router is not supporting one of the three methods, empty list can be returned and cancelQuery boolean set to false.
      */
-    protected abstract List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation );
+    protected abstract List<RoutedRelBuilder> handleHorizontalPartitioning(
+            RelNode node,
+            CatalogTable catalogTable,
+            Statement statement,
+            LogicalTable logicalTable,
+            List<RoutedRelBuilder> builders,
+            RelOptCluster cluster,
+            LogicalQueryInformation queryInformation );
 
-    protected abstract List<RoutedRelBuilder> handleVerticalPartitioningOrReplication( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation );
+    protected abstract List<RoutedRelBuilder> handleVerticalPartitioningOrReplication(
+            RelNode node,
+            CatalogTable catalogTable,
+            Statement statement,
+            LogicalTable logicalTable,
+            List<RoutedRelBuilder> builders,
+            RelOptCluster cluster,
+            LogicalQueryInformation queryInformation );
 
-    protected abstract List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation );
+    protected abstract List<RoutedRelBuilder> handleNonePartitioning(
+            RelNode node,
+            CatalogTable catalogTable,
+            Statement statement,
+            List<RoutedRelBuilder> builders,
+            RelOptCluster cluster,
+            LogicalQueryInformation queryInformation );
 
 
     /**
@@ -81,7 +100,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
      */
     @Override
     public List<RoutedRelBuilder> route( RelRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
-        // reset cancel query this run
+        // Reset cancel query this run
         this.cancelQuery = false;
         this.selectedAdapter = new HashMap<>();
 
@@ -151,7 +170,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
 
             } else {
-                // at the moment multiple strategies
+                // At the moment multiple strategies
                 if ( catalogTable.placementsByAdapter.keySet().size() > 1 ) {
                     return handleVerticalPartitioningOrReplication( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
                 }

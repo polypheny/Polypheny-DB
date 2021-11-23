@@ -39,6 +39,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
 import org.polypheny.db.transaction.Statement;
 
+
 @Slf4j
 public class FullPlacementQueryRouter extends AbstractDqlRouter {
 

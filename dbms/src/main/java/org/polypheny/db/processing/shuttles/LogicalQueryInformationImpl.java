@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 
+
 public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
     @Getter

@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
+
 /**
  * Adds new columns and tables on all stores.
  */
