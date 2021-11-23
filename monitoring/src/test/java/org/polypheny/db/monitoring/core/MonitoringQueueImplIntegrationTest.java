@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import lombok.val;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -52,12 +51,12 @@ class MonitoringQueueImplIntegrationTest {
         MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( repo );
 
         // Initialize the monitoringService
-        val sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
+        MonitoringService sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
 
         Assertions.assertNotNull( sut );
 
         // -- Act --
-        val events = createQueryEvent( 15 );
+        List<QueryEvent> events = createQueryEvent( 15 );
         events.forEach( sut::monitorEvent );
 
         try {
@@ -67,16 +66,16 @@ class MonitoringQueueImplIntegrationTest {
         }
 
         // -- Assert --
-        val result = sut.getAllDataPoints( QueryDataPointImpl.class );
+        List<QueryDataPointImpl> result = sut.getAllDataPoints( QueryDataPointImpl.class );
         Assertions.assertEquals( 15, result.size() );
     }
 
 
     private List<QueryEvent> createQueryEvent( int number ) {
-        val result = new ArrayList<QueryEvent>();
+        List<QueryEvent> result = new ArrayList<>();
 
         for ( int i = 0; i < number; i++ ) {
-            val event = new QueryEvent();
+            QueryEvent event = new QueryEvent();
             event.setRouted( null );
             event.setSignature( null );
             event.setStatement( Mockito.mock( Statement.class ) );

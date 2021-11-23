@@ -19,7 +19,6 @@ package org.polypheny.db.monitoring.core;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Timestamp;
-import lombok.val;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -34,9 +33,9 @@ class MonitoringServiceImplTest {
     @Test
     public void ctor_invalidParameters_ThrowsException() {
         // arrange
-        val monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        val repository = Mockito.mock( MonitoringRepository.class );
-        val monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
+        MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
+        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
 
         // act - assert
         assertThrows( NullPointerException.class, () -> new MonitoringServiceImpl( null, repository, monitoringServiceUi ) );
@@ -48,12 +47,12 @@ class MonitoringServiceImplTest {
     @Test
     void ctor_validParameters_instanceNotNull() {
         // arrange
-        val monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        val repository = Mockito.mock( MonitoringRepository.class );
-        val monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
+        MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
+        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
 
         // act
-        val sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
+        MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
         // assert
         Assertions.assertNotNull( sut );
@@ -63,10 +62,10 @@ class MonitoringServiceImplTest {
     @Test
     void monitorEvent_provideNullEvent_throwsException() {
         // arrange
-        val monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        val repository = Mockito.mock( MonitoringRepository.class );
-        val monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
-        val sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
+        MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
+        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
+        MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
         // act - assert
         assertThrows( NullPointerException.class, () -> sut.monitorEvent( null ) );
@@ -76,11 +75,11 @@ class MonitoringServiceImplTest {
     @Test
     void monitorEvent_provideEvent_queueCalled() {
         // arrange
-        val monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        val repository = Mockito.mock( MonitoringRepository.class );
-        val monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
-        val event = Mockito.mock( MonitoringEvent.class );
-        val sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
+        MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
+        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
+        MonitoringEvent event = Mockito.mock( MonitoringEvent.class );
+        MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
         // act
         sut.monitorEvent( event );
@@ -93,10 +92,10 @@ class MonitoringServiceImplTest {
     @Test
     void getAllDataPoints_providePointClass_repositoryCalled() {
         // arrange
-        val monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        val repository = Mockito.mock( MonitoringRepository.class );
-        val monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
-        val sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
+        MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
+        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
+        MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
         // act
         sut.getAllDataPoints( QueryDataPointImpl.class );
@@ -109,13 +108,13 @@ class MonitoringServiceImplTest {
     @Test
     void getDataPointsBefore_providePointClass_repositoryCalled() {
         // arrange
-        val monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        val repository = Mockito.mock( MonitoringRepository.class );
-        val monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
-        val sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
+        MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
+        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
+        MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
         // act
-        val time = new Timestamp( System.currentTimeMillis() );
+        Timestamp time = new Timestamp( System.currentTimeMillis() );
         sut.getDataPointsBefore( QueryDataPointImpl.class, time );
 
         // assert
@@ -126,13 +125,13 @@ class MonitoringServiceImplTest {
     @Test
     void getDataPointsAfter_providePointClass_repositoryCalled() {
         // arrange
-        val monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        val repository = Mockito.mock( MonitoringRepository.class );
-        val monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
-        val sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
+        MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
+        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
+        MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
         // act
-        val time = new Timestamp( System.currentTimeMillis() );
+        Timestamp time = new Timestamp( System.currentTimeMillis() );
         sut.getDataPointsAfter( QueryDataPointImpl.class, time );
 
         // assert
