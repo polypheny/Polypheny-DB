@@ -21,4 +21,5 @@ import org.polypheny.db.routing.Router;
 public abstract class RouterFactory {
 
     public abstract Router createInstance();
+
 }

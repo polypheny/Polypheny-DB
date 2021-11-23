@@ -72,6 +72,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
         return partitionManager.getAllPlacements( catalogTable, partitionIds );
     }
 
+
     @Override
     public boolean requiresUnboundPartitionGroup() {
         return REQUIRES_UNBOUND_PARTITION_GROUP;

@@ -245,10 +245,10 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
         }
 
         val logicalTable = table.getTable();
-        if(!(logicalTable instanceof LogicalTable)){
+        if ( !(logicalTable instanceof LogicalTable) ) {
             return;
         }
-        CatalogTable catalogTable = Catalog.getInstance().getTable( ((LogicalTable) logicalTable).getTableId());
+        CatalogTable catalogTable = Catalog.getInstance().getTable( ((LogicalTable) logicalTable).getTableId() );
 
         // only if table is partitioned
         if ( catalogTable.isPartitioned ) {

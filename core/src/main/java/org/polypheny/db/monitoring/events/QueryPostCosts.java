@@ -36,4 +36,5 @@ public interface QueryPostCosts {
      * @return number of samples.
      */
     int getNumberOfSamples();
+
 }

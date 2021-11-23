@@ -75,13 +75,13 @@ public interface MonitoringRepository {
     /**
      * @return All query post costs for printing in ui.
      */
-    List<QueryPostCosts> getAllQueryPostCosts( );
+    List<QueryPostCosts> getAllQueryPostCosts();
 
     /**
      * @param physicalQueryClass the physical query class string to identify aggregated post costs.
      * @param executionTime the measured execution time.
      */
-    void updateQueryPostCosts(@NonNull String physicalQueryClass , long executionTime);
+    void updateQueryPostCosts( @NonNull String physicalQueryClass, long executionTime );
 
     /**
      * Removes all aggregates post costs from cache.

@@ -434,7 +434,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 statement,
                                                 cluster,
                                                 true,
-                                                statement.getDataContext().getParameterValues()).build();
+                                                statement.getDataContext().getParameterValues() ).build();
 
                                         List<String> qualifiedTableName = ImmutableList.of(
                                                 PolySchemaBuilder.buildAdapterSchemaName(
@@ -490,7 +490,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                             // Get partitionValue per row/tuple to be inserted
                                             // Create as many independent TableModifies as there are entries in getParameterValues
 
-                                            for ( Map<Long, Object> currentRow :  statement.getDataContext().getParameterValues() ) {
+                                            for ( Map<Long, Object> currentRow : statement.getDataContext().getParameterValues() ) {
 
                                                 tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
 
@@ -511,7 +511,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         statement,
                                                         cluster,
                                                         true,
-                                                        parameterValues).build();
+                                                        parameterValues ).build();
 
                                                 newParameterValues.putAll( parameterValues.get( 0 ) );
 
@@ -862,6 +862,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
     }
+
+
     private RoutedRelBuilder remapParameterizedDml( RelNode node, RoutedRelBuilder builder, Statement statement, List<Map<Long, Object>> parameterValues ) {
         if ( parameterValues.size() != 1 ) {
             throw new RuntimeException( "The parameter values is expected to have a size of one in this case!" );

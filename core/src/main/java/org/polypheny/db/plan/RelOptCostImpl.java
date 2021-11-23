@@ -204,5 +204,7 @@ public class RelOptCostImpl implements RelOptCost {
         public RelOptCost makeZeroCost() {
             return new RelOptCostImpl( 0.0 );
         }
+
     }
+
 }

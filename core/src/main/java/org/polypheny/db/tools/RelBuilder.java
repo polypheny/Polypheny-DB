@@ -242,9 +242,10 @@ public class RelBuilder {
     /**
      * @return the stack size of the current builder.
      */
-    public int stackSize(){
+    public int stackSize() {
         return this.stack.size();
     }
+
 
     /**
      * Creates a RelBuilder.
@@ -275,6 +276,7 @@ public class RelBuilder {
     public static RelBuilder create( Statement statement, RelOptCluster cluster ) {
         return new RelBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
     }
+
 
     /**
      * Converts this RelBuilder to a string. The string is the string representation of all of the RelNodes on the stack.

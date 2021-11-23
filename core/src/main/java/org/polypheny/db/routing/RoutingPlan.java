@@ -27,7 +27,11 @@ import org.polypheny.db.util.Pair;
 public interface RoutingPlan {
 
     String getQueryClass();
+
     String getPhysicalQueryClass();
+
     Optional<Class<? extends Router>> getRouter();
-    Optional<Map<Long, List<Pair<Integer, Long>>>>  getOptionalPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
+
+    Optional<Map<Long, List<Pair<Integer, Long>>>> getOptionalPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
+
 }

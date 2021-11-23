@@ -35,9 +35,11 @@ public class ExecutionTimeMonitor {
         observers.put( observer, queryClassString );
     }
 
+
     public interface ExecutionTimeObserver {
 
         void executionTime( String reference, long nanoTime );
+
     }
 
 }

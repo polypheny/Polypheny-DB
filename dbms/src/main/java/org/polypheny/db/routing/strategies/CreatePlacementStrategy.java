@@ -24,6 +24,9 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
  * Interface to define, on which store(s) tables and columns are created.
  */
 public interface CreatePlacementStrategy {
+
     List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn );
+
     List<DataStore> getDataStoresForNewTable();
+
 }

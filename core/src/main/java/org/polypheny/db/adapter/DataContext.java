@@ -99,7 +99,7 @@ public interface DataContext {
         throw new UnsupportedOperationException();
     }
 
-    default boolean wasBackuped()  {
+    default boolean wasBackuped() {
         throw new UnsupportedOperationException();
     }
 
@@ -109,6 +109,7 @@ public interface DataContext {
         private final long index;
         private final RelDataType type;
         private final Object value;
+
     }
 
 
@@ -237,10 +238,12 @@ public interface DataContext {
 
         }
 
+
         @Override
-        public boolean wasBackuped(){
+        public boolean wasBackuped() {
             return false;
         }
+
 
         @Override
         public RelDataType getParameterType( long index ) {
@@ -252,6 +255,8 @@ public interface DataContext {
         public List<Map<Long, Object>> getParameterValues() {
             return null;
         }
+
     }
+
 }
 

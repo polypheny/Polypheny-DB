@@ -70,16 +70,17 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
     public List<Long> getAllColumnsPerTable( Long tableId ) {
         val usedCols = this.availableColumns;
         return availableColumnsWithTable.entrySet().stream()
-                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ))
+                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ) )
                 .map( x -> x.getKey() )
                 .collect( Collectors.toList() );
     }
 
+
     @Override
-    public List<Long> getUsedColumnsPerTable(Long tableId) {
+    public List<Long> getUsedColumnsPerTable( Long tableId ) {
         val usedCols = getUsedColumns();
         return availableColumnsWithTable.entrySet().stream()
-                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ))
+                .filter( x -> x.getValue().equals( tableId ) && usedCols.keySet().contains( x.getKey() ) )
                 .map( x -> x.getKey() )
                 .collect( Collectors.toList() );
     }

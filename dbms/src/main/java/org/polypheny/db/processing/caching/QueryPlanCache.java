@@ -151,4 +151,5 @@ public class QueryPlanCache {
         invalidateAction.setOrder( 2 );
         im.registerInformation( invalidateAction );
     }
+
 }

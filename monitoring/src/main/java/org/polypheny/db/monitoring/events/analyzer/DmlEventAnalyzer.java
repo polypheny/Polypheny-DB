@@ -45,5 +45,6 @@ public class DmlEventAnalyzer {
 
         return metric;
     }
+
 }
 

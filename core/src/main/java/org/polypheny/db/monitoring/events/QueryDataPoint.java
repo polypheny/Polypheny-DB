@@ -16,9 +16,12 @@
 
 package org.polypheny.db.monitoring.events;
 
-public interface QueryDataPoint extends MonitoringDataPoint{
+public interface QueryDataPoint extends MonitoringDataPoint {
+
     long getExecutionTime();
+
     String getQueryId();
+
     String getPhysicalQueryId();
 
 }

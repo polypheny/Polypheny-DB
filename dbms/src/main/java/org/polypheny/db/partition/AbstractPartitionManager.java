@@ -126,6 +126,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     @Override
     public abstract PartitionFunctionInfo getPartitionFunctionInfo();
 
+
     public Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         Map<Integer, Map<Long, List<CatalogColumnPlacement>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
         if ( partitionIds != null ) {

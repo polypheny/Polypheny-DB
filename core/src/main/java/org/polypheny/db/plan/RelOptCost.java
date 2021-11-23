@@ -141,5 +141,6 @@ public interface RelOptCost {
      * Forces implementations to override {@link Object#toString} and provide a good cost rendering to use during tracing.
      */
     String toString();
+
 }
 

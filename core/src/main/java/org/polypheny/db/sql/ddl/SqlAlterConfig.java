@@ -52,7 +52,7 @@ public class SqlAlterConfig extends SqlAlter {
         super( OPERATOR, pos );
         this.key = Objects.requireNonNull( key );
         this.value = Objects.requireNonNull( value );
-        System.out.println("--------" +value);
+        System.out.println( "--------" + value );
     }
 
 

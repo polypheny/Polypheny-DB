@@ -291,6 +291,8 @@ public class VolcanoCost implements RelOptCost {
         public RelOptCost makeZeroCost() {
             return VolcanoCost.ZERO;
         }
+
     }
+
 }
 

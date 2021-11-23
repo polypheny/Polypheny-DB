@@ -122,6 +122,7 @@ public class MapDbRepository implements MonitoringRepository {
         return Collections.emptyList();
     }
 
+
     @Override
     public QueryPostCosts getQueryPostCosts( @NonNull String physicalQueryClass ) {
         if ( queryPostCosts == null ) {
@@ -139,7 +140,7 @@ public class MapDbRepository implements MonitoringRepository {
             this.initializePostCosts();
         }
 
-        return new ArrayList<>(queryPostCosts.values());
+        return new ArrayList<>( queryPostCosts.values() );
     }
 
 

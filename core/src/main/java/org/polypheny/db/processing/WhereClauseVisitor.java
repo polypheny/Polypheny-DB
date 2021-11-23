@@ -50,6 +50,7 @@ public class WhereClauseVisitor extends RexShuttle {
         this.partitionColumnIndex = partitionColumnIndex;
     }
 
+
     @Override
     public RexNode visitCall( final RexCall call ) {
         super.visitCall( call );
@@ -84,8 +85,7 @@ public class WhereClauseVisitor extends RexShuttle {
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 //Enable worstcase routing
                 unsupportedFilter = true;
             }

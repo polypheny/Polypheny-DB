@@ -123,7 +123,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public List<HashMap<String, String>> getInformationOnElementsInQueue() {
         List<HashMap<String, String>> infoList = new ArrayList<>();
 
-        for ( MonitoringEvent event : monitoringJobQueue.stream().limit( 100 ).collect( Collectors.toList()) ) {
+        for ( MonitoringEvent event : monitoringJobQueue.stream().limit( 100 ).collect( Collectors.toList() ) ) {
             HashMap<String, String> infoRow = new HashMap<String, String>();
             infoRow.put( "type", event.getClass().toString() );
             infoRow.put( "id", event.getId().toString() );

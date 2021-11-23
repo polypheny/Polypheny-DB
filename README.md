@@ -9,7 +9,6 @@ _Polypheny-DB_ is a self-adaptive Polystore that provides cost- and workload awa
 If you want to learn more about Polypheny-DB, we recommend having a look on our [vision paper](https://ieeexplore.ieee.org/document/8622353).
 
 ## Getting Started ##
-
 The easiest way to setup Polypheny-DB is to use [Polypheny Control](https://github.com/polypheny/Polypheny-Control).
 
 ## Roadmap ##

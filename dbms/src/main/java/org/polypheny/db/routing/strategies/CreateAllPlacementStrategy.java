@@ -35,8 +35,8 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
         return catalogTable.placementsByAdapter.keySet()
                 .stream()
-                .map( elem -> AdapterManager.getInstance().getStore(elem))
-                .collect( Collectors.toList());
+                .map( elem -> AdapterManager.getInstance().getStore( elem ) )
+                .collect( Collectors.toList() );
 
     }
 

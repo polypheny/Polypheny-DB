@@ -64,6 +64,7 @@ public abstract class BaseRouter {
     // For reporting purposes
     protected Map<Long, SelectedAdapterInfo> selectedAdapter;
 
+
     @AllArgsConstructor
     @Getter
     protected static class SelectedAdapterInfo {
@@ -118,6 +119,7 @@ public abstract class BaseRouter {
         return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
     }
 
+
     public RoutedRelBuilder handleGeneric( RelNode node, RoutedRelBuilder builder ) {
         val result = handleGeneric( node, Lists.newArrayList( builder ) );
         if ( result.size() > 1 ) {
@@ -141,8 +143,6 @@ public abstract class BaseRouter {
         }
         return builders;
     }
-
-
 
 
     public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {

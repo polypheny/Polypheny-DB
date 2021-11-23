@@ -35,8 +35,10 @@ public interface PartitionManager {
     Map<Long, List<CatalogColumnPlacement>> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds, List<Integer> excludedAdapters );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
+
     /**
      * Returns all placements of catalogTable and partitionIds
+     *
      * @param catalogTable The table we are looking for placements.
      * @param partitionIds List of all asked partitions ids
      * @return Returns map of AdapterId  -> [Map PartitionsId -> needed Columns Placements]
