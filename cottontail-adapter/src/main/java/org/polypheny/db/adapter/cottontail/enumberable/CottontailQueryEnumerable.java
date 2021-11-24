@@ -30,33 +30,38 @@ import org.vitrivr.cottontail.client.iterators.TupleIterator;
 import java.util.List;
 
 
-public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
+public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
 
     /** The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}. */
     private final TupleIterator tupleIterator;
 
     /** The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}. */
-    private final Function1<Tuple, T> parser;
+    private final Function1<Tuple, Object[]> parser;
 
-    public CottontailQueryEnumerable(TupleIterator iterator, Function1<Tuple, T> rowParser ) {
+    public CottontailQueryEnumerable(TupleIterator iterator, Function1<Tuple, Object[]> rowParser ) {
         this.tupleIterator = iterator;
         this.parser = rowParser;
     }
 
     @Override
-    public Enumerator<T> enumerator() {
-        return new CottontailQueryResultEnumerator<>();
+    public Enumerator<Object> enumerator() {
+        return new CottontailQueryResultEnumerator();
     }
 
 
-    private class CottontailQueryResultEnumerator<T> implements Enumerator<T> {
+    private class CottontailQueryResultEnumerator implements Enumerator<Object> {
 
         /** The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to. */
         private Tuple tuple = null;
 
         @Override
-        public T current() {
-            return ( (T) CottontailQueryEnumerable.this.parser.apply( this.tuple ) );
+        public Object current() {
+            final Object[] results = CottontailQueryEnumerable.this.parser.apply( this.tuple );
+            if (results.length == 1) {
+                return results[0];
+            } else {
+                return results;
+            }
         }
 
         @Override

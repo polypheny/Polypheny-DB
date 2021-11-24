@@ -141,8 +141,8 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-        return new CottontailTableQueryable<>( dataContext, schema, tableName );
+    public Queryable<Object[]> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
+        return new CottontailTableQueryable( dataContext, schema, tableName );
     }
 
 
@@ -179,7 +179,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     }
 
 
-    private class CottontailTableQueryable<T> extends AbstractTableQueryable<T> {
+    private class CottontailTableQueryable extends AbstractTableQueryable<Object[]> {
 
         public CottontailTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
             super( dataContext, schema, CottontailTable.this, tableName );
@@ -187,7 +187,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
 
         @Override
-        public Enumerator<T> enumerator() {
+        public Enumerator enumerator() {
             final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
             final CottontailTable cottontailTable = (CottontailTable) this.table;
             final long txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
@@ -198,7 +198,5 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
                     new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames )
             ).enumerator();
         }
-
     }
-
 }

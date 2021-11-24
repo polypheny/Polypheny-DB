@@ -29,6 +29,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 import org.vitrivr.cottontail.client.language.basics.Constants;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
@@ -86,7 +87,7 @@ public class CottontailEnumerableFactory {
             String.class, String.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
 
 
-    public static CottontailQueryEnumerable<Object> query(
+    public static CottontailQueryEnumerable query(
             String from,
             String schema,
             Map<Object, String> projection,
@@ -95,7 +96,7 @@ public class CottontailEnumerableFactory {
             Function1<Map<Long, Object>, Integer> offsetBuilder,
             Function1<Map<Long, Object>, Where> whereBuilder,
             DataContext dataContext,
-            Function1 rowParser,
+            Function1<Tuple, Object[]> rowParser,
             CottontailWrapper wrapper
     ) {
 
@@ -145,7 +146,7 @@ public class CottontailEnumerableFactory {
             queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );
         }
 
-        return new CottontailQueryEnumerable<Object>( queryResponseIterator, rowParser );
+        return new CottontailQueryEnumerable( queryResponseIterator, rowParser );
     }
 
 
