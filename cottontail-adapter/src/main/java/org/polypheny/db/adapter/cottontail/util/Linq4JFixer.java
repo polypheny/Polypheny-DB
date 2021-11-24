@@ -31,6 +31,29 @@ import java.util.List;
  * A collections of conversion methods used for data access (sometimes used reflectively).
  */
 public class Linq4JFixer {
+
+    /**
+     * Converts the given object and returns it as {@link Byte}.
+     *
+     * @param data The data, expected to be {@link Byte}.
+     * @return {@link Byte}
+     */
+    public static Object getTinyIntData( Object data ) {
+        if (data == null) return null;
+        return (byte) data;
+    }
+
+    /**
+     * Converts the given object and returns it as {@link Short}.
+     *
+     * @param data The data, expected to be {@link Short}.
+     * @return {@link Short}
+     */
+    public static Object getSmallIntData( Object data ) {
+        if (data == null) return null;
+        return (short) data;
+    }
+
     /**
      * Converts the given object and returns it as {@link String}.
      *

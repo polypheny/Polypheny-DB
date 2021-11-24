@@ -235,10 +235,14 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case DOUBLE:
             case CHAR:
             case VARCHAR:
-            case TINYINT:
-            case SMALLINT:
             case NULL:
-                source = getDataFromMap_ ; /* No conversion required since tuple returns primitive data types. */
+                source = getDataFromMap_;
+                break;
+            case TINYINT:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getTinyIntData", Object.class ), getDataFromMap_ );
+                break;
+            case SMALLINT:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getSmallIntData", Object.class ), getDataFromMap_ );
                 break;
             case JSON:
                 source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getJsonData", Object.class ), getDataFromMap_ );
