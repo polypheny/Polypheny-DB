@@ -68,7 +68,7 @@ public class CottontailSort extends Sort implements CottontailRel {
             context.offsetBuilder = numberBuilderBuilder( this.offset );
         }
         if ( this.collation != null && this.collation.getFieldCollations().size() > 0 ) {
-            context.sortMap = sortMapBuilder( this.collation, context.blockBuilder, getRowType().getFieldNames() );
+            context.sortMap = sortMapBuilder( this.collation, context, getRowType().getFieldNames() );
         }
     }
 
@@ -83,16 +83,23 @@ public class CottontailSort extends Sort implements CottontailRel {
      * Constructs a {@link ParameterExpression} that generates a map containing the field to order by.
      *
      * @param node The {@link RelCollation} node to implement.
-     * @param builder The {@link BlockBuilder} instance.
+     * @param context The {@link CottontailImplementContext} instance.
      * @param columnNames List of column names.
      * @return {@link ParameterExpression}
      */
-    private static ParameterExpression sortMapBuilder( RelCollation node, BlockBuilder builder, List<String> columnNames ) {
+    private static ParameterExpression sortMapBuilder( RelCollation node, CottontailImplementContext context, List<String> columnNames ) {
+        final BlockBuilder builder = context.blockBuilder;
         final ParameterExpression orderMap_ = Expressions.variable( Map.class, builder.newName( "orderMap" ) );
         final NewExpression projectionMapCreator = Expressions.new_( LinkedHashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, orderMap_, projectionMapCreator ) );
         for ( RelFieldCollation c : node.getFieldCollations() ) {
-            final String physicalName = columnNames.get( c.getFieldIndex() );
+            final String logicalName = columnNames.get( c.getFieldIndex() );
+            String physicalName;
+            try {
+                physicalName = context.cottontailTable.getPhysicalColumnName( logicalName );
+            } catch (IndexOutOfBoundsException e) {
+                physicalName = logicalName; /* Case of column being calculated and there being no physical column. */
+            }
             final Expression sortOrder;
             switch ( c.direction ) {
                 case DESCENDING:
