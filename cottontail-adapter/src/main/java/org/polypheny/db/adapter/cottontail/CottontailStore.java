@@ -595,7 +595,7 @@ public class CottontailStore extends DataStore {
             final QueryMessage query = QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ).build() ) ) ).build();
             final TupleIterator iterator = this.wrapper.query( query );
             final From from = From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ).build() ).build();
-            final List<String> columnNames = iterator.getColumnNames();
+            final List<String> columnNames = iterator.getSimpleNames();
             iterator.forEachRemaining( t -> {
                 final InsertMessage.Builder insert = InsertMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId).build() ).setFrom( from );
                 int i = 0;
