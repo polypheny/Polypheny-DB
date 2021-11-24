@@ -104,7 +104,7 @@ public class SqlSubstringFunction extends SqlFunction {
         SqlValidator validator = callBinding.getValidator();
         SqlValidatorScope scope = callBinding.getScope();
 
-        final List<Node> operands = callBinding.operands();
+        final List<? extends Node> operands = callBinding.operands();
         int n = operands.size();
         assert (3 == n) || (2 == n);
         if ( !OperandTypes.STRING.checkSingleOperandType( callBinding, operands.get( 0 ), 0, throwOnFailure ) ) {

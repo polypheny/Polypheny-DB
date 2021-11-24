@@ -32,7 +32,7 @@ public interface CallBinding {
 
     Call getCall();
 
-    List<Node> operands();
+    List<? extends Node> operands();
 
     Node operand( int i );
 

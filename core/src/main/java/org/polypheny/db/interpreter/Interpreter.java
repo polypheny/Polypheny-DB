@@ -61,7 +61,6 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.TransformedEnumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.hep.HepPlanner;
@@ -239,7 +238,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                                         throw new AssertionError( "unknown expression " + call );
                                 }
                             default:
-                                if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.UPPER ) ) ) {
+                                if ( call.getOperator().getOperatorName() == OperatorName.UPPER ) {
                                     argScalar.execute( context, args );
                                     String s0 = (String) args[0];
                                     if ( s0 == null ) {
@@ -247,7 +246,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                                     }
                                     return s0.toUpperCase( Locale.ROOT );
                                 }
-                                if ( call.getOperator().equals( StdOperatorRegistry.getAgg( OperatorName.SUBSTRING ) ) ) {
+                                if ( call.getOperator().getOperatorName() == OperatorName.SUBSTRING ) {
                                     argScalar.execute( context, args );
                                     String s0 = (String) args[0];
                                     Number i1 = (Number) args[1];

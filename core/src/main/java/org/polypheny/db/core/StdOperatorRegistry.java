@@ -17,6 +17,9 @@
 package org.polypheny.db.core;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.polypheny.db.core.operators.OperatorName;
 
 public class StdOperatorRegistry {
@@ -25,9 +28,10 @@ public class StdOperatorRegistry {
 
 
     public synchronized static boolean register( OperatorName key, Operator operator ) {
-        boolean replaced = registry.containsKey( key );
+        boolean isReplaced = registry.containsKey( key );
+        operator.setOperatorName( key );
         registry.put( key, operator );
-        return replaced;
+        return isReplaced;
     }
 
 
@@ -48,6 +52,20 @@ public class StdOperatorRegistry {
 
     public static BinaryOperator getBinary( OperatorName key ) {
         return (BinaryOperator) get( key );
+    }
+
+
+    public static <T extends Operator> Map<OperatorName, T> getMatchingOperators( Class<T> clazz ) {
+        return registry
+                .entrySet()
+                .stream()
+                .filter( e -> !clazz.isInstance( e ) )
+                .collect( Collectors.toMap( Entry::getKey, e -> clazz.cast( e.getValue() ) ) );
+    }
+
+
+    public static HashMap<OperatorName, Operator> getAllOperators() {
+        return registry;
     }
 
 }

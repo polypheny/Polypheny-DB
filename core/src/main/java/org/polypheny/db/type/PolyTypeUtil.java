@@ -52,7 +52,6 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.core.Call;
 import org.polypheny.db.core.CallBinding;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.DataTypeSpec;
@@ -129,7 +128,7 @@ public abstract class PolyTypeUtil {
      * @param throwOnFailure Whether to throw an exception on failure
      * @return whether operands are valid
      */
-    public static boolean isCharTypeComparable( CallBinding binding, List<Node> operands, boolean throwOnFailure ) {
+    public static boolean isCharTypeComparable( CallBinding binding, List<? extends Node> operands, boolean throwOnFailure ) {
         final Validator validator = binding.getValidator();
         final ValidatorScope scope = binding.getScope();
         assert operands != null;
@@ -155,7 +154,7 @@ public abstract class PolyTypeUtil {
     /**
      * Iterates over all operands, derives their types, and collects them into a list.
      */
-    public static List<RelDataType> deriveAndCollectTypes( Validator validator, ValidatorScope scope, List<Node> operands ) {
+    public static List<RelDataType> deriveAndCollectTypes( Validator validator, ValidatorScope scope, List<? extends Node> operands ) {
         // NOTE: Do not use an AbstractList. Don't want to be lazy. We want errors.
         List<RelDataType> types = new ArrayList<>();
         for ( Node operand : operands ) {
@@ -182,22 +181,6 @@ public abstract class PolyTypeUtil {
         return type;
     }
 
-
-    /**
-     * Recreates a given RelDataType with nullability iff any of the operands of a call are nullable.
-     */
-    public static RelDataType makeNullableIfOperandsAre( final Validator validator, final ValidatorScope scope, final Call call, RelDataType type ) {
-        for ( Node operand : call.getOperandList() ) {
-            RelDataType operandType = validator.deriveType( scope, operand );
-
-            if ( containsNullable( operandType ) ) {
-                RelDataTypeFactory typeFactory = validator.getTypeFactory();
-                type = typeFactory.createTypeWithNullability( type, true );
-                break;
-            }
-        }
-        return type;
-    }
 
 
     /**

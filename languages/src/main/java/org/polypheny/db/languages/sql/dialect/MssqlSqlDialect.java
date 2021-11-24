@@ -20,7 +20,6 @@ package org.polypheny.db.languages.sql.dialect;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlAbstractDateTimeLiteral;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -74,7 +73,7 @@ public class MssqlSqlDialect extends SqlDialect {
 
     @Override
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.SUBSTRING ) ) ) {
+        if ( call.getOperator().getOperatorName() == OperatorName.SUBSTRING ) {
             if ( call.operandCount() != 3 ) {
                 throw new IllegalArgumentException( "MSSQL SUBSTRING requires FROM and FOR arguments" );
             }

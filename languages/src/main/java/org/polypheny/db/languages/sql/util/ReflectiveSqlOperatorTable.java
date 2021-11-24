@@ -20,7 +20,6 @@ package org.polypheny.db.languages.sql.util;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -28,10 +27,9 @@ import org.polypheny.db.core.FunctionCategory;
 import org.polypheny.db.core.Identifier;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.Syntax;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -43,7 +41,7 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
 
     public static final String IS_NAME = "INFORMATION_SCHEMA";
 
-    private final Multimap<Key, SqlOperator> operators = HashMultimap.create();
+    private final Multimap<Key, Operator> operators = HashMultimap.create();
 
 
     protected ReflectiveSqlOperatorTable() {
@@ -55,7 +53,7 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
      */
     public final void init() {
         // Use reflection to register the expressions stored in public fields.
-        for ( Field field : getClass().getFields() ) {
+        /*for ( Field field : getClass().getFields() ) {
             try {
                 if ( SqlFunction.class.isAssignableFrom( field.getType() ) ) {
                     SqlFunction op = (SqlFunction) field.get( this );
@@ -70,7 +68,10 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
                 Util.throwIfUnchecked( e.getCause() );
                 throw new RuntimeException( e.getCause() );
             }
-        }
+        }*/
+        StdOperatorRegistry
+                .getAllOperators()
+                .forEach( ( operatorName, operator ) -> register( operator ) );
     }
 
 
@@ -92,11 +93,11 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
         }
 
         // Always look up built-in operators case-insensitively. Even in sessions with unquotedCasing=UNCHANGED and caseSensitive=true.
-        final Collection<SqlOperator> list = operators.get( new Key( simpleName, SqlSyntax.fromSyntax( syntax ) ) );
+        final Collection<Operator> list = operators.get( new Key( simpleName, syntax ) );
         if ( list.isEmpty() ) {
             return;
         }
-        for ( SqlOperator op : list ) {
+        for ( Operator op : list ) {
             if ( op.getSyntax() == syntax ) {
                 operatorList.add( op );
             } else if ( syntax == Syntax.FUNCTION && op instanceof SqlFunction ) {
@@ -110,7 +111,7 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
             case BINARY:
             case PREFIX:
             case POSTFIX:
-                for ( SqlOperator extra : operators.get( new Key( simpleName, SqlSyntax.fromSyntax( syntax ) ) ) ) {
+                for ( Operator extra : operators.get( new Key( simpleName, syntax ) ) ) {
                     // REVIEW: Should only search operators added during this method?
                     if ( extra != null && !operatorList.contains( extra ) ) {
                         operatorList.add( extra );
@@ -124,8 +125,8 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
     /**
      * Registers a function or operator in the table.
      */
-    public void register( SqlOperator op ) {
-        operators.put( new Key( op.getName(), op.getSqlSyntax() ), op );
+    public void register( Operator op ) {
+        operators.put( new Key( op.getName(), op.getSyntax() ), op );
     }
 
 
@@ -138,21 +139,21 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
     /**
      * Key for looking up operators. The name is stored in upper-case because we store case-insensitively, even in a case-sensitive session.
      */
-    private static class Key extends Pair<String, SqlSyntax> {
+    private static class Key extends Pair<String, Syntax> {
 
-        Key( String name, SqlSyntax syntax ) {
+        Key( String name, Syntax syntax ) {
             super( name.toUpperCase( Locale.ROOT ), normalize( syntax ) );
         }
 
 
-        private static SqlSyntax normalize( SqlSyntax syntax ) {
+        private static Syntax normalize( Syntax syntax ) {
             switch ( syntax ) {
                 case BINARY:
                 case PREFIX:
                 case POSTFIX:
                     return syntax;
                 default:
-                    return SqlSyntax.FUNCTION;
+                    return Syntax.FUNCTION;
             }
         }
 

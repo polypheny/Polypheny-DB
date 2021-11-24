@@ -59,7 +59,6 @@ import org.polypheny.db.adapter.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.Conformance;
 import org.polypheny.db.core.ConformanceEnum;
-import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.interpreter.Row.RowBuilder;
 import org.polypheny.db.rel.core.Aggregate;
@@ -131,9 +130,9 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                 return new FilterAccumulator( accumulator, call.filterArg );
             };
         }
-        if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( OperatorName.COUNT ) ) ) {
+        if ( call.getAggregation().getOperatorName() == OperatorName.COUNT ) {
             return () -> new CountAccumulator( call );
-        } else if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( OperatorName.SUM ) ) || call.getAggregation().equals( StdOperatorRegistry.getAgg( OperatorName.SUM0 ) ) ) {
+        } else if ( call.getAggregation().getOperatorName() == OperatorName.SUM || call.getAggregation().getOperatorName() == OperatorName.SUM0 ) {
             final Class<?> clazz;
             switch ( call.type.getPolyType() ) {
                 case DOUBLE:
@@ -149,12 +148,12 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                     clazz = LongSum.class;
                     break;
             }
-            if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( OperatorName.SUM ) ) ) {
+            if ( call.getAggregation().getOperatorName() == OperatorName.SUM ) {
                 return new UdaAccumulatorFactory( AggregateFunctionImpl.create( clazz ), call, true );
             } else {
                 return new UdaAccumulatorFactory( AggregateFunctionImpl.create( clazz ), call, false );
             }
-        } else if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( OperatorName.MIN ) ) ) {
+        } else if ( call.getAggregation().getOperatorName() == OperatorName.MIN ) {
             final Class<?> clazz;
             switch ( call.getType().getPolyType() ) {
                 case INTEGER:
@@ -172,7 +171,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                     break;
             }
             return new UdaAccumulatorFactory( AggregateFunctionImpl.create( clazz ), call, true );
-        } else if ( call.getAggregation().equals( StdOperatorRegistry.getAgg( OperatorName.MAX ) ) ) {
+        } else if ( call.getAggregation().getOperatorName() == OperatorName.MAX ) {
             final Class<?> clazz;
             switch ( call.getType().getPolyType() ) {
                 case INTEGER:

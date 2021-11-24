@@ -79,18 +79,18 @@ public abstract class SqlCall extends SqlNode implements Call {
     @Override
     @SuppressWarnings("unchecked")
     public <S extends Node> S operand( int i ) {
-        return (S) getOperandList().get( i );
+        return (S) getSqlOperandList().get( i );
     }
 
 
     public int operandCount() {
-        return getOperandList().size();
+        return getSqlOperandList().size();
     }
 
 
     @Override
     public Node clone( ParserPos pos ) {
-        final List<Node> operandList = getOperandList();
+        final List<SqlNode> operandList = getSqlOperandList();
         return getOperator().createCall( getFunctionQuantifier(), pos, operandList.toArray( new Node[0] ) );
     }
 
@@ -125,7 +125,7 @@ public abstract class SqlCall extends SqlNode implements Call {
 
     @Override
     public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, ParserPos pos, Collection<SqlMoniker> hintList ) {
-        for ( Node operand : getOperandList() ) {
+        for ( SqlNode operand : getSqlOperandList() ) {
             if ( operand instanceof SqlIdentifier ) {
                 SqlIdentifier id = (SqlIdentifier) operand;
                 ParserPos idPos = id.getPos();
@@ -156,11 +156,11 @@ public abstract class SqlCall extends SqlNode implements Call {
         SqlCall that = (SqlCall) node;
 
         // Compare operators by name, not identity, because they may not have been resolved yet.
-        // Use case insensitive comparison since this may be a case insensitive system.
+        // Use case-insensitive comparison since this may be a case-insensitive system.
         if ( !this.getOperator().getName().equalsIgnoreCase( that.getOperator().getName() ) ) {
             return litmus.fail( "{} != {}", this, node );
         }
-        return Node.equalDeep( this.getOperandList(), that.getOperandList(), litmus );
+        return Node.equalDeep( this.getSqlOperandList(), that.getSqlOperandList(), litmus );
     }
 
 
@@ -169,7 +169,7 @@ public abstract class SqlCall extends SqlNode implements Call {
      */
     protected String getCallSignature( SqlValidator validator, SqlValidatorScope scope ) {
         List<String> signatureList = new ArrayList<>();
-        for ( final Node operand : getOperandList() ) {
+        for ( final Node operand : getSqlOperandList() ) {
             final RelDataType argType = validator.deriveType( scope, operand );
             if ( null == argType ) {
                 continue;
@@ -199,9 +199,7 @@ public abstract class SqlCall extends SqlNode implements Call {
             final SqlNode parm = operand( 0 );
             if ( parm instanceof SqlIdentifier ) {
                 SqlIdentifier id = (SqlIdentifier) parm;
-                if ( id.isStar() && id.names.size() == 1 ) {
-                    return true;
-                }
+                return id.isStar() && id.names.size() == 1;
             }
         }
 

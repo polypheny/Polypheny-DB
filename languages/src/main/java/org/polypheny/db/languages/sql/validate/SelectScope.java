@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.Monotonicity;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.ValidatorTable;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -159,7 +158,7 @@ public class SelectScope extends ListScope {
         if ( orderList.size() > 0 ) {
             SqlNode order0 = orderList.getSqlList().get( 0 );
             monotonicity = Monotonicity.INCREASING;
-            if ( (order0 instanceof SqlCall) && (((SqlCall) order0).getOperator().equals( StdOperatorRegistry.get( OperatorName.DESC ) )) ) {
+            if ( (order0 instanceof SqlCall) && (((SqlCall) order0).getOperator().getOperatorName() == OperatorName.DESC) ) {
                 monotonicity = monotonicity.reverse();
                 order0 = ((SqlCall) order0).operand( 0 );
             }

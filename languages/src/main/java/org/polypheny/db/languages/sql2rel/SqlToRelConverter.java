@@ -2111,7 +2111,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
     protected void convertCollectionTable( Blackboard bb, SqlCall call ) {
         final Operator operator = call.getOperator();
-        if ( operator.equals( StdOperatorRegistry.get( OperatorName.TABLESAMPLE ) ) ) {
+        if ( operator.getOperatorName() == OperatorName.TABLESAMPLE ) {
             final String sampleName = SqlLiteral.unchain( call.operand( 0 ) ).getValueAs( String.class );
             datasetStack.push( sampleName );
             SqlCall cursorCall = call.operand( 1 );
@@ -4209,7 +4209,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
             }
             if ( rex instanceof RexCall ) {
                 RexCall call = (RexCall) rex;
-                if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) ) {
+                if ( call.getOperator().getOperatorName() == OperatorName.CAST ) {
                     RexNode operand = call.getOperands().get( 0 );
                     if ( operand instanceof RexLiteral ) {
                         return true;
@@ -4978,19 +4978,19 @@ public class SqlToRelConverter implements NodeToRelConverter {
         /**
          * Returns the histogram operator corresponding to a given aggregate function.
          *
-         * For example, <code>getHistogramOp ({@link SqlStdOperatorTable#MIN}}</code> returns {@link SqlStdOperatorTable#HISTOGRAM_MIN}.
+         * For example, <code>getHistogramOp ({@link StdOperatorRegistry MIN}}</code> returns {@link StdOperatorRegistry HISTOGRAM_MIN}.
          *
          * @param aggFunction An aggregate function
          * @return Its histogram function, or null
          */
         SqlFunction getHistogramOp( SqlAggFunction aggFunction ) {
-            if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.MIN ) ) ) {
+            if ( aggFunction.getOperatorName() == OperatorName.MIN ) {
                 return StdOperatorRegistry.get( OperatorName.HISTOGRAM_MIN, SqlFunction.class );
-            } else if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.MAX ) ) ) {
+            } else if ( aggFunction.getOperatorName() == OperatorName.MAX ) {
                 return StdOperatorRegistry.get( OperatorName.HISTOGRAM_MAX, SqlFunction.class );
-            } else if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.FIRST_VALUE ) ) ) {
+            } else if ( aggFunction.getOperatorName() == OperatorName.FIRST_VALUE ) {
                 return StdOperatorRegistry.get( OperatorName.HISTOGRAM_FIRST_VALUE, SqlFunction.class );
-            } else if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.LAST_VALUE ) ) ) {
+            } else if ( aggFunction.getOperatorName() == OperatorName.LAST_VALUE ) {
                 return StdOperatorRegistry.get( OperatorName.HISTOGRAM_LAST_VALUE, SqlFunction.class );
             } else {
                 return null;

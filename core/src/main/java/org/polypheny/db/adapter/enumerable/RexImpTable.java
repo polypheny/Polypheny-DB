@@ -439,7 +439,7 @@ public class RexImpTable {
                 //   : b0 ? b1
                 //   : Boolean.FALSE;
                 return ( translator, call, nullAs ) -> {
-                    assert call.getOperator().equals( StdOperatorRegistry.get( OperatorName.AND ) ) : "AND null semantics is supported only for AND operator. Actual operator is " + call.getOperator();
+                    assert call.getOperator().getOperatorName() == OperatorName.AND : "AND null semantics is supported only for AND operator. Actual operator is " + call.getOperator();
                     final RexCall call2 = call2( false, translator, call );
                     switch ( nullAs ) {
                         case NOT_POSSIBLE:
@@ -473,7 +473,7 @@ public class RexImpTable {
                 //   : !b0 ? b1
                 //   : Boolean.TRUE;
                 return ( translator, call, nullAs ) -> {
-                    assert call.getOperator().equals( StdOperatorRegistry.get( OperatorName.OR ) ) : "OR null semantics is supported only for OR operator. Actual operator is " + call.getOperator();
+                    assert call.getOperator().getOperatorName() == OperatorName.OR : "OR null semantics is supported only for OR operator. Actual operator is " + call.getOperator();
                     final RexCall call2 = call2( harmonize, translator, call );
                     switch ( nullAs ) {
                         case NOT_POSSIBLE:
@@ -1028,7 +1028,7 @@ public class RexImpTable {
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
             Expression acc = reset.accumulator().get( 0 );
             Primitive p = Primitive.of( acc.getType() );
-            boolean isMin = StdOperatorRegistry.get( OperatorName.MIN ).equals( info.aggregation() );
+            boolean isMin = OperatorName.MIN == info.aggregation().getOperatorName();
             Object inf = p == null ? null : (isMin ? p.max : p.min);
             reset.currentBlock().add( Expressions.statement( Expressions.assign( acc, Expressions.constant( inf, acc.getType() ) ) ) );
         }
@@ -1039,7 +1039,7 @@ public class RexImpTable {
             Expression acc = add.accumulator().get( 0 );
             Expression arg = add.arguments().get( 0 );
             AggFunction aggregation = info.aggregation();
-            final Method method = (aggregation.equals( StdOperatorRegistry.get( OperatorName.MIN ) )
+            final Method method = (aggregation.getOperatorName() == OperatorName.MIN
                     ? BuiltInMethod.LESSER
                     : BuiltInMethod.GREATER).method;
             Expression next = Expressions.call( method.getDeclaringClass(), method.getName(), acc, Expressions.unbox( arg ) );
@@ -1811,7 +1811,7 @@ public class RexImpTable {
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final boolean strict = !translator.conformance.allowExtendedTrim();
             final Object value = ((ConstantExpression) translatedOperands.get( 0 )).value;
-            Flag flag = (Flag) value; // todo dl this could lead to errors further down the road
+            Flag flag = (Flag) value;
             return Expressions.call(
                     BuiltInMethod.TRIM.method,
                     Expressions.constant( flag == Flag.BOTH || flag == Flag.LEADING ),
@@ -2543,25 +2543,25 @@ public class RexImpTable {
             final Operator op = call.getOperator();
             final Expression root = translator.getRoot();
             if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_USER ) )
-                    || op.equals( StdOperatorRegistry.get( OperatorName.SESSION_USER ) )
-                    || op.equals( StdOperatorRegistry.get( OperatorName.USER ) ) ) {
+                    || op.getOperatorName() == OperatorName.SESSION_USER
+                    || op.getOperatorName() == OperatorName.USER ) {
                 return Expressions.constant( "sa" );
-            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.SYSTEM_USER ) ) ) {
+            } else if ( op.getOperatorName() == OperatorName.SYSTEM_USER ) {
                 return Expressions.constant( System.getProperty( "user.name" ) );
-            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_PATH ) )
-                    || op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_ROLE ) )
-                    || op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_CATALOG ) ) ) {
+            } else if ( op.getOperatorName() == OperatorName.CURRENT_PATH
+                    || op.getOperatorName() == OperatorName.CURRENT_ROLE
+                    || op.getOperatorName() == OperatorName.CURRENT_CATALOG ) {
                 // By default, the CURRENT_ROLE and CURRENT_CATALOG functions return the empty string because a role or a catalog has to be set explicitly.
                 return Expressions.constant( "" );
-            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ) ) ) {
+            } else if ( op.getOperatorName() == OperatorName.CURRENT_TIMESTAMP ) {
                 return Expressions.call( BuiltInMethod.CURRENT_TIMESTAMP.method, root );
-            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_TIME ) ) ) {
+            } else if ( op.getOperatorName() == OperatorName.CURRENT_TIME ) {
                 return Expressions.call( BuiltInMethod.CURRENT_TIME.method, root );
-            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_DATE ) ) ) {
+            } else if ( op.getOperatorName() == OperatorName.CURRENT_DATE ) {
                 return Expressions.call( BuiltInMethod.CURRENT_DATE.method, root );
-            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.LOCALTIMESTAMP ) ) ) {
+            } else if ( op.getOperatorName() == OperatorName.LOCALTIMESTAMP ) {
                 return Expressions.call( BuiltInMethod.LOCAL_TIMESTAMP.method, root );
-            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.LOCALTIME ) ) ) {
+            } else if ( op.getOperatorName() == OperatorName.LOCALTIME ) {
                 return Expressions.call( BuiltInMethod.LOCAL_TIME.method, root );
             } else {
                 throw new AssertionError( "unknown function " + op );

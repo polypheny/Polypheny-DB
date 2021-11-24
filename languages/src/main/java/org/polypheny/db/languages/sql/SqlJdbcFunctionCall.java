@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.core.Call;
@@ -367,7 +368,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
     private final MakeCall lookupMakeCallObj;
     private SqlCall lookupCall;
 
-    private SqlNode[] thisOperands;
+    private SqlNode[] operands;
 
 
     public SqlJdbcFunctionCall( String name ) {
@@ -402,13 +403,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
-        SqlNode[] nodes = new SqlNode[operands.length];
-        int i = 0;
-        for ( Node operand : operands ) {
-            nodes[i] = (SqlNode) operand;
-            i++;
-        } //todo dl change
-        thisOperands = nodes;
+        this.operands = Arrays.stream( operands ).map( e -> (SqlNode) e ).toArray( SqlNode[]::new );
         return super.createCall( functionQualifier, pos, operands );
     }
 
@@ -424,7 +419,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
     public SqlCall getLookupCall() {
         if ( null == lookupCall ) {
-            lookupCall = lookupMakeCallObj.createCall( ParserPos.ZERO, thisOperands );
+            lookupCall = lookupMakeCallObj.createCall( ParserPos.ZERO, operands );
         }
         return lookupCall;
     }
@@ -460,7 +455,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
         final String message = lookupMakeCallObj.isValidArgCount( callBinding );
         if ( message != null ) {
-            throw callBinding.newValidationError( Static.RESOURCE.wrongNumberOfParam( getName(), thisOperands.length, message ) );
+            throw callBinding.newValidationError( Static.RESOURCE.wrongNumberOfParam( getName(), operands.length, message ) );
         }
 
         final SqlCall newCall = getLookupCall();

@@ -49,7 +49,6 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -419,7 +418,7 @@ public class ScannableTableTest {
             final RexNode node = filterIter.next();
             if ( cooperative
                     && node instanceof RexCall
-                    && ((RexCall) node).getOperator().equals( StdOperatorRegistry.get( OperatorName.EQUALS ) )
+                    && ((RexCall) node).getOperator().getOperatorName() == OperatorName.EQUALS
                     && ((RexCall) node).getOperands().get( 0 ) instanceof RexInputRef
                     && ((RexInputRef) ((RexCall) node).getOperands().get( 0 )).getIndex() == 0
                     && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ) {

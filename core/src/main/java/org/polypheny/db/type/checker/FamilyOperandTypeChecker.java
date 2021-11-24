@@ -98,7 +98,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
             return false;
         }
 
-        for ( Ord<Node> op : Ord.zip( callBinding.operands() ) ) {
+        for ( Ord<? extends Node> op : Ord.zip( callBinding.operands() ) ) {
             if ( !checkSingleOperandType( callBinding, op.e, op.i, throwOnFailure ) ) {
                 return false;
             }

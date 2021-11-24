@@ -19,6 +19,7 @@ package org.polypheny.db.core;
 import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Function.FunctionType;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.util.Litmus;
@@ -78,5 +79,9 @@ public interface Operator {
     String getSignatureTemplate( int operandsCount );
 
     Monotonicity getMonotonicity( OperatorBinding call );
+
+    OperatorName getOperatorName();
+
+    void setOperatorName( OperatorName name );
 
 }

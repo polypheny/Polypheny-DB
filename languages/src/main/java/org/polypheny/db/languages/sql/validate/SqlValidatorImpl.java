@@ -1758,7 +1758,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             final SqlCall call = (SqlCall) node;
             final PolyOperandTypeInference operandTypeInference = ((SqlOperator) call.getOperator()).getOperandTypeInference();
             final SqlCallBinding callBinding = new SqlCallBinding( this, scope, call );
-            final List<Node> operands = callBinding.operands();
+            final List<? extends Node> operands = callBinding.operands();
             final RelDataType[] operandTypes = new RelDataType[operands.size()];
             Arrays.fill( operandTypes, unknownType );
             // TODO:  eventually should assert(operandTypeInference != null) instead; for now just eat it
@@ -3129,7 +3129,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return;
         }
         final Operator op = agg.getOperator();
-        if ( op.equals( StdOperatorRegistry.get( OperatorName.OVER ) ) ) {
+        if ( op.getOperatorName() == OperatorName.OVER ) {
             throw newValidationError( agg, RESOURCE.windowedAggregateIllegalInClause( clause ) );
         } else if ( op.isGroup() || op.isGroupAuxiliary() ) {
             throw newValidationError( agg, RESOURCE.groupFunctionMustAppearInGroupByClause( op.getName() ) );

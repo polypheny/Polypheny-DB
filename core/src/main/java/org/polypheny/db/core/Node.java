@@ -44,7 +44,7 @@ public interface Node extends Cloneable, Visitable {
     /**
      * Returns whether two lists of operands are equal.
      */
-    static boolean equalDeep( List<Node> operands0, List<Node> operands1, Litmus litmus ) {
+    static boolean equalDeep( List<? extends Node> operands0, List<? extends Node> operands1, Litmus litmus ) {
         if ( operands0.size() != operands1.size() ) {
             return litmus.fail( null );
         }

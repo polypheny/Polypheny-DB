@@ -46,7 +46,6 @@ import java.util.regex.Pattern;
 import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.RowOperator;
-import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
@@ -848,7 +847,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 }
 
                 // if this cast expression can't be reduced to a literal, then see if we can remove the cast
-                if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) ) {
+                if ( call.getOperator().getOperatorName() == OperatorName.CAST ) {
                     reduceCasts( call );
                 }
             }
@@ -885,7 +884,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                 return;
             }
             RexCall innerCast = (RexCall) operands.get( 0 );
-            if ( !innerCast.getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) ) {
+            if ( innerCast.getOperator().getOperatorName() != OperatorName.CAST ) {
                 return;
             }
             if ( innerCast.getOperands().size() != 1 ) {

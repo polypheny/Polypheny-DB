@@ -136,7 +136,7 @@ public class MongoRules {
      * Returns 'string' if it is a call to item['string'], null otherwise.
      */
     static String isItem( RexCall call ) {
-        if ( !call.getOperator().equals( StdOperatorRegistry.get( OperatorName.ITEM ) ) ) {
+        if ( call.getOperator().getOperatorName() != OperatorName.ITEM ) {
             return null;
         }
         final RexNode op0 = call.operands.get( 0 );
@@ -327,7 +327,7 @@ public class MongoRules {
                 }
                 return "{" + stdOperator + ": [" + Util.commaList( strings ) + "]}";
             }
-            if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.ITEM ) ) ) {
+            if ( call.getOperator().getOperatorName() == OperatorName.ITEM ) {
                 final RexNode op1 = call.operands.get( 1 );
                 // normal
                 if ( op1 instanceof RexLiteral && op1.getType().
@@ -383,7 +383,7 @@ public class MongoRules {
                 return call.operands.get( 0 ).accept( this );
             }
 
-            if ( call.op.equals( StdOperatorRegistry.get( OperatorName.SIGN ) ) ) {
+            if ( call.op.getOperatorName() == OperatorName.SIGN ) {
                 // x < 0, -1
                 // x == 0, 0
                 // x > 0, 1
@@ -648,12 +648,12 @@ public class MongoRules {
         @Override
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
-            if ( operator.equals( StdOperatorRegistry.get( OperatorName.COALESCE ) )
-                    || operator.equals( StdOperatorRegistry.get( OperatorName.EXTRACT ) )
-                    || operator.equals( StdOperatorRegistry.get( OperatorName.OVERLAY ) )
-                    || operator.equals( StdOperatorRegistry.get( OperatorName.COT ) )
-                    || operator.equals( StdOperatorRegistry.get( OperatorName.FLOOR ) )
-                    || (operator.equals( StdOperatorRegistry.get( OperatorName.CAST ) )
+            if ( operator.getOperatorName() == OperatorName.COALESCE
+                    || operator.getOperatorName() == OperatorName.EXTRACT
+                    || operator.getOperatorName() == OperatorName.OVERLAY
+                    || operator.getOperatorName() == OperatorName.COT
+                    || operator.getOperatorName() == OperatorName.FLOOR
+                    || (operator.getOperatorName() == OperatorName.CAST
                     && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {

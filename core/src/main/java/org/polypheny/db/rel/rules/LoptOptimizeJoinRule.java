@@ -167,7 +167,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
                         continue;
                     }
                     RexCall filterCall = (RexCall) filter;
-                    if ( (!filterCall.getOperator().equals( StdOperatorRegistry.get( OperatorName.EQUALS ) ))
+                    if ( (filterCall.getOperator().getOperatorName() != OperatorName.EQUALS)
                             || !(filterCall.getOperands().get( 0 ) instanceof RexInputRef)
                             || !(filterCall.getOperands().get( 1 ) instanceof RexInputRef) ) {
                         continue;

@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.Function.FunctionType;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -56,6 +57,9 @@ public abstract class OperatorImpl implements Operator {
      */
     protected final PolyOperandTypeChecker operandTypeChecker;
 
+    @Getter
+    private OperatorName operatorName;
+
 
     public OperatorImpl( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker ) {
         this.name = name;
@@ -63,6 +67,14 @@ public abstract class OperatorImpl implements Operator {
         this.returnTypeInference = returnTypeInference;
         this.operandTypeInference = operandTypeInference;
         this.operandTypeChecker = operandTypeChecker;
+    }
+
+
+    public void setOperatorName( OperatorName operatorName ) {
+        if ( this.operatorName != null ) {
+            throw new RuntimeException( "The operatorName can only be set once." );
+        }
+        this.operatorName = operatorName;
     }
 
 

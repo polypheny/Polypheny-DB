@@ -99,11 +99,11 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
      * Returns the operands to a call permuted into the same order as the formal parameters of the function.
      */
     @Override
-    public List<Node> operands() {
+    public List<? extends Node> operands() {
         if ( hasAssignment() && !(call.getOperator() instanceof SqlUnresolvedFunction) ) {
             return permutedOperands( call );
         } else {
-            final List<Node> operandList = call.getOperandList();
+            final List<SqlNode> operandList = call.getSqlOperandList();
             if ( call.getOperator() instanceof SqlFunction ) {
                 final List<RelDataType> paramTypes = ((SqlFunction) call.getOperator()).getParamTypes();
                 if ( paramTypes != null && operandList.size() < paramTypes.size() ) {
@@ -128,7 +128,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
      * Returns whether arguments have name assignment.
      */
     private boolean hasAssignment() {
-        for ( Node operand : call.getOperandList() ) {
+        for ( Node operand : call.getSqlOperandList() ) {
             if ( operand != null && operand.getKind() == Kind.ARGUMENT_ASSIGNMENT ) {
                 return true;
             }
@@ -143,7 +143,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     private List<Node> permutedOperands( final SqlCall call ) {
         final SqlFunction operator = (SqlFunction) call.getOperator();
         return operator.getParamNames().stream().map( paramName -> {
-            for ( Node operand2 : call.getOperandList() ) {
+            for ( Node operand2 : call.getSqlOperandList() ) {
                 final SqlCall call2 = (SqlCall) operand2;
                 assert operand2.getKind() == Kind.ARGUMENT_ASSIGNMENT;
                 final SqlIdentifier id = call2.operand( 1 );
@@ -170,8 +170,8 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
      * used are null.
      */
     public SqlCall permutedCall() {
-        final List<Node> operandList = operands();
-        if ( operandList.equals( call.getOperandList() ) ) {
+        final List<? extends Node> operandList = operands();
+        if ( operandList.equals( call.getSqlOperandList() ) ) {
             return call;
         }
         return (SqlCall) call.getOperator().createCall( call.pos, operandList );
@@ -180,7 +180,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
     @Override
     public Monotonicity getOperandMonotonicity( int ordinal ) {
-        return ((SqlNode) call.getOperandList().get( ordinal )).getMonotonicity( scope );
+        return ((SqlNode) call.getSqlOperandList().get( ordinal )).getMonotonicity( scope );
     }
 
 
@@ -243,7 +243,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
         if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( OperatorName.ROW ) ) ) {
             return null;
         }
-        for ( Node id : ((SqlCall) operand).getOperandList() ) {
+        for ( Node id : ((SqlCall) operand).getSqlOperandList() ) {
             columnList.add( ((SqlIdentifier) id).getSimple() );
         }
         return validator.getParentCursor( paramName );

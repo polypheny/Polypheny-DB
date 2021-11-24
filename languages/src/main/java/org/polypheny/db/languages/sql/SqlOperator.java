@@ -208,13 +208,7 @@ public abstract class SqlOperator extends OperatorImpl {
     @Override
     public Call createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         pos = pos.plusAll( Arrays.asList( operands ) );
-        SqlNode[] nodes = new SqlNode[operands.length];
-        int i = 0;
-        for ( Node operand : operands ) {
-            nodes[i] = (SqlNode) operand;
-            i++;
-        } //todo dl change
-        return new SqlBasicCall( this, nodes, pos, false, (SqlLiteral) functionQualifier );
+        return new SqlBasicCall( this, Arrays.stream( operands ).map( e -> (SqlNode) e ).toArray( value -> new SqlNode[value] ), pos, false, (SqlLiteral) functionQualifier );
     }
 
 
@@ -522,7 +516,7 @@ public abstract class SqlOperator extends OperatorImpl {
         }
 
         if ( kind != Kind.ARGUMENT_ASSIGNMENT ) {
-            for ( Ord<Node> operand : Ord.zip( callBinding.operands() ) ) {
+            for ( Ord<? extends Node> operand : Ord.zip( callBinding.operands() ) ) {
                 if ( operand.e != null
                         && operand.e.getKind() == Kind.DEFAULT
                         && !operandTypeChecker.isOptional( operand.i ) ) {

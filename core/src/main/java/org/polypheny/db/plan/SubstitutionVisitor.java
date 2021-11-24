@@ -43,6 +43,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1353,13 +1354,14 @@ public class SubstitutionVisitor {
 
 
     public static AggFunction getRollup( AggFunction aggregation ) {
-        if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.SUM ) )
-                || aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.MIN ) )
-                || aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.MAX ) )
-                || aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.SUM0 ) )
-                || aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.ANY_VALUE ) ) ) {
+        if ( Arrays.asList(
+                OperatorName.SUM,
+                OperatorName.MIN,
+                OperatorName.MAX,
+                OperatorName.SUM0,
+                OperatorName.ANY_VALUE ).contains( aggregation.getOperatorName() ) ) {
             return aggregation;
-        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.COUNT ) ) ) {
+        } else if ( aggregation.getOperatorName() == OperatorName.COUNT ) {
             return StdOperatorRegistry.getAgg( OperatorName.SUM0 );
         } else {
             return null;

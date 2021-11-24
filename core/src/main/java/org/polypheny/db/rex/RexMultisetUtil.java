@@ -162,7 +162,7 @@ public class RexMultisetUtil {
         for ( Operator op : MULTISET_OPERATORS ) {
             firstOne = RexUtil.findOperatorCall( op, call );
             if ( null != firstOne ) {
-                if ( firstOne.getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) && !isMultisetCast( firstOne ) ) {
+                if ( firstOne.getOperator().getOperatorName() == OperatorName.CAST && !isMultisetCast( firstOne ) ) {
                     firstOne = null;
                     continue;
                 }
@@ -203,7 +203,7 @@ public class RexMultisetUtil {
         public Void visitCall( RexCall call ) {
             ++totalCount;
             if ( MULTISET_OPERATORS.contains( call.getOperator() ) ) {
-                if ( !call.getOperator().equals( StdOperatorRegistry.get( OperatorName.CAST ) ) || isMultisetCast( call ) ) {
+                if ( call.getOperator().getOperatorName() != OperatorName.CAST || isMultisetCast( call ) ) {
                     ++multisetCount;
                 }
             }
