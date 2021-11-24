@@ -245,7 +245,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getSmallIntData", Object.class ), getDataFromMap_ );
                 break;
             case JSON:
-                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getJsonData", Object.class ), getDataFromMap_ );
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ );
                 break;
             case DECIMAL:
                 // Polypheny uses BigDecimal internally to represent DECIMAL values.
@@ -307,7 +307,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                         BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
                         Expressions.constant( fieldType.getComponentType().getPolyType() ),
                         Expressions.constant( arrayType.getDimension() ),
-                        getDataFromMap_
+                        Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ )
                     );
                 }
             }

@@ -57,12 +57,10 @@ public class Linq4JFixer {
     /**
      * Converts the given object and returns it as {@link String}.
      *
-     * TODO: JSON conversion could probably take place here.
-     *
      * @param data The data, expected to be {@link String}.
      * @return {@link String}
      */
-    public static String getJsonData( Object data ) {
+    public static String getStringData(Object data ) {
         if (data == null) return null;
         return (String) data;
     }

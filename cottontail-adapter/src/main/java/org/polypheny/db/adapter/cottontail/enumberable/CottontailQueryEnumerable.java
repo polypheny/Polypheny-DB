@@ -139,7 +139,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
                 case SMALLINT:
                     return Linq4JFixer.getSmallIntData( data );
                 case JSON:
-                    return Linq4JFixer.getJsonData( data );
+                    return Linq4JFixer.getStringData( data );
                 case DECIMAL:
                     return Linq4JFixer.getDecimalData( data );
                 case DATE:
