@@ -40,7 +40,7 @@ public class Linq4JFixer {
      */
     public static Object getTinyIntData( Object data ) {
         if (data == null) return null;
-        return (byte) data;
+        return ((Integer) data).byteValue();
     }
 
     /**
@@ -51,7 +51,7 @@ public class Linq4JFixer {
      */
     public static Object getSmallIntData( Object data ) {
         if (data == null) return null;
-        return (short) data;
+        return ((Integer) data).shortValue();
     }
 
     /**
@@ -99,7 +99,7 @@ public class Linq4JFixer {
      */
     public static Object getTimeData( Object data ) {
         if (data == null) return null;
-        return ((int)data);
+        return ((Integer)data);
     }
 
     /**
@@ -112,7 +112,7 @@ public class Linq4JFixer {
      */
     public static Object getDateData( Object data ) {
         if (data == null) return null;
-        return ((int)data);
+        return ((Integer)data);
     }
 
     /**

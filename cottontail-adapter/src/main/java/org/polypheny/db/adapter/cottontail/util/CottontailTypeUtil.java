@@ -531,8 +531,7 @@ public class CottontailTypeUtil {
         }
         return fixedList;
     }
-
-
+    
     private static List<Object> arrayCallToList( List<RexNode> operands, PolyType innerType ) {
         List<Object> list = new ArrayList<>( operands.size() );
         for ( RexNode node : operands ) {

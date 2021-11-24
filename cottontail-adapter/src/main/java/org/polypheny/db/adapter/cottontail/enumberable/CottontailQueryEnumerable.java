@@ -125,8 +125,6 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
         private Object parseSingleField( Object data, RelDataType type ) {
             switch ( type.getPolyType() ) {
                 case BOOLEAN:
-                case TINYINT:
-                case SMALLINT:
                 case INTEGER:
                 case BIGINT:
                 case FLOAT:
@@ -134,8 +132,12 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
                 case DOUBLE:
                 case CHAR:
                 case VARCHAR:
-                    return data ; /* Pass through, no conversion needed. */
                 case NULL:
+                    return data ; /* Pass through, no conversion needed. */
+                case TINYINT:
+                    return Linq4JFixer.getTinyIntData( data );
+                case SMALLINT:
+                    return Linq4JFixer.getSmallIntData( data );
                 case JSON:
                     return Linq4JFixer.getJsonData( data );
                 case DECIMAL:
