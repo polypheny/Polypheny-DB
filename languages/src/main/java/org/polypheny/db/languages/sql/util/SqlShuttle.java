@@ -122,7 +122,7 @@ public class SqlShuttle extends BasicNodeVisitor<SqlNode> {
             this.call = call;
             this.update = false;
             final List<SqlNode> operands = call.getSqlOperandList();
-            this.clonedOperands = operands.toArray( new SqlNode[0] );
+            this.clonedOperands = operands.toArray( SqlNode.EMPTY_ARRAY );
             this.alwaysCopy = alwaysCopy;
         }
 

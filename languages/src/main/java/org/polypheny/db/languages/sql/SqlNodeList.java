@@ -68,7 +68,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
     /**
      * Creates a <code>SqlNodeList</code> containing the nodes in <code>list</code>. The list is copied, but the nodes in it are not.
      */
-    public SqlNodeList( Collection<? extends Node> collection, ParserPos pos ) {
+    public SqlNodeList( Collection<? extends SqlNode> collection, ParserPos pos ) {
         super( pos );
         list = new ArrayList<>( collection );
         // todo dl this is dangerous
@@ -103,7 +103,7 @@ public class SqlNodeList extends SqlNode implements NodeList {
 
     @Override
     public SqlNodeList clone( ParserPos pos ) {
-        return new SqlNodeList( list, pos );
+        return new SqlNodeList( sqlList, pos );
     }
 
 
@@ -255,8 +255,8 @@ public class SqlNodeList extends SqlNode implements NodeList {
         //
         //    {  SqlIdentifier({"empno"}), SqlNodeList(SqlLiteral(10), SqlLiteral(20))  }
 
-        for ( Node node : list ) {
-            ((SqlNode) node).validateExpr( validator, scope );
+        for ( SqlNode node : sqlList ) {
+            node.validateExpr( validator, scope );
         }
     }
 

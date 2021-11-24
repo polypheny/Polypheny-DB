@@ -169,7 +169,7 @@ public abstract class OperatorImpl implements Operator {
     public <R> void acceptCall( NodeVisitor<R> visitor, Call call, boolean onlyExpressions, ArgHandler<R> argHandler ) {
         List<Node> operands = call.getOperandList();
         for ( int i = 0; i < operands.size(); i++ ) {
-            argHandler.visitChild( visitor, (Node) call, i, operands.get( i ) );
+            argHandler.visitChild( visitor, call, i, operands.get( i ) );
         }
     }
 

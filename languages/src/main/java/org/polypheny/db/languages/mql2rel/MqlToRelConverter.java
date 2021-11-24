@@ -2184,7 +2184,7 @@ public class MqlToRelConverter {
         RelDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
 
         List<RexNode> operands = new ArrayList<>();
-        boolean isIn = op == StdOperatorRegistry.get( OperatorName.IN );
+        boolean isIn = op.equals( StdOperatorRegistry.get( OperatorName.IN ) );
         op = isIn ? StdOperatorRegistry.get( OperatorName.OR ) : StdOperatorRegistry.get( OperatorName.AND );
         RexNode id = getIdentifier( key, rowType );
 

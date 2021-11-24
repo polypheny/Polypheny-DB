@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.sql.validate;
 
 
-import java.util.stream.Collectors;
 import org.polypheny.db.core.Operator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -52,11 +51,11 @@ public class ProcedureNamespace extends AbstractNamespace {
         if ( operator instanceof SqlUserDefinedTableFunction ) {
             assert type.getPolyType() == PolyType.CURSOR : "User-defined table function should have CURSOR type, not " + type;
             final SqlUserDefinedTableFunction udf = (SqlUserDefinedTableFunction) operator;
-            return udf.getRowType( validator.typeFactory, callBinding.operands().stream().map( e -> (SqlNode) e ).collect( Collectors.toList() ) );
+            return udf.getRowType( validator.typeFactory, callBinding.sqlOperands() );
         } else if ( operator instanceof SqlUserDefinedTableMacro ) {
             assert type.getPolyType() == PolyType.CURSOR : "User-defined table macro should have CURSOR type, not " + type;
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
-            return udf.getTable( validator.typeFactory, callBinding.operands().stream().map( e -> (SqlNode) e ).collect( Collectors.toList() ) ).getRowType( validator.typeFactory );
+            return udf.getTable( validator.typeFactory, callBinding.sqlOperands() ).getRowType( validator.typeFactory );
         }
         return type;
     }

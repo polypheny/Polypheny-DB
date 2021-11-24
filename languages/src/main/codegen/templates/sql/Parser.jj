@@ -1666,7 +1666,7 @@ SqlNode JoinTable(SqlNode e) :
                 joinType,
                 e2,
                 using,
-                new SqlNodeList(list.getList(), Span.of(using).end(this)));
+                new SqlNodeList(list.getSqlList(), Span.of(using).end(this)));
         }
     |
         {
@@ -1737,7 +1737,7 @@ SqlNode FromClause() :
                     joinType,
                     e2,
                     joinConditionType,
-                    new SqlNodeList(list.getList(), Span.of(joinConditionType).end(this)));
+                    new SqlNodeList(list.getSqlList(), Span.of(joinConditionType).end(this)));
             }
         |
             {
@@ -5856,12 +5856,12 @@ SqlNode JdbcFunctionCall() :
         LOOKAHEAD(1)
         call = TimestampAddFunctionCall() {
             name = call.getOperator().getName();
-            args = new SqlNodeList(call.getOperandList(), getPos());
+            args = new SqlNodeList(call.getSqlOperandList(), getPos());
         }
     |
         call = TimestampDiffFunctionCall() {
             name = call.getOperator().getName();
-            args = new SqlNodeList(call.getOperandList(), getPos());
+            args = new SqlNodeList(call.getSqlOperandList(), getPos());
         }
     |
         <CONVERT> { name = unquotedIdentifier(); }

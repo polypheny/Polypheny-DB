@@ -58,10 +58,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private static final AtomicLong TRANSACTION_COUNTER = new AtomicLong();
 
-    static private final Processor mqlProcessor = new MqlProcessorImpl();
-    static private final Processor sqlProcessor = new SqlProcessorImpl();
-    static private final Processor jsonProcessor = new JsonRelProcessorImpl();
-
     @Getter
     private final long id;
 
@@ -235,13 +231,16 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public Processor getProcessor( QueryLanguage language ) {
+        // note dl, while caching the processors works in most cases,
+        // it can lead to validator bleed when using multiple simulations insert for example
+        // caching therefore is not possible atm
         switch ( language ) {
             case SQL:
-                return sqlProcessor;
+                return new SqlProcessorImpl();
             case RELALG:
-                return jsonProcessor;
+                return new JsonRelProcessorImpl();
             case MONGOQL:
-                return mqlProcessor;
+                return new MqlProcessorImpl();
             default:
                 throw new RuntimeException( "This language seems to not be supported!" );
         }

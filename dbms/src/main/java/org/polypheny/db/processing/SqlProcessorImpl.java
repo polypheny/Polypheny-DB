@@ -71,7 +71,6 @@ import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.validate.PolyphenyDbSqlValidator;
-import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
 import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
 import org.polypheny.db.plan.RelOptCluster;
@@ -209,8 +208,8 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, (SqlValidator) validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
-        RelRoot logicalRoot = sqlToRelConverter.convertQuery( (SqlNode) query, false, true );
+        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        RelRoot logicalRoot = sqlToRelConverter.convertQuery( query, false, true );
 
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();

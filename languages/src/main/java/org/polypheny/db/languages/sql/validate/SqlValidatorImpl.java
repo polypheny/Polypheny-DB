@@ -1341,7 +1341,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             SqlCall rowCall = valuesCall.operand( 0 );
             selectList =
                     new SqlNodeList(
-                            rowCall.getOperandList(),
+                            rowCall.getSqlOperandList(),
                             ParserPos.ZERO );
             final SqlNode insertSource = Node.clone( sourceTableRef );
             select =
@@ -2214,7 +2214,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 return registerFrom( parentScope,
                         usingScope,
                         true,
-                        (SqlNode) extend.getOperandList().get( 0 ),
+                        extend.getSqlOperandList().get( 0 ),
                         extend,
                         alias,
                         (SqlNodeList) extend.getOperandList().get( 1 ),
@@ -5480,7 +5480,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         @Override
         public RelDataType visit( Call call ) {
             final Operator operator = call.getOperator();
-            return ((SqlOperator) operator).deriveType( SqlValidatorImpl.this, scope, (SqlCall) call );
+            return operator.deriveType( SqlValidatorImpl.this, scope, call );
         }
 
 

@@ -1028,7 +1028,7 @@ public class RexImpTable {
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
             Expression acc = reset.accumulator().get( 0 );
             Primitive p = Primitive.of( acc.getType() );
-            boolean isMin = StdOperatorRegistry.get( OperatorName.MIN, AggFunction.class ).equals( info.aggregation() );
+            boolean isMin = StdOperatorRegistry.get( OperatorName.MIN ).equals( info.aggregation() );
             Object inf = p == null ? null : (isMin ? p.max : p.min);
             reset.currentBlock().add( Expressions.statement( Expressions.assign( acc, Expressions.constant( inf, acc.getType() ) ) ) );
         }
@@ -1158,7 +1158,7 @@ public class RexImpTable {
 
         @Override
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
-            Object initValue = info.aggregation() == StdOperatorRegistry.getAgg( OperatorName.BIT_AND ) ? -1 : 0;
+            Object initValue = info.aggregation().equals( StdOperatorRegistry.getAgg( OperatorName.BIT_AND ) ) ? -1 : 0;
             Expression start = Expressions.constant( initValue, info.returnType() );
 
             reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), start ) ) );
@@ -1170,7 +1170,7 @@ public class RexImpTable {
             Expression acc = add.accumulator().get( 0 );
             Expression arg = add.arguments().get( 0 );
             AggFunction aggregation = info.aggregation();
-            final Method method = (aggregation == StdOperatorRegistry.getAgg( OperatorName.BIT_AND )
+            final Method method = (aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.BIT_AND ) )
                     ? BuiltInMethod.BIT_AND
                     : BuiltInMethod.BIT_OR).method;
             Expression next = Expressions.call( method.getDeclaringClass(), method.getName(), acc, Expressions.unbox( arg ) );
@@ -2542,26 +2542,26 @@ public class RexImpTable {
             }
             final Operator op = call.getOperator();
             final Expression root = translator.getRoot();
-            if ( op == StdOperatorRegistry.get( OperatorName.CURRENT_USER )
-                    || op == StdOperatorRegistry.get( OperatorName.SESSION_USER )
-                    || op == StdOperatorRegistry.get( OperatorName.USER ) ) {
+            if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_USER ) )
+                    || op.equals( StdOperatorRegistry.get( OperatorName.SESSION_USER ) )
+                    || op.equals( StdOperatorRegistry.get( OperatorName.USER ) ) ) {
                 return Expressions.constant( "sa" );
-            } else if ( op == StdOperatorRegistry.get( OperatorName.SYSTEM_USER ) ) {
+            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.SYSTEM_USER ) ) ) {
                 return Expressions.constant( System.getProperty( "user.name" ) );
-            } else if ( op == StdOperatorRegistry.get( OperatorName.CURRENT_PATH )
-                    || op == StdOperatorRegistry.get( OperatorName.CURRENT_ROLE )
-                    || op == StdOperatorRegistry.get( OperatorName.CURRENT_CATALOG ) ) {
+            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_PATH ) )
+                    || op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_ROLE ) )
+                    || op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_CATALOG ) ) ) {
                 // By default, the CURRENT_ROLE and CURRENT_CATALOG functions return the empty string because a role or a catalog has to be set explicitly.
                 return Expressions.constant( "" );
-            } else if ( op == StdOperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ) ) {
+            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ) ) ) {
                 return Expressions.call( BuiltInMethod.CURRENT_TIMESTAMP.method, root );
-            } else if ( op == StdOperatorRegistry.get( OperatorName.CURRENT_TIME ) ) {
+            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_TIME ) ) ) {
                 return Expressions.call( BuiltInMethod.CURRENT_TIME.method, root );
-            } else if ( op == StdOperatorRegistry.get( OperatorName.CURRENT_DATE ) ) {
+            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_DATE ) ) ) {
                 return Expressions.call( BuiltInMethod.CURRENT_DATE.method, root );
-            } else if ( op == StdOperatorRegistry.get( OperatorName.LOCALTIMESTAMP ) ) {
+            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.LOCALTIMESTAMP ) ) ) {
                 return Expressions.call( BuiltInMethod.LOCAL_TIMESTAMP.method, root );
-            } else if ( op == StdOperatorRegistry.get( OperatorName.LOCALTIME ) ) {
+            } else if ( op.equals( StdOperatorRegistry.get( OperatorName.LOCALTIME ) ) ) {
                 return Expressions.call( BuiltInMethod.LOCAL_TIME.method, root );
             } else {
                 throw new AssertionError( "unknown function " + op );

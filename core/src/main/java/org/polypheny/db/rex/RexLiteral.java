@@ -1212,10 +1212,10 @@ public class RexLiteral extends RexNode {
         if ( node instanceof RexCall ) {
             final RexCall call = (RexCall) node;
             final Operator operator = call.getOperator();
-            if ( operator == StdOperatorRegistry.get( OperatorName.CAST ) ) {
+            if ( operator.equals( StdOperatorRegistry.get( OperatorName.CAST ) ) ) {
                 return findValue( call.getOperands().get( 0 ) );
             }
-            if ( operator == StdOperatorRegistry.get( OperatorName.UNARY_MINUS ) ) {
+            if ( operator.equals( StdOperatorRegistry.get( OperatorName.UNARY_MINUS ) ) ) {
                 final BigDecimal value = (BigDecimal) findValue( call.getOperands().get( 0 ) );
                 return value.negate();
             }

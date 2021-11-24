@@ -2111,7 +2111,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
     protected void convertCollectionTable( Blackboard bb, SqlCall call ) {
         final Operator operator = call.getOperator();
-        if ( operator == StdOperatorRegistry.get( OperatorName.TABLESAMPLE ) ) {
+        if ( operator.equals( StdOperatorRegistry.get( OperatorName.TABLESAMPLE ) ) ) {
             final String sampleName = SqlLiteral.unchain( call.operand( 0 ) ).getValueAs( String.class );
             datasetStack.push( sampleName );
             SqlCall cursorCall = call.operand( 1 );
@@ -3412,7 +3412,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
             switch ( call.getKind() ) {
                 case MULTISET_VALUE_CONSTRUCTOR:
                 case ARRAY_VALUE_CONSTRUCTOR:
-                    final SqlNodeList list = new SqlNodeList( call.getOperandList(), call.getPos() );
+                    final SqlNodeList list = new SqlNodeList( call.getSqlOperandList(), call.getPos() );
                     CollectNamespace nss = (CollectNamespace) validator.getSqlNamespace( call );
                     Blackboard usedBb;
                     if ( null != nss ) {
@@ -4687,7 +4687,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 distinct = true;
             }
             boolean approximate = false;
-            if ( aggFunction == StdOperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT ) ) {
+            if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT ) ) ) {
                 aggFunction = (SqlAggFunction) StdOperatorRegistry.getAgg( OperatorName.COUNT );
                 distinct = true;
                 approximate = true;
@@ -4984,13 +4984,13 @@ public class SqlToRelConverter implements NodeToRelConverter {
          * @return Its histogram function, or null
          */
         SqlFunction getHistogramOp( SqlAggFunction aggFunction ) {
-            if ( aggFunction == StdOperatorRegistry.get( OperatorName.MIN ) ) {
+            if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.MIN ) ) ) {
                 return StdOperatorRegistry.get( OperatorName.HISTOGRAM_MIN, SqlFunction.class );
-            } else if ( aggFunction == StdOperatorRegistry.get( OperatorName.MAX ) ) {
+            } else if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.MAX ) ) ) {
                 return StdOperatorRegistry.get( OperatorName.HISTOGRAM_MAX, SqlFunction.class );
-            } else if ( aggFunction == StdOperatorRegistry.get( OperatorName.FIRST_VALUE ) ) {
+            } else if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.FIRST_VALUE ) ) ) {
                 return StdOperatorRegistry.get( OperatorName.HISTOGRAM_FIRST_VALUE, SqlFunction.class );
-            } else if ( aggFunction == StdOperatorRegistry.get( OperatorName.LAST_VALUE ) ) {
+            } else if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.LAST_VALUE ) ) ) {
                 return StdOperatorRegistry.get( OperatorName.HISTOGRAM_LAST_VALUE, SqlFunction.class );
             } else {
                 return null;
