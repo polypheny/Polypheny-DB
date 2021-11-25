@@ -23,13 +23,12 @@ import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import org.polypheny.db.core.nodes.LangFunctionOperator;
-import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -55,10 +54,7 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
     public final void init() {
         StdOperatorRegistry
                 .getAllOperators()
-                .entrySet()
-                .stream()
-                .filter( e -> !(e instanceof LangFunctionOperator) )
-                .forEach( entry -> register( entry.getValue() ) );
+                .forEach( ( name, operator ) -> register( operator ) );
     }
 
 

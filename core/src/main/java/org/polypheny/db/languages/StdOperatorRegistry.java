@@ -28,22 +28,47 @@ import org.polypheny.db.core.operators.OperatorName;
 
 public class StdOperatorRegistry {
 
-    private static final HashMap<OperatorName, Operator> registry = new HashMap<>();
+    private static final HashMap<QueryLanguage, HashMap<OperatorName, Operator>> registry = new HashMap<>();
+
+
+    static {
+        // we register a new map for each language per default
+        // the general operators are registered for null
+        registry.put( null, new HashMap<>() );
+        for ( QueryLanguage language : QueryLanguage.values() ) {
+            registry.put( language, new HashMap<>() );
+        }
+    }
 
 
     public synchronized static void register( OperatorName name, Operator operator ) {
+        register( null, name, operator );
+    }
+
+
+    public synchronized static void register( QueryLanguage language, OperatorName name, Operator operator ) {
         operator.setOperatorName( name );
-        registry.put( name, operator );
+        registry.get( language ).put( name, operator );
     }
 
 
     public static Operator get( OperatorName name ) {
-        return registry.get( name );
+        return get( null, name );
+    }
+
+
+    public static Operator get( QueryLanguage language, OperatorName name ) {
+        return registry.get( language ).get( name );
     }
 
 
     public static <T extends Operator> T get( OperatorName name, Class<T> clazz ) {
-        return (T) clazz.cast( get( name ) );
+        return get( null, name, clazz );
+    }
+
+
+    public static <T extends Operator> T get( QueryLanguage language, OperatorName name, Class<T> clazz ) {
+        return clazz.cast( get( language, name ) );
     }
 
 
@@ -57,17 +82,17 @@ public class StdOperatorRegistry {
     }
 
 
-    public static <T extends Operator> Map<OperatorName, T> getMatchingOperators( Class<T> clazz ) {
-        return getAllOperators()
-                .entrySet()
-                .stream()
-                .filter( e -> !clazz.isInstance( e ) )
-                .collect( Collectors.toMap( Entry::getKey, e -> clazz.cast( e.getValue() ) ) );
+    public static Map<OperatorName, ? extends Operator> getMatchingOperators( QueryLanguage language ) {
+        return registry.get( language );
     }
 
 
-    public static HashMap<OperatorName, Operator> getAllOperators() {
-        return registry;
+    public static Map<OperatorName, Operator> getAllOperators() {
+        return registry
+                .entrySet()
+                .stream()
+                .flatMap( e -> e.getValue().entrySet().stream() )
+                .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
     }
 
 }

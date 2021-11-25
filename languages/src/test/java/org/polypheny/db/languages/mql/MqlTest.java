@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
@@ -40,12 +41,12 @@ public abstract class MqlTest extends LanguageManagerDependant {
     @Getter
     private static final Map<String, Kind> logicalOperators;
 
-    public static final Operator eq = StdOperatorRegistry.get( OperatorName.MQL_EQUALS );
+    public static final Operator eq = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS );
     public static final Operator ne = StdOperatorRegistry.get( OperatorName.NOT_EQUALS );
-    public static final Operator gt = StdOperatorRegistry.get( OperatorName.MQL_GT );
-    public static final Operator gte = StdOperatorRegistry.get( OperatorName.MQL_GTE );
-    public static final Operator lt = StdOperatorRegistry.get( OperatorName.MQL_LT );
-    public static final Operator lte = StdOperatorRegistry.get( OperatorName.MQL_LTE );
+    public static final Operator gt = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GT );
+    public static final Operator gte = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GTE );
+    public static final Operator lt = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LT );
+    public static final Operator lte = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LTE );
 
 
     static {

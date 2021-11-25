@@ -16,13 +16,15 @@
 
 package org.polypheny.db.languages.core;
 
-import static org.polypheny.db.languages.StdOperatorRegistry.register;
 
 import com.google.common.annotations.VisibleForTesting;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.LangFunctionOperator;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.StdOperatorRegistry;
 
 
 /**
@@ -92,6 +94,11 @@ public class MqlRegisterer {
         register( OperatorName.MQL_JSONIFY, new LangFunctionOperator( "MQL_JSONIFY", Kind.MQL_JSONIFY ) );
 
         isInit = true;
+    }
+
+
+    private static void register( OperatorName name, Operator operator ) {
+        StdOperatorRegistry.register( QueryLanguage.MONGOQL, name, operator );
     }
 
 
