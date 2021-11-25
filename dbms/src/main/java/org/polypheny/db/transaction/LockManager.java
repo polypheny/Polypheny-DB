@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 
 // Based on code taken from https://github.com/dstibrany/LockManager

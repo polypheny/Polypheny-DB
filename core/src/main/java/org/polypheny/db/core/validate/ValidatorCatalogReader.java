@@ -18,8 +18,8 @@ package org.polypheny.db.core.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.NameMatcher;
-import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.util.NameMatcher;
+import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -64,7 +64,7 @@ public interface ValidatorCatalogReader extends Wrapper {
      * @param names the array contains fully qualified schema name or empty list for root schema
      * @return the list of all object (schema, table, function, view) names under the above criteria
      */
-    List<SqlMoniker> getAllSchemaObjectNames( List<String> names );
+    List<Moniker> getAllSchemaObjectNames( List<String> names );
 
     /**
      * Returns the paths of all schemas to look in for tables.

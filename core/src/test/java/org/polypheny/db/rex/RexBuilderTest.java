@@ -48,7 +48,7 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Test;
-import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;

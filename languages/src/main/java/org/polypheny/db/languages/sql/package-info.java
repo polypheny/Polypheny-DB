@@ -50,13 +50,13 @@
  * {@link org.polypheny.db.languages.sql.SqlSelect} and
  * {@link org.polypheny.db.languages.sql.SqlJoin}.)
  *
- * A {@link org.polypheny.db.core.OperatorTable} is a collection of operators. By supplying your own operator table, you can customize the
+ * A {@link org.polypheny.db.core.operators.OperatorTable} is a collection of operators. By supplying your own operator table, you can customize the
  * dialect of SQL without modifying the parser.
  *
  * <h2>Validation</h2>
  *
  * {@link org.polypheny.db.languages.sql.validate.SqlValidator} checks that a tree of {@link org.polypheny.db.languages.sql.SqlNode}s is semantically valid.
- * You supply a {@link org.polypheny.db.core.OperatorTable} to describe the available functions and operators, and a
+ * You supply a {@link org.polypheny.db.core.operators.OperatorTable} to describe the available functions and operators, and a
  * {@link org.polypheny.db.core.validate.ValidatorCatalogReader} for access to the database's catalog.
  *
  * <h2>Generating SQL</h2>

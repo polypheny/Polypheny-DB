@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import lombok.Getter;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 
 
 /**

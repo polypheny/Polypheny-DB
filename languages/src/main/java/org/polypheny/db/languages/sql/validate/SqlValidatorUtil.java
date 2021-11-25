@@ -31,14 +31,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.core.operators.OperatorName;
@@ -322,7 +322,7 @@ public class SqlValidatorUtil {
     }
 
 
-    public static void getSchemaObjectMonikers( ValidatorCatalogReader catalogReader, List<String> names, List<SqlMoniker> hints ) {
+    public static void getSchemaObjectMonikers( ValidatorCatalogReader catalogReader, List<String> names, List<Moniker> hints ) {
         // Assume that the last name is 'dummy' or similar.
         List<String> subNames = Util.skipLast( names );
 

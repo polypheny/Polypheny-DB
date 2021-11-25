@@ -24,7 +24,7 @@ import java.util.Objects;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCreate;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;

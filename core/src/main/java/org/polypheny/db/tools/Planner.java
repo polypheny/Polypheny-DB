@@ -35,8 +35,8 @@ package org.polypheny.db.tools;
 
 
 import java.io.Reader;
-import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;

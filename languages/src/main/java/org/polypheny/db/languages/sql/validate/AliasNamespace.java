@@ -21,8 +21,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;

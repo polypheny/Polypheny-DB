@@ -16,10 +16,11 @@
 
 package org.polypheny.db.processing;
 
-import org.polypheny.db.core.QueryParameters;
+import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Statement;
@@ -27,7 +28,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.QueryPlanBuilder;
 
-public class JsonRelProcessorImpl implements Processor {
+public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
@@ -51,6 +52,24 @@ public class JsonRelProcessorImpl implements Processor {
     @Override
     public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         throw new RuntimeException("JsonProcessor does not support DDLs!");
+    }
+
+
+    @Override
+    void unlock( Statement statement ) {
+        throw new RuntimeException("The JsonRelProcessor does not support DML or DDLs and should therefore not lock.");
+    }
+
+
+    @Override
+    void lock( Statement statement ) throws DeadlockException {
+        throw new RuntimeException("The JsonRelProcessor does not support DML or DDLs and should therefore not lock.");
+    }
+
+
+    @Override
+    String getQuery( Node parsed, QueryParameters parameters ) {
+        return parameters.getQuery();
     }
 
 

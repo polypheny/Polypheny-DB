@@ -62,7 +62,7 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.bson.BsonValue;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.SemiJoinType;
 import org.polypheny.db.core.fun.AggFunction;

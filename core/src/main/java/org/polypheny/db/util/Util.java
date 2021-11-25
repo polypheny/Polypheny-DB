@@ -97,13 +97,13 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.fun.AggFunction;
-import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.nodes.BasicNodeVisitor;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.RowOperator;
-import org.polypheny.db.core.ValuesOperator;
+import org.polypheny.db.core.nodes.ValuesOperator;
 import org.slf4j.Logger;
 
 

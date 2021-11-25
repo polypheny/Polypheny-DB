@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.QueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.operators.OperatorName;

@@ -29,7 +29,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.core.DiffRepository;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;

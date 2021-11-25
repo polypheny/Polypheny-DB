@@ -21,7 +21,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;

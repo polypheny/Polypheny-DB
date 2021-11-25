@@ -3,16 +3,16 @@ package org.polypheny.db.core.operators;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.LangFunctionOperator;
 import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.fun.TrimFunction;
 import org.polypheny.db.core.nodes.BinaryOperator;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.Function;
+import org.polypheny.db.core.nodes.LangFunctionOperator;
 import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.util.Conformance;
 
 @Getter
 public enum OperatorName {

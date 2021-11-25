@@ -18,11 +18,11 @@ package org.polypheny.db.languages;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.ChainedOperatorTable;
-import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.core.operators.ChainedOperatorTable;
+import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;

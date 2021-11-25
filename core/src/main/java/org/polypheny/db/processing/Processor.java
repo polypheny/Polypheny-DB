@@ -17,26 +17,98 @@
 package org.polypheny.db.processing;
 
 
-import org.polypheny.db.core.QueryParameters;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import org.apache.calcite.avatica.Meta;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.core.DeadlockException;
+import org.polypheny.db.core.enums.ExplainFormat;
+import org.polypheny.db.core.enums.ExplainLevel;
+import org.polypheny.db.core.nodes.ExecutableStatement;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationQueryPlan;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.Pair;
 
 
-public interface Processor {
+public abstract class Processor {
 
-    Node parse( String query );
+    public abstract Node parse( String query );
 
-    Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
+    public abstract Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
-    RelRoot translate( Statement statement, Node query, QueryParameters parameters );
+    public abstract RelRoot translate( Statement statement, Node query, QueryParameters parameters );
 
-    PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters );
+    public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+        if ( parsed instanceof ExecutableStatement ) {
+            try {
+                // Acquire global schema lock
+                lock( statement );
+                // Execute statement
+                return getDbSignature( statement, parsed, parameters );
+            } catch ( DeadlockException e ) {
+                throw new RuntimeException( "Exception while acquiring global schema lock", e );
+            } catch ( TransactionException | NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( e );
+            } finally {
+                // Release lock
+                unlock( statement );
+            }
+        } else {
+            throw new RuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
+        }
+    }
 
-    RelDataType getParameterRowType( Node left );
+    PolyphenyDbSignature<Object> getDbSignature( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
+        ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
+        statement.getTransaction().commit();
+        Catalog.getInstance().commit();
+        return new PolyphenyDbSignature<>(
+                getQuery( parsed, parameters ),
+                ImmutableList.of(),
+                ImmutableMap.of(),
+                null,
+                ImmutableList.of(),
+                Meta.CursorFactory.OBJECT,
+                statement.getTransaction().getSchema(),
+                ImmutableList.of(),
+                -1,
+                null,
+                Meta.StatementType.OTHER_DDL,
+                new ExecutionTimeMonitor() );
+    }
+
+    abstract void unlock( Statement statement );
+
+    abstract void lock( Statement statement ) throws DeadlockException;
+
+    abstract String getQuery( Node parsed, QueryParameters parameters );
+
+    public abstract RelDataType getParameterRowType( Node left );
+
+    void attachAnalyzer( Statement statement, RelRoot logicalRoot ) {
+        InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+        InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
+        page.fullWidth();
+        InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
+        queryAnalyzer.addPage( page );
+        queryAnalyzer.addGroup( group );
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                group,
+                RelOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.rel, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
+        queryAnalyzer.registerInformation( informationQueryPlan );
+    }
 
 }

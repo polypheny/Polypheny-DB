@@ -18,13 +18,12 @@ package org.polypheny.db.core.nodes;
 
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
-import org.polypheny.db.core.NodeVisitor;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.nodes.Function.FunctionType;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;

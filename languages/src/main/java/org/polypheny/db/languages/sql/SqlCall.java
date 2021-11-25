@@ -25,9 +25,9 @@ import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.NodeVisitor;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.nodes.NodeVisitor;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
@@ -124,7 +124,7 @@ public abstract class SqlCall extends SqlNode implements Call {
 
 
     @Override
-    public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, ParserPos pos, Collection<SqlMoniker> hintList ) {
+    public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, ParserPos pos, Collection<Moniker> hintList ) {
         for ( SqlNode operand : getSqlOperandList() ) {
             if ( operand instanceof SqlIdentifier ) {
                 SqlIdentifier id = (SqlIdentifier) operand;

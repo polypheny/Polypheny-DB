@@ -20,7 +20,7 @@ package org.polypheny.db.type.inference;
 import com.google.common.base.Preconditions;
 import java.util.AbstractList;
 import java.util.List;
-import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.core.nodes.CallBinding;
 import org.polypheny.db.core.nodes.ExplicitOperatorBinding;
 import org.polypheny.db.core.nodes.OperatorBinding;

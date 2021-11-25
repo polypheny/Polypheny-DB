@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 
@@ -36,9 +36,9 @@ public interface SqlValidatorWithHints extends SqlValidator {
      *
      * @param topNode top of expression tree in which to lookup completion hints
      * @param pos indicates the position in the sql statement we want to get completion hints for. For example, "select a.ename, b.deptno from sales.emp a join sales.dept b "on a.deptno=b.deptno where empno=1"; setting pos to 'Line 1, Column 17' returns all the possible column names that can be selected from sales.dept table setting pos to 'Line 1, Column 31' returns all the possible table names in 'sales' schema
-     * @return an array of {@link SqlMoniker} (sql identifiers) that can fill in at the indicated position
+     * @return an array of {@link Moniker} (sql identifiers) that can fill in at the indicated position
      */
-    List<SqlMoniker> lookupHints( SqlNode topNode, ParserPos pos );
+    List<Moniker> lookupHints( SqlNode topNode, ParserPos pos );
 
     /**
      * Looks up the fully qualified name for a {@link SqlIdentifier} at a given Parser Position in a parsed expression tree Note: call this only after
@@ -48,6 +48,6 @@ public interface SqlValidatorWithHints extends SqlValidator {
      * @param pos indicates the position of the {@link SqlIdentifier} in the SQL statement we want to get the qualified name for
      * @return a string of the fully qualified name of the {@link SqlIdentifier} if the Parser position represents a valid {@link SqlIdentifier}. Else return an empty string
      */
-    SqlMoniker lookupQualifiedName( SqlNode topNode, ParserPos pos );
+    Moniker lookupQualifiedName( SqlNode topNode, ParserPos pos );
 }
 

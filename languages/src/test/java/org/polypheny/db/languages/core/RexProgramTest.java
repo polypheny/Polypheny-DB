@@ -41,7 +41,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;

@@ -32,8 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.ByteString;
-import org.polypheny.db.core.NameMatcher;
-import org.polypheny.db.core.NameMatchers;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.core.JoinRelType;

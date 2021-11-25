@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.AccessType;
 import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.util.AccessType;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.rel.type.RelDataType;
 

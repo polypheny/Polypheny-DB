@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.Objects;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
 

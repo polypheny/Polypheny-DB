@@ -19,13 +19,13 @@ package org.polypheny.db.languages.sql;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.NodeVisitor;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.nodes.NodeVisitor;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 

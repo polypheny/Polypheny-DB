@@ -29,12 +29,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
-import org.polypheny.db.core.Advisor;
-import org.polypheny.db.core.NodeParseException;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.SqlMonikerImpl;
-import org.polypheny.db.core.enums.SqlMonikerType;
+import org.polypheny.db.core.util.Advisor;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.MonikerImpl;
+import org.polypheny.db.core.enums.MonikerType;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -108,7 +108,7 @@ public class SqlAdvisor implements Advisor {
      * @param replaced String which is being replaced (output)
      * @return completion hints
      */
-    public List<SqlMoniker> getCompletionHints( String sql, int cursor, String[] replaced ) {
+    public List<Moniker> getCompletionHints( String sql, int cursor, String[] replaced ) {
         // search backward starting from current position to find a "word"
         int wordStart = cursor;
         boolean quoted = false;
@@ -139,7 +139,7 @@ public class SqlAdvisor implements Advisor {
             sql = sql.substring( 0, wordStart ) + sql.substring( wordEnd );
         }
 
-        final List<SqlMoniker> completionHints = getCompletionHints0( sql, wordStart );
+        final List<Moniker> completionHints = getCompletionHints0( sql, wordStart );
 
         if ( quoted ) {
             word = word.substring( 1 );
@@ -150,11 +150,11 @@ public class SqlAdvisor implements Advisor {
         }
 
         // If cursor was part of the way through a word, only include hints which start with that word in the result.
-        final List<SqlMoniker> result = new ArrayList<>();
+        final List<Moniker> result = new ArrayList<>();
         Casing preferredCasing = getPreferredCasing( word );
 
         boolean ignoreCase = preferredCasing != Casing.UNCHANGED;
-        for ( SqlMoniker hint : completionHints ) {
+        for ( Moniker hint : completionHints ) {
             List<String> names = hint.getFullyQualifiedNames();
             // For now we treat only simple cases where the added name is the last
             // See [POLYPHENYDB-2439] Smart complete for SqlAdvisor
@@ -168,7 +168,7 @@ public class SqlAdvisor implements Advisor {
     }
 
 
-    public List<SqlMoniker> getCompletionHints0( String sql, int cursor ) {
+    public List<Moniker> getCompletionHints0( String sql, int cursor ) {
         String simpleSql = simplifySql( sql, cursor );
         int idx = simpleSql.indexOf( HINT_TOKEN );
         if ( idx < 0 ) {
@@ -214,16 +214,16 @@ public class SqlAdvisor implements Advisor {
     }
 
 
-    public String getReplacement( SqlMoniker hint, String word ) {
+    public String getReplacement( Moniker hint, String word ) {
         Casing preferredCasing = getPreferredCasing( word );
         boolean quoted = !word.isEmpty() && word.charAt( 0 ) == quoteStart();
         return getReplacement( hint, quoted, preferredCasing );
     }
 
 
-    public String getReplacement( SqlMoniker hint, boolean quoted, Casing preferredCasing ) {
+    public String getReplacement( Moniker hint, boolean quoted, Casing preferredCasing ) {
         String name = Util.last( hint.getFullyQualifiedNames() );
-        boolean isKeyword = hint.getType() == SqlMonikerType.KEYWORD;
+        boolean isKeyword = hint.getType() == MonikerType.KEYWORD;
         // If replacement has mixed case, we need to quote it (or not depending on quotedCasing/unquotedCasing
         quoted &= !isKeyword;
 
@@ -279,12 +279,12 @@ public class SqlAdvisor implements Advisor {
      * @param sql A syntactically correct sql statement for which to retrieve completion hints
      * @param pos to indicate the line and column position in the query at which completion hints need to be retrieved. For example, "select a.ename, b.deptno from sales.emp a join sales.dept b "on a.deptno=b.deptno where empno=1"; setting pos to 'Line 1, Column 17' returns all the possible column names that can be selected
      * from sales.dept table setting pos to 'Line 1, Column 31' returns all the possible table names in 'sales' schema
-     * @return an array of hints ({@link SqlMoniker}) that can fill in at the indicated position
+     * @return an array of hints ({@link Moniker}) that can fill in at the indicated position
      */
-    public List<SqlMoniker> getCompletionHints( String sql, ParserPos pos ) {
+    public List<Moniker> getCompletionHints( String sql, ParserPos pos ) {
         // First try the statement they gave us. If this fails, just return
         // the tokens which were expected at the failure point.
-        List<SqlMoniker> hintList = new ArrayList<>();
+        List<Moniker> hintList = new ArrayList<>();
         SqlNode sqlNode = tryParse( sql, hintList );
         if ( sqlNode == null ) {
             return hintList;
@@ -295,7 +295,7 @@ public class SqlAdvisor implements Advisor {
         sql = sql.substring( 0, x ) + " \07" + sql.substring( x );
         tryParse( sql, hintList );
 
-        final SqlMoniker star = new SqlMonikerImpl( ImmutableList.of( "*" ), SqlMonikerType.KEYWORD );
+        final Moniker star = new MonikerImpl( ImmutableList.of( "*" ), MonikerType.KEYWORD );
         String hintToken = parserConfig.unquotedCasing() == Casing.TO_UPPER ? UPPER_HINT_TOKEN : HINT_TOKEN;
         if ( hintList.contains( star ) && !isSelectListItem( sqlNode, pos, hintToken ) ) {
             hintList.remove( star );
@@ -308,7 +308,7 @@ public class SqlAdvisor implements Advisor {
             // mask any exception that is thrown during the validation, i.e. try to continue even if the sql is invalid. we are doing a best effort here to try to come up with the requested completion hints
             Util.swallow( e, LOGGER );
         }
-        final List<SqlMoniker> validatorHints = validator.lookupHints( sqlNode, pos );
+        final List<Moniker> validatorHints = validator.lookupHints( sqlNode, pos );
         hintList.addAll( validatorHints );
         return hintList;
     }
@@ -336,7 +336,7 @@ public class SqlAdvisor implements Advisor {
      * @param hintList List of hints suggesting allowable tokens at the point of failure
      * @return Parse tree if succeeded, null if parse failed
      */
-    private SqlNode tryParse( String sql, List<SqlMoniker> hintList ) {
+    private SqlNode tryParse( String sql, List<Moniker> hintList ) {
         try {
             return parseQuery( sql );
         } catch ( NodeParseException e ) {
@@ -344,7 +344,7 @@ public class SqlAdvisor implements Advisor {
                 // Only add tokens which are keywords, like '"BY"'; ignore symbols such as '<Identifier>'.
                 if ( tokenName.startsWith( "\"" ) && tokenName.endsWith( "\"" ) ) {
                     hintList.add(
-                            new SqlMonikerImpl( tokenName.substring( 1, tokenName.length() - 1 ), SqlMonikerType.KEYWORD ) );
+                            new MonikerImpl( tokenName.substring( 1, tokenName.length() - 1 ), MonikerType.KEYWORD ) );
                 }
             }
             return null;
@@ -360,9 +360,9 @@ public class SqlAdvisor implements Advisor {
      *
      * @param sql A syntactically correct sql statement for which to retrieve a fully qualified SQL identifier name
      * @param cursor to indicate the 0-based cursor position in the query that represents a SQL identifier for which its fully qualified name is to be returned.
-     * @return a {@link SqlMoniker} that contains the fully qualified name of the specified SQL identifier, returns null if none is found or the SQL statement is invalid.
+     * @return a {@link Moniker} that contains the fully qualified name of the specified SQL identifier, returns null if none is found or the SQL statement is invalid.
      */
-    public SqlMoniker getQualifiedName( String sql, int cursor ) {
+    public Moniker getQualifiedName( String sql, int cursor ) {
         SqlNode sqlNode;
         try {
             sqlNode = parseQuery( sql );

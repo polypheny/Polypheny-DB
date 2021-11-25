@@ -17,16 +17,15 @@
 package org.polypheny.db.core.nodes;
 
 import java.util.List;
-import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
-import org.polypheny.db.core.NodeVisitor;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.nodes.Function.FunctionType;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.util.Litmus;

@@ -29,11 +29,12 @@ import org.junit.Test;
 import org.polypheny.db.catalog.MockCatalogReaderExtended;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.languages.core.DiffRepository;
 import org.polypheny.db.languages.sql.fun.SqlCaseOperator;
 import org.polypheny.db.languages.sql.validate.SqlDelegatingConformance;
@@ -2053,7 +2054,7 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
 
 
     /**
-     * Tests one of the custom conversions which is recognized by the identity of the operator (in this case, {@link org.polypheny.db.core.StdOperatorRegistry #CHARACTER_LENGTH}).
+     * Tests one of the custom conversions which is recognized by the identity of the operator (in this case, {@link StdOperatorRegistry #CHARACTER_LENGTH}).
      */
     @Test
     public void testCharLength() {

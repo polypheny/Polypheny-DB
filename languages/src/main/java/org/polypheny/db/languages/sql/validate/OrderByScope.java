@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql.validate;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
-import org.polypheny.db.core.NameMatcher;
-import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
@@ -63,7 +63,7 @@ public class OrderByScope extends DelegatingScope {
 
 
     @Override
-    public void findAllColumnNames( List<SqlMoniker> result ) {
+    public void findAllColumnNames( List<Moniker> result ) {
         final SqlValidatorNamespace ns = validator.getSqlNamespace( select );
         addColumnNames( ns, result );
     }

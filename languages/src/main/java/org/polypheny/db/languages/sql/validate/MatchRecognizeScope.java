@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.languages.sql.SqlMatchRecognize;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;

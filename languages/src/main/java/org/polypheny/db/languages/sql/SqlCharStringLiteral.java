@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
-import org.polypheny.db.core.Collation;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.util.Collation;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NlsString;

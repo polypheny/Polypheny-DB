@@ -19,9 +19,9 @@ package org.polypheny.db.languages.sql.dialect;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;

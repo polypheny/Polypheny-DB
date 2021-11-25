@@ -16,29 +16,20 @@
 
 package org.polypheny.db.processing;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.Meta;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.core.ExecutableStatement;
-import org.polypheny.db.core.NodeParseException;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.QueryParameters;
-import org.polypheny.db.core.RelDecorrelator;
+import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationQueryPlan;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.core.rel.RelDecorrelator;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -52,9 +43,7 @@ import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -66,7 +55,7 @@ import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
+public class MqlProcessorImpl extends MqlProcessor implements ViewExpander {
 
     private static final MqlParserConfig parserConfig;
 
@@ -158,16 +147,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         RelRoot logicalRoot = mqlToRelConverter.convert( mql, parameters );
 
         if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    RelOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.rel, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
+            attachAnalyzer( statement, logicalRoot );
         }
 
         // Decorrelate
@@ -187,39 +167,20 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
-        if ( parsed instanceof ExecutableStatement ) {
-            try { // TODO DL merge with sql processor
-                // Acquire global schema lock
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                // Execute statement
-                ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
-                statement.getTransaction().commit();
-                Catalog.getInstance().commit();
-                return new PolyphenyDbSignature<>(
-                        parameters.getQuery(),
-                        ImmutableList.of(),
-                        ImmutableMap.of(),
-                        null,
-                        ImmutableList.of(),
-                        Meta.CursorFactory.OBJECT,
-                        statement.getTransaction().getSchema(),
-                        ImmutableList.of(),
-                        -1,
-                        null,
-                        Meta.StatementType.OTHER_DDL,
-                        new ExecutionTimeMonitor() );
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( "Exception while acquiring global schema lock", e );
-            } catch ( TransactionException | NoTablePrimaryKeyException e ) {
-                throw new RuntimeException( e );
-            } finally {
-                // Release lock
-                LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
-            }
-        } else {
-            throw new RuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
-        }
+    public void unlock( Statement statement ) {
+        LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
+    }
+
+
+    @Override
+    public void lock( Statement statement ) throws DeadlockException {
+        LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+    }
+
+
+    @Override
+    public String getQuery( Node parsed, QueryParameters parameters ) {
+        return parameters.getQuery();
     }
 
 

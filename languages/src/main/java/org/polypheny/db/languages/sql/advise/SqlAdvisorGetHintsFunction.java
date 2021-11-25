@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
-import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.FunctionParameter;
@@ -108,10 +108,10 @@ public class SqlAdvisorGetHintsFunction implements TableFunction, ImplementableF
      */
     public static Enumerable<SqlAdvisorHint> getCompletionHints( final SqlAdvisor advisor, final String sql, final int pos ) {
         final String[] replaced = { null };
-        final List<SqlMoniker> hints = advisor.getCompletionHints( sql, pos, replaced );
+        final List<Moniker> hints = advisor.getCompletionHints( sql, pos, replaced );
         final List<SqlAdvisorHint> res = new ArrayList<>( hints.size() + 1 );
         res.add( new SqlAdvisorHint( replaced[0], null, "MATCH" ) );
-        for ( SqlMoniker hint : hints ) {
+        for ( Moniker hint : hints ) {
             res.add( new SqlAdvisorHint( hint ) );
         }
         return Linq4j.asEnumerable( res ).asQueryable();

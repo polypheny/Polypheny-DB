@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.rex;
 
 
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rex.RexCall;

@@ -34,7 +34,7 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.languages.NodeParseException;
 
 
 /**

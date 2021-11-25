@@ -19,7 +19,7 @@ package org.polypheny.db.languages.mql;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 
 
 public abstract class MqlCollectionStatement extends MqlNode {

@@ -30,7 +30,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.operators.OperatorName;

@@ -34,7 +34,7 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.rel.RelNode;
 
 

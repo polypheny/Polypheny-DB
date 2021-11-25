@@ -25,7 +25,7 @@ import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.core.fun.TrimFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;

@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.dialect;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlDialect;

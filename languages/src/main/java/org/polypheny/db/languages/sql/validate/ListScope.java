@@ -25,10 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.polypheny.db.core.NameMatcher;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.SqlMonikerImpl;
-import org.polypheny.db.core.enums.SqlMonikerType;
+import org.polypheny.db.core.enums.MonikerType;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.MonikerImpl;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;
@@ -114,7 +114,7 @@ public abstract class ListScope extends DelegatingScope {
 
 
     @Override
-    public void findAllColumnNames( List<SqlMoniker> result ) {
+    public void findAllColumnNames( List<Moniker> result ) {
         for ( ScopeChild child : children ) {
             addColumnNames( child.namespace, result );
         }
@@ -123,9 +123,9 @@ public abstract class ListScope extends DelegatingScope {
 
 
     @Override
-    public void findAliases( Collection<SqlMoniker> result ) {
+    public void findAliases( Collection<Moniker> result ) {
         for ( ScopeChild child : children ) {
-            result.add( new SqlMonikerImpl( child.name, SqlMonikerType.TABLE ) );
+            result.add( new MonikerImpl( child.name, MonikerType.TABLE ) );
         }
         parent.findAliases( result );
     }

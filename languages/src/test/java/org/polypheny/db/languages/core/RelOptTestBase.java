@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.polypheny.db.core.RelDecorrelator;
+import org.polypheny.db.core.rel.RelDecorrelator;
 import org.polypheny.db.languages.sql.SqlToRelTestBase;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;

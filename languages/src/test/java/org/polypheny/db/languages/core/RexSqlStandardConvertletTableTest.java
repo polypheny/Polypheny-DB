@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.Parser;

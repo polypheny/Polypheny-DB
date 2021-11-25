@@ -24,14 +24,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.core.NameMatcher;
-import org.polypheny.db.core.NameMatchers;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.SqlMonikerImpl;
+import org.polypheny.db.core.enums.MonikerType;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.enums.SqlMonikerType;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.MonikerImpl;
+import org.polypheny.db.core.util.NameMatcher;
+import org.polypheny.db.core.util.NameMatchers;
 import org.polypheny.db.core.validate.ValidatorTable;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -138,7 +138,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     }
 
 
-    protected void addColumnNames( SqlValidatorNamespace ns, List<SqlMoniker> colNames ) {
+    protected void addColumnNames( SqlValidatorNamespace ns, List<Moniker> colNames ) {
         final RelDataType rowType;
         try {
             rowType = ns.getRowType();
@@ -148,19 +148,19 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
 
         for ( RelDataTypeField field : rowType.getFieldList() ) {
-            colNames.add( new SqlMonikerImpl( field.getName(), SqlMonikerType.COLUMN ) );
+            colNames.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
         }
     }
 
 
     @Override
-    public void findAllColumnNames( List<SqlMoniker> result ) {
+    public void findAllColumnNames( List<Moniker> result ) {
         parent.findAllColumnNames( result );
     }
 
 
     @Override
-    public void findAliases( Collection<SqlMoniker> result ) {
+    public void findAliases( Collection<Moniker> result ) {
         parent.findAliases( result );
     }
 

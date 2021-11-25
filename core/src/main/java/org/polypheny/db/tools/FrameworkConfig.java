@@ -35,7 +35,7 @@ package org.polypheny.db.tools;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;

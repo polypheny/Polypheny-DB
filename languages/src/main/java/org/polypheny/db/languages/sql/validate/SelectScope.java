@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.validate;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;

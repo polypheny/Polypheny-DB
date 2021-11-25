@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Modality;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlFunctionalOperator;
 import org.polypheny.db.type.checker.OperandTypes;

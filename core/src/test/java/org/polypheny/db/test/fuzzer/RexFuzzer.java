@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;

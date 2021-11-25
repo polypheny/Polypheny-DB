@@ -20,15 +20,15 @@ package org.polypheny.db.languages.sql.validate;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.core.nodes.Identifier;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.enums.SqlMonikerType;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.enums.MonikerType;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 
 
 /**
- * An implementation of {@link SqlMoniker} that encapsulates the normalized name information of a {@link SqlIdentifier}.
+ * An implementation of {@link Moniker} that encapsulates the normalized name information of a {@link SqlIdentifier}.
  */
-public class SqlIdentifierMoniker implements SqlMoniker {
+public class SqlIdentifierMoniker implements Moniker {
 
     private final SqlIdentifier id;
 
@@ -42,8 +42,8 @@ public class SqlIdentifierMoniker implements SqlMoniker {
 
 
     @Override
-    public SqlMonikerType getType() {
-        return SqlMonikerType.COLUMN;
+    public MonikerType getType() {
+        return MonikerType.COLUMN;
     }
 
 

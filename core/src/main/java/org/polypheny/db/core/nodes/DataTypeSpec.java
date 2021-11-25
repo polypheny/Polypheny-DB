@@ -17,7 +17,6 @@
 package org.polypheny.db.core.nodes;
 
 import java.util.TimeZone;
-import org.polypheny.db.core.Visitable;
 import org.polypheny.db.type.PolyType;
 
 public interface DataTypeSpec extends Visitable {

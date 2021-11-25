@@ -18,11 +18,11 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
-import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.core.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.nodes.NodeVisitor;
 import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;

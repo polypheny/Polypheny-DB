@@ -17,7 +17,6 @@
 package org.polypheny.db.core.nodes;
 
 import java.util.List;
-import org.polypheny.db.core.Visitable;
 
 public interface Call extends Visitable, Node {
 

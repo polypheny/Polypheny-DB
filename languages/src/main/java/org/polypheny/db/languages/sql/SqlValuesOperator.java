@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql;
 
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.ValuesOperator;
+import org.polypheny.db.core.nodes.ValuesOperator;
 
 /**
  * The <code>VALUES</code> operator.

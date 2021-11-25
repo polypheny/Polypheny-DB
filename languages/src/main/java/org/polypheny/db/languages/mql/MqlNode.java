@@ -24,10 +24,10 @@ import lombok.Setter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.core.NodeVisitor;
-import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.nodes.NodeVisitor;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.util.Litmus;
 
 

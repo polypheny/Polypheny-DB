@@ -18,7 +18,7 @@ package org.polypheny.db.core.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.AccessType;
+import org.polypheny.db.core.util.AccessType;
 import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.rel.type.RelDataType;

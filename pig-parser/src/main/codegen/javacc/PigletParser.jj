@@ -42,8 +42,8 @@ PARSER_BEGIN(PigletParser)
 package org.polypheny.db.piglet.parser;
 
 import org.apache.calcite.avatica.util.Casing;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.piglet.parser.ParseException;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;

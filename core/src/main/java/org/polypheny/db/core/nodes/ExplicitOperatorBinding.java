@@ -18,9 +18,9 @@ package org.polypheny.db.core.nodes;
 
 
 import java.util.List;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlValidatorException;
 import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.util.SqlValidatorException;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;

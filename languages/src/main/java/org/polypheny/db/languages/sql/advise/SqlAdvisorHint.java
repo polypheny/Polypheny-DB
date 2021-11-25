@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.advise;
 
 
 import java.util.List;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.enums.SqlMonikerType;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.enums.MonikerType;
 
 
 /**
@@ -36,7 +36,7 @@ public class SqlAdvisorHint {
      */
     public final String[] names;
     /**
-     * One of {@link SqlMonikerType}.
+     * One of {@link MonikerType}.
      */
     public final String type;
 
@@ -48,7 +48,7 @@ public class SqlAdvisorHint {
     }
 
 
-    public SqlAdvisorHint( SqlMoniker id ) {
+    public SqlAdvisorHint( Moniker id ) {
         this.id = id.toString();
         final List<String> names = id.getFullyQualifiedNames();
         this.names =

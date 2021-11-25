@@ -18,7 +18,7 @@ package org.polypheny.db.catalog;
 
 
 import java.util.Arrays;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.rel.type.RelDataTypeFactory;

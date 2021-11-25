@@ -23,7 +23,7 @@ import java.util.List;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.ExplicitOperatorBinding;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.core.operators.OperatorName;

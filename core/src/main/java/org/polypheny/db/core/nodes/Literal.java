@@ -17,7 +17,6 @@
 package org.polypheny.db.core.nodes;
 
 import java.math.BigDecimal;
-import org.polypheny.db.core.Visitable;
 import org.polypheny.db.type.PolyType;
 
 public interface Literal extends Visitable, Node {

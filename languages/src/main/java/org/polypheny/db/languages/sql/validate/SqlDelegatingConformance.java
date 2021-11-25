@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.validate;
 
 
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 
 /**
  * Implementation of {@link Conformance} that delegates all methods to another object. You can create a sub-class that overrides particular methods.

@@ -19,14 +19,11 @@ package org.polypheny.db.processing;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
-import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.commons.lang3.time.StopWatch;
@@ -35,27 +32,24 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.ExecutableStatement;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.NodeParseException;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.QueryParameters;
-import org.polypheny.db.core.RelDecorrelator;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.core.rel.RelDecorrelator;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.NodeToRelConverter.ConfigBuilder;
@@ -81,22 +75,20 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.transaction.DeadlockException;
+import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class SqlProcessorImpl implements Processor, ViewExpander {
+public class SqlProcessorImpl extends Processor implements ViewExpander {
 
     private static final ParserConfig parserConfig;
     @Setter
@@ -212,16 +204,7 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
         RelRoot logicalRoot = sqlToRelConverter.convertQuery( query, false, true );
 
         if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    RelOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.rel, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
+            attachAnalyzer( statement, logicalRoot );
         }
 
         // Decorrelate
@@ -246,39 +229,20 @@ public class SqlProcessorImpl implements Processor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
-        if ( parsed instanceof ExecutableStatement ) {
-            try {
-                // Acquire global schema lock
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                // Execute statement
-                ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, null );
-                statement.getTransaction().commit();
-                Catalog.getInstance().commit();
-                return new PolyphenyDbSignature<>(
-                        ((SqlNode) parsed).toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
-                        ImmutableList.of(),
-                        ImmutableMap.of(),
-                        null,
-                        ImmutableList.of(),
-                        Meta.CursorFactory.OBJECT,
-                        statement.getTransaction().getSchema(),
-                        ImmutableList.of(),
-                        -1,
-                        null,
-                        Meta.StatementType.OTHER_DDL,
-                        new ExecutionTimeMonitor() );
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( "Exception while acquiring global schema lock", e );
-            } catch ( TransactionException | NoTablePrimaryKeyException e ) {
-                throw new RuntimeException( e );
-            } finally {
-                // Release lock
-                LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
-            }
-        } else {
-            throw new RuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
-        }
+    public void unlock( Statement statement ) {
+        LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
+    }
+
+
+    @Override
+    public void lock( Statement statement ) throws DeadlockException {
+        LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+    }
+
+
+    @Override
+    public String getQuery( Node parsed, QueryParameters parameters ) {
+        return ((SqlNode) parsed).toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql();
     }
 
 

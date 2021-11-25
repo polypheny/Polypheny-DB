@@ -24,8 +24,8 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.languages.sql.util.SqlString;
@@ -183,7 +183,7 @@ public abstract class SqlNode implements Node {
      * @param pos SqlParserPos indicating the cursor position at which completion hints are requested for
      * @param hintList list of valid options
      */
-    public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, ParserPos pos, Collection<SqlMoniker> hintList ) {
+    public void findValidOptions( SqlValidator validator, SqlValidatorScope scope, ParserPos pos, Collection<Moniker> hintList ) {
         // no valid options
     }
 

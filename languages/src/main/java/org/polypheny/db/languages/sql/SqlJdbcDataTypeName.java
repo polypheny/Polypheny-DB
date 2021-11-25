@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.fun.SqlConvertFunction;
 import org.polypheny.db.type.PolyType;
 

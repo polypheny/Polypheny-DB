@@ -23,9 +23,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.core.NameMatcher;
-import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
@@ -175,16 +175,16 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public void findAllColumnNames( List<SqlMoniker> result ) {
+    public void findAllColumnNames( List<Moniker> result ) {
     }
 
 
-    public void findAllTableNames( List<SqlMoniker> result ) {
+    public void findAllTableNames( List<Moniker> result ) {
     }
 
 
     @Override
-    public void findAliases( Collection<SqlMoniker> result ) {
+    public void findAliases( Collection<Moniker> result ) {
     }
 
 

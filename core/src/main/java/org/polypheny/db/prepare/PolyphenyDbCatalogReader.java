@@ -47,12 +47,12 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.NameMatcher;
-import org.polypheny.db.core.NameMatchers;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.SqlMonikerImpl;
+import org.polypheny.db.core.util.NameMatcher;
+import org.polypheny.db.core.util.NameMatchers;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.MonikerImpl;
 import org.polypheny.db.core.enums.FunctionCategory;
-import org.polypheny.db.core.enums.SqlMonikerType;
+import org.polypheny.db.core.enums.MonikerType;
 import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.nodes.Operator;
@@ -182,42 +182,42 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public List<SqlMoniker> getAllSchemaObjectNames( List<String> names ) {
+    public List<Moniker> getAllSchemaObjectNames( List<String> names ) {
         final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, names, nameMatcher );
         if ( schema == null ) {
             return ImmutableList.of();
         }
-        final List<SqlMoniker> result = new ArrayList<>();
+        final List<Moniker> result = new ArrayList<>();
 
         // Add root schema if not anonymous
         if ( !schema.getName().equals( "" ) ) {
-            result.add( moniker( schema, null, SqlMonikerType.SCHEMA ) );
+            result.add( moniker( schema, null, MonikerType.SCHEMA ) );
         }
 
         final Map<String, PolyphenyDbSchema> schemaMap = schema.getSubSchemaMap();
 
         for ( String subSchema : schemaMap.keySet() ) {
-            result.add( moniker( schema, subSchema, SqlMonikerType.SCHEMA ) );
+            result.add( moniker( schema, subSchema, MonikerType.SCHEMA ) );
         }
 
         for ( String table : schema.getTableNames() ) {
-            result.add( moniker( schema, table, SqlMonikerType.TABLE ) );
+            result.add( moniker( schema, table, MonikerType.TABLE ) );
         }
 
         final NavigableSet<String> functions = schema.getFunctionNames();
         for ( String function : functions ) { // views are here as well
-            result.add( moniker( schema, function, SqlMonikerType.FUNCTION ) );
+            result.add( moniker( schema, function, MonikerType.FUNCTION ) );
         }
         return result;
     }
 
 
-    private SqlMoniker moniker( PolyphenyDbSchema schema, String name, SqlMonikerType type ) {
+    private Moniker moniker( PolyphenyDbSchema schema, String name, MonikerType type ) {
         final List<String> path = schema.path( name );
-        if ( path.size() == 1 && !schema.root().getName().equals( "" ) && type == SqlMonikerType.SCHEMA ) {
-            type = SqlMonikerType.CATALOG;
+        if ( path.size() == 1 && !schema.root().getName().equals( "" ) && type == MonikerType.SCHEMA ) {
+            type = MonikerType.CATALOG;
         }
-        return new SqlMonikerImpl( path, type );
+        return new MonikerImpl( path, type );
     }
 
 

@@ -26,7 +26,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Util;

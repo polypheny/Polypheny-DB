@@ -35,7 +35,7 @@ import org.polypheny.db.type.inference.PolyReturnTypeInference;
  *
  * Created by the validator, after resolving a function call to a function defined in a Polypheny-DB schema.
  */
-public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implements org.polypheny.db.core.TableFunction {
+public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implements org.polypheny.db.core.fun.TableFunction {
 
     public SqlUserDefinedTableFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, TableFunction function ) {
         super(

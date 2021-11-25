@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.validate;
 
 
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.enums.ConformanceEnum;
 
 /**

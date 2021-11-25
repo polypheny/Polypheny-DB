@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.dialect;
 
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlCall;

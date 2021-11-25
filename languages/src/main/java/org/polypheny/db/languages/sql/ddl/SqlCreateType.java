@@ -19,11 +19,11 @@ package org.polypheny.db.languages.sql.ddl;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.ExecutableStatement;
+import org.polypheny.db.core.nodes.ExecutableStatement;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.QueryParameters;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.sql.SqlCreate;

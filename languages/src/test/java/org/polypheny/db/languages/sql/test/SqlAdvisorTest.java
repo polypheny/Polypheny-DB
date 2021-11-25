@@ -37,8 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.MethodRule;
 import org.polypheny.db.core.enums.Lex;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.enums.SqlMonikerType;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.enums.MonikerType;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.advise.SqlAdvisor;
@@ -434,7 +434,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
         StringAndPos sap = SqlParserUtil.findPos( sql );
 
-        List<SqlMoniker> results = advisor.getCompletionHints( sap.sql, sap.pos );
+        List<Moniker> results = advisor.getCompletionHints( sap.sql, sap.pos );
         Assert.assertEquals( expectedResults, convertCompletionHints( results ) );
     }
 
@@ -483,7 +483,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
 
         SqlParserUtil.StringAndPos sap = SqlParserUtil.findPos( sql );
         final String[] replaced = { null };
-        List<SqlMoniker> results = advisor.getCompletionHints( sap.sql, sap.cursor, replaced );
+        List<Moniker> results = advisor.getCompletionHints( sap.sql, sap.cursor, replaced );
         Assert.assertEquals( "Completion hints for " + sql, expectedResults, convertCompletionHints( results ) );
         if ( expectedWord != null ) {
             Assert.assertEquals( "replaced[0] for " + sql, expectedWord, replaced[0] );
@@ -494,12 +494,12 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
 
-    private void assertReplacements( String sql, Map<String, String> replacements, SqlAdvisor advisor, String word, List<SqlMoniker> results ) {
+    private void assertReplacements( String sql, Map<String, String> replacements, SqlAdvisor advisor, String word, List<Moniker> results ) {
         if ( replacements == null ) {
             return;
         }
         Set<String> missingReplacemenets = new HashSet<>( replacements.keySet() );
-        for ( SqlMoniker result : results ) {
+        for ( Moniker result : results ) {
             String id = result.id();
             String expectedReplacement = replacements.get( id );
             if ( expectedReplacement == null ) {
@@ -529,13 +529,13 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
     }
 
 
-    private String convertCompletionHints( List<SqlMoniker> hints ) {
+    private String convertCompletionHints( List<Moniker> hints ) {
         if ( hints == null ) {
             return "<<NULL>>";
         }
         List<String> list = new ArrayList<>();
-        for ( SqlMoniker hint : hints ) {
-            if ( hint.getType() != SqlMonikerType.FUNCTION ) {
+        for ( Moniker hint : hints ) {
+            if ( hint.getType() != MonikerType.FUNCTION ) {
                 list.add( hint.id() );
             }
         }

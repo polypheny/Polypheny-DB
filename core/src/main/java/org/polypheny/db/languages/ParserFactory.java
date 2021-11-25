@@ -17,7 +17,6 @@
 package org.polypheny.db.languages;
 
 import java.io.Reader;
-import org.polypheny.db.core.ParserImpl;
 
 public interface ParserFactory {
 

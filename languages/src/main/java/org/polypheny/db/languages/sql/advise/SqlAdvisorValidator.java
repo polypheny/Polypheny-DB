@@ -19,11 +19,11 @@ package org.polypheny.db.languages.sql.advise;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;

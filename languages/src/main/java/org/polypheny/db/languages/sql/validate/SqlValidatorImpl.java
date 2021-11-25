@@ -53,36 +53,36 @@ import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.enums.AccessEnum;
-import org.polypheny.db.core.AccessType;
-import org.polypheny.db.core.BasicNodeVisitor;
+import org.polypheny.db.core.util.AccessType;
+import org.polypheny.db.core.nodes.BasicNodeVisitor;
 import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.nodes.DataTypeSpec;
 import org.polypheny.db.core.nodes.DynamicParam;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.InitializerContext;
-import org.polypheny.db.core.IntervalQualifier;
+import org.polypheny.db.core.nodes.IntervalQualifier;
 import org.polypheny.db.core.enums.JoinConditionType;
 import org.polypheny.db.core.enums.JoinType;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.NameMatcher;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.NodeList;
-import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.nodes.NodeVisitor;
 import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.SqlMonikerImpl;
-import org.polypheny.db.core.enums.SqlMonikerType;
-import org.polypheny.db.core.SqlValidatorException;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.MonikerImpl;
+import org.polypheny.db.core.enums.MonikerType;
+import org.polypheny.db.core.util.SqlValidatorException;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorException;
@@ -632,7 +632,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public List<SqlMoniker> lookupHints( SqlNode topNode, ParserPos pos ) {
+    public List<Moniker> lookupHints( SqlNode topNode, ParserPos pos ) {
         SqlValidatorScope scope = new EmptyScope( this );
         SqlNode outermostNode = performUnconditionalRewrites( topNode, false );
         cursorSet.add( outermostNode );
@@ -649,14 +649,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if ( ns == null ) {
             throw new AssertionError( "Not a query: " + outermostNode );
         }
-        Collection<SqlMoniker> hintList = Sets.newTreeSet( SqlMoniker.COMPARATOR );
+        Collection<Moniker> hintList = Sets.newTreeSet( Moniker.COMPARATOR );
         lookupSelectHints( ns, pos, hintList );
         return ImmutableList.copyOf( hintList );
     }
 
 
     @Override
-    public SqlMoniker lookupQualifiedName( SqlNode topNode, ParserPos pos ) {
+    public Moniker lookupQualifiedName( SqlNode topNode, ParserPos pos ) {
         final String posString = pos.toString();
         IdInfo info = idPositions.get( posString );
         if ( info != null ) {
@@ -673,9 +673,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      *
      * @param select the Select node of the parsed expression tree
      * @param pos indicates the position in the sql statement we want to get completion hints for
-     * @param hintList list of {@link SqlMoniker} (sql identifiers) that can fill in at the indicated position
+     * @param hintList list of {@link Moniker} (sql identifiers) that can fill in at the indicated position
      */
-    void lookupSelectHints( SqlSelect select, ParserPos pos, Collection<SqlMoniker> hintList ) {
+    void lookupSelectHints( SqlSelect select, ParserPos pos, Collection<Moniker> hintList ) {
         IdInfo info = idPositions.get( pos.toString() );
         if ( (info == null) || (info.scope == null) ) {
             SqlNode fromNode = select.getSqlFrom();
@@ -687,7 +687,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private void lookupSelectHints( SqlValidatorNamespace ns, ParserPos pos, Collection<SqlMoniker> hintList ) {
+    private void lookupSelectHints( SqlValidatorNamespace ns, ParserPos pos, Collection<Moniker> hintList ) {
         final SqlNode node = ns.getNode();
         if ( node instanceof SqlSelect ) {
             lookupSelectHints( (SqlSelect) node, pos, hintList );
@@ -695,7 +695,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private void lookupFromHints( SqlNode node, SqlValidatorScope scope, ParserPos pos, Collection<SqlMoniker> hintList ) {
+    private void lookupFromHints( SqlNode node, SqlValidatorScope scope, ParserPos pos, Collection<Moniker> hintList ) {
         if ( node == null ) {
             // This can happen in cases like "select * _suggest_", so from clause is absent
             return;
@@ -706,13 +706,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             final SqlIdentifier id = idNs.getId();
             for ( int i = 0; i < id.names.size(); i++ ) {
                 if ( pos.toString().equals( id.getComponent( i ).getPos().toString() ) ) {
-                    final List<SqlMoniker> objNames = new ArrayList<>();
+                    final List<Moniker> objNames = new ArrayList<>();
                     SqlValidatorUtil.getSchemaObjectMonikers(
                             getCatalogReader(),
                             id.names.subList( 0, i + 1 ),
                             objNames );
-                    for ( SqlMoniker objName : objNames ) {
-                        if ( objName.getType() != SqlMonikerType.FUNCTION ) {
+                    for ( Moniker objName : objNames ) {
+                        if ( objName.getType() != MonikerType.FUNCTION ) {
                             hintList.add( objName );
                         }
                     }
@@ -731,7 +731,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private void lookupJoinHints( SqlJoin join, SqlValidatorScope scope, ParserPos pos, Collection<SqlMoniker> hintList ) {
+    private void lookupJoinHints( SqlJoin join, SqlValidatorScope scope, ParserPos pos, Collection<Moniker> hintList ) {
         SqlNode left = join.getLeft();
         SqlNode right = join.getRight();
         SqlNode condition = join.getCondition();
@@ -766,7 +766,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param pos position
      * @param hintList a list of valid options
      */
-    public final void lookupNameCompletionHints( SqlValidatorScope scope, List<String> names, ParserPos pos, Collection<SqlMoniker> hintList ) {
+    public final void lookupNameCompletionHints( SqlValidatorScope scope, List<String> names, ParserPos pos, Collection<Moniker> hintList ) {
         // Remove the last part of name - it is a dummy
         List<String> subNames = Util.skipLast( names );
 
@@ -792,7 +792,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 RelDataType rowType = ns.getRowType();
                 if ( rowType.isStruct() ) {
                     for ( RelDataTypeField field : rowType.getFieldList() ) {
-                        hintList.add( new SqlMonikerImpl( field.getName(), SqlMonikerType.COLUMN ) );
+                        hintList.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
                     }
                 }
             }
@@ -808,7 +808,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( (selectScope != null) && (selectScope.getChildren().size() == 1) ) {
                 RelDataType rowType = selectScope.getChildren().get( 0 ).getRowType();
                 for ( RelDataTypeField field : rowType.getFieldList() ) {
-                    hintList.add( new SqlMonikerImpl( field.getName(), SqlMonikerType.COLUMN ) );
+                    hintList.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
                 }
             }
         }
@@ -817,18 +817,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private static void findAllValidUdfNames( List<String> names, SqlValidator validator, Collection<SqlMoniker> result ) {
-        final List<SqlMoniker> objNames = new ArrayList<>();
+    private static void findAllValidUdfNames( List<String> names, SqlValidator validator, Collection<Moniker> result ) {
+        final List<Moniker> objNames = new ArrayList<>();
         SqlValidatorUtil.getSchemaObjectMonikers( validator.getCatalogReader(), names, objNames );
-        for ( SqlMoniker objName : objNames ) {
-            if ( objName.getType() == SqlMonikerType.FUNCTION ) {
+        for ( Moniker objName : objNames ) {
+            if ( objName.getType() == MonikerType.FUNCTION ) {
                 result.add( objName );
             }
         }
     }
 
 
-    private static void findAllValidFunctionNames( List<String> names, SqlValidator validator, Collection<SqlMoniker> result, ParserPos pos ) {
+    private static void findAllValidFunctionNames( List<String> names, SqlValidator validator, Collection<Moniker> result, ParserPos pos ) {
         // a function name can only be 1 part
         if ( names.size() > 1 ) {
             return;
@@ -838,16 +838,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             final SqlCall call = SqlUtil.makeCall( validator.getOperatorTable(), curOpId );
             if ( call != null ) {
-                result.add( new SqlMonikerImpl( op.getName(), SqlMonikerType.FUNCTION ) );
+                result.add( new MonikerImpl( op.getName(), MonikerType.FUNCTION ) );
             } else {
                 if ( (op.getSyntax() == Syntax.FUNCTION) || (op.getSyntax() == Syntax.PREFIX) ) {
                     if ( ((SqlOperator) op).getOperandTypeChecker() != null ) {
                         String sig = op.getAllowedSignatures();
                         sig = sig.replaceAll( "'", "" );
-                        result.add( new SqlMonikerImpl( sig, SqlMonikerType.FUNCTION ) );
+                        result.add( new MonikerImpl( sig, MonikerType.FUNCTION ) );
                         continue;
                     }
-                    result.add( new SqlMonikerImpl( op.getName(), SqlMonikerType.FUNCTION ) );
+                    result.add( new MonikerImpl( op.getName(), MonikerType.FUNCTION ) );
                 }
             }
         }

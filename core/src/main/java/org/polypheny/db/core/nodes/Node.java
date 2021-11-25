@@ -19,9 +19,8 @@ package org.polypheny.db.core.nodes;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.Visitable;
 import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.util.Litmus;
 
 public interface Node extends Cloneable, Visitable {

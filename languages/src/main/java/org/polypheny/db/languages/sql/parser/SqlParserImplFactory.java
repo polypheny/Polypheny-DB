@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.parser;
 
 
 import java.io.Reader;
-import org.polypheny.db.core.ParserImpl;
+import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.tools.Planner;
 

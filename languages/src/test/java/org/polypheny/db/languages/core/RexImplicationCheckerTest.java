@@ -25,7 +25,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.hamcrest.core.Is;
 import org.junit.Test;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RexImplicationChecker;
 import org.polypheny.db.rel.type.RelDataType;

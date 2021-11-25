@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.advise;
 
 
-import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.util.Moniker;
 
 
 /**
@@ -37,7 +37,7 @@ public class SqlAdvisorHint2 extends SqlAdvisorHint {
     }
 
 
-    public SqlAdvisorHint2( SqlMoniker id, String replacement ) {
+    public SqlAdvisorHint2( Moniker id, String replacement ) {
         super( id );
         this.replacement = replacement;
     }

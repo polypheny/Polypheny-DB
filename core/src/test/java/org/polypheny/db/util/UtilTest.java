@@ -103,7 +103,7 @@ import org.hamcrest.StringDescription;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Functions;

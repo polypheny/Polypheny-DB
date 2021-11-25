@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.rel.type.RelDataType;
@@ -56,7 +56,7 @@ public abstract class DelegatingSqlValidatorCatalogReader implements ValidatorCa
 
 
     @Override
-    public List<SqlMoniker> getAllSchemaObjectNames( List<String> names ) {
+    public List<Moniker> getAllSchemaObjectNames( List<String> names ) {
         return catalogReader.getAllSchemaObjectNames( names );
     }
 

@@ -36,7 +36,7 @@ package org.polypheny.db.rel.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;

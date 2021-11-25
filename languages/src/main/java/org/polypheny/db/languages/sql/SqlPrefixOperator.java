@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql;
 
 
-import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.nodes.OperatorBinding;

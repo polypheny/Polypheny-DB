@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.parser;
 
 import java.io.StringReader;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlNode;

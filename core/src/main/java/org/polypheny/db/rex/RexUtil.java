@@ -56,7 +56,7 @@ import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.nodes.OperatorImpl;
-import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.core.util.ValidatorUtil.Suggester;
 import org.polypheny.db.core.operators.OperatorName;

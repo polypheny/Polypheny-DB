@@ -16,7 +16,7 @@
 
 package org.polypheny.db.languages.mql;
 
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
 

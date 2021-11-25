@@ -18,13 +18,13 @@ package org.polypheny.db.languages.mql;
 
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.core.ExecutableStatement;
-import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.QueryParameters;
+import org.polypheny.db.core.nodes.ExecutableStatement;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.transaction.Statement;
 

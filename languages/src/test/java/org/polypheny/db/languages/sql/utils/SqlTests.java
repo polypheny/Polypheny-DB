@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.calcite.avatica.ColumnMetaData;
-import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
 import org.polypheny.db.languages.sql.utils.SqlTester.ParameterChecker;

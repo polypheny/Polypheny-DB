@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import org.bson.BsonDocument;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
 

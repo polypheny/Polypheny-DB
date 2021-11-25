@@ -17,7 +17,7 @@
 package org.polypheny.db.core.nodes;
 
 import java.util.List;
-import org.polypheny.db.core.SqlValidatorException;
+import org.polypheny.db.core.util.SqlValidatorException;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;

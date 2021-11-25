@@ -45,7 +45,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.ClassDeclaration;
-import org.polypheny.db.core.CyclicDefinitionException;
+import org.polypheny.db.core.util.CyclicDefinitionException;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.validate.Validator;

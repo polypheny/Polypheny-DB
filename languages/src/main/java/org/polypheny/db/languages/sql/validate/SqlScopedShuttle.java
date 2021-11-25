@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.validate;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.NodeVisitor;
+import org.polypheny.db.core.nodes.NodeVisitor;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.util.SqlShuttle;

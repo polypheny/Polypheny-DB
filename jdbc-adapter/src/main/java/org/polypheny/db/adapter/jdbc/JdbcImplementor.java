@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter;
-import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.rel.RelNode;

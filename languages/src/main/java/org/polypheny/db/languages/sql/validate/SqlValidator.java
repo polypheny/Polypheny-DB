@@ -19,12 +19,12 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.core.Conformance;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.enums.NullCollation;
-import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.languages.sql.SqlCall;

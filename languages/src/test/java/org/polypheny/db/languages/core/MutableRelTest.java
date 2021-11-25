@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
-import org.polypheny.db.core.RelDecorrelator;
+import org.polypheny.db.core.rel.RelDecorrelator;
 import org.polypheny.db.languages.sql.SqlToRelTestBase;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptUtil;

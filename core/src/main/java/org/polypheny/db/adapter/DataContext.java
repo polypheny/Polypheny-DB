@@ -31,7 +31,7 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.Advisor;
+import org.polypheny.db.core.util.Advisor;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.Statement;

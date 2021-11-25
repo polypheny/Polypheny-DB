@@ -39,7 +39,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import lombok.Getter;
-import org.polypheny.db.core.Collation;
+import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.util.SerializableCharset;
 

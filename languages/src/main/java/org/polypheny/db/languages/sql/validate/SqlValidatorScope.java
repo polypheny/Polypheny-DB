@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.NameMatcher;
-import org.polypheny.db.core.SqlMoniker;
+import org.polypheny.db.core.util.NameMatcher;
+import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -88,18 +88,18 @@ public interface SqlValidatorScope extends ValidatorScope {
     Map<String, ScopeChild> findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher );
 
     /**
-     * Collects the {@link SqlMoniker}s of all possible columns in this scope.
+     * Collects the {@link Moniker}s of all possible columns in this scope.
      *
      * @param result an array list of strings to add the result to
      */
-    void findAllColumnNames( List<SqlMoniker> result );
+    void findAllColumnNames( List<Moniker> result );
 
     /**
-     * Collects the {@link SqlMoniker}s of all table aliases (uses of tables in query FROM clauses) available in this scope.
+     * Collects the {@link Moniker}s of all table aliases (uses of tables in query FROM clauses) available in this scope.
      *
      * @param result a list of monikers to add the result to
      */
-    void findAliases( Collection<SqlMoniker> result );
+    void findAliases( Collection<Moniker> result );
 
     /**
      * Converts an identifier into a fully-qualified identifier. For example, the "empno" in "select empno from emp natural join dept" becomes "emp.empno".

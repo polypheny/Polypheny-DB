@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.Meta;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.core.OperatorTable;
+import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.Kind;
