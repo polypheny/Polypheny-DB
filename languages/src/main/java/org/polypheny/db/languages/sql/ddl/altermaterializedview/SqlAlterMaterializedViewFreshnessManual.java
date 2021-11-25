@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.ddl.altermaterializedview;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;

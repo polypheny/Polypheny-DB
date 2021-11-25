@@ -20,13 +20,13 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
-import org.polypheny.db.core.Call;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Literal;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Literal;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.TrimFunction;
+import org.polypheny.db.core.fun.TrimFunction;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
@@ -48,7 +48,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
  */
 public class SqlTrimFunction extends SqlFunction implements TrimFunction {
 
-    protected static final SqlTrimFunction INSTANCE =
+    public static final SqlTrimFunction INSTANCE =
             new SqlTrimFunction( "TRIM", Kind.TRIM,
                     ReturnTypes.cascade( ReturnTypes.ARG2, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING ),
                     OperandTypes.and(

@@ -18,10 +18,10 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.Modality;
-import org.polypheny.db.core.Monotonicity;
-import org.polypheny.db.core.ValidatorNamespace;
-import org.polypheny.db.core.ValidatorTable;
+import org.polypheny.db.core.enums.Modality;
+import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.validate.ValidatorNamespace;
+import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;

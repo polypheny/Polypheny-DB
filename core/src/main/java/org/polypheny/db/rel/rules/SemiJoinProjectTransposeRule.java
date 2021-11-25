@@ -36,7 +36,7 @@ package org.polypheny.db.rel.rules;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelNode;

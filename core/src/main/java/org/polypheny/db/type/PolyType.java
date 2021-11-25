@@ -49,8 +49,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.core.Literal;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.util.Util;
 

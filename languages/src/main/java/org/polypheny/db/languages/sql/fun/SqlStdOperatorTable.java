@@ -19,8 +19,8 @@ package org.polypheny.db.languages.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;

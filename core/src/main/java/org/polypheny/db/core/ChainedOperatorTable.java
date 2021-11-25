@@ -20,6 +20,10 @@ package org.polypheny.db.core;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.nodes.Operator;
 
 
 /**

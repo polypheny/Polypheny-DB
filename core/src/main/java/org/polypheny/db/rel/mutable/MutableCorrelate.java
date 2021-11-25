@@ -35,7 +35,7 @@ package org.polypheny.db.rel.mutable;
 
 
 import java.util.Objects;
-import org.polypheny.db.core.SemiJoinType;
+import org.polypheny.db.core.enums.SemiJoinType;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.type.RelDataType;

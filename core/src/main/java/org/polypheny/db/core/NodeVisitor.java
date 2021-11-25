@@ -17,6 +17,15 @@
 package org.polypheny.db.core;
 
 
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.DataTypeSpec;
+import org.polypheny.db.core.nodes.DynamicParam;
+import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.nodes.Literal;
+import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.nodes.NodeList;
+import org.polypheny.db.core.nodes.OperatorImpl;
+
 /**
  * Visitor class, follows the {@link org.polypheny.db.util.Glossary#VISITOR_PATTERN visitor pattern}.
  *

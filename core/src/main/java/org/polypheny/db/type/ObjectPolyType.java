@@ -36,7 +36,7 @@ package org.polypheny.db.type;
 
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.core.Identifier;
+import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypeField;

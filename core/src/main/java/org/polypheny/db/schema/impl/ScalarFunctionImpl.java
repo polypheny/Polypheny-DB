@@ -43,7 +43,7 @@ import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.ImplementableFunction;

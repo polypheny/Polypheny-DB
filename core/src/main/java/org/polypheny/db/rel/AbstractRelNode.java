@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Setter;
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;

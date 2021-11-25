@@ -40,7 +40,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;

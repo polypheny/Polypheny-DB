@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -103,7 +103,7 @@ public class SqlTimestampAddFunction extends SqlFunction {
     /**
      * Creates a SqlTimestampAddFunction.
      */
-    SqlTimestampAddFunction() {
+    public SqlTimestampAddFunction() {
         super(
                 "TIMESTAMPADD",
                 Kind.TIMESTAMP_ADD,

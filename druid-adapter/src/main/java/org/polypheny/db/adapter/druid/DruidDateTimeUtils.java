@@ -46,7 +46,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.joda.time.chrono.ISOChronology;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;

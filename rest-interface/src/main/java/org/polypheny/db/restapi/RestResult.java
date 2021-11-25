@@ -43,7 +43,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.type.PolyType;

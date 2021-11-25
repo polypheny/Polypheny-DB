@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.rex;
 
 
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 

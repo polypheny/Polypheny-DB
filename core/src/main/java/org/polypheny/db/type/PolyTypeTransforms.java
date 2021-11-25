@@ -36,7 +36,7 @@ package org.polypheny.db.type;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;

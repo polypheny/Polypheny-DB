@@ -18,9 +18,9 @@ package org.polypheny.db.type.checker;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.CallBinding;
-import org.polypheny.db.core.Node;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.nodes.CallBinding;
+import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;

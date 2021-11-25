@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import org.polypheny.db.core.Collation;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyTypeUtil;

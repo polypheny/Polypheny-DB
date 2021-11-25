@@ -17,6 +17,7 @@
 package org.polypheny.db.core;
 
 
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.transaction.Statement;
 

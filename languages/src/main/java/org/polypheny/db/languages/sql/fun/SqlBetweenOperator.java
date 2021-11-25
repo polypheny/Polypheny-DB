@@ -19,12 +19,12 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor;
-import org.polypheny.db.core.Call;
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.ExplicitOperatorBinding;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.nodes.ExplicitOperatorBinding;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;

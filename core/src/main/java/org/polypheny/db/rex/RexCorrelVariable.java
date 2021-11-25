@@ -35,7 +35,7 @@ package org.polypheny.db.rex;
 
 
 import java.util.Objects;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.type.RelDataType;
 

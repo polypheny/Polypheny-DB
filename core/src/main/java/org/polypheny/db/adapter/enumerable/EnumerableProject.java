@@ -35,7 +35,7 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.List;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelCollationTraitDef;

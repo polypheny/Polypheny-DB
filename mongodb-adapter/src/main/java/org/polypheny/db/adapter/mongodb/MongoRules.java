@@ -55,13 +55,12 @@ import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.core.BsonUtil;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.MqlStdOperatorTable;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.util.BsonUtil;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.document.rules.DocumentRules;
 import org.polypheny.db.languages.sql.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.languages.sql.fun.SqlDatetimeSubtractionOperator;
@@ -377,9 +376,7 @@ public class MongoRules {
             if ( special != null ) {
                 return special;
             }
-            if ( call.op.getName().
-
-                    equals( MqlStdOperatorTable.DOC_JSONIZE.getName() ) ) {
+            if ( call.op.getOperatorName() == OperatorName.MQL_JSONIFY ) {
                 return call.operands.get( 0 ).accept( this );
             }
 
@@ -431,23 +428,23 @@ public class MongoRules {
                 BsonArray array = new BsonArray();
                 array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
-            } else if ( call.isA( Kind.DOC_FIELD ) ) {
+            } else if ( call.isA( Kind.MQL_QUERY_VALUE ) ) {
                 return RexToMongoTranslator.translateDocValue( implementor.getStaticRowType(), call );
 
-            } else if ( call.isA( Kind.DOC_ITEM ) ) {
+            } else if ( call.isA( Kind.MQL_ITEM ) ) {
                 RexNode leftPre = call.operands.get( 0 );
                 String left = leftPre.accept( this );
 
                 String right = call.operands.get( 1 ).accept( this );
 
                 return "{\"$arrayElemAt\":[" + left + "," + right + "]}";
-            } else if ( call.isA( Kind.DOC_SLICE ) ) {
+            } else if ( call.isA( Kind.MQL_SLICE ) ) {
                 String left = call.operands.get( 0 ).accept( this );
                 String skip = call.operands.get( 1 ).accept( this );
                 String return_ = call.operands.get( 2 ).accept( this );
 
                 return "{\"$slice\":[ " + left + "," + skip + "," + return_ + "]}";
-            } else if ( call.isA( Kind.DOC_EXCLUDE ) ) {
+            } else if ( call.isA( Kind.MQL_EXCLUDE ) ) {
                 String parent = implementor
                         .getStaticRowType()
                         .getFieldNames()
@@ -470,7 +467,7 @@ public class MongoRules {
                 }
 
                 return String.join( ",", fields );
-            } else if ( call.isA( Kind.DOC_UNWIND ) ) {
+            } else if ( call.isA( Kind.UNWIND ) ) {
                 return call.operands.get( 0 ).accept( this );
             }
             return null;
@@ -858,7 +855,7 @@ public class MongoRules {
                                 doc.append(
                                         rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                         visitCall( implementor, (RexCall) el, Kind.PLUS, el.getType().getPolyType() ) );
-                            } else if ( ((RexCall) el).op.getKind().belongsTo( Kind.DOC_KIND ) ) {
+                            } else if ( ((RexCall) el).op.getKind().belongsTo( Kind.MQL_KIND ) ) {
                                 docDocs.add( handleDocumentUpdate( (RexCall) el, bucket, rowType ) );
                             } else {
                                 doc.append(
@@ -920,24 +917,24 @@ public class MongoRules {
         private void attachUpdateStep( BsonDocument doc, RexCall el, MongoRowType rowType, String key ) {
             List<String> keys = getDocUpdateKey( (RexInputRef) el.operands.get( 0 ), (RexCall) el.operands.get( 1 ), rowType );
             switch ( el.op.getKind() ) {
-                case DOC_UPDATE_REPLACE:
+                case MQL_UPDATE_REPLACE:
                     assert el.getOperands().size() == 3;
                     assert el.getOperands().get( 2 ) instanceof RexCall;
 
                     doc.putAll( getReplaceUpdate( keys, (RexCall) el.operands.get( 2 ) ) );
                     break;
-                case DOC_UPDATE_ADD:
+                case MQL_ADD_FIELDS:
                     assert el.getOperands().size() == 3;
                     assert el.getOperands().get( 2 ) instanceof RexCall;
 
                     doc.putAll( getAddUpdate( keys, (RexCall) el.operands.get( 2 ) ) );
                     break;
-                case DOC_UPDATE_REMOVE:
+                case MQL_UPDATE_REMOVE:
                     assert el.getOperands().size() == 2;
 
                     doc.putAll( getRemoveUpdate( keys, (RexCall) el.operands.get( 1 ) ) );
                     break;
-                case DOC_UPDATE_RENAME:
+                case MQL_UPDATE_RENAME:
                     assert el.getOperands().size() == 3;
                     assert el.getOperands().get( 2 ) instanceof RexCall;
 

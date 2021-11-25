@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.rel.RelCollation;

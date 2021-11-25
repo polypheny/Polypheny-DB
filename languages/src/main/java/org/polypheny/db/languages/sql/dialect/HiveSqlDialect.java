@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql.dialect;
 
 
-import org.polypheny.db.core.NullCollation;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;

@@ -19,9 +19,9 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.util.ReflectiveSqlOperatorTable;

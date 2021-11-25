@@ -35,7 +35,7 @@ package org.polypheny.db.rel;
 
 
 import java.util.List;
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.util.Pair;
 
 

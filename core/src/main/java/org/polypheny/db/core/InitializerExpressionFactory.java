@@ -18,6 +18,7 @@ package org.polypheny.db.core;
 
 
 import java.util.List;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;

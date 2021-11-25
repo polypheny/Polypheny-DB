@@ -21,10 +21,10 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.ExecutableStatement;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;

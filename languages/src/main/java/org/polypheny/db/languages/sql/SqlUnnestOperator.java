@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql;
 
 
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.OperatorBinding;
-import org.polypheny.db.core.UnnestOperator;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.core.fun.UnnestOperator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.ArrayType;

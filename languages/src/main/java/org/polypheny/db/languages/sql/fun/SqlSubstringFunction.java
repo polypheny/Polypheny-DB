@@ -21,13 +21,13 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Monotonicity;
-import org.polypheny.db.core.Node;
-import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
@@ -52,7 +52,7 @@ public class SqlSubstringFunction extends SqlFunction {
     /**
      * Creates the SqlSubstringFunction.
      */
-    SqlSubstringFunction() {
+    public SqlSubstringFunction() {
         super(
                 "SUBSTRING",
                 Kind.OTHER_FUNCTION,

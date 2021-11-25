@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -59,7 +59,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
      * @param kind Kind
      * @param negated Whether this is 'NOT LIKE'
      */
-    SqlLikeOperator( String name, Kind kind, boolean negated ) {
+    public SqlLikeOperator( String name, Kind kind, boolean negated ) {
         // LIKE is right-associative, because that makes it easier to capture dangling ESCAPE clauses: "a like b like c escape d" becomes "a like (b like c escape d)".
         super(
                 name,

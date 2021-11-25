@@ -36,7 +36,7 @@ package org.polypheny.db.rel;
 
 import java.io.Serializable;
 import java.util.Objects;
-import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.enums.Monotonicity;
 
 
 /**

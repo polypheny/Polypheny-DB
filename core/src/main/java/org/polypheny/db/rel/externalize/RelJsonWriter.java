@@ -41,7 +41,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;

@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.validate;
 
 import java.lang.reflect.Type;
 import java.util.List;
-import org.polypheny.db.core.FunctionCategory;
+import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;

@@ -51,7 +51,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelTraitSet;

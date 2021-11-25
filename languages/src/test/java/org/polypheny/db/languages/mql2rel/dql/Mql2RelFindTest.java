@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.junit.Test;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.MqlStdOperatorTable;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.mql.MqlTest;
 import org.polypheny.db.languages.mql2rel.Mql2RelTest;
 import org.polypheny.db.rel.RelRoot;
@@ -66,7 +66,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
     public void testSingleMatch() {
         RelRoot root = translate( find( "\"_id\":\"value\"" ) );
         RexCall condition = getConditionTestFilter( root );
-        assertEquals( MqlStdOperatorTable.DOC_EQ, condition.op );
+        assertEquals( OperatorName.MQL_EQUALS, condition.op.getOperatorName() );
 
         assertTrue( condition.operands.get( 0 ).isA( Kind.INPUT_REF ) );
         assertEquals( 0, ((RexInputRef) condition.operands.get( 0 )).getIndex() );
@@ -317,7 +317,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( "DOC_TYPE_MATCH", condition.op.getName() );
+        assertEquals( OperatorName.MQL_TYPE_MATCH, condition.op.getOperatorName() );
         assertEquals( 2, condition.operands.size() );
 
         RexCall query = assertRexCall( condition, 0 );
@@ -338,7 +338,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
         RexCall condition = getConditionTestFilter( root );
 
-        assertEquals( "DOC_TYPE_MATCH", condition.op.getName() );
+        assertEquals( OperatorName.MQL_TYPE_MATCH, condition.op.getOperatorName() );
         assertEquals( 2, condition.operands.size() );
 
         RexCall query = assertRexCall( condition, 0 );
@@ -570,7 +570,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonQuery( String key, RexCall projection, List<String> excludes ) {
-        assertEquals( "DOC_QUERY_EXCLUDE", projection.op.getName() );
+        assertEquals( OperatorName.MQL_EXCLUDE, projection.op.getOperatorName() );
         assertEquals( 2, projection.operands.size() );
 
         assertEquals( Kind.INPUT_REF, projection.operands.get( 0 ).getKind() );
@@ -620,7 +620,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonExists( RexCall condition, String key ) {
-        assertEquals( Kind.DOC_EXISTS, condition.op.getKind() );
+        assertEquals( Kind.MQL_EXISTS, condition.op.getKind() );
         assertEquals( 2, condition.operands.size() );
 
         assertEquals(
@@ -634,7 +634,7 @@ public class Mql2RelFindTest extends Mql2RelTest {
 
 
     private void testJsonValue( RexCall jsonValue, String key ) {
-        assertEquals( "DOC_QUERY_VALUE", jsonValue.op.getName() );
+        assertEquals( OperatorName.MQL_QUERY_VALUE, jsonValue.op.getOperatorName() );
 
         assertEquals( 2, jsonValue.operands.size() );
         assertEquals( Kind.INPUT_REF, jsonValue.operands.get( 0 ).getKind() );

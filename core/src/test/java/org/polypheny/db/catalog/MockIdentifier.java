@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.core.Identifier;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.util.Litmus;
 
 public class MockIdentifier implements Identifier, Node {

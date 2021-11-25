@@ -20,11 +20,11 @@ package org.polypheny.db.languages.sql.validate;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.BasicNodeVisitor;
-import org.polypheny.db.core.Call;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.fun.SqlAbstractGroupFunction;
 

@@ -22,10 +22,10 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.ConformanceEnum;
-import org.polypheny.db.core.Lex;
-import org.polypheny.db.core.Node;
 import org.polypheny.db.core.NodeParseException;
+import org.polypheny.db.core.enums.ConformanceEnum;
+import org.polypheny.db.core.enums.Lex;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.util.SourceStringReader;
 
 public interface Parser {

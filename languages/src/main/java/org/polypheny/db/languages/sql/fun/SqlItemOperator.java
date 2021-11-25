@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import java.util.Arrays;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -51,7 +51,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
                     OperandTypes.family( PolyTypeFamily.ANY ) );
 
 
-    SqlItemOperator() {
+    public SqlItemOperator() {
         super( "ITEM", Kind.OTHER_FUNCTION, 100, true, null, null, null );
     }
 

@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql.dialect;
 
 
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.NullCollation;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;

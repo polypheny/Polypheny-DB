@@ -74,7 +74,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.VisitorImpl;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.plan.RelImplementor;
 import org.polypheny.db.rex.RexBuilder;

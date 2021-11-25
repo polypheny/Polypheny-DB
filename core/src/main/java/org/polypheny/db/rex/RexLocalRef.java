@@ -36,7 +36,7 @@ package org.polypheny.db.rex;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.rel.type.RelDataType;
 
 

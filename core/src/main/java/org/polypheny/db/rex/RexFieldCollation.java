@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Set;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelFieldCollation.Direction;
 import org.polypheny.db.util.Pair;

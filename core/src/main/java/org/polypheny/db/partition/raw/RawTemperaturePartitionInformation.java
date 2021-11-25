@@ -19,8 +19,8 @@ package org.polypheny.db.partition.raw;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.core.Identifier;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.nodes.Node;
 
 
 @Getter

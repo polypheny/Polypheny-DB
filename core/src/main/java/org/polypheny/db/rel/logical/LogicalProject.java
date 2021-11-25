@@ -37,7 +37,7 @@ package org.polypheny.db.rel.logical;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;

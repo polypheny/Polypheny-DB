@@ -21,11 +21,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Monotonicity;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;

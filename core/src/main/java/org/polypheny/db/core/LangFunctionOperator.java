@@ -17,6 +17,15 @@
 package org.polypheny.db.core;
 
 import java.util.List;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.Literal;
+import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.core.nodes.OperatorImpl;
+import org.polypheny.db.core.validate.Validator;
+import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 
@@ -29,7 +38,7 @@ public class LangFunctionOperator extends OperatorImpl {
 
     @Override
     public Syntax getSyntax() {
-        throw new RuntimeException( "Not Implemented" );
+        return Syntax.SPECIAL;
     }
 
 

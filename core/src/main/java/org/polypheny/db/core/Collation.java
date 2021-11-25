@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.Locale;
 import lombok.Getter;
+import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.SerializableCharset;

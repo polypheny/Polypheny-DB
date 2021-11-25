@@ -36,7 +36,7 @@ package org.polypheny.db.rel.mutable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexNode;

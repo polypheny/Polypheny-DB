@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.dialect;
 
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlAbstractDateTimeLiteral;
 import org.polypheny.db.languages.sql.SqlCall;

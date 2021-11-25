@@ -36,7 +36,7 @@ package org.polypheny.db.rel.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;

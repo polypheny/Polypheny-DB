@@ -17,6 +17,8 @@
 package org.polypheny.db.core;
 
 
+import org.polypheny.db.core.enums.ConformanceEnum;
+
 /**
  * Enumeration of valid SQL compatibility modes.
  *

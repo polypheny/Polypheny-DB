@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.JoinRelType;

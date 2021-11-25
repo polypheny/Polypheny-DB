@@ -42,7 +42,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.polypheny.db.core.SemiJoinType;
+import org.polypheny.db.core.enums.SemiJoinType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelCollationTraitDef;

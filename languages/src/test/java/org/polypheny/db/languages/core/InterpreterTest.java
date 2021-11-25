@@ -34,7 +34,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;

@@ -51,7 +51,7 @@ import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;

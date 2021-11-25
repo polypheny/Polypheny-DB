@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.util.Util;
 
 

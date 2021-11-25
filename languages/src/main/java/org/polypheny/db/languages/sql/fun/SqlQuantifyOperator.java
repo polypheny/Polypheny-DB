@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.base.Preconditions;
 import java.util.Objects;
 import lombok.Getter;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.QuantifyOperator;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.QuantifyOperator;
 
 
 /**
@@ -46,7 +46,7 @@ public class SqlQuantifyOperator extends SqlInOperator implements QuantifyOperat
      * @param kind Either ALL or SOME
      * @param comparisonKind Either <code>&lt;</code>, <code>&le;</code>, <code>&gt;</code>, <code>&ge;</code>, <code>=</code> or <code>&lt;&gt;</code>.
      */
-    SqlQuantifyOperator( Kind kind, Kind comparisonKind ) {
+    public SqlQuantifyOperator( Kind kind, Kind comparisonKind ) {
         super( comparisonKind.sql + " " + kind, kind );
         this.comparisonKind = Objects.requireNonNull( comparisonKind );
         Preconditions.checkArgument( comparisonKind == Kind.EQUALS

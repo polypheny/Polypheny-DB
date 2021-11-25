@@ -18,9 +18,9 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
@@ -45,7 +45,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 public class SqlOverlapsOperator extends SqlBinaryOperator {
 
 
-    SqlOverlapsOperator( Kind kind ) {
+    public SqlOverlapsOperator( Kind kind ) {
         super(
                 kind.sql,
                 kind,

@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.polypheny.db.core.NameMatcher;
 import org.polypheny.db.core.NameMatchers;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlTestFactory;

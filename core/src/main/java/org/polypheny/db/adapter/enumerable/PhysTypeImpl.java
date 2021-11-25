@@ -52,7 +52,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.CoreUtil;
+import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;

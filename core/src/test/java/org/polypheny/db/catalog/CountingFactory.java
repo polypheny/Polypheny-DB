@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.polypheny.db.core.InitializerContext;
 import org.polypheny.db.core.InitializerExpressionFactory;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;

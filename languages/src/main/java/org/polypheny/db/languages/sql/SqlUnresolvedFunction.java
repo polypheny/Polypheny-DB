@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.List;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;

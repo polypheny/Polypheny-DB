@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlInternalOperator;
 import org.polypheny.db.languages.sql.SqlNode;

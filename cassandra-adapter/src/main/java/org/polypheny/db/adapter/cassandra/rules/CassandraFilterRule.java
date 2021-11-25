@@ -26,7 +26,7 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.util.CassandraUtils;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;

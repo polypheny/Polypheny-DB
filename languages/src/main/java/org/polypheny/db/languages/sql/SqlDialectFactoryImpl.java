@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Locale;
-import org.polypheny.db.core.NullCollation;
+import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.languages.sql.dialect.AccessSqlDialect;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.languages.sql.dialect.BigQuerySqlDialect;

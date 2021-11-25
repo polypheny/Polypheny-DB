@@ -26,7 +26,7 @@ import lombok.Getter;
 import org.apache.calcite.avatica.MetaImpl;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rel.RelNode;

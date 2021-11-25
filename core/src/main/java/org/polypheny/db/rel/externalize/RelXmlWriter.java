@@ -37,7 +37,7 @@ package org.polypheny.db.rel.externalize;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.XmlOutput;

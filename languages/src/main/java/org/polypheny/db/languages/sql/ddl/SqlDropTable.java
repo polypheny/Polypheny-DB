@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;

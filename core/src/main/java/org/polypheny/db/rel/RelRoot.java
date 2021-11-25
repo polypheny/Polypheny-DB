@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;

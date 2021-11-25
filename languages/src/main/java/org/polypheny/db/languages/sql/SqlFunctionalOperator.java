@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql;
 
 
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;

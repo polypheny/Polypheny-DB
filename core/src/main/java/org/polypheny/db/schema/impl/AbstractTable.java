@@ -34,8 +34,8 @@
 package org.polypheny.db.schema.impl;
 
 
-import org.polypheny.db.core.Call;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.Statistic;

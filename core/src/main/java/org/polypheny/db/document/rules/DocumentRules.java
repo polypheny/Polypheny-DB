@@ -18,9 +18,9 @@ package org.polypheny.db.document.rules;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.core.Function.FunctionType;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Function.FunctionType;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
@@ -104,7 +104,7 @@ public class DocumentRules {
         @Override
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
-            if ( Kind.DOC_KIND.contains( operator.getKind() ) ) {
+            if ( Kind.MQL_KIND.contains( operator.getKind() ) ) {
                 containsDocument = true;
             }
             return super.visitCall( call );

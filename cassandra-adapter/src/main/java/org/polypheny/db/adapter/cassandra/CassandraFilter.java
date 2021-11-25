@@ -43,7 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;

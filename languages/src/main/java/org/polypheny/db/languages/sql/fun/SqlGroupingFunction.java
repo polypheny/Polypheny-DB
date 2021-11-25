@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -39,7 +39,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
  */
 public class SqlGroupingFunction extends SqlAbstractGroupFunction {
 
-    SqlGroupingFunction( String name ) {
+    public SqlGroupingFunction( String name ) {
         super(
                 name,
                 Kind.GROUPING,

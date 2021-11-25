@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.advise;
 
 import java.util.List;
 import org.polypheny.db.core.SqlMoniker;
-import org.polypheny.db.core.SqlMonikerType;
+import org.polypheny.db.core.enums.SqlMonikerType;
 
 
 /**

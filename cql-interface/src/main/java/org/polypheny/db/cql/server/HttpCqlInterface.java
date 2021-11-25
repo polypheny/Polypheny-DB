@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.cql.Cql2RelConverter;
 import org.polypheny.db.cql.CqlQuery;
 import org.polypheny.db.cql.parser.CqlParser;

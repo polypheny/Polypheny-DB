@@ -21,7 +21,6 @@ import static org.junit.Assert.assertNotEquals;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.polypheny.db.languages.sql.fun.SqlRegisterer;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
@@ -34,7 +33,9 @@ public class RexBuilderTest {
 
     @BeforeClass
     public static void init() {
-        new SqlRegisterer();
+        if ( !SqlRegisterer.isInit() ) {
+            SqlRegisterer.registerOperators();
+        }
     }
 
 

@@ -45,7 +45,7 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -117,7 +117,7 @@ public class MongoProject extends Project implements MongoRel {
             }
 
             if ( pair.left instanceof RexCall ) {
-                if ( ((RexCall) pair.left).operands.get( 0 ).isA( Kind.DOC_UPDATE_ADD ) ) {
+                if ( ((RexCall) pair.left).operands.get( 0 ).isA( Kind.MQL_ADD_FIELDS ) ) {
                     Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) ((RexCall) pair.left).operands.get( 0 ), rowType );
                     String expr = ret.right.accept( translator );
                     implementor.preProjections.add( new BsonDocument( ret.left, BsonDocument.parse( expr ) ) );
@@ -132,7 +132,7 @@ public class MongoProject extends Project implements MongoRel {
             }
 
             // exclude projection cannot be handled this way, so it needs fixing
-            KindChecker visitor = new KindChecker( Kind.DOC_EXCLUDE );
+            KindChecker visitor = new KindChecker( Kind.MQL_EXCLUDE );
             pair.left.accept( visitor );
             if ( visitor.containsKind ) {
                 items.add( name + ":1" );
@@ -140,7 +140,7 @@ public class MongoProject extends Project implements MongoRel {
                 continue;
             }
 
-            visitor = new KindChecker( Kind.DOC_UNWIND );
+            visitor = new KindChecker( Kind.UNWIND );
             pair.left.accept( visitor );
             if ( visitor.containsKind ) {
                 // $unwinds need to projected out else $unwind is not possible

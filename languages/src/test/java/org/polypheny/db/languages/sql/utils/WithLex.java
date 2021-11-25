@@ -21,7 +21,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.polypheny.db.core.Lex;
+import org.polypheny.db.core.enums.Lex;
 
 
 /**

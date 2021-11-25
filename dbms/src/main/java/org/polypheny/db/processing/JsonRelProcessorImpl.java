@@ -16,9 +16,9 @@
 
 package org.polypheny.db.processing;
 
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Node;
 import org.polypheny.db.core.QueryParameters;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;

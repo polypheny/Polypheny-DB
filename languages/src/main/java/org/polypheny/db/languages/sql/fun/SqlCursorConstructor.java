@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.Call;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Validator;
-import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.validate.Validator;
+import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelect;

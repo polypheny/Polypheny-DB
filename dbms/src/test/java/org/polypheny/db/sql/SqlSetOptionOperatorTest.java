@@ -22,7 +22,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.sql.SqlCall;

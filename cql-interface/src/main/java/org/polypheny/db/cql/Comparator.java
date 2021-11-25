@@ -16,8 +16,8 @@
 
 package org.polypheny.db.cql;
 
-import org.polypheny.db.core.BinaryOperator;
 import org.polypheny.db.core.StdOperatorRegistry;
+import org.polypheny.db.core.nodes.BinaryOperator;
 import org.polypheny.db.core.operators.OperatorName;
 
 

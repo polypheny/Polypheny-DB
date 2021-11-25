@@ -1,15 +1,18 @@
 package org.polypheny.db.core.operators;
 
+import java.util.Arrays;
+import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.core.AggFunction;
-import org.polypheny.db.core.BinaryOperator;
-import org.polypheny.db.core.Call;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.Function;
-import org.polypheny.db.core.Literal;
-import org.polypheny.db.core.Node;
-import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.TrimFunction;
+import org.polypheny.db.core.LangFunctionOperator;
+import org.polypheny.db.core.fun.AggFunction;
+import org.polypheny.db.core.fun.TrimFunction;
+import org.polypheny.db.core.nodes.BinaryOperator;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.Function;
+import org.polypheny.db.core.nodes.Literal;
+import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.nodes.Operator;
 
 @Getter
 public enum OperatorName {
@@ -1281,7 +1284,61 @@ public enum OperatorName {
      *
      * If {@code p} is a pattern then {@code {- p -} }} is a pattern that excludes {@code p} from the output.
      */
-    PATTERN_EXCLUDE( Operator.class );
+    PATTERN_EXCLUDE( Operator.class ),
+
+    //-------------------------------------------------------------
+    //                   SET OPERATORS
+    //-------------------------------------------------------------
+
+    MQL_EQUALS( LangFunctionOperator.class ),
+
+    MQL_SIZE_MATCH( LangFunctionOperator.class ),
+
+    MQL_JSON_MATCH( LangFunctionOperator.class ),
+
+    MQL_REGEX_MATCH( LangFunctionOperator.class ),
+
+    MQL_TYPE_MATCH( LangFunctionOperator.class ),
+
+    MQL_QUERY_VALUE( LangFunctionOperator.class ),
+
+    MQL_SLICE( LangFunctionOperator.class ),
+
+    MQL_ITEM( LangFunctionOperator.class ),
+
+    MQL_EXCLUDE( LangFunctionOperator.class ),
+
+    MQL_ADD_FIELDS( LangFunctionOperator.class ),
+
+    MQL_UPDATE_MIN( LangFunctionOperator.class ),
+
+    MQL_UPDATE_MAX( LangFunctionOperator.class ),
+
+    MQL_UPDATE_ADD_TO_SET( LangFunctionOperator.class ),
+
+    MQL_UPDATE_RENAME( LangFunctionOperator.class ),
+
+    MQL_UPDATE_REPLACE( LangFunctionOperator.class ),
+
+    MQL_UPDATE_REMOVE( LangFunctionOperator.class ),
+
+    MQL_UPDATE( LangFunctionOperator.class ),
+
+    MQL_ELEM_MATCH( LangFunctionOperator.class ),
+
+    MQL_UNWIND( LangFunctionOperator.class ),
+
+    MQL_EXISTS( LangFunctionOperator.class ),
+
+    MQL_LT( LangFunctionOperator.class ),
+
+    MQL_GT( LangFunctionOperator.class ),
+
+    MQL_LTE( LangFunctionOperator.class ),
+
+    MQL_GTE( LangFunctionOperator.class ),
+
+    MQL_JSONIFY( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;
@@ -1291,4 +1348,12 @@ public enum OperatorName {
         this.clazz = clazz;
     }
 
+
+    final public static List<OperatorName> MQL_OPERATORS = Arrays.asList(
+            MQL_EQUALS,
+            MQL_GT,
+            MQL_GTE,
+            MQL_LT,
+            MQL_LTE
+    );
 }

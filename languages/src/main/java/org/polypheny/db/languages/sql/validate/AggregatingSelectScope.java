@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;

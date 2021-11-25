@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.Collections;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;

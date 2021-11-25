@@ -19,8 +19,8 @@ package org.polypheny.db.languages.sql.validate;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;

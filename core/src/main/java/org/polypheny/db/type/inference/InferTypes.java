@@ -19,7 +19,7 @@ package org.polypheny.db.type.inference;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;

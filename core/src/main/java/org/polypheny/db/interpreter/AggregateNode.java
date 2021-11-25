@@ -58,7 +58,7 @@ import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.Conformance;
-import org.polypheny.db.core.ConformanceEnum;
+import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.interpreter.Row.RowBuilder;
 import org.polypheny.db.rel.core.Aggregate;

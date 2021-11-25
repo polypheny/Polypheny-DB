@@ -19,7 +19,7 @@ package org.polypheny.db.restapi;
 
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.fun.AggFunction;
 
 
 public class RequestColumn {

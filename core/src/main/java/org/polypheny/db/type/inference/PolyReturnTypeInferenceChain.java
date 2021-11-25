@@ -18,7 +18,7 @@ package org.polypheny.db.type.inference;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 
 

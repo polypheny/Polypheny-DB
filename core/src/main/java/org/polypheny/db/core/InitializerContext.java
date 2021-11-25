@@ -17,6 +17,7 @@
 package org.polypheny.db.core;
 
 
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 

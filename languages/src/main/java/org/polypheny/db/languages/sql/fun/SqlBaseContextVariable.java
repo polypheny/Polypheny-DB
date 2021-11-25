@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Monotonicity;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -35,7 +35,7 @@ public class SqlBaseContextVariable extends SqlFunction {
     /**
      * Creates a SqlBaseContextVariable.
      */
-    protected SqlBaseContextVariable( String name, PolyReturnTypeInference returnType, FunctionCategory category ) {
+    public SqlBaseContextVariable( String name, PolyReturnTypeInference returnType, FunctionCategory category ) {
         super( name, Kind.OTHER_FUNCTION, returnType, null, OperandTypes.NILADIC, category );
     }
 

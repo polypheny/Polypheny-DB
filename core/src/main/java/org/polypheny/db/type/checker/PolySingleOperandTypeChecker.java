@@ -17,8 +17,8 @@
 package org.polypheny.db.type.checker;
 
 
-import org.polypheny.db.core.CallBinding;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.CallBinding;
+import org.polypheny.db.core.nodes.Node;
 
 
 /**

@@ -16,9 +16,9 @@
 
 package org.polypheny.db.languages;
 
-import org.polypheny.db.core.Node;
 import org.polypheny.db.core.RelFieldTrimmer;
 import org.polypheny.db.core.RelStructuredTypeFlattener;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;

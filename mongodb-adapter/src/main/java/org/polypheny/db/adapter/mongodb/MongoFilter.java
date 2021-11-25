@@ -56,9 +56,9 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
-import org.polypheny.db.core.BsonUtil;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.util.BsonUtil;
 import org.polypheny.db.languages.sql.fun.SqlItemOperator;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -273,16 +273,16 @@ public class MongoFilter extends Filter implements MongoRel {
                 case LIKE:
                     translateLike( (RexCall) node );
                     return;
-                case DOC_SIZE_MATCH:
+                case MQL_SIZE_MATCH:
                     translateSize( (RexCall) node );
                     return;
-                case DOC_REGEX_MATCH:
+                case MQL_REGEX_MATCH:
                     translateRegex( (RexCall) node );
                     return;
-                case DOC_TYPE_MATCH:
+                case MQL_TYPE_MATCH:
                     translateTypeMatch( (RexCall) node );
                     return;
-                case DOC_ELEM_MATCH:
+                case MQL_ELEM_MATCH:
                     translateElemMatch( (RexCall) node );
                     return;
                 case IS_NOT_TRUE:
@@ -297,7 +297,7 @@ public class MongoFilter extends Filter implements MongoRel {
                 case OR:
                     translateOr( (RexCall) node );
                     return;
-                case DOC_EXISTS:
+                case MQL_EXISTS:
                     translateExists( (RexCall) node );
                     return;
                 case DYNAMIC_PARAM:
@@ -555,7 +555,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         /**
-         * Translates a {@link Kind#DOC_TYPE_MATCH } to its {"$type": 3} form
+         * Translates a {@link Kind#MQL_TYPE_MATCH } to its {"$type": 3} form
          *
          * @param node the untranslated node
          */
@@ -619,7 +619,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         /**
-         * Translates a {@link Kind#DOC_FIELD } to its {"$test": true} form
+         * Translates a {@link Kind#MQL_QUERY_VALUE } to its {"$test": true} form
          *
          * @param call the untranslated node
          */
@@ -769,7 +769,7 @@ public class MongoFilter extends Filter implements MongoRel {
             BsonValue r;
             if ( left.isA( Kind.INPUT_REF ) ) {
                 l = new BsonString( "$" + getPhysicalName( (RexInputRef) left ) );
-            } else if ( left.isA( Kind.DOC_FIELD ) ) {
+            } else if ( left.isA( Kind.MQL_QUERY_VALUE ) ) {
                 l = new BsonString( "$" + translateDocValue( (RexCall) left ) );
             } else {
                 return false;
@@ -777,7 +777,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
             if ( left.isA( Kind.INPUT_REF ) ) {
                 r = new BsonString( "$" + getPhysicalName( (RexInputRef) right ) );
-            } else if ( left.isA( Kind.DOC_FIELD ) ) {
+            } else if ( left.isA( Kind.MQL_QUERY_VALUE ) ) {
                 r = new BsonString( "$" + translateDocValue( (RexCall) right ) );
             } else {
                 return false;
@@ -1032,7 +1032,7 @@ public class MongoFilter extends Filter implements MongoRel {
                         return true;
                     }
 
-                case DOC_FIELD:
+                case MQL_QUERY_VALUE:
                     return translateDocValue( op, (RexCall) left, right );
 
                 // fall through
@@ -1066,7 +1066,7 @@ public class MongoFilter extends Filter implements MongoRel {
                 return translateMod( (RexCall) left, right );
             }
 
-            if ( left.getKind() == Kind.DOC_FIELD ) {
+            if ( left.getKind() == Kind.MQL_QUERY_VALUE ) {
                 return translateDocValue( op, (RexCall) left, right );
             }
             if ( left.getKind() == Kind.CAST ) {
@@ -1159,7 +1159,7 @@ public class MongoFilter extends Filter implements MongoRel {
             } else if ( r.isA( Kind.DYNAMIC_PARAM ) ) {
                 item = new BsonDynamic( (RexDynamicParam) r );
             } else if ( r instanceof RexCall ) {
-                if ( r.getKind() == Kind.DOC_FIELD ) {
+                if ( r.getKind() == Kind.MQL_QUERY_VALUE ) {
                     item = new BsonString( "$" + translateDocValue( (RexCall) r ) );
                 } else {
                     item = getArray( (RexCall) r );

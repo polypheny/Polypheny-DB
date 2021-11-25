@@ -31,7 +31,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.cottontail.rel.CottontailFilter.CompoundPredicate.Op;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;

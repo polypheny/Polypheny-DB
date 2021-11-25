@@ -17,8 +17,8 @@
 package org.polypheny.db.type.inference;
 
 
-import org.polypheny.db.core.OperatorBinding;
-import org.polypheny.db.core.OperatorImpl;
+import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.core.nodes.OperatorImpl;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.Glossary;
 

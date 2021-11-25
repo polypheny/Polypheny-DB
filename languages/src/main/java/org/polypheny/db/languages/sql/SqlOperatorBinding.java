@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql;
 
 
-import org.polypheny.db.core.Operator;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 
 

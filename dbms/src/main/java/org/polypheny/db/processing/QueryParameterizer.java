@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -206,7 +206,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.getKind().belongsTo( Kind.DOC_KIND ) ) {
+        if ( call.getKind().belongsTo( Kind.MQL_KIND ) ) {
             return call;
         } else if ( call.op instanceof SqlArrayValueConstructor ) {
             int i = index.getAndIncrement();

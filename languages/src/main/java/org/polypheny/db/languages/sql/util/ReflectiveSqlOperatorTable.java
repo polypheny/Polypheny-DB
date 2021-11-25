@@ -23,12 +23,13 @@ import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Identifier;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.LangFunctionOperator;
 import org.polypheny.db.core.OperatorTable;
 import org.polypheny.db.core.StdOperatorRegistry;
-import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -52,26 +53,12 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
      * Performs post-constructor initialization of an operator table. It can't be part of the constructor, because the subclass constructor needs to complete first.
      */
     public final void init() {
-        // Use reflection to register the expressions stored in public fields.
-        /*for ( Field field : getClass().getFields() ) {
-            try {
-                if ( SqlFunction.class.isAssignableFrom( field.getType() ) ) {
-                    SqlFunction op = (SqlFunction) field.get( this );
-                    if ( op != null ) {
-                        register( op );
-                    }
-                } else if ( SqlOperator.class.isAssignableFrom( field.getType() ) ) {
-                    SqlOperator op = (SqlOperator) field.get( this );
-                    register( op );
-                }
-            } catch ( IllegalArgumentException | IllegalAccessException e ) {
-                Util.throwIfUnchecked( e.getCause() );
-                throw new RuntimeException( e.getCause() );
-            }
-        }*/
         StdOperatorRegistry
                 .getAllOperators()
-                .forEach( ( operatorName, operator ) -> register( operator ) );
+                .entrySet()
+                .stream()
+                .filter( e -> !(e instanceof LangFunctionOperator) )
+                .forEach( entry -> register( entry.getValue() ) );
     }
 
 

@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql;
 
 
 import java.util.function.Predicate;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil.ToTreeListItem;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;

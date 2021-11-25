@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.validate;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import org.polypheny.db.core.Modality;
+import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.rel.type.RelDataType;

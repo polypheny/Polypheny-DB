@@ -45,9 +45,9 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.ConnectionProperty;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.core.ConformanceEnum;
-import org.polypheny.db.core.Lex;
-import org.polypheny.db.core.NullCollation;
+import org.polypheny.db.core.enums.ConformanceEnum;
+import org.polypheny.db.core.enums.Lex;
+import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.util.Bug;
 
 

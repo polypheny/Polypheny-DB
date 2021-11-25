@@ -34,7 +34,7 @@
 package org.polypheny.db.rel.rules;
 
 
-import org.polypheny.db.core.SemiJoinType;
+import org.polypheny.db.core.enums.SemiJoinType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;

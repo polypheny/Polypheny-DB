@@ -17,8 +17,8 @@
 package org.polypheny.db.languages;
 
 import java.util.function.Supplier;
-import org.polypheny.db.core.Literal;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Literal;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.languages.rex.RexSqlStandardConvertletTable;
 import org.polypheny.db.languages.rex.RexToSqlNodeConverter;
 import org.polypheny.db.languages.rex.RexToSqlNodeConverterImpl;

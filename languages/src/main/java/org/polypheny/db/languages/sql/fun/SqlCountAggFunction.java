@@ -17,12 +17,12 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.Call;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.SplittableAggFunction;
-import org.polypheny.db.core.Validator;
-import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.fun.SplittableAggFunction;
+import org.polypheny.db.core.validate.Validator;
+import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.core.fun.CountAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlSyntax;

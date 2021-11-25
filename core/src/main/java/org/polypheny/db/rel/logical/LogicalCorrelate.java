@@ -35,7 +35,7 @@ package org.polypheny.db.rel.logical;
 
 
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.SemiJoinType;
+import org.polypheny.db.core.enums.SemiJoinType;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;

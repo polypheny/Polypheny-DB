@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;

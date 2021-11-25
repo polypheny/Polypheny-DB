@@ -19,7 +19,7 @@ package org.polypheny.db.languages.rex;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 
 

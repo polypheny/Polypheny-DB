@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.Monotonicity;
+import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.util.Litmus;

@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql;
 
 
-import org.polypheny.db.core.DynamicParam;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Monotonicity;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.DynamicParam;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.NodeVisitor;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;

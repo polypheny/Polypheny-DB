@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -30,7 +30,7 @@ import org.polypheny.db.languages.sql.SqlWriter;
  */
 public class SqlConvertFunction extends SqlFunction {
 
-    protected SqlConvertFunction( String name ) {
+    public SqlConvertFunction( String name ) {
         super(
                 name,
                 Kind.OTHER_FUNCTION,

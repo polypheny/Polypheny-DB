@@ -17,10 +17,10 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Monotonicity;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
@@ -42,7 +42,7 @@ public class SqlAbstractTimeFunction extends SqlFunction {
     private final PolyType typeName;
 
 
-    protected SqlAbstractTimeFunction( String name, PolyType typeName ) {
+    public SqlAbstractTimeFunction( String name, PolyType typeName ) {
         super( name, Kind.OTHER_FUNCTION, null, null, OTC_CUSTOM, FunctionCategory.TIMEDATE );
         this.typeName = typeName;
     }

@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;

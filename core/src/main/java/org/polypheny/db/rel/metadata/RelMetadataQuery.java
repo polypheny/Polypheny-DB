@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptTable;

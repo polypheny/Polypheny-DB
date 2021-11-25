@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import com.google.common.base.Preconditions;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.fun.AnyValueAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;

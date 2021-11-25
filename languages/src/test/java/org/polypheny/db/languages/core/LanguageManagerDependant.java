@@ -17,7 +17,6 @@
 package org.polypheny.db.languages.core;
 
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.LanguageManagerImpl;
 
 public class LanguageManagerDependant {
 

@@ -17,9 +17,9 @@
 package org.polypheny.db.languages.sql.fun;
 
 
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Monotonicity;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlCall;

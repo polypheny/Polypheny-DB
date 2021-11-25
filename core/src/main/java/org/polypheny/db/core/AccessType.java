@@ -19,6 +19,7 @@ package org.polypheny.db.core;
 
 import java.util.EnumSet;
 import java.util.Locale;
+import org.polypheny.db.core.enums.AccessEnum;
 
 
 /**

@@ -17,8 +17,8 @@
 package org.polypheny.db.languages.sql;
 
 
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Optionality;

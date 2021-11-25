@@ -60,7 +60,7 @@ import java.util.regex.Pattern;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Convention;

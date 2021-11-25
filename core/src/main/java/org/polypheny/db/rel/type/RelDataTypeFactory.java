@@ -44,7 +44,7 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.Collation;
 import org.polypheny.db.core.IntervalQualifier;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Glossary;

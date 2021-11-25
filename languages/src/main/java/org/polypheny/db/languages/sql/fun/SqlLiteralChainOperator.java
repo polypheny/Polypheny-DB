@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql.fun;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.Collation;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -55,7 +55,7 @@ import org.polypheny.db.util.Util;
  */
 public class SqlLiteralChainOperator extends SqlSpecialOperator {
 
-    SqlLiteralChainOperator() {
+    public SqlLiteralChainOperator() {
         super(
                 "$LiteralChain",
                 Kind.LITERAL_CHAIN,

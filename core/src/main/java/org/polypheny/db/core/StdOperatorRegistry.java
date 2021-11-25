@@ -20,6 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.core.fun.AggFunction;
+import org.polypheny.db.core.nodes.BinaryOperator;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 
 public class StdOperatorRegistry {
@@ -27,26 +31,24 @@ public class StdOperatorRegistry {
     private static final HashMap<OperatorName, Operator> registry = new HashMap<>();
 
 
-    public synchronized static boolean register( OperatorName key, Operator operator ) {
-        boolean isReplaced = registry.containsKey( key );
-        operator.setOperatorName( key );
-        registry.put( key, operator );
-        return isReplaced;
+    public synchronized static void register( OperatorName name, Operator operator ) {
+        operator.setOperatorName( name );
+        registry.put( name, operator );
     }
 
 
-    public static Operator get( OperatorName key ) {
-        return registry.get( key );
+    public static Operator get( OperatorName name ) {
+        return registry.get( name );
     }
 
 
-    public static <T extends Operator> T get( OperatorName key, Class<T> clazz ) {
-        return (T) clazz.cast( get( key ) );
+    public static <T extends Operator> T get( OperatorName name, Class<T> clazz ) {
+        return (T) clazz.cast( get( name ) );
     }
 
 
-    public static AggFunction getAgg( OperatorName key ) {
-        return (AggFunction) get( key );
+    public static AggFunction getAgg( OperatorName name ) {
+        return (AggFunction) get( name );
     }
 
 
@@ -56,7 +58,7 @@ public class StdOperatorRegistry {
 
 
     public static <T extends Operator> Map<OperatorName, T> getMatchingOperators( Class<T> clazz ) {
-        return registry
+        return getAllOperators()
                 .entrySet()
                 .stream()
                 .filter( e -> !clazz.isInstance( e ) )

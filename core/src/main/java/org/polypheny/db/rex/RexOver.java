@@ -38,7 +38,7 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.polypheny.db.core.Operator;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Util;

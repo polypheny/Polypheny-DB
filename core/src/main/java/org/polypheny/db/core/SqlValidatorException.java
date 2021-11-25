@@ -19,6 +19,7 @@ package org.polypheny.db.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.util.PolyphenyDbValidatorException;
 

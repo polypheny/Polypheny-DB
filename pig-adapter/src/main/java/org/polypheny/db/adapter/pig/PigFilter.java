@@ -34,8 +34,8 @@
 package org.polypheny.db.adapter.pig;
 
 
-import static org.polypheny.db.core.Kind.INPUT_REF;
-import static org.polypheny.db.core.Kind.LITERAL;
+import static org.polypheny.db.core.enums.Kind.INPUT_REF;
+import static org.polypheny.db.core.enums.Kind.LITERAL;
 
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;

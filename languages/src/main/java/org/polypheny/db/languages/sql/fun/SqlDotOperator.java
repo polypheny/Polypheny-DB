@@ -19,16 +19,16 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.Arrays;
 import org.polypheny.db.core.BasicNodeVisitor.ArgHandler;
-import org.polypheny.db.core.Call;
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.NodeVisitor;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.ParserPos;
-import org.polypheny.db.core.Validator;
-import org.polypheny.db.core.ValidatorScope;
-import org.polypheny.db.core.ValidatorUtil;
+import org.polypheny.db.core.validate.Validator;
+import org.polypheny.db.core.validate.ValidatorScope;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -55,7 +55,7 @@ import org.polypheny.db.util.Static;
  */
 public class SqlDotOperator extends SqlSpecialOperator {
 
-    SqlDotOperator() {
+    public SqlDotOperator() {
         super( "DOT", Kind.DOT, 100, true, null, null, null );
     }
 

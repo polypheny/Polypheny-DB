@@ -46,7 +46,7 @@ import java.util.Locale;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;

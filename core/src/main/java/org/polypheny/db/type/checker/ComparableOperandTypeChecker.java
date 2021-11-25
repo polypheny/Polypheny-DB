@@ -18,8 +18,8 @@ package org.polypheny.db.type.checker;
 
 
 import java.util.Objects;
-import org.polypheny.db.core.CallBinding;
-import org.polypheny.db.core.OperatorBinding;
+import org.polypheny.db.core.nodes.CallBinding;
+import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
 

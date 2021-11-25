@@ -34,7 +34,7 @@
 package org.polypheny.db.rel.metadata;
 
 
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.util.BuiltInMethod;
 

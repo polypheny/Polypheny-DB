@@ -19,9 +19,9 @@ package org.polypheny.db.languages.sql.fun;
 
 import java.util.List;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Kind;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;

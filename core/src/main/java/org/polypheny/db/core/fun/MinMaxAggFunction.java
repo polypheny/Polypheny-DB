@@ -16,8 +16,6 @@
 
 package org.polypheny.db.core.fun;
 
-import org.polypheny.db.core.AggFunction;
-
 public interface MinMaxAggFunction extends AggFunction {
 
 }

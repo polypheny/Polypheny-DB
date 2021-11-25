@@ -20,12 +20,12 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.Call;
-import org.polypheny.db.core.ExplicitOperatorBinding;
-import org.polypheny.db.core.Kind;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.ExplicitOperatorBinding;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.StdOperatorRegistry;
-import org.polypheny.db.core.Validator;
-import org.polypheny.db.core.ValidatorScope;
+import org.polypheny.db.core.validate.Validator;
+import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -59,7 +59,7 @@ public class SqlInOperator extends SqlBinaryOperator {
      *
      * @param kind IN or NOT IN
      */
-    SqlInOperator( Kind kind ) {
+    public SqlInOperator( Kind kind ) {
         this( kind.sql, kind );
         assert kind == Kind.IN || kind == Kind.NOT_IN;
     }

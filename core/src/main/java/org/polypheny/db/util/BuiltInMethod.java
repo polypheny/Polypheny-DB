@@ -76,7 +76,7 @@ import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
-import org.polypheny.db.core.ExplainLevel;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.json.JsonConstructorNullClause;
 import org.polypheny.db.core.json.JsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.core.json.JsonQueryWrapperBehavior;

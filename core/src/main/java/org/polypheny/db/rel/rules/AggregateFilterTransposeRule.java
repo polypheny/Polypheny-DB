@@ -37,7 +37,7 @@ package org.polypheny.db.rel.rules;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptRuleOperand;

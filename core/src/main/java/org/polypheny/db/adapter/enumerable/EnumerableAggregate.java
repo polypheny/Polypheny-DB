@@ -54,7 +54,7 @@ import org.polypheny.db.adapter.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.AggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.AggFunction;
+import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;

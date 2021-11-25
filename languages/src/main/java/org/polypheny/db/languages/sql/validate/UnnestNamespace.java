@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.sql.validate;
 
 
-import org.polypheny.db.core.ValidatorTable;
+import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;

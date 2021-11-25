@@ -35,8 +35,8 @@ package org.polypheny.db.rel.core;
 
 
 import java.util.List;
-import org.polypheny.db.core.CoreUtil;
-import org.polypheny.db.core.UnnestOperator;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.fun.UnnestOperator;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;

@@ -20,11 +20,11 @@ package org.polypheny.db.languages.sql.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.core.FunctionCategory;
-import org.polypheny.db.core.Identifier;
-import org.polypheny.db.core.Operator;
 import org.polypheny.db.core.OperatorTable;
-import org.polypheny.db.core.Syntax;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
 

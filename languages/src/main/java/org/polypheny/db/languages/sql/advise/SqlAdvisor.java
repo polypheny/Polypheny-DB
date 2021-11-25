@@ -34,7 +34,7 @@ import org.polypheny.db.core.NodeParseException;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.core.SqlMoniker;
 import org.polypheny.db.core.SqlMonikerImpl;
-import org.polypheny.db.core.SqlMonikerType;
+import org.polypheny.db.core.enums.SqlMonikerType;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlIdentifier;

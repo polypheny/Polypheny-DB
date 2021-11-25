@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.core.ExecutableStatement;
-import org.polypheny.db.core.Node;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.ParserPos;
 import org.polypheny.db.languages.sql.SqlDrop;
 import org.polypheny.db.languages.sql.SqlIdentifier;
