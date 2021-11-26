@@ -4629,14 +4629,13 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogTable> getTablesForPeriodicProcessing() {
         List<CatalogTable> procTables = new ArrayList<>();
-        Iterator<Long> iterator = frequencyDependentTables.iterator();
-        while ( iterator.hasNext() ) {
+        for ( Iterator<Long> iterator = frequencyDependentTables.iterator(); iterator.hasNext(); ) {
             long tableId = -1;
             try {
                 tableId = iterator.next();
                 procTables.add( getTable( tableId ) );
             } catch ( UnknownTableIdRuntimeException e ) {
-                frequencyDependentTables.remove( tableId );
+                iterator.remove();
             }
         }
 

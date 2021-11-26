@@ -16,6 +16,7 @@
 
 package org.polypheny.db.misc;
 
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -39,7 +40,6 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
-import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
@@ -653,8 +653,8 @@ public class HorizontalPartitioningTest {
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
                 Config c2 = cm.getConfig( "runtime/queueProcessingInterval" );
-                ((ConfigEnum) c1).setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
-                ((ConfigEnum) c2).setEnum( TaskSchedulingType.EVERY_SECOND );
+                c1.setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
+                c2.setEnum( TaskSchedulingType.EVERY_SECOND );
 
                 statement.executeUpdate( "CREATE TABLE temperaturetest( "
                         + "tprimary INTEGER NOT NULL, "
@@ -679,7 +679,7 @@ public class HorizontalPartitioningTest {
                     Assert.assertEquals( 2, table.partitionProperty.getPartitionGroupIds().size() );
                     Assert.assertEquals( 20, table.partitionProperty.getPartitionIds().size() );
 
-                    // Check if initially as many partitionPlacements are created as requested and stored in the partitionproperty
+                    // Check if initially as many partitionPlacements are created as requested and stored in the partition property
                     Assert.assertEquals( table.partitionProperty.getPartitionIds().size(), Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
                     // Retrieve partition distribution
