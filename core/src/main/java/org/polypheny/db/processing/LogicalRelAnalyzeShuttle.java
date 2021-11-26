@@ -87,16 +87,26 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
         }
 
         Map<Long, String> result = new HashMap<>();
-        if ( availableColumnKeys.size() > this.rexShuttle.usedIds.size() && availableColumnNames.size() > this.rexShuttle.usedIds.size() ) {
+        //if ( availableColumnKeys.size() > this.rexShuttle.usedIds.size() && availableColumnNames.size() > this.rexShuttle.usedIds.size() ) {
             for ( int usedId : this.rexShuttle.usedIds ) {
+
+                // The number of UsedIds could be greater than number of availableColumns. This occurs if a statement contains a column more than two times.
+                // E.g.col21 is present in Projection & in Filter.
+                // However, since  availableColumns is a map it only stores the present ColumnIds one time. But rexShuttle.usedIds tracks every positional occurence.
+                //  Therefore, this could result in more entries. We consequently need to skip those
+                if ( usedId >= availableColumnKeys.size() ) {
+                    continue;
+                }
                 result.put(
                         availableColumnKeys.get( usedId ),
                         availableColumnNames.get( usedId )
                 );
             }
-        } else {
+        /*} else {
             result = this.availableColumns;
         }
+
+         */
 
         return result;
     }
