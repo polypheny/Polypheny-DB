@@ -4096,7 +4096,7 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( e );
         }
 
-        // get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        // Get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
         CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
         PartitionProperty partitionProperty = PartitionProperty.builder()
                 .partitionType( PartitionType.NONE )
