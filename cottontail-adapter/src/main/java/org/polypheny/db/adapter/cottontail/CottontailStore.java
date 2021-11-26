@@ -293,7 +293,6 @@ public class CottontailStore extends DataStore {
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             /* Prepare DROP TABLE message. */
-            //final String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getAdapterId(), combinedTable.id );
             final String physicalTableName = partitionPlacement.physicalTableName;
             final EntityName tableEntity = EntityName.newBuilder()
                     .setSchema( this.currentSchema.getCottontailSchema() )
@@ -429,29 +428,19 @@ public class CottontailStore extends DataStore {
             final TupleIterator iterator = this.wrapper.query( query );
             final List<String> columnNames = iterator.getSimpleNames();
 
-            /* Determine which column was dropped. */
-            int idx = 0;
-            for ( String c : columnNames ) {
-                if ( c.equals( oldPhysicalColumnName ) ) {
-                    break;
-                }
-                idx++;
-            }
-            final int droppedIndex = idx;
-
             /* Create insert messages for remaining columns- */
             iterator.forEachRemaining( t -> {
                 final InsertMessage.Builder insert = InsertMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId(txId) ).setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ) ) );
-                int i = 0;
-                for ( Literal l : t.getRaw().getDataList() ) {
-                    if ( i != droppedIndex ) {
-                        insert.addElementsBuilder().setColumn( ColumnName.newBuilder().setName( columnNames.get( i++ ) ) ).setValue( l );
+                for (int i = 0; i< columnNames.size(); i++) {
+                    final String name = columnNames.get( i );
+                    if ( !name.equals( oldPhysicalColumnName )) {
+                        insert.addElementsBuilder().setColumn( ColumnName.newBuilder().setName( columnNames.get( i ) ) ).setValue( t.getRaw().getData( i ) );
                     }
                 }
                 if ( !this.wrapper.insert( insert.build() ) ) {
                     throw new RuntimeException( "Failed to migrate data." );
                 }
-            } );
+            });
 
             catalog.updatePartitionPlacementPhysicalNames( getAdapterId(), partitionPlacement.partitionId, partitionPlacement.physicalSchemaName, newPhysicalTableName );
 
