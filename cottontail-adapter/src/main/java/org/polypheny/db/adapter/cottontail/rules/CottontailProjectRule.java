@@ -69,6 +69,11 @@ public class CottontailProjectRule extends CottontailConverterRule {
                 if ( !(CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() )) ) {
                     return false;
                 }
+                for ( RexNode node : rexCall.getOperands() ) {
+                    if ( node instanceof RexCall) {
+                        return false; /* TODO: Nested function calls in NNS context are currently not supported. */
+                    }
+                }
             } else {
                 return false;
             }
