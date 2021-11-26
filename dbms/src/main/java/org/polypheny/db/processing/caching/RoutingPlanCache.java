@@ -51,7 +51,7 @@ public class RoutingPlanCache {
     private final Cache<Pair<String, Set<Long>>, List<CachedProposedRoutingPlan>> planCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
-    private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
+    private final AtomicLong missesCounter = new AtomicLong(); // Number of requests when the cache didn't contain the value
 
 
     public RoutingPlanCache() {

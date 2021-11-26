@@ -50,14 +50,14 @@ public class SimpleRouter extends AbstractDqlRouter {
 
     @Override
     protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        // do same as without any partitioning
+        // Do same as without any partitioning
         return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
     }
 
 
     @Override
     protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        // get placements and convert i
+        // Get placements and convert into placement distribution
         final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
 
         // Only one builder available

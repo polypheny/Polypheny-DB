@@ -252,7 +252,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         logicalRoot.rel.accept( new DataModelShuttle() );
 
-        //
         // Analyze step
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Analyze" );
@@ -267,7 +266,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
         if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {
-            // Subscribe only when aggregation active
+            // Subscribe only when aggregation is active
             executionTimeMonitor.subscribe( this, logicalQueryInformation.getQueryClass() );
         }
 
@@ -301,7 +300,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 this.acquireLock( isAnalyze, logicalRoot );
             }
 
-            //
             // Index Update
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Locking" );
@@ -313,7 +311,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
             }
 
-            //
             // Constraint Enforcement Rewrite
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Index Update" );
@@ -325,7 +322,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 constraintsRoot = constraintEnforcer.enforce( constraintsRoot, statement );
             }
 
-            //
             // Index Lookup Rewrite
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Constraint Enforcement" );
@@ -341,7 +337,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().start( "Routing" );
             }
 
-            //
             // Routing
             if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() &&
                     !indexLookupRoot.kind.belongsTo( SqlKind.DML )
@@ -390,7 +385,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().stop( "Parameter validation" );
         }
 
-        //
         // Parameterize
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Parameterize" );
@@ -419,7 +413,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().stop( "Parameterize" );
         }
 
-        //
         // Implementation Caching
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Implementation Caching" );
@@ -461,14 +454,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         optimalNodeList = new ArrayList<>( Collections.nCopies( optimalNodeList.size(), Optional.empty() ) );
 
-        //
         // Plan Caching
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Plan Caching" );
         }
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
             if ( this.isQueryPlanCachingActive( statement, proposedRoutingPlans.get( i ).getRoutedRoot() ) ) {
-                // should always be the case
+                // Should always be the case
                 RelNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).rel );
                 if ( cachedElem != null ) {
                     optimalNodeList.set( i, Optional.of( cachedElem ) );
@@ -476,14 +468,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
-        //
         // Planning & Optimization
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Plan Caching" );
             statement.getProcessingDuration().start( "Planning & Optimization" );
         }
 
-        // optimalNode same size as routed, parametrized and signature
+        // OptimalNode same size as routed, parametrized and signature
         for ( int i = 0; i < optimalNodeList.size(); i++ ) {
             if ( optimalNodeList.get( i ).isPresent() ) {
                 continue;
@@ -497,7 +488,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
-        //
         // Implementation
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Planning & Optimization" );
@@ -519,7 +509,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
 
-            //
             // Cache implementation
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
                 if ( optimalRoot.rel.isImplementationCacheable() ) {
@@ -543,7 +532,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
-        // finally, all optionals should be of certain values.
+        // Finally, all optionals should be of certain values.
         return new ProposedImplementations(
                 proposedRoutingPlans,
                 optimalNodeList.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
@@ -565,6 +554,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ) {
+
         // Locking
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Locking" );
@@ -1102,18 +1092,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( log.isTraceEnabled() ) {
             log.trace( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", root.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        /*if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    RelOptUtil.dumpPlan( "Physical Query Plan", root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
-        }*/
 
         final RelDataType jdbcType = QueryProcessorHelpers.makeStruct( root.rel.getCluster().getTypeFactory(), root.validatedRowType );
         List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
@@ -1293,10 +1271,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     /**
-     * Traverse all TablesScans used during execution and identifies for teh corresponding the table all
-     * associated partition that needs to be accessed, on the basis of the provided partitionValues identified in a LogicalFilter
+     * Traverses all TablesScans used during execution and identifies for the corresponding table all
+     * associated partitions that needs to be accessed, on the basis of the provided partitionValues identified in a LogicalFilter
      *
-     * It is necessary to associate the partitoinIds again with the TableScanId and not with the table itself. Because a table could be present
+     * It is necessary to associate the partitionIds again with the TableScanId and not with the table itself. Because a table could be present
      * multiple times within one query. The aggregation per table would lead to data loss
      *
      * @param rel RelNode to be processed
@@ -1402,7 +1380,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void monitorResult( ProposedRoutingPlan selectedPlan ) {
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
             StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
-            //eventData.setDurations( statement.getTotalDuration().asJson() );
             eventData.setRelCompareString( selectedPlan.getRoutedRoot().rel.relCompareString() );
             if ( selectedPlan.getOptionalPhysicalQueryClass().isPresent() ) {
                 eventData.setPhysicalQueryId( selectedPlan.getOptionalPhysicalQueryClass().get() );
@@ -1426,6 +1403,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      * Adds all information to teh accessedPartitions directly in the StatementEvent.
      *
      * Also remaps scanId to tableId to correctly update the accessed partition List
+     *
+     * @param eventData monitoring data to be updated
      */
     private void finalizeAccessedPartitions( StatementEvent eventData ) {
         Map<Integer, List<Long>> partitionsInQueryInformation = eventData.getLogicalQueryInformation().getAccessedPartitions();

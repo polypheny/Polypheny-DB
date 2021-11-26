@@ -117,7 +117,6 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
-
         }
 
         builders.clear();

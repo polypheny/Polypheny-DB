@@ -39,8 +39,8 @@ public interface PartitionManager {
     /**
      * Returns all placements of catalogTable and partitionIds
      *
-     * @param catalogTable The table we are looking for placements.
-     * @param partitionIds List of all asked partitions ids
+     * @param catalogTable Table to look for placements
+     * @param partitionIds List of all requested partitions ids
      * @return Returns map of AdapterId  -> [Map PartitionsId -> needed Columns Placements]
      */
     Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds );

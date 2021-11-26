@@ -58,18 +58,18 @@ public class RoutingPlanSelector {
         final double ratioPost = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
         final int n = routingPlans.size();
 
-        // calc pre-costs or set them to 0 for all entries.
+        // Calculate pre-costs or set them to 0 for all entries.
         boolean calcPreCosts = Math.abs( ratioPre ) >= RelOptUtil.EPSILON; // <=0
         List<Double> preCosts = calcPreCosts ? normalizeApproximatedCosts( approximatedCosts ) : Collections.nCopies( n, 0.0 );
 
-        // calc post-costs or set them to 0 for all entries.
+        // Calculate post-costs or set them to 0 for all entries.
         // If calculation is needed, get icarus original costs for printing debug output.
         boolean calcPostCosts = Math.abs( ratioPost ) >= RelOptUtil.EPSILON; // > 0
         Optional<List<Double>> icarusCosts;
         List<Double> postCosts;
         Optional<List<Double>> percentageCosts = Optional.empty();
         if ( calcPostCosts ) {
-            Pair<List<Double>, List<Double>> icarusResult = calcIcarusPostCosts( routingPlans, queryId );
+            Pair<List<Double>, List<Double>> icarusResult = calculateIcarusPostCosts( routingPlans, queryId );
             icarusCosts = Optional.of( icarusResult.right );
             postCosts = icarusResult.left;
         } else {
@@ -153,7 +153,7 @@ public class RoutingPlanSelector {
     }
 
 
-    private Pair<List<Double>, List<Double>> calcIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans, String queryId ) {
+    private Pair<List<Double>, List<Double>> calculateIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans, String queryId ) {
         final List<Long> postCosts = proposedRoutingPlans.stream()
                 .map( plan -> MonitoringServiceProvider.getInstance().getQueryPostCosts( plan.getPhysicalQueryClass() ).getExecutionTime() )
                 .collect( Collectors.toList() );
@@ -181,7 +181,7 @@ public class RoutingPlanSelector {
             return input;
         }
 
-        // Calc probabilities
+        // Calculate probabilities
         double hundredPercent = input.stream().mapToDouble( Double::doubleValue ).sum();
         return input.stream().map( cost -> cost / hundredPercent ).collect( Collectors.toList() );
     }

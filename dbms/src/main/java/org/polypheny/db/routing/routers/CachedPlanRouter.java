@@ -64,7 +64,6 @@ public class CachedPlanRouter extends BaseRouter {
             LogicalTable logicalTable = ((LogicalTable) table.getTable());
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
-            //val partitionIds = cachedPlan.physicalPlacementsOfPartitions.keySet();
             List<Long> partitionIds = catalogTable.partitionProperty.partitionIds;
             Map<Long, List<CatalogColumnPlacement>> placement = new HashMap<>();
             for ( long partition : partitionIds ) {

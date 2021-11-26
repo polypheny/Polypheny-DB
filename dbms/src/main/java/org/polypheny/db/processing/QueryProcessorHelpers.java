@@ -114,10 +114,7 @@ public class QueryProcessorHelpers {
         final String typeName = type.getPolyType().getTypeName();
         if ( type.getComponentType() != null ) {
             final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
-//            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
-//            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
             final ColumnMetaData.Rep rep = Rep.ARRAY;
-//            assert rep != null;
             return ColumnMetaData.array( componentType, typeName, rep );
         } else {
             int typeOrdinal = QueryProcessorHelpers.getTypeOrdinal( type );
@@ -130,7 +127,7 @@ public class QueryProcessorHelpers {
                     return ColumnMetaData.struct( columns );
                 case ExtraPolyTypes.GEOMETRY:
                     typeOrdinal = Types.VARCHAR;
-                    // fall through
+                    // Fall through
                 default:
                     final Type clazz = typeFactory.getJavaClass( Util.first( fieldType, type ) );
                     final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
