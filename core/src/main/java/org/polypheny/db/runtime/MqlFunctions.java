@@ -44,7 +44,7 @@ public class MqlFunctions {
      * This method extracts the provided the filter from the input.
      *
      * @param input an arbitrary object, from which the value is extracted
-     * @param filters a filter, in the form key1.key2.key3 -> [key1, key2, key3]
+     * @param filters a filter, in the form key1.key2.key3 {@code ->} [key1, key2, key3]
      * @return the extracted value or null if no value was matched
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -201,7 +201,7 @@ public class MqlFunctions {
      * Update method, which deletes the provided name
      *
      * @param input the full object/document, from which the values are removed
-     * @param names the name in a list form <pre>key1.key2.key3 -> [key1,key2,key3]</pre>
+     * @param names the name in a list form <pre>key1.key2.key3 {@code ->} [key1,key2,key3]</pre>
      * @return the object/document, without the filtered name
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -287,7 +287,7 @@ public class MqlFunctions {
      * Scans the object/document and removes matching filters
      *
      * @param input the object/document, form which the filters are removed
-     * @param excluded multiple filters, group in collections <pre>[key1.key2.key3, key1.key2] -> [[key1, key2, key3],[key1, key2]]</pre>
+     * @param excluded multiple filters, group in collections [key1.key2.key3, key1.key2] {@code ->} [[key1, key2, key3],[key1, key2]]
      * @return a filtered object/document
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -311,7 +311,7 @@ public class MqlFunctions {
      * Scans the object/document and removes matching filters
      *
      * @param input the object/document, form which the filters are removed
-     * @param excluded multiple filters, group in collections <pre>[key1.key2.key3, key1.key2] -> [[key1, key2, key3],[key1, key2]]</pre>
+     * @param excluded multiple filters, group in collections [key1.key2.key3, key1.key2] {@code ->} [[key1, key2, key3],[key1, key2]]
      * @return a filtered object/document
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -702,7 +702,7 @@ public class MqlFunctions {
      * Tests if a specified path exists in the provided object/document
      *
      * @param obj the object/document to check
-     * @param path the path, which is test in the form key1.key2.key3 -> [key1. key2, key3]
+     * @param path the path, which is test in the form key1.key2.key3 {@code ->} [key1. key2, key3]
      * @return if the path exists
      */
     @SuppressWarnings("UnusedDeclaration")
