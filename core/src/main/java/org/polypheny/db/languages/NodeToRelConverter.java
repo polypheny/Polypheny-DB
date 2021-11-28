@@ -31,7 +31,7 @@ import org.polypheny.db.tools.RelBuilderFactory;
 public interface NodeToRelConverter {
 
     /**
-     * Size of the smallest IN list that will be converted to a semijoin to a static table.
+     * Size of the smallest IN list that will be converted to a semi-join to a static table.
      */
     int DEFAULT_IN_SUB_QUERY_THRESHOLD = 20;
 
@@ -58,7 +58,7 @@ public interface NodeToRelConverter {
     boolean isTrimUnusedFields();
 
     /**
-     * Interface to define the configuration for a SqlToRelConverter.
+     * Interface to define the configuration for a NodeToRelConverter.
      * Provides methods to set each configuration option.
      *
      * @see ConfigBuilder

@@ -21,9 +21,9 @@ import java.util.List;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -73,7 +73,7 @@ public class SqlCoalesceFunction extends SqlFunction {
         // todo: optimize when know operand is not null.
 
         for ( SqlNode operand : Util.skipLast( operands ) ) {
-            whenList.add( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ).createCall( pos, operand ) );
+            whenList.add( OperatorRegistry.get( OperatorName.IS_NOT_NULL ).createCall( pos, operand ) );
             thenList.add( Node.clone( operand ) );
         }
         SqlNode elseExpr = Util.last( operands );

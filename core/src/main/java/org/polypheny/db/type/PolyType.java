@@ -49,9 +49,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.util.Util;
 
 
@@ -1125,7 +1126,7 @@ public enum PolyType {
 
 
     public Literal createLiteral( Object o, ParserPos pos ) {
-        return LanguageManager.getInstance().createLiteral( this, o, pos );
+        return LanguageManager.getInstance().createLiteral( QueryLanguage.SQL, this, o, pos );
     }
 
 

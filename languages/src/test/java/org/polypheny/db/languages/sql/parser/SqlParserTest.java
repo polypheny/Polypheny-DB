@@ -49,12 +49,13 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.core.DiffTestCase;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.sql.SqlDialect;
@@ -604,7 +605,7 @@ public class SqlParserTest extends LanguageManagerDependant {
     /**
      * Implementors of custom parsing logic who want to reuse this test should override this method with the factory for their extension parser.
      */
-    protected SqlParserImplFactory parserImplFactory() {
+    protected ParserFactory parserImplFactory() {
         return SqlParserImpl.FACTORY;
     }
 

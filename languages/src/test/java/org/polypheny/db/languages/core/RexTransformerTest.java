@@ -29,9 +29,9 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlToRelTestBase;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelOptUtil.Logic;
@@ -127,67 +127,67 @@ public class RexTransformerTest {
 
 
     private RexNode lessThan( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.LESS_THAN ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN ), a0, a1 );
     }
 
 
     private RexNode lessThanOrEqual( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), a0, a1 );
     }
 
 
     private RexNode greaterThan( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN ), a0, a1 );
     }
 
 
     private RexNode greaterThanOrEqual( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), a0, a1 );
     }
 
 
     private RexNode equals( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), a0, a1 );
     }
 
 
     private RexNode notEquals( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT_EQUALS ), a0, a1 );
     }
 
 
     private RexNode and( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), a0, a1 );
     }
 
 
     private RexNode or( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.OR ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.OR ), a0, a1 );
     }
 
 
     private RexNode not( RexNode a0 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), a0 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT ), a0 );
     }
 
 
     private RexNode plus( RexNode a0, RexNode a1 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), a0, a1 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), a0, a1 );
     }
 
 
     private RexNode isNotNull( RexNode a0 ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), a0 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), a0 );
     }
 
 
     private RexNode isFalse( RexNode node ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_FALSE ), node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_FALSE ), node );
     }
 
 
     private RexNode isTrue( RexNode node ) {
-        return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_TRUE ), node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ), node );
     }
 
 

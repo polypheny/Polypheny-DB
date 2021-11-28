@@ -45,12 +45,12 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.restapi.exception.ParserException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
@@ -399,15 +399,15 @@ public class RequestParser {
 
         switch ( function ) {
             case "COUNT":
-                return StdOperatorRegistry.getAgg( OperatorName.COUNT );
+                return OperatorRegistry.getAgg( OperatorName.COUNT );
             case "MAX":
-                return StdOperatorRegistry.getAgg( OperatorName.MAX );
+                return OperatorRegistry.getAgg( OperatorName.MAX );
             case "MIN":
-                return StdOperatorRegistry.getAgg( OperatorName.MIN );
+                return OperatorRegistry.getAgg( OperatorName.MIN );
             case "AVG":
-                return StdOperatorRegistry.getAgg( OperatorName.AVG );
+                return OperatorRegistry.getAgg( OperatorName.AVG );
             case "SUM":
-                return StdOperatorRegistry.getAgg( OperatorName.SUM );
+                return OperatorRegistry.getAgg( OperatorName.SUM );
             default:
                 return null;
         }
@@ -604,28 +604,28 @@ public class RequestParser {
         Operator callOperator;
         String rightHandSide;
         if ( filterString.startsWith( "<=" ) ) {
-            callOperator = StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
+            callOperator = OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( "<" ) ) {
-            callOperator = StdOperatorRegistry.get( OperatorName.LESS_THAN );
+            callOperator = OperatorRegistry.get( OperatorName.LESS_THAN );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( ">=" ) ) {
-            callOperator = StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
+            callOperator = OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( ">" ) ) {
-            callOperator = StdOperatorRegistry.get( OperatorName.GREATER_THAN );
+            callOperator = OperatorRegistry.get( OperatorName.GREATER_THAN );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "=" ) ) {
-            callOperator = StdOperatorRegistry.get( OperatorName.EQUALS );
+            callOperator = OperatorRegistry.get( OperatorName.EQUALS );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "!=" ) ) {
-            callOperator = StdOperatorRegistry.get( OperatorName.NOT_EQUALS );
+            callOperator = OperatorRegistry.get( OperatorName.NOT_EQUALS );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else if ( filterString.startsWith( "%" ) ) {
-            callOperator = StdOperatorRegistry.get( OperatorName.LIKE );
+            callOperator = OperatorRegistry.get( OperatorName.LIKE );
             rightHandSide = filterString.substring( 1, filterString.length() );
         } else if ( filterString.startsWith( "!%" ) ) {
-            callOperator = StdOperatorRegistry.get( OperatorName.NOT_LIKE );
+            callOperator = OperatorRegistry.get( OperatorName.NOT_LIKE );
             rightHandSide = filterString.substring( 2, filterString.length() );
         } else {
             log.warn( "Unable to parse filter operation comparator. Returning null." );

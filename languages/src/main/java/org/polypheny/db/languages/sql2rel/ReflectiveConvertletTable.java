@@ -23,12 +23,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -160,7 +160,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
     /**
      * Registers a convertlet for a given operator instance
      *
-     * @param op Operator instance, say {@link SqlStdOperatorTable#MINUS}
+     * @param op Operator instance, say {@link OperatorRegistry #MINUS}
      * @param convertlet Convertlet
      */
     protected void registerOp( Operator op, SqlRexConvertlet convertlet ) {

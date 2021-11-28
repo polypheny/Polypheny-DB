@@ -30,7 +30,7 @@ import org.polypheny.db.util.Static;
 
 
 /**
- * SqlParserPos represents the position of a parsed token within SQL statement text.
+ * SqlParserPos represents the position of a parsed token within statement text.
  */
 public class ParserPos implements Serializable {
 

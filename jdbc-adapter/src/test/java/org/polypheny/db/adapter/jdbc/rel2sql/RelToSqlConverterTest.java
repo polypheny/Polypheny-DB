@@ -30,7 +30,6 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter.PlainRelToSqlConverter;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.operators.OperatorName;
@@ -38,6 +37,7 @@ import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.NodeToRelConverter.Config;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
@@ -379,7 +379,7 @@ public class RelToSqlConverterTest extends LanguageManagerDependant {
         final RelBuilder builder = relBuilder();
         final RelNode root = builder
                 .scan( "emp" )
-                .aggregate( builder.groupKey(), builder.aggregateCall( StdOperatorRegistry.getAgg( OperatorName.SUM0 ), builder.field( 3 ) ).as( "s" ) )
+                .aggregate( builder.groupKey(), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.SUM0 ), builder.field( 3 ) ).as( "s" ) )
                 .build();
         final String expectedMysql = "SELECT COALESCE(SUM(`mgr`), 0) AS `s`\n"
                 + "FROM `scott`.`emp`";
@@ -629,7 +629,7 @@ public class RelToSqlConverterTest extends LanguageManagerDependant {
     @Test
     public void testUnparseIn1() {
         final RelBuilder builder = relBuilder().scan( "emp" );
-        final RexNode condition = builder.call( StdOperatorRegistry.get( OperatorName.IN ), builder.field( "deptno" ), builder.literal( 21 ) );
+        final RexNode condition = builder.call( OperatorRegistry.get( OperatorName.IN ), builder.field( "deptno" ), builder.literal( 21 ) );
         final RelNode root = relBuilder().scan( "emp" ).filter( condition ).build();
         final String sql = toSql( root );
         final String expectedSql = "SELECT *\n"
@@ -644,7 +644,7 @@ public class RelToSqlConverterTest extends LanguageManagerDependant {
         final RelBuilder builder = relBuilder();
         final RelNode rel = builder
                 .scan( "emp" )
-                .filter( builder.call( StdOperatorRegistry.get( OperatorName.IN ), builder.field( "deptno" ), builder.literal( 20 ), builder.literal( 21 ) ) )
+                .filter( builder.call( OperatorRegistry.get( OperatorName.IN ), builder.field( "deptno" ), builder.literal( 20 ), builder.literal( 21 ) ) )
                 .build();
         final String sql = toSql( rel );
         final String expectedSql = "SELECT *\n"
@@ -657,9 +657,9 @@ public class RelToSqlConverterTest extends LanguageManagerDependant {
     @Test
     public void testUnparseInStruct1() {
         final RelBuilder builder = relBuilder().scan( "emp" );
-        final RexNode condition = builder.call( StdOperatorRegistry.get( OperatorName.IN ),
-                builder.call( StdOperatorRegistry.get( OperatorName.ROW ), builder.field( "deptno" ), builder.field( "job" ) ),
-                builder.call( StdOperatorRegistry.get( OperatorName.ROW ), builder.literal( 1 ), builder.literal( "president" ) ) );
+        final RexNode condition = builder.call( OperatorRegistry.get( OperatorName.IN ),
+                builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.field( "deptno" ), builder.field( "job" ) ),
+                builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.literal( 1 ), builder.literal( "president" ) ) );
         final RelNode root = relBuilder().scan( "emp" ).filter( condition ).build();
         final String sql = toSql( root );
         final String expectedSql = "SELECT *\n"
@@ -673,10 +673,10 @@ public class RelToSqlConverterTest extends LanguageManagerDependant {
     public void testUnparseInStruct2() {
         final RelBuilder builder = relBuilder().scan( "emp" );
         final RexNode condition =
-                builder.call( StdOperatorRegistry.get( OperatorName.IN ),
-                        builder.call( StdOperatorRegistry.get( OperatorName.ROW ), builder.field( "deptno" ), builder.field( "job" ) ),
-                        builder.call( StdOperatorRegistry.get( OperatorName.ROW ), builder.literal( 1 ), builder.literal( "president" ) ),
-                        builder.call( StdOperatorRegistry.get( OperatorName.ROW ), builder.literal( 2 ), builder.literal( "president" ) ) );
+                builder.call( OperatorRegistry.get( OperatorName.IN ),
+                        builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.field( "deptno" ), builder.field( "job" ) ),
+                        builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.literal( 1 ), builder.literal( "president" ) ),
+                        builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.literal( 2 ), builder.literal( "president" ) ) );
         final RelNode root = relBuilder().scan( "emp" ).filter( condition ).build();
         final String sql = toSql( root );
         final String expectedSql = "SELECT *\n"

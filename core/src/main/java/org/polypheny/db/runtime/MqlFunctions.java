@@ -201,7 +201,7 @@ public class MqlFunctions {
      * Update method, which deletes the provided name
      *
      * @param input the full object/document, from which the values are removed
-     * @param names the name in a list form key1.key2.key3 -> [key1,key2,key3]
+     * @param names the name in a list form <pre>key1.key2.key3 -> [key1,key2,key3]</pre>
      * @return the object/document, without the filtered name
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -287,7 +287,7 @@ public class MqlFunctions {
      * Scans the object/document and removes matching filters
      *
      * @param input the object/document, form which the filters are removed
-     * @param excluded multiple filters, group in collections [key1.key2.key3, key1.key2] -> [[key1, key2, key3],[key1, key2]]
+     * @param excluded multiple filters, group in collections <pre>[key1.key2.key3, key1.key2] -> [[key1, key2, key3],[key1, key2]]</pre>
      * @return a filtered object/document
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -311,7 +311,7 @@ public class MqlFunctions {
      * Scans the object/document and removes matching filters
      *
      * @param input the object/document, form which the filters are removed
-     * @param excluded multiple filters, group in collections [key1.key2.key3, key1.key2] -> [[key1, key2, key3],[key1, key2]]
+     * @param excluded multiple filters, group in collections <pre>[key1.key2.key3, key1.key2] -> [[key1, key2, key3],[key1, key2]]</pre>
      * @return a filtered object/document
      */
     @SuppressWarnings("UnusedDeclaration")

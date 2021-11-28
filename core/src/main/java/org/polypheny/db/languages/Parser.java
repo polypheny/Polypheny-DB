@@ -46,7 +46,7 @@ public interface Parser {
     }
 
     /**
-     * Creates a <code>SqlParser</code> to parse the given string using Polypheny-DB's parser implementation.
+     * Creates a <code>Parser</code> to parse the given string using Polypheny-DB's parser implementation.
      *
      * @param s An SQL statement or expression to parse.
      * @return A parser

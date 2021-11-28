@@ -46,9 +46,9 @@ import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.core.util.Collation.Coercibility;
 import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlLiteral;
@@ -588,11 +588,11 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         x.accept(
                 new SqlShuttle() {
                     private final List<Operator> ops = ImmutableList.of(
-                            StdOperatorRegistry.get( OperatorName.LITERAL_CHAIN ),
-                            StdOperatorRegistry.get( OperatorName.LOCALTIME ),
-                            StdOperatorRegistry.get( OperatorName.LOCALTIMESTAMP ),
-                            StdOperatorRegistry.get( OperatorName.CURRENT_TIME ),
-                            StdOperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ) );
+                            OperatorRegistry.get( OperatorName.LITERAL_CHAIN ),
+                            OperatorRegistry.get( OperatorName.LOCALTIME ),
+                            OperatorRegistry.get( OperatorName.LOCALTIMESTAMP ),
+                            OperatorRegistry.get( OperatorName.CURRENT_TIME ),
+                            OperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ) );
 
 
                     @Override

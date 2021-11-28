@@ -36,8 +36,8 @@ package org.polypheny.db.rel.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
@@ -126,7 +126,7 @@ public class RelMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
         RexBuilder rexBuilder = rel.getCluster().getRexBuilder();
         RexNode newPred = RelMdUtil.makeSemiJoinSelectivityRexNode( mq, rel );
         if ( predicate != null ) {
-            newPred = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), newPred, predicate );
+            newPred = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), newPred, predicate );
         }
 
         return mq.getSelectivity( rel.getLeft(), newPred );

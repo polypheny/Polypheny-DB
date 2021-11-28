@@ -39,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
@@ -167,9 +167,9 @@ public class PigRelBuilder extends RelBuilder {
             final RexNode row =
                     cluster.getRexBuilder().makeCall(
                             peek( 1, 0 ).getRowType(),
-                            StdOperatorRegistry.get( OperatorName.ROW ),
+                            OperatorRegistry.get( OperatorName.ROW ),
                             fields() );
-            aggregate( groupKey.e, aggregateCall( StdOperatorRegistry.getAgg( OperatorName.COLLECT ), row ).as( getAlias() ) );
+            aggregate( groupKey.e, aggregateCall( OperatorRegistry.getAgg( OperatorName.COLLECT ), row ).as( getAlias() ) );
             if ( groupKey.i < n - 1 ) {
                 push( r );
                 List<RexNode> predicates = new ArrayList<>();

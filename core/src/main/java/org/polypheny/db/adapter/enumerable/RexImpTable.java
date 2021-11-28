@@ -91,7 +91,7 @@ import org.polypheny.db.core.nodes.BinaryOperator;
 import org.polypheny.db.core.nodes.JsonAgg;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
@@ -127,52 +127,52 @@ public class RexImpTable {
 
 
     RexImpTable() {
-        defineMethod( StdOperatorRegistry.get( OperatorName.ROW ), BuiltInMethod.ARRAY.method, NullPolicy.ANY );
-        defineMethod( StdOperatorRegistry.get( OperatorName.UPPER ), BuiltInMethod.UPPER.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.LOWER ), BuiltInMethod.LOWER.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.INITCAP ), BuiltInMethod.INITCAP.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.SUBSTRING ), BuiltInMethod.SUBSTRING.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.REPLACE ), BuiltInMethod.REPLACE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ), BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT ); // TODO DL
-        defineMethod( StdOperatorRegistry.get( OperatorName.CHARACTER_LENGTH ), BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.CHAR_LENGTH ), BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.CONCAT ), BuiltInMethod.STRING_CONCAT.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.OVERLAY ), BuiltInMethod.OVERLAY.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.POSITION ), BuiltInMethod.POSITION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ROW ), BuiltInMethod.ARRAY.method, NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.UPPER ), BuiltInMethod.UPPER.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.LOWER ), BuiltInMethod.LOWER.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.INITCAP ), BuiltInMethod.INITCAP.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.SUBSTRING ), BuiltInMethod.SUBSTRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.REPLACE ), BuiltInMethod.REPLACE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ), BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT ); // TODO DL
+        defineMethod( OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ), BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.CHAR_LENGTH ), BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.CONCAT ), BuiltInMethod.STRING_CONCAT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.OVERLAY ), BuiltInMethod.OVERLAY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.POSITION ), BuiltInMethod.POSITION.method, NullPolicy.STRICT );
 
         final TrimImplementor trimImplementor = new TrimImplementor();
-        defineImplementor( StdOperatorRegistry.get( OperatorName.TRIM ), NullPolicy.STRICT, trimImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.TRIM ), NullPolicy.STRICT, trimImplementor, false );
 
         // logical
-        defineBinary( StdOperatorRegistry.get( OperatorName.AND ), AndAlso, NullPolicy.AND, null );
-        defineBinary( StdOperatorRegistry.get( OperatorName.OR ), OrElse, NullPolicy.OR, null );
-        defineUnary( StdOperatorRegistry.get( OperatorName.NOT ), Not, NullPolicy.NOT );
+        defineBinary( OperatorRegistry.get( OperatorName.AND ), AndAlso, NullPolicy.AND, null );
+        defineBinary( OperatorRegistry.get( OperatorName.OR ), OrElse, NullPolicy.OR, null );
+        defineUnary( OperatorRegistry.get( OperatorName.NOT ), Not, NullPolicy.NOT );
 
         // comparisons
-        defineBinary( StdOperatorRegistry.get( OperatorName.LESS_THAN ), LessThan, NullPolicy.STRICT, "lt" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), LessThanOrEqual, NullPolicy.STRICT, "le" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), GreaterThan, NullPolicy.STRICT, "gt" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), GreaterThanOrEqual, NullPolicy.STRICT, "ge" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.EQUALS ), Equal, NullPolicy.STRICT, "eq" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), NotEqual, NullPolicy.STRICT, "ne" );
+        defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN ), LessThan, NullPolicy.STRICT, "lt" );
+        defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), LessThanOrEqual, NullPolicy.STRICT, "le" );
+        defineBinary( OperatorRegistry.get( OperatorName.GREATER_THAN ), GreaterThan, NullPolicy.STRICT, "gt" );
+        defineBinary( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), GreaterThanOrEqual, NullPolicy.STRICT, "ge" );
+        defineBinary( OperatorRegistry.get( OperatorName.EQUALS ), Equal, NullPolicy.STRICT, "eq" );
+        defineBinary( OperatorRegistry.get( OperatorName.NOT_EQUALS ), NotEqual, NullPolicy.STRICT, "ne" );
 
         // arithmetic
-        defineBinary( StdOperatorRegistry.get( OperatorName.PLUS ), Add, NullPolicy.STRICT, "plus" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.MINUS ), Subtract, NullPolicy.STRICT, "minus" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.MULTIPLY ), Multiply, NullPolicy.STRICT, "multiply" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.DIVIDE ), Divide, NullPolicy.STRICT, "divide" );
-        defineBinary( StdOperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), Divide, NullPolicy.STRICT, "divide" );
-        defineUnary( StdOperatorRegistry.get( OperatorName.UNARY_MINUS ), Negate, NullPolicy.STRICT );
-        defineUnary( StdOperatorRegistry.get( OperatorName.UNARY_PLUS ), UnaryPlus, NullPolicy.STRICT );
+        defineBinary( OperatorRegistry.get( OperatorName.PLUS ), Add, NullPolicy.STRICT, "plus" );
+        defineBinary( OperatorRegistry.get( OperatorName.MINUS ), Subtract, NullPolicy.STRICT, "minus" );
+        defineBinary( OperatorRegistry.get( OperatorName.MULTIPLY ), Multiply, NullPolicy.STRICT, "multiply" );
+        defineBinary( OperatorRegistry.get( OperatorName.DIVIDE ), Divide, NullPolicy.STRICT, "divide" );
+        defineBinary( OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), Divide, NullPolicy.STRICT, "divide" );
+        defineUnary( OperatorRegistry.get( OperatorName.UNARY_MINUS ), Negate, NullPolicy.STRICT );
+        defineUnary( OperatorRegistry.get( OperatorName.UNARY_PLUS ), UnaryPlus, NullPolicy.STRICT );
 
-        defineMethod( StdOperatorRegistry.get( OperatorName.MOD ), "mod", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.EXP ), "exp", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.POWER ), "power", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.LN ), "ln", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.LOG10 ), "log10", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.ABS ), "abs", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.MOD ), "mod", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.EXP ), "exp", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.POWER ), "power", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.LN ), "ln", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.LOG10 ), "log10", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ABS ), "abs", NullPolicy.STRICT );
 
-        defineImplementor( StdOperatorRegistry.get( OperatorName.RAND ), NullPolicy.STRICT,
+        defineImplementor( OperatorRegistry.get( OperatorName.RAND ), NullPolicy.STRICT,
                 new NotNullImplementor() {
                     final NotNullImplementor[] implementors = {
                             new ReflectiveCallNotNullImplementor( BuiltInMethod.RAND.method ),
@@ -185,7 +185,7 @@ public class RexImpTable {
                         return implementors[call.getOperands().size()].implement( translator, call, translatedOperands );
                     }
                 }, false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.RAND_INTEGER ), NullPolicy.STRICT,
+        defineImplementor( OperatorRegistry.get( OperatorName.RAND_INTEGER ), NullPolicy.STRICT,
                 new NotNullImplementor() {
                     final NotNullImplementor[] implementors = {
                             null,
@@ -200,187 +200,187 @@ public class RexImpTable {
                     }
                 }, false );
 
-        defineMethod( StdOperatorRegistry.get( OperatorName.ACOS ), "acos", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.ASIN ), "asin", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.ATAN ), "atan", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.ATAN2 ), "atan2", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.COS ), "cos", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.COT ), "cot", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.DEGREES ), "degrees", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.RADIANS ), "radians", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.ROUND ), "sround", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.SIGN ), "sign", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.SIN ), "sin", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.TAN ), "tan", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.TRUNCATE ), "struncate", NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.DISTANCE ), "distance", NullPolicy.ANY );
-        defineMethod( StdOperatorRegistry.get( OperatorName.META ), "meta", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.ACOS ), "acos", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ASIN ), "asin", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ATAN ), "atan", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ATAN2 ), "atan2", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.COS ), "cos", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.COT ), "cot", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.DEGREES ), "degrees", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.RADIANS ), "radians", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ROUND ), "sround", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.SIGN ), "sign", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.SIN ), "sin", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.TAN ), "tan", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.TRUNCATE ), "struncate", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.DISTANCE ), "distance", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.META ), "meta", NullPolicy.ANY );
 
-        map.put( StdOperatorRegistry.get( OperatorName.PI ), ( translator, call, nullAs ) -> Expressions.constant( Math.PI ) );
+        map.put( OperatorRegistry.get( OperatorName.PI ), ( translator, call, nullAs ) -> Expressions.constant( Math.PI ) );
 
         // datetime
-        defineImplementor( StdOperatorRegistry.get( OperatorName.DATETIME_PLUS ), NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.MINUS_DATE ), NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.EXTRACT ), NullPolicy.STRICT, new ExtractImplementor(), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.FLOOR ), NullPolicy.STRICT,
+        defineImplementor( OperatorRegistry.get( OperatorName.DATETIME_PLUS ), NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.MINUS_DATE ), NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.EXTRACT ), NullPolicy.STRICT, new ExtractImplementor(), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.FLOOR ), NullPolicy.STRICT,
                 new FloorImplementor(
                         BuiltInMethod.FLOOR.method.getName(),
                         BuiltInMethod.UNIX_TIMESTAMP_FLOOR.method,
                         BuiltInMethod.UNIX_DATE_FLOOR.method ),
                 false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.CEIL ), NullPolicy.STRICT,
+        defineImplementor( OperatorRegistry.get( OperatorName.CEIL ), NullPolicy.STRICT,
                 new FloorImplementor( BuiltInMethod.CEIL.method.getName(),
                         BuiltInMethod.UNIX_TIMESTAMP_CEIL.method,
                         BuiltInMethod.UNIX_DATE_CEIL.method ),
                 false );
 
-        map.put( StdOperatorRegistry.get( OperatorName.IS_NULL ), new IsXxxImplementor( null, false ) );
-        map.put( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), new IsXxxImplementor( null, true ) );
-        map.put( StdOperatorRegistry.get( OperatorName.IS_TRUE ), new IsXxxImplementor( true, false ) );
-        map.put( StdOperatorRegistry.get( OperatorName.IS_NOT_TRUE ), new IsXxxImplementor( true, true ) );
-        map.put( StdOperatorRegistry.get( OperatorName.IS_FALSE ), new IsXxxImplementor( false, false ) );
-        map.put( StdOperatorRegistry.get( OperatorName.IS_NOT_FALSE ), new IsXxxImplementor( false, true ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_NULL ), new IsXxxImplementor( null, false ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), new IsXxxImplementor( null, true ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_TRUE ), new IsXxxImplementor( true, false ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_NOT_TRUE ), new IsXxxImplementor( true, true ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_FALSE ), new IsXxxImplementor( false, false ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_NOT_FALSE ), new IsXxxImplementor( false, true ) );
 
         // LIKE and SIMILAR
         final MethodImplementor likeImplementor = new MethodImplementor( BuiltInMethod.LIKE.method );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.LIKE ), NullPolicy.STRICT, likeImplementor, false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.NOT_LIKE ), NullPolicy.STRICT, NotImplementor.of( likeImplementor ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.LIKE ), NullPolicy.STRICT, likeImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.NOT_LIKE ), NullPolicy.STRICT, NotImplementor.of( likeImplementor ), false );
         final MethodImplementor similarImplementor = new MethodImplementor( BuiltInMethod.SIMILAR.method );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.SIMILAR_TO ), NullPolicy.STRICT, similarImplementor, false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ), NullPolicy.STRICT, NotImplementor.of( similarImplementor ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.SIMILAR_TO ), NullPolicy.STRICT, similarImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ), NullPolicy.STRICT, NotImplementor.of( similarImplementor ), false );
 
         // Multisets & arrays
-        defineMethod( StdOperatorRegistry.get( OperatorName.CARDINALITY ), BuiltInMethod.COLLECTION_SIZE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.SLICE ), BuiltInMethod.SLICE.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.ELEMENT ), BuiltInMethod.ELEMENT.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.STRUCT_ACCESS ), BuiltInMethod.STRUCT_ACCESS.method, NullPolicy.ANY );
-        defineMethod( StdOperatorRegistry.get( OperatorName.MEMBER_OF ), BuiltInMethod.MEMBER_OF.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.CARDINALITY ), BuiltInMethod.COLLECTION_SIZE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.SLICE ), BuiltInMethod.SLICE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.ELEMENT ), BuiltInMethod.ELEMENT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.STRUCT_ACCESS ), BuiltInMethod.STRUCT_ACCESS.method, NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.MEMBER_OF ), BuiltInMethod.MEMBER_OF.method, NullPolicy.NONE );
         final MethodImplementor isEmptyImplementor = new MethodImplementor( BuiltInMethod.IS_EMPTY.method );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_EMPTY ), NullPolicy.NONE, isEmptyImplementor, false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_NOT_EMPTY ), NullPolicy.NONE, NotImplementor.of( isEmptyImplementor ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_EMPTY ), NullPolicy.NONE, isEmptyImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_EMPTY ), NullPolicy.NONE, NotImplementor.of( isEmptyImplementor ), false );
         final MethodImplementor isASetImplementor = new MethodImplementor( BuiltInMethod.IS_A_SET.method );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_A_SET ), NullPolicy.NONE, isASetImplementor, false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_NOT_A_SET ), NullPolicy.NONE, NotImplementor.of( isASetImplementor ), false );
-        defineMethod( StdOperatorRegistry.get( OperatorName.MULTISET_INTERSECT_DISTINCT ), BuiltInMethod.MULTISET_INTERSECT_DISTINCT.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.MULTISET_INTERSECT ), BuiltInMethod.MULTISET_INTERSECT_ALL.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.MULTISET_EXCEPT_DISTINCT ), BuiltInMethod.MULTISET_EXCEPT_DISTINCT.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.MULTISET_EXCEPT ), BuiltInMethod.MULTISET_EXCEPT_ALL.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.MULTISET_UNION_DISTINCT ), BuiltInMethod.MULTISET_UNION_DISTINCT.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.MULTISET_UNION ), BuiltInMethod.MULTISET_UNION_ALL.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_A_SET ), NullPolicy.NONE, isASetImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_A_SET ), NullPolicy.NONE, NotImplementor.of( isASetImplementor ), false );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_INTERSECT_DISTINCT ), BuiltInMethod.MULTISET_INTERSECT_DISTINCT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_INTERSECT ), BuiltInMethod.MULTISET_INTERSECT_ALL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_EXCEPT_DISTINCT ), BuiltInMethod.MULTISET_EXCEPT_DISTINCT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_EXCEPT ), BuiltInMethod.MULTISET_EXCEPT_ALL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_UNION_DISTINCT ), BuiltInMethod.MULTISET_UNION_DISTINCT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_UNION ), BuiltInMethod.MULTISET_UNION_ALL.method, NullPolicy.NONE );
         final MethodImplementor subMultisetImplementor = new MethodImplementor( BuiltInMethod.SUBMULTISET_OF.method );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.SUBMULTISET_OF ), NullPolicy.NONE, subMultisetImplementor, false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.NOT_SUBMULTISET_OF ), NullPolicy.NONE, NotImplementor.of( subMultisetImplementor ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.SUBMULTISET_OF ), NullPolicy.NONE, subMultisetImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.NOT_SUBMULTISET_OF ), NullPolicy.NONE, NotImplementor.of( subMultisetImplementor ), false );
 
-        map.put( StdOperatorRegistry.get( OperatorName.CASE ), new CaseImplementor() );
-        map.put( StdOperatorRegistry.get( OperatorName.COALESCE ), new CoalesceImplementor() );
-        map.put( StdOperatorRegistry.get( OperatorName.CAST ), new CastOptimizedImplementor() );
+        map.put( OperatorRegistry.get( OperatorName.CASE ), new CaseImplementor() );
+        map.put( OperatorRegistry.get( OperatorName.COALESCE ), new CoalesceImplementor() );
+        map.put( OperatorRegistry.get( OperatorName.CAST ), new CastOptimizedImplementor() );
 
-        defineImplementor( StdOperatorRegistry.get( OperatorName.REINTERPRET ), NullPolicy.STRICT, new ReinterpretImplementor(), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.REINTERPRET ), NullPolicy.STRICT, new ReinterpretImplementor(), false );
 
         final CallImplementor value = new ValueConstructorImplementor();
-        map.put( StdOperatorRegistry.get( OperatorName.MAP_VALUE_CONSTRUCTOR ), value );
-        map.put( StdOperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), value );
-        map.put( StdOperatorRegistry.get( OperatorName.ITEM ), new ItemImplementor() );
+        map.put( OperatorRegistry.get( OperatorName.MAP_VALUE_CONSTRUCTOR ), value );
+        map.put( OperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), value );
+        map.put( OperatorRegistry.get( OperatorName.ITEM ), new ItemImplementor() );
 
-        map.put( StdOperatorRegistry.get( OperatorName.DEFAULT ), ( translator, call, nullAs ) -> Expressions.constant( null ) );
+        map.put( OperatorRegistry.get( OperatorName.DEFAULT ), ( translator, call, nullAs ) -> Expressions.constant( null ) );
 
         // Sequences
-        defineMethod( StdOperatorRegistry.get( OperatorName.CURRENT_VALUE ), BuiltInMethod.SEQUENCE_CURRENT_VALUE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.NEXT_VALUE ), BuiltInMethod.SEQUENCE_NEXT_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.CURRENT_VALUE ), BuiltInMethod.SEQUENCE_CURRENT_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.NEXT_VALUE ), BuiltInMethod.SEQUENCE_NEXT_VALUE.method, NullPolicy.STRICT );
 
         // Json Operators
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION ), BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION_EXCLUDED ), BuiltInMethod.JSON_VALUE_EXPRESSION_EXCLUDE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_STRUCTURED_VALUE_EXPRESSION ), BuiltInMethod.JSON_STRUCTURED_VALUE_EXPRESSION.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_API_COMMON_SYNTAX ), BuiltInMethod.JSON_API_COMMON_SYNTAX.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_EXISTS ), BuiltInMethod.JSON_EXISTS.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_VALUE_ANY ), BuiltInMethod.JSON_VALUE_ANY.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_QUERY ), BuiltInMethod.JSON_QUERY.method, NullPolicy.NONE );
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_OBJECT ), BuiltInMethod.JSON_OBJECT.method, NullPolicy.NONE );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.JSON_OBJECTAGG ), JsonObjectAggImplementor.supplierFor( BuiltInMethod.JSON_OBJECTAGG_ADD.method ) );
-        defineMethod( StdOperatorRegistry.get( OperatorName.JSON_ARRAY ), BuiltInMethod.JSON_ARRAY.method, NullPolicy.NONE );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.JSON_ARRAYAGG ), JsonArrayAggImplementor.supplierFor( BuiltInMethod.JSON_ARRAYAGG_ADD.method ) );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_JSON_VALUE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_VALUE.method ), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_JSON_OBJECT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_JSON_ARRAY ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_JSON_SCALAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_VALUE ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_VALUE.method ) ), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_OBJECT ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ) ), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_ARRAY ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
-        defineImplementor( StdOperatorRegistry.get( OperatorName.IS_NOT_JSON_SCALAR ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION ), BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION_EXCLUDED ), BuiltInMethod.JSON_VALUE_EXPRESSION_EXCLUDE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_STRUCTURED_VALUE_EXPRESSION ), BuiltInMethod.JSON_STRUCTURED_VALUE_EXPRESSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_API_COMMON_SYNTAX ), BuiltInMethod.JSON_API_COMMON_SYNTAX.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_EXISTS ), BuiltInMethod.JSON_EXISTS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_ANY ), BuiltInMethod.JSON_VALUE_ANY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_QUERY ), BuiltInMethod.JSON_QUERY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_OBJECT ), BuiltInMethod.JSON_OBJECT.method, NullPolicy.NONE );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.JSON_OBJECTAGG ), JsonObjectAggImplementor.supplierFor( BuiltInMethod.JSON_OBJECTAGG_ADD.method ) );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_ARRAY ), BuiltInMethod.JSON_ARRAY.method, NullPolicy.NONE );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.JSON_ARRAYAGG ), JsonArrayAggImplementor.supplierFor( BuiltInMethod.JSON_ARRAYAGG_ADD.method ) );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_JSON_VALUE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_VALUE.method ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_JSON_OBJECT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_JSON_ARRAY ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_JSON_SCALAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_VALUE ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_VALUE.method ) ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_OBJECT ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ) ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_ARRAY ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_SCALAR ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
 
-        defineBinary( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
-        defineImplementor( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_SLICE ), BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EXCLUDE ), BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
+        defineBinary( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_SLICE ), BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EXCLUDE ), BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
 
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
-        defineMethod( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
-        map.put( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
-        map.put( StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UNWIND ), new UnwindImplementor() );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
+        map.put( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
+        map.put( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UNWIND ), new UnwindImplementor() );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
-        map.put( StdOperatorRegistry.get( OperatorName.USER ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.CURRENT_USER ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.SESSION_USER ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.SYSTEM_USER ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.CURRENT_PATH ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.CURRENT_ROLE ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.CURRENT_CATALOG ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.USER ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_USER ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.SESSION_USER ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.SYSTEM_USER ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_PATH ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_ROLE ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_CATALOG ), systemFunctionImplementor );
 
         // Current time functions
-        map.put( StdOperatorRegistry.get( OperatorName.CURRENT_TIME ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.CURRENT_DATE ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.LOCALTIME ), systemFunctionImplementor );
-        map.put( StdOperatorRegistry.get( OperatorName.LOCALTIMESTAMP ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_TIME ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_DATE ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.LOCALTIME ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.LOCALTIMESTAMP ), systemFunctionImplementor );
 
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountImplementor.class ) );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountImplementor.class ) );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.SUM0 ), constructorSupplier( SumImplementor.class ) );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.SUM ), constructorSupplier( SumImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.SUM0 ), constructorSupplier( SumImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.SUM ), constructorSupplier( SumImplementor.class ) );
         Supplier<MinMaxImplementor> minMax = constructorSupplier( MinMaxImplementor.class );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.MIN ), minMax );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.MAX ), minMax );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.ANY_VALUE ), minMax );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.MIN ), minMax );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.MAX ), minMax );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.ANY_VALUE ), minMax );
         final Supplier<BitOpImplementor> bitop = constructorSupplier( BitOpImplementor.class );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.BIT_AND ), bitop );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.BIT_OR ), bitop );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.SINGLE_VALUE ), constructorSupplier( SingleValueImplementor.class ) );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.COLLECT ), constructorSupplier( CollectImplementor.class ) );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.FUSION ), constructorSupplier( FusionImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.BIT_AND ), bitop );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.BIT_OR ), bitop );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.SINGLE_VALUE ), constructorSupplier( SingleValueImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.COLLECT ), constructorSupplier( CollectImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.FUSION ), constructorSupplier( FusionImplementor.class ) );
         final Supplier<GroupingImplementor> grouping = constructorSupplier( GroupingImplementor.class );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.GROUPING ), grouping );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.GROUP_ID ), grouping );
-        aggMap.put( StdOperatorRegistry.getAgg( OperatorName.GROUPING_ID ), grouping );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.RANK ), constructorSupplier( RankImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.DENSE_RANK ), constructorSupplier( DenseRankImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.ROW_NUMBER ), constructorSupplier( RowNumberImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.FIRST_VALUE ), constructorSupplier( FirstValueImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.NTH_VALUE ), constructorSupplier( NthValueImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.LAST_VALUE ), constructorSupplier( LastValueImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.LEAD ), constructorSupplier( LeadImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.LAG ), constructorSupplier( LagImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.NTILE ), constructorSupplier( NtileImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountWinImplementor.class ) );
-        winAggMap.put( StdOperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountWinImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.GROUPING ), grouping );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.GROUP_ID ), grouping );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.GROUPING_ID ), grouping );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.RANK ), constructorSupplier( RankImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.DENSE_RANK ), constructorSupplier( DenseRankImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.ROW_NUMBER ), constructorSupplier( RowNumberImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.FIRST_VALUE ), constructorSupplier( FirstValueImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.NTH_VALUE ), constructorSupplier( NthValueImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.LAST_VALUE ), constructorSupplier( LastValueImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.LEAD ), constructorSupplier( LeadImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.LAG ), constructorSupplier( LagImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.NTILE ), constructorSupplier( NtileImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountWinImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountWinImplementor.class ) );
     }
 
 
@@ -1158,7 +1158,7 @@ public class RexImpTable {
 
         @Override
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
-            Object initValue = info.aggregation().equals( StdOperatorRegistry.getAgg( OperatorName.BIT_AND ) ) ? -1 : 0;
+            Object initValue = info.aggregation().equals( OperatorRegistry.getAgg( OperatorName.BIT_AND ) ) ? -1 : 0;
             Expression start = Expressions.constant( initValue, info.returnType() );
 
             reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), start ) ) );
@@ -1170,7 +1170,7 @@ public class RexImpTable {
             Expression acc = add.accumulator().get( 0 );
             Expression arg = add.arguments().get( 0 );
             AggFunction aggregation = info.aggregation();
-            final Method method = (aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.BIT_AND ) )
+            final Method method = (aggregation.equals( OperatorRegistry.getAgg( OperatorName.BIT_AND ) )
                     ? BuiltInMethod.BIT_AND
                     : BuiltInMethod.BIT_OR).method;
             Expression next = Expressions.call( method.getDeclaringClass(), method.getName(), acc, Expressions.unbox( arg ) );
@@ -1959,10 +1959,10 @@ public class RexImpTable {
 
         private static final List<BinaryOperator> COMPARISON_OPERATORS =
                 ImmutableList.of(
-                        StdOperatorRegistry.get( OperatorName.LESS_THAN, BinaryOperator.class ),
-                        StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL, BinaryOperator.class ),
-                        StdOperatorRegistry.get( OperatorName.GREATER_THAN, BinaryOperator.class ),
-                        StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL, BinaryOperator.class ) );
+                        OperatorRegistry.get( OperatorName.LESS_THAN, BinaryOperator.class ),
+                        OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL, BinaryOperator.class ),
+                        OperatorRegistry.get( OperatorName.GREATER_THAN, BinaryOperator.class ),
+                        OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL, BinaryOperator.class ) );
         public static final String METHOD_POSTFIX_FOR_ANY_TYPE = "Any";
 
         private final ExpressionType expressionType;
@@ -2542,7 +2542,7 @@ public class RexImpTable {
             }
             final Operator op = call.getOperator();
             final Expression root = translator.getRoot();
-            if ( op.equals( StdOperatorRegistry.get( OperatorName.CURRENT_USER ) )
+            if ( op.equals( OperatorRegistry.get( OperatorName.CURRENT_USER ) )
                     || op.getOperatorName() == OperatorName.SESSION_USER
                     || op.getOperatorName() == OperatorName.USER ) {
                 return Expressions.constant( "sa" );

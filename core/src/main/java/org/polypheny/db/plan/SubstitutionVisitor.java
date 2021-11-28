@@ -56,8 +56,8 @@ import java.util.TreeMap;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.fun.AggFunction;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.AggregateCall;
@@ -1362,7 +1362,7 @@ public class SubstitutionVisitor {
                 OperatorName.ANY_VALUE ).contains( aggregation.getOperatorName() ) ) {
             return aggregation;
         } else if ( aggregation.getOperatorName() == OperatorName.COUNT ) {
-            return StdOperatorRegistry.getAgg( OperatorName.SUM0 );
+            return OperatorRegistry.getAgg( OperatorName.SUM0 );
         } else {
             return null;
         }

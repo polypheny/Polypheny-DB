@@ -31,9 +31,9 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
 import org.polypheny.db.util.Pair;
 
@@ -87,14 +87,14 @@ public class RequestParserTest {
                 "username",
                 "testdb" );
         HashMap<String, Pair<Operator, String>> operationMap = new HashMap<>();
-        operationMap.put( ">=10", new Pair<>( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), "10" ) );
-        operationMap.put( ">10", new Pair<>( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), "10" ) );
-        operationMap.put( "<=10", new Pair<>( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "10" ) );
-        operationMap.put( "<10", new Pair<>( StdOperatorRegistry.get( OperatorName.LESS_THAN ), "10" ) );
-        operationMap.put( "=10", new Pair<>( StdOperatorRegistry.get( OperatorName.EQUALS ), "10" ) );
-        operationMap.put( "!=10", new Pair<>( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), "10" ) );
-        operationMap.put( "%10", new Pair<>( StdOperatorRegistry.get( OperatorName.LIKE ), "10" ) );
-        operationMap.put( "!%10", new Pair<>( StdOperatorRegistry.get( OperatorName.NOT_LIKE ), "10" ) );
+        operationMap.put( ">=10", new Pair<>( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), "10" ) );
+        operationMap.put( ">10", new Pair<>( OperatorRegistry.get( OperatorName.GREATER_THAN ), "10" ) );
+        operationMap.put( "<=10", new Pair<>( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "10" ) );
+        operationMap.put( "<10", new Pair<>( OperatorRegistry.get( OperatorName.LESS_THAN ), "10" ) );
+        operationMap.put( "=10", new Pair<>( OperatorRegistry.get( OperatorName.EQUALS ), "10" ) );
+        operationMap.put( "!=10", new Pair<>( OperatorRegistry.get( OperatorName.NOT_EQUALS ), "10" ) );
+        operationMap.put( "%10", new Pair<>( OperatorRegistry.get( OperatorName.LIKE ), "10" ) );
+        operationMap.put( "!%10", new Pair<>( OperatorRegistry.get( OperatorName.NOT_LIKE ), "10" ) );
 
         operationMap.forEach( ( k, v ) -> {
             Pair<Operator, String> operationPair = requestParser.parseFilterOperation( k );

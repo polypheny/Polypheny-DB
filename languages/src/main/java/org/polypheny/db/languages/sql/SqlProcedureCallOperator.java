@@ -19,9 +19,9 @@ package org.polypheny.db.languages.sql;
 
 import java.util.Collections;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 
 
@@ -47,9 +47,9 @@ public class SqlProcedureCallOperator extends SqlPrefixOperator {
                 new SqlNodeList(
                         Collections.singletonList( call.operand( 0 ) ),
                         ParserPos.ZERO ),
-                (SqlNode) StdOperatorRegistry.get( OperatorName.VALUES ).createCall(
+                (SqlNode) OperatorRegistry.get( OperatorName.VALUES ).createCall(
                         ParserPos.ZERO,
-                        StdOperatorRegistry.get( OperatorName.ROW ).createCall(
+                        OperatorRegistry.get( OperatorName.ROW ).createCall(
                                 ParserPos.ZERO,
                                 SqlLiteral.createExactNumeric( "0", ParserPos.ZERO ) ) ),
                 null,

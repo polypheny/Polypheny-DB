@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
@@ -404,7 +404,7 @@ public class LoptSemiJoinOptimizer {
             if ( right == null ) {
                 return left;
             }
-            return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), left, right );
+            return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), left, right );
         }
 
         // Determine which side of the equality filter references the join operand we're interested in; then, check if it is contained in our key list

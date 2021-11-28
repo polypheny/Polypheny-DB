@@ -52,46 +52,46 @@ import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.enums.AccessEnum;
-import org.polypheny.db.core.util.AccessType;
-import org.polypheny.db.core.nodes.BasicNodeVisitor;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.util.Conformance;
-import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.nodes.DataTypeSpec;
-import org.polypheny.db.core.nodes.DynamicParam;
-import org.polypheny.db.core.enums.FunctionCategory;
-import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.InitializerContext;
-import org.polypheny.db.core.nodes.IntervalQualifier;
+import org.polypheny.db.core.enums.AccessEnum;
+import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.JoinConditionType;
 import org.polypheny.db.core.enums.JoinType;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.enums.Modality;
+import org.polypheny.db.core.enums.MonikerType;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.util.NameMatcher;
+import org.polypheny.db.core.enums.NullCollation;
+import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.nodes.BasicNodeVisitor;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.DataTypeSpec;
+import org.polypheny.db.core.nodes.DynamicParam;
+import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.nodes.IntervalQualifier;
+import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.NodeList;
 import org.polypheny.db.core.nodes.NodeVisitor;
-import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.core.util.AccessType;
+import org.polypheny.db.core.util.Conformance;
+import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.util.MonikerImpl;
-import org.polypheny.db.core.enums.MonikerType;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.util.SqlValidatorException;
-import org.polypheny.db.languages.StdOperatorRegistry;
-import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorException;
 import org.polypheny.db.core.validate.ValidatorNamespace;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.core.validate.ValidatorTable;
-import org.polypheny.db.core.util.ValidatorUtil;
-import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.document.util.DocumentUtil;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.SqlRelOptUtil;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlBasicCall;
@@ -450,7 +450,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             String newAlias = deriveAlias( expanded, aliases.size() );
             if ( !newAlias.equals( alias ) ) {
                 expanded =
-                        (SqlNode) StdOperatorRegistry.get( OperatorName.AS ).createCall(
+                        (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall(
                                 selectItem.getPos(),
                                 expanded,
                                 new SqlIdentifier( alias, ParserPos.ZERO ) );
@@ -588,7 +588,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private SqlNode maybeCast( SqlNode node, RelDataType currentType, RelDataType desiredType ) {
         return currentType.equals( desiredType ) || (currentType.isNullable() != desiredType.isNullable() && typeFactory.createTypeWithNullability( currentType, desiredType.isNullable() ).equals( desiredType ))
                 ? node
-                : (SqlNode) StdOperatorRegistry.get( OperatorName.CAST ).createCall( ParserPos.ZERO, node, (Node) PolyTypeUtil.convertTypeToSpec( desiredType ) );
+                : (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( ParserPos.ZERO, node, (Node) PolyTypeUtil.convertTypeToSpec( desiredType ) );
     }
 
 
@@ -1376,7 +1376,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // Create join condition between source and target exprs, creating a conjunction with the user-level WHERE clause if one was supplied
         SqlNode condition = updateCall.getCondition();
         SqlNode selfJoinCond =
-                (SqlNode) StdOperatorRegistry.get( OperatorName.EQUALS ).createCall(
+                (SqlNode) OperatorRegistry.get( OperatorName.EQUALS ).createCall(
                         ParserPos.ZERO,
                         selfJoinSrcExpr,
                         selfJoinTgtExpr );
@@ -1384,7 +1384,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             condition = selfJoinCond;
         } else {
             condition =
-                    (SqlNode) StdOperatorRegistry.get( OperatorName.AND ).createCall(
+                    (SqlNode) OperatorRegistry.get( OperatorName.AND ).createCall(
                             ParserPos.ZERO,
                             selfJoinCond,
                             condition );
@@ -2779,7 +2779,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             for ( int i = 0, count = list.size(); i < count; i++ ) {
                 Node listNode = list.get( i );
                 if ( listNode.getKind().belongsTo( Kind.QUERY ) ) {
-                    listNode = StdOperatorRegistry.get( OperatorName.SCALAR_QUERY ).createCall( listNode.getPos(), listNode );
+                    listNode = OperatorRegistry.get( OperatorName.SCALAR_QUERY ).createCall( listNode.getPos(), listNode );
                     list.set( i, listNode );
                 }
                 registerSubQueries( parentScope, (SqlNode) listNode );
@@ -2804,7 +2804,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return;
         }
         if ( operand.getKind().belongsTo( Kind.QUERY ) && ((SqlOperator) call.getOperator()).argumentMustBeScalar( operandOrdinal ) ) {
-            operand = (SqlNode) StdOperatorRegistry.get( OperatorName.SCALAR_QUERY ).createCall( operand.getPos(), operand );
+            operand = (SqlNode) OperatorRegistry.get( OperatorName.SCALAR_QUERY ).createCall( operand.getPos(), operand );
             call.setOperand( operandOrdinal, operand );
         }
         registerSubQueries( parentScope, operand );
@@ -4596,7 +4596,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             for ( Node operand : operands ) {
                 SqlCall thisRow = (SqlCall) operand;
                 if ( columnCount != thisRow.operandCount() ) {
-                    throw newValidationError( node, RESOURCE.incompatibleValueType( StdOperatorRegistry.get( OperatorName.VALUES ).getName() ) );
+                    throw newValidationError( node, RESOURCE.incompatibleValueType( OperatorRegistry.get( OperatorName.VALUES ).getName() ) );
                 }
             }
 
@@ -4620,7 +4620,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                                 } );
 
                 if ( null == type ) {
-                    throw newValidationError( node, RESOURCE.incompatibleValueType( StdOperatorRegistry.get( OperatorName.VALUES ).getName() ) );
+                    throw newValidationError( node, RESOURCE.incompatibleValueType( OperatorRegistry.get( OperatorName.VALUES ).getName() ) );
                 }
             }
         }
@@ -4942,7 +4942,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             setValidatedNodeType( (SqlNode) measure, type );
 
             fields.add( Pair.of( alias, type ) );
-            sqlNodes.add( (SqlNode) StdOperatorRegistry.get( OperatorName.AS ).createCall( ParserPos.ZERO, expand, new SqlIdentifier( alias, ParserPos.ZERO ) ) );
+            sqlNodes.add( (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall( ParserPos.ZERO, expand, new SqlIdentifier( alias, ParserPos.ZERO ) ) );
         }
 
         SqlNodeList list = new SqlNodeList( sqlNodes, measures.getPos() );
@@ -4965,12 +4965,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         final Operator defaultOp =
                 allRows
-                        ? StdOperatorRegistry.get( OperatorName.RUNNING )
-                        : StdOperatorRegistry.get( OperatorName.FINAL );
+                        ? OperatorRegistry.get( OperatorName.RUNNING )
+                        : OperatorRegistry.get( OperatorName.FINAL );
         final Node op0 = ops.get( 0 );
         if ( !isRunningOrFinal( op0.getKind() ) || !allRows && op0.getKind() == Kind.RUNNING ) {
             Node newNode = defaultOp.createCall( ParserPos.ZERO, op0 );
-            node = (SqlNode) StdOperatorRegistry.get( OperatorName.AS ).createCall( ParserPos.ZERO, newNode, ops.get( 1 ) );
+            node = (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall( ParserPos.ZERO, newNode, ops.get( 1 ) );
         }
 
         node = new NavigationExpander().go( node );
@@ -5001,7 +5001,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             // Some extra work need required here.
             // In PREV, NEXT, FINAL and LAST, only one pattern variable is allowed.
             sqlNodes.add(
-                    (SqlNode) StdOperatorRegistry.get( OperatorName.AS ).createCall(
+                    (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall(
                             ParserPos.ZERO,
                             expand,
                             new SqlIdentifier( alias, ParserPos.ZERO ) ) );
@@ -5637,7 +5637,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 SqlNode[] inputs = new SqlNode[2];
                 inputs[0] = fqId;
                 inputs[1] = SqlLiteral.createCharString( Util.last( id.names ), id.getPos() );
-                return new SqlBasicCall( StdOperatorRegistry.get( OperatorName.ITEM, SqlOperator.class ), inputs, id.getPos() );
+                return new SqlBasicCall( OperatorRegistry.get( OperatorName.ITEM, SqlOperator.class ), inputs, id.getPos() );
             }
             return fqId;
         }
@@ -5944,8 +5944,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         Node innerOffset = innerOperands.get( 1 );
                         Operator newOperator =
                                 innerKind == kind
-                                        ? StdOperatorRegistry.get( OperatorName.PLUS )
-                                        : StdOperatorRegistry.get( OperatorName.MINUS );
+                                        ? OperatorRegistry.get( OperatorName.PLUS )
+                                        : OperatorRegistry.get( OperatorName.MINUS );
                         offset = newOperator.createCall( ParserPos.ZERO, offset, innerOffset );
                         inner = call.getOperator().createCall( ParserPos.ZERO, innerOperands.get( 0 ), offset );
                     }
@@ -6022,7 +6022,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         String name = ((SqlIdentifier) operands.get( 0 )).names.get( 0 );
                         return (SqlNode) (name.equals( alpha )
                                 ? call
-                                : StdOperatorRegistry.get( OperatorName.LAST ).createCall( ParserPos.ZERO, operands ));
+                                : OperatorRegistry.get( OperatorName.LAST ).createCall( ParserPos.ZERO, operands ));
                     }
             }
             return super.visit( call );
@@ -6035,8 +6035,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 return (SqlNode) id;
             }
             Operator operator = id.getNames().get( 0 ).equals( alpha )
-                    ? StdOperatorRegistry.get( OperatorName.PREV )
-                    : StdOperatorRegistry.get( OperatorName.LAST );
+                    ? OperatorRegistry.get( OperatorName.PREV )
+                    : OperatorRegistry.get( OperatorName.LAST );
 
             return (SqlNode) operator.createCall(
                     ParserPos.ZERO,
@@ -6131,7 +6131,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     default:
                         if ( operands.size() == 0
                                 || !(operands.get( 0 ) instanceof SqlCall)
-                                || !((SqlCall) operands.get( 0 )).getOperator().equals( StdOperatorRegistry.get( OperatorName.CLASSIFIER ) ) ) {
+                                || !((SqlCall) operands.get( 0 )).getOperator().equals( OperatorRegistry.get( OperatorName.CLASSIFIER ) ) ) {
                             if ( vars.isEmpty() ) {
                                 throw newValidationError( call, Static.RESOURCE.patternFunctionNullCheck( call.toString() ) );
                             }
@@ -6305,9 +6305,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     final boolean nullable = type.isNullable() && type1.isNullable();
                     final RelDataType type2 = PolyTypeUtil.leastRestrictiveForComparison( typeFactory, type, type1 );
                     selectItem =
-                            (SqlNode) StdOperatorRegistry.get( OperatorName.AS ).createCall(
+                            (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall(
                                     ParserPos.ZERO,
-                                    StdOperatorRegistry.get( OperatorName.COALESCE ).createCall(
+                                    OperatorRegistry.get( OperatorName.COALESCE ).createCall(
                                             ParserPos.ZERO,
                                             maybeCast( selectItem, type, type2 ),
                                             maybeCast( selectItem1, type1, type2 ) ),

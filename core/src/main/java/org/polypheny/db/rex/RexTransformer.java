@@ -39,8 +39,8 @@ import java.util.HashSet;
 import java.util.Set;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyTypeUtil;
 
@@ -63,15 +63,15 @@ public class RexTransformer {
         this.rexBuilder = rexBuilder;
         isParentsCount = 0;
 
-        transformableOperators.add( StdOperatorRegistry.get( OperatorName.AND ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.AND ) );
 
         // NOTE the OR operator is NOT missing. see {@link org.polypheny.db.test.RexTransformerTest}
-        transformableOperators.add( StdOperatorRegistry.get( OperatorName.EQUALS ) );
-        transformableOperators.add( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ) );
-        transformableOperators.add( StdOperatorRegistry.get( OperatorName.GREATER_THAN ) );
-        transformableOperators.add( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ) );
-        transformableOperators.add( StdOperatorRegistry.get( OperatorName.LESS_THAN ) );
-        transformableOperators.add( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.EQUALS ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.GREATER_THAN ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.LESS_THAN ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ) );
     }
 
 
@@ -130,19 +130,19 @@ public class RexTransformer {
                 if ( isNullable( node ) ) {
                     RexNode notNullNode =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ),
+                                    OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                     operand );
                     RexNode boolNode =
                             rexBuilder.makeLiteral(
                                     directlyUnderIs.booleanValue() );
                     RexNode eqNode =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.EQUALS ),
+                                    OperatorRegistry.get( OperatorName.EQUALS ),
                                     operand,
                                     boolNode );
                     RexNode andBoolNode =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.AND ),
+                                    OperatorRegistry.get( OperatorName.AND ),
                                     notNullNode,
                                     eqNode );
 
@@ -153,7 +153,7 @@ public class RexTransformer {
                                     directlyUnderIs.booleanValue() );
                     RexNode andBoolNode =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.EQUALS ),
+                                    OperatorRegistry.get( OperatorName.EQUALS ),
                                     node,
                                     boolNode );
                     return andBoolNode;
@@ -185,7 +185,7 @@ public class RexTransformer {
                 if ( isTransformable( operands.get( 0 ) ) ) {
                     isNotNullOne =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ),
+                                    OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                     operands.get( 0 ) );
                 } else {
                     isNotNullOne = null;
@@ -195,7 +195,7 @@ public class RexTransformer {
                 if ( isTransformable( operands.get( 1 ) ) ) {
                     isNotNullTwo =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ),
+                                    OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                     operands.get( 1 ) );
                 } else {
                     isNotNullTwo = null;
@@ -205,7 +205,7 @@ public class RexTransformer {
                 if ( (null != isNotNullOne) && (null != isNotNullTwo) ) {
                     intoFinalAnd =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.AND ),
+                                    OperatorRegistry.get( OperatorName.AND ),
                                     isNotNullOne,
                                     isNotNullTwo );
                 } else if ( null != isNotNullOne ) {
@@ -217,7 +217,7 @@ public class RexTransformer {
                 if ( null != intoFinalAnd ) {
                     RexNode andNullAndCheckNode =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.AND ),
+                                    OperatorRegistry.get( OperatorName.AND ),
                                     intoFinalAnd,
                                     call.clone( call.getType(), operands ) );
                     return andNullAndCheckNode;

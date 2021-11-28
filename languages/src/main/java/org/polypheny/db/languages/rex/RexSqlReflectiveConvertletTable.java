@@ -20,7 +20,7 @@ package org.polypheny.db.languages.rex;
 import java.util.HashMap;
 import java.util.Map;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexCall;
 
 
@@ -73,7 +73,7 @@ public class RexSqlReflectiveConvertletTable implements RexSqlConvertletTable {
     /**
      * Registers a convertlet for a given operator instance
      *
-     * @param op Operator instance, say {@link StdOperatorRegistry #MINUS}
+     * @param op Operator instance, say {@link OperatorRegistry #MINUS}
      * @param convertlet Convertlet
      */
     protected void registerOp( Operator op, RexSqlConvertlet convertlet ) {

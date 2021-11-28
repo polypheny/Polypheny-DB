@@ -33,24 +33,24 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.nodes.BasicNodeVisitor;
 import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.nodes.DataTypeSpec;
 import org.polypheny.db.core.nodes.DynamicParam;
-import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.nodes.IntervalQualifier;
-import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.NodeList;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.StdOperatorRegistry;
-import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -81,7 +81,7 @@ public abstract class SqlUtil {
         } else {
             list.add( node2 );
         }
-        return (SqlNode) StdOperatorRegistry.get( OperatorName.AND ).createCall( ParserPos.ZERO, list );
+        return (SqlNode) OperatorRegistry.get( OperatorName.AND ).createCall( ParserPos.ZERO, list );
     }
 
 

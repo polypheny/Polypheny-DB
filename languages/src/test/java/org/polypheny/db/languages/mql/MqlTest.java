@@ -25,7 +25,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
@@ -41,12 +41,12 @@ public abstract class MqlTest extends LanguageManagerDependant {
     @Getter
     private static final Map<String, Kind> logicalOperators;
 
-    public static final Operator eq = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS );
-    public static final Operator ne = StdOperatorRegistry.get( OperatorName.NOT_EQUALS );
-    public static final Operator gt = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GT );
-    public static final Operator gte = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GTE );
-    public static final Operator lt = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LT );
-    public static final Operator lte = StdOperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LTE );
+    public static final Operator eq = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS );
+    public static final Operator ne = OperatorRegistry.get( OperatorName.NOT_EQUALS );
+    public static final Operator gt = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GT );
+    public static final Operator gte = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GTE );
+    public static final Operator lt = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LT );
+    public static final Operator lte = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LTE );
 
 
     static {

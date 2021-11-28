@@ -26,7 +26,7 @@ import org.polypheny.db.core.InitializerExpressionFactory;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -248,11 +248,11 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                         final RelDataTypeField salField = tableRowType.getFieldList().get( 5 );
                         final List<RexNode> nodes = Arrays.asList(
                                 rexBuilder.makeCall(
-                                        StdOperatorRegistry.get( OperatorName.EQUALS ),
+                                        OperatorRegistry.get( OperatorName.EQUALS ),
                                         rexBuilder.makeInputRef( deptnoField.getType(), deptnoField.getIndex() ),
                                         rexBuilder.makeExactLiteral( BigDecimal.valueOf( 20L ), deptnoField.getType() ) ),
                                 rexBuilder.makeCall(
-                                        StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
+                                        OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                         rexBuilder.makeInputRef( salField.getType(), salField.getIndex() ),
                                         rexBuilder.makeExactLiteral( BigDecimal.valueOf( 1000L ), salField.getType() ) ) );
                         return RexUtil.composeConjunction( rexBuilder, nodes );
@@ -275,10 +275,10 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
                 final RelDataTypeField deptnoField = tableRowType.getFieldList().get( 7 );
                 final RelDataTypeField salField = tableRowType.getFieldList().get( 5 );
                 final List<RexNode> nodes = Arrays.asList(
-                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ),
+                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ),
                                 rexBuilder.makeInputRef( deptnoField.getType(), deptnoField.getIndex() ),
                                 rexBuilder.makeExactLiteral( BigDecimal.valueOf( 20L ), deptnoField.getType() ) ),
-                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
+                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                 rexBuilder.makeInputRef( salField.getType(), salField.getIndex() ),
                                 rexBuilder.makeExactLiteral( BigDecimal.valueOf( 1000L ), salField.getType() ) ) );
                 return RexUtil.composeConjunction( rexBuilder, nodes );
@@ -341,7 +341,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
             @Override
             public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
                 final RelDataTypeField c0Field = tableRowType.getFieldList().get( 4 );
-                return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ),
+                return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ),
                         rexBuilder.makeInputRef( c0Field.getType(), c0Field.getIndex() ),
                         rexBuilder.makeExactLiteral( BigDecimal.valueOf( 10L ), c0Field.getType() ) );
             }

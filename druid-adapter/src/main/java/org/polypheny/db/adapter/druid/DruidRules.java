@@ -47,7 +47,7 @@ import org.joda.time.Interval;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPredicateList;
 import org.polypheny.db.plan.RelOptRule;
@@ -573,7 +573,7 @@ public class DruidRules {
 
             if ( containsFilter ) {
                 // AND the current filterNode with the filter node inside filter
-                filterNode = builder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), filterNode, filter.getCondition() );
+                filterNode = builder.makeCall( OperatorRegistry.get( OperatorName.AND ), filterNode, filter.getCondition() );
             }
 
             // Simplify the filter as much as possible

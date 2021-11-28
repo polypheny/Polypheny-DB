@@ -48,9 +48,9 @@ import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.plan.ConventionTraitDef;
@@ -131,7 +131,7 @@ public class FrameworksTest extends LanguageManagerDependant {
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
                     final RexNode condition =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
+                                    OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                     rexBuilder.makeFieldAccess( rexBuilder.makeRangeReference( tableRel ), "i", true ),
                                     rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
                     final LogicalFilter filter = LogicalFilter.create( tableRel, condition );
@@ -224,7 +224,7 @@ public class FrameworksTest extends LanguageManagerDependant {
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.DECIMAL, 30, 2 );
                         final RexLiteral literal = cluster.getRexBuilder().makeExactLiteral( BigDecimal.ONE, type );
-                        final RexNode call = cluster.getRexBuilder().makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), literal, literal );
+                        final RexNode call = cluster.getRexBuilder().makeCall( OperatorRegistry.get( OperatorName.PLUS ), literal, literal );
                         assertEquals( expected, call.getType().getPrecision() );
                         return null;
                     }

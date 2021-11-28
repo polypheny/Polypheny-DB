@@ -142,19 +142,19 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Validator createPolyphenyValidator( QueryLanguage sql, OperatorTable operatorTable, PolyphenyDbCatalogReader catalogReader, JavaTypeFactory typeFactory, Conformance conformance ) {
+    public Validator createPolyphenyValidator( QueryLanguage language, OperatorTable operatorTable, PolyphenyDbCatalogReader catalogReader, JavaTypeFactory typeFactory, Conformance conformance ) {
         return new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
     }
 
 
     @Override
-    public ParserFactory getFactory( QueryLanguage sql ) {
+    public ParserFactory getFactory( QueryLanguage language ) {
         return SqlParserImpl.FACTORY;
     }
 
 
     @Override
-    public Parser getParser( QueryLanguage sql, Reader reader, ParserConfig sqlParserConfig ) {
+    public Parser getParser( QueryLanguage language, Reader reader, ParserConfig sqlParserConfig ) {
         SqlAbstractParserImpl parser = (SqlAbstractParserImpl) sqlParserConfig.parserFactory().getParser( reader );
 
         return new SqlParser( parser, sqlParserConfig );
@@ -168,25 +168,25 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Logger getLogger( QueryLanguage queryLanguage, Class<RelNode> relNodeClass ) {
+    public Logger getLogger( QueryLanguage language, Class<RelNode> relNodeClass ) {
         return SqlToRelConverter.SQL2REL_LOGGER;
     }
 
 
     @Override
-    public Identifier createIdentifier( QueryLanguage sql, String name, ParserPos zero ) {
+    public Identifier createIdentifier( QueryLanguage language, String name, ParserPos zero ) {
         return new SqlIdentifier( name, zero );
     }
 
 
     @Override
-    public Identifier createIdentifier( QueryLanguage sql, List<String> names, ParserPos zero ) {
+    public Identifier createIdentifier( QueryLanguage language, List<String> names, ParserPos zero ) {
         return new SqlIdentifier( names, zero );
     }
 
 
     @Override
-    public DataTypeSpec createDataTypeSpec( QueryLanguage sql, Identifier typeIdentifier, int precision, int scale, String charSetName, TimeZone o, ParserPos pos ) {
+    public DataTypeSpec createDataTypeSpec( QueryLanguage language, Identifier typeIdentifier, int precision, int scale, String charSetName, TimeZone o, ParserPos pos ) {
         return new SqlDataTypeSpec(
                 (SqlIdentifier) typeIdentifier,
                 precision,
@@ -198,7 +198,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public DataTypeSpec createDataTypeSpec( QueryLanguage sql,
+    public DataTypeSpec createDataTypeSpec( QueryLanguage language,
             Identifier typeIdentifier,
             Identifier componentTypeIdentifier,
             int precision,
@@ -223,7 +223,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public IntervalQualifier createIntervalQualifier( QueryLanguage sql,
+    public IntervalQualifier createIntervalQualifier( QueryLanguage language,
             TimeUnit startUnit,
             int startPrecision,
             TimeUnit endUnit,
@@ -234,7 +234,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Literal createLiteral( PolyType polyType, Object o, ParserPos pos ) {
+    public Literal createLiteral( QueryLanguage language, PolyType polyType, Object o, ParserPos pos ) {
         switch ( polyType ) {
             case BOOLEAN:
                 return SqlLiteral.createBoolean( (Boolean) o, pos );
@@ -278,31 +278,31 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public AggFunction createMinMaxAggFunction( Kind kind ) {
+    public AggFunction createMinMaxAggFunction( QueryLanguage language, Kind kind ) {
         return new SqlMinMaxAggFunction( kind );
     }
 
 
     @Override
-    public AggFunction createSumEmptyIsZeroFunction() {
+    public AggFunction createSumEmptyIsZeroFunction( QueryLanguage language ) {
         return new SqlSumEmptyIsZeroAggFunction();
     }
 
 
     @Override
-    public AggFunction createBitOpAggFunction( Kind kind ) {
+    public AggFunction createBitOpAggFunction( QueryLanguage language, Kind kind ) {
         return new SqlBitOpAggFunction( kind );
     }
 
 
     @Override
-    public AggFunction createSumAggFunction( RelDataType type ) {
+    public AggFunction createSumAggFunction( QueryLanguage language, RelDataType type ) {
         return new SqlSumAggFunction( type );
     }
 
 
     @Override
-    public Operator createFunction( String name,
+    public Operator createFunction( QueryLanguage language, String name,
             Kind kind,
             PolyReturnTypeInference returnTypeInference,
             PolyOperandTypeInference o,
@@ -333,7 +333,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Operator createUserDefinedFunction( QueryLanguage sql,
+    public Operator createUserDefinedFunction( QueryLanguage language,
             Identifier name,
             PolyReturnTypeInference infer,
             PolyOperandTypeInference explicit,
@@ -345,7 +345,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Operator createUserDefinedAggFunction( QueryLanguage queryLanguage,
+    public Operator createUserDefinedAggFunction( QueryLanguage language,
             Identifier name,
             PolyReturnTypeInference infer,
             PolyOperandTypeInference explicit,
@@ -369,7 +369,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Operator createUserDefinedTableMacro( QueryLanguage sql,
+    public Operator createUserDefinedTableMacro( QueryLanguage language,
             Identifier name,
             PolyReturnTypeInference typeInference,
             PolyOperandTypeInference explicit,

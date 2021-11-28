@@ -61,7 +61,7 @@ import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.BsonUtil;
 import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.document.rules.DocumentRules;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.languages.sql.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.plan.Convention;
@@ -232,41 +232,41 @@ public class MongoRules {
 
         static {
             // Arithmetic
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.DIVIDE ), "$divide" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.MULTIPLY ), "$multiply" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.MOD ), "$mod" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.PLUS ), "$add" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.MINUS ), "$subtract" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.DIVIDE ), "$divide" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MULTIPLY ), "$multiply" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MOD ), "$mod" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.PLUS ), "$add" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MINUS ), "$subtract" );
             // Boolean
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.AND ), "$and" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.OR ), "$or" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.NOT ), "$not" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.AND ), "$and" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.OR ), "$or" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.NOT ), "$not" );
             // Comparison
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.EQUALS ), "$eq" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), "$ne" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), "$gt" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), "$gte" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.LESS_THAN ), "$lt" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "$lte" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.EQUALS ), "$eq" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.NOT_EQUALS ), "$ne" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.GREATER_THAN ), "$gt" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), "$gte" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.LESS_THAN ), "$lt" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "$lte" );
 
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.FLOOR ), "$floor" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.CEIL ), "$ceil" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.EXP ), "$exp" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.LN ), "$ln" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.LOG10 ), "$log10" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.ABS ), "$abs" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.CHAR_LENGTH ), "$strLenCP" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.SUBSTRING ), "$substrCP" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.ROUND ), "$round" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.ACOS ), "$acos" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.TAN ), "$tan" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.COS ), "$cos" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.ASIN ), "$asin" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.SIN ), "$sin" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.ATAN ), "$atan" );
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.ATAN2 ), "$atan2" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.FLOOR ), "$floor" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.CEIL ), "$ceil" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.EXP ), "$exp" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.LN ), "$ln" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.LOG10 ), "$log10" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ABS ), "$abs" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.CHAR_LENGTH ), "$strLenCP" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.SUBSTRING ), "$substrCP" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ROUND ), "$round" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ACOS ), "$acos" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.TAN ), "$tan" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.COS ), "$cos" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ASIN ), "$asin" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.SIN ), "$sin" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ATAN ), "$atan" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ATAN2 ), "$atan2" );
 
-            MONGO_OPERATORS.put( StdOperatorRegistry.get( OperatorName.POWER ), "$pow" );
+            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.POWER ), "$pow" );
         }
 
 
@@ -315,7 +315,7 @@ public class MongoRules {
             }
             String stdOperator = MONGO_OPERATORS.get( call.getOperator() );
             if ( stdOperator != null ) {
-                if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.SUBSTRING ) ) ) {
+                if ( call.getOperator().equals( OperatorRegistry.get( OperatorName.SUBSTRING ) ) ) {
                     String first = strings.get( 1 );
                     first = "{\"$subtract\":[" + first + ", 1]}";
                     strings.remove( 1 );
@@ -339,7 +339,7 @@ public class MongoRules {
                     return "{$arrayElemAt:[" + strings.get( 0 ) + ", {$subtract:[" + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + ", 1]}]}";
                 }
             }
-            if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.CASE ) ) ) {
+            if ( call.getOperator().equals( OperatorRegistry.get( OperatorName.CASE ) ) ) {
                 StringBuilder sb = new StringBuilder();
                 StringBuilder finish = new StringBuilder();
                 // case(a, b, c)  -> $cond:[a, b, c]
@@ -366,7 +366,7 @@ public class MongoRules {
                 sb.append( finish );
                 return sb.toString();
             }
-            if ( call.op.equals( StdOperatorRegistry.get( OperatorName.UNARY_MINUS ) ) ) {
+            if ( call.op.equals( OperatorRegistry.get( OperatorName.UNARY_MINUS ) ) ) {
                 if ( strings.size() == 1 ) {
                     return "{\"$multiply\":[" + strings.get( 0 ) + ",-1]}";
                 }
@@ -408,7 +408,7 @@ public class MongoRules {
                 return sb.toString();
             }
 
-            if ( call.op.equals( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ) ) ) {
+            if ( call.op.equals( OperatorRegistry.get( OperatorName.IS_NOT_NULL ) ) ) {
                 return call.operands.get( 0 ).
 
                         accept( this );

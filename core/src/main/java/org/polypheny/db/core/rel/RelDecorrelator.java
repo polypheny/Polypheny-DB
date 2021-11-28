@@ -50,7 +50,7 @@ import org.polypheny.db.core.nodes.Function;
 import org.polypheny.db.core.nodes.Function.FunctionType;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCostImpl;
@@ -1014,7 +1014,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             final int newRightPos = rightOutput.getValue();
             conditions.add(
                     relBuilder.call(
-                            StdOperatorRegistry.get( OperatorName.EQUALS ),
+                            OperatorRegistry.get( OperatorName.EQUALS ),
                             RexInputRef.of( newLeftPos, newLeftOutput ),
                             new RexInputRef( newLeftFieldCount + newRightPos, newRightOutput.get( newRightPos ).getType() ) ) );
 
@@ -1458,7 +1458,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             // WHEN indicator IS NULL
             caseOperands[0] =
                     rexBuilder.makeCall(
-                            StdOperatorRegistry.get( OperatorName.IS_NULL ),
+                            OperatorRegistry.get( OperatorName.IS_NULL ),
                             new RexInputRef(
                                     nullInputRef.getIndex(),
                                     typeFactory.createTypeWithNullability(
@@ -1482,7 +1482,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
                             rexNode );
 
             return rexBuilder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.CASE ),
+                    OperatorRegistry.get( OperatorName.CASE ),
                     caseOperands );
         }
 

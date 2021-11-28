@@ -28,7 +28,7 @@ import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -52,7 +52,7 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
      * Performs post-constructor initialization of an operator table. It can't be part of the constructor, because the subclass constructor needs to complete first.
      */
     public final void init() {
-        StdOperatorRegistry
+        OperatorRegistry
                 .getAllOperators()
                 .forEach( ( name, operator ) -> register( operator ) );
     }

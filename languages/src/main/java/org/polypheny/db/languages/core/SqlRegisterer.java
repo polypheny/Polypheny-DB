@@ -25,10 +25,10 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Modality;
-import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.json.JsonConstructorNullClause;
+import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlAsOperator;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
@@ -2088,20 +2088,20 @@ public class SqlRegisterer {
                     @Override
                     public List<SqlGroupedWindowFunction> getAuxiliaryFunctions() {
                         return ImmutableList.of(
-                                StdOperatorRegistry.get( OperatorName.TUMBLE_START, SqlGroupedWindowFunction.class ),
-                                StdOperatorRegistry.get( OperatorName.TUMBLE_END, SqlGroupedWindowFunction.class ) );
+                                OperatorRegistry.get( OperatorName.TUMBLE_START, SqlGroupedWindowFunction.class ),
+                                OperatorRegistry.get( OperatorName.TUMBLE_END, SqlGroupedWindowFunction.class ) );
                     }
                 } );
 
         /**
          * The {@code TUMBLE_START} auxiliary function of the {@code TUMBLE} group function.
          */
-        register( OperatorName.TUMBLE_START, StdOperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class ).auxiliary( Kind.TUMBLE_START ) );
+        register( OperatorName.TUMBLE_START, OperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class ).auxiliary( Kind.TUMBLE_START ) );
 
         /**
          * The {@code TUMBLE_END} auxiliary function of the {@code TUMBLE} group function.
          */
-        register( OperatorName.TUMBLE_END, StdOperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class ).auxiliary( Kind.TUMBLE_END ) );
+        register( OperatorName.TUMBLE_END, OperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class ).auxiliary( Kind.TUMBLE_END ) );
 
         /**
          * The {@code HOP} group function.
@@ -2118,8 +2118,8 @@ public class SqlRegisterer {
                     @Override
                     public List<SqlGroupedWindowFunction> getAuxiliaryFunctions() {
                         return ImmutableList.of(
-                                StdOperatorRegistry.get( OperatorName.HOP_START, SqlGroupedWindowFunction.class ),
-                                StdOperatorRegistry.get( OperatorName.HOP_END, SqlGroupedWindowFunction.class )
+                                OperatorRegistry.get( OperatorName.HOP_START, SqlGroupedWindowFunction.class ),
+                                OperatorRegistry.get( OperatorName.HOP_END, SqlGroupedWindowFunction.class )
                         );
                     }
                 } );
@@ -2127,12 +2127,12 @@ public class SqlRegisterer {
         /**
          * The {@code HOP_START} auxiliary function of the {@code HOP} group function.
          */
-        register( OperatorName.HOP_START, StdOperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class ).auxiliary( Kind.HOP_START ) );
+        register( OperatorName.HOP_START, OperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class ).auxiliary( Kind.HOP_START ) );
 
         /**
          * The {@code HOP_END} auxiliary function of the {@code HOP} group function.
          */
-        register( OperatorName.HOP_END, StdOperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class ).auxiliary( Kind.HOP_END ) );
+        register( OperatorName.HOP_END, OperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class ).auxiliary( Kind.HOP_END ) );
 
         /**
          * The {@code SESSION} group function.
@@ -2149,8 +2149,8 @@ public class SqlRegisterer {
                     @Override
                     public List<SqlGroupedWindowFunction> getAuxiliaryFunctions() {
                         return ImmutableList.of(
-                                StdOperatorRegistry.get( OperatorName.SESSION_START, SqlGroupedWindowFunction.class ),
-                                StdOperatorRegistry.get( OperatorName.SESSION_END, SqlGroupedWindowFunction.class )
+                                OperatorRegistry.get( OperatorName.SESSION_START, SqlGroupedWindowFunction.class ),
+                                OperatorRegistry.get( OperatorName.SESSION_END, SqlGroupedWindowFunction.class )
                         );
                     }
                 } );
@@ -2158,12 +2158,12 @@ public class SqlRegisterer {
         /**
          * The {@code SESSION_START} auxiliary function of the {@code SESSION} group function.
          */
-        register( OperatorName.SESSION_START, StdOperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class ).auxiliary( Kind.SESSION_START ) );
+        register( OperatorName.SESSION_START, OperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class ).auxiliary( Kind.SESSION_START ) );
 
         /**
          * The {@code SESSION_END} auxiliary function of the {@code SESSION} group function.
          */
-        register( OperatorName.SESSION_END, StdOperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class ).auxiliary( Kind.SESSION_END ) );
+        register( OperatorName.SESSION_END, OperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class ).auxiliary( Kind.SESSION_END ) );
 
         /**
          * {@code |} operator to create alternate patterns within {@code MATCH_RECOGNIZE}.
@@ -2281,7 +2281,7 @@ public class SqlRegisterer {
 
 
     private static void register( OperatorName key, Operator operator ) {
-        StdOperatorRegistry.register( key, operator );
+        OperatorRegistry.register( key, operator );
     }
 
 }

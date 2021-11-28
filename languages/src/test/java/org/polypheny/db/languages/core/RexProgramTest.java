@@ -41,8 +41,8 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.plan.RelOptPredicateList;
@@ -341,36 +341,36 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexNode i0 = rexBuilder.makeInputRef( types.get( 0 ), 0 );
         final RexLiteral c1 = rexBuilder.makeExactLiteral( BigDecimal.ONE );
         final RexLiteral c5 = rexBuilder.makeExactLiteral( BigDecimal.valueOf( 5L ) );
-        RexLocalRef t2 = builder.addExpr( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), i0, c1 ) );
+        RexLocalRef t2 = builder.addExpr( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), i0, c1 ) );
         // $t3 = 77 (not used)
         final RexLiteral c77 = rexBuilder.makeExactLiteral( BigDecimal.valueOf( 77 ) );
         RexLocalRef t3 = builder.addExpr( c77 );
         Util.discard( t3 );
         // $t4 = $t0 + $t1 (i.e. x + y)
         final RexNode i1 = rexBuilder.makeInputRef( types.get( 1 ), 1 );
-        RexLocalRef t4 = builder.addExpr( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), i0, i1 ) );
+        RexLocalRef t4 = builder.addExpr( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), i0, i1 ) );
         RexLocalRef t5;
         final RexLocalRef t1;
         switch ( variant ) {
             case 0:
             case 2:
                 // $t5 = $t0 + $t0 (i.e. x + x)
-                t5 = builder.addExpr( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), i0, i0 ) );
+                t5 = builder.addExpr( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), i0, i0 ) );
                 t1 = null;
                 break;
             case 1:
             case 3:
             case 4:
                 // $tx = $t0 + 1
-                t1 = builder.addExpr( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), i0, c1 ) );
+                t1 = builder.addExpr( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), i0, c1 ) );
                 // $t5 = $t0 + $tx (i.e. x + (x + 1))
-                t5 = builder.addExpr( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), i0, t1 ) );
+                t5 = builder.addExpr( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), i0, t1 ) );
                 break;
             default:
                 throw new AssertionError( "unexpected variant " + variant );
         }
         // $t6 = $t4 + $t2 (i.e. (x + y) + (x + 1))
-        RexLocalRef t6 = builder.addExpr( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.PLUS ), t4, t2 ) );
+        RexLocalRef t6 = builder.addExpr( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), t4, t2 ) );
         builder.addProject( t6.getIndex(), "a" );
         builder.addProject( t5.getIndex(), "b" );
 
@@ -379,7 +379,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         switch ( variant ) {
             case 2:
                 // $t7 = $t4 > $i0 (i.e. (x + y) > 0)
-                t7 = builder.addExpr( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), t4, i0 ) );
+                t7 = builder.addExpr( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN ), t4, i0 ) );
                 // $t8 = $t7 AND $t7
                 t8 = builder.addExpr( and( t7, t7 ) );
                 builder.addCondition( t8 );
@@ -395,7 +395,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
                 final RexLocalRef t9 = builder.addExpr( trueLiteral );
                 // $t10 = $t1 is not null (i.e. y is not null)
                 assert t1 != null;
-                final RexLocalRef t10 = builder.addExpr( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), t1 ) );
+                final RexLocalRef t10 = builder.addExpr( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), t1 ) );
                 // $t11 = false
                 final RexLocalRef t11 = builder.addExpr( falseLiteral );
                 // $t12 = unknown
@@ -1043,12 +1043,12 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
         // is null, applied to not-null value
         checkSimplify(
-                rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), aRef ),
+                rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), aRef ),
                 "false" );
 
         // is not null, applied to not-null value
         checkSimplify(
-                rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), aRef ),
+                rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), aRef ),
                 "true" );
 
         // condition, and the inverse - nothing to do due to null values
@@ -1585,7 +1585,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         assertThat( "The case should be nonNullable", caseNode.getType().isNullable(), is( false ) );
         assertThat( "Expected a nonNullable type", result.getType().isNullable(), is( false ) );
         assertThat( result.getType().getPolyType(), is( PolyType.BOOLEAN ) );
-        assertThat( result.getOperator(), is( StdOperatorRegistry.get( OperatorName.IS_TRUE ) ) );
+        assertThat( result.getOperator(), is( OperatorRegistry.get( OperatorName.IS_TRUE ) ) );
         assertThat( result.getOperands().get( 0 ), is( condition ) );
     }
 
@@ -2170,7 +2170,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexNode isFalse = isFalse( booleanInput );
         final RexCall result = (RexCall) simplify( isFalse );
         assertThat( result.getType().isNullable(), is( false ) );
-        assertThat( result.getOperator(), is( StdOperatorRegistry.get( OperatorName.IS_FALSE ) ) );
+        assertThat( result.getOperator(), is( OperatorRegistry.get( OperatorName.IS_FALSE ) ) );
         assertThat( result.getOperands().size(), is( 1 ) );
         assertThat( result.getOperands().get( 0 ), is( booleanInput ) );
 
@@ -2180,7 +2180,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexNode isFalseIsFalse = isFalse( isFalse );
         final RexCall result2 = (RexCall) simplify( isFalseIsFalse );
         assertThat( result2.getType().isNullable(), is( false ) );
-        assertThat( result2.getOperator(), is( StdOperatorRegistry.get( OperatorName.IS_NOT_FALSE ) ) );
+        assertThat( result2.getOperator(), is( OperatorRegistry.get( OperatorName.IS_NOT_FALSE ) ) );
         assertThat( result2.getOperands().size(), is( 1 ) );
         assertThat( result2.getOperands().get( 0 ), is( booleanInput ) );
     }

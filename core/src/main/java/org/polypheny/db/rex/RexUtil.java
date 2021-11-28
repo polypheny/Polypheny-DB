@@ -52,14 +52,14 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Predicate1;
-import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.nodes.OperatorImpl;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.core.util.ValidatorUtil.Suggester;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -1033,7 +1033,7 @@ public class RexUtil {
                 if ( containsFalse( list ) ) {
                     return rexBuilder.makeLiteral( false );
                 }
-                return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), list );
+                return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), list );
         }
     }
 
@@ -1105,7 +1105,7 @@ public class RexUtil {
                 if ( containsTrue( list ) ) {
                     return rexBuilder.makeLiteral( true );
                 }
-                return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.OR ), list );
+                return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.OR ), list );
         }
     }
 
@@ -1628,48 +1628,48 @@ public class RexUtil {
 
 
     private static RexNode addNot( RexNode e ) {
-        return new RexCall( e.getType(), StdOperatorRegistry.get( OperatorName.NOT ), ImmutableList.of( e ) );
+        return new RexCall( e.getType(), OperatorRegistry.get( OperatorName.NOT ), ImmutableList.of( e ) );
     }
 
 
     static Operator op( Kind kind ) {
         switch ( kind ) {
             case IS_FALSE:
-                return StdOperatorRegistry.get( OperatorName.IS_FALSE );
+                return OperatorRegistry.get( OperatorName.IS_FALSE );
             case IS_TRUE:
-                return StdOperatorRegistry.get( OperatorName.IS_TRUE );
+                return OperatorRegistry.get( OperatorName.IS_TRUE );
             case IS_UNKNOWN:
-                return StdOperatorRegistry.get( OperatorName.IS_UNKNOWN );
+                return OperatorRegistry.get( OperatorName.IS_UNKNOWN );
             case IS_NULL:
-                return StdOperatorRegistry.get( OperatorName.IS_NULL );
+                return OperatorRegistry.get( OperatorName.IS_NULL );
             case IS_NOT_FALSE:
-                return StdOperatorRegistry.get( OperatorName.IS_NOT_FALSE );
+                return OperatorRegistry.get( OperatorName.IS_NOT_FALSE );
             case IS_NOT_TRUE:
-                return StdOperatorRegistry.get( OperatorName.IS_NOT_TRUE );
+                return OperatorRegistry.get( OperatorName.IS_NOT_TRUE );
             case IS_NOT_NULL:
-                return StdOperatorRegistry.get( OperatorName.IS_NOT_NULL );
+                return OperatorRegistry.get( OperatorName.IS_NOT_NULL );
             case IS_DISTINCT_FROM:
-                return StdOperatorRegistry.get( OperatorName.IS_DISTINCT_FROM );
+                return OperatorRegistry.get( OperatorName.IS_DISTINCT_FROM );
             case IS_NOT_DISTINCT_FROM:
-                return StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM );
+                return OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM );
             case EQUALS:
-                return StdOperatorRegistry.get( OperatorName.EQUALS );
+                return OperatorRegistry.get( OperatorName.EQUALS );
             case NOT_EQUALS:
-                return StdOperatorRegistry.get( OperatorName.NOT_EQUALS );
+                return OperatorRegistry.get( OperatorName.NOT_EQUALS );
             case LESS_THAN:
-                return StdOperatorRegistry.get( OperatorName.LESS_THAN );
+                return OperatorRegistry.get( OperatorName.LESS_THAN );
             case GREATER_THAN:
-                return StdOperatorRegistry.get( OperatorName.GREATER_THAN );
+                return OperatorRegistry.get( OperatorName.GREATER_THAN );
             case LESS_THAN_OR_EQUAL:
-                return StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
+                return OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
             case GREATER_THAN_OR_EQUAL:
-                return StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
+                return OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
             case AND:
-                return StdOperatorRegistry.get( OperatorName.AND );
+                return OperatorRegistry.get( OperatorName.AND );
             case OR:
-                return StdOperatorRegistry.get( OperatorName.OR );
+                return OperatorRegistry.get( OperatorName.OR );
             case COALESCE:
-                return StdOperatorRegistry.get( OperatorName.COALESCE );
+                return OperatorRegistry.get( OperatorName.COALESCE );
             default:
                 throw new AssertionError( kind );
         }
@@ -1793,7 +1793,7 @@ public class RexUtil {
                         ? rexBuilder.makeLiteral( true )
                         : input.getKind() == Kind.NOT
                                 ? ((RexCall) input).operands.get( 0 )
-                                : rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), input );
+                                : rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT ), input );
     }
 
 

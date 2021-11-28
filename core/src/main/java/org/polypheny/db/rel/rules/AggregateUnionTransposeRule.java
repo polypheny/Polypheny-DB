@@ -49,7 +49,7 @@ import org.polypheny.db.core.fun.SumAggFunction;
 import org.polypheny.db.core.fun.SumEmptyIsZeroAggFunction;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelNode;
@@ -158,7 +158,7 @@ public class AggregateUnionTransposeRule extends RelOptRule {
             final AggFunction aggFun;
             final RelDataType aggType;
             if ( origCall.getAggregation().getOperatorName() == OperatorName.COUNT ) {
-                aggFun = StdOperatorRegistry.getAgg( OperatorName.SUM0 );
+                aggFun = OperatorRegistry.getAgg( OperatorName.SUM0 );
                 // count(any) is always not null, however nullability of sum might depend on the number of columns in GROUP BY.
                 // Here we use SUM0 since we are sure we will not face nullable inputs nor we'll face empty set.
                 aggType = null;

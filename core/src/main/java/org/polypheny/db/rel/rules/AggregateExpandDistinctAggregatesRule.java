@@ -49,12 +49,13 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelCollations;
@@ -294,7 +295,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
                 final int arg = bottomGroups.size() + nonDistinctAggCallProcessedSoFar;
                 final List<Integer> newArgs = ImmutableList.of( arg );
                 if ( aggCall.getAggregation().getKind() == Kind.COUNT ) {
-                    newCall = AggregateCall.create( (Operator & AggFunction) LanguageManager.getInstance().createSumEmptyIsZeroFunction(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), relBuilder.peek(), aggCall.getType(), aggCall.getName() );
+                    newCall = AggregateCall.create( (Operator & AggFunction) LanguageManager.getInstance().createSumEmptyIsZeroFunction( QueryLanguage.SQL ), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), relBuilder.peek(), aggCall.getType(), aggCall.getName() );
                 } else {
                     newCall = AggregateCall.create( (Operator & AggFunction) aggCall.getAggregation(), false, aggCall.isApproximate(), newArgs, -1, aggCall.collation, originalGroupSet.cardinality(), relBuilder.peek(), aggCall.getType(), aggCall.name );
                 }
@@ -349,7 +350,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
 
         final Map<ImmutableBitSet, Integer> filters = new LinkedHashMap<>();
         final int z = groupCount + distinctAggCalls.size();
-        distinctAggCalls.add( AggregateCall.create( (Operator & AggFunction) StdOperatorRegistry.getAgg( OperatorName.GROUPING ), false, false, ImmutableIntList.copyOf( fullGroupSet ), -1, RelCollations.EMPTY, groupSets.size(), relBuilder.peek(), null, "$g" ) );
+        distinctAggCalls.add( AggregateCall.create( (Operator & AggFunction) OperatorRegistry.getAgg( OperatorName.GROUPING ), false, false, ImmutableIntList.copyOf( fullGroupSet ), -1, RelCollations.EMPTY, groupSets.size(), relBuilder.peek(), null, "$g" ) );
         for ( Ord<ImmutableBitSet> groupSet : Ord.zip( groupSets ) ) {
             filters.put( groupSet.e, z + groupSet.i );
         }
@@ -375,7 +376,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
             final List<Integer> newArgList;
             final AggFunction aggregation;
             if ( !aggCall.isDistinct() ) {
-                aggregation = StdOperatorRegistry.getAgg( OperatorName.MIN );
+                aggregation = OperatorRegistry.getAgg( OperatorName.MIN );
                 newArgList = ImmutableIntList.of( x++ );
                 newFilterArg = filters.get( aggregate.getGroupSet() );
             } else {
@@ -602,7 +603,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
             // null values form its own group use "is not distinct from" so that the join condition allows null values to match.
             conditions.add(
                     rexBuilder.makeCall(
-                            StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ),
+                            OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ),
                             RexInputRef.of( i, leftFields ),
                             new RexInputRef( leftFields.size() + i, distinctFields.get( i ).getType() ) ) );
         }
@@ -694,7 +695,7 @@ public final class AggregateExpandDistinctAggregatesRule extends RelOptRule {
                 final Pair<RexNode, String> argRef = RexInputRef.of2( arg, childFields );
                 RexNode condition =
                         rexBuilder.makeCall(
-                                StdOperatorRegistry.get( OperatorName.CASE ),
+                                OperatorRegistry.get( OperatorName.CASE ),
                                 filterRef,
                                 argRef.left,
                                 rexBuilder.ensureType(

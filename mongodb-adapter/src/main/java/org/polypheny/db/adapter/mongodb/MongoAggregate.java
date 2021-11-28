@@ -39,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSumEmptyIsZeroAggFunction;
@@ -168,12 +168,12 @@ public class MongoAggregate extends Aggregate implements MongoRel {
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$min: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation.equals( StdOperatorRegistry.getAgg( OperatorName.MAX ) ) ) {
+        } else if ( aggregation.equals( OperatorRegistry.getAgg( OperatorName.MAX ) ) ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$max: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation.getOperatorName() == OperatorName.AVG || aggregation.getKind() == StdOperatorRegistry.getAgg( OperatorName.AVG ).getKind() ) {
+        } else if ( aggregation.getOperatorName() == OperatorName.AVG || aggregation.getKind() == OperatorRegistry.getAgg( OperatorName.AVG ).getKind() ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );

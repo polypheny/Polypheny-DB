@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
@@ -80,6 +81,7 @@ public class RelMdUtil {
 
     public static final Operator ARTIFICIAL_SELECTIVITY_FUNC =
             LanguageManager.getInstance().createFunction(
+                    QueryLanguage.SQL,
                     "ARTIFICIAL_SELECTIVITY",
                     Kind.OTHER_FUNCTION,
                     ReturnTypes.BOOLEAN, // returns boolean since we'll AND it

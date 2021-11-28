@@ -17,17 +17,19 @@
 package org.polypheny.db.core.enums;
 
 
+import com.esri.core.geometry.Operator;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
+import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.Node;
 
 
 /**
  * Enumerates the possible types of {@link Node}.
  *
- * The values are immutable, canonical constants, so you can use Kinds to find particular types of expressions quickly. To identity a call to a common operator such as '=', use {@link SqlNode#isA}:
+ * The values are immutable, canonical constants, so you can use Kinds to find particular types of expressions quickly. To identity a call to a common operator such as '=', use {@link Node#isA}:
  *
  * <blockquote>
  * exp.{@link Node#isA isA}({@link #EQUALS})
@@ -48,7 +50,7 @@ import org.polypheny.db.core.nodes.Node;
  * }</pre>
  * </blockquote>
  *
- * Note that we do not even have to check that a {@code SqlNode} is a {@link SqlCall}.
+ * Note that we do not even have to check that a {@code SqlNode} is a {@link Call}.
  *
  * To identify a category of expressions, use {@code SqlNode.isA} with an aggregate Kind. The following expression will return <code>true</code> for calls to '=' and '&gt;=', but <code>false</code> for the constant '5', or a call to '+':
  *
@@ -61,7 +63,7 @@ import org.polypheny.db.core.nodes.Node;
  * There is no water-tight definition of "common", but that's OK. There will always be operators that don't have their own kind, and for these we use the {@code SqlOperator}. But for really the common ones, e.g. the many places where we are looking
  * for {@code AND}, {@code OR} and {@code EQUALS}, the enum helps.
  *
- * (If we were using Scala, {@link SqlOperator} would be a case class, and we wouldn't need {@code Kind}. But we're not.)
+ * (If we were using Scala, {@link Operator} would be a case class, and we wouldn't need {@code Kind}. But we're not.)
  */
 public enum Kind {
 

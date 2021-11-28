@@ -23,16 +23,16 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.nodes.CallBinding;
-import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.CallBinding;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.core.util.SqlValidatorException;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.util.SqlValidatorException;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.validate.SelectScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
@@ -48,7 +48,7 @@ import org.polypheny.db.runtime.Resources;
  */
 public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
-    private static final Call DEFAULT_CALL = StdOperatorRegistry.get( OperatorName.DEFAULT ).createCall( ParserPos.ZERO );
+    private static final Call DEFAULT_CALL = OperatorRegistry.get( OperatorName.DEFAULT ).createCall( ParserPos.ZERO );
 
     @Getter
     private final SqlValidator validator;
@@ -228,7 +228,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     @Override
     public RelDataType getCursorOperand( int ordinal ) {
         final SqlNode operand = call.operand( ordinal );
-        if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( OperatorName.CURSOR ) ) ) {
+        if ( !SqlUtil.isCallTo( operand, OperatorRegistry.get( OperatorName.CURSOR ) ) ) {
             return null;
         }
         final SqlCall cursorCall = (SqlCall) operand;
@@ -240,7 +240,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
     @Override
     public String getColumnListParamInfo( int ordinal, String paramName, List<String> columnList ) {
         final SqlNode operand = call.operand( ordinal );
-        if ( !SqlUtil.isCallTo( operand, StdOperatorRegistry.get( OperatorName.ROW ) ) ) {
+        if ( !SqlUtil.isCallTo( operand, OperatorRegistry.get( OperatorName.ROW ) ) ) {
             return null;
         }
         for ( Node id : ((SqlCall) operand).getSqlOperandList() ) {

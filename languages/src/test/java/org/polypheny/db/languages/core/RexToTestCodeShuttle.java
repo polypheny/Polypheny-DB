@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -39,31 +39,31 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
 
     private static final Map<Operator, String> OP_METHODS =
             ImmutableMap.<Operator, String>builder()
-                    .put( StdOperatorRegistry.get( OperatorName.AND ), "and" )
-                    .put( StdOperatorRegistry.get( OperatorName.OR ), "or" )
-                    .put( StdOperatorRegistry.get( OperatorName.CASE ), "case_" )
-                    .put( StdOperatorRegistry.get( OperatorName.COALESCE ), "coalesce" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_NULL ), "isNull" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), "isNotNull" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_UNKNOWN ), "isUnknown" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_TRUE ), "isTrue" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_NOT_TRUE ), "isNotTrue" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_FALSE ), "isFalse" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_NOT_FALSE ), "isNotFalse" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_DISTINCT_FROM ), "isDistinctFrom" )
-                    .put( StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ), "isNotDistinctFrom" )
-                    .put( StdOperatorRegistry.get( OperatorName.NULLIF ), "nullIf" )
-                    .put( StdOperatorRegistry.get( OperatorName.NOT ), "not" )
-                    .put( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), "gt" )
-                    .put( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), "ge" )
-                    .put( StdOperatorRegistry.get( OperatorName.LESS_THAN ), "lt" )
-                    .put( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "le" )
-                    .put( StdOperatorRegistry.get( OperatorName.EQUALS ), "eq" )
-                    .put( StdOperatorRegistry.get( OperatorName.NOT_EQUALS ), "ne" )
-                    .put( StdOperatorRegistry.get( OperatorName.PLUS ), "plus" )
-                    .put( StdOperatorRegistry.get( OperatorName.UNARY_PLUS ), "unaryPlus" )
-                    .put( StdOperatorRegistry.get( OperatorName.MINUS ), "sub" )
-                    .put( StdOperatorRegistry.get( OperatorName.UNARY_MINUS ), "unaryMinus" )
+                    .put( OperatorRegistry.get( OperatorName.AND ), "and" )
+                    .put( OperatorRegistry.get( OperatorName.OR ), "or" )
+                    .put( OperatorRegistry.get( OperatorName.CASE ), "case_" )
+                    .put( OperatorRegistry.get( OperatorName.COALESCE ), "coalesce" )
+                    .put( OperatorRegistry.get( OperatorName.IS_NULL ), "isNull" )
+                    .put( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), "isNotNull" )
+                    .put( OperatorRegistry.get( OperatorName.IS_UNKNOWN ), "isUnknown" )
+                    .put( OperatorRegistry.get( OperatorName.IS_TRUE ), "isTrue" )
+                    .put( OperatorRegistry.get( OperatorName.IS_NOT_TRUE ), "isNotTrue" )
+                    .put( OperatorRegistry.get( OperatorName.IS_FALSE ), "isFalse" )
+                    .put( OperatorRegistry.get( OperatorName.IS_NOT_FALSE ), "isNotFalse" )
+                    .put( OperatorRegistry.get( OperatorName.IS_DISTINCT_FROM ), "isDistinctFrom" )
+                    .put( OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ), "isNotDistinctFrom" )
+                    .put( OperatorRegistry.get( OperatorName.NULLIF ), "nullIf" )
+                    .put( OperatorRegistry.get( OperatorName.NOT ), "not" )
+                    .put( OperatorRegistry.get( OperatorName.GREATER_THAN ), "gt" )
+                    .put( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), "ge" )
+                    .put( OperatorRegistry.get( OperatorName.LESS_THAN ), "lt" )
+                    .put( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "le" )
+                    .put( OperatorRegistry.get( OperatorName.EQUALS ), "eq" )
+                    .put( OperatorRegistry.get( OperatorName.NOT_EQUALS ), "ne" )
+                    .put( OperatorRegistry.get( OperatorName.PLUS ), "plus" )
+                    .put( OperatorRegistry.get( OperatorName.UNARY_PLUS ), "unaryPlus" )
+                    .put( OperatorRegistry.get( OperatorName.MINUS ), "sub" )
+                    .put( OperatorRegistry.get( OperatorName.UNARY_MINUS ), "unaryMinus" )
                     .build();
 
 

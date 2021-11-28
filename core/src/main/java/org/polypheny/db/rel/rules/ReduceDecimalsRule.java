@@ -43,10 +43,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -253,38 +253,38 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         private void registerExpanders( RexBuilder rexBuilder ) {
             RexExpander cast = new CastExpander( rexBuilder );
-            map.put( StdOperatorRegistry.get( OperatorName.CAST ), cast );
+            map.put( OperatorRegistry.get( OperatorName.CAST ), cast );
 
             RexExpander passThrough = new PassThroughExpander( rexBuilder );
-            map.put( StdOperatorRegistry.get( OperatorName.UNARY_MINUS ), passThrough );
-            map.put( StdOperatorRegistry.get( OperatorName.ABS ), passThrough );
+            map.put( OperatorRegistry.get( OperatorName.UNARY_MINUS ), passThrough );
+            map.put( OperatorRegistry.get( OperatorName.ABS ), passThrough );
 
-            map.put( StdOperatorRegistry.get( OperatorName.IS_NULL ), passThrough );
-            map.put( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), passThrough );
+            map.put( OperatorRegistry.get( OperatorName.IS_NULL ), passThrough );
+            map.put( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), passThrough );
 
             RexExpander arithmetic = new BinaryArithmeticExpander( rexBuilder );
-            map.put( StdOperatorRegistry.get( OperatorName.DIVIDE ), arithmetic );
-            map.put( StdOperatorRegistry.get( OperatorName.MULTIPLY ), arithmetic );
-            map.put( StdOperatorRegistry.get( OperatorName.PLUS ), arithmetic );
-            map.put( StdOperatorRegistry.get( OperatorName.MINUS ), arithmetic );
-            map.put( StdOperatorRegistry.get( OperatorName.MOD ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.DIVIDE ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.MULTIPLY ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.PLUS ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.MINUS ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.MOD ), arithmetic );
 
-            map.put( StdOperatorRegistry.get( OperatorName.EQUALS ), arithmetic );
-            map.put( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), arithmetic );
-            map.put( StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), arithmetic );
-            map.put( StdOperatorRegistry.get( OperatorName.LESS_THAN ), arithmetic );
-            map.put( StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.EQUALS ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.GREATER_THAN ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.LESS_THAN ), arithmetic );
+            map.put( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), arithmetic );
 
             RexExpander floor = new FloorExpander( rexBuilder );
-            map.put( StdOperatorRegistry.get( OperatorName.FLOOR ), floor );
+            map.put( OperatorRegistry.get( OperatorName.FLOOR ), floor );
             RexExpander ceil = new CeilExpander( rexBuilder );
-            map.put( StdOperatorRegistry.get( OperatorName.CEIL ), ceil );
+            map.put( OperatorRegistry.get( OperatorName.CEIL ), ceil );
 
             RexExpander reinterpret = new ReinterpretExpander( rexBuilder );
-            map.put( StdOperatorRegistry.get( OperatorName.REINTERPRET ), reinterpret );
+            map.put( OperatorRegistry.get( OperatorName.REINTERPRET ), reinterpret );
 
             RexExpander caseExpander = new CaseExpander( rexBuilder );
-            map.put( StdOperatorRegistry.get( OperatorName.CASE ), caseExpander );
+            map.put( OperatorRegistry.get( OperatorName.CASE ), caseExpander );
 
             defaultExpander = new CastArgAsDoubleExpander( rexBuilder );
         }
@@ -434,7 +434,7 @@ public class ReduceDecimalsRule extends RelOptRule {
             if ( scale == 0 ) {
                 return value;
             }
-            return builder.makeCall( StdOperatorRegistry.get( OperatorName.MULTIPLY ), value, makeScaleFactor( scale ) );
+            return builder.makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), value, makeScaleFactor( scale ) );
         }
 
 
@@ -455,12 +455,12 @@ public class ReduceDecimalsRule extends RelOptRule {
                 long half = BigInteger.TEN.pow( scale - 1 ).longValue() * 5;
                 return makeCase(
                         builder.makeCall(
-                                StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ),
+                                OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ),
                                 value,
                                 makeExactLiteral( half ) ),
                         makeExactLiteral( 1 ),
                         builder.makeCall(
-                                StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ),
+                                OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ),
                                 value,
                                 makeExactLiteral( -half ) ),
                         makeExactLiteral( -1 ),
@@ -470,7 +470,7 @@ public class ReduceDecimalsRule extends RelOptRule {
             RexNode roundValue =
                     makeCase(
                             builder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
+                                    OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                     value,
                                     makeExactLiteral( 0 ) ),
                             makePlus( value, roundFactor ),
@@ -614,7 +614,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         protected RexNode makeCase( RexNode condition, RexNode thenClause, RexNode elseClause ) {
             return builder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.CASE ),
+                    OperatorRegistry.get( OperatorName.CASE ),
                     condition,
                     thenClause,
                     elseClause );
@@ -623,7 +623,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         protected RexNode makeCase( RexNode whenA, RexNode thenA, RexNode whenB, RexNode thenB, RexNode elseClause ) {
             return builder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.CASE ),
+                    OperatorRegistry.get( OperatorName.CASE ),
                     whenA,
                     thenA,
                     whenB,
@@ -634,7 +634,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         protected RexNode makePlus( RexNode a, RexNode b ) {
             return builder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.PLUS ),
+                    OperatorRegistry.get( OperatorName.PLUS ),
                     a,
                     b );
         }
@@ -642,7 +642,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         protected RexNode makeMinus( RexNode a, RexNode b ) {
             return builder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.MINUS ),
+                    OperatorRegistry.get( OperatorName.MINUS ),
                     a,
                     b );
         }
@@ -650,7 +650,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         protected RexNode makeDivide( RexNode a, RexNode b ) {
             return builder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.DIVIDE_INTEGER ),
+                    OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ),
                     a,
                     b );
         }
@@ -658,7 +658,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         protected RexNode makeMultiply( RexNode a, RexNode b ) {
             return builder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.MULTIPLY ),
+                    OperatorRegistry.get( OperatorName.MULTIPLY ),
                     a,
                     b );
         }
@@ -666,7 +666,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         protected RexNode makeIsPositive( RexNode a ) {
             return builder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.GREATER_THAN ),
+                    OperatorRegistry.get( OperatorName.GREATER_THAN ),
                     a,
                     makeExactLiteral( 0 ) );
         }
@@ -674,7 +674,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
         protected RexNode makeIsNegative( RexNode a ) {
             return builder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.LESS_THAN ),
+                    OperatorRegistry.get( OperatorName.LESS_THAN ),
                     a,
                     makeExactLiteral( 0 ) );
         }
@@ -871,7 +871,7 @@ public class ReduceDecimalsRule extends RelOptRule {
             int scaleDifference = outType.getScale() - scaleA + scaleB;
             RexNode rescale =
                     builder.makeCall(
-                            StdOperatorRegistry.get( OperatorName.MULTIPLY ),
+                            OperatorRegistry.get( OperatorName.MULTIPLY ),
                             dividend,
                             makeApproxScaleFactor( scaleDifference ) );
             return encodeValue( rescale, outType );

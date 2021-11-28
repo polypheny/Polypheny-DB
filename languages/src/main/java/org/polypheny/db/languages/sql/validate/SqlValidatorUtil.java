@@ -31,17 +31,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.util.NameMatcher;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.core.util.Moniker;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorTable;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDataTypeSpec;
 import org.polypheny.db.languages.sql.SqlIdentifier;
@@ -215,7 +215,7 @@ public class SqlValidatorUtil {
     public static Node addAlias( SqlNode expr, String alias ) {
         final ParserPos pos = expr.getPos();
         final SqlIdentifier id = new SqlIdentifier( alias, pos );
-        return StdOperatorRegistry.get( OperatorName.AS ).createCall( pos, expr, id );
+        return OperatorRegistry.get( OperatorName.AS ).createCall( pos, expr, id );
     }
 
 

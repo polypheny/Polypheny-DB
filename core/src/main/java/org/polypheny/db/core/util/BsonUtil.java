@@ -76,7 +76,7 @@ public class BsonUtil {
     /**
      * operations which include /*+_ cannot be parsed by the bsonDocument parser,
      * so they need to be replaced by an equivalent bson compatible operation
-     * 1-3*10 -> {$subtract: [1, {$multiply:[3,10]}]}
+     * <pre>1-3*10 -> {$subtract: [1, {$multiply:[3,10]}]}</pre>
      *
      * @param bson the full bson string
      * @return the initial bson string with the exchanged calculation
@@ -115,7 +115,7 @@ public class BsonUtil {
     /**
      * Recursively iterates over the operation mappings and replaces them in them with the equivalent BSON compatible format
      *
-     * "{"key": 3*10-18}" -> "{"key": {"subtract":[18, {"multiply": [3, 10]}]}}"
+     * <pre>"{"key": 3*10-18}" -> "{"key": {"subtract":[18, {"multiply": [3, 10]}]}}"</pre>
      *
      * @param calculation the calculation up to this point
      * @param depth how many operations of [+-/*] where already replaced
@@ -574,8 +574,8 @@ public class BsonUtil {
 
     /**
      * Helper method to transform a SQL like clause into the matching regex
-     * _ -> .
-     * % -> .*
+     * <pre>_ -> .</pre>
+     * <pre>% -> .*</pre>
      *
      * @param input the like clause as string
      * @return a Bson object which matches the initial like clause

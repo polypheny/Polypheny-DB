@@ -40,7 +40,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
@@ -55,7 +55,7 @@ public class CeilOperatorConversion implements DruidSqlOperatorConverter {
 
     @Override
     public Operator polyphenyDbOperator() {
-        return StdOperatorRegistry.get( OperatorName.CEIL );
+        return OperatorRegistry.get( OperatorName.CEIL );
     }
 
 

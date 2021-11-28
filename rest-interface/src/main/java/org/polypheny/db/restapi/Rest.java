@@ -32,12 +32,12 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
@@ -541,10 +541,10 @@ public class Rest {
                 RexNode inputRef = rexBuilder.makeInputRef( baseNodeForSorts, inputField );
                 RexNode sortingNode;
                 if ( sort.right ) {
-                    RexNode innerNode = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.DESC ), inputRef );
-                    sortingNode = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NULLS_FIRST ), innerNode );
+                    RexNode innerNode = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DESC ), inputRef );
+                    sortingNode = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NULLS_FIRST ), innerNode );
                 } else {
-                    sortingNode = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NULLS_FIRST ), inputRef );
+                    sortingNode = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NULLS_FIRST ), inputRef );
                 }
 
                 sortingNodes.add( sortingNode );

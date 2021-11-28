@@ -40,13 +40,13 @@ import org.polypheny.db.languages.mql.MqlShowDatabase;
 import org.polypheny.db.languages.mql.MqlUseDatabase;
 import org.polypheny.db.languages.mql.MqlDropDatabase;
 import org.polypheny.db.languages.mql.parser.MqlAbstractParserImpl;
-import org.polypheny.db.languages.mql.parser.MqlParserImplFactory;
 import org.polypheny.db.languages.mql.parser.MqlParseException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.parser.MqlParserUtil;
 import org.polypheny.db.core.util.BsonUtil;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.util.SourceStringReader;
+import org.polypheny.db.languages.ParserFactory;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -69,9 +69,9 @@ private static Metadata metadata;
 
 
       /**
-       * {@link MqlParserImplFactory} implementation for creating parser.
+       * {@link ParserFactory} implementation for creating parser.
        */
-      public static final MqlParserImplFactory FACTORY = new MqlParserImplFactory() {
+      public static final ParserFactory FACTORY = new ParserFactory() {
           public MqlAbstractParserImpl getParser(Reader reader) {
               final ${parser.class} parser = new ${parser.class}(reader);
               if (reader instanceof SourceStringReader) {

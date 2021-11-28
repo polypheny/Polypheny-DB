@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlGroupedWindowFunction;
@@ -66,13 +66,13 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
         switch ( kind ) {
             case TUMBLE_START:
             case TUMBLE_END:
-                return StdOperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class );
+                return OperatorRegistry.get( OperatorName.TUMBLE, SqlGroupedWindowFunction.class );
             case HOP_START:
             case HOP_END:
-                return StdOperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class );
+                return OperatorRegistry.get( OperatorName.HOP, SqlGroupedWindowFunction.class );
             case SESSION_START:
             case SESSION_END:
-                return StdOperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class );
+                return OperatorRegistry.get( OperatorName.SESSION, SqlGroupedWindowFunction.class );
             default:
                 return null;
         }
@@ -126,17 +126,17 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     public static SqlQuantifyOperator some( Kind comparisonKind ) {
         switch ( comparisonKind ) {
             case EQUALS:
-                return StdOperatorRegistry.get( OperatorName.SOME_EQ, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.SOME_EQ, SqlQuantifyOperator.class );
             case NOT_EQUALS:
-                return StdOperatorRegistry.get( OperatorName.SOME_NE, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.SOME_NE, SqlQuantifyOperator.class );
             case LESS_THAN:
-                return StdOperatorRegistry.get( OperatorName.SOME_LT, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.SOME_LT, SqlQuantifyOperator.class );
             case LESS_THAN_OR_EQUAL:
-                return StdOperatorRegistry.get( OperatorName.SOME_LE, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.SOME_LE, SqlQuantifyOperator.class );
             case GREATER_THAN:
-                return StdOperatorRegistry.get( OperatorName.SOME_GT, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.SOME_GT, SqlQuantifyOperator.class );
             case GREATER_THAN_OR_EQUAL:
-                return StdOperatorRegistry.get( OperatorName.SOME_GE, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.SOME_GE, SqlQuantifyOperator.class );
             default:
                 throw new AssertionError( comparisonKind );
         }
@@ -149,17 +149,17 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     public static SqlQuantifyOperator all( Kind comparisonKind ) {
         switch ( comparisonKind ) {
             case EQUALS:
-                return StdOperatorRegistry.get( OperatorName.ALL_EQ, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.ALL_EQ, SqlQuantifyOperator.class );
             case NOT_EQUALS:
-                return StdOperatorRegistry.get( OperatorName.ALL_NE, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.ALL_NE, SqlQuantifyOperator.class );
             case LESS_THAN:
-                return StdOperatorRegistry.get( OperatorName.ALL_LT, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.ALL_LT, SqlQuantifyOperator.class );
             case LESS_THAN_OR_EQUAL:
-                return StdOperatorRegistry.get( OperatorName.ALL_LE, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.ALL_LE, SqlQuantifyOperator.class );
             case GREATER_THAN:
-                return StdOperatorRegistry.get( OperatorName.ALL_GT, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.ALL_GT, SqlQuantifyOperator.class );
             case GREATER_THAN_OR_EQUAL:
-                return StdOperatorRegistry.get( OperatorName.ALL_GE, SqlQuantifyOperator.class );
+                return OperatorRegistry.get( OperatorName.ALL_GE, SqlQuantifyOperator.class );
             default:
                 throw new AssertionError( comparisonKind );
         }

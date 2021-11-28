@@ -19,8 +19,8 @@ package org.polypheny.db.languages.sql.fun;
 
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -32,7 +32,7 @@ import org.polypheny.db.type.inference.ReturnTypes;
 /**
  * Definition of the "TRANSLATE" built-in SQL function that takes 3 arguments.
  *
- * Based on Oracle's {@code TRANSLATE} function, it is commonly called "TRANSLATE3" to distinguish it from the standard SQL function {@link StdOperatorRegistry.get( OperatorName.TRANSLATE )} that takes 2 arguments
+ * Based on Oracle's {@code TRANSLATE} function, it is commonly called "TRANSLATE3" to distinguish it from the standard SQL function {@link OperatorRegistry.get( OperatorName.TRANSLATE )} that takes 2 arguments
  * and has an entirely different purpose.
  */
 public class SqlTranslate3Function extends SqlFunction {

@@ -17,9 +17,20 @@
 package org.polypheny.db.languages;
 
 import java.io.Reader;
+import org.polypheny.db.tools.Planner;
 
+/**
+ * Factory for [language]AbstractParserImpl objects.
+ *
+ * A parser factory allows you to include a custom parser in {@link Planner} created through {@code Frameworks}.
+ */
 public interface ParserFactory {
 
+    /**
+     * Get the underlying parser implementation.
+     *
+     * @return [language]AbstractParserImpl object.
+     */
     ParserImpl getParser( Reader stream );
 
 }

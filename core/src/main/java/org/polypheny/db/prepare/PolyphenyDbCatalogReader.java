@@ -36,7 +36,6 @@ package org.polypheny.db.prepare;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -45,18 +44,20 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.util.NameMatcher;
-import org.polypheny.db.core.util.NameMatchers;
-import org.polypheny.db.core.util.Moniker;
-import org.polypheny.db.core.util.MonikerImpl;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.MonikerType;
 import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.nodes.OperatorImpl;
+import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.MonikerImpl;
+import org.polypheny.db.core.util.NameMatcher;
+import org.polypheny.db.core.util.NameMatchers;
 import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.LanguageManager;
@@ -86,7 +87,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link org.polypheny.db.prepare.Prepare.CatalogReader} and also {#@link SqlOperatorTable} based on
+ * Implementation of {@link org.polypheny.db.prepare.Prepare.CatalogReader} and also {@link OperatorTable} based on
  * tables and functions defined schemas.
  */
 public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
@@ -303,9 +304,23 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
                     Optionality.FORBIDDEN,
                     typeFactory );
         } else if ( function instanceof TableMacro ) {
-            return LanguageManager.getInstance().createUserDefinedTableMacro( QueryLanguage.SQL, name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableMacro) function );
+            return LanguageManager.getInstance().createUserDefinedTableMacro(
+                    QueryLanguage.SQL,
+                    name,
+                    ReturnTypes.CURSOR,
+                    InferTypes.explicit( argTypes ),
+                    typeChecker,
+                    paramTypes,
+                    (TableMacro) function );
         } else if ( function instanceof TableFunction ) {
-            return LanguageManager.getInstance().createUserDefinedTableFunction( QueryLanguage.SQL, name, ReturnTypes.CURSOR, InferTypes.explicit( argTypes ), typeChecker, paramTypes, (TableFunction) function );
+            return LanguageManager.getInstance().createUserDefinedTableFunction(
+                    QueryLanguage.SQL,
+                    name,
+                    ReturnTypes.CURSOR,
+                    InferTypes.explicit( argTypes ),
+                    typeChecker,
+                    paramTypes,
+                    (TableFunction) function );
         } else {
             throw new AssertionError( "unknown function type " + function );
         }
@@ -336,7 +351,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     private static List<RelDataType> toSql( final RelDataTypeFactory typeFactory, List<RelDataType> types ) {
-        return Lists.transform( types, type -> toSql( typeFactory, type ) );
+        return types.stream().map( type -> toSql( typeFactory, type ) ).collect( Collectors.toList() );
     }
 
 

@@ -42,9 +42,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.QuantifyOperator;
-import org.polypheny.db.core.rel.RelDecorrelator;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.rel.RelDecorrelator;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptRuleOperand;
@@ -133,7 +133,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
         if ( unique == null || !unique ) {
             builder.aggregate(
                     builder.groupKey(),
-                    builder.aggregateCall( StdOperatorRegistry.getAgg( OperatorName.SINGLE_VALUE ), builder.field( 0 ) ) );
+                    builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.SINGLE_VALUE ), builder.field( 0 ) ) );
         }
         builder.join( JoinRelType.LEFT, builder.literal( true ), variablesSet );
         return field( builder, inputCount, offset );
@@ -176,12 +176,12 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
                         builder.count( false, "d", builder.field( 0 ) ) )
                 .as( "q" )
                 .join( JoinRelType.INNER );
-        return builder.call( StdOperatorRegistry.get( OperatorName.CASE ),
-                builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ), builder.field( "q", "c" ), builder.literal( 0 ) ),
+        return builder.call( OperatorRegistry.get( OperatorName.CASE ),
+                builder.call( OperatorRegistry.get( OperatorName.EQUALS ), builder.field( "q", "c" ), builder.literal( 0 ) ),
                 builder.literal( false ),
-                builder.call( StdOperatorRegistry.get( OperatorName.IS_TRUE ), builder.call( RelOptUtil.op( op.getComparisonKind(), null ), e.operands.get( 0 ), builder.field( "q", "m" ) ) ),
+                builder.call( OperatorRegistry.get( OperatorName.IS_TRUE ), builder.call( RelOptUtil.op( op.getComparisonKind(), null ), e.operands.get( 0 ), builder.field( "q", "m" ) ) ),
                 builder.literal( true ),
-                builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "q", "c" ), builder.field( "q", "d" ) ),
+                builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "q", "c" ), builder.field( "q", "d" ) ),
                 builder.literal( null ),
                 builder.call( RelOptUtil.op( op.getComparisonKind(), null ), e.operands.get( 0 ), builder.field( "q", "m" ) ) );
     }
@@ -352,7 +352,7 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
                         // When true value is absent then we are interested only in false value.
                         builder.sortLimit( 0, 1,
                                 ImmutableList.of(
-                                        builder.call( StdOperatorRegistry.get( OperatorName.DESC ),
+                                        builder.call( OperatorRegistry.get( OperatorName.DESC ),
                                                 builder.field( "cs" ) ) ) );
                     } else {
                         builder.distinct();
@@ -444,12 +444,12 @@ public abstract class SubQueryRemoveRule extends RelOptRule {
                 case TRUE_FALSE_UNKNOWN:
                 case UNKNOWN_AS_TRUE:
                     operands.add(
-                            builder.call( StdOperatorRegistry.get( OperatorName.LESS_THAN ), builder.field( "ct", "ck" ), builder.field( "ct", "c" ) ),
+                            builder.call( OperatorRegistry.get( OperatorName.LESS_THAN ), builder.field( "ct", "ck" ), builder.field( "ct", "c" ) ),
                             builder.literal( b ) );
             }
         }
         operands.add( builder.literal( false ) );
-        return builder.call( StdOperatorRegistry.get( OperatorName.CASE ), operands.build() );
+        return builder.call( OperatorRegistry.get( OperatorName.CASE ), operands.build() );
     }
 
 

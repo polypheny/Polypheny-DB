@@ -82,17 +82,15 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.util.Conformance;
-import org.polypheny.db.core.nodes.ExecutableStatement;
-import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.BinaryOperator;
+import org.polypheny.db.core.nodes.ExecutableStatement;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.interpreter.BindableConvention;
@@ -103,8 +101,10 @@ import org.polypheny.db.jdbc.PolyphenyDbPrepare;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.NodeToRelConverter.ConfigBuilder;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.RexConvertletTable;
@@ -1389,9 +1389,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                             ((MemberExpression) expression).field.getName(),
                             true );
                 case GreaterThan:
-                    return binary( expression, StdOperatorRegistry.get( OperatorName.GREATER_THAN, BinaryOperator.class ) );
+                    return binary( expression, OperatorRegistry.get( OperatorName.GREATER_THAN, BinaryOperator.class ) );
                 case LessThan:
-                    return binary( expression, StdOperatorRegistry.get( OperatorName.LESS_THAN, BinaryOperator.class ) );
+                    return binary( expression, OperatorRegistry.get( OperatorName.LESS_THAN, BinaryOperator.class ) );
                 case Parameter:
                     return parameter( (ParameterExpression) expression );
                 case Call:

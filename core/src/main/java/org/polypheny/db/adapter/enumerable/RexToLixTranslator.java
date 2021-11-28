@@ -62,12 +62,12 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.util.Conformance;
-import org.polypheny.db.core.nodes.IntervalQualifier;
 import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.IntervalQualifier;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.util.Conformance;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
@@ -96,11 +96,11 @@ public class RexToLixTranslator {
 
     public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
             Util.mapOf(
-                    findMethod( String.class, "toUpperCase" ), StdOperatorRegistry.get( OperatorName.UPPER ),
-                    findMethod( Functions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), StdOperatorRegistry.get( OperatorName.SUBSTRING ),
-                    findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( OperatorName.CHARACTER_LENGTH ),
-                    findMethod( Functions.class, "charLength", String.class ), StdOperatorRegistry.get( OperatorName.CHAR_LENGTH ),
-                    findMethod( Functions.class, "translate3", String.class, String.class, String.class ), StdOperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ) );
+                    findMethod( String.class, "toUpperCase" ), OperatorRegistry.get( OperatorName.UPPER ),
+                    findMethod( Functions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), OperatorRegistry.get( OperatorName.SUBSTRING ),
+                    findMethod( Functions.class, "charLength", String.class ), OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ),
+                    findMethod( Functions.class, "charLength", String.class ), OperatorRegistry.get( OperatorName.CHAR_LENGTH ),
+                    findMethod( Functions.class, "translate3", String.class, String.class, String.class ), OperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ) );
 
     final JavaTypeFactory typeFactory;
     final RexBuilder builder;
@@ -670,7 +670,7 @@ public class RexToLixTranslator {
                     default:
                         RexNode rxIndex = builder.makeLiteral( fieldIndex, typeFactory.createType( int.class ), true );
                         RexNode rxName = builder.makeLiteral( fieldName, typeFactory.createType( String.class ), true );
-                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), StdOperatorRegistry.get( OperatorName.STRUCT_ACCESS ), ImmutableList.of( target, rxIndex, rxName ) );
+                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), OperatorRegistry.get( OperatorName.STRUCT_ACCESS ), ImmutableList.of( target, rxIndex, rxName ) );
                         return translateCall( accessCall, nullAs );
                 }
             }

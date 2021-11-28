@@ -18,11 +18,11 @@ package org.polypheny.db.languages.sql.fun;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -68,7 +68,7 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
 
 
     void arg( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec, int i ) {
-        if ( SqlUtil.isCallTo( call.operand( i ), StdOperatorRegistry.get( OperatorName.ROW ) ) ) {
+        if ( SqlUtil.isCallTo( call.operand( i ), OperatorRegistry.get( OperatorName.ROW ) ) ) {
             SqlCall row = call.operand( i );
             writer.keyword( "PERIOD" );
             writer.sep( "(", true );

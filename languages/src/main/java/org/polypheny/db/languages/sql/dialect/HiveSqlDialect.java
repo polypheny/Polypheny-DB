@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.dialect;
 
 import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -91,7 +91,7 @@ public class HiveSqlDialect extends SqlDialect {
                 writer.endFunCall( frame );
                 break;
             case MOD:
-                SqlOperator op = StdOperatorRegistry.get( OperatorName.PERCENT_REMAINDER, SqlOperator.class );
+                SqlOperator op = OperatorRegistry.get( OperatorName.PERCENT_REMAINDER, SqlOperator.class );
                 SqlSyntax.BINARY.unparse( writer, op, call, leftPrec, rightPrec );
                 break;
             default:

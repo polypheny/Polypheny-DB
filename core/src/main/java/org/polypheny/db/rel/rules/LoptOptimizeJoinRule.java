@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -972,7 +972,7 @@ public class LoptOptimizeJoinRule extends RelOptRule {
                 if ( condition == null ) {
                     condition = joinFilter;
                 } else {
-                    condition = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), condition, joinFilter );
+                    condition = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), condition, joinFilter );
                 }
                 filterIter.remove();
             }

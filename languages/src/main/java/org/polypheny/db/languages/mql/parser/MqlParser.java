@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -169,7 +170,7 @@ public class MqlParser implements Parser {
         MqlParserConfig DEFAULT = configBuilder().build();
 
 
-        MqlParserImplFactory parserFactory();
+        ParserFactory parserFactory();
 
     }
 
@@ -179,7 +180,7 @@ public class MqlParser implements Parser {
      */
     public static class ConfigBuilder {
 
-        private MqlParserImplFactory parserFactory = MqlParserImpl.FACTORY;
+        private ParserFactory parserFactory = MqlParserImpl.FACTORY;
 
 
         private ConfigBuilder() {
@@ -195,7 +196,7 @@ public class MqlParser implements Parser {
         }
 
 
-        public ConfigBuilder setParserFactory( MqlParserImplFactory factory ) {
+        public ConfigBuilder setParserFactory( ParserFactory factory ) {
             this.parserFactory = Objects.requireNonNull( factory );
             return this;
         }
@@ -217,16 +218,16 @@ public class MqlParser implements Parser {
      */
     private static class ConfigImpl implements MqlParserConfig {
 
-        private final MqlParserImplFactory parserFactory;
+        private final ParserFactory parserFactory;
 
 
-        private ConfigImpl( MqlParserImplFactory parserFactory ) {
+        private ConfigImpl( ParserFactory parserFactory ) {
             this.parserFactory = Objects.requireNonNull( parserFactory );
         }
 
 
         @Override
-        public MqlParserImplFactory parserFactory() {
+        public ParserFactory parserFactory() {
             return parserFactory;
         }
 

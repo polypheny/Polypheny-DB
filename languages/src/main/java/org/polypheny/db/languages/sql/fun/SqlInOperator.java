@@ -20,13 +20,13 @@ package org.polypheny.db.languages.sql.fun;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.ExplicitOperatorBinding;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
@@ -126,7 +126,7 @@ public class SqlInOperator extends SqlBinaryOperator {
 
         final ComparableOperandTypeChecker checker = (ComparableOperandTypeChecker) OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;
         if ( !checker.checkOperandTypes( new ExplicitOperatorBinding( new SqlCallBinding( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call ), ImmutableList.of( leftRowType, rightRowType ) ) ) ) {
-            throw validator.newValidationError( call, Static.RESOURCE.incompatibleValueType( StdOperatorRegistry.get( OperatorName.IN ).getName() ) );
+            throw validator.newValidationError( call, Static.RESOURCE.incompatibleValueType( OperatorRegistry.get( OperatorName.IN ).getName() ) );
         }
 
         // Result is a boolean, nullable if there are any nullable types on either side.

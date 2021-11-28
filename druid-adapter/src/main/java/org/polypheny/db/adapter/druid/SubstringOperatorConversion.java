@@ -37,8 +37,8 @@ package org.polypheny.db.adapter.druid;
 import javax.annotation.Nullable;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
@@ -52,7 +52,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
 
     @Override
     public Operator polyphenyDbOperator() {
-        return StdOperatorRegistry.get( OperatorName.SUBSTRING );
+        return OperatorRegistry.get( OperatorName.SUBSTRING );
     }
 
 

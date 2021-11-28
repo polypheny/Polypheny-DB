@@ -18,6 +18,7 @@ package org.polypheny.db.languages.sql.parser;
 
 
 import org.junit.Test;
+import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 
 
@@ -35,7 +36,7 @@ import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 public class DdlParserTest extends SqlParserTest {
 
     @Override
-    protected SqlParserImplFactory parserImplFactory() {
+    protected ParserFactory parserImplFactory() {
         return SqlParserImpl.FACTORY;
     }
 

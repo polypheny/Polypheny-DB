@@ -21,9 +21,9 @@ import java.util.List;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
@@ -77,9 +77,9 @@ public class SqlCase extends SqlCall {
                 SqlNode e = list.get( i );
                 final SqlCall call;
                 if ( e instanceof SqlNodeList ) {
-                    call = (SqlCall) StdOperatorRegistry.get( OperatorName.IN ).createCall( pos, value, e );
+                    call = (SqlCall) OperatorRegistry.get( OperatorName.IN ).createCall( pos, value, e );
                 } else {
-                    call = (SqlCall) StdOperatorRegistry.get( OperatorName.EQUALS ).createCall( pos, value, e );
+                    call = (SqlCall) OperatorRegistry.get( OperatorName.EQUALS ).createCall( pos, value, e );
                 }
                 whenList.set( i, call );
             }
@@ -101,7 +101,7 @@ public class SqlCase extends SqlCall {
 
     @Override
     public Operator getOperator() {
-        return StdOperatorRegistry.get( OperatorName.CASE );
+        return OperatorRegistry.get( OperatorName.CASE );
     }
 
 

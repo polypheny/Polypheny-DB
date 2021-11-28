@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.util.ReflectiveSqlOperatorTable;
 import org.polypheny.db.rel.type.RelDataType;
@@ -114,7 +112,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      * Oracle's "SUBSTR(string, position [, substringLength ])" function.
      *
-     * It has similar semantics to standard SQL's {@link StdOperatorRegistry.get( OperatorName.SUBSTRING )} function but different syntax.
+     * It has similar semantics to standard SQL's {@see OperatorRegistry.get( OperatorName.SUBSTRING )} function but different syntax.
      */
     public static final SqlFunction SUBSTR =
             new SqlFunction(

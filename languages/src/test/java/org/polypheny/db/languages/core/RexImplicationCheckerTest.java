@@ -25,8 +25,8 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.hamcrest.core.Is;
 import org.junit.Test;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RexImplicationChecker;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
@@ -391,20 +391,20 @@ public class RexImplicationCheckerTest extends LanguageManagerDependant {
         final RexNode literalTs = f.timestampLiteral( new TimestampString( "2010-10-10 00:00:00" ) );
         for ( int i = 0; i < timeUnitRanges.size(); i++ ) {
             final RexNode innerFloorCall = f.rexBuilder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.FLOOR ),
+                    OperatorRegistry.get( OperatorName.FLOOR ),
                     literalTs,
                     f.rexBuilder.makeFlag( timeUnitRanges.get( i ) ) );
             final RexNode innerCeilCall = f.rexBuilder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.CEIL ),
+                    OperatorRegistry.get( OperatorName.CEIL ),
                     literalTs,
                     f.rexBuilder.makeFlag( timeUnitRanges.get( i ) ) );
             for ( int j = 0; j <= i; j++ ) {
                 final RexNode outerFloorCall = f.rexBuilder.makeCall(
-                        StdOperatorRegistry.get( OperatorName.FLOOR ),
+                        OperatorRegistry.get( OperatorName.FLOOR ),
                         innerFloorCall,
                         f.rexBuilder.makeFlag( timeUnitRanges.get( j ) ) );
                 final RexNode outerCeilCall = f.rexBuilder.makeCall(
-                        StdOperatorRegistry.get( OperatorName.CEIL ),
+                        OperatorRegistry.get( OperatorName.CEIL ),
                         innerCeilCall,
                         f.rexBuilder.makeFlag( timeUnitRanges.get( j ) ) );
                 final RexCall floorSimplifiedExpr = (RexCall) f.simplify.simplifyPreservingType(
@@ -424,20 +424,20 @@ public class RexImplicationCheckerTest extends LanguageManagerDependant {
         // Negative test
         for ( int i = timeUnitRanges.size() - 1; i >= 0; i-- ) {
             final RexNode innerFloorCall = f.rexBuilder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.FLOOR ),
+                    OperatorRegistry.get( OperatorName.FLOOR ),
                     literalTs,
                     f.rexBuilder.makeFlag( timeUnitRanges.get( i ) ) );
             final RexNode innerCeilCall = f.rexBuilder.makeCall(
-                    StdOperatorRegistry.get( OperatorName.CEIL ),
+                    OperatorRegistry.get( OperatorName.CEIL ),
                     literalTs,
                     f.rexBuilder.makeFlag( timeUnitRanges.get( i ) ) );
             for ( int j = timeUnitRanges.size() - 1; j > i; j-- ) {
                 final RexNode outerFloorCall = f.rexBuilder.makeCall(
-                        StdOperatorRegistry.get( OperatorName.FLOOR ),
+                        OperatorRegistry.get( OperatorName.FLOOR ),
                         innerFloorCall,
                         f.rexBuilder.makeFlag( timeUnitRanges.get( j ) ) );
                 final RexNode outerCeilCall = f.rexBuilder.makeCall(
-                        StdOperatorRegistry.get( OperatorName.CEIL ),
+                        OperatorRegistry.get( OperatorName.CEIL ),
                         innerCeilCall,
                         f.rexBuilder.makeFlag( timeUnitRanges.get( j ) ) );
                 final RexCall floorSimplifiedExpr = (RexCall) f.simplify.simplifyPreservingType(

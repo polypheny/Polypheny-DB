@@ -26,9 +26,9 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.NodeList;
 import org.polypheny.db.core.nodes.NodeVisitor;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.util.Litmus;
@@ -149,8 +149,8 @@ public class SqlNodeList extends SqlNode implements NodeList {
     void andOrList( SqlWriter writer, Kind sepKind ) {
         SqlBinaryOperator sepOp =
                 sepKind == Kind.AND
-                        ? StdOperatorRegistry.get( OperatorName.AND, SqlBinaryOperator.class )
-                        : StdOperatorRegistry.get( OperatorName.OR, SqlBinaryOperator.class );
+                        ? OperatorRegistry.get( OperatorName.AND, SqlBinaryOperator.class )
+                        : OperatorRegistry.get( OperatorName.OR, SqlBinaryOperator.class );
         for ( int i = 0; i < list.size(); i++ ) {
             Node node = list.get( i );
             writer.sep( sepKind.name(), false );

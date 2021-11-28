@@ -48,7 +48,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
@@ -151,18 +151,18 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
                 for ( final String column : constraint.key.getColumnNames() ) {
                     RexNode joinComparison = rexBuilder.makeCall(
-                            StdOperatorRegistry.get( OperatorName.EQUALS ),
+                            OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, column ),
                             builder.field( 2, 0, column )
                     );
-                    joinCondition = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), joinCondition, joinComparison );
+                    joinCondition = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), joinCondition, joinComparison );
                 }
                 //
                 // TODO MV: Changed JOIN Type from LEFT to INNER to fix issues row types in index based query simplification.
                 //  Make sure this is ok!
                 //
                 final RelNode join = builder.join( JoinRelType.INNER, joinCondition ).build();
-                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
+                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO,
                         ConstraintViolationException.class,
                         String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -224,7 +224,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     builder.clear();
                     builder.push( input );
                     builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) ), builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" ) );
-                    builder.filter( builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
+                    builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                     final RelNode innerCheck = builder.build();
                     final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                             String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -254,15 +254,15 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     final String column = foreignKey.getColumnNames().get( i );
                     final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
                     RexNode joinComparison = rexBuilder.makeCall(
-                            StdOperatorRegistry.get( OperatorName.EQUALS ),
+                            OperatorRegistry.get( OperatorName.EQUALS ),
                             builder.field( 2, 1, referencedColumn ),
                             builder.field( 2, 0, column )
                     );
-                    joinCondition = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), joinCondition, joinComparison );
+                    joinCondition = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), joinCondition, joinComparison );
                 }
 
                 final RelNode join = builder.join( JoinRelType.LEFT, joinCondition ).build();
-                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
+                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Insert violates foreign key constraint `%s`.`%s`", table.name, foreignKey.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
@@ -321,28 +321,28 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 builder.join( JoinRelType.INNER, builder.literal( true ) );
 
                 List<RexNode> conditionList1 = primaryKey.getColumnNames().stream().map( c ->
-                        builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ),
+                        builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( c ) ),
                                 builder.field( names.size() + table.getColumnNames().indexOf( c ) )
                         )
                 ).collect( Collectors.toList() );
 
                 List<RexNode> conditionList2 = constraint.key.getColumnNames().stream().map( c ->
-                        builder.call( StdOperatorRegistry.get( OperatorName.EQUALS ),
+                        builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( "$projected$." + c ) ),
                                 builder.field( names.size() + table.getColumnNames().indexOf( c ) )
                         )
                 ).collect( Collectors.toList() );
 
                 RexNode condition =
-                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ),
-                                rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ),
+                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ),
+                                rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT ),
                                         conditionList1.size() > 1 ?
-                                                rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), conditionList1 ) :
+                                                rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), conditionList1 ) :
                                                 conditionList1.get( 0 )
                                 ),
                                 conditionList2.size() > 1 ?
-                                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.AND ), conditionList2 ) :
+                                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), conditionList2 ) :
                                         conditionList2.get( 0 )
                         );
                 condition = RexUtil.flatten( rexBuilder, condition );
@@ -370,7 +370,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                         builder.groupKey( IntStream.range( 0, projects.size() ).mapToObj( builder::field ).collect( Collectors.toList() ) ),
                         builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" )
                 );
-                builder.filter( builder.call( StdOperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
+                builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                 final RelNode innerCheck = builder.build();
                 final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -435,7 +435,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     );
                 }
                 final RelNode join = builder.join( JoinRelType.LEFT, condition ).build();
-                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
+                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );

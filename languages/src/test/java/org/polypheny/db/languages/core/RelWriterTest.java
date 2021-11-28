@@ -28,10 +28,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
@@ -107,7 +107,7 @@ public class RelWriterTest {
                     LogicalFilter filter =
                             LogicalFilter.create( scan,
                                     rexBuilder.makeCall(
-                                            StdOperatorRegistry.get( OperatorName.EQUALS ),
+                                            OperatorRegistry.get( OperatorName.EQUALS ),
                                             rexBuilder.makeFieldAccess( rexBuilder.makeRangeReference( scan ), "deptno", true ),
                                             rexBuilder.makeExactLiteral( BigDecimal.TEN ) ) );
                     final RelJsonWriter writer = new RelJsonWriter();
@@ -115,8 +115,8 @@ public class RelWriterTest {
                     LogicalAggregate aggregate =
                             LogicalAggregate.create( filter, ImmutableBitSet.of( 0 ), null,
                                     ImmutableList.of(
-                                            AggregateCall.create( StdOperatorRegistry.getAgg( OperatorName.COUNT ), true, false, ImmutableList.of( 1 ), -1, RelCollations.EMPTY, bigIntType, "c" ),
-                                            AggregateCall.create( StdOperatorRegistry.getAgg( OperatorName.COUNT ), false, false, ImmutableList.of(), -1, RelCollations.EMPTY, bigIntType, "d" ) ) );
+                                            AggregateCall.create( OperatorRegistry.getAgg( OperatorName.COUNT ), true, false, ImmutableList.of( 1 ), -1, RelCollations.EMPTY, bigIntType, "c" ),
+                                            AggregateCall.create( OperatorRegistry.getAgg( OperatorName.COUNT ), false, false, ImmutableList.of(), -1, RelCollations.EMPTY, bigIntType, "d" ) ) );
                     aggregate.explain( writer );
                     return writer.asString();
                 } );

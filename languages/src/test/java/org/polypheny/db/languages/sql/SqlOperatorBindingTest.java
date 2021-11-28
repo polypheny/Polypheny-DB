@@ -23,10 +23,10 @@ import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -75,11 +75,11 @@ public class SqlOperatorBindingTest extends LanguageManagerDependant {
         final SqlNode literal = SqlLiteral.createExactNumeric(
                 "0",
                 ParserPos.ZERO );
-        final SqlNode castLiteral = (SqlNode) StdOperatorRegistry.get( OperatorName.CAST ).createCall(
+        final SqlNode castLiteral = (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall(
                 ParserPos.ZERO,
                 literal,
                 integerType );
-        final SqlNode castCastLiteral = (SqlNode) StdOperatorRegistry.get( OperatorName.CAST ).createCall(
+        final SqlNode castCastLiteral = (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall(
                 ParserPos.ZERO,
                 castLiteral,
                 integerType );
@@ -104,12 +104,12 @@ public class SqlOperatorBindingTest extends LanguageManagerDependant {
 
         final RexNode castLiteral = rexBuilder.makeCall(
                 integerDataType,
-                StdOperatorRegistry.get( OperatorName.CAST ),
+                OperatorRegistry.get( OperatorName.CAST ),
                 Lists.newArrayList( literal ) );
 
         final RexNode castCastLiteral = rexBuilder.makeCall(
                 integerDataType,
-                StdOperatorRegistry.get( OperatorName.CAST ),
+                OperatorRegistry.get( OperatorName.CAST ),
                 Lists.newArrayList( castLiteral ) );
         // RexLiteral is considered as a Literal
         assertSame( true, RexUtil.isLiteral( literal, true ) );

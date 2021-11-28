@@ -24,7 +24,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.LangFunctionOperator;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 
 
 /**
@@ -98,7 +98,7 @@ public class MqlRegisterer {
 
 
     private static void register( OperatorName name, Operator operator ) {
-        StdOperatorRegistry.register( QueryLanguage.MONGOQL, name, operator );
+        OperatorRegistry.register( QueryLanguage.MONGOQL, name, operator );
     }
 
 

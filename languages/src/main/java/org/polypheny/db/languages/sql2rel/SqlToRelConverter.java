@@ -46,40 +46,40 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.fun.AggFunction;
-import org.polypheny.db.core.nodes.BasicNodeVisitor;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.nodes.DataTypeSpec;
-import org.polypheny.db.core.nodes.DynamicParam;
-import org.polypheny.db.core.enums.ExplainFormat;
-import org.polypheny.db.core.enums.ExplainLevel;
-import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.InitializerContext;
 import org.polypheny.db.core.InitializerExpressionFactory;
-import org.polypheny.db.core.nodes.IntervalQualifier;
+import org.polypheny.db.core.NullInitializerExpressionFactory;
+import org.polypheny.db.core.enums.ExplainFormat;
+import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.JoinConditionType;
 import org.polypheny.db.core.enums.JoinType;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.util.NameMatcher;
+import org.polypheny.db.core.enums.SemiJoinType;
+import org.polypheny.db.core.fun.AggFunction;
+import org.polypheny.db.core.nodes.BasicNodeVisitor;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.DataTypeSpec;
+import org.polypheny.db.core.nodes.DynamicParam;
+import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.nodes.IntervalQualifier;
+import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.NodeList;
 import org.polypheny.db.core.nodes.NodeVisitor;
-import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.core.rel.RelDecorrelator;
 import org.polypheny.db.core.rel.RelFieldTrimmer;
 import org.polypheny.db.core.rel.RelStructuredTypeFlattener;
-import org.polypheny.db.core.enums.SemiJoinType;
-import org.polypheny.db.languages.StdOperatorRegistry;
-import org.polypheny.db.core.validate.ValidatorTable;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.util.ValidatorUtil;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -809,19 +809,19 @@ public class SqlToRelConverter implements NodeToRelConverter {
                         final SqlNodeList thenOperands = new SqlNodeList( ParserPos.ZERO );
 
                         for ( SqlNode thenOperand : caseNode.getThenOperands().getSqlList() ) {
-                            final SqlCall not = (SqlCall) StdOperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, thenOperand );
+                            final SqlCall not = (SqlCall) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, thenOperand );
                             thenOperands.add( pushDownNotForIn( scope, reg( scope, not ) ) );
                         }
                         SqlNode elseOperand = caseNode.getElseOperand();
                         if ( !SqlUtil.isNull( elseOperand ) ) {
                             // "not(unknown)" is "unknown", so no need to simplify
-                            final SqlCall not = (SqlCall) StdOperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, elseOperand );
+                            final SqlCall not = (SqlCall) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, elseOperand );
                             elseOperand = pushDownNotForIn( scope, reg( scope, not ) );
                         }
 
                         return reg(
                                 scope,
-                                (SqlNode) StdOperatorRegistry.get( OperatorName.CASE ).createCall(
+                                (SqlNode) OperatorRegistry.get( OperatorName.CASE ).createCall(
                                         ParserPos.ZERO,
                                         caseNode.getValueOperand(),
                                         caseNode.getWhenOperands(),
@@ -834,9 +834,9 @@ public class SqlToRelConverter implements NodeToRelConverter {
                             orOperands.add(
                                     pushDownNotForIn(
                                             scope,
-                                            reg( scope, (SqlNode) StdOperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, operand ) ) ) );
+                                            reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, operand ) ) ) );
                         }
-                        return reg( scope, (SqlNode) StdOperatorRegistry.get( OperatorName.OR ).createCall( ParserPos.ZERO, orOperands ) );
+                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.OR ).createCall( ParserPos.ZERO, orOperands ) );
 
                     case OR:
                         final List<Node> andOperands = new ArrayList<>();
@@ -844,19 +844,19 @@ public class SqlToRelConverter implements NodeToRelConverter {
                             andOperands.add(
                                     pushDownNotForIn(
                                             scope,
-                                            reg( scope, (SqlNode) StdOperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, operand ) ) ) );
+                                            reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall( ParserPos.ZERO, operand ) ) ) );
                         }
-                        return reg( scope, (SqlNode) StdOperatorRegistry.get( OperatorName.AND ).createCall( ParserPos.ZERO, andOperands ) );
+                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.AND ).createCall( ParserPos.ZERO, andOperands ) );
 
                     case NOT:
                         assert call.operandCount() == 1;
                         return pushDownNotForIn( scope, call.operand( 0 ) );
 
                     case NOT_IN:
-                        return reg( scope, (SqlNode) StdOperatorRegistry.get( OperatorName.IN ).createCall( ParserPos.ZERO, call.getOperandList() ) );
+                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.IN ).createCall( ParserPos.ZERO, call.getOperandList() ) );
 
                     case IN:
-                        return reg( scope, (SqlNode) StdOperatorRegistry.get( OperatorName.NOT_IN ).createCall( ParserPos.ZERO, call.getOperandList() ) );
+                        return reg( scope, (SqlNode) OperatorRegistry.get( OperatorName.NOT_IN ).createCall( ParserPos.ZERO, call.getOperandList() ) );
                 }
         }
         return sqlNode;
@@ -1019,7 +1019,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                             LogicalAggregate.create( seek, ImmutableBitSet.of(), null,
                                     ImmutableList.of(
                                             AggregateCall.create(
-                                                    StdOperatorRegistry.getAgg( OperatorName.COUNT ),
+                                                    OperatorRegistry.getAgg( OperatorName.COUNT ),
                                                     false,
                                                     false,
                                                     ImmutableList.of(),
@@ -1028,7 +1028,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                                                     longType,
                                                     null ),
                                             AggregateCall.create(
-                                                    StdOperatorRegistry.getAgg( OperatorName.COUNT ),
+                                                    OperatorRegistry.getAgg( OperatorName.COUNT ),
                                                     false,
                                                     false,
                                                     args,
@@ -1063,7 +1063,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 }
                 subQuery.expr = translateIn( logic, bb.root, rex );
                 if ( notIn ) {
-                    subQuery.expr = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), subQuery.expr );
+                    subQuery.expr = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT ), subQuery.expr );
                 }
                 return;
 
@@ -1145,7 +1145,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 assert rex instanceof RexRangeRef;
                 final int fieldCount = rex.getType().getFieldCount();
                 RexNode rexNode = rexBuilder.makeFieldAccess( rex, fieldCount - 1 );
-                rexNode = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_TRUE ), rexNode );
+                rexNode = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ), rexNode );
 
                 // Then append the IS NOT NULL(leftKeysForIn).
                 //
@@ -1159,10 +1159,10 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 for ( int i = 0; i < k; i++ ) {
                     rexNode =
                             rexBuilder.makeCall(
-                                    StdOperatorRegistry.get( OperatorName.AND ),
+                                    OperatorRegistry.get( OperatorName.AND ),
                                     rexNode,
                                     rexBuilder.makeCall(
-                                            StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ),
+                                            OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                             rexBuilder.makeFieldAccess( rex, i ) ) );
                 }
                 return rexNode;
@@ -1197,18 +1197,18 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
                 final ImmutableList.Builder<RexNode> args = ImmutableList.builder();
                 args.add(
-                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), cRef, zero ),
+                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), cRef, zero ),
                         falseLiteral,
-                        rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), iRef ),
+                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), iRef ),
                         trueLiteral );
                 final JoinInfo joinInfo = join.analyzeCondition();
                 for ( int leftKey : joinInfo.leftKeys ) {
                     final RexNode kRef = rexBuilder.makeInputRef( root, leftKey );
-                    args.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NULL ), kRef ), unknownLiteral );
+                    args.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), kRef ), unknownLiteral );
                 }
-                args.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.LESS_THAN ), ckRef, cRef ), unknownLiteral, falseLiteral );
+                args.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN ), ckRef, cRef ), unknownLiteral, falseLiteral );
 
-                return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.CASE ), args.build() );
+                return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.CASE ), args.build() );
 
             default:
                 throw new AssertionError( logic );
@@ -1314,9 +1314,9 @@ public class SqlToRelConverter implements NodeToRelConverter {
             RexNode rexComparison;
             final SqlOperator comparisonOp;
             if ( op instanceof SqlQuantifyOperator ) {
-                comparisonOp = (SqlOperator) RelOptUtil.op( ((SqlQuantifyOperator) op).comparisonKind, StdOperatorRegistry.get( OperatorName.EQUALS ) );
+                comparisonOp = (SqlOperator) RelOptUtil.op( ((SqlQuantifyOperator) op).comparisonKind, OperatorRegistry.get( OperatorName.EQUALS ) );
             } else {
-                comparisonOp = (SqlOperator) StdOperatorRegistry.get( OperatorName.EQUALS );
+                comparisonOp = (SqlOperator) OperatorRegistry.get( OperatorName.EQUALS );
             }
             if ( leftKeys.size() == 1 ) {
                 rexComparison =
@@ -1352,7 +1352,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                         true );
             case NOT_IN:
                 return rexBuilder.makeCall(
-                        StdOperatorRegistry.get( OperatorName.NOT ),
+                        OperatorRegistry.get( OperatorName.NOT ),
                         RexUtil.composeDisjunction( rexBuilder, comparisons, true ) );
             case IN:
             case SOME:
@@ -1459,7 +1459,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 }
 
                 // convert "1" to "row(1)"
-                call = (SqlBasicCall) StdOperatorRegistry.get( OperatorName.ROW ).createCall( ParserPos.ZERO, node );
+                call = (SqlBasicCall) OperatorRegistry.get( OperatorName.ROW ).createCall( ParserPos.ZERO, node );
             }
             unionInputs.add( convertRowConstructor( bb, call ) );
         }
@@ -2391,7 +2391,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 operands.add( rexBuilder.makeInputRef( field.getType(), offset + field.getIndex() ) );
                 offset += rowType.getFieldList().size();
             }
-            list.add( rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.EQUALS ), operands ) );
+            list.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), operands ) );
         }
         return RexUtil.composeConjunction( rexBuilder, list );
     }
@@ -4072,12 +4072,12 @@ public class SqlToRelConverter implements NodeToRelConverter {
                                 case IN:
                                     return RexSubQuery.in( root.rel, list );
                                 case NOT_IN:
-                                    return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT ), RexSubQuery.in( root.rel, list ) );
+                                    return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT ), RexSubQuery.in( root.rel, list ) );
                                 case SOME:
                                     return RexSubQuery.some( root.rel, list, (SqlQuantifyOperator) call.getOperator() );
                                 case ALL:
                                     return rexBuilder.makeCall(
-                                            StdOperatorRegistry.get( OperatorName.NOT ),
+                                            OperatorRegistry.get( OperatorName.NOT ),
                                             RexSubQuery.some( root.rel, list, negate( (SqlQuantifyOperator) call.getOperator() ) ) );
                                 default:
                                     throw new AssertionError( kind );
@@ -4138,7 +4138,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
                     // The indicator column will be nullable if it comes from the null-generating side of the join. For EXISTS, add an "IS TRUE" check so that the result is "BOOLEAN NOT NULL".
                     if ( fieldAccess.getType().isNullable() && kind == Kind.EXISTS ) {
-                        fieldAccess = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_NOT_NULL ), fieldAccess );
+                        fieldAccess = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), fieldAccess );
                     }
                     return fieldAccess;
 
@@ -4463,7 +4463,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
             for ( int i = 0; i < selectList.size(); i++ ) {
                 SqlNode selectItem = selectList.getSqlList().get( i );
                 String name = null;
-                if ( SqlUtil.isCallTo( selectItem, StdOperatorRegistry.get( OperatorName.AS ) ) ) {
+                if ( SqlUtil.isCallTo( selectItem, OperatorRegistry.get( OperatorName.AS ) ) ) {
                     final SqlCall call = (SqlCall) selectItem;
                     selectItem = call.operand( 0 );
                     name = call.operand( 1 ).toString();
@@ -4670,7 +4670,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
                     RexNode convertedExpr = bb.convertExpression( filter );
                     assert convertedExpr != null;
                     if ( convertedExpr.getType().isNullable() ) {
-                        convertedExpr = rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.IS_TRUE ), convertedExpr );
+                        convertedExpr = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ), convertedExpr );
                     }
                     filterArg = lookupOrCreateGroupExpr( convertedExpr );
                 }
@@ -4687,8 +4687,8 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 distinct = true;
             }
             boolean approximate = false;
-            if ( aggFunction.equals( StdOperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT ) ) ) {
-                aggFunction = (SqlAggFunction) StdOperatorRegistry.getAgg( OperatorName.COUNT );
+            if ( aggFunction.equals( OperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT ) ) ) {
+                aggFunction = (SqlAggFunction) OperatorRegistry.getAgg( OperatorName.COUNT );
                 distinct = true;
                 approximate = true;
             }
@@ -4915,14 +4915,14 @@ public class SqlToRelConverter implements NodeToRelConverter {
                 RexCallBinding bind =
                         new RexCallBinding(
                                 rexBuilder.getTypeFactory(),
-                                StdOperatorRegistry.get( OperatorName.HISTOGRAM_AGG ),
+                                OperatorRegistry.get( OperatorName.HISTOGRAM_AGG ),
                                 exprs,
                                 ImmutableList.of() );
 
                 RexNode over =
                         rexBuilder.makeOver(
-                                StdOperatorRegistry.get( OperatorName.HISTOGRAM_AGG ).inferReturnType( bind ),
-                                StdOperatorRegistry.getAgg( OperatorName.HISTOGRAM_AGG ),
+                                OperatorRegistry.get( OperatorName.HISTOGRAM_AGG ).inferReturnType( bind ),
+                                OperatorRegistry.getAgg( OperatorName.HISTOGRAM_AGG ),
                                 exprs,
                                 partitionKeys,
                                 orderKeys,
@@ -4954,10 +4954,10 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
                 return histogramCall;
             } else {
-                boolean needSum0 = aggOp.equals( StdOperatorRegistry.get( OperatorName.SUM ) ) && type.isNullable();
+                boolean needSum0 = aggOp.equals( OperatorRegistry.get( OperatorName.SUM ) ) && type.isNullable();
                 AggFunction aggOpToUse =
                         needSum0
-                                ? StdOperatorRegistry.getAgg( OperatorName.SUM0 )
+                                ? OperatorRegistry.getAgg( OperatorName.SUM0 )
                                 : aggOp;
                 return rexBuilder.makeOver(
                         type,
@@ -4978,20 +4978,20 @@ public class SqlToRelConverter implements NodeToRelConverter {
         /**
          * Returns the histogram operator corresponding to a given aggregate function.
          *
-         * For example, <code>getHistogramOp ({@link StdOperatorRegistry MIN}}</code> returns {@link StdOperatorRegistry HISTOGRAM_MIN}.
+         * For example, <code>getHistogramOp ({@link OperatorRegistry MIN}}</code> returns {@link OperatorRegistry HISTOGRAM_MIN}.
          *
          * @param aggFunction An aggregate function
          * @return Its histogram function, or null
          */
         SqlFunction getHistogramOp( SqlAggFunction aggFunction ) {
             if ( aggFunction.getOperatorName() == OperatorName.MIN ) {
-                return StdOperatorRegistry.get( OperatorName.HISTOGRAM_MIN, SqlFunction.class );
+                return OperatorRegistry.get( OperatorName.HISTOGRAM_MIN, SqlFunction.class );
             } else if ( aggFunction.getOperatorName() == OperatorName.MAX ) {
-                return StdOperatorRegistry.get( OperatorName.HISTOGRAM_MAX, SqlFunction.class );
+                return OperatorRegistry.get( OperatorName.HISTOGRAM_MAX, SqlFunction.class );
             } else if ( aggFunction.getOperatorName() == OperatorName.FIRST_VALUE ) {
-                return StdOperatorRegistry.get( OperatorName.HISTOGRAM_FIRST_VALUE, SqlFunction.class );
+                return OperatorRegistry.get( OperatorName.HISTOGRAM_FIRST_VALUE, SqlFunction.class );
             } else if ( aggFunction.getOperatorName() == OperatorName.LAST_VALUE ) {
-                return StdOperatorRegistry.get( OperatorName.HISTOGRAM_LAST_VALUE, SqlFunction.class );
+                return OperatorRegistry.get( OperatorName.HISTOGRAM_LAST_VALUE, SqlFunction.class );
             } else {
                 return null;
             }

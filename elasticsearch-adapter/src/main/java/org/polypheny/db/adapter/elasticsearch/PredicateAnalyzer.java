@@ -47,10 +47,10 @@ import java.util.stream.Collectors;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.BoolQueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.QueryBuilder;
 import org.polypheny.db.adapter.elasticsearch.QueryBuilders.RangeQueryBuilder;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -154,7 +154,7 @@ class PredicateAnalyzer {
                             .stream()
                             .map( rexNode -> rexNode.accept( NotLikeConverter.this ) )
                             .collect( Collectors.toList() );
-                    return rexBuilder.makeCall( StdOperatorRegistry.get( OperatorName.NOT_LIKE ), operands );
+                    return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT_LIKE ), operands );
                 }
             }
             return super.visitCall( call );

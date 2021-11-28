@@ -35,7 +35,7 @@ package org.polypheny.db.rel.rules;
 
 
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.StdOperatorRegistry;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptUtil;
@@ -54,7 +54,7 @@ import org.polypheny.db.tools.RelBuilderFactory;
 /**
  * Planner rule that replaces {@code IS NOT DISTINCT FROM} in a {@link Filter} with logically equivalent operations.
  *
- * @see StdOperatorRegistry IS_NOT_DISTINCT_FROM
+ * @see OperatorRegistry IS_NOT_DISTINCT_FROM
  */
 public final class FilterRemoveIsNotDistinctFromRule extends RelOptRule {
 
@@ -79,7 +79,7 @@ public final class FilterRemoveIsNotDistinctFromRule extends RelOptRule {
         Filter oldFilter = call.rel( 0 );
         RexNode oldFilterCond = oldFilter.getCondition();
 
-        if ( RexUtil.findOperatorCall( StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ), oldFilterCond ) == null ) {
+        if ( RexUtil.findOperatorCall( OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ), oldFilterCond ) == null ) {
             // no longer contains isNotDistinctFromOperator
             return;
         }
@@ -117,7 +117,7 @@ public final class FilterRemoveIsNotDistinctFromRule extends RelOptRule {
         public RexNode visitCall( RexCall call ) {
             RexNode newCall = super.visitCall( call );
 
-            if ( call.getOperator().equals( StdOperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ) ) ) {
+            if ( call.getOperator().equals( OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ) ) ) {
                 RexCall tmpCall = (RexCall) newCall;
                 newCall = RelOptUtil.isDistinctFrom(
                         rexBuilder,

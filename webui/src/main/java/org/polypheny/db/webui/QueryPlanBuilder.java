@@ -20,9 +20,9 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import org.apache.commons.lang.math.NumberUtils;
-import org.polypheny.db.languages.StdOperatorRegistry;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.RelBuilder;
@@ -197,18 +197,18 @@ public class QueryPlanBuilder {
     private static Operator getOperator( final String operator ) {
         switch ( operator ) {
             case "=":
-                return StdOperatorRegistry.get( OperatorName.EQUALS );
+                return OperatorRegistry.get( OperatorName.EQUALS );
             case "!=":
             case "<>":
-                return StdOperatorRegistry.get( OperatorName.NOT_EQUALS );
+                return OperatorRegistry.get( OperatorName.NOT_EQUALS );
             case "<":
-                return StdOperatorRegistry.get( OperatorName.LESS_THAN );
+                return OperatorRegistry.get( OperatorName.LESS_THAN );
             case "<=":
-                return StdOperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
+                return OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL );
             case ">":
-                return StdOperatorRegistry.get( OperatorName.GREATER_THAN );
+                return OperatorRegistry.get( OperatorName.GREATER_THAN );
             case ">=":
-                return StdOperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
+                return OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL );
             default:
                 throw new IllegalArgumentException( "Operator '" + operator + "' is not supported." );
         }
