@@ -40,7 +40,6 @@ import org.polypheny.db.transaction.Statement;
 public class UiRoutingPageUtil {
 
     public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, InformationManager queryAnalyzer ) {
-        // Print stuff in reverse order
         addPhysicalPlanPage( optimalRelNode, queryAnalyzer );
 
         InformationPage page = setBaseOutput( "Routing", 0, queryAnalyzer );
@@ -98,7 +97,7 @@ public class UiRoutingPageUtil {
         double ratioPre = 1 - RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
         double ratioPost = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
 
-        InformationGroup overview = new InformationGroup( page, "Stats overview" ).setOrder( 1 );
+        InformationGroup overview = new InformationGroup( page, "Overview" ).setOrder( 1 );
         queryAnalyzer.addGroup( overview );
         InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# of Plans", "Pre Cost Factor", "Post Cost Factor", "Selection Strategy" ) );
         overviewTable.addRow( numberOfPlans == 0 ? "-" : numberOfPlans, ratioPre, ratioPost, RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() );
@@ -134,7 +133,7 @@ public class UiRoutingPageUtil {
             final RoutingPlan routingPlan = routingPlans.get( i );
             table.addRow(
                     routingPlan.getPhysicalQueryClass(),
-                    routingPlan.getRouter() != null ? routingPlan.getRouter() : "",
+                    routingPlan.getRouter() != null ? routingPlan.getRouter().toString().replace( "class org.polypheny.db.routing.routers.", "" ) : "",
                     approximatedCosts.get( i ),
                     isIcarus ? icarusCosts.get( i ) : "-",
                     preCosts.get( i ),
@@ -152,7 +151,7 @@ public class UiRoutingPageUtil {
         selectedTable.addRow(
                 selectedPlan.getQueryClass(),
                 selectedPlan.getPhysicalQueryClass(),
-                selectedPlan.getRouter(),
+                selectedPlan.getRouter().toString().replace( "class org.polypheny.db.routing.routers.", "" ),
                 selectedPlan.getPhysicalPlacementsOfPartitions() );
 
         queryAnalyzer.registerInformation( table, selectedTable );
