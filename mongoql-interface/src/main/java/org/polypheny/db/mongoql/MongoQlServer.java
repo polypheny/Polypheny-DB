@@ -146,7 +146,7 @@ public class MongoQlServer extends QueryInterface {
         Transaction transaction = getTransaction();
 
         PolyphenyDbSignature<?> signature;
-        MqlProcessor mqlProcessor = (MqlProcessor) transaction.getProcessor( QueryLanguage.MONGOQL );
+        MqlProcessor mqlProcessor = (MqlProcessor) transaction.getProcessor( QueryLanguage.MONGO_QL );
         String mql = query.query;
         Statement statement = transaction.createStatement();
 

@@ -461,8 +461,8 @@ public class CatalogImpl extends Catalog {
                         relTypeInfo.put( c.id, relRoot.validatedRowType );
                         break;
 
-                    case RELALG:
-                        Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.RELALG );
+                    case REL_ALG:
+                        Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
                         RelNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query ) ).rel;
 
                         final RelDataType rowType = result.getRowType();
@@ -477,8 +477,8 @@ public class CatalogImpl extends Catalog {
                         relTypeInfo.put( c.id, root.validatedRowType );
                         break;
 
-                    case MONGOQL:
-                        Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGOQL );
+                    case MONGO_QL:
+                        Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
                         Node mqlNode = mqlProcessor.parse( query );
 
                         RelRoot mqlRel = mqlProcessor.translate(

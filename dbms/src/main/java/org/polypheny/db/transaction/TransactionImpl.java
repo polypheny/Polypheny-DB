@@ -237,9 +237,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         switch ( language ) {
             case SQL:
                 return new SqlProcessorImpl();
-            case RELALG:
+            case REL_ALG:
                 return new JsonRelProcessorImpl();
-            case MONGOQL:
+            case MONGO_QL:
                 return new MqlProcessorImpl();
             default:
                 throw new RuntimeException( "This language seems to not be supported!" );

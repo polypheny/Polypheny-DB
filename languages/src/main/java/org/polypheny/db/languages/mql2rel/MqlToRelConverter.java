@@ -45,7 +45,6 @@ import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.document.util.DocumentUtil;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -92,6 +91,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalView;
+import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -136,14 +136,14 @@ public class MqlToRelConverter {
 
         mappings = new HashMap<>();
 
-        mappings.put( "$lt", OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LT ) );
-        mappings.put( "$gt", OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GT ) );
-        mappings.put( "$lte", OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LTE ) );
-        mappings.put( "$gte", OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GTE ) );
+        mappings.put( "$lt", OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_LT ) );
+        mappings.put( "$gt", OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GT ) );
+        mappings.put( "$lte", OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_LTE ) );
+        mappings.put( "$gte", OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GTE ) );
 
         mathComparators.putAll( mappings );
 
-        mappings.put( "$eq", OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ) );
+        mappings.put( "$eq", OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ) );
         mappings.put( "$ne", OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
         mappings.put( "$in", OperatorRegistry.get( OperatorName.IN ) );
         mappings.put( "$nin", OperatorRegistry.get( OperatorName.NOT_IN ) );
@@ -371,11 +371,11 @@ public class MqlToRelConverter {
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$min":
-                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_MIN ) ) );
+                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_MIN ) ) );
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$max":
-                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_MAX ) ) );
+                    updates.putAll( translateMinMaxMul( entry.getValue().asDocument(), rowType, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_MAX ) ) );
                     updateOp = UpdateOperation.REPLACE;
                     break;
                 case "$mul":
@@ -508,7 +508,7 @@ public class MqlToRelConverter {
 
         RexNode replace = new RexCall(
                 jsonType,
-                OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REPLACE ),
+                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REPLACE ),
                 Arrays.asList(
                         id,
                         getStringArray( Pair.left( replaceNodes ) ),
@@ -521,7 +521,7 @@ public class MqlToRelConverter {
 
         RexNode rename = new RexCall(
                 jsonType,
-                OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_RENAME ),
+                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_RENAME ),
                 Arrays.asList(
                         id,
                         getStringArray( Pair.left( renameNodes ) ),
@@ -534,12 +534,12 @@ public class MqlToRelConverter {
 
         RexNode remove = new RexCall(
                 jsonType,
-                OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REMOVE ),
+                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REMOVE ),
                 Arrays.asList(
                         id,
                         getStringArray( removeNodes ) ) );
 
-        RexCall combination = new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE ), Arrays.asList( id, replace, rename, remove ) );
+        RexCall combination = new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE ), Arrays.asList( id, replace, rename, remove ) );
 
         return LogicalTableModify.create(
                 table,
@@ -561,7 +561,7 @@ public class MqlToRelConverter {
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType );
             RexNode value = convertLiteral( entry.getValue() );
-            RexCall addToSet = new RexCall( jsonType, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_ADD_TO_SET ), Arrays.asList( id, value ) );
+            RexCall addToSet = new RexCall( jsonType, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_ADD_TO_SET ), Arrays.asList( id, value ) );
 
             updates.put( entry.getKey(), addToSet );
         }
@@ -889,7 +889,7 @@ public class MqlToRelConverter {
                         .map( el -> {
                             RexInputRef ref = new RexInputRef( el.getIndex(), finalNode.getRowType().getFieldList().get( el.getIndex() ).getType() );
                             if ( !el.getName().equals( "_id" ) ) {
-                                return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_JSONIFY ), Collections.singletonList( ref ) );
+                                return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSONIFY ), Collections.singletonList( ref ) );
                             } else {
                                 return ref;
                             }
@@ -976,7 +976,7 @@ public class MqlToRelConverter {
 
         RexNode id = getIdentifier( path, node.getRowType() );
 
-        RexCall call = new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UNWIND ), Collections.singletonList( id ) );
+        RexCall call = new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UNWIND ), Collections.singletonList( id ) );
 
         List<String> names = new ArrayList<>();
         List<RexNode> values = new ArrayList<>();
@@ -1413,7 +1413,7 @@ public class MqlToRelConverter {
                     RexNode node = convertMath( key, null, bsonValue, rowType, false );
                     if ( losesContext && id != null ) {
                         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
-                        return new RexCall( type, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ), Arrays.asList( id, node ) );
+                        return new RexCall( type, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ), Arrays.asList( id, node ) );
                     } else {
                         return node;
                     }
@@ -1477,7 +1477,7 @@ public class MqlToRelConverter {
 
         RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
 
-        return new RexCall( type, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ), Arrays.asList( node, rexRemainder ) );
+        return new RexCall( type, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ), Arrays.asList( node, rexRemainder ) );
     }
 
 
@@ -1514,7 +1514,7 @@ public class MqlToRelConverter {
             throw new RuntimeException( "After a $slice projection a number or an array of 2 is needed" );
         }
 
-        return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_SLICE ), Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
+        return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_SLICE ), Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
     }
 
 
@@ -1536,7 +1536,7 @@ public class MqlToRelConverter {
             if ( nodes.size() > 2 ) {
                 throw new RuntimeException( msg );
             }
-            return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ITEM ), Arrays.asList( nodes.get( 0 ), nodes.get( 1 ) ) );
+            return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ITEM ), Arrays.asList( nodes.get( 0 ), nodes.get( 1 ) ) );
 
         } else {
             throw new RuntimeException( msg );
@@ -1674,7 +1674,7 @@ public class MqlToRelConverter {
                 nodes.add( convertLiteral( bsonValue ) );
             }
 
-            return getFixedCall( nodes, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ), PolyType.BOOLEAN );
+            return getFixedCall( nodes, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ), PolyType.BOOLEAN );
         }
     }
 
@@ -1840,7 +1840,7 @@ public class MqlToRelConverter {
     private RexCall getRegex( String stringRegex, String options, String parentKey, RelDataType rowType ) {
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_REGEX_MATCH ),
+                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_REGEX_MATCH ),
                 Arrays.asList(
                         getIdentifier( parentKey, rowType ),
                         convertLiteral( new BsonString( stringRegex ) ),
@@ -1877,7 +1877,7 @@ public class MqlToRelConverter {
 
             RexCall exists = new RexCall(
                     cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                    OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EXISTS ),
+                    OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EXISTS ),
                     Arrays.asList( getIdentifier( key, rowType ), getStringArray( keys ) ) );
 
             if ( !value.asBoolean().getValue() ) {
@@ -1930,7 +1930,7 @@ public class MqlToRelConverter {
      */
     private RexNode convertJsonSchema( BsonValue bsonValue, RelDataType rowType ) {
         if ( bsonValue.isDocument() ) {
-            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexInputRef.of( getIndexOfParentField( "_data", rowType ), rowType ) ) );
+            return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexInputRef.of( getIndexOfParentField( "_data", rowType ), rowType ) ) );
         } else {
             throw new RuntimeException( "After $jsonSchema there needs to follow a document" );
         }
@@ -1951,7 +1951,7 @@ public class MqlToRelConverter {
     private RexNode convertSize( BsonValue bsonValue, String parentKey, RelDataType rowType ) {
         if ( bsonValue.isNumber() ) {
             RexNode id = getIdentifier( parentKey, rowType );
-            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_SIZE_MATCH ), Arrays.asList( id, convertLiteral( bsonValue ) ) );
+            return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_SIZE_MATCH ), Arrays.asList( id, convertLiteral( bsonValue ) ) );
         } else {
             throw new RuntimeException( "After $size there needs to follow a number" );
         }
@@ -1982,7 +1982,7 @@ public class MqlToRelConverter {
 
         RexNode op = getFixedCall( nodes, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
 
-        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ELEM_MATCH ), Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
+        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ELEM_MATCH ), Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
     }
 
 
@@ -2005,7 +2005,7 @@ public class MqlToRelConverter {
 
             List<RexNode> operands = new ArrayList<>();
             for ( RexNode rexNode : arr ) {
-                operands.add( new RexCall( type, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ), Arrays.asList( id, rexNode ) ) );
+                operands.add( new RexCall( type, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ), Arrays.asList( id, rexNode ) ) );
             }
 
             return getFixedCall( operands, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
@@ -2051,7 +2051,7 @@ public class MqlToRelConverter {
         }
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_TYPE_MATCH ),
+                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_TYPE_MATCH ),
                 Arrays.asList( getIdentifier( parentKey, rowType ), types ) );
 
     }
@@ -2099,7 +2099,7 @@ public class MqlToRelConverter {
 
         return new RexCall(
                 any,
-                OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_QUERY_VALUE ),
+                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_QUERY_VALUE ),
                 Arrays.asList(
                         useAccess
                                 ? builder.makeCorrel( rowType, new CorrelationId( index ) )
@@ -2110,7 +2110,7 @@ public class MqlToRelConverter {
 
     private RexNode translateJsonQuery( int index, RelDataType rowType, List<String> excludes ) {
         RexCall filter = getNestedArray( excludes.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() ) );
-        return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EXCLUDE ), Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
+        return new RexCall( any, OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EXCLUDE ), Arrays.asList( RexInputRef.of( index, rowType ), filter ) );
     }
 
 
@@ -2201,7 +2201,7 @@ public class MqlToRelConverter {
                 }
                 operands.add( filter );
             } else {
-                operands.add( new RexCall( type, isIn ? OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ) : OperatorRegistry.get( OperatorName.NOT_EQUALS ), Arrays.asList( id, convertLiteral( literal ) ) ) );
+                operands.add( new RexCall( type, isIn ? OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ) : OperatorRegistry.get( OperatorName.NOT_EQUALS ), Arrays.asList( id, convertLiteral( literal ) ) ) );
             }
         }
 
@@ -2361,7 +2361,7 @@ public class MqlToRelConverter {
                         // we attach the new values to the input bson
                         values.add( new RexCall(
                                 any,
-                                OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ADD_FIELDS ),
+                                OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ADD_FIELDS ),
                                 Arrays.asList(
                                         RexInputRef.of( dataIndex, rowType ),
                                         convertLiteral( new BsonString( entry.getKey() ) ),
@@ -2485,9 +2485,9 @@ public class MqlToRelConverter {
      * Defines one of the possible doc update operations
      */
     enum UpdateOperation {
-        RENAME( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_RENAME ) ),
-        REPLACE( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REPLACE ) ),
-        REMOVE( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REMOVE ) );
+        RENAME( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_RENAME ) ),
+        REPLACE( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REPLACE ) ),
+        REMOVE( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REMOVE ) );
 
         @Getter
         private final Operator operator;

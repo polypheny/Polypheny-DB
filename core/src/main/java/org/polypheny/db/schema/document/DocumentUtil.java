@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.document.util;
+package org.polypheny.db.schema.document;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

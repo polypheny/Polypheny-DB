@@ -66,11 +66,11 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
         }
 
         Node mqlNode = statement.getTransaction()
-                .getProcessor( QueryLanguage.MONGOQL )
+                .getProcessor( QueryLanguage.MONGO_QL )
                 .parse( buildQuery() );
 
         RelRoot relRoot = statement.getTransaction()
-                .getProcessor( QueryLanguage.MONGOQL )
+                .getProcessor( QueryLanguage.MONGO_QL )
                 .translate( statement, mqlNode, parameters );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
@@ -88,7 +88,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
                     placementType,
                     relRoot.rel.getRowType().getFieldNames(),
                     buildQuery(),
-                    Catalog.QueryLanguage.MONGOQL );
+                    Catalog.QueryLanguage.MONGO_QL );
         } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         } // we just added the table/column, so it has to exist, or we have an internal problem

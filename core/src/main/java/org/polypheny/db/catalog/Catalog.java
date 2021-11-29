@@ -1574,8 +1574,9 @@ public abstract class Catalog {
 
     public enum QueryLanguage {
         SQL( SchemaType.RELATIONAL ),
-        MONGOQL( SchemaType.DOCUMENT ),
-        RELALG( SchemaType.RELATIONAL );
+        MONGO_QL( SchemaType.DOCUMENT ),
+        CQL( SchemaType.RELATIONAL ),
+        REL_ALG( SchemaType.RELATIONAL );
 
         @Getter
         private final SchemaType schemaType;

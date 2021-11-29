@@ -45,7 +45,7 @@ public class MqlParser implements Parser {
     private final Integer limit;
 
 
-    private MqlParser( MqlAbstractParserImpl parser, Integer limit ) {
+    public MqlParser( MqlAbstractParserImpl parser, Integer limit ) {
         this.limit = limit;
         this.parser = parser;
     }

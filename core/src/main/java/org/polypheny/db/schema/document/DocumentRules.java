@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.document.rules;
+package org.polypheny.db.schema.document;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;

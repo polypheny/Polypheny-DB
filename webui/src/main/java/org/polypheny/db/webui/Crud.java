@@ -2962,7 +2962,7 @@ public class Crud implements InformationObserver {
                             columns,
                             materializedCriteria,
                             gson.toJson( request.topNode ),
-                            Catalog.QueryLanguage.RELALG,
+                            Catalog.QueryLanguage.REL_ALG,
                             false,
                             false
                     );
@@ -3003,7 +3003,7 @@ public class Crud implements InformationObserver {
                             placementType,
                             columns,
                             gson.toJson( request.topNode ),
-                            Catalog.QueryLanguage.RELALG
+                            Catalog.QueryLanguage.REL_ALG
                     );
                 } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {
                     log.error( "Not possible to create View because the Name is already used", e );

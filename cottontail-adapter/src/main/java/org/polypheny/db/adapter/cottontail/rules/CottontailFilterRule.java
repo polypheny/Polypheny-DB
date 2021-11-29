@@ -20,7 +20,6 @@ package org.polypheny.db.adapter.cottontail.rules;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.rel.CottontailFilter;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.document.rules.DocumentRules;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
@@ -28,6 +27,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 

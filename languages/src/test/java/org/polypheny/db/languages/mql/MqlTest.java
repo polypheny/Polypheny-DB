@@ -41,12 +41,12 @@ public abstract class MqlTest extends LanguageManagerDependant {
     @Getter
     private static final Map<String, Kind> logicalOperators;
 
-    public static final Operator eq = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS );
+    public static final Operator eq = OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS );
     public static final Operator ne = OperatorRegistry.get( OperatorName.NOT_EQUALS );
-    public static final Operator gt = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GT );
-    public static final Operator gte = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GTE );
-    public static final Operator lt = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LT );
-    public static final Operator lte = OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LTE );
+    public static final Operator gt = OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GT );
+    public static final Operator gte = OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GTE );
+    public static final Operator lt = OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_LT );
+    public static final Operator lte = OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_LTE );
 
 
     static {

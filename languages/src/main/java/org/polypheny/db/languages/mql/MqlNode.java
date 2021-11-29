@@ -47,7 +47,7 @@ public abstract class MqlNode implements Node {
 
     @Override
     public QueryLanguage getLanguage() {
-        return QueryLanguage.MONGOQL;
+        return QueryLanguage.MONGO_QL;
     }
 
 

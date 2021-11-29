@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.document.util;
+package org.polypheny.db.schema.document;
 
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.rel.RelNode;

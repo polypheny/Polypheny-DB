@@ -309,31 +309,31 @@ public class RexImpTable {
         defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_ARRAY ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
         defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_SCALAR ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
 
-        defineBinary( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
-        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_SLICE ), BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EXCLUDE ), BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
+        defineBinary( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_SLICE ), BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EXCLUDE ), BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
 
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
-        map.put( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
-        map.put( OperatorRegistry.get( QueryLanguage.MONGOQL, OperatorName.MQL_UNWIND ), new UnwindImplementor() );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
+        map.put( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
+        map.put( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UNWIND ), new UnwindImplementor() );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();

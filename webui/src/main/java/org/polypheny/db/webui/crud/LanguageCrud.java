@@ -145,7 +145,7 @@ public class LanguageCrud {
         Transaction transaction = crud.getTransaction( request.analyze, request.cache );
 
         PolyphenyDbSignature<?> signature;
-        MqlProcessor mqlProcessor = (MqlProcessor) transaction.getProcessor( QueryLanguage.MONGOQL );
+        MqlProcessor mqlProcessor = (MqlProcessor) transaction.getProcessor( QueryLanguage.MONGO_QL );
         String mql = request.query;
         Statement statement = transaction.createStatement();
 

@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.polypheny.db.document.util.DocumentUtil;
+import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.util.Pair;
 
 

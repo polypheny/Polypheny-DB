@@ -98,7 +98,7 @@ public class MqlRegisterer {
 
 
     private static void register( OperatorName name, Operator operator ) {
-        OperatorRegistry.register( QueryLanguage.MONGOQL, name, operator );
+        OperatorRegistry.register( QueryLanguage.MONGO_QL, name, operator );
     }
 
 

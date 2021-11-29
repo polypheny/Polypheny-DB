@@ -72,6 +72,7 @@ import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql2rel.SqlRexConvertletTable;
 import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
 import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
+import org.polypheny.db.mql.parser.impl.MqlParserImpl;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -186,6 +187,8 @@ public class LanguageManagerImpl extends LanguageManager {
     public ParserFactory getFactory( QueryLanguage language ) {
         if ( language == QueryLanguage.SQL ) {
             return SqlParserImpl.FACTORY;
+        } else if ( language == QueryLanguage.MONGO_QL ) {
+            return MqlParserImpl.FACTORY;
         }
 
         throw new UnsupportedLanguageOperation( language );
@@ -193,11 +196,10 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Parser getParser( QueryLanguage language, Reader reader, ParserConfig sqlParserConfig ) {
+    public Parser getParser( QueryLanguage language, Reader reader, ParserConfig parserConfig ) {
         if ( language == QueryLanguage.SQL ) {
-            SqlAbstractParserImpl parser = (SqlAbstractParserImpl) sqlParserConfig.parserFactory().getParser( reader );
-
-            return new SqlParser( parser, sqlParserConfig );
+            SqlAbstractParserImpl parser = (SqlAbstractParserImpl) parserConfig.parserFactory().getParser( reader );
+            return new SqlParser( parser, parserConfig );
         }
 
         throw new UnsupportedLanguageOperation( language );
