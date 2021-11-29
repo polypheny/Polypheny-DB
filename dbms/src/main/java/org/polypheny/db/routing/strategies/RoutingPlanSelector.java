@@ -27,6 +27,7 @@ import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.routing.RouterPlanSelectionStrategy;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.routing.RoutingPlan;
+import org.polypheny.db.routing.UiRoutingPageUtil;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
@@ -88,7 +89,7 @@ public class RoutingPlanSelector {
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
-            RoutingManager.getInstance().getDebugUiPrinter().setDebugOutput(
+            UiRoutingPageUtil.setDebugOutput(
                     approximatedCosts,
                     preCosts,
                     postCosts,
