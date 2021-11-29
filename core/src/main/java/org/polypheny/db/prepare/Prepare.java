@@ -41,12 +41,12 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.Meta;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Explain;
 import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorTable;
@@ -59,7 +59,6 @@ import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -75,7 +74,6 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.ModifiableViewTable;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.Holder;
@@ -153,7 +151,7 @@ public abstract class Prepare {
             public void visit( RelNode node, int ordinal, RelNode parent ) {
                 if ( node instanceof TableScan ) {
                     final RelOptCluster cluster = node.getCluster();
-                    final RelOptTable.ToRelContext context = ViewExpanders.simpleContext( cluster );
+                    final RelOptTable.ToRelContext context = () -> cluster;
                     final RelNode r = node.getTable().toRel( context );
                     planner.registerClass( r );
                 }
@@ -401,10 +399,6 @@ public abstract class Prepare {
             if ( table instanceof ExtensibleTable ) {
                 final Table extendedTable = ((ExtensibleTable) table).extend( dedupedExtendedFields );
                 return extend( extendedTable );
-            } else if ( table instanceof ModifiableViewTable ) {
-                final ModifiableViewTable modifiableViewTable = (ModifiableViewTable) table;
-                final ModifiableViewTable extendedView = modifiableViewTable.extend( dedupedExtendedFields, getRelOptSchema().getTypeFactory() );
-                return extend( extendedView );
             }
             throw new RuntimeException( "Cannot extend " + table );
         }

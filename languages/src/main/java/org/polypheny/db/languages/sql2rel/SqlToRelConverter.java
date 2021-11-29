@@ -135,10 +135,8 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSamplingParameters;
 import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
@@ -265,12 +263,9 @@ public class SqlToRelConverter implements NodeToRelConverter {
      */
     private final Map<SqlNode, RexNode> mapConvertedNonCorrSubqs = new HashMap<>();
 
-    public final ViewExpander viewExpander;
-
 
     /* Creates a converter. */
-    public SqlToRelConverter( ViewExpander viewExpander, SqlValidator validator, CatalogReader catalogReader, RelOptCluster cluster, SqlRexConvertletTable convertletTable, Config config ) {
-        this.viewExpander = viewExpander;
+    public SqlToRelConverter( SqlValidator validator, CatalogReader catalogReader, RelOptCluster cluster, SqlRexConvertletTable convertletTable, Config config ) {
         this.opTab =
                 (validator == null)
                         ? SqlStdOperatorTable.instance()
@@ -2923,7 +2918,7 @@ public class SqlToRelConverter implements NodeToRelConverter {
 
 
     private RelOptTable.ToRelContext createToRelContext() {
-        return ViewExpanders.toRelContext( viewExpander, cluster );
+        return () -> cluster;
     }
 
 

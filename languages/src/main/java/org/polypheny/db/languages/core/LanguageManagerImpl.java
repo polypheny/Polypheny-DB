@@ -74,7 +74,6 @@ import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
 import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
 import org.polypheny.db.mql.parser.impl.MqlParserImpl;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.RelNode;
@@ -96,6 +95,7 @@ import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 import org.slf4j.Logger;
+
 
 public class LanguageManagerImpl extends LanguageManager {
 
@@ -131,14 +131,13 @@ public class LanguageManagerImpl extends LanguageManager {
     @Override
     public NodeToRelConverter createToRelConverter(
             QueryLanguage language,
-            ViewExpander polyphenyDbPreparingStmt,
             Validator validator,
             CatalogReader catalogReader,
             RelOptCluster cluster,
             RexConvertletTable convertletTable,
             Config config ) {
         if ( language == QueryLanguage.SQL ) {
-            return getSqlToRelConverter( polyphenyDbPreparingStmt, (SqlValidator) validator, catalogReader, cluster, (SqlRexConvertletTable) convertletTable, config );
+            return getSqlToRelConverter( (SqlValidator) validator, catalogReader, cluster, (SqlRexConvertletTable) convertletTable, config );
         }
 
         throw new UnsupportedLanguageOperation( language );
@@ -146,13 +145,12 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     private SqlToRelConverter getSqlToRelConverter(
-            ViewExpander polyphenyDbPreparingStmt,
             SqlValidator validator,
             CatalogReader catalogReader,
             RelOptCluster cluster,
             SqlRexConvertletTable convertletTable,
             Config config ) {
-        return new SqlToRelConverter( polyphenyDbPreparingStmt, validator, catalogReader, cluster, convertletTable, config );
+        return new SqlToRelConverter( validator, catalogReader, cluster, convertletTable, config );
     }
 
 

@@ -37,8 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.MethodRule;
 import org.polypheny.db.core.enums.Lex;
-import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.enums.MonikerType;
+import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.advise.SqlAdvisor;
@@ -82,8 +82,6 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
                     "TABLE(CATALOG.SALES.EMPDEFAULTS)",
                     "TABLE(CATALOG.SALES.EMPNULLABLES)",
                     "TABLE(CATALOG.SALES.EMP_B)",
-                    "TABLE(CATALOG.SALES.EMP_20)",
-                    "TABLE(CATALOG.SALES.EMPNULLABLES_20)",
                     "TABLE(CATALOG.SALES.EMP_ADDRESS)",
                     "TABLE(CATALOG.SALES.DEPT)",
                     "TABLE(CATALOG.SALES.DEPT_NESTED)",

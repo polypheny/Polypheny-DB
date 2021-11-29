@@ -58,8 +58,9 @@ public interface Validator {
     /**
      * Adds "line x, column y" context to a validator exception.
      *
-     * Note that the input exception is checked (it derives from {@link Exception}) and the output exception is unchecked (it derives from {@link RuntimeException}). This is intentional -- it should remind code
-     * authors to provide context for their validation errors.
+     * Note that the input exception is checked (it derives from {@link Exception}) and the output exception is unchecked
+     * (it derives from {@link RuntimeException}). This is intentional -- it should remind code authors to provide context
+     * for their validation errors.
      *
      * @param node The place where the exception occurred, not null
      * @param e The validation error
@@ -90,8 +91,8 @@ public interface Validator {
     /**
      * Returns a description of how each field in the row type maps to a catalog, schema, table and column in the schema.
      *
-     * The returned list is never null, and has one element for each field in the row type. Each element is a list of four elements (catalog, schema, table, column), or may be null
-     * if the column is an expression.
+     * The returned list is never null, and has one element for each field in the row type. Each element is a list of four
+     * elements (catalog, schema, table, column), or may be null if the column is an expression.
      *
      * @param sqlQuery Query
      * @return Description of how each field in the row type maps to a schema object

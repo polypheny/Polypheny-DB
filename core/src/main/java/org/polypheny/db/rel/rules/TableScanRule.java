@@ -37,7 +37,6 @@ package org.polypheny.db.rel.rules;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.logical.LogicalTableScan;
@@ -65,7 +64,7 @@ public class TableScanRule extends RelOptRule {
     @Override
     public void onMatch( RelOptRuleCall call ) {
         final LogicalTableScan oldRel = call.rel( 0 );
-        RelNode newRel = oldRel.getTable().toRel( ViewExpanders.simpleContext( oldRel.getCluster() ) );
+        RelNode newRel = oldRel.getTable().toRel( oldRel::getCluster );
         call.transformTo( newRel );
     }
 }

@@ -44,7 +44,6 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.TableModify.Operation;
@@ -354,7 +353,7 @@ public class DataMigratorImpl implements DataMigrator {
         RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                 RelBuilder.create( statement, relRoot.rel.getCluster() ),
                 relRoot.rel.getCluster().getRexBuilder(),
-                ViewExpanders.toRelContext( statement.getQueryProcessor(), relRoot.rel.getCluster() ),
+                relRoot.rel::getCluster,
                 true );
         return relRoot.withRel( typeFlattener.rewrite( relRoot.rel ) );
     }

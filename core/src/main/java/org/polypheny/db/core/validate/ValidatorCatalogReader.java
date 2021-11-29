@@ -18,9 +18,9 @@ package org.polypheny.db.core.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.util.NameMatcher;
-import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.nodes.Identifier;
+import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
@@ -29,8 +29,9 @@ import org.polypheny.db.schema.Wrapper;
 /**
  * Supplies catalog information for {@link Validator}.
  *
- * This interface only provides a thin API to the underlying repository, and this is intentional. By only presenting the repository information of interest to the validator, we reduce the dependency
- * on exact mechanism to implement the repository. It is also possible to construct mock implementations of this interface for testing purposes.
+ * This interface only provides a thin API to the underlying repository, and this is intentional. By only presenting the
+ * repository information of interest to the validator, we reduce the dependency on exact mechanism to implement the
+ * repository. It is also possible to construct mock implementations of this interface for testing purposes.
  */
 public interface ValidatorCatalogReader extends Wrapper {
 
@@ -39,7 +40,8 @@ public interface ValidatorCatalogReader extends Wrapper {
      *
      * Uses the case-sensitivity policy of the catalog reader.
      *
-     * If not found, returns null. If you want a more descriptive error message or to override the case-sensitivity of the match, use {#@link ValidatorScope#resolveTable}.
+     * If not found, returns null. If you want a more descriptive error message or to override the case-sensitivity of the
+     * match, use {#@link ValidatorScope#resolveTable}.
      *
      * @param names Name of table, may be qualified or fully-qualified
      * @return Table with the given name, or null
@@ -49,8 +51,8 @@ public interface ValidatorCatalogReader extends Wrapper {
     /**
      * Finds a user-defined type with the given name, possibly qualified.
      *
-     * NOTE jvs 12-Feb-2005: the reason this method is defined here instead of on RelDataTypeFactory is that it has to take into account context-dependent information such as SQL schema path,
-     * whereas a type factory is context-independent.
+     * NOTE: The reason this method is defined here instead of on RelDataTypeFactory is that it has to take into account
+     * context-dependent information such as SQL schema path, whereas a type factory is context-independent.
      *
      * @param typeName Name of type
      * @return named type, or null if not found
@@ -86,4 +88,3 @@ public interface ValidatorCatalogReader extends Wrapper {
     PolyphenyDbSchema getRootSchema();
 
 }
-

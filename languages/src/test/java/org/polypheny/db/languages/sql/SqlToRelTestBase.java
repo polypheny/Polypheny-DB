@@ -31,11 +31,11 @@ import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDynamic;
 import org.polypheny.db.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.rel.RelFieldTrimmer;
+import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.MockSqlOperatorTable;
@@ -687,7 +687,7 @@ public abstract class SqlToRelTestBase extends LanguageManagerDependant {
             if ( clusterFactory != null ) {
                 cluster = clusterFactory.apply( cluster );
             }
-            return new SqlToRelConverter( null, validator, catalogReader, cluster, StandardConvertletTable.INSTANCE, config );
+            return new SqlToRelConverter( validator, catalogReader, cluster, StandardConvertletTable.INSTANCE, config );
         }
 
 

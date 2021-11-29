@@ -53,7 +53,6 @@ import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCostFactory;
 import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.prepare.PlannerImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
@@ -240,7 +239,6 @@ public class Frameworks {
         private RexExecutor executor;
         private RelOptCostFactory costFactory;
         private RelDataTypeSystem typeSystem;
-        private ViewExpander viewExpander;
         private org.polypheny.db.jdbc.Context prepareContext;
 
 
@@ -289,7 +287,6 @@ public class Frameworks {
                     costFactory,
                     typeSystem,
                     executor,
-                    viewExpander,
                     prepareContext );
         }
 
@@ -386,12 +383,6 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder viewExpander( ViewExpander viewExpander ) {
-            this.viewExpander = viewExpander;
-            return this;
-        }
-
-
         public ConfigBuilder prepareContext( org.polypheny.db.jdbc.Context prepareContext ) {
             this.prepareContext = prepareContext;
             return this;
@@ -416,7 +407,6 @@ public class Frameworks {
         private final RelOptCostFactory costFactory;
         private final RelDataTypeSystem typeSystem;
         private final RexExecutor executor;
-        private final ViewExpander viewExpander;
         private final org.polypheny.db.jdbc.Context prepareContext;
 
 
@@ -432,7 +422,6 @@ public class Frameworks {
                 RelOptCostFactory costFactory,
                 RelDataTypeSystem typeSystem,
                 RexExecutor executor,
-                ViewExpander viewExpander,
                 org.polypheny.db.jdbc.Context prepareContext ) {
             this.context = context;
             this.convertletTable = convertletTable;
@@ -445,7 +434,6 @@ public class Frameworks {
             this.costFactory = costFactory;
             this.typeSystem = typeSystem;
             this.executor = executor;
-            this.viewExpander = viewExpander;
             this.prepareContext = prepareContext;
         }
 
@@ -513,12 +501,6 @@ public class Frameworks {
         @Override
         public RelDataTypeSystem getTypeSystem() {
             return typeSystem;
-        }
-
-
-        @Override
-        public ViewExpander getViewExpander() {
-            return viewExpander;
         }
 
 

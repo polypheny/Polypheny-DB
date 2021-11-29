@@ -49,7 +49,6 @@ import org.polypheny.db.core.enums.SemiJoinType;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
@@ -532,32 +531,11 @@ public class RelFactories {
      * @return Table scan factory
      */
     @Nonnull
-    public static TableScanFactory expandingScanFactory(
-            @Nonnull TableScanFactory tableScanFactory ) {
-        return expandingScanFactory(
-                ( rowType, queryString, schemaPath, viewPath ) -> {
-                    throw new UnsupportedOperationException( "cannot expand view" );
-                },
-                tableScanFactory );
-    }
-
-
-    /**
-     * Creates a {@link TableScanFactory} that uses a {@link org.polypheny.db.plan.RelOptTable.ViewExpander} to handle {@link TranslatableTable} instances,
-     * and falls back to a default factory for other tables.
-     *
-     * @param viewExpander View expander
-     * @param tableScanFactory Factory for non-translatable tables
-     * @return Table scan factory
-     */
-    @Nonnull
-    public static TableScanFactory expandingScanFactory(
-            @Nonnull RelOptTable.ViewExpander viewExpander,
-            @Nonnull TableScanFactory tableScanFactory ) {
+    public static TableScanFactory expandingScanFactory( @Nonnull TableScanFactory tableScanFactory ) {
         return ( cluster, table ) -> {
             final TranslatableTable translatableTable = table.unwrap( TranslatableTable.class );
             if ( translatableTable != null ) {
-                final RelOptTable.ToRelContext toRelContext = ViewExpanders.toRelContext( viewExpander, cluster );
+                final RelOptTable.ToRelContext toRelContext = () -> cluster;
                 return translatableTable.toRel( toRelContext, table );
             }
             return tableScanFactory.createScan( cluster, table );

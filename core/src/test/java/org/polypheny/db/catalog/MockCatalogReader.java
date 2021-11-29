@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -31,7 +30,6 @@ import java.util.Set;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.InitializerExpressionFactory;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
@@ -47,7 +45,6 @@ import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.util.NameMatchers;
 import org.polypheny.db.core.util.ValidatorUtil;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.AnalyzeViewResult;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -59,8 +56,6 @@ import org.polypheny.db.rel.RelDistributions;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelReferentialConstraint;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.DynamicRecordTypeImpl;
 import org.polypheny.db.rel.type.RelDataType;
@@ -68,33 +63,24 @@ import org.polypheny.db.rel.type.RelDataTypeComparability;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.rel.type.RelRecordType;
 import org.polypheny.db.rel.type.StructKind;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.ExtensibleTable;
-import org.polypheny.db.schema.Path;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.StreamableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.schema.impl.ModifiableViewTable;
-import org.polypheny.db.schema.impl.ViewTableMacro;
 import org.polypheny.db.test.JdbcTest;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -594,271 +580,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
                 return resolver.resolveColumn( rowType, typeFactory, names );
             }
 
-        }
-
-    }
-
-
-    /**
-     * Alternative to MockViewTable that exercises code paths in ModifiableViewTable and ModifiableViewTableInitializerExpressionFactory.
-     */
-    public static class MockModifiableViewRelOptTable extends MockTable {
-
-        private final MockModifiableViewTable modifiableViewTable;
-
-
-        private MockModifiableViewRelOptTable( MockModifiableViewTable modifiableViewTable, MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream,
-                double rowCount, ColumnResolver resolver, InitializerExpressionFactory initializerExpressionFactory ) {
-            super( catalogReader, ImmutableList.of( catalogName, schemaName, name ), stream, rowCount, resolver, initializerExpressionFactory );
-            this.modifiableViewTable = modifiableViewTable;
-        }
-
-
-        /**
-         * Copy constructor.
-         */
-        private MockModifiableViewRelOptTable( MockModifiableViewTable modifiableViewTable, MockCatalogReader catalogReader, boolean stream, double rowCount, List<Map.Entry<String, RelDataType>> columnList, List<Integer> keyList,
-                RelDataType rowType, List<RelCollation> collationList, List<String> names, Set<String> monotonicColumnSet, StructKind kind, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
-            super( catalogReader, stream, rowCount, columnList, keyList, rowType, collationList, names, monotonicColumnSet, kind, resolver, initializerFactory );
-            this.modifiableViewTable = modifiableViewTable;
-        }
-
-
-        public static MockModifiableViewRelOptTable create( MockModifiableViewTable modifiableViewTable, MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount, ColumnResolver resolver ) {
-            final Table underlying = modifiableViewTable.unwrap( Table.class );
-            final InitializerExpressionFactory initializerExpressionFactory =
-                    underlying instanceof Wrapper
-                            ? ((Wrapper) underlying).unwrap( InitializerExpressionFactory.class )
-                            : NullInitializerExpressionFactory.INSTANCE;
-            return new MockModifiableViewRelOptTable( modifiableViewTable, catalogReader, catalogName, schemaName, name, stream, rowCount, resolver, Util.first( initializerExpressionFactory, NullInitializerExpressionFactory.INSTANCE ) );
-        }
-
-
-        public static MockViewTableMacro viewMacro( PolyphenyDbSchema schema, String viewSql, List<String> schemaPath, List<String> viewPath, Boolean modifiable ) {
-            return new MockViewTableMacro( schema, viewSql, schemaPath, viewPath, modifiable );
-        }
-
-
-        @Override
-        public RelDataType getRowType() {
-            return modifiableViewTable.getRowType( catalogReader.typeFactory );
-        }
-
-
-        @Override
-        protected RelOptTable extend( Table extendedTable ) {
-            return new MockModifiableViewRelOptTable( (MockModifiableViewTable) extendedTable, catalogReader, stream, rowCount, columnList, keyList, rowType, collationList, names, monotonicColumnSet, kind, resolver, initializerFactory );
-        }
-
-
-        @Override
-        public <T> T unwrap( Class<T> clazz ) {
-            if ( clazz.isInstance( modifiableViewTable ) ) {
-                return clazz.cast( modifiableViewTable );
-            }
-            return super.unwrap( clazz );
-        }
-
-
-        /**
-         * A TableMacro that creates mock ModifiableViewTable.
-         */
-        public static class MockViewTableMacro extends ViewTableMacro {
-
-            MockViewTableMacro( PolyphenyDbSchema schema, String viewSql, List<String> schemaPath, List<String> viewPath, Boolean modifiable ) {
-                super( schema, viewSql, schemaPath, viewPath, modifiable );
-            }
-
-
-            @Override
-            protected ModifiableViewTable modifiableViewTable( AnalyzeViewResult parsed, String viewSql, List<String> schemaPath, List<String> viewPath, PolyphenyDbSchema schema ) {
-                final JavaTypeFactory typeFactory = (JavaTypeFactory) parsed.typeFactory;
-                final Type elementType = typeFactory.getJavaClass( parsed.rowType );
-                return new MockModifiableViewTable( elementType, RelDataTypeImpl.proto( parsed.rowType ), viewSql, schemaPath, viewPath, parsed.table, Schemas.path( schema.root(), parsed.tablePath ), parsed.constraint, parsed.columnMapping );
-            }
-
-        }
-
-
-        /**
-         * A mock of ModifiableViewTable that can unwrap a mock RelOptTable.
-         */
-        public static class MockModifiableViewTable extends ModifiableViewTable {
-
-            private final RexNode constraint;
-
-
-            MockModifiableViewTable( Type elementType, RelProtoDataType rowType, String viewSql, List<String> schemaPath, List<String> viewPath, Table table, Path tablePath, RexNode constraint, ImmutableIntList columnMapping ) {
-                super( elementType, rowType, viewSql, schemaPath, viewPath, table, tablePath, constraint, columnMapping );
-                this.constraint = constraint;
-            }
-
-
-            @Override
-            public ModifiableViewTable extend( Table extendedTable, RelProtoDataType protoRowType, ImmutableIntList newColumnMapping ) {
-                return new MockModifiableViewTable( getElementType(), protoRowType, getViewSql(), getSchemaPath(), getViewPath(), extendedTable, getTablePath(), constraint, newColumnMapping );
-            }
-
-        }
-
-    }
-
-
-    /**
-     * Mock implementation of {@link Prepare.PreparingTable} for views.
-     */
-    public abstract static class MockViewTable extends MockTable {
-
-        private final MockTable fromTable;
-        private final Table table;
-        private final ImmutableIntList mapping;
-
-
-        MockViewTable( MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount, MockTable fromTable, ImmutableIntList mapping, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
-            super( catalogReader, catalogName, schemaName, name, stream, rowCount, resolver, initializerFactory );
-            this.fromTable = fromTable;
-            this.table = fromTable.unwrap( Table.class );
-            this.mapping = mapping;
-        }
-
-
-        /**
-         * Implementation of AbstractModifiableView.
-         */
-        private class ModifiableView extends JdbcTest.AbstractModifiableView implements Wrapper {
-
-            @Override
-            public Table getTable() {
-                return fromTable.unwrap( Table.class );
-            }
-
-
-            @Override
-            public Path getTablePath() {
-                final ImmutableList.Builder<Pair<String, Schema>> builder = ImmutableList.builder();
-                for ( String name : fromTable.names ) {
-                    builder.add( Pair.of( name, null ) );
-                }
-                return Schemas.path( builder.build() );
-            }
-
-
-            @Override
-            public ImmutableIntList getColumnMapping() {
-                return mapping;
-            }
-
-
-            @Override
-            public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
-                return MockViewTable.this.getConstraint( rexBuilder, tableRowType );
-            }
-
-
-            @Override
-            public RelDataType
-            getRowType( final RelDataTypeFactory typeFactory ) {
-                return typeFactory.createStructType(
-                        new AbstractList<Map.Entry<String, RelDataType>>() {
-                            @Override
-                            public Map.Entry<String, RelDataType>
-                            get( int index ) {
-                                return table.getRowType( typeFactory ).getFieldList().get( mapping.get( index ) );
-                            }
-
-
-                            @Override
-                            public int size() {
-                                return mapping.size();
-                            }
-                        } );
-            }
-
-
-            @Override
-            public <C> C unwrap( Class<C> aClass ) {
-                if ( table instanceof Wrapper ) {
-                    final C c = ((Wrapper) table).unwrap( aClass );
-                    if ( c != null ) {
-                        return c;
-                    }
-                }
-                return super.unwrap( aClass );
-            }
-
-        }
-
-
-        /**
-         * Subclass of ModifiableView that also implements CustomColumnResolvingTable.
-         */
-        private class ModifiableViewWithCustomColumnResolving extends ModifiableView implements CustomColumnResolvingTable, Wrapper {
-
-            @Override
-            public List<Pair<RelDataTypeField, List<String>>> resolveColumn( RelDataType rowType, RelDataTypeFactory typeFactory, List<String> names ) {
-                return resolver.resolveColumn( rowType, typeFactory, names );
-            }
-
-
-            @Override
-            public <C> C unwrap( Class<C> aClass ) {
-                if ( table instanceof Wrapper ) {
-                    final C c = ((Wrapper) table).unwrap( aClass );
-                    if ( c != null ) {
-                        return c;
-                    }
-                }
-                return super.unwrap( aClass );
-            }
-
-        }
-
-
-        protected abstract RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType );
-
-
-        @Override
-        public void onRegister( RelDataTypeFactory typeFactory ) {
-            super.onRegister( typeFactory );
-            // To simulate getRowType() behavior in ViewTable.
-            final RelProtoDataType protoRowType = RelDataTypeImpl.proto( rowType );
-            rowType = protoRowType.apply( typeFactory );
-        }
-
-
-        @Override
-        public RelNode toRel( ToRelContext context ) {
-            RelNode rel = LogicalTableScan.create( context.getCluster(), fromTable );
-            final RexBuilder rexBuilder = context.getCluster().getRexBuilder();
-            rel = LogicalFilter.create( rel, getConstraint( rexBuilder, rel.getRowType() ) );
-            final List<RelDataTypeField> fieldList = rel.getRowType().getFieldList();
-            final List<Pair<RexNode, String>> projects =
-                    new AbstractList<Pair<RexNode, String>>() {
-                        @Override
-                        public Pair<RexNode, String> get( int index ) {
-                            return RexInputRef.of2( mapping.get( index ), fieldList );
-                        }
-
-
-                        @Override
-                        public int size() {
-                            return mapping.size();
-                        }
-                    };
-            return LogicalProject.create( rel, Pair.left( projects ), Pair.right( projects ) );
-        }
-
-
-        @Override
-        public <T> T unwrap( Class<T> clazz ) {
-            if ( clazz.isAssignableFrom( ModifiableView.class ) ) {
-                ModifiableView view =
-                        resolver == null
-                                ? new ModifiableView()
-                                : new ModifiableViewWithCustomColumnResolving();
-                return clazz.cast( view );
-            }
-            return super.unwrap( clazz );
         }
 
     }

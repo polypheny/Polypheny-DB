@@ -56,4 +56,3 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
         return context.getRexBuilder().constantNull();
     }
 }
-

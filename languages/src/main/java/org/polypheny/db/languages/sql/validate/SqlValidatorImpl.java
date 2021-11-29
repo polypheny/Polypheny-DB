@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.languages.sql.validate;
@@ -91,7 +108,6 @@ import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.SqlRelOptUtil;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlCall;
@@ -127,7 +143,6 @@ import org.polypheny.db.languages.sql.SqlWithItem;
 import org.polypheny.db.languages.sql.fun.SqlCase;
 import org.polypheny.db.languages.sql.util.SqlShuttle;
 import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.type.DynamicRecordType;
@@ -149,7 +164,6 @@ import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.document.DocumentUtil;
-import org.polypheny.db.schema.impl.ModifiableViewTable;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -158,7 +172,6 @@ import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Bug;
-import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
@@ -4137,96 +4150,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 logicalTargetRowType,
                 insert );
 
-        checkConstraint(
-                table,
-                source,
-                logicalTargetRowType );
-
         validateAccess(
                 insert.getTargetTable(),
                 table,
                 AccessEnum.INSERT );
     }
 
-
-    /**
-     * Validates insert values against the constraint of a modifiable view.
-     *
-     * @param validatorTable Table that may wrap a ModifiableViewTable
-     * @param source The values being inserted
-     * @param targetRowType The target type for the view
-     */
-    private void checkConstraint( ValidatorTable validatorTable, SqlNode source, RelDataType targetRowType ) {
-        final ModifiableViewTable modifiableViewTable = validatorTable.unwrap( ModifiableViewTable.class );
-        if ( modifiableViewTable != null && source instanceof SqlCall ) {
-            final Table table = modifiableViewTable.unwrap( Table.class );
-            final RelDataType tableRowType = table.getRowType( typeFactory );
-            final List<RelDataTypeField> tableFields = tableRowType.getFieldList();
-
-            // Get the mapping from column indexes of the underlying table to the target columns and view constraints.
-            final Map<Integer, RelDataTypeField> tableIndexToTargetField = SqlValidatorUtil.getIndexToFieldMap( tableFields, targetRowType );
-            final Map<Integer, RexNode> projectMap = RelOptUtil.getColumnConstraints( modifiableViewTable, targetRowType, typeFactory );
-
-            // Determine columns (indexed to the underlying table) that need to be validated against the view constraint.
-            final ImmutableBitSet targetColumns = ImmutableBitSet.of( tableIndexToTargetField.keySet() );
-            final ImmutableBitSet constrainedColumns = ImmutableBitSet.of( projectMap.keySet() );
-            final ImmutableBitSet constrainedTargetColumns = targetColumns.intersect( constrainedColumns );
-
-            // Validate insert values against the view constraint.
-            final List<Node> values = ((SqlCall) source).getOperandList();
-            for ( final int colIndex : constrainedTargetColumns.asList() ) {
-                final String colName = tableFields.get( colIndex ).getName();
-                final RelDataTypeField targetField = tableIndexToTargetField.get( colIndex );
-                for ( Node row : values ) {
-                    final SqlCall call = (SqlCall) row;
-                    final SqlNode sourceValue = call.operand( targetField.getIndex() );
-                    final ValidationError validationError =
-                            new ValidationError(
-                                    sourceValue,
-                                    RESOURCE.viewConstraintNotSatisfied( colName, Util.last( validatorTable.getQualifiedName() ) ) );
-                    SqlRelOptUtil.validateValueAgainstConstraint( sourceValue, projectMap.get( colIndex ), validationError );
-                }
-            }
-        }
-    }
-
-
-    /**
-     * Validates updates against the constraint of a modifiable view.
-     *
-     * @param validatorTable A {@link ValidatorTable} that may wrap a ModifiableViewTable
-     * @param update The UPDATE parse tree node
-     * @param targetRowType The target type
-     */
-    private void checkConstraint( ValidatorTable validatorTable, SqlUpdate update, RelDataType targetRowType ) {
-        final ModifiableViewTable modifiableViewTable = validatorTable.unwrap( ModifiableViewTable.class );
-        if ( modifiableViewTable != null ) {
-            final Table table = modifiableViewTable.unwrap( Table.class );
-            final RelDataType tableRowType = table.getRowType( typeFactory );
-
-            final Map<Integer, RexNode> projectMap = RelOptUtil.getColumnConstraints( modifiableViewTable, targetRowType, typeFactory );
-            final Map<String, Integer> nameToIndex = ValidatorUtil.mapNameToIndex( tableRowType.getFieldList() );
-
-            // Validate update values against the view constraint.
-            final List<SqlNode> targets = update.getTargetColumnList().getSqlList();
-            final List<SqlNode> sources = update.getSourceExpressionList().getSqlList();
-            for ( final Pair<SqlNode, SqlNode> column : Pair.zip( targets, sources ) ) {
-                final String columnName = ((SqlIdentifier) column.left).getSimple();
-                final Integer columnIndex = nameToIndex.get( columnName );
-                if ( projectMap.containsKey( columnIndex ) ) {
-                    final RexNode columnConstraint = projectMap.get( columnIndex );
-                    final ValidationError validationError =
-                            new ValidationError(
-                                    column.right,
-                                    RESOURCE.viewConstraintNotSatisfied( columnName, Util.last( validatorTable.getQualifiedName() ) ) );
-                    SqlRelOptUtil.validateValueAgainstConstraint(
-                            column.right,
-                            columnConstraint,
-                            validationError );
-                }
-            }
-        }
-    }
 
 
     private void checkFieldCount( SqlNode node, ValidatorTable table, SqlNode source, RelDataType logicalSourceRowType, RelDataType logicalTargetRowType ) {
@@ -4481,8 +4410,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         final RelDataType sourceRowType = getSqlNamespace( call ).getRowType();
         checkTypeAssignment( sourceRowType, targetRowType, call );
-
-        checkConstraint( table, call, targetRowType );
 
         validateAccess( call.getTargetTable(), table, AccessEnum.UPDATE );
     }

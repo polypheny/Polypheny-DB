@@ -36,25 +36,22 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.util.Conformance;
-import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.core.rel.RelDecorrelator;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationQueryPlan;
+import org.polypheny.db.core.util.Conformance;
+import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToRelConverter;
 import org.polypheny.db.languages.NodeToRelConverter.Config;
 import org.polypheny.db.languages.NodeToRelConverter.ConfigBuilder;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.sql.SqlBasicCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlInsert;
@@ -68,7 +65,6 @@ import org.polypheny.db.languages.sql.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
 import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rel.RelNode;
@@ -77,7 +73,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -88,7 +83,7 @@ import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class SqlProcessorImpl extends Processor implements ViewExpander {
+public class SqlProcessorImpl extends Processor {
 
     private static final ParserConfig parserConfig;
     @Setter
@@ -200,7 +195,7 @@ public class SqlProcessorImpl extends Processor implements ViewExpander {
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
         RelRoot logicalRoot = sqlToRelConverter.convertQuery( query, false, true );
 
         if ( statement.getTransaction().isAnalyze() ) {
@@ -410,21 +405,6 @@ public class SqlProcessorImpl extends Processor implements ViewExpander {
             i++;
         }
         return -1;
-    }
-
-
-    /**
-     * Returns a relational expression that is to be substituted for an access to a SQL view.
-     *
-     * @param rowType Row type of the view
-     * @param queryString Body of the view
-     * @param schemaPath Path of a schema wherein to find referenced tables
-     * @param viewPath Path of the view, ending with its name; may be null
-     * @return Relational expression
-     */
-    @Override
-    public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-        return null; // TODO: Implement
     }
 
 

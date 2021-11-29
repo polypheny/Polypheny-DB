@@ -81,7 +81,6 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
@@ -302,7 +301,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                     RelBuilder.create( statement, routedRoot.rel.getCluster() ),
                     routedRoot.rel.getCluster().getRexBuilder(),
-                    ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
+                    routedRoot.rel::getCluster,
                     true );
             routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
             if ( isAnalyze ) {
@@ -1206,12 +1205,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 false,
 //                avaticaType.columnClassName() );
                 (fieldType instanceof ArrayType) ? "java.util.List" : avaticaType.columnClassName() );
-    }
-
-
-    @Override
-    public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-        return null; // TODO
     }
 
 

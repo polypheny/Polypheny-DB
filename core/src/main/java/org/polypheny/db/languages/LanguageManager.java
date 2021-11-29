@@ -37,7 +37,6 @@ import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rel.RelNode;
@@ -78,7 +77,6 @@ public abstract class LanguageManager {
 
     public abstract NodeToRelConverter createToRelConverter(
             QueryLanguage sql,
-            ViewExpander polyphenyDbPreparingStmt,
             Validator validator,
             CatalogReader catalogReader,
             RelOptCluster cluster,

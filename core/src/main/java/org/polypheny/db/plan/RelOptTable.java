@@ -40,7 +40,6 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelReferentialConstraint;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
@@ -81,9 +80,9 @@ public interface RelOptTable extends Wrapper {
     /**
      * Converts this table into a {@link RelNode relational expression}.
      *
-     * The {@link org.polypheny.db.plan.RelOptPlanner planner} calls this method to convert a table into an initial relational expression, generally something abstract, such as a
-     * {@link LogicalTableScan}, then optimizes this expression by applying {@link RelOptRule rules} to transform it
-     * into more efficient access methods for this table.
+     * The {@link org.polypheny.db.plan.RelOptPlanner planner} calls this method to convert a table into an initial
+     * relational expression, generally something abstract, such as a {@link LogicalTableScan}, then optimizes this
+     * expression by applying {@link RelOptRule rules} to transform it into more efficient access methods for this table.
      */
     RelNode toRel( ToRelContext context );
 
@@ -110,7 +109,8 @@ public interface RelOptTable extends Wrapper {
     boolean isKey( ImmutableBitSet columns );
 
     /**
-     * Returns the referential constraints existing for this table. These constraints are represented over other tables using {@link RelReferentialConstraint} nodes.
+     * Returns the referential constraints existing for this table. These constraints are represented over other tables
+     * using {@link RelReferentialConstraint} nodes.
      */
     List<RelReferentialConstraint> getReferentialConstraints();
 
@@ -124,12 +124,14 @@ public interface RelOptTable extends Wrapper {
     /**
      * Returns a table with the given extra fields.
      *
-     * The extended table includes the fields of this base table plus the extended fields that do not have the same name as a field in the base table.
+     * The extended table includes the fields of this base table plus the extended fields that do not have the same name as
+     * a field in the base table.
      */
     RelOptTable extend( List<RelDataTypeField> extendedFields );
 
     /**
-     * Returns a list describing how each column is populated. The list has the same number of entries as there are fields, and is immutable.
+     * Returns a list describing how each column is populated. The list has the same number of entries as there are fields,
+     * and is immutable.
      */
     List<ColumnStrategy> getColumnStrategies();
 
@@ -138,29 +140,11 @@ public interface RelOptTable extends Wrapper {
         return null;
     }
 
-    /**
-     * Can expand a view into relational expressions.
-     */
-    interface ViewExpander {
-
-        /**
-         * Returns a relational expression that is to be substituted for an access to a SQL view.
-         *
-         * @param rowType Row type of the view
-         * @param queryString Body of the view
-         * @param schemaPath Path of a schema wherein to find referenced tables
-         * @param viewPath Path of the view, ending with its name; may be null
-         * @return Relational expression
-         */
-        RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath );
-
-    }
-
 
     /**
-     * Contains the context needed to convert a a table into a relational expression.
+     * Contains the context needed to convert a table into a relational expression.
      */
-    interface ToRelContext extends ViewExpander {
+    interface ToRelContext {
 
         RelOptCluster getCluster();
 
