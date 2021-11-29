@@ -1421,6 +1421,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 eventData.updateAccessedPartitions( tempAccessedPartitions );
             }
         }
+
+        // Otherwise, Analyzer cannot correctly analyze the event anymore
+        if ( eventData.getAccessedPartitions() == null ) {
+            eventData.setAccessedPartitions( Collections.emptyMap() );
+        }
+
     }
 
 
