@@ -111,7 +111,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.routing.RoutingManager;
@@ -1781,7 +1781,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( relNode instanceof LogicalTableScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( relNode, fieldList );
             underlyingTables.put( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId(), underlyingColumns );
-        } else if ( relNode instanceof LogicalViewTableScan ) {
+        } else if ( relNode instanceof LogicalViewScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( relNode, fieldList );
             underlyingTables.put( ((LogicalView) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId(), underlyingColumns );
         }

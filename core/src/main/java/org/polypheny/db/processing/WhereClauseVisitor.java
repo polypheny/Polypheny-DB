@@ -40,7 +40,6 @@ public class WhereClauseVisitor extends RexShuttle {
     private final long partitionColumnIndex;
     @Getter
     protected boolean valueIdentified = false;
-    private Object value = null;
     @Getter
     private boolean unsupportedFilter = false;
 
@@ -58,6 +57,7 @@ public class WhereClauseVisitor extends RexShuttle {
 
         if ( call.operands.size() == 2 ) {
             if ( call.op.kind.equals( SqlKind.EQUALS ) ) {
+                Object value;
                 if ( call.operands.get( 0 ) instanceof RexInputRef ) {
                     if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 1 ) instanceof RexLiteral ) {
@@ -86,7 +86,6 @@ public class WhereClauseVisitor extends RexShuttle {
                     }
                 }
             } else {
-                // Enable worstcase routing
                 unsupportedFilter = true;
             }
         }

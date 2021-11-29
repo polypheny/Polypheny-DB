@@ -29,7 +29,7 @@ import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.processing.RelDeepCopyShuttle;
+import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
@@ -61,7 +61,7 @@ public class RoutedRelBuilder extends RelBuilder {
         newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
 
         if ( builder.stackSize() > 0 ) {
-            final RelNode node = builder.peek().accept( new RelDeepCopyShuttle() );
+            final RelNode node = builder.peek().accept( new DeepCopyShuttle() );
             newBuilder.push( node );
         }
 

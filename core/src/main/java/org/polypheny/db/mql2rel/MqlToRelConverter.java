@@ -74,7 +74,7 @@ import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
@@ -263,7 +263,7 @@ public class MqlToRelConverter {
         RelNode node;
 
         if ( table instanceof RelOptTableImpl && table.getTable() instanceof LogicalView ) {
-            node = LogicalViewTableScan.create( cluster, table );
+            node = LogicalViewScan.create( cluster, table );
         } else {
             node = LogicalTableScan.create( cluster, table );
         }

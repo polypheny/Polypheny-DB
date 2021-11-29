@@ -90,10 +90,10 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
         for ( int usedId : this.rexShuttle.usedIds ) {
 
-            // The number of UsedIds could be greater than number of availableColumns. This occurs if a statement contains a column more than two times.
-            // E.g.col21 is present in Projection & in Filter.
-            // However, since  availableColumns is a map it only stores the present ColumnIds one time. But rexShuttle.usedIds tracks every positional occurence.
-            //  Therefore, this could result in more entries. We consequently need to skip those
+            // The number of UsedIds could be greater than number of availableColumns. This occurs if a statement contains
+            // a column more than two times. E.g.col21 is present in Projection & in Filter. However, since  availableColumns
+            // is a map it only stores the present ColumnIds one time. But rexShuttle.usedIds tracks every positional
+            // occurrence. Therefore, this could result in more entries. We consequently need to skip those.
             if ( usedId >= availableColumnKeys.size() ) {
                 continue;
             }
@@ -253,7 +253,9 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
         // Only if table is partitioned
         if ( catalogTable.isPartitioned ) {
-            WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
+            WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
+                    statement,
+                    catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
             filter.accept( whereClauseVisitor );
 
             int scanId = filter.getInput().getId();
@@ -264,7 +266,6 @@ public class LogicalRelAnalyzeShuttle extends RelShuttleImpl {
 
             if ( whereClauseVisitor.valueIdentified ) {
                 if ( !whereClauseVisitor.getValues().isEmpty() && !whereClauseVisitor.isUnsupportedFilter() ) {
-
                     partitionValueFilterPerScan.get( scanId ).addAll( whereClauseVisitor.getValues().stream()
                             .map( Object::toString )
                             .collect( Collectors.toSet() ) );

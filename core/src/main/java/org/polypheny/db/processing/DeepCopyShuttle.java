@@ -41,9 +41,9 @@ import org.polypheny.db.rel.logical.LogicalValues;
 
 
 /**
- * RelShuttle for creating a deep copy for rel.
+ * Shuttle for creating a deep copy of a query plan.
  */
-public class RelDeepCopyShuttle extends RelShuttleImpl {
+public class DeepCopyShuttle extends RelShuttleImpl {
 
     private RelTraitSet copy( final RelTraitSet other ) {
         return RelTraitSet.createEmpty().merge( other );

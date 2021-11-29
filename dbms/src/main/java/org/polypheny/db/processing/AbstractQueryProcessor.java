@@ -617,7 +617,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         }
 
                         if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
-                            final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new RelDeepCopyShuttle() );
+                            final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new DeepCopyShuttle() );
                             for ( final Index index : indices ) {
                                 final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lvalues.tuples.size() );
                                 for ( final ImmutableList<RexLiteral> row : lvalues.getTuples() ) {
@@ -640,7 +640,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
                             }
                         } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalProject && ((LogicalProject) ltm.getInput()).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                            final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new RelDeepCopyShuttle() );
+                            final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new DeepCopyShuttle() );
                             for ( final Index index : indices ) {
                                 final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lproject.getProjects().size() );
                                 final List<Object> rowValues = new ArrayList<>();
@@ -681,7 +681,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         } else if ( ltm.isDelete() || ltm.isUpdate() || ltm.isMerge() || (ltm.isInsert() && !(ltm.getInput() instanceof Values)) ) {
                             final Map<String, Integer> nameMap = new HashMap<>();
                             final Map<String, Integer> newValueMap = new HashMap<>();
-                            RelNode original = ltm.getInput().accept( new RelDeepCopyShuttle() );
+                            RelNode original = ltm.getInput().accept( new DeepCopyShuttle() );
                             if ( !(original instanceof LogicalProject) ) {
                                 original = LogicalProject.identity( original );
                             }

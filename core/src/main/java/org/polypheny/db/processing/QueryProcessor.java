@@ -27,18 +27,26 @@ import org.polypheny.db.rel.type.RelDataType;
 public interface QueryProcessor extends ViewExpander {
 
     /**
-     * @param logicalRoot relRoot of query.
-     * @param withMonitoring activates or deactivates the monitoring.
+     * @param logicalRoot Logical query plan.
+     * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
     PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, boolean withMonitoring );
 
+    /**
+     * @param logicalRoot Logical query plan.
+     * @param parameters Row type (required with prepared statements).
+     * @param withMonitoring Activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
     PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean withMonitoring );
 
     /**
-     * @param logicalRoot relRoot of query.
-     * @param isRouted indicated whether query already routed.
-     * @param withMonitoring activates or deactivates the monitoring.
+     * @param logicalRoot Logical query plan.
+     * @param parameters Row type (required with prepared statements).
+     * @param isRouted Indicated whether query already routed.
+     * @param isSubquery Indicates whether the query is a subquery (used with constraint enforcement)
+     * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
     PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );

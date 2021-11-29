@@ -54,7 +54,7 @@ import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewScan;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
@@ -465,8 +465,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         } else if ( viewLogicalRoot instanceof SingleRel ) {
             prepareNode( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster, relCollation );
         }
-        if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
-            prepareNode( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
+        if ( viewLogicalRoot instanceof LogicalViewScan ) {
+            prepareNode( ((LogicalViewScan) viewLogicalRoot).getRelNode(), relOptCluster, relCollation );
         }
     }
 

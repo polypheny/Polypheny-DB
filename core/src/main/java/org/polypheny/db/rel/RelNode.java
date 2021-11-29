@@ -46,7 +46,7 @@ import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewScan;
 import org.polypheny.db.rel.metadata.Metadata;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
@@ -353,16 +353,16 @@ public interface RelNode extends RelOptNode, Cloneable {
      * Else recursively hands call down if view in deeper level
      */
     default void tryExpandView( RelNode input ) {
-        if ( input instanceof LogicalViewTableScan ) {
-            input = ((LogicalViewTableScan) input).expandViewNode();
+        if ( input instanceof LogicalViewScan ) {
+            input = ((LogicalViewScan) input).expandViewNode();
         } else {
             input.tryExpandView( input );
         }
     }
 
     default RelNode tryParentExpandView( RelNode input ) {
-        if ( input instanceof LogicalViewTableScan ) {
-            return ((LogicalViewTableScan) input).expandViewNode();
+        if ( input instanceof LogicalViewScan ) {
+            return ((LogicalViewScan) input).expandViewNode();
         } else {
             input.tryExpandView( input );
             return input;

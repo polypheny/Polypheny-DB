@@ -33,7 +33,7 @@ import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewScan;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 public class CatalogView extends CatalogTable {
@@ -199,8 +199,8 @@ public class CatalogView extends CatalogTable {
         } else if ( viewLogicalRoot instanceof SingleRel ) {
             prepareView( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster );
         }
-        if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
-            prepareView( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster );
+        if ( viewLogicalRoot instanceof LogicalViewScan ) {
+            prepareView( ((LogicalViewScan) viewLogicalRoot).getRelNode(), relOptCluster );
         }
     }
 
