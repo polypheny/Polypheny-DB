@@ -21,7 +21,8 @@ import org.polypheny.db.rel.type.RelDataType;
 public interface ValidatorNamespace {
 
     /**
-     * Returns the row type of this namespace, which comprises a list of names and types of the output columns. If the scope's type has not yet been derived, derives it.
+     * Returns the row type of this namespace, which comprises a list of names and types of the output columns. If the
+     * scope's type has not yet been derived, derives it.
      *
      * @return Row type of this namespace, never null, always a struct
      */

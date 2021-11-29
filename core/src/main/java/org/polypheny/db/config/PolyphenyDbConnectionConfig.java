@@ -37,9 +37,9 @@ package org.polypheny.db.config;
 import org.apache.calcite.avatica.ConnectionConfig;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.enums.Lex;
 import org.polypheny.db.core.enums.NullCollation;
+import org.polypheny.db.core.util.Conformance;
 
 /**
  * Interface for reading connection properties within Polypheny-DB code. There is a method for every property.
@@ -99,7 +99,6 @@ public interface PolyphenyDbConnectionConfig extends ConnectionConfig {
 
     /**
      * @see PolyphenyDbConnectionProperty#CONFORMANCE
-     * @return
      */
     Conformance conformance();
 

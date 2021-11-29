@@ -55,9 +55,7 @@ import org.polypheny.db.schema.SchemaPlus;
 public interface FrameworkConfig {
 
     /**
-     * The configuration of SQL parser.
-     *
-     * @return
+     * Returns the configuration of SQL parser.
      */
     ParserConfig getParserConfig();
 
@@ -91,8 +89,6 @@ public interface FrameworkConfig {
 
     /**
      * Returns operator table that should be used to resolve functions and operators during query validation.
-     *
-     * @return
      */
     OperatorTable getOperatorTable();
 
@@ -116,8 +112,6 @@ public interface FrameworkConfig {
 
     /**
      * Returns the convertlet table that should be used when converting from SQL to row expressions
-     *
-     * @return
      */
     RexConvertletTable getConvertletTable();
 
