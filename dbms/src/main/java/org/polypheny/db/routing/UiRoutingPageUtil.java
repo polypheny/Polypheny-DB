@@ -18,6 +18,8 @@ package org.polypheny.db.routing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -37,43 +39,58 @@ import org.polypheny.db.transaction.Statement;
  */
 public class UiRoutingPageUtil {
 
-    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, Statement statement ) {
+    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, InformationManager queryAnalyzer ) {
         // Print stuff in reverse order
-        setExecutedPhysicalPlan( optimalRelNode, statement );
+        addPhysicalPlanPage( optimalRelNode, queryAnalyzer );
 
-        InformationPage page = setBaseOutput( "Routed Query Plan", 0, statement );
-
-        InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-        if ( proposedRoutingPlan != null ) {
-            final RelRoot root = proposedRoutingPlan.getRoutedRoot();
-            InformationGroup routedQueryPlan = new InformationGroup( page, "Routed Query Plan" );
-            queryAnalyzer.addGroup( routedQueryPlan );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    routedQueryPlan,
-                    RelOptUtil.dumpPlan( "Routed Query Plan", root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
-        }
+        InformationPage page = setBaseOutput( "Routing", 0, queryAnalyzer );
+        addSelectedAdapterTable( queryAnalyzer, proposedRoutingPlan, page );
+        final RelRoot root = proposedRoutingPlan.getRoutedRoot();
+        addRoutedPlanPage( root.rel, queryAnalyzer );
     }
 
 
-    public static void setExecutedPhysicalPlan( RelNode optimalNode, Statement statement ) {
-        if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    RelOptUtil.dumpPlan( "Physical Query Plan", optimalNode, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
-        }
+    public static void addPhysicalPlanPage( RelNode optimalNode, InformationManager queryAnalyzer ) {
+        InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
+        page.fullWidth();
+        InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
+        queryAnalyzer.addPage( page );
+        queryAnalyzer.addGroup( group );
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                group,
+                RelOptUtil.dumpPlan( "Physical Query Plan", optimalNode, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        queryAnalyzer.registerInformation( informationQueryPlan );
     }
 
 
-    public static InformationPage setBaseOutput( String title, Integer numberOfPlans, Statement statement ) {
-        InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+    private static void addRoutedPlanPage( RelNode routedNode, InformationManager queryAnalyzer ) {
+        InformationPage page = new InformationPage( "Routed Query Plan" ).setLabel( "plans" );
+        page.fullWidth();
+        InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
+        queryAnalyzer.addPage( page );
+        queryAnalyzer.addGroup( group );
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                group,
+                RelOptUtil.dumpPlan( "Routed Query Plan", routedNode, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+        queryAnalyzer.registerInformation( informationQueryPlan );
+    }
+
+
+    private static void addSelectedAdapterTable( InformationManager queryAnalyzer, ProposedRoutingPlan proposedRoutingPlan, InformationPage page ) {
+        InformationGroup group = new InformationGroup( page, "Selected Adapters" );
+        queryAnalyzer.addGroup( group );
+        InformationTable table = new InformationTable(
+                group,
+                ImmutableList.of( "Table", "Adapter", "Physical Name" ) );
+        proposedRoutingPlan.getSelectedAdaptersInfo().forEach( ( k, v ) -> {
+            CatalogTable catalogTable = Catalog.getInstance().getTable( k );
+            table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.uniqueName, v.physicalSchemaName + "." + v.physicalTableName );
+        } );
+        queryAnalyzer.registerInformation( table );
+    }
+
+
+    public static InformationPage setBaseOutput( String title, Integer numberOfPlans, InformationManager queryAnalyzer ) {
         InformationPage page = new InformationPage( title );
         page.fullWidth();
         queryAnalyzer.addPage( page );
@@ -81,18 +98,17 @@ public class UiRoutingPageUtil {
         double ratioPre = 1 - RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
         double ratioPost = RoutingManager.PRE_COST_POST_COST_RATIO.getDouble();
 
-        InformationGroup overview = new InformationGroup( page, "Stats overview" );
+        InformationGroup overview = new InformationGroup( page, "Stats overview" ).setOrder( 1 );
         queryAnalyzer.addGroup( overview );
-        InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# of Plans", "Pre Cost factor", "Post cost factor", "Selection Strategy" ) );
+        InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# of Plans", "Pre Cost Factor", "Post Cost Factor", "Selection Strategy" ) );
         overviewTable.addRow( numberOfPlans == 0 ? "-" : numberOfPlans, ratioPre, ratioPost, RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() );
-
         queryAnalyzer.registerInformation( overviewTable );
 
         return page;
     }
 
 
-    public static void setDebugOutput(
+    public static void addRoutingAndPlanPage(
             List<RelOptCost> approximatedCosts,
             List<Double> preCosts,
             List<Double> postCosts,
@@ -103,16 +119,16 @@ public class UiRoutingPageUtil {
             List<Double> percentageCosts,
             Statement statement ) {
 
-        InformationPage page = setBaseOutput( "Routing", routingPlans.size(), statement );
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+        InformationPage page = setBaseOutput( "Routing", routingPlans.size(), queryAnalyzer );
 
         final boolean isIcarus = icarusCosts != null;
 
-        InformationGroup group = new InformationGroup( page, "Proposed Plans" );
+        InformationGroup group = new InformationGroup( page, "Proposed Plans" ).setOrder( 2 );
         queryAnalyzer.addGroup( group );
         InformationTable table = new InformationTable(
                 group,
-                ImmutableList.of( "Physical QueryClass", "router", "Pre. Costs", "Post Costs", "Norm. pre Costs", "Norm. post Costs", "Total Costs", "Adapter Info", "Percentage" ) );
+                ImmutableList.of( "Physical Query Class", "Router", "Pre. Costs", "Post Costs", "Norm. pre Costs", "Norm. post Costs", "Total Costs", "Adapter Info", "Percentage" ) );
 
         for ( int i = 0; i < routingPlans.size(); i++ ) {
             final RoutingPlan routingPlan = routingPlans.get( i );
@@ -124,30 +140,28 @@ public class UiRoutingPageUtil {
                     preCosts.get( i ),
                     isIcarus ? postCosts.get( i ) : "-",
                     effectiveCosts.get( i ),
-                    routingPlan.getOptionalPhysicalPlacementsOfPartitions(),
+                    routingPlan.getPhysicalPlacementsOfPartitions(),
                     percentageCosts != null ? percentageCosts.get( i ) : "-" );
         }
 
-        InformationGroup selected = new InformationGroup( page, "Selected Plan" );
+        InformationGroup selected = new InformationGroup( page, "Selected Plan" ).setOrder( 3 );
         queryAnalyzer.addGroup( selected );
         InformationTable selectedTable = new InformationTable(
                 selected,
-                ImmutableList.of( "QueryClass", "Physical QueryClass", "Router", "Partitioning - Placements" ) );
+                ImmutableList.of( "Query Class", "Physical Query Class", "Router", "Partitioning - Placements" ) );
         selectedTable.addRow(
                 selectedPlan.getQueryClass(),
                 selectedPlan.getPhysicalQueryClass(),
                 selectedPlan.getRouter(),
-                selectedPlan.getOptionalPhysicalPlacementsOfPartitions() );
+                selectedPlan.getPhysicalPlacementsOfPartitions() );
+
+        queryAnalyzer.registerInformation( table, selectedTable );
 
         if ( selectedPlan instanceof ProposedRoutingPlan ) {
             ProposedRoutingPlan plan = (ProposedRoutingPlan) selectedPlan;
+            addSelectedAdapterTable( queryAnalyzer, plan, page );
             RelRoot root = plan.getRoutedRoot();
-            if ( statement.getTransaction().isAnalyze() ) {
-                InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                        selected,
-                        RelOptUtil.dumpPlan( "Routed Query Plan", root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-                queryAnalyzer.registerInformation( informationQueryPlan );
-            }
+            addRoutedPlanPage( root.rel, queryAnalyzer );
         }
 
         /*val plans = routingPlans.stream().map( elem -> elem instanceof ProposedRoutingPlan ? (ProposedRoutingPlan) elem : null ).collect( Collectors.toList() );
@@ -166,7 +180,6 @@ public class UiRoutingPageUtil {
             }
         }*/
 
-        queryAnalyzer.registerInformation( table, selectedTable );
     }
 
 }

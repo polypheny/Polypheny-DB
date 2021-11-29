@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.tools.RoutedRelBuilder.SelectedAdapterInfo;
 import org.polypheny.db.util.Pair;
 
 
@@ -49,16 +50,6 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     void setQueryClass( String queryClass );
 
     /**
-     * @return Gets the physical query class as Optional.
-     */
-    String getOptionalPhysicalQueryClass();
-
-    /**
-     * @param physicalQueryClass The physical queryClass
-     */
-    void setOptionalPhysicalQueryId( String physicalQueryClass );
-
-    /**
      * @return Gets the router class which proposed the plan.
      */
     @Override
@@ -72,6 +63,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     /**
      * @return The physical placements of the necessary partitions: PartitionId -> List<AdapterId, CatalogColumnPlacementId>
      */
+    @Override
     Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
     /**
@@ -90,5 +82,10 @@ public interface ProposedRoutingPlan extends RoutingPlan {
      * @return true if routing plan is cacheable. Currently, DMLs and DDLs will not be cached.
      */
     boolean isCacheable();
+
+    /**
+     * For reporting in the UI
+     */
+    Map<Long, SelectedAdapterInfo> getSelectedAdaptersInfo();
 
 }

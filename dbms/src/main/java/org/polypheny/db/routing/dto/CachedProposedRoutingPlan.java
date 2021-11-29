@@ -25,6 +25,7 @@ import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RoutingPlan;
+import org.polypheny.db.tools.RoutedRelBuilder.SelectedAdapterInfo;
 import org.polypheny.db.util.Pair;
 
 
@@ -36,6 +37,7 @@ import org.polypheny.db.util.Pair;
 public class CachedProposedRoutingPlan implements RoutingPlan {
 
     public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected Map<Long, SelectedAdapterInfo> selectedAdaptersInfo; // For reporting in the UI
     protected String queryClass;
     protected String physicalQueryClass;
     protected RelOptCost preCosts;
@@ -47,12 +49,13 @@ public class CachedProposedRoutingPlan implements RoutingPlan {
         this.preCosts = approximatedCosts;
         this.router = routingPlan.getRouter();
         this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions() );
+        this.selectedAdaptersInfo = ImmutableMap.copyOf( routingPlan.getSelectedAdaptersInfo() );
         this.physicalQueryClass = routingPlan.getPhysicalQueryClass();
     }
 
 
     @Override
-    public Map<Long, List<Pair<Integer, Long>>> getOptionalPhysicalPlacementsOfPartitions() {
+    public Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions() {
         return this.physicalPlacementsOfPartitions;
     }
 

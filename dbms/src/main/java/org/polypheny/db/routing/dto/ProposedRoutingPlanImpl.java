@@ -17,6 +17,7 @@
 package org.polypheny.db.routing.dto;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -28,6 +29,7 @@ import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RoutedRelBuilder;
+import org.polypheny.db.tools.RoutedRelBuilder.SelectedAdapterInfo;
 import org.polypheny.db.util.Pair;
 
 
@@ -43,6 +45,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     protected String physicalQueryClass;
     protected Class<? extends Router> router;
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected Map<Long, SelectedAdapterInfo> selectedAdaptersInfo = new HashMap<>(); // For reporting in the UI
     protected RelOptCost preCosts;
 
 
@@ -53,6 +56,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
         this.router = routerClass;
         RelNode rel = routedRelBuilder.build();
         this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.selectedAdaptersInfo = routedRelBuilder.getSelectedAdaptersInfo();
     }
 
 
@@ -63,6 +67,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
         this.router = cachedPlan.getRouter();
         RelNode rel = routedRelBuilder.build();
         this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.selectedAdaptersInfo = cachedPlan.getSelectedAdaptersInfo();
     }
 
 
@@ -79,33 +84,15 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
 
     @Override
-    public String getOptionalPhysicalQueryClass() {
-        return physicalQueryClass;
-    }
-
-
-    @Override
-    public void setOptionalPhysicalQueryId( String physicalQueryClass ) {
-        this.physicalQueryClass = physicalQueryClass;
-    }
-
-
-    @Override
     public String getPhysicalQueryClass() {
         return physicalQueryClass != null ? physicalQueryClass : "";
     }
 
 
     @Override
-    public Map<Long, List<Pair<Integer, Long>>> getOptionalPhysicalPlacementsOfPartitions() {
-        return this.getPhysicalPlacementsOfPartitions();
-    }
-
-
-    @Override
     public boolean isCacheable() {
         return this.physicalPlacementsOfPartitions != null
-                && this.getOptionalPhysicalQueryClass() != null
+                && this.getPhysicalQueryClass() != null
                 && !this.routedRoot.kind.belongsTo( SqlKind.DML );
     }
 

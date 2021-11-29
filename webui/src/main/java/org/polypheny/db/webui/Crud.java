@@ -875,30 +875,34 @@ public class Crud implements InformationObserver {
         }
 
         if ( queryAnalyzer != null ) {
-            attachQueryAnalyzer( queryAnalyzer, executionTime );
+            attachQueryAnalyzer( queryAnalyzer, executionTime, results.size() );
         }
 
         return results;
     }
 
 
-    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime ) {
-        InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
+    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime, int numberOfQueries ) {
+        InformationPage p1 = new InformationPage( "Transaction", "Analysis of the transaction." );
+        queryAnalyzer.addPage( p1 );
         InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-        InformationText text;
+        queryAnalyzer.addGroup( g1 );
+        InformationText text1;
         if ( executionTime < 1e4 ) {
-            text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+            text1 = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
         } else {
             long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
             // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
             //noinspection SuspiciousDateFormat
             DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
             String durationText = df.format( new Date( millis ) );
-            text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+            text1 = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
         }
-        queryAnalyzer.addPage( p1 );
-        queryAnalyzer.addGroup( g1 );
-        queryAnalyzer.registerInformation( text );
+        queryAnalyzer.registerInformation( text1 );
+        InformationGroup g2 = new InformationGroup( p1, "Number of queries" );
+        queryAnalyzer.addGroup( g2 );
+        InformationText text2 = new InformationText( g2, String.format( "Number of queries in this transaction: %d", numberOfQueries ) );
+        queryAnalyzer.registerInformation( text2 );
     }
 
 

@@ -43,16 +43,15 @@ public class StatementImpl implements Statement {
 
     @Getter
     private final long id;
-
     @Getter
     private final TransactionImpl transaction;
     private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
+
     private QueryProcessor queryProcessor;
-    private DataContext dataContext = null;
-    private ContextImpl prepareContext = null;
-    private InformationDuration processingDuration = null;
-    private InformationDuration executionDuration = null;
-    private InformationGroup group = null;
+    private DataContext dataContext;
+    private ContextImpl prepareContext;
+    private InformationDuration processingDuration;
+    private InformationDuration executionDuration;
     private InformationPage executionTimePage;
 
 
@@ -87,7 +86,12 @@ public class StatementImpl implements Statement {
             if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
                 return new SlimDataContext();
             }
-            dataContext = new DataContextImpl( new QueryProviderImpl(), map, transaction.getSchema(), transaction.getTypeFactory(), this );
+            dataContext = new DataContextImpl(
+                    new QueryProviderImpl(),
+                    map,
+                    transaction.getSchema(),
+                    transaction.getTypeFactory(),
+                    this );
         }
         return dataContext;
     }
@@ -129,15 +133,14 @@ public class StatementImpl implements Statement {
     @Override
     public InformationDuration getTotalDuration() {
         InformationDuration finalDuration = getExecutionDuration();
-
         return finalDuration.merge( getProcessingDuration() );
     }
 
 
     private InformationDuration initDuration( String title ) {
         InformationManager im = transaction.getQueryAnalyzer();
-        if ( this.executionTimePage == null ) {
-            executionTimePage = new InformationPage( "Execution time", "Query execution time" );
+        if ( executionTimePage == null ) {
+            executionTimePage = new InformationPage( "Execution Time", "Query execution time" );
             im.addPage( executionTimePage );
         }
         InformationGroup group = new InformationGroup( executionTimePage, title );

@@ -32,6 +32,6 @@ public interface RoutingPlan {
 
     Class<? extends Router> getRouter();
 
-    Map<Long, List<Pair<Integer, Long>>> getOptionalPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
+    Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
 
 }

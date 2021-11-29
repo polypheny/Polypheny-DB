@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -44,6 +45,9 @@ public class RoutedRelBuilder extends RelBuilder {
 
     @Getter
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+
+    @Getter
+    protected Map<Long, SelectedAdapterInfo> selectedAdaptersInfo = new HashMap<>(); // For reporting in the UI
 
 
     public RoutedRelBuilder( Context context, RelOptCluster cluster, RelOptSchema relOptSchema ) {
@@ -106,6 +110,17 @@ public class RoutedRelBuilder extends RelBuilder {
 
     private List<Pair<Integer, Long>> map( List<CatalogColumnPlacement> catalogCols ) {
         return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() );
+    }
+
+
+    @AllArgsConstructor
+    @Getter
+    public static class SelectedAdapterInfo {
+
+        public final String uniqueName;
+        public final String physicalSchemaName;
+        public final String physicalTableName;
+
     }
 
 }

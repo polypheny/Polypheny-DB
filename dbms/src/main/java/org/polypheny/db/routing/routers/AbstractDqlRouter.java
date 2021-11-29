@@ -23,9 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
@@ -102,31 +99,22 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     public List<RoutedRelBuilder> route( RelRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
         // Reset cancel query this run
         this.cancelQuery = false;
-        this.selectedAdapter = new HashMap<>();
+        this.selectedAdaptersInfo = new HashMap<>();
 
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
-            throw new IllegalStateException( "Should never happen for dml" );
+            throw new IllegalStateException( "Should never happen for DML" );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
             throw new IllegalStateException( "Should never happen for conditional executes" );
         } else {
             RoutedRelBuilder builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
-
-            // Add information to query analyzer
-            if ( statement.getTransaction().isAnalyze() ) {
-                InformationPage page = new InformationPage( "Routing" );
-                statement.getTransaction().getQueryAnalyzer().addPage( page );
-                InformationGroup group = new InformationGroup( page, "Selected Adapters" );
-                statement.getTransaction().getQueryAnalyzer().addGroup( group );
-                InformationTable table = new InformationTable(
-                        group,
-                        ImmutableList.of( "Table", "Adapter", "Physical Name" ) );
-                selectedAdapter.forEach( ( k, v ) -> {
-                    CatalogTable catalogTable = catalog.getTable( k );
-                    table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.uniqueName, v.physicalSchemaName + "." + v.physicalTableName );
-                } );
-                statement.getTransaction().getQueryAnalyzer().registerInformation( table );
-            }
-            return buildDql( logicalRoot.rel, Lists.newArrayList( builder ), statement, logicalRoot.rel.getCluster(), queryInformation );
+            List<RoutedRelBuilder> routedRelBuilders = buildDql(
+                    logicalRoot.rel,
+                    Lists.newArrayList( builder ),
+                    statement,
+                    logicalRoot.rel.getCluster(),
+                    queryInformation );
+            builder.getSelectedAdaptersInfo().putAll( selectedAdaptersInfo );
+            return routedRelBuilders;
         }
     }
 

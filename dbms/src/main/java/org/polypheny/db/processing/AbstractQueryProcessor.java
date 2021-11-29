@@ -331,10 +331,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             // Routing
-            if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() &&
-                    !indexLookupRoot.kind.belongsTo( SqlKind.DML )
-            ) {
-                Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() );
+            if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() && !indexLookupRoot.kind.belongsTo( SqlKind.DML ) ) {
+                Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream()
+                        .flatMap( List::stream )
+                        .collect( Collectors.toSet() );
                 List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryClass(), partitionIds );
                 if ( !routingPlansCached.isEmpty() ) {
                     proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
@@ -388,10 +388,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         for ( ProposedRoutingPlan routingPlan : proposedRoutingPlans ) {
             RelRoot routedRoot = routingPlan.getRoutedRoot();
             RelRoot parameterizedRoot;
-            if ( statement.getDataContext().getParameterValues().size() == 0 &&
-                    (RuntimeConfig.PARAMETERIZE_DML.getBoolean() ||
-                            !routedRoot.kind.belongsTo( SqlKind.DML ))
-            ) {
+            if ( statement.getDataContext().getParameterValues().size() == 0
+                    && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( SqlKind.DML )) ) {
                 Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
                 parameterizedRoot = parameterized.left;
             } else {
@@ -414,14 +412,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
             RelRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
-
                 RelRoot parameterizedRoot = parameterizedRootList.get( i );
                 PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
+                RelNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).rel );
                 if ( preparedResult != null ) {
-                    PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
+                    PolyphenyDbSignature<?> signature = createSignature(
+                            preparedResult,
+                            parameterizedRoot.kind,
+                            optimalNode,
+                            parameterizedRoot.validatedRowType,
+                            resultConvention,
+                            executionTimeMonitor );
                     signature.setSchemaType( schemaType );
                     signatures.add( signature );
-                    optimalNodeList.add( routedRoot.rel );
+                    optimalNodeList.add( optimalNode );
                 } else {
                     signatures.add( null );
                     optimalNodeList.add( null );
@@ -511,7 +515,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
 
-            PolyphenyDbSignature<?> signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
+            PolyphenyDbSignature<?> signature = createSignature(
+                    preparedResult,
+                    optimalRoot.kind,
+                    optimalRoot.rel,
+                    optimalRoot.validatedRowType,
+                    resultConvention,
+                    executionTimeMonitor );
             signature.setSchemaType( schemaType );
             signatures.set( i, signature );
             optimalNodeList.set( i, optimalRoot.rel );
@@ -547,7 +557,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ) {
-
         // Locking
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Locking" );
@@ -1099,7 +1108,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        final Bindable bindable;
+        final Bindable<Object[]> bindable;
         if ( resultConvention == BindableConvention.INSTANCE ) {
             bindable = Interpreters.bindable( root.rel );
         } else {
@@ -1148,7 +1157,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
             @Override
-            public Bindable getBindable( CursorFactory cursorFactory ) {
+            public Bindable<Object[]> getBindable( CursorFactory cursorFactory ) {
                 return bindable;
             }
 
@@ -1168,8 +1177,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PolyphenyDbSignature createSignature( PreparedResult preparedResult, RelRoot optimalRoot, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
-        final RelDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalRoot.rel.getCluster().getTypeFactory(), optimalRoot.validatedRowType );
+    private PolyphenyDbSignature<?> createSignature( PreparedResult preparedResult, SqlKind kind, RelNode optimalNode, RelDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
+        final RelDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
         final List<AvaticaParameter> parameters = new ArrayList<>();
         for ( RelDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
             RelDataType type = field.getType();
@@ -1185,33 +1194,33 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         final RelDataType x;
-        switch ( optimalRoot.kind ) {
+        switch ( kind ) {
             case INSERT:
             case DELETE:
             case UPDATE:
             case EXPLAIN:
                 // FIXME: getValidatedNodeType is wrong for DML
-                x = RelOptUtil.createDmlRowType( optimalRoot.kind, statement.getTransaction().getTypeFactory() );
+                x = RelOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
                 break;
             default:
-                x = optimalRoot.validatedRowType;
+                x = validatedRowType;
         }
         final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
                 statement.getTransaction().getTypeFactory(),
                 x,
                 QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
                 preparedResult.getFieldOrigins() );
-        Class resultClazz = null;
+        Class<?> resultClazz = null;
         if ( preparedResult instanceof Typed ) {
-            resultClazz = (Class) ((Typed) preparedResult).getElementType();
+            resultClazz = (Class<?>) ((Typed) preparedResult).getElementType();
         }
         final CursorFactory cursorFactory =
                 resultConvention == BindableConvention.INSTANCE
                         ? CursorFactory.ARRAY
                         : CursorFactory.deduce( columns, resultClazz );
-        final Bindable bindable = preparedResult.getBindable( cursorFactory );
+        final Bindable<Object[]> bindable = preparedResult.getBindable( cursorFactory );
 
-        return new PolyphenyDbSignature<Object[]>(
+        return new PolyphenyDbSignature<>(
                 "",
                 parameters,
                 ImmutableMap.of(),
@@ -1378,8 +1387,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
             StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
             eventData.setRelCompareString( selectedPlan.getRoutedRoot().rel.relCompareString() );
-            if ( selectedPlan.getOptionalPhysicalQueryClass() != null ) {
-                eventData.setPhysicalQueryId( selectedPlan.getOptionalPhysicalQueryClass() );
+            if ( selectedPlan.getPhysicalQueryClass() != null ) {
+                eventData.setPhysicalQueryId( selectedPlan.getPhysicalQueryClass() );
                 eventData.setRowCount( (int) selectedPlan.getRoutedRoot().rel.estimateRowCount( selectedPlan.getRoutedRoot().rel.getCluster().getMetadataQuery() ) );
             }
 
@@ -1464,7 +1473,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( signatures.size() == 1 ) {
             // If only one plan proposed, return this without further selection
             if ( statement.getTransaction().isAnalyze() ) {
-                UiRoutingPageUtil.outputSingleResult( proposedRoutingPlans.get( 0 ), optimalRels.get( 0 ), statement );
+                UiRoutingPageUtil.outputSingleResult(
+                        proposedRoutingPlans.get( 0 ),
+                        optimalRels.get( 0 ),
+                        statement.getTransaction().getQueryAnalyzer() );
             }
             return new Pair<>( signatures.get( 0 ), proposedRoutingPlans.get( 0 ) );
         } else {
@@ -1480,7 +1492,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             int index = proposedRoutingPlans.indexOf( (ProposedRoutingPlan) routingPlan );
             if ( statement.getTransaction().isAnalyze() ) {
                 RelNode optimalNode = optimalRels.get( index );
-                UiRoutingPageUtil.setExecutedPhysicalPlan( optimalNode, statement );
+                UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
             }
             return new Pair<>( proposedImplementations.getSignatures().get( index ), (ProposedRoutingPlan) routingPlan );
         }

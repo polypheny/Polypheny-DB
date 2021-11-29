@@ -89,7 +89,7 @@ public class RoutingPlanSelector {
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
-            UiRoutingPageUtil.setDebugOutput(
+            UiRoutingPageUtil.addRoutingAndPlanPage(
                     approximatedCosts,
                     preCosts,
                     postCosts,

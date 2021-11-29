@@ -127,7 +127,7 @@ public class LanguageCrud {
             }
             executionTime = System.nanoTime() - executionTime;
             if ( queryAnalyzer != null ) {
-                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
+                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, 1 );
             }
 
             return result;
@@ -204,7 +204,7 @@ public class LanguageCrud {
         }
 
         if ( queryAnalyzer != null ) {
-            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
+            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, results.size() );
         }
 
         return results;
