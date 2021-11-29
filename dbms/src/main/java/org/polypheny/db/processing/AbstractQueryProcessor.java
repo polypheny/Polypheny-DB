@@ -354,7 +354,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Routing" );
-                statement.getProcessingDuration().start( "Routing flattener" );
+                statement.getProcessingDuration().start( "Routing Flattener" );
             }
 
             proposedRoutingPlans.forEach( proposedRoutingPlan -> {
@@ -368,12 +368,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             } );
 
             if ( isAnalyze ) {
-                statement.getProcessingDuration().stop( "Routing flattener" );
+                statement.getProcessingDuration().stop( "Routing Flattener" );
             }
         }
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Parameter validation" );
+            statement.getProcessingDuration().start( "Parameter Validation" );
         }
 
         // Validate parameterValues
@@ -382,7 +382,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         .visit( proposedRoutingPlan.getRoutedRoot().rel ) );
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Parameter validation" );
+            statement.getProcessingDuration().stop( "Parameter Validation" );
         }
 
         // Parameterize
@@ -1421,6 +1421,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 eventData.updateAccessedPartitions( tempAccessedPartitions );
             }
         }
+
+        // Otherwise, Analyzer cannot correctly analyze the event anymore
+        if ( eventData.getAccessedPartitions() == null ) {
+            eventData.setAccessedPartitions( Collections.emptyMap() );
+        }
+
     }
 
 
