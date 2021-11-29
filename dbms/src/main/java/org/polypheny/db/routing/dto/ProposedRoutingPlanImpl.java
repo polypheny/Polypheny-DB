@@ -42,7 +42,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     protected String queryClass;
     protected String physicalQueryClass;
     protected Class<? extends Router> router;
-    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId -> List<CatalogPlacementIds>
+    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
     protected RelOptCost preCosts;
 
 

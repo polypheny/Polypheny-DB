@@ -43,7 +43,7 @@ import org.polypheny.db.util.Pair;
 public class RoutedRelBuilder extends RelBuilder {
 
     @Getter
-    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // partitionId, list<adapterId - colId>
+    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
 
     public RoutedRelBuilder( Context context, RelOptCluster cluster, RelOptSchema relOptSchema ) {
@@ -97,11 +97,10 @@ public class RoutedRelBuilder extends RelBuilder {
     }
 
 
-    public RoutedRelBuilder addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements ) { // list<adapterId - colId>
+    public void addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements ) {
         final Map<Long, List<Pair<Integer, Long>>> map = physicalPlacements.entrySet().stream()
                 .collect( Collectors.toMap( Map.Entry::getKey, entry -> map( entry.getValue() ) ) );
         physicalPlacementsOfPartitions.putAll( map );
-        return this;
     }
 
 

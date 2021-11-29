@@ -25,9 +25,9 @@ import org.polypheny.db.transaction.Statement;
 public interface Router {
 
     /**
-     * @param relRoot the relRoot which will be routed.
-     * @param statement the corresponding statement.
-     * @param queryInformation different query information resulting from analyze step.
+     * @param relRoot The relRoot which will be routed.
+     * @param statement The corresponding statement.
+     * @param queryInformation Different query information resulting from analyze step.
      * @return Proposes multiple routed rel nodes as a List of  relBuilders.
      */
     List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement, LogicalQueryInformation queryInformation );

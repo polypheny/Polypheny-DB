@@ -26,40 +26,40 @@ import org.polypheny.db.util.Pair;
 public interface ProposedRoutingPlan extends RoutingPlan {
 
     /**
-     * @return the relRoot of the proposed routing plan.
+     * @return The relRoot of the proposed routing plan.
      */
     RelRoot getRoutedRoot();
 
     /**
      * Sets the routed relRoot
      *
-     * @param relRoot the routed rel root.
+     * @param relRoot The routed rel root.
      */
     void setRoutedRoot( RelRoot relRoot );
 
     /**
-     * @return the query class.
+     * @return The query class.
      */
     @Override
     String getQueryClass();
 
     /**
-     * @param queryClass the query class string.
+     * @param queryClass The query class string.
      */
     void setQueryClass( String queryClass );
 
     /**
-     * @return gets the physical query class as Optional.
+     * @return Gets the physical query class as Optional.
      */
     String getOptionalPhysicalQueryClass();
 
     /**
-     * @param physicalQueryClass the physical queryClass
+     * @param physicalQueryClass The physical queryClass
      */
     void setOptionalPhysicalQueryId( String physicalQueryClass );
 
     /**
-     * @return gets the router class which proposed the plan.
+     * @return Gets the router class which proposed the plan.
      */
     @Override
     Class<? extends Router> getRouter();
@@ -70,9 +70,9 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     void setRouter( Class<? extends Router> routerClass );
 
     /**
-     * @return the physical placements of the necessary partitions: partitionId, list<CatalogPlacementIds>
+     * @return The physical placements of the necessary partitions: PartitionId -> List<AdapterId, CatalogColumnPlacementId>
      */
-    Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // partitionId -> List<CatalogPlacementIds>
+    Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
     /**
      * @return Optional pre costs.

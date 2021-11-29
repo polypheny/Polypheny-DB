@@ -35,7 +35,7 @@ import org.polypheny.db.util.Pair;
 @Setter
 public class CachedProposedRoutingPlan implements RoutingPlan {
 
-    public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId, list<CatalogPlacementIds>
+    public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
     protected String queryClass;
     protected String physicalQueryClass;
     protected RelOptCost preCosts;
