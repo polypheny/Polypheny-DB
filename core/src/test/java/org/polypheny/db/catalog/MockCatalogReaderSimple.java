@@ -12,32 +12,39 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.catalog;
 
 
 import com.google.common.collect.ImmutableList;
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.InitializerExpressionFactory;
-import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.core.nodes.Identifier;
-import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Litmus;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -234,66 +241,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         suppliersTable.addColumn( "CITY", fixture.intType );
         registerTable( suppliersTable );
 
-        // Register "EMP_20" and "EMPNULLABLES_20 views.
-        // Same columns as "EMP" amd "EMPNULLABLES", but "DEPTNO" not visible and set to 20 by default and "SAL" is visible but must be greater than 1000, which is the equivalent of:
-        //   SELECT EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, SLACKER
-        //   FROM EMP
-        //   WHERE DEPTNO = 20 AND SAL > 1000
-        final ImmutableIntList m0 = ImmutableIntList.of( 0, 1, 2, 3, 4, 5, 6, 8 );
-        MockTable emp20View =
-                new MockViewTable( this, salesSchema.getCatalogName(), salesSchema.getName(), "EMP_20", false, 600, empTable, m0, null, NullInitializerExpressionFactory.INSTANCE ) {
-                    @Override
-                    public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
-                        final RelDataTypeField deptnoField = tableRowType.getFieldList().get( 7 );
-                        final RelDataTypeField salField = tableRowType.getFieldList().get( 5 );
-                        final List<RexNode> nodes = Arrays.asList(
-                                rexBuilder.makeCall(
-                                        OperatorRegistry.get( OperatorName.EQUALS ),
-                                        rexBuilder.makeInputRef( deptnoField.getType(), deptnoField.getIndex() ),
-                                        rexBuilder.makeExactLiteral( BigDecimal.valueOf( 20L ), deptnoField.getType() ) ),
-                                rexBuilder.makeCall(
-                                        OperatorRegistry.get( OperatorName.GREATER_THAN ),
-                                        rexBuilder.makeInputRef( salField.getType(), salField.getIndex() ),
-                                        rexBuilder.makeExactLiteral( BigDecimal.valueOf( 1000L ), salField.getType() ) ) );
-                        return RexUtil.composeConjunction( rexBuilder, nodes );
-                    }
-                };
-        salesSchema.addTable( Util.last( emp20View.getQualifiedName() ) );
-        emp20View.addColumn( "EMPNO", fixture.intType );
-        emp20View.addColumn( "ENAME", fixture.varchar20Type );
-        emp20View.addColumn( "JOB", fixture.varchar10Type );
-        emp20View.addColumn( "MGR", fixture.intTypeNull );
-        emp20View.addColumn( "HIREDATE", fixture.timestampType );
-        emp20View.addColumn( "SAL", fixture.intType );
-        emp20View.addColumn( "COMM", fixture.intType );
-        emp20View.addColumn( "SLACKER", fixture.booleanType );
-        registerTable( emp20View );
 
-        MockTable empNullables20View = new MockViewTable( this, salesSchema.getCatalogName(), salesSchema.getName(), "EMPNULLABLES_20", false, 600, empNullablesTable, m0, null, NullInitializerExpressionFactory.INSTANCE ) {
-            @Override
-            public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
-                final RelDataTypeField deptnoField = tableRowType.getFieldList().get( 7 );
-                final RelDataTypeField salField = tableRowType.getFieldList().get( 5 );
-                final List<RexNode> nodes = Arrays.asList(
-                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ),
-                                rexBuilder.makeInputRef( deptnoField.getType(), deptnoField.getIndex() ),
-                                rexBuilder.makeExactLiteral( BigDecimal.valueOf( 20L ), deptnoField.getType() ) ),
-                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN ),
-                                rexBuilder.makeInputRef( salField.getType(), salField.getIndex() ),
-                                rexBuilder.makeExactLiteral( BigDecimal.valueOf( 1000L ), salField.getType() ) ) );
-                return RexUtil.composeConjunction( rexBuilder, nodes );
-            }
-        };
-        salesSchema.addTable( Util.last( empNullables20View.getQualifiedName() ) );
-        empNullables20View.addColumn( "EMPNO", fixture.intType );
-        empNullables20View.addColumn( "ENAME", fixture.varchar20Type );
-        empNullables20View.addColumn( "JOB", fixture.varchar10TypeNull );
-        empNullables20View.addColumn( "MGR", fixture.intTypeNull );
-        empNullables20View.addColumn( "HIREDATE", fixture.timestampTypeNull );
-        empNullables20View.addColumn( "SAL", fixture.intTypeNull );
-        empNullables20View.addColumn( "COMM", fixture.intTypeNull );
-        empNullables20View.addColumn( "SLACKER", fixture.booleanTypeNull );
-        registerTable( empNullables20View );
 
         MockSchema structTypeSchema = new MockSchema( "STRUCT" );
         registerSchema( structTypeSchema );
@@ -330,27 +278,6 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         }
         registerTable( structNullableTypeTable );
 
-        // Register "STRUCT.T_10" view.
-        // Same columns as "STRUCT.T", but "F0.C0" is set to 10 by default, which is the equivalent of:
-        //   SELECT *
-        //   FROM T
-        //   WHERE F0.C0 = 10
-        // This table uses MockViewTable which does not populate the constrained columns with default values on INSERT.
-        final ImmutableIntList m1 = ImmutableIntList.of( 0, 1, 2, 3, 4, 5, 6, 7, 8 );
-        MockTable struct10View = new MockViewTable( this, structTypeSchema.getCatalogName(), structTypeSchema.getName(), "T_10", false, 20, structTypeTable, m1, structTypeTableResolver, NullInitializerExpressionFactory.INSTANCE ) {
-            @Override
-            public RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType ) {
-                final RelDataTypeField c0Field = tableRowType.getFieldList().get( 4 );
-                return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ),
-                        rexBuilder.makeInputRef( c0Field.getType(), c0Field.getIndex() ),
-                        rexBuilder.makeExactLiteral( BigDecimal.valueOf( 10L ), c0Field.getType() ) );
-            }
-        };
-        structTypeSchema.addTable( Util.last( struct10View.getQualifiedName() ) );
-        for ( CompoundNameColumn column : columns ) {
-            struct10View.addColumn( column.getName(), column.type );
-        }
-        registerTable( struct10View );
         registerTablesWithRollUp( salesSchema, fixture );
         return this;
 

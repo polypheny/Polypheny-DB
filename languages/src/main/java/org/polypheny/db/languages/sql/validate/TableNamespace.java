@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.languages.sql.validate;
@@ -22,8 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.core.util.ValidatorUtil;
+import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
@@ -33,7 +50,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.ModifiableViewTable;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
 
@@ -97,8 +113,7 @@ class TableNamespace extends AbstractNamespace {
     /**
      * Creates a TableNamespace based on the same table as this one, but with extended fields.
      *
-     * Extended fields are "hidden" or undeclared fields that may nevertheless be present if you ask for them. Phoenix uses them, for instance, to access
-     * rarely used fields in the underlying HBase table.
+     * Extended fields are "hidden" or undeclared fields that may nevertheless be present if you ask for them.
      */
     public TableNamespace extend( SqlNodeList extendList ) {
         final List<SqlNode> identifierList = Util.quotientList( extendList.getSqlList(), 2, 0 );
@@ -108,7 +123,7 @@ class TableNamespace extends AbstractNamespace {
         builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
         final List<RelDataTypeField> extendedFields = builder.build();
         final Table schemaTable = table.unwrap( Table.class );
-        if ( schemaTable != null && table instanceof RelOptTable && (schemaTable instanceof ExtensibleTable || schemaTable instanceof ModifiableViewTable) ) {
+        if ( schemaTable != null && table instanceof RelOptTable && schemaTable instanceof ExtensibleTable ) {
             checkExtendedColumnTypes( extendList );
             final RelOptTable relOptTable = ((RelOptTable) table).extend( extendedFields );
             final ValidatorTable validatorTable = relOptTable.unwrap( ValidatorTable.class );
@@ -123,11 +138,6 @@ class TableNamespace extends AbstractNamespace {
      */
     private RelDataType getBaseRowType() {
         final Table schemaTable = table.unwrap( Table.class );
-        if ( schemaTable instanceof ModifiableViewTable ) {
-            final Table underlying = ((ModifiableViewTable) schemaTable).unwrap( Table.class );
-            assert underlying != null;
-            return underlying.getRowType( validator.typeFactory );
-        }
         return schemaTable.getRowType( validator.typeFactory );
     }
 

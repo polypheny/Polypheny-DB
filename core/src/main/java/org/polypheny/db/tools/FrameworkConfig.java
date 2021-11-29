@@ -41,7 +41,6 @@ import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCostFactory;
-import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexExecutor;
@@ -131,11 +130,6 @@ public interface FrameworkConfig {
      * Returns the type system.
      */
     RelDataTypeSystem getTypeSystem();
-
-    /**
-     * Returns a view expander.
-     */
-    RelOptTable.ViewExpander getViewExpander();
 
     /**
      * Returns a prepare context.

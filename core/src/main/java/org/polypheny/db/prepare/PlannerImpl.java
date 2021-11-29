@@ -36,7 +36,6 @@ package org.polypheny.db.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
-import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
@@ -54,7 +53,6 @@ import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
@@ -79,7 +77,7 @@ import org.polypheny.db.util.Util;
 /**
  * Implementation of {@link Planner}.
  */
-public class PlannerImpl implements Planner, ViewExpander {
+public class PlannerImpl implements Planner {
 
     private final OperatorTable operatorTable;
     private final ImmutableList<Program> programs;
@@ -261,49 +259,13 @@ public class PlannerImpl implements Planner, ViewExpander {
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
                         .build();
-        final NodeToRelConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, this, validator, createCatalogReader(), cluster, convertletTable, config );
+        final NodeToRelConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, validator, createCatalogReader(), cluster, convertletTable, config );
         root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
         root = root.withRel( sqlToRelConverter.flattenTypes( root.rel, true ) );
         final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
         root = root.withRel( RelDecorrelator.decorrelateQuery( root.rel, relBuilder ) );
         state = State.STATE_5_CONVERTED;
         return root;
-    }
-
-
-    @Override
-    public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-        if ( planner == null ) {
-            ready();
-        }
-        Parser parser = Parser.create( queryString, parserConfig );
-        Node sqlNode;
-        try {
-            sqlNode = parser.parseQuery();
-        } catch ( NodeParseException e ) {
-            throw new RuntimeException( "parse failed", e );
-        }
-
-        final Conformance conformance = conformance();
-        final PolyphenyDbCatalogReader catalogReader = createCatalogReader().withSchemaPath( schemaPath );
-        final Validator validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.SQL, operatorTable, catalogReader, typeFactory, conformance );
-        validator.setIdentifierExpansion( true );
-
-        final RexBuilder rexBuilder = createRexBuilder();
-        final RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
-        final NodeToRelConverter.Config config =
-                NodeToRelConverter
-                        .configBuilder()
-                        .withConfig( sqlToRelConverterConfig )
-                        .withTrimUnusedFields( false )
-                        .withConvertTableAccess( false )
-                        .build();
-        final NodeToRelConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, this, validator, catalogReader, cluster, convertletTable, config );
-
-        final RelRoot root = sqlToRelConverter.convertQuery( sqlNode, true, false );
-        final RelRoot root2 = root.withRel( sqlToRelConverter.flattenTypes( root.rel, true ) );
-        final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
-        return root2.withRel( RelDecorrelator.decorrelateQuery( root.rel, relBuilder ) );
     }
 
 

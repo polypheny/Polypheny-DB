@@ -17,7 +17,6 @@
 package org.polypheny.db.processing;
 
 import java.util.Collections;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
@@ -38,7 +37,6 @@ import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2rel.MqlToRelConverter;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
@@ -55,7 +53,7 @@ import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class MqlProcessorImpl extends MqlProcessor implements ViewExpander {
+public class MqlProcessorImpl extends MqlProcessor {
 
     private static final MqlParserConfig parserConfig;
 
@@ -63,12 +61,6 @@ public class MqlProcessorImpl extends MqlProcessor implements ViewExpander {
     static {
         MqlParser.ConfigBuilder configConfigBuilder = MqlParser.configBuilder();
         parserConfig = configConfigBuilder.build();
-    }
-
-
-    @Override
-    public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-        return null;
     }
 
 

@@ -49,7 +49,6 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.JoinInfo;
 import org.polypheny.db.rel.core.SemiJoin;
@@ -244,7 +243,7 @@ public class LoptSemiJoinOptimizer {
 
         // Find the best index
         final List<Integer> bestKeyOrder = new ArrayList<>();
-        LcsTableScan tmpFactRel = (LcsTableScan) factTable.toRel( ViewExpanders.simpleContext( factRel.getCluster() ) );
+        LcsTableScan tmpFactRel = (LcsTableScan) factTable.toRel( factRel::getCluster );
 
         LcsIndexOptimizer indexOptimizer = new LcsIndexOptimizer( tmpFactRel );
         FemLocalIndex bestIndex =

@@ -49,8 +49,6 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable.ToRelContext;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
-import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -68,24 +66,17 @@ import org.polypheny.db.util.BuiltInMethod;
 class LixToRelTranslator {
 
     final RelOptCluster cluster;
-    private final Prepare preparingStmt;
     final JavaTypeFactory typeFactory;
 
 
-    LixToRelTranslator( RelOptCluster cluster, Prepare preparingStmt ) {
+    LixToRelTranslator( RelOptCluster cluster ) {
         this.cluster = cluster;
-        this.preparingStmt = preparingStmt;
         this.typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
     }
 
 
     ToRelContext toRelContext() {
-        if ( preparingStmt instanceof ViewExpander ) {
-            final ViewExpander viewExpander = (ViewExpander) this.preparingStmt;
-            return ViewExpanders.toRelContext( viewExpander, cluster );
-        } else {
-            return ViewExpanders.simpleContext( cluster );
-        }
+        return () -> cluster;
     }
 
 

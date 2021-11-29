@@ -12,13 +12,27 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.languages.core;
 
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
@@ -27,7 +41,6 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.AbstractList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,10 +58,8 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.ScannableTable;
@@ -56,11 +67,8 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.schema.impl.ViewTable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Litmus;
 
 
 /**
@@ -355,31 +363,6 @@ public class Smalls {
                 return (Queryable) enumerable.asQueryable();
             }
         };
-    }
-
-
-    public static TranslatableTable view( String s ) {
-        return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", null, PolyType.INTEGER ).build(),
-                "values (1), (3), " + s, ImmutableList.of(), Arrays.asList( "view" ) );
-    }
-
-
-    public static TranslatableTable strView( String s ) {
-        return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", null, PolyType.VARCHAR, 100 ).build(),
-                "values (" + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( s ) + ")",
-                ImmutableList.of(), Arrays.asList( "view" ) );
-    }
-
-
-    public static TranslatableTable str( Object o, Object p ) {
-        assertThat( RexLiteral.validConstant( o, Litmus.THROW ), is( true ) );
-        assertThat( RexLiteral.validConstant( p, Litmus.THROW ), is( true ) );
-        return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", null, PolyType.VARCHAR, 100 ).build(),
-                "values " + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( o.toString() ) + ", " + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( p.toString() ),
-                ImmutableList.of(), Arrays.asList( "view" ) );
     }
 
 
@@ -1019,56 +1002,6 @@ public class Smalls {
 
         public long add( short accumulator, int v ) {
             return accumulator + v;
-        }
-
-    }
-
-
-    /**
-     * User-defined table-macro function.
-     */
-    public static class TableMacroFunction {
-
-        public TranslatableTable eval( String s ) {
-            return view( s );
-        }
-
-    }
-
-
-    /**
-     * User-defined table-macro function whose eval method is static.
-     */
-    public static class StaticTableMacroFunction {
-
-        public static TranslatableTable eval( String s ) {
-            return view( s );
-        }
-
-    }
-
-
-    /**
-     * User-defined table-macro function with named and optional parameters.
-     */
-    public static class TableMacroFunctionWithNamedParameters {
-
-        public TranslatableTable eval( @Parameter(name = "R", optional = true) String r, @Parameter(name = "S") String s, @Parameter(name = "T", optional = true) Integer t ) {
-            final StringBuilder sb = new StringBuilder();
-            abc( sb, r );
-            abc( sb, s );
-            abc( sb, t );
-            return view( sb.toString() );
-        }
-
-
-        private void abc( StringBuilder sb, Object s ) {
-            if ( s != null ) {
-                if ( sb.length() > 0 ) {
-                    sb.append( ", " );
-                }
-                sb.append( '(' ).append( s ).append( ')' );
-            }
         }
 
     }

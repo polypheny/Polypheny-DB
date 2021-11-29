@@ -2232,12 +2232,6 @@ public abstract class RelOptUtil {
     }
 
 
-    @Deprecated // to be removed before 2.0
-    public static RelOptTable.ToRelContext getContext( RelOptCluster cluster ) {
-        return ViewExpanders.simpleContext( cluster );
-    }
-
-
     /**
      * Returns the number of {@link Join} nodes in a tree.
      */

@@ -117,7 +117,6 @@ import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptPlanner.CannotPlanException;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
@@ -1065,7 +1064,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Holds state for the process of preparing a SQL statement.
      */
-    public static class PolyphenyDbPreparingStmt extends Prepare implements ViewExpander {
+    public static class PolyphenyDbPreparingStmt extends Prepare {
 
         protected final RelOptPlanner planner;
         protected final RexBuilder rexBuilder;
@@ -1108,7 +1107,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         public PreparedResult prepareQueryable( final Queryable queryable, RelDataType resultType ) {
             return prepare_( () -> {
                 final RelOptCluster cluster = prepare.createCluster( planner, rexBuilder );
-                return new LixToRelTranslator( cluster, PolyphenyDbPreparingStmt.this ).translate( queryable );
+                return new LixToRelTranslator( cluster ).translate( queryable );
             }, resultType );
         }
 
@@ -1158,7 +1157,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         @Override
         protected NodeToRelConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToRelConverter.Config config ) {
             final RelOptCluster cluster = prepare.createCluster( planner, rexBuilder );
-            return LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, this, validator, catalogReader, cluster, convertletTable, config );
+            return LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, validator, catalogReader, cluster, convertletTable, config );
         }
 
 
@@ -1175,29 +1174,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         @Override
         protected RelNode decorrelate( NodeToRelConverter sqlToRelConverter, Node query, RelNode rootRel ) {
             return sqlToRelConverter.decorrelate( query, rootRel );
-        }
-
-
-        @Override
-        public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-            expansionDepth++;
-
-            Parser parser = prepare.createParser( queryString );
-            Node sqlNode;
-            try {
-                sqlNode = parser.parseQuery();
-            } catch ( NodeParseException e ) {
-                throw new RuntimeException( "parse failed", e );
-            }
-            // View may have different schema path than current connection.
-            final CatalogReader catalogReader = this.catalogReader.withSchemaPath( schemaPath );
-            Validator validator = createSqlValidator( catalogReader );
-            final NodeToRelConverter.Config config = NodeToRelConverter.configBuilder().withTrimUnusedFields( true ).build();
-            NodeToRelConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, config );
-            RelRoot root = sqlToRelConverter.convertQuery( sqlNode, true, false );
-
-            --expansionDepth;
-            return root;
         }
 
 
