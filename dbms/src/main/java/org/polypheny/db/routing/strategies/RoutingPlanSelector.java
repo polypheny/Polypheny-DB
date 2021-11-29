@@ -18,11 +18,9 @@ package org.polypheny.db.routing.strategies;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptUtil;
@@ -39,18 +37,10 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class RoutingPlanSelector {
 
-
-    public Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, List<PolyphenyDbSignature<?>> signatures, Statement statement ) {
-        return this.selectPlanBasedOnCosts( routingPlans, approximatedCosts, queryId, Optional.of( signatures ), statement );
-    }
-
-
-    public Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, Statement statement ) {
-        return this.selectPlanBasedOnCosts( routingPlans, approximatedCosts, queryId, Optional.empty(), statement );
-    }
-
-
-    public Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> selectPlanBasedOnCosts( List<? extends RoutingPlan> routingPlans, List<RelOptCost> approximatedCosts, String queryId, Optional<List<PolyphenyDbSignature<?>>> signatures, Statement statement ) {
+    public RoutingPlan selectPlanBasedOnCosts(
+            List<? extends RoutingPlan> routingPlans,
+            List<RelOptCost> approximatedCosts,
+            Statement statement ) {
         // 0 = only consider pre costs
         // 1 = only consider post costs
         // [0,1] = get normalized pre and post costs and multiply by ratio
@@ -65,20 +55,20 @@ public class RoutingPlanSelector {
         // Calculate post-costs or set them to 0 for all entries.
         // If calculation is needed, get icarus original costs for printing debug output.
         boolean calcPostCosts = Math.abs( ratioPost ) >= RelOptUtil.EPSILON; // > 0
-        Optional<List<Double>> icarusCosts;
+        List<Double> icarusCosts;
         List<Double> postCosts;
-        Optional<List<Double>> percentageCosts = Optional.empty();
+        List<Double> percentageCosts = null;
         if ( calcPostCosts ) {
-            Pair<List<Double>, List<Double>> icarusResult = calculateIcarusPostCosts( routingPlans, queryId );
-            icarusCosts = Optional.of( icarusResult.right );
+            Pair<List<Double>, List<Double>> icarusResult = calculateIcarusPostCosts( routingPlans );
+            icarusCosts = icarusResult.right;
             postCosts = icarusResult.left;
         } else {
             postCosts = Collections.nCopies( n, 0.0 );
-            icarusCosts = Optional.empty();
+            icarusCosts = null;
         }
 
         // Get effective costs
-        Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> result = null;
+        RoutingPlan result = null;
         List<Double> effectiveCosts = IntStream.rangeClosed( 0, n - 1 )
                 .mapToDouble( i -> (preCosts.get( i ) * ratioPre) + (postCosts.get( i ) * ratioPost) )
                 .boxed()
@@ -86,11 +76,11 @@ public class RoutingPlanSelector {
 
         // Get plan in regard to the active strategy
         if ( RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.BEST ) {
-            result = this.selectBestPlan( routingPlans, signatures, effectiveCosts );
+            result = this.selectBestPlan( routingPlans, effectiveCosts );
         } else if ( RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() == RouterPlanSelectionStrategy.PROBABILITY ) {
-            Pair<Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan>, List<Double>> percentageResult = this.selectPlanFromProbability( routingPlans, signatures, effectiveCosts );
+            Pair<RoutingPlan, List<Double>> percentageResult = this.selectPlanFromProbability( routingPlans, effectiveCosts );
             result = percentageResult.left;
-            percentageCosts = Optional.of( percentageResult.right );
+            percentageCosts = percentageResult.right;
         }
 
         if ( result == null ) {
@@ -98,14 +88,25 @@ public class RoutingPlanSelector {
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
-            RoutingManager.getInstance().getDebugUiPrinter().printDebugOutput( approximatedCosts, preCosts, postCosts, icarusCosts, routingPlans, result.right, effectiveCosts, percentageCosts, statement );
+            RoutingManager.getInstance().getDebugUiPrinter().setDebugOutput(
+                    approximatedCosts,
+                    preCosts,
+                    postCosts,
+                    icarusCosts,
+                    routingPlans,
+                    result,
+                    effectiveCosts,
+                    percentageCosts,
+                    statement );
         }
 
         return result;
     }
 
 
-    private Pair<Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan>, List<Double>> selectPlanFromProbability( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature<?>>> signatures, List<Double> effectiveCosts ) {
+    private Pair<RoutingPlan, List<Double>> selectPlanFromProbability(
+            List<? extends RoutingPlan> routingPlans,
+            List<Double> effectiveCosts ) {
         // Check for list all 0
         if ( effectiveCosts.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
             effectiveCosts = Collections.nCopies( effectiveCosts.size(), 1.0 );
@@ -126,34 +127,34 @@ public class RoutingPlanSelector {
             double weight = inverseProbabilities.get( i );
             p += weight;
             if ( p >= random ) {
-                return new Pair( new Pair( signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty(), routingPlans.get( i ) ), inverseProbabilities );
+                return new Pair<>( routingPlans.get( i ), inverseProbabilities );
             }
         }
 
         log.error( "Should never happen from percentages" );
-        return new Pair( new Pair( signatures.isPresent() ? Optional.of( signatures.get().get( 0 ) ) : Optional.empty(), routingPlans.get( 0 ) ), inverseProbabilities );
+        return new Pair<>( routingPlans.get( 0 ), inverseProbabilities );
     }
 
 
-    private Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> selectBestPlan( List<? extends RoutingPlan> routingPlans, Optional<List<PolyphenyDbSignature<?>>> signatures, List<Double> effectiveCosts ) {
+    private RoutingPlan selectBestPlan(
+            List<? extends RoutingPlan> routingPlans,
+            List<Double> effectiveCosts ) {
         RoutingPlan currentPlan = routingPlans.get( 0 );
-        Optional<PolyphenyDbSignature<?>> currentSignature = signatures.map( polyphenyDbSignatures -> polyphenyDbSignatures.get( 0 ) );
         Double currentCost = effectiveCosts.get( 0 );
 
         for ( int i = 1; i < routingPlans.size(); i++ ) {
             final double cost = effectiveCosts.get( i );
             if ( cost < currentCost ) {
                 currentPlan = routingPlans.get( i );
-                currentSignature = signatures.isPresent() ? Optional.of( signatures.get().get( i ) ) : Optional.empty();
                 currentCost = cost;
             }
         }
 
-        return new Pair<>( currentSignature, currentPlan );
+        return currentPlan;
     }
 
 
-    private Pair<List<Double>, List<Double>> calculateIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans, String queryId ) {
+    private Pair<List<Double>, List<Double>> calculateIcarusPostCosts( List<? extends RoutingPlan> proposedRoutingPlans ) {
         final List<Long> postCosts = proposedRoutingPlans.stream()
                 .map( plan -> MonitoringServiceProvider.getInstance().getQueryPostCosts( plan.getPhysicalQueryClass() ).getExecutionTime() )
                 .collect( Collectors.toList() );
@@ -220,13 +221,13 @@ public class RoutingPlanSelector {
             return costs;
         }
 
-        Optional<Double> min = costs.stream().min( Double::compareTo );
-        Optional<Double> max = costs.stream().max( Double::compareTo );
+        Double min = costs.stream().min( Double::compareTo ).get();
+        Double max = costs.stream().max( Double::compareTo ).get();
 
         // When min == mix, set min = 0
-        Optional<Double> usedMin = Math.abs( min.get() - max.get() ) <= RelOptUtil.EPSILON ? Optional.of( 0.0 ) : min;
+        Double usedMin = Math.abs( min - max ) <= RelOptUtil.EPSILON ? 0.0 : min;
         return costs.stream()
-                .map( c -> (c - usedMin.get()) / (max.get() - usedMin.get()) )
+                .map( c -> (c - usedMin) / (max - usedMin) )
                 .collect( Collectors.toList() );
     }
 

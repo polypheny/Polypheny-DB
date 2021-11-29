@@ -20,7 +20,6 @@ import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -153,18 +152,18 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         log.debug( "Start processing queue" );
         this.processingQueueLock.lock();
 
-        Optional<MonitoringEvent> event;
+        MonitoringEvent event;
 
         try {
             // while there are jobs to consume:
             int countEvents = 0;
-            while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
+            while ( (event = this.getNextJob()) != null && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "get new monitoring job {}", event.get().getId().toString() );
+                    log.debug( "get new monitoring job {}", event.getId().toString() );
                 }
 
                 // returns list of metrics which was produced by this particular event
-                final List<MonitoringDataPoint> dataPoints = event.get().analyze();
+                final List<MonitoringDataPoint> dataPoints = event.analyze();
                 if ( dataPoints.isEmpty() ) {
                     continue;
                 }
@@ -175,7 +174,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 }
 
                 countEvents++;
-                queueIds.remove( event.get().getId() );
+                queueIds.remove( event.getId() );
             }
             processedEvents += countEvents;
             processedEventsTotal += countEvents;
@@ -185,11 +184,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-    private Optional<MonitoringEvent> getNextJob() {
+    private MonitoringEvent getNextJob() {
         if ( monitoringJobQueue.peek() != null ) {
-            return Optional.of( monitoringJobQueue.poll() );
+            return monitoringJobQueue.poll();
         }
-        return Optional.empty();
+        return null;
     }
 
 }

@@ -18,7 +18,6 @@ package org.polypheny.db.routing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.Optional;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -36,13 +35,13 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Adds debug information from routing to the ui.
  */
-public class RoutingDebugUiPrinter {
+public class UiRoutingPageUtil {
 
-    public void printDebugOutputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, Statement statement ) {
+    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, Statement statement ) {
         // Print stuff in reverse order
-        this.printExecutedPhysicalPlan( optimalRelNode, statement );
+        setExecutedPhysicalPlan( optimalRelNode, statement );
 
-        InformationPage page = this.printBaseOutput( "Routed Query Plan", 0, statement );
+        InformationPage page = setBaseOutput( "Routed Query Plan", 0, statement );
 
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
         if ( proposedRoutingPlan != null ) {
@@ -57,7 +56,7 @@ public class RoutingDebugUiPrinter {
     }
 
 
-    public void printExecutedPhysicalPlan( RelNode optimalNode, Statement statement ) {
+    public static void setExecutedPhysicalPlan( RelNode optimalNode, Statement statement ) {
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
@@ -73,7 +72,7 @@ public class RoutingDebugUiPrinter {
     }
 
 
-    public InformationPage printBaseOutput( String title, Integer numberOfPlans, Statement statement ) {
+    public static InformationPage setBaseOutput( String title, Integer numberOfPlans, Statement statement ) {
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
         InformationPage page = new InformationPage( title );
         page.fullWidth();
@@ -93,21 +92,21 @@ public class RoutingDebugUiPrinter {
     }
 
 
-    public void printDebugOutput(
+    public static void setDebugOutput(
             List<RelOptCost> approximatedCosts,
             List<Double> preCosts,
             List<Double> postCosts,
-            Optional<List<Double>> icarusCosts,
+            List<Double> icarusCosts,
             List<? extends RoutingPlan> routingPlans,
             RoutingPlan selectedPlan,
             List<Double> effectiveCosts,
-            Optional<List<Double>> percentageCosts,
+            List<Double> percentageCosts,
             Statement statement ) {
 
-        InformationPage page = this.printBaseOutput( "Routing", routingPlans.size(), statement );
+        InformationPage page = setBaseOutput( "Routing", routingPlans.size(), statement );
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
 
-        final boolean isIcarus = icarusCosts.isPresent();
+        final boolean isIcarus = icarusCosts != null;
 
         InformationGroup group = new InformationGroup( page, "Proposed Plans" );
         queryAnalyzer.addGroup( group );
@@ -119,19 +118,21 @@ public class RoutingDebugUiPrinter {
             final RoutingPlan routingPlan = routingPlans.get( i );
             table.addRow(
                     routingPlan.getPhysicalQueryClass(),
-                    routingPlan.getRouter().isPresent() ? routingPlan.getRouter().get() : "",
+                    routingPlan.getRouter() != null ? routingPlan.getRouter() : "",
                     approximatedCosts.get( i ),
-                    isIcarus ? icarusCosts.get().get( i ) : "-",
+                    isIcarus ? icarusCosts.get( i ) : "-",
                     preCosts.get( i ),
                     isIcarus ? postCosts.get( i ) : "-",
                     effectiveCosts.get( i ),
                     routingPlan.getOptionalPhysicalPlacementsOfPartitions(),
-                    percentageCosts.isPresent() ? percentageCosts.get().get( i ) : "-" );
+                    percentageCosts != null ? percentageCosts.get( i ) : "-" );
         }
 
         InformationGroup selected = new InformationGroup( page, "Selected Plan" );
         queryAnalyzer.addGroup( selected );
-        InformationTable selectedTable = new InformationTable( selected, ImmutableList.of( "QueryClass", "Physical QueryClass", "Router", "Partitioning - Placements" ) );
+        InformationTable selectedTable = new InformationTable(
+                selected,
+                ImmutableList.of( "QueryClass", "Physical QueryClass", "Router", "Partitioning - Placements" ) );
         selectedTable.addRow(
                 selectedPlan.getQueryClass(),
                 selectedPlan.getPhysicalQueryClass(),

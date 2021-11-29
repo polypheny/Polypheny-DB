@@ -65,8 +65,6 @@ public class RoutingManager {
     private static final RoutingManager INSTANCE = new RoutingManager();
 
     @Getter
-    final RoutingDebugUiPrinter debugUiPrinter = new RoutingDebugUiPrinter();
-    @Getter
     private final DmlRouter dmlRouter = new DmlRouterImpl();
     @Getter
     private final CachedPlanRouter cachedPlanRouter = new CachedPlanRouter();

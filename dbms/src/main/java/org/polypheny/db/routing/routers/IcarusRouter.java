@@ -95,7 +95,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 final int adapterId = currentPlacement.get( 0 ).adapterId;
 
                 // Find corresponding builder:
-                final Optional<RoutedRelBuilder> builder = builders.stream().filter( b -> {
+                final RoutedRelBuilder builder = builders.stream().filter( b -> {
                             final List<Pair<Integer, Long>> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
                                     .flatMap( Collection::stream )
                                     .collect( Collectors.toList() );
@@ -105,14 +105,14 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                                     .findFirst();
                             return found.isPresent();
                         }
-                ).findAny();
+                ).findAny().orElse( null );
 
-                if ( !builder.isPresent() ) {
+                if ( builder == null ) {
                     // If builder not found, adapter with id will be removed.
                     continue;
                 }
 
-                final RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder.get() );
+                final RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );

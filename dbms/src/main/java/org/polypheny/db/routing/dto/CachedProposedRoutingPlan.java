@@ -19,7 +19,6 @@ package org.polypheny.db.routing.dto;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.plan.RelOptCost;
@@ -40,21 +39,21 @@ public class CachedProposedRoutingPlan implements RoutingPlan {
     protected String queryClass;
     protected String physicalQueryClass;
     protected RelOptCost preCosts;
-    protected Optional<Class<? extends Router>> router;
+    protected Class<? extends Router> router;
 
 
     public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts ) {
         this.queryClass = routingPlan.getQueryClass();
         this.preCosts = approximatedCosts;
         this.router = routingPlan.getRouter();
-        this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions().get() );
+        this.physicalPlacementsOfPartitions = ImmutableMap.copyOf( routingPlan.getPhysicalPlacementsOfPartitions() );
         this.physicalQueryClass = routingPlan.getPhysicalQueryClass();
     }
 
 
     @Override
-    public Optional<Map<Long, List<Pair<Integer, Long>>>> getOptionalPhysicalPlacementsOfPartitions() {
-        return Optional.of( this.physicalPlacementsOfPartitions );
+    public Map<Long, List<Pair<Integer, Long>>> getOptionalPhysicalPlacementsOfPartitions() {
+        return this.physicalPlacementsOfPartitions;
     }
 
 }

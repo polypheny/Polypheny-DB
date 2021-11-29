@@ -19,7 +19,6 @@ package org.polypheny.db.routing.dto;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.plan.RelOptCost;
@@ -34,7 +33,6 @@ import org.polypheny.db.util.Pair;
 
 /**
  * Some information are not available during instantiation and therefore will be added later on.
- * These values are all marked as Optional<>.
  */
 @Setter
 @Getter
@@ -42,35 +40,26 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
     protected RelRoot routedRoot;
     protected String queryClass;
-    protected Optional<String> physicalQueryClass = Optional.empty();
-    protected Optional<Class<? extends Router>> router = Optional.empty();
-    protected Optional<Map<Long, List<Pair<Integer, Long>>>> physicalPlacementsOfPartitions = Optional.empty(); // partitionId, list<CatalogPlacementIds>
-    protected Optional<RelOptCost> preCosts = Optional.empty();
-
-
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryClass ) {
-        this.physicalPlacementsOfPartitions = Optional.of( routedRelBuilder.getPhysicalPlacementsOfPartitions() );
-        this.queryClass = queryClass;
-        this.physicalQueryClass = Optional.of( queryClass + this.physicalPlacementsOfPartitions.get() );
-        RelNode rel = routedRelBuilder.build();
-        this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
-    }
+    protected String physicalQueryClass;
+    protected Class<? extends Router> router;
+    protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // partitionId -> List<CatalogPlacementIds>
+    protected RelOptCost preCosts;
 
 
     public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryClass, Class<? extends Router> routerClass ) {
-        this.physicalPlacementsOfPartitions = Optional.of( routedRelBuilder.getPhysicalPlacementsOfPartitions() );
+        this.physicalPlacementsOfPartitions = routedRelBuilder.getPhysicalPlacementsOfPartitions();
         this.queryClass = queryClass;
-        this.physicalQueryClass = Optional.of( queryClass + this.physicalPlacementsOfPartitions.get() );
-        this.router = Optional.of( routerClass );
+        this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
+        this.router = routerClass;
         RelNode rel = routedRelBuilder.build();
         this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
     public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryClass, CachedProposedRoutingPlan cachedPlan ) {
-        this.physicalPlacementsOfPartitions = Optional.of( cachedPlan.getPhysicalPlacementsOfPartitions() );
+        this.physicalPlacementsOfPartitions = cachedPlan.getPhysicalPlacementsOfPartitions();
         this.queryClass = queryClass;
-        this.physicalQueryClass = Optional.of( queryClass + this.physicalPlacementsOfPartitions.get() );
+        this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
         this.router = cachedPlan.getRouter();
         RelNode rel = routedRelBuilder.build();
         this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
@@ -90,32 +79,34 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
 
     @Override
-    public Optional<String> getOptionalPhysicalQueryClass() {
+    public String getOptionalPhysicalQueryClass() {
         return physicalQueryClass;
     }
 
 
     @Override
-    public void setOptionalPhysicalQueryId( Optional<String> physicalQueryClass ) {
+    public void setOptionalPhysicalQueryId( String physicalQueryClass ) {
         this.physicalQueryClass = physicalQueryClass;
     }
 
 
     @Override
     public String getPhysicalQueryClass() {
-        return physicalQueryClass.isPresent() ? physicalQueryClass.get() : "";
+        return physicalQueryClass != null ? physicalQueryClass : "";
     }
 
 
     @Override
-    public Optional<Map<Long, List<Pair<Integer, Long>>>> getOptionalPhysicalPlacementsOfPartitions() {
+    public Map<Long, List<Pair<Integer, Long>>> getOptionalPhysicalPlacementsOfPartitions() {
         return this.getPhysicalPlacementsOfPartitions();
     }
 
 
     @Override
     public boolean isCacheable() {
-        return this.physicalPlacementsOfPartitions.isPresent() && this.getOptionalPhysicalQueryClass().isPresent() && !this.routedRoot.kind.belongsTo( SqlKind.DML );
+        return this.physicalPlacementsOfPartitions != null
+                && this.getOptionalPhysicalQueryClass() != null
+                && !this.routedRoot.kind.belongsTo( SqlKind.DML );
     }
 
 
@@ -132,22 +123,22 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
             return false;
         }
 
-        if ( !this.physicalPlacementsOfPartitions.isPresent() && !other.physicalPlacementsOfPartitions.isPresent() ) {
+        if ( physicalPlacementsOfPartitions == null && other.physicalPlacementsOfPartitions == null ) {
             return true;
         }
 
-        if ( !this.physicalPlacementsOfPartitions.isPresent() || !other.physicalPlacementsOfPartitions.isPresent() ) {
+        if ( this.physicalPlacementsOfPartitions == null || other.physicalPlacementsOfPartitions == null ) {
             return true;
         }
 
-        for ( Map.Entry<Long, List<Pair<Integer, Long>>> entry : this.physicalPlacementsOfPartitions.get().entrySet() ) {
+        for ( Map.Entry<Long, List<Pair<Integer, Long>>> entry : this.physicalPlacementsOfPartitions.entrySet() ) {
             final Long id = entry.getKey();
             List<Pair<Integer, Long>> values = entry.getValue();
 
-            if ( !other.physicalPlacementsOfPartitions.get().containsKey( id ) ) {
+            if ( !other.physicalPlacementsOfPartitions.containsKey( id ) ) {
                 return false;
             } else {
-                if ( !values.containsAll( other.physicalPlacementsOfPartitions.get().get( id ) ) ) {
+                if ( !values.containsAll( other.physicalPlacementsOfPartitions.get( id ) ) ) {
                     return false;
                 }
             }
@@ -164,11 +155,12 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
      */
     @Override
     public int hashCode() {
-        if ( this.physicalPlacementsOfPartitions.isPresent() && !this.physicalPlacementsOfPartitions.get().isEmpty() ) {
-            return this.physicalPlacementsOfPartitions.get().values()
+        if ( this.physicalPlacementsOfPartitions != null && !this.physicalPlacementsOfPartitions.isEmpty() ) {
+            return this.physicalPlacementsOfPartitions.values()
                     .stream().flatMap( Collection::stream )
                     .map( elem -> elem.right.hashCode() * elem.left.hashCode() )
-                    .reduce( ( a, b ) -> a + b ).get();
+                    .reduce( ( a, b ) -> a + b )
+                    .get();
         }
         return super.hashCode();
     }

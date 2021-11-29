@@ -18,7 +18,6 @@ package org.polypheny.db.routing;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.util.Pair;
@@ -52,43 +51,43 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     /**
      * @return gets the physical query class as Optional.
      */
-    Optional<String> getOptionalPhysicalQueryClass();
+    String getOptionalPhysicalQueryClass();
 
     /**
      * @param physicalQueryClass the physical queryClass
      */
-    void setOptionalPhysicalQueryId( Optional<String> physicalQueryClass );
+    void setOptionalPhysicalQueryId( String physicalQueryClass );
 
     /**
      * @return gets the router class which proposed the plan.
      */
     @Override
-    Optional<Class<? extends Router>> getRouter();
+    Class<? extends Router> getRouter();
 
     /**
      * @param routerClass the router which proposed this plan.
      */
-    void setRouter( Optional<Class<? extends Router>> routerClass );
+    void setRouter( Class<? extends Router> routerClass );
 
     /**
      * @return the physical placements of the necessary partitions: partitionId, list<CatalogPlacementIds>
      */
-    Optional<Map<Long, List<Pair<Integer, Long>>>> getPhysicalPlacementsOfPartitions(); // partitionId, list<CatalogPlacementIds>
+    Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // partitionId -> List<CatalogPlacementIds>
 
     /**
      * @return Optional pre costs.
      */
-    Optional<RelOptCost> getPreCosts();
+    RelOptCost getPreCosts();
 
     /**
      * Sets the pre costs.
      *
      * @param preCosts the approximated rel costs.
      */
-    void setPreCosts( Optional<RelOptCost> preCosts );
+    void setPreCosts( RelOptCost preCosts );
 
     /**
-     * @return true if routing plan is cacheable. Currenty, dml and ddls will not be cached.
+     * @return true if routing plan is cacheable. Currently, DMLs and DDLs will not be cached.
      */
     boolean isCacheable();
 

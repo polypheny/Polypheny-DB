@@ -30,7 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -114,13 +114,11 @@ import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.routing.RoutingDebugUiPrinter;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.routing.RoutingPlan;
+import org.polypheny.db.routing.UiRoutingPageUtil;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
-import org.polypheny.db.routing.routers.CachedPlanRouter;
-import org.polypheny.db.routing.strategies.RoutingPlanSelector;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.LogicalTable;
@@ -158,11 +156,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
     private final Statement statement;
-
-    private final CachedPlanRouter cachedPlanRouter = RoutingManager.getInstance().getCachedPlanRouter();
-    private final RoutingPlanSelector routingPlanSelector = RoutingManager.getInstance().getRoutingPlanSelector();
-    private final RoutingDebugUiPrinter debugUiPrinter = RoutingManager.getInstance().getDebugUiPrinter();
-    private final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
 
     private final Map<Integer, Long> scanPerTable = new HashMap<>(); // scanId  -> tableId //Needed for Lookup
 
@@ -216,17 +209,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Plan Selection" );
         }
 
-        final Pair<PolyphenyDbSignature<?>, ProposedRoutingPlan> executionResult = selectPlan( proposedImplementations );
+        final Pair<PolyphenyDbSignature<?>, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
 
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getProcessingDuration().stop( "Plan Selection" );
         }
 
         if ( withMonitoring ) {
-            this.monitorResult( executionResult.right );
+            this.monitorResult( selectedPlan.right );
         }
 
-        return executionResult.left;
+        return selectedPlan.left;
     }
 
 
@@ -241,9 +234,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Initialize result lists. They will all be with in the same ordering.
         List<ProposedRoutingPlan> proposedRoutingPlans = null;
-        List<Optional<RelNode>> optimalNodeList = new ArrayList<>();
+        List<RelNode> optimalNodeList = new ArrayList<>();
         List<RelRoot> parameterizedRootList = new ArrayList<>();
-        List<Optional<PolyphenyDbSignature<?>>> signatures = new ArrayList<>();
+        List<PolyphenyDbSignature<?>> signatures = new ArrayList<>();
 
         // Check for view
         if ( logicalRoot.rel.hasView() ) {
@@ -427,15 +420,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 if ( preparedResult != null ) {
                     PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
                     signature.setSchemaType( schemaType );
-                    signatures.add( Optional.of( signature ) );
-                    optimalNodeList.add( Optional.of( routedRoot.rel ) );
+                    signatures.add( signature );
+                    optimalNodeList.add( routedRoot.rel );
                 } else {
-                    signatures.add( Optional.empty() );
-                    optimalNodeList.add( Optional.empty() );
+                    signatures.add( null );
+                    optimalNodeList.add( null );
                 }
             } else {
-                signatures.add( Optional.empty() );
-                optimalNodeList.add( Optional.empty() );
+                signatures.add( null );
+                optimalNodeList.add( null );
             }
         }
 
@@ -444,15 +437,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // Can we return earlier?
-        if ( signatures.stream().allMatch( Optional::isPresent ) && optimalNodeList.stream().allMatch( Optional::isPresent ) ) {
+        if ( signatures.stream().allMatch( Objects::nonNull ) && optimalNodeList.stream().allMatch( Objects::nonNull ) ) {
             return new ProposedImplementations(
                     proposedRoutingPlans,
-                    optimalNodeList.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
-                    signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
+                    optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                    signatures.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     logicalQueryInformation );
         }
 
-        optimalNodeList = new ArrayList<>( Collections.nCopies( optimalNodeList.size(), Optional.empty() ) );
+        optimalNodeList = new ArrayList<>( Collections.nCopies( optimalNodeList.size(), null ) );
 
         // Plan Caching
         if ( isAnalyze ) {
@@ -463,7 +456,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 // Should always be the case
                 RelNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).rel );
                 if ( cachedElem != null ) {
-                    optimalNodeList.set( i, Optional.of( cachedElem ) );
+                    optimalNodeList.set( i, cachedElem );
                 }
             }
         }
@@ -476,15 +469,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // OptimalNode same size as routed, parametrized and signature
         for ( int i = 0; i < optimalNodeList.size(); i++ ) {
-            if ( optimalNodeList.get( i ).isPresent() ) {
+            if ( optimalNodeList.get( i ) != null ) {
                 continue;
             }
             RelRoot parameterizedRoot = parameterizedRootList.get( i );
             RelRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
-            optimalNodeList.set( i, Optional.of( optimize( parameterizedRoot, resultConvention ) ) );
+            optimalNodeList.set( i, optimize( parameterizedRoot, resultConvention ) );
 
             if ( this.isQueryPlanCachingActive( statement, routedRoot ) ) {
-                QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNodeList.get( i ).get() );
+                QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNodeList.get( i ) );
             }
         }
 
@@ -495,11 +488,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         for ( int i = 0; i < optimalNodeList.size(); i++ ) {
-            if ( signatures.get( i ).isPresent() ) {
+            if ( signatures.get( i ) != null ) {
                 continue;
             }
 
-            RelNode optimalNode = optimalNodeList.get( i ).get();
+            RelNode optimalNode = optimalNodeList.get( i );
             RelRoot parameterizedRoot = parameterizedRootList.get( i );
             RelRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
 
@@ -520,8 +513,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             PolyphenyDbSignature<?> signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
             signature.setSchemaType( schemaType );
-            signatures.set( i, Optional.of( signature ) );
-            optimalNodeList.set( i, Optional.of( optimalRoot.rel ) );
+            signatures.set( i, signature );
+            optimalNodeList.set( i, optimalRoot.rel );
         }
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Implementation" );
@@ -535,8 +528,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // Finally, all optionals should be of certain values.
         return new ProposedImplementations(
                 proposedRoutingPlans,
-                optimalNodeList.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
-                signatures.stream().filter( Optional::isPresent ).map( Optional::get ).collect( Collectors.toList() ),
+                optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                signatures.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 logicalQueryInformation );
     }
 
@@ -953,6 +946,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<ProposedRoutingPlan> route( RelRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
+        final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             RelNode routedDml = dmlRouter.routeDml( logicalRoot.rel, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
@@ -1000,7 +994,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Plan Selection" );
         }
 
-        CachedProposedRoutingPlan selectedCachedPlan = selectCachedPlan( routingPlansCached, queryInformation.getQueryClass() );
+        CachedProposedRoutingPlan selectedCachedPlan = selectCachedPlan( routingPlansCached );
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Plan Selection" );
@@ -1010,7 +1004,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Route Cached" );
         }
 
-        RoutedRelBuilder builder = cachedPlanRouter.routeCached( logicalRoot, selectedCachedPlan, statement );
+        RoutedRelBuilder builder = RoutingManager.getInstance().getCachedPlanRouter().routeCached(
+                logicalRoot,
+                selectedCachedPlan,
+                statement );
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Route Cached" );
@@ -1381,8 +1378,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
             StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
             eventData.setRelCompareString( selectedPlan.getRoutedRoot().rel.relCompareString() );
-            if ( selectedPlan.getOptionalPhysicalQueryClass().isPresent() ) {
-                eventData.setPhysicalQueryId( selectedPlan.getOptionalPhysicalQueryClass().get() );
+            if ( selectedPlan.getOptionalPhysicalQueryClass() != null ) {
+                eventData.setPhysicalQueryId( selectedPlan.getOptionalPhysicalQueryClass() );
                 eventData.setRowCount( (int) selectedPlan.getRoutedRoot().rel.estimateRowCount( selectedPlan.getRoutedRoot().rel.getCluster().getMetadataQuery() ) );
             }
 
@@ -1467,44 +1464,43 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( signatures.size() == 1 ) {
             // If only one plan proposed, return this without further selection
             if ( statement.getTransaction().isAnalyze() ) {
-                debugUiPrinter.printDebugOutputSingleResult( proposedRoutingPlans.get( 0 ), optimalRels.get( 0 ), statement );
+                UiRoutingPageUtil.outputSingleResult( proposedRoutingPlans.get( 0 ), optimalRels.get( 0 ), statement );
             }
-
             return new Pair<>( signatures.get( 0 ), proposedRoutingPlans.get( 0 ) );
+        } else {
+            // Calculate costs and get selected plan from plan selector
+            approximatedCosts = optimalRels.stream()
+                    .map( rel -> rel.computeSelfCost( getPlanner(), rel.getCluster().getMetadataQuery() ) )
+                    .collect( Collectors.toList() );
+            RoutingPlan routingPlan = RoutingManager.getInstance().getRoutingPlanSelector().selectPlanBasedOnCosts(
+                    proposedRoutingPlans,
+                    approximatedCosts,
+                    statement );
+
+            int index = proposedRoutingPlans.indexOf( (ProposedRoutingPlan) routingPlan );
+            if ( statement.getTransaction().isAnalyze() ) {
+                RelNode optimalNode = optimalRels.get( index );
+                UiRoutingPageUtil.setExecutedPhysicalPlan( optimalNode, statement );
+            }
+            return new Pair<>( proposedImplementations.getSignatures().get( index ), (ProposedRoutingPlan) routingPlan );
         }
-
-        // Calculate costs and get selected plan from plan selector
-        approximatedCosts = optimalRels.stream().map( rel -> rel.computeSelfCost( getPlanner(), rel.getCluster().getMetadataQuery() ) ).collect( Collectors.toList() );
-        Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> planPair = routingPlanSelector.selectPlanBasedOnCosts(
-                proposedRoutingPlans,
-                approximatedCosts,
-                queryInformation.getQueryClass(),
-                signatures,
-                statement );
-
-        if ( statement.getTransaction().isAnalyze() ) {
-            int id = proposedRoutingPlans.indexOf( planPair.right );
-            RelNode optimalNode = optimalRels.get( id );
-            debugUiPrinter.printExecutedPhysicalPlan( optimalNode, statement );
-        }
-
-        return new Pair<>( planPair.left.get(), (ProposedRoutingPlan) planPair.right );
     }
 
 
-    private CachedProposedRoutingPlan selectCachedPlan( List<CachedProposedRoutingPlan> routingPlansCached, String queryId ) {
+    private CachedProposedRoutingPlan selectCachedPlan( List<CachedProposedRoutingPlan> routingPlansCached ) {
         if ( routingPlansCached.size() == 1 ) {
             return routingPlansCached.get( 0 );
         }
 
-        List<RelOptCost> approximatedCosts = routingPlansCached.stream().map( CachedProposedRoutingPlan::getPreCosts ).collect( Collectors.toList() );
-        Pair<Optional<PolyphenyDbSignature<?>>, RoutingPlan> planPair = routingPlanSelector.selectPlanBasedOnCosts(
+        List<RelOptCost> approximatedCosts = routingPlansCached.stream()
+                .map( CachedProposedRoutingPlan::getPreCosts )
+                .collect( Collectors.toList() );
+        RoutingPlan routingPlan = RoutingManager.getInstance().getRoutingPlanSelector().selectPlanBasedOnCosts(
                 routingPlansCached,
                 approximatedCosts,
-                queryId,
                 statement );
 
-        return (CachedProposedRoutingPlan) planPair.right;
+        return (CachedProposedRoutingPlan) routingPlan;
     }
 
 }

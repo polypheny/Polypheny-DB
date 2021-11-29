@@ -21,17 +21,17 @@ import org.polypheny.db.transaction.Statement;
 
 
 /**
- * Interface for routing dml queries.
+ * Interface for routing DML queries.
  */
 public interface DmlRouter {
 
     /**
-     * Routes dml queries and returns a rel builder.
+     * Routes DML queries and returns a RelNode.
      */
     RelNode routeDml( RelNode node, Statement statement );
 
     /**
-     * Routes conditional executes and directly returns a rel node.
+     * Routes conditional executes and directly returns a RelNode.
      */
     RelNode handleConditionalExecute( RelNode node, Statement statement, LogicalQueryInformation queryInformation );
 

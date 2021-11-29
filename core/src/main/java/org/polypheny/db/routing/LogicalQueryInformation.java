@@ -27,19 +27,19 @@ import java.util.Map;
 public interface LogicalQueryInformation {
 
     /**
-     * @return a map with tableId as key and a list of partitionIds as value.
+     * @return A map with tableId as key and a list of partitionIds as value.
      */
     Map<Integer, List<Long>> getAccessedPartitions(); // tableId  -> partitionIds
 
     /**
-     * @return a map with columnId as key and tableId as value.
+     * @return A map with columnId as key and tableId as value.
      */
     Map<Long, Long> getAvailableColumnsWithTable(); // columnId -> tableId
 
     /**
-     * @return a map with columnIds as key and column full names as values.
+     * @return A map with columnIds as key and column full names as values.
      */
-    Map<Long, String> getUsedColumns(); // column id -> schemaName.tableName.ColumnName
+    Map<Long, String> getUsedColumns(); // columnId -> schemaName.tableName.columnName
 
     /**
      * @param tableId The id of the table
