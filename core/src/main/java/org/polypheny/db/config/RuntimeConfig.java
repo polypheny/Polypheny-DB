@@ -100,7 +100,7 @@ public enum RuntimeConfig {
             "Time after which queries are aborted. 0 means infinite.",
             0,
             ConfigType.INTEGER,
-            "runtimeExecutionGroup" ),
+            "processingExecutionGroup" ),
 
     DEFAULT_COLLATION( "runtime/defaultCollation",
             "Collation to use if no collation is specified",
@@ -146,7 +146,7 @@ public enum RuntimeConfig {
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
             ConfigType.BOOLEAN,
-            "runtimeExecutionGroup" ),
+            "processingExecutionGroup" ),
 
     DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
@@ -198,7 +198,7 @@ public enum RuntimeConfig {
             "Build SQL query from classification.",
             true,
             ConfigType.BOOLEAN,
-            "exploreByExampleGroup" ),
+            "uiSettings" ),
 
     UI_PAGE_SIZE( "ui/pageSize",
             "Number of rows per page in the data view.",
@@ -270,16 +270,16 @@ public enum RuntimeConfig {
             "implementationCachingGroup" ),
 
     ROUTING_PLAN_CACHING( "runtime/routingPlanCaching",
-            "Cache routing plans.",
+            "Caching of routing plans.",
             true,
             ConfigType.BOOLEAN,
-            "routingPlanCachingGroup" ),
+            "routingCache" ),
 
     ROUTING_PLAN_CACHING_SIZE( "runtime/routingPlanCachingSize",
             "Size of the routing plan cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER,
-            "routingPlanCachingGroup" ),
+            "routingCache" ),
 
     PARAMETERIZE_DML( "runtime/parameterizeDML",
             "Whether DML queries should be parameterized.",
@@ -343,7 +343,7 @@ public enum RuntimeConfig {
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
-            "runtimeExecutionGroup" ),
+            "processingExecutionGroup" ),
 
     QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
             "Rate of passive tracking of statistics.",
@@ -378,12 +378,11 @@ public enum RuntimeConfig {
                 "processingPage",
                 "Query Processing",
                 "Settings influencing the query processing." );
+        //processingPage.withIcon( "fa fa-cogs" );
         final WebUiGroup planningGroup = new WebUiGroup( "planningGroup", processingPage.getId() );
         planningGroup.withTitle( "Query Planning" );
         final WebUiGroup parsingGroup = new WebUiGroup( "parsingGroup", processingPage.getId() );
         parsingGroup.withTitle( "Query Parsing" );
-        final WebUiGroup queryPlanCachingGroup = new WebUiGroup( "queryPlanCachingGroup", processingPage.getId() );
-        queryPlanCachingGroup.withTitle( "Query Plan Caching" );
         final WebUiGroup implementationCachingGroup = new WebUiGroup( "implementationCachingGroup", processingPage.getId() );
         implementationCachingGroup.withTitle( "Implementation Caching" );
         final WebUiGroup queryParameterizationGroup = new WebUiGroup( "queryParameterizationGroup", processingPage.getId() );
@@ -394,51 +393,46 @@ public enum RuntimeConfig {
         polystoreIndexGroup.withTitle( "Polystore Indexes" );
         final WebUiGroup validationGroup = new WebUiGroup( "validationGroup", processingPage.getId() );
         validationGroup.withTitle( "Query Validation" );
+        final WebUiGroup executionGroup = new WebUiGroup( "processingExecutionGroup", processingPage.getId() );
+        executionGroup.withTitle( "Query Execution" );
         configManager.registerWebUiPage( processingPage );
         configManager.registerWebUiGroup( parsingGroup );
         configManager.registerWebUiGroup( planningGroup );
-        configManager.registerWebUiGroup( queryPlanCachingGroup );
         configManager.registerWebUiGroup( implementationCachingGroup );
         configManager.registerWebUiGroup( queryParameterizationGroup );
         configManager.registerWebUiGroup( constraintEnforcementGroup );
         configManager.registerWebUiGroup( polystoreIndexGroup );
         configManager.registerWebUiGroup( validationGroup );
+        configManager.registerWebUiGroup( executionGroup );
 
-        // Runtime settings
-        final WebUiPage runtimePage = new WebUiPage(
-                "runtimePage",
-                "Runtime Settings",
-                "Settings influencing the runtime behavior of the whole system." );
-        final WebUiGroup runtimeExecutionGroup = new WebUiGroup( "runtimeExecutionGroup", runtimePage.getId() );
-        runtimeExecutionGroup.withTitle( "Query Execution" );
-        configManager.registerWebUiPage( runtimePage );
-        configManager.registerWebUiGroup( runtimeExecutionGroup );
+        // Routing
+        final WebUiPage routingPage = new WebUiPage(
+                "routing",
+                "Query Routing",
+                "Settings influencing the query routing behavior." );
+        //routingPage.withIcon( "fa fa-map-signs" );
+        final WebUiGroup routingCacheGroup = new WebUiGroup( "routingCache", routingPage.getId() );
+        routingCacheGroup.withTitle( "Caching" );
+        configManager.registerWebUiPage( routingPage );
+        configManager.registerWebUiGroup( routingCacheGroup );
 
-        // Statistics and dynamic querying settings
+        // Statistics
         final WebUiPage queryStatisticsPage = new WebUiPage(
-                "queryStatisticsPage",
-                "Dynamic Querying",
-                "Settings for the dynamic querying component." );
+                "statisticsPage",
+                "Statistics",
+                "Settings on the stored data." );
+        //queryStatisticsPage.withIcon( "fa fa-percent" );
         final WebUiGroup statisticSettingsGroup = new WebUiGroup( "statisticSettingsGroup", queryStatisticsPage.getId() );
         statisticSettingsGroup.withTitle( "Statistics Settings" );
         configManager.registerWebUiPage( queryStatisticsPage );
         configManager.registerWebUiGroup( statisticSettingsGroup );
 
-        //Explore by Example Settings
-        final WebUiPage exploreByExamplePage = new WebUiPage(
-                "exploreByExamplePage",
-                "Explore by Example",
-                "Settings for the Explore-by-Example component." );
-        final WebUiGroup exploreByExampleGroup = new WebUiGroup( "exploreByExampleGroup", exploreByExamplePage.getId() );
-        exploreByExampleGroup.withTitle( "Explore by Example" );
-        configManager.registerWebUiPage( exploreByExamplePage );
-        configManager.registerWebUiGroup( exploreByExampleGroup );
-
-        //Docker Settings
+        // Docker Settings
         final WebUiPage dockerPage = new WebUiPage(
                 "dockerPage",
                 "Docker",
-                "Settings for using Docker in Polypheny." );
+                "Settings for the Docker-based data store deployment." );
+        //dockerPage.withIcon( "fa fa-cube" );
         final WebUiGroup dockerGroup = new WebUiGroup( "dockerGroup", dockerPage.getId() );
         dockerGroup.withTitle( "Docker" );
         configManager.registerWebUiPage( dockerPage );
@@ -448,7 +442,8 @@ public enum RuntimeConfig {
         final WebUiPage uiSettingsPage = new WebUiPage(
                 "uiSettings",
                 "Polypheny-UI",
-                "Settings for the user interface." );
+                "Settings for this user interface." );
+        //uiSettingsPage.withIcon( "fa fa-window-maximize" );
         final WebUiGroup uiSettingsDataViewGroup = new WebUiGroup( "uiSettingsDataViewGroup", uiSettingsPage.getId() );
         uiSettingsDataViewGroup.withTitle( "Data View" );
         configManager.registerWebUiPage( uiSettingsPage );
@@ -459,16 +454,18 @@ public enum RuntimeConfig {
                 "monitoringSettings",
                 "Workload Monitoring",
                 "Settings for workload monitoring." );
+        //monitoringSettingsPage.withIcon( "fa fa-line-chart" );
         final WebUiGroup monitoringSettingsQueueGroup = new WebUiGroup( "monitoringSettingsQueueGroup", monitoringSettingsPage.getId() );
-        monitoringSettingsQueueGroup.withTitle( "Queue Processing" );
+        monitoringSettingsQueueGroup.withTitle( "Processing Queue" );
         configManager.registerWebUiPage( monitoringSettingsPage );
         configManager.registerWebUiGroup( monitoringSettingsQueueGroup );
 
-        // Partitioning specific setting
+        // Partitioning
         final WebUiPage partitionSettingsPage = new WebUiPage(
                 "partitionSettings",
                 "Partitioning",
                 "Settings for partitioning" );
+        //partitionSettingsPage.withIcon( "fa fa-thermometer-three-quarters" );
         final WebUiGroup temperaturePartitionProcessingSettingsGroup = new WebUiGroup( "temperaturePartitionProcessingSettingsGroup", partitionSettingsPage.getId() );
         temperaturePartitionProcessingSettingsGroup.withTitle( "TEMPERATURE Partition Processing" );
         configManager.registerWebUiPage( partitionSettingsPage );

@@ -1351,7 +1351,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     }
                                 }
 
-                                accessedPartitionList.merge( scanId, identifiedPartitions, ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                                accessedPartitionList.merge(
+                                        scanId,
+                                        identifiedPartitions,
+                                        ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
                                 scanPerTable.putIfAbsent( scanId, catalogTable.id );
                                 // Fallback all partitionIds are needed
                             } else {

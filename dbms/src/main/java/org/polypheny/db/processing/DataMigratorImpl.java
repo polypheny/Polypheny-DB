@@ -95,9 +95,11 @@ public class DataMigratorImpl implements DataMigrator {
         if ( table.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
-            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, new ArrayList<>( Collections.singletonList( store.id ) ) );
+            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, Collections.singletonList( store.id ) );
         } else {
-            placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
+            placementDistribution.put(
+                    table.partitionProperty.partitionIds.get( 0 ),
+                    selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
         }
 
         for ( long partitionId : partitionIds ) {
@@ -135,7 +137,9 @@ public class DataMigratorImpl implements DataMigrator {
                 signature = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceRel,
                         sourceRel.rel.getCluster().getTypeFactory().builder().build(),
-                        true, false, false );
+                        true,
+                        false,
+                        false );
             }
             final Enumerable<?> enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
@@ -191,7 +195,10 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 int pos = 0;
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
-                    targetStatement.getDataContext().addParameterValues( v.getKey(), fields.get( resultColMapping.get( v.getKey() ) ).getType(), v.getValue() );
+                    targetStatement.getDataContext().addParameterValues(
+                            v.getKey(),
+                            fields.get( resultColMapping.get( v.getKey() ) ).getType(),
+                            v.getValue() );
                     pos++;
                 }
 

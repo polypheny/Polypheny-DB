@@ -817,7 +817,9 @@ public class Crud implements InformationObserver {
                 }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit )
+                            .setGeneratedQuery( query )
+                            .setXid( transaction.getXid().toString() );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
@@ -827,7 +829,12 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                    if ( e.getCause() instanceof AvaticaRuntimeException ) {
+                        result = new Result( ((AvaticaRuntimeException) e.getCause()).getErrorMessage() );
+                    } else {
+                        result = new Result( e.getCause().getMessage() );
+                    }
+                    result.setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     try {
                         transaction.rollback();

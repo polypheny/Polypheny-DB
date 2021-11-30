@@ -33,7 +33,6 @@ import org.polypheny.db.config.ConfigDouble;
 import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
-import org.polypheny.db.config.WebUiPage;
 import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.routing.routers.CachedPlanRouter;
 import org.polypheny.db.routing.routers.DmlRouterImpl;
@@ -60,7 +59,8 @@ public class RoutingManager {
     public static final ConfigEnum PLAN_SELECTION_STRATEGY = new ConfigEnum(
             "routing/planSelectionStrategy",
             "Defines whether the best plan will be returned or the plan based on percentage calculated for each plan orderd by costs",
-            RouterPlanSelectionStrategy.class, RouterPlanSelectionStrategy.BEST );
+            RouterPlanSelectionStrategy.class,
+            RouterPlanSelectionStrategy.BEST );
 
 
     private static final RoutingManager INSTANCE = new RoutingManager();
@@ -78,7 +78,6 @@ public class RoutingManager {
     private List<RouterFactory> routerFactories;
     @Getter
     private List<Router> routers;
-    private WebUiPage routingPage;
 
 
     public RoutingManager() {
@@ -101,17 +100,15 @@ public class RoutingManager {
 
     public void initializeConfigUi() {
         final ConfigManager configManager = ConfigManager.getInstance();
-        routingPage = new WebUiPage(
-                "routingPage",
-                "Query Routing",
-                "Settings influencing the query routing." );
-        final WebUiGroup routingGroup = new WebUiGroup( "routingGroup", routingPage.getId() );
+        final WebUiGroup routingGroup = new WebUiGroup( "routingGeneral", "routing" );
         routingGroup.withTitle( "General" );
-        configManager.registerWebUiPage( routingPage );
         configManager.registerWebUiGroup( routingGroup );
 
         // Settings
-        final ConfigClazz tablePlacementStrategy = new ConfigClazz( "routing/createPlacementStrategy", CreatePlacementStrategy.class, CreateSinglePlacementStrategy.class );
+        final ConfigClazz tablePlacementStrategy = new ConfigClazz(
+                "routing/createPlacementStrategy",
+                CreatePlacementStrategy.class,
+                CreateSinglePlacementStrategy.class );
         configManager.registerConfig( tablePlacementStrategy );
         tablePlacementStrategy.withUi( routingGroup.getId() );
         tablePlacementStrategy.addObserver( new ConfigListener() {
@@ -130,7 +127,10 @@ public class RoutingManager {
         } );
 
         // Router settings
-        final ConfigClazzList routerClassesConfig = new ConfigClazzList( "routing/routers", RouterFactory.class, true );
+        final ConfigClazzList routerClassesConfig = new ConfigClazzList(
+                "routing/routers",
+                RouterFactory.class,
+                true );
         configManager.registerConfig( routerClassesConfig );
         routerClassesConfig.withUi( routingGroup.getId(), 0 );
         routerClassesConfig.addObserver( getRouterConfigListener() );
