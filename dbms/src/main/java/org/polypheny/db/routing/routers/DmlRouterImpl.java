@@ -256,7 +256,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     } else {
                                         throw new RuntimeException( "Updating partition key is not allowed" );
 
-                                        /* TODO add possibility to substitute the update as a insert into target partitoin from all source parttions
+                                        /* TODO add possibility to substitute the update as a insert into target partition from all source partitions
                                         // IS currently blocked
                                         // needs to to a insert into target partitions select from all other partitions first and then delete on source partitions
                                         worstCaseRouting = false;

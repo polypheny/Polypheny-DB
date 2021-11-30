@@ -67,7 +67,6 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, placementCombination ) );
                 newBuilders.add( newBuilder );
             }
-
         }
 
         builders.clear();

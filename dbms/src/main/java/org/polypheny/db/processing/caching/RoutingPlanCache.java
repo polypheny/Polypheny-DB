@@ -37,7 +37,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.util.Pair;
 
@@ -180,7 +179,7 @@ public class RoutingPlanCache {
         invalidatePostCostsTextAction.setOrder( 2 );
         im.registerInformation( invalidatePostCostsTextAction );
 
-        InformationTable debugPostCostTable = new InformationTable( invalidatePostCosts,
+        /*InformationTable debugPostCostTable = new InformationTable( invalidatePostCosts,
                 Arrays.asList( "QueryClass", "time", "Samples" ) );
 
         invalidatePostCosts.setRefreshFunction( () -> {
@@ -191,9 +190,8 @@ public class RoutingPlanCache {
                 debugPostCostTable.addRow( postCost.getPhysicalQueryClass(), postCost.getExecutionTime(), postCost.getNumberOfSamples() );
             }
         } );
-
         debugPostCostTable.setOrder( 2 );
-        im.registerInformation( debugPostCostTable );
+        im.registerInformation( debugPostCostTable );*/
     }
 
 
