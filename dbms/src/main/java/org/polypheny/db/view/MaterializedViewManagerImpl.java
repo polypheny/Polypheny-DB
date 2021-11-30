@@ -233,13 +233,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * Register the freshnessLoop as BackgroundTask to update interval Materialized Views after a given time
+     * Register the freshnessLoop as BackgroundTask to update Materialized Views
      */
     private void registerFreshnessLoop() {
         BackgroundTaskManager.INSTANCE.registerTask(
                 MaterializedViewManagerImpl.this::updatingIntervalMaterialized,
-                "Update Materialized View with freshness type interval if it is time.",
-                TaskPriority.HIGH,
+                "Update materialized views with freshness type interval if required",
+                TaskPriority.MEDIUM,
                 (TaskSchedulingType) RuntimeConfig.MATERIALIZED_VIEW_LOOP.getEnum() );
     }
 
