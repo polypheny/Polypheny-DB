@@ -51,7 +51,8 @@ public class StatementImpl implements Statement {
     private DataContext dataContext;
     private ContextImpl prepareContext;
     private InformationDuration processingDuration;
-    private InformationDuration executionDuration;
+    private InformationDuration routingDuration;
+    private InformationDuration overviewDuration;
     private InformationPage executionTimePage;
 
 
@@ -115,32 +116,34 @@ public class StatementImpl implements Statement {
     @Override
     public InformationDuration getProcessingDuration() {
         if ( processingDuration == null ) {
-            processingDuration = initDuration( "Plan Query" );
+            processingDuration = initDuration( "Query Processing" );
         }
         return processingDuration;
     }
 
 
     @Override
-    public InformationDuration getExecutionDuration() {
-        if ( executionDuration == null ) {
-            executionDuration = initDuration( "Plan & Execute Query" );
+    public InformationDuration getRoutingDuration() {
+        if ( routingDuration == null ) {
+            routingDuration = initDuration( "Query Routing" );
         }
-        return executionDuration;
+        return routingDuration;
     }
 
 
     @Override
-    public InformationDuration getTotalDuration() {
-        InformationDuration finalDuration = getExecutionDuration();
-        return finalDuration.merge( getProcessingDuration() );
+    public InformationDuration getOverviewDuration() {
+        if ( overviewDuration == null ) {
+            overviewDuration = initDuration( "Overview" );
+        }
+        return overviewDuration;
     }
 
 
     private InformationDuration initDuration( String title ) {
         InformationManager im = transaction.getQueryAnalyzer();
         if ( executionTimePage == null ) {
-            executionTimePage = new InformationPage( "Execution Time", "Query execution time" );
+            executionTimePage = new InformationPage( "Execution Time", "Query processing & execution time" );
             im.addPage( executionTimePage );
         }
         InformationGroup group = new InformationGroup( executionTimePage, title );

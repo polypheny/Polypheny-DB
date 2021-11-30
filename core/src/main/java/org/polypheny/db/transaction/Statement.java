@@ -34,9 +34,9 @@ public interface Statement {
 
     InformationDuration getProcessingDuration();
 
-    InformationDuration getExecutionDuration();
+    InformationDuration getRoutingDuration();
 
-    InformationDuration getTotalDuration();
+    InformationDuration getOverviewDuration();
 
     void close();
 

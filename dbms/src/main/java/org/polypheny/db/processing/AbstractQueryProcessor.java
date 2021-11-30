@@ -203,16 +203,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getOverviewDuration().start( "Processing" );
+        }
         final ProposedImplementations proposedImplementations = prepareQueryList( logicalRoot, parameterRowType, isRouted, isSubquery );
 
         if ( statement.getTransaction().isAnalyze() ) {
-            statement.getProcessingDuration().start( "Plan Selection" );
+            statement.getOverviewDuration().stop( "Processing" );
+            statement.getOverviewDuration().start( "Plan Selection" );
         }
 
         final Pair<PolyphenyDbSignature<?>, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
 
         if ( statement.getTransaction().isAnalyze() ) {
-            statement.getProcessingDuration().stop( "Plan Selection" );
+            statement.getOverviewDuration().stop( "Plan Selection" );
         }
 
         if ( withMonitoring ) {
@@ -238,6 +242,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<RelRoot> parameterizedRootList = new ArrayList<>();
         List<PolyphenyDbSignature<?>> signatures = new ArrayList<>();
 
+        //
         // Check for view
         if ( logicalRoot.rel.hasView() ) {
             logicalRoot = logicalRoot.tryExpandView();
@@ -264,7 +269,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Prepare Views" );
+            statement.getProcessingDuration().start( "Expand Views" );
         }
 
         // Check if the relRoot includes Views or Materialized Views and replaces what necessary
@@ -283,16 +288,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         schemaType = schemaTypeVisitor.getSchemaTypes();
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Prepare Views" );
+            statement.getProcessingDuration().stop( "Expand Views" );
         }
 
         if ( isRouted ) {
             proposedRoutingPlans = Lists.newArrayList( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryClass() ) );
         } else {
+            //
+            // Locking
+            if ( isAnalyze ) {
+                statement.getProcessingDuration().start( "Locking" );
+            }
             if ( lock ) {
                 this.acquireLock( isAnalyze, logicalRoot );
             }
 
+            //
             // Index Update
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Locking" );
@@ -304,6 +315,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
             }
 
+            //
             // Constraint Enforcement Rewrite
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Index Update" );
@@ -315,6 +327,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 constraintsRoot = constraintEnforcer.enforce( constraintsRoot, statement );
             }
 
+            //
             // Index Lookup Rewrite
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Constraint Enforcement" );
@@ -324,12 +337,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
                 indexLookupRoot = indexLookup( indexLookupRoot, statement );
             }
-
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Index Lookup Rewrite" );
                 statement.getProcessingDuration().start( "Routing" );
             }
 
+            //
             // Routing
             if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() && !indexLookupRoot.kind.belongsTo( SqlKind.DML ) ) {
                 Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream()
@@ -346,8 +359,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             if ( isAnalyze ) {
-                statement.getProcessingDuration().stop( "Routing" );
-                statement.getProcessingDuration().start( "Routing Flattener" );
+                statement.getRoutingDuration().start( "Flattener" );
             }
 
             proposedRoutingPlans.forEach( proposedRoutingPlan -> {
@@ -361,7 +373,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             } );
 
             if ( isAnalyze ) {
-                statement.getProcessingDuration().stop( "Routing Flattener" );
+                statement.getRoutingDuration().stop( "Flattener" );
+                statement.getProcessingDuration().stop( "Routing" );
             }
         }
 
@@ -369,6 +382,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Parameter Validation" );
         }
 
+        //
         // Validate parameterValues
         proposedRoutingPlans.forEach( proposedRoutingPlan ->
                 new ParameterValueValidator( proposedRoutingPlan.getRoutedRoot().validatedRowType, statement.getDataContext() )
@@ -378,6 +392,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().stop( "Parameter Validation" );
         }
 
+        //
         // Parameterize
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Parameterize" );
@@ -404,6 +419,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().stop( "Parameterize" );
         }
 
+        //
         // Implementation Caching
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Implementation Caching" );
@@ -451,6 +467,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         optimalNodeList = new ArrayList<>( Collections.nCopies( optimalNodeList.size(), null ) );
 
+        //
         // Plan Caching
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Plan Caching" );
@@ -465,6 +482,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
+        //
         // Planning & Optimization
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Plan Caching" );
@@ -485,6 +503,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
+        //
         // Implementation
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Planning & Optimization" );
@@ -558,11 +577,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private void acquireLock( boolean isAnalyze, RelRoot logicalRoot ) {
         // Locking
-        if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Locking" );
-        }
         try {
-            // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
             LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
             // Get locks for individual tables
             TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
@@ -965,7 +981,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
             if ( statement.getTransaction().isAnalyze() ) {
-                statement.getProcessingDuration().start( "Routing Plan Proposing" );
+                statement.getRoutingDuration().start( "Plan Proposing" );
             }
 
             for ( Router router : RoutingManager.getInstance().getRouters() ) {
@@ -977,8 +993,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             if ( statement.getTransaction().isAnalyze() ) {
-                statement.getProcessingDuration().stop( "Routing Plan Proposing" );
-                statement.getProcessingDuration().start( "Routing Plan Remove Duplicates" );
+                statement.getRoutingDuration().stop( "Plan Proposing" );
+                statement.getRoutingDuration().start( "Remove Duplicates" );
             }
 
             final List<ProposedRoutingPlan> distinctPlans = proposedPlans.stream().distinct().collect( Collectors.toList() );
@@ -988,7 +1004,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             if ( statement.getTransaction().isAnalyze() ) {
-                statement.getProcessingDuration().stop( "Routing Plan Remove Duplicates" );
+                statement.getRoutingDuration().stop( "Remove Duplicates" );
             }
 
             return distinctPlans;
@@ -1000,17 +1016,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // TODO: get only best plan.
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Plan Selection" );
+            statement.getRoutingDuration().start( "Select Cached Plan" );
         }
 
         CachedProposedRoutingPlan selectedCachedPlan = selectCachedPlan( routingPlansCached );
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Plan Selection" );
+            statement.getRoutingDuration().stop( "Select Cached Plan" );
         }
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Route Cached" );
+            statement.getRoutingDuration().start( "Route Cached Plan" );
         }
 
         RoutedRelBuilder builder = RoutingManager.getInstance().getCachedPlanRouter().routeCached(
@@ -1019,14 +1035,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement );
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Route Cached" );
-            statement.getProcessingDuration().start( "Create Plan From Cache" );
+            statement.getRoutingDuration().stop( "Route Cached Plan" );
+            statement.getRoutingDuration().start( "Create Plan From Cache" );
         }
 
         ProposedRoutingPlan proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), selectedCachedPlan );
 
         if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Create Plan From Cache" );
+            statement.getRoutingDuration().stop( "Create Plan From Cache" );
         }
 
         return Lists.newArrayList( proposed );

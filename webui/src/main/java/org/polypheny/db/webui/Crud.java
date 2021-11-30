@@ -3665,20 +3665,19 @@ public class Crud implements InformationObserver {
 
         try {
             if ( isAnalyze ) {
-                statement.getProcessingDuration().start( "Plan Query" );
+                statement.getOverviewDuration().start( "Parsing" );
             }
 
-            signature = processQuery( statement, sqlSelect );
+            signature = processQuery( statement, sqlSelect, isAnalyze );
 
             if ( isAnalyze ) {
-                statement.getProcessingDuration().stop( "Plan Query" );
-                statement.getExecutionDuration().start( "Execute Query" );
+                statement.getOverviewDuration().start( "Execution" );
             }
 
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
 
             if ( isAnalyze ) {
-                statement.getExecutionDuration().stop( "Execute Query" );
+                statement.getOverviewDuration().stop( "Execution" );
             }
 
             //noinspection unchecked
@@ -3953,16 +3952,32 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
+    private PolyphenyDbSignature processQuery( Statement statement, String sql, boolean isAnalyze ) {
         PolyphenyDbSignature signature;
+        if ( isAnalyze ) {
+            statement.getOverviewDuration().start( "Parsing" );
+        }
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         SqlNode parsed = sqlProcessor.parse( sql );
+        if ( isAnalyze ) {
+            statement.getOverviewDuration().stop( "Parsing" );
+        }
         RelRoot logicalRoot = null;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
         } else {
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().start( "Validation" );
+            }
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().stop( "Validation" );
+                statement.getOverviewDuration().start( "Translation" );
+            }
             logicalRoot = sqlProcessor.translate( statement, validated.left );
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().stop( "Translation" );
+            }
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         return signature;
@@ -3978,7 +3993,7 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature<?> signature;
 
         try {
-            signature = processQuery( statement, sqlUpdate );
+            signature = processQuery( statement, sqlUpdate, transaction.isAnalyze() );
         } catch ( Throwable t ) {
             if ( transaction.isAnalyze() ) {
                 InformationManager analyzer = transaction.getQueryAnalyzer();
