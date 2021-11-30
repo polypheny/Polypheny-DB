@@ -89,8 +89,6 @@ public class TransactionImpl implements Transaction, Comparable {
 
     private StatementEvent statementEvent;
 
-    private final AtomicLong statementCounter = new AtomicLong();
-
     private final List<Statement> statements = new ArrayList<>();
 
     private final List<String> changedTables = new ArrayList<>();
@@ -100,6 +98,9 @@ public class TransactionImpl implements Transaction, Comparable {
 
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
+
+    @Getter
+    private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
 
 
     TransactionImpl(
@@ -213,12 +214,6 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public boolean isActive() {
         return transactionManager.isActive( xid );
-    }
-
-
-    @Override
-    public JavaTypeFactory getTypeFactory() {
-        return new JavaTypeFactoryImpl();
     }
 
 
