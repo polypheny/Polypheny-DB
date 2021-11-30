@@ -47,6 +47,14 @@ public interface MonitoringService {
     <T extends MonitoringDataPoint> List<T> getAllDataPoints( Class<T> dataPointClass );
 
     /**
+     * Get number of data points for given monitoring persistent type.
+     *
+     * @param dataPointClass DatapointClass of interest
+     * @return Returns number of data points
+     */
+    <T extends MonitoringDataPoint> long getNumberOfDataPoints( @NonNull Class<T> dataPointClass );
+
+    /**
      * Get data before specified timestamp for given monitoring persistent type.
      *
      * @param dataPointClass Data point class of interest to look for

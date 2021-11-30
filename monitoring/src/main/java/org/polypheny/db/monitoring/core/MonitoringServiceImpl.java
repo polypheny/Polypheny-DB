@@ -59,6 +59,12 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
+    public <T extends MonitoringDataPoint> long getNumberOfDataPoints( @NonNull Class<T> dataPointClass ) {
+        return this.repository.getNumberOfDataPoints( dataPointClass );
+    }
+
+
+    @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         return this.repository.getDataPointsBefore( dataPointClass, timestamp );
     }

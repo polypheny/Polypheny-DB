@@ -77,11 +77,20 @@ public class MapDbRepository implements MonitoringRepository {
                     .stream()
                     .map( monitoringPersistentData -> (TPersistent) monitoringPersistentData )
                     .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
-                    .limit( 100 )
                     .collect( Collectors.toList() );
         }
 
         return Collections.emptyList();
+    }
+
+
+    @Override
+    public <TPersistent extends MonitoringDataPoint> long getNumberOfDataPoints( @NonNull Class<TPersistent> dataPointClass ) {
+        final Map<UUID, MonitoringDataPoint> table = this.data.get( dataPointClass );
+        if ( table != null ) {
+            return table.values().size();
+        }
+        return 0;
     }
 
 
