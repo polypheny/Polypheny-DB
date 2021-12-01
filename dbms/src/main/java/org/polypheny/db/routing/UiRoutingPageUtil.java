@@ -42,7 +42,10 @@ public class UiRoutingPageUtil {
     public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, InformationManager queryAnalyzer ) {
         addPhysicalPlanPage( optimalRelNode, queryAnalyzer );
 
-        InformationPage page = setBaseOutput( "Routing", 0, queryAnalyzer );
+        InformationPage page = queryAnalyzer.getPage( "routing" );
+        if ( page == null ) {
+            page = setBaseOutput( "Routing", 0, queryAnalyzer );
+        }
         addSelectedAdapterTable( queryAnalyzer, proposedRoutingPlan, page );
         final RelRoot root = proposedRoutingPlan.getRoutedRoot();
         addRoutedPlanPage( root.rel, queryAnalyzer );
@@ -90,7 +93,7 @@ public class UiRoutingPageUtil {
 
 
     public static InformationPage setBaseOutput( String title, Integer numberOfPlans, InformationManager queryAnalyzer ) {
-        InformationPage page = new InformationPage( title );
+        InformationPage page = new InformationPage( "routing", title, null );
         page.fullWidth();
         queryAnalyzer.addPage( page );
 
@@ -119,7 +122,10 @@ public class UiRoutingPageUtil {
             Statement statement ) {
 
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-        InformationPage page = setBaseOutput( "Routing", routingPlans.size(), queryAnalyzer );
+        InformationPage page = queryAnalyzer.getPage( "routing" );
+        if ( page == null ) {
+            page = setBaseOutput( "Routing", routingPlans.size(), queryAnalyzer );
+        }
 
         final boolean isIcarus = icarusCosts != null;
 
