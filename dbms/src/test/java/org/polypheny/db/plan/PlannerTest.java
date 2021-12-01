@@ -57,32 +57,10 @@ import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.adapter.jdbc.JdbcAlg;
 import org.polypheny.db.adapter.jdbc.JdbcConvention;
 import org.polypheny.db.adapter.jdbc.JdbcImplementor;
-import org.polypheny.db.adapter.jdbc.JdbcAlg;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.enums.ExplainFormat;
-import org.polypheny.db.core.enums.ExplainLevel;
-import org.polypheny.db.core.enums.FunctionCategory;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.enums.Lex;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.operators.ChainedOperatorTable;
-import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.core.validate.ValidatorScope;
-import org.polypheny.db.jdbc.ContextImpl;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.languages.Parser;
-import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlDialect;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -100,6 +78,29 @@ import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.core.enums.ExplainFormat;
+import org.polypheny.db.core.enums.ExplainLevel;
+import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.enums.Lex;
+import org.polypheny.db.core.nodes.Call;
+import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.operators.ChainedOperatorTable;
+import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.core.validate.Validator;
+import org.polypheny.db.core.validate.ValidatorScope;
+import org.polypheny.db.jdbc.ContextImpl;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.core.LanguageManagerDependant;
+import org.polypheny.db.languages.sql.SqlAggFunction;
+import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.languages.sql.SqlNode;
+import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
 import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -126,7 +127,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link Planner}.
  */
-public class PlannerTest {
+public class PlannerTest extends LanguageManagerDependant {
 
     private void checkParseAndConvert( String query, String queryFromParseTree, String expectedRelExpr ) throws Exception {
         Planner planner = getPlanner( null );
