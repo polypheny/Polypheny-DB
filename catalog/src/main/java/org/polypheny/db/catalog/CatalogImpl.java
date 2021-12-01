@@ -1542,7 +1542,8 @@ public class CatalogImpl extends Catalog {
         // Technically every Table is partitioned. But tables classified as UNPARTITIONED only consist of one PartitionGroup and one large partition
         List<Long> partitionGroupIds = new ArrayList<>();
         partitionGroupIds.add( addPartitionGroup( id, "full", schemaId, PartitionType.NONE, 1, new ArrayList<>(), true ) );
-        // get All(only one) PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+
+        // Get the single PartitionGroup and consequently retrieve all contained partitionIds to add them to completeList of partitionIds in the partitionProperty
         CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
 
         PartitionProperty partitionProperty = PartitionProperty.builder()
