@@ -20,8 +20,8 @@ public interface QueryDataPoint extends MonitoringDataPoint {
 
     long getExecutionTime();
 
-    String getQueryId();
+    String getQueryClass();
 
-    String getPhysicalQueryId();
+    String getPhysicalQueryClass();
 
 }

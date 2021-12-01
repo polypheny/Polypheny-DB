@@ -53,8 +53,8 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private List<String> fieldNames;
     private List<Long> accessedPartitions;
     protected String relCompareString;
-    protected String queryId;
-    protected String physicalQueryId;
+    protected String queryClass;
+    protected String physicalQueryClass;
 
 
     @Override

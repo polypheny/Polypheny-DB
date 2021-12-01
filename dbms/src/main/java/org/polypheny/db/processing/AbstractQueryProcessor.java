@@ -1025,8 +1025,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private List<ProposedRoutingPlan> routeCached( RelRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement, LogicalQueryInformation queryInformation, boolean isAnalyze ) {
-        // TODO: get only best plan.
-
         if ( isAnalyze ) {
             statement.getRoutingDuration().start( "Select Cached Plan" );
         }
@@ -1428,7 +1426,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
             eventData.setRelCompareString( selectedPlan.getRoutedRoot().rel.relCompareString() );
             if ( selectedPlan.getPhysicalQueryClass() != null ) {
-                eventData.setPhysicalQueryId( selectedPlan.getPhysicalQueryClass() );
+                eventData.setPhysicalQueryClass( selectedPlan.getPhysicalQueryClass() );
                 eventData.setRowCount( (int) selectedPlan.getRoutedRoot().rel.estimateRowCount( selectedPlan.getRoutedRoot().rel.getCluster().getMetadataQuery() ) );
             }
 
