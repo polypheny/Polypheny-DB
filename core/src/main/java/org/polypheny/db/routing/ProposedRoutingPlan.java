@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.tools.RoutedRelBuilder.SelectedAdapterInfo;
 import org.polypheny.db.util.Pair;
 
 
@@ -82,10 +81,5 @@ public interface ProposedRoutingPlan extends RoutingPlan {
      * @return true if routing plan is cacheable. Currently, DMLs and DDLs will not be cached.
      */
     boolean isCacheable();
-
-    /**
-     * For reporting in the UI
-     */
-    Map<Long, SelectedAdapterInfo> getSelectedAdaptersInfo();
 
 }

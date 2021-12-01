@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -45,7 +44,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RoutedRelBuilder;
-import org.polypheny.db.tools.RoutedRelBuilder.SelectedAdapterInfo;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -60,10 +58,6 @@ public abstract class BaseRouter {
             .build();
 
     final static Catalog catalog = Catalog.getInstance();
-
-    // For reporting purposes
-    @Getter
-    protected Map<Long, SelectedAdapterInfo> selectedAdaptersInfo;
 
 
     public RelNode recursiveCopy( RelNode node ) {
@@ -86,9 +80,6 @@ public abstract class BaseRouter {
             String physicalSchemaName,
             String physicalTableName,
             long partitionId ) {
-        if ( selectedAdaptersInfo != null ) {
-            selectedAdaptersInfo.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
-        }
         return builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
                 logicalTableName + "_" + partitionId ) );

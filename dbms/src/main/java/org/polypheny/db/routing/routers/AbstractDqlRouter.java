@@ -19,7 +19,6 @@ package org.polypheny.db.routing.routers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -99,7 +98,6 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
     public List<RoutedRelBuilder> route( RelRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
         // Reset cancel query this run
         this.cancelQuery = false;
-        this.selectedAdaptersInfo = new HashMap<>();
 
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             throw new IllegalStateException( "Should never happen for DML" );
@@ -113,7 +111,6 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                     statement,
                     logicalRoot.rel.getCluster(),
                     queryInformation );
-            builder.getSelectedAdaptersInfo().putAll( selectedAdaptersInfo );
             return routedRelBuilders;
         }
     }

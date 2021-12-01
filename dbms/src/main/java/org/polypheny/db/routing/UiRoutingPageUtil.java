@@ -19,6 +19,11 @@ package org.polypheny.db.routing;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -44,7 +49,7 @@ public class UiRoutingPageUtil {
 
         InformationPage page = queryAnalyzer.getPage( "routing" );
         if ( page == null ) {
-            page = setBaseOutput( "Routing", 0, queryAnalyzer );
+            page = setBaseOutput( "Routing", 1, proposedRoutingPlan, queryAnalyzer );
         }
         addSelectedAdapterTable( queryAnalyzer, proposedRoutingPlan, page );
         final RelRoot root = proposedRoutingPlan.getRoutedRoot();
@@ -79,20 +84,34 @@ public class UiRoutingPageUtil {
 
 
     private static void addSelectedAdapterTable( InformationManager queryAnalyzer, ProposedRoutingPlan proposedRoutingPlan, InformationPage page ) {
-        InformationGroup group = new InformationGroup( page, "Selected Adapters" );
+        InformationGroup group = new InformationGroup( page, "Selected Placements" );
         queryAnalyzer.addGroup( group );
         InformationTable table = new InformationTable(
                 group,
-                ImmutableList.of( "Table", "Adapter", "Physical Name" ) );
-        proposedRoutingPlan.getSelectedAdaptersInfo().forEach( ( k, v ) -> {
-            CatalogTable catalogTable = Catalog.getInstance().getTable( k );
-            table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.uniqueName, v.physicalSchemaName + "." + v.physicalTableName );
-        } );
+                ImmutableList.of( "Entity", "Field", "Partition (Group --> ID)", "Adapter", "Physical Name" ) );
+        if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
+            proposedRoutingPlan.getPhysicalPlacementsOfPartitions().forEach( ( k, v ) -> {
+                CatalogPartition catalogPartition = Catalog.getInstance().getPartition( k );
+                CatalogPartitionGroup catalogPartitionGroup = Catalog.getInstance().getPartitionGroup( catalogPartition.partitionGroupId );
+                CatalogTable catalogTable = Catalog.getInstance().getTable( catalogPartition.tableId );
+                v.forEach( p -> {
+                    CatalogColumnPlacement catalogColumnPlacement = Catalog.getInstance().getColumnPlacement( p.left, p.right );
+                    CatalogPartitionPlacement catalogPartitionPlacement = Catalog.getInstance().getPartitionPlacement( p.left, k );
+                    CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogColumnPlacement.columnId );
+                    table.addRow(
+                            catalogTable.getSchemaName() + "." + catalogTable.name,
+                            catalogColumn.name,
+                            catalogPartitionGroup.partitionGroupName + " --> " + catalogPartition.id,
+                            catalogPartitionPlacement.adapterUniqueName,
+                            catalogColumnPlacement.physicalSchemaName + "." + catalogPartitionPlacement.physicalTableName + "." + catalogColumnPlacement.physicalColumnName );
+                } );
+            } );
+        }
         queryAnalyzer.registerInformation( table );
     }
 
 
-    public static InformationPage setBaseOutput( String title, Integer numberOfPlans, InformationManager queryAnalyzer ) {
+    public static InformationPage setBaseOutput( String title, Integer numberOfPlans, RoutingPlan selectedPlan, InformationManager queryAnalyzer ) {
         InformationPage page = new InformationPage( "routing", title, null );
         page.fullWidth();
         queryAnalyzer.addPage( page );
@@ -102,8 +121,18 @@ public class UiRoutingPageUtil {
 
         InformationGroup overview = new InformationGroup( page, "Overview" ).setOrder( 1 );
         queryAnalyzer.addGroup( overview );
-        InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# of Plans", "Pre Cost Factor", "Post Cost Factor", "Selection Strategy" ) );
-        overviewTable.addRow( numberOfPlans == 0 ? "-" : numberOfPlans, ratioPre, ratioPost, RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() );
+        //InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "# of Plans", "Pre Cost Factor", "Post Cost Factor", "Selection Strategy" ) );
+        InformationTable overviewTable = new InformationTable( overview, ImmutableList.of( "Query Class", selectedPlan.getQueryClass() ) );
+        overviewTable.addRow( "# of Proposed Plans", numberOfPlans == 0 ? "-" : numberOfPlans );
+        overviewTable.addRow( "Pre Cost Factor", ratioPre );
+        overviewTable.addRow( "Post Cost Factor", ratioPost );
+        overviewTable.addRow( "Selection Strategy", RoutingManager.PLAN_SELECTION_STRATEGY.getEnum() );
+        if ( selectedPlan.getPhysicalPlacementsOfPartitions() != null ) {
+            overviewTable.addRow( "Selected Plan", selectedPlan.getPhysicalPlacementsOfPartitions().toString() );
+        }
+        if ( selectedPlan.getRouter() != null ) {
+            overviewTable.addRow( "Proposed By", selectedPlan.getRouter().getSimpleName() );
+        }
         queryAnalyzer.registerInformation( overviewTable );
 
         return page;
@@ -124,43 +153,31 @@ public class UiRoutingPageUtil {
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
         InformationPage page = queryAnalyzer.getPage( "routing" );
         if ( page == null ) {
-            page = setBaseOutput( "Routing", routingPlans.size(), queryAnalyzer );
+            page = setBaseOutput( "Routing", routingPlans.size(), selectedPlan, queryAnalyzer );
         }
 
         final boolean isIcarus = icarusCosts != null;
 
         InformationGroup group = new InformationGroup( page, "Proposed Plans" ).setOrder( 2 );
         queryAnalyzer.addGroup( group );
-        InformationTable table = new InformationTable(
+        InformationTable proposedPlansTable = new InformationTable(
                 group,
-                ImmutableList.of( "Physical Query Class", "Router", "Pre. Costs", "Post Costs", "Norm. pre Costs", "Norm. post Costs", "Total Costs", "Adapter Info", "Percentage" ) );
+                ImmutableList.of( "Physical", "Router", "Pre. Costs", "Norm. Pre Costs", "Post Costs", "Norm. Post Costs", "Total Costs", "Percentage" ) ); //"Physical (Partition --> <Adapter, ColumnPlacement>)"
 
         for ( int i = 0; i < routingPlans.size(); i++ ) {
             final RoutingPlan routingPlan = routingPlans.get( i );
-            table.addRow(
-                    routingPlan.getPhysicalQueryClass(),
-                    routingPlan.getRouter() != null ? routingPlan.getRouter().toString().replace( "class org.polypheny.db.routing.routers.", "" ) : "",
+            proposedPlansTable.addRow(
+                    routingPlan.getPhysicalPlacementsOfPartitions().toString(),
+                    routingPlan.getRouter() != null ? routingPlan.getRouter().getSimpleName() : "",
                     approximatedCosts.get( i ),
-                    isIcarus ? icarusCosts.get( i ) : "-",
-                    preCosts.get( i ),
-                    isIcarus ? postCosts.get( i ) : "-",
-                    effectiveCosts.get( i ),
-                    routingPlan.getPhysicalPlacementsOfPartitions(),
-                    percentageCosts != null ? percentageCosts.get( i ) : "-" );
+                    Math.round( preCosts.get( i ) * 100.0 ) / 100.0,
+                    isIcarus ? Math.round( icarusCosts.get( i ) * 100.0 ) / 100.0 : "-",
+                    isIcarus ? Math.round( postCosts.get( i ) * 100.0 ) / 100.0 : "-",
+                    Math.round( effectiveCosts.get( i ) * 100.0 ) / 100.0,
+                    //routingPlan.getPhysicalPlacementsOfPartitions(),
+                    percentageCosts != null ? Math.round( percentageCosts.get( i ) * 100.0 ) / 100.0 + " %" : "-" );
         }
-
-        InformationGroup selected = new InformationGroup( page, "Selected Plan" ).setOrder( 3 );
-        queryAnalyzer.addGroup( selected );
-        InformationTable selectedTable = new InformationTable(
-                selected,
-                ImmutableList.of( "Query Class", "Physical Query Class", "Router", "Partitioning - Placements" ) );
-        selectedTable.addRow(
-                selectedPlan.getQueryClass(),
-                selectedPlan.getPhysicalQueryClass(),
-                selectedPlan.getRouter().toString().replace( "class org.polypheny.db.routing.routers.", "" ),
-                selectedPlan.getPhysicalPlacementsOfPartitions() );
-
-        queryAnalyzer.registerInformation( table, selectedTable );
+        queryAnalyzer.registerInformation( proposedPlansTable );
 
         if ( selectedPlan instanceof ProposedRoutingPlan ) {
             ProposedRoutingPlan plan = (ProposedRoutingPlan) selectedPlan;

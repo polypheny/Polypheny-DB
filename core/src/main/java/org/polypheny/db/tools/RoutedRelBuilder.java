@@ -46,9 +46,6 @@ public class RoutedRelBuilder extends RelBuilder {
     @Getter
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
-    @Getter
-    protected Map<Long, SelectedAdapterInfo> selectedAdaptersInfo = new HashMap<>(); // For reporting in the UI
-
 
     public RoutedRelBuilder( Context context, RelOptCluster cluster, RelOptSchema relOptSchema ) {
         super( context, cluster, relOptSchema );
