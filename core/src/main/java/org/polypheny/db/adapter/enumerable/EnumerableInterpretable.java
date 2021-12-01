@@ -49,11 +49,8 @@ import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationCode;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Compiler;
 import org.polypheny.db.interpreter.InterpretableConvention;
@@ -73,6 +70,7 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -101,15 +99,15 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 implementor.internalParameters,
                 implementor.spark,
                 (EnumerableRel) getInput(),
-                EnumerableRel.Prefer.ARRAY,
-                implementor.dataContext.getStatement() );
+                Prefer.ARRAY,
+                implementor.dataContext.getStatement() ).left;
         final ArrayBindable arrayBindable = box( bindable );
         final Enumerable<Object[]> enumerable = arrayBindable.bind( implementor.dataContext );
         return new EnumerableNode( enumerable, implementor.compiler, this );
     }
 
 
-    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, Statement statement ) {
+    public static Pair<Bindable<Object[]>, String> toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, Statement statement ) {
         EnumerableRelImplementor relImplementor = new EnumerableRelImplementor( rel.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = relImplementor.implementRoot( rel, prefer );
@@ -119,24 +117,13 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             Util.debugCode( System.out, s );
         }
 
-        if ( statement != null && statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Generated Code" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Generated Code" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationCode informationCode = new InformationCode( group, s );
-            queryAnalyzer.registerInformation( informationCode );
-        }
-
         Hook.JAVA_PLAN.run( s );
 
         try {
             if ( spark != null && spark.enabled() ) {
-                return spark.compile( expr, s );
+                return new Pair<>( spark.compile( expr, s ), s );
             } else {
-                return getBindable( expr, s, rel.getRowType().getFieldCount() );
+                return new Pair<>( getBindable( expr, s, rel.getRowType().getFieldCount() ), s );
             }
         } catch ( Exception e ) {
             throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );

@@ -62,6 +62,10 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.document.util.DataModelShuttle;
+import org.polypheny.db.information.InformationCode;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
@@ -241,6 +245,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<RelNode> optimalNodeList = new ArrayList<>();
         List<RelRoot> parameterizedRootList = new ArrayList<>();
         List<PolyphenyDbSignature<?>> signatures = new ArrayList<>();
+        List<String> generatedCodes = new ArrayList<>();
 
         //
         // Check for view
@@ -441,13 +446,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             executionTimeMonitor );
                     signature.setSchemaType( schemaType );
                     signatures.add( signature );
+                    generatedCodes.add( preparedResult.getCode() );
                     optimalNodeList.add( optimalNode );
                 } else {
                     signatures.add( null );
+                    generatedCodes.add( null );
                     optimalNodeList.add( null );
                 }
             } else {
                 signatures.add( null );
+                generatedCodes.add( null );
                 optimalNodeList.add( null );
             }
         }
@@ -462,6 +470,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     proposedRoutingPlans,
                     optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     signatures.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                    generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     logicalQueryInformation );
         }
 
@@ -543,6 +552,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     executionTimeMonitor );
             signature.setSchemaType( schemaType );
             signatures.set( i, signature );
+            generatedCodes.set( i, preparedResult.getCode() );
             optimalNodeList.set( i, optimalRoot.rel );
         }
         if ( isAnalyze ) {
@@ -559,6 +569,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 proposedRoutingPlans,
                 optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 signatures.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 logicalQueryInformation );
     }
 
@@ -570,6 +581,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         private final List<ProposedRoutingPlan> proposedRoutingPlans;
         private final List<RelNode> optimizedPlans;
         private final List<PolyphenyDbSignature<?>> signatures;
+        private final List<String> generatedCodes;
         private final LogicalQueryInformation logicalQueryInformation;
 
     }
@@ -1125,8 +1137,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         : EnumerableConvention.INSTANCE;
 
         final Bindable<Object[]> bindable;
+        final String generatedCode;
         if ( resultConvention == BindableConvention.INSTANCE ) {
             bindable = Interpreters.bindable( root.rel );
+            generatedCode = null;
         } else {
             EnumerableRel enumerable = (EnumerableRel) root.rel;
             if ( !root.isRefTrivial() ) {
@@ -1146,7 +1160,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 final Map<String, Object> internalParameters = new LinkedHashMap<>();
                 internalParameters.put( "_conformance", conformance );
 
-                bindable = EnumerableInterpretable.toBindable( internalParameters, statement.getPrepareContext().spark(), enumerable, prefer, statement );
+                Pair<Bindable<Object[]>, String> implementationPair = EnumerableInterpretable.toBindable(
+                        internalParameters,
+                        statement.getPrepareContext().spark(),
+                        enumerable,
+                        prefer,
+                        statement );
+                bindable = implementationPair.left;
+                generatedCode = implementationPair.right;
                 statement.getDataContext().addAll( internalParameters );
             } finally {
                 CatalogReader.THREAD_LOCAL.remove();
@@ -1168,7 +1189,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 isDml ) {
             @Override
             public String getCode() {
-                throw new UnsupportedOperationException();
+                return generatedCode;
             }
 
 
@@ -1474,6 +1495,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<ProposedRoutingPlan> proposedRoutingPlans = proposedImplementations.getProposedRoutingPlans();
         List<RelNode> optimalRels = proposedImplementations.getOptimizedPlans();
         List<PolyphenyDbSignature<?>> signatures = proposedImplementations.getSignatures();
+        List<String> generatedCodes = proposedImplementations.getGeneratedCodes();
         LogicalQueryInformation queryInformation = proposedImplementations.getLogicalQueryInformation();
 
         List<RelOptCost> approximatedCosts;
@@ -1496,6 +1518,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         proposedRoutingPlans.get( 0 ),
                         optimalRels.get( 0 ),
                         statement.getTransaction().getQueryAnalyzer() );
+                addGeneratedCodeToQueryAnalyzer( generatedCodes.get( 0 ) );
             }
             return new Pair<>( signatures.get( 0 ), proposedRoutingPlans.get( 0 ) );
         } else {
@@ -1512,8 +1535,25 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             if ( statement.getTransaction().isAnalyze() ) {
                 RelNode optimalNode = optimalRels.get( index );
                 UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
+                addGeneratedCodeToQueryAnalyzer( generatedCodes.get( index ) );
             }
             return new Pair<>( proposedImplementations.getSignatures().get( index ), (ProposedRoutingPlan) routingPlan );
+        }
+    }
+
+
+    private void addGeneratedCodeToQueryAnalyzer( String code ) {
+        if ( code != null ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+            InformationPage page = new InformationPage( "Implementation" );
+            page.fullWidth();
+            InformationGroup group = new InformationGroup( page, "Java Code" );
+            queryAnalyzer.addPage( page );
+            queryAnalyzer.addGroup( group );
+            InformationCode informationCode = new InformationCode( group, code );
+            queryAnalyzer.registerInformation( informationCode );
+        } else {
+            log.error( "Generated code is null" );
         }
     }
 
