@@ -18,12 +18,12 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.ConditionalExecute.Condition;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 
 
 public class EnumerableConditionalExecuteTrueRule extends ConverterRule {
@@ -32,14 +32,14 @@ public class EnumerableConditionalExecuteTrueRule extends ConverterRule {
         super( LogicalConditionalExecute.class,
                 lce -> lce.getCondition() == Condition.TRUE,
                 Convention.NONE, EnumerableConvention.INSTANCE,
-                RelFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteTrueRule" );
+                AlgFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteTrueRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalConditionalExecute lce = (LogicalConditionalExecute) rel;
-        return RelOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalConditionalExecute lce = (LogicalConditionalExecute) alg;
+        return AlgOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
     }
 
 }

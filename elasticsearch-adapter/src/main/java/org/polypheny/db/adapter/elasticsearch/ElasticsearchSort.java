@@ -35,26 +35,26 @@ package org.polypheny.db.adapter.elasticsearch;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Sort} relational expression in Elasticsearch.
+ * Implementation of {@link org.polypheny.db.algebra.core.Sort} relational expression in Elasticsearch.
  */
 public class ElasticsearchSort extends Sort implements ElasticsearchRel {
 
-    ElasticsearchSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
+    ElasticsearchSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, child, collation, offset, fetch );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
@@ -62,23 +62,23 @@ public class ElasticsearchSort extends Sort implements ElasticsearchRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.05 );
     }
 
 
     @Override
-    public Sort copy( RelTraitSet traitSet, RelNode relNode, RelCollation relCollation, RexNode offset, RexNode fetch ) {
-        return new ElasticsearchSort( getCluster(), traitSet, relNode, collation, offset, fetch );
+    public Sort copy( AlgTraitSet traitSet, AlgNode algNode, AlgCollation relCollation, RexNode offset, RexNode fetch ) {
+        return new ElasticsearchSort( getCluster(), traitSet, algNode, collation, offset, fetch );
     }
 
 
     @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
-        final List<RelDataTypeField> fields = getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = getRowType().getFieldList();
 
-        for ( RelFieldCollation fieldCollation : collation.getFieldCollations() ) {
+        for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
             final String name = fields.get( fieldCollation.getFieldIndex() ).getName();
             final String rawName = implementor.expressionItemMap.getOrDefault( name, name );
             implementor.addSort( rawName, fieldCollation.getDirection() );

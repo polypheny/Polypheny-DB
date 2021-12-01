@@ -20,7 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.interpreter.Node;
 
 /**
- * Container class which should be used to hand different parameters to either {@link NodeToRelConverter}
+ * Container class which should be used to hand different parameters to either {@link NodeToAlgConverter}
  * or when translating native language strings into language-specific {@link Node} implementations
  */
 public class QueryParameters {

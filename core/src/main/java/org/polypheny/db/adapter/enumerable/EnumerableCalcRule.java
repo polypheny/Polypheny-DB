@@ -36,12 +36,12 @@ package org.polypheny.db.adapter.enumerable;
 
 import java.util.function.Predicate;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.Calc;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.LogicalCalc;
 
 
 /**
@@ -51,14 +51,14 @@ class EnumerableCalcRule extends ConverterRule {
 
     EnumerableCalcRule() {
         // The predicate ensures that if there's a multiset, FarragoMultisetSplitter will work on it first.
-        super( LogicalCalc.class, (Predicate<Calc>) RelOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, EnumerableConvention.INSTANCE, RelFactories.LOGICAL_BUILDER, "EnumerableCalcRule" );
+        super( LogicalCalc.class, (Predicate<Calc>) AlgOptUtil::containsMultisetOrWindowedAgg, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER, "EnumerableCalcRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalCalc calc = (LogicalCalc) rel;
-        final RelNode input = calc.getInput();
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalCalc calc = (LogicalCalc) alg;
+        final AlgNode input = calc.getInput();
         return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), calc.getProgram() );
     }
 }

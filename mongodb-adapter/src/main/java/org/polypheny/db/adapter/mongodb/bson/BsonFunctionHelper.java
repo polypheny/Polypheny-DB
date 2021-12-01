@@ -21,7 +21,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
+import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.util.BsonUtil;

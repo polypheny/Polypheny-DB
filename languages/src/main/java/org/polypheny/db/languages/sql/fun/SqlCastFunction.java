@@ -37,8 +37,8 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -90,10 +90,10 @@ public class SqlCastFunction extends SqlFunction {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         assert opBinding.getOperandCount() == 2;
-        RelDataType ret = opBinding.getOperandType( 1 );
-        RelDataType firstType = opBinding.getOperandType( 0 );
+        AlgDataType ret = opBinding.getOperandType( 1 );
+        AlgDataType firstType = opBinding.getOperandType( 0 );
         ret = opBinding.getTypeFactory().createTypeWithNullability( ret, firstType.isNullable() );
         if ( opBinding instanceof SqlCallBinding ) {
             SqlCallBinding callBinding = (SqlCallBinding) opBinding;
@@ -136,8 +136,8 @@ public class SqlCastFunction extends SqlFunction {
         if ( CoreUtil.isNullLiteral( left, false ) || left instanceof SqlDynamicParam ) {
             return true;
         }
-        RelDataType validatedNodeType = callBinding.getValidator().getValidatedNodeType( left );
-        RelDataType returnType = callBinding.getValidator().deriveType( callBinding.getScope(), right );
+        AlgDataType validatedNodeType = callBinding.getValidator().getValidatedNodeType( left );
+        AlgDataType returnType = callBinding.getValidator().deriveType( callBinding.getScope(), right );
         if ( !PolyTypeUtil.canCastFrom( returnType, validatedNodeType, true ) ) {
             if ( throwOnFailure ) {
                 throw callBinding.newError( RESOURCE.cannotCastValue( validatedNodeType.toString(), returnType.toString() ) );
@@ -177,8 +177,8 @@ public class SqlCastFunction extends SqlFunction {
 
     @Override
     public Monotonicity getMonotonicity( OperatorBinding call ) {
-        RelDataTypeFamily castFrom = call.getOperandType( 0 ).getFamily();
-        RelDataTypeFamily castTo = call.getOperandType( 1 ).getFamily();
+        AlgDataTypeFamily castFrom = call.getOperandType( 0 ).getFamily();
+        AlgDataTypeFamily castTo = call.getOperandType( 1 ).getFamily();
         if ( castFrom instanceof PolyTypeFamily && castTo instanceof PolyTypeFamily && nonMonotonicCasts.containsEntry( castFrom, castTo ) ) {
             return Monotonicity.NOT_MONOTONIC;
         } else {

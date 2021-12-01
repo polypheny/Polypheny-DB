@@ -24,11 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.util.Pair;
 
 
@@ -53,8 +53,8 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
 
 
     @Override
-    public List<Pair<RelDataTypeField, List<String>>> resolveColumn( RelDataType rowType, RelDataTypeFactory typeFactory, List<String> names ) {
-        List<Pair<RelDataTypeField, List<String>>> ret = new ArrayList<>();
+    public List<Pair<AlgDataTypeField, List<String>>> resolveColumn( AlgDataType rowType, AlgDataTypeFactory typeFactory, List<String> names ) {
+        List<Pair<AlgDataTypeField, List<String>>> ret = new ArrayList<>();
         if ( names.size() >= 2 ) {
             Map<String, Integer> subMap = groupMap.get( names.get( 0 ) );
             if ( subMap != null ) {
@@ -99,7 +99,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             if ( subMap != null ) {
                 List<Map.Entry<String, Integer>> entries = new ArrayList<>( subMap.entrySet() );
                 entries.sort( ( o1, o2 ) -> o1.getValue() - o2.getValue() );
-                ret.add( new Pair<>( new RelDataTypeFieldImpl( columnName, -1, createStructType( rowType, typeFactory, entries ) ), remainder ) );
+                ret.add( new Pair<>( new AlgDataTypeFieldImpl( columnName, -1, createStructType( rowType, typeFactory, entries ) ), remainder ) );
             }
         }
 
@@ -107,12 +107,12 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
     }
 
 
-    private static RelDataType createStructType( final RelDataType rowType, RelDataTypeFactory typeFactory, final List<Map.Entry<String, Integer>> entries ) {
+    private static AlgDataType createStructType( final AlgDataType rowType, AlgDataTypeFactory typeFactory, final List<Map.Entry<String, Integer>> entries ) {
         return typeFactory.createStructType(
                 StructKind.PEEK_FIELDS,
-                new AbstractList<RelDataType>() {
+                new AbstractList<AlgDataType>() {
                     @Override
-                    public RelDataType get( int index ) {
+                    public AlgDataType get( int index ) {
                         final int i = entries.get( index ).getValue();
                         return rowType.getFieldList().get( i ).getType();
                     }

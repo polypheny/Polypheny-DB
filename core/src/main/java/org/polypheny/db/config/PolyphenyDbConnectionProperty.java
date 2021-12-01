@@ -48,6 +48,7 @@ import org.apache.calcite.avatica.util.Quoting;
 import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.enums.Lex;
 import org.polypheny.db.core.enums.NullCollation;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 
 
 /**
@@ -122,7 +123,7 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     FORCE_DECORRELATE( "forceDecorrelate", Type.BOOLEAN, true, false ),
 
     /**
-     * Type system. The name of a class that implements {@link org.polypheny.db.rel.type.RelDataTypeSystem} and has a
+     * Type system. The name of a class that implements {@link AlgDataTypeSystem} and has a
      * public default constructor or an {@code INSTANCE} constant.
      */
     TYPE_SYSTEM( "typeSystem", Type.PLUGIN, null, false ),

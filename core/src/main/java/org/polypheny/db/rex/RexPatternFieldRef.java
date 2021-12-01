@@ -35,7 +35,7 @@ package org.polypheny.db.rex;
 
 
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -46,7 +46,7 @@ public class RexPatternFieldRef extends RexInputRef {
     private final String alpha;
 
 
-    public RexPatternFieldRef( String alpha, int index, RelDataType type ) {
+    public RexPatternFieldRef( String alpha, int index, AlgDataType type ) {
         super( index, type );
         this.alpha = alpha;
         digest = alpha + ".$" + index;
@@ -58,7 +58,7 @@ public class RexPatternFieldRef extends RexInputRef {
     }
 
 
-    public static RexPatternFieldRef of( String alpha, int index, RelDataType type ) {
+    public static RexPatternFieldRef of( String alpha, int index, AlgDataType type ) {
         return new RexPatternFieldRef( alpha, index, type );
     }
 

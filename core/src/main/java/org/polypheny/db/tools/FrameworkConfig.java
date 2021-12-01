@@ -36,13 +36,14 @@ package org.polypheny.db.tools;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptCostFactory;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.plan.AlgOptCostFactory;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.SchemaPlus;
 
@@ -60,9 +61,9 @@ public interface FrameworkConfig {
     ParserConfig getParserConfig();
 
     /**
-     * The configuration of {@link NodeToRelConverter}.
+     * The configuration of {@link NodeToAlgConverter}.
      */
-    NodeToRelConverter.Config getSqlToRelConverterConfig();
+    NodeToAlgConverter.Config getSqlToRelConverterConfig();
 
     /**
      * Returns the default schema that should be checked before looking at the root schema.  Returns null to only consult the root schema.
@@ -96,19 +97,19 @@ public interface FrameworkConfig {
      * Returns the cost factory that should be used when creating the planner.
      * If null, use the default cost factory for that planner.
      */
-    RelOptCostFactory getCostFactory();
+    AlgOptCostFactory getCostFactory();
 
     /**
      * Returns a list of trait definitions.
      *
-     * If the list is not null, the planner first de-registers any existing {@link RelTraitDef}s, then registers the
+     * If the list is not null, the planner first de-registers any existing {@link AlgTraitDef}s, then registers the
      * {@code RelTraitDef}s in this list.
      *
      * The order of {@code RelTraitDef}s in the list matters if the planner is VolcanoPlanner. The planner calls
-     * {@link RelTraitDef#convert} in the order of this list. The most important trait comes first in the list,
+     * {@link AlgTraitDef#convert} in the order of this list. The most important trait comes first in the list,
      * followed by the second most important one, etc.
      */
-    ImmutableList<RelTraitDef> getTraitDefs();
+    ImmutableList<AlgTraitDef> getTraitDefs();
 
     /**
      * Returns the convertlet table that should be used when converting from SQL to row expressions
@@ -116,14 +117,14 @@ public interface FrameworkConfig {
     RexConvertletTable getConvertletTable();
 
     /**
-     * Returns the PlannerContext that should be made available during planning by calling {@link org.polypheny.db.plan.RelOptPlanner#getContext()}.
+     * Returns the PlannerContext that should be made available during planning by calling {@link AlgOptPlanner#getContext()}.
      */
     Context getContext();
 
     /**
      * Returns the type system.
      */
-    RelDataTypeSystem getTypeSystem();
+    AlgDataTypeSystem getTypeSystem();
 
     /**
      * Returns a prepare context.

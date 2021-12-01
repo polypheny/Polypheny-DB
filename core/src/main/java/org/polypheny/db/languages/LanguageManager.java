@@ -36,12 +36,12 @@ import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.TableFunction;
@@ -75,13 +75,13 @@ public abstract class LanguageManager {
 
     public abstract Validator createValidator( QueryLanguage language, Context context, PolyphenyDbCatalogReader catalogReader );
 
-    public abstract NodeToRelConverter createToRelConverter(
+    public abstract NodeToAlgConverter createToRelConverter(
             QueryLanguage sql,
             Validator validator,
             CatalogReader catalogReader,
-            RelOptCluster cluster,
+            AlgOptCluster cluster,
             RexConvertletTable convertletTable,
-            NodeToRelConverter.Config config );
+            NodeToAlgConverter.Config config );
 
     public abstract RexConvertletTable getStandardConvertlet();
 
@@ -100,7 +100,7 @@ public abstract class LanguageManager {
 
     public abstract OperatorTable getOracleOperatorTable();
 
-    public abstract Logger getLogger( QueryLanguage language, Class<RelNode> relNodeClass );
+    public abstract Logger getLogger( QueryLanguage language, Class<AlgNode> algNodeClass );
 
     public abstract Identifier createIdentifier( QueryLanguage language, String name, ParserPos zero );
 
@@ -144,7 +144,7 @@ public abstract class LanguageManager {
 
     public abstract AggFunction createBitOpAggFunction( QueryLanguage language, Kind kind );
 
-    public abstract AggFunction createSumAggFunction( QueryLanguage language, RelDataType type );
+    public abstract AggFunction createSumAggFunction( QueryLanguage language, AlgDataType type );
 
     public abstract Operator createFunction(
             QueryLanguage language,
@@ -163,7 +163,7 @@ public abstract class LanguageManager {
             PolyReturnTypeInference infer,
             PolyOperandTypeInference explicit,
             FamilyOperandTypeChecker typeChecker,
-            List<RelDataType> paramTypes,
+            List<AlgDataType> paramTypes,
             Function function );
 
     public abstract Operator createUserDefinedAggFunction(
@@ -176,7 +176,7 @@ public abstract class LanguageManager {
             boolean b,
             boolean b1,
             Optionality forbidden,
-            RelDataTypeFactory typeFactory );
+            AlgDataTypeFactory typeFactory );
 
     public abstract Operator createUserDefinedTableMacro(
             QueryLanguage language,
@@ -184,7 +184,7 @@ public abstract class LanguageManager {
             PolyReturnTypeInference cursor,
             PolyOperandTypeInference explicit,
             FamilyOperandTypeChecker typeChecker,
-            List<RelDataType> paramTypes,
+            List<AlgDataType> paramTypes,
             TableMacro function );
 
     public abstract Operator createUserDefinedTableFunction(
@@ -193,7 +193,7 @@ public abstract class LanguageManager {
             PolyReturnTypeInference cursor,
             PolyOperandTypeInference explicit,
             FamilyOperandTypeChecker typeChecker,
-            List<RelDataType> paramTypes,
+            List<AlgDataType> paramTypes,
             TableFunction function );
 
 }

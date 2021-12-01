@@ -23,7 +23,7 @@ import java.util.Map;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexLiteral;
@@ -102,7 +102,7 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
 
     @Override
     public String visitLiteral( RexLiteral literal ) {
-        RelDataType type = literal.getType();
+        AlgDataType type = literal.getType();
 
         if ( type.getPolyType() == PolyType.BOOLEAN ) {
             if ( literal.isNull() ) {
@@ -129,7 +129,7 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
     public String visitFieldAccess( RexFieldAccess fieldAccess ) {
         StringBuilder sb = new StringBuilder();
         sb.append( "v" );
-        RelDataType type = fieldAccess.getType();
+        AlgDataType type = fieldAccess.getType();
         switch ( type.getPolyType() ) {
             case BOOLEAN:
                 sb.append( "Bool" );

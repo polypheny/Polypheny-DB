@@ -34,7 +34,7 @@ import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -74,9 +74,9 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
         if ( callBinding.getOperandCount() < 2 ) {
             return true; // nothing to compare
         }
-        RelDataType firstType = null;
+        AlgDataType firstType = null;
         for ( Ord<SqlNode> operand : Ord.zip( callBinding.sqlOperands() ) ) {
-            RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), operand.e );
+            AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), operand.e );
             if ( operand.i == 0 ) {
                 firstType = type;
             } else {
@@ -104,13 +104,13 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     // Result type is the same as all the args, but its size is the total size.
     // REVIEW mb: Possibly this can be achieved by combining the strategy useFirstArgType with a new transformer.
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         // Here we know all the operands have the same type, which has a size (precision), but not a scale.
-        RelDataType ret = opBinding.getOperandType( 0 );
+        AlgDataType ret = opBinding.getOperandType( 0 );
         PolyType typeName = ret.getPolyType();
         assert typeName.allowsPrecNoScale() : "LiteralChain has impossible operand type " + typeName;
         int size = 0;
-        for ( RelDataType type : opBinding.collectOperandTypes() ) {
+        for ( AlgDataType type : opBinding.collectOperandTypes() ) {
             size += type.getPrecision();
             assert type.getPolyType() == typeName;
         }

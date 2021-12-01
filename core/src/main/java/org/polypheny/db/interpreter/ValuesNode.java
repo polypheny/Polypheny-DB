@@ -37,13 +37,13 @@ package org.polypheny.db.interpreter;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Interpreter node that implements a {@link org.polypheny.db.rel.core.Values}.
+ * Interpreter node that implements a {@link org.polypheny.db.algebra.core.Values}.
  */
 public class ValuesNode implements Node {
 
@@ -52,10 +52,10 @@ public class ValuesNode implements Node {
     private final ImmutableList<Row> rows;
 
 
-    public ValuesNode( Compiler compiler, Values rel ) {
-        this.sink = compiler.sink( rel );
-        this.fieldCount = rel.getRowType().getFieldCount();
-        this.rows = createRows( compiler, rel.getTuples() );
+    public ValuesNode( Compiler compiler, Values alg ) {
+        this.sink = compiler.sink( alg );
+        this.fieldCount = alg.getRowType().getFieldCount();
+        this.rows = createRows( compiler, alg.getTuples() );
     }
 
 

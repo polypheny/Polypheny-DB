@@ -60,14 +60,14 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.util.BsonUtil;
 import org.polypheny.db.languages.sql.fun.SqlItemOperator;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -78,12 +78,12 @@ import org.polypheny.db.util.JsonBuilder;
 
 
 /**
- * Implementation of a {@link org.polypheny.db.rel.core.Filter}
+ * Implementation of a {@link org.polypheny.db.algebra.core.Filter}
  * relational expression in MongoDB.
  */
-public class MongoFilter extends Filter implements MongoRel {
+public class MongoFilter extends Filter implements MongoAlg {
 
-    public MongoFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition ) {
+    public MongoFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
         super( cluster, traitSet, child, condition );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
@@ -91,13 +91,13 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
 
     @Override
-    public MongoFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
+    public MongoFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new MongoFilter( getCluster(), traitSet, input, condition );
     }
 
@@ -160,7 +160,7 @@ public class MongoFilter extends Filter implements MongoRel {
 
 
         private BsonDocument translateFinalOr( RexNode condition ) {
-            for ( RexNode node : RelOptUtil.disjunctions( condition ) ) {
+            for ( RexNode node : AlgOptUtil.disjunctions( condition ) ) {
                 HashMap<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
                 this.map = new HashMap<>();
                 translateAnd( node );
@@ -213,7 +213,7 @@ public class MongoFilter extends Filter implements MongoRel {
          * Translates a condition that may be an AND of other conditions. Gathers together conditions that apply to the same field.
          */
         private void translateAnd( RexNode node0 ) {
-            for ( RexNode node : RelOptUtil.conjunctions( node0 ) ) {
+            for ( RexNode node : AlgOptUtil.conjunctions( node0 ) ) {
                 Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
                 this.map = new HashMap<>();
                 translateMatch2( node );

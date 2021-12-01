@@ -34,20 +34,21 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.algebra.AlgNode;
 
 
 /**
- * Extension to {@link Table} that specifies how it is to be translated to a {@link org.polypheny.db.rel.RelNode relational expression}.
+ * Extension to {@link Table} that specifies how it is to be translated to a {@link AlgNode relational expression}.
  *
  * It is optional for a Table to implement this interface. If Table does not implement this interface, it will be converted to a  {@link org.polypheny.db.adapter.enumerable.EnumerableTableScan}.
- * Generally a Table will implement this interface to create a particular subclass of RelNode, and also register rules that act on that particular subclass of RelNode.
+ * Generally a Table will implement this interface to create a particular subclass of AlgNode, and also register rules that act on that particular subclass of AlgNode.
  */
 public interface TranslatableTable extends Table {
 
     /**
-     * Converts this table into a {@link RelNode relational expression}.
+     * Converts this table into a {@link AlgNode relational expression}.
      */
-    RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable );
+    AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable );
 }

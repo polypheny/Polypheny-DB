@@ -33,8 +33,8 @@ import org.polypheny.db.core.nodes.NodeList;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.nodes.Select;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
@@ -233,7 +233,7 @@ public class CoreUtil {
      * @param str String
      * @return Type, including collation and charset
      */
-    public static RelDataType createNlsStringType( RelDataTypeFactory typeFactory, NlsString str ) {
+    public static AlgDataType createNlsStringType( AlgDataTypeFactory typeFactory, NlsString str ) {
         Charset charset = str.getCharset();
         if ( null == charset ) {
             charset = typeFactory.getDefaultCharset();
@@ -242,7 +242,7 @@ public class CoreUtil {
         if ( null == collation ) {
             collation = Collation.COERCIBLE;
         }
-        RelDataType type = typeFactory.createPolyType( PolyType.CHAR, str.getValue().length() );
+        AlgDataType type = typeFactory.createPolyType( PolyType.CHAR, str.getValue().length() );
         type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
         return type;
     }

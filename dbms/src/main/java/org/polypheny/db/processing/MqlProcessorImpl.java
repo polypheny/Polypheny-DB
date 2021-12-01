@@ -25,7 +25,7 @@ import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.rel.RelDecorrelator;
+import org.polypheny.db.core.algebra.AlgDecorrelator;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -35,13 +35,13 @@ import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
-import org.polypheny.db.languages.mql2rel.MqlToRelConverter;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -95,7 +95,7 @@ public class MqlProcessorImpl extends MqlProcessor {
 
 
     @Override
-    public Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
+    public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
         throw new RuntimeException( "The MQL implementation does not support validation." );
     }
 
@@ -125,7 +125,7 @@ public class MqlProcessorImpl extends MqlProcessor {
 
 
     @Override
-    public RelRoot translate( Statement statement, Node mql, QueryParameters parameters ) {
+    public AlgRoot translate( Statement statement, Node mql, QueryParameters parameters ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
@@ -133,21 +133,21 @@ public class MqlProcessorImpl extends MqlProcessor {
         stopWatch.start();
 
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
-        final MqlToRelConverter mqlToRelConverter = new MqlToRelConverter( this, statement.getTransaction().getCatalogReader(), cluster );
-        RelRoot logicalRoot = mqlToRelConverter.convert( mql, parameters );
+        final MqlToAlgConverter mqlToAlgConverter = new MqlToAlgConverter( this, statement.getTransaction().getCatalogReader(), cluster );
+        AlgRoot logicalRoot = mqlToAlgConverter.convert( mql, parameters );
 
         if ( statement.getTransaction().isAnalyze() ) {
             attachAnalyzer( statement, logicalRoot );
         }
 
         // Decorrelate
-        final RelBuilder relBuilder = RelBuilder.create( statement );
-        logicalRoot = logicalRoot.withRel( RelDecorrelator.decorrelateQuery( logicalRoot.rel, relBuilder ) );
+        final AlgBuilder algBuilder = AlgBuilder.create( statement );
+        logicalRoot = logicalRoot.withAlg( AlgDecorrelator.decorrelateQuery( logicalRoot.alg, algBuilder ) );
 
         if ( log.isTraceEnabled() ) {
-            log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            log.trace( "Logical query plan: [{}]", AlgOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
@@ -177,7 +177,7 @@ public class MqlProcessorImpl extends MqlProcessor {
 
 
     @Override
-    public RelDataType getParameterRowType( Node left ) {
+    public AlgDataType getParameterRowType( Node left ) {
         return null;
     }
 

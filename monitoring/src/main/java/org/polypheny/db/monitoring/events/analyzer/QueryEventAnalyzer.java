@@ -21,8 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 
 
 @Slf4j
@@ -42,9 +42,9 @@ public class QueryEventAnalyzer {
                 .accessedPartitions( queryEvent.getAccessedPartitions() )
                 .build();
 
-        RelRoot relRoot = queryEvent.getRouted();
+        AlgRoot relRoot = queryEvent.getRouted();
         if ( relRoot != null ) {
-            RelNode node = relRoot.rel;
+            AlgNode node = relRoot.alg;
             processRelNode( node, queryEvent, metric );
         }
 
@@ -75,7 +75,7 @@ public class QueryEventAnalyzer {
     }
 
 
-    private static void processRelNode( RelNode node, QueryEvent event, QueryDataPoint metric ) {
+    private static void processRelNode( AlgNode node, QueryEvent event, QueryDataPoint metric ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), event, metric );
         }

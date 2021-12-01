@@ -56,8 +56,8 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 import org.apache.geode.cache.query.Struct;
 import org.apache.geode.pdx.PdxInstance;
 import org.apache.geode.pdx.ReflectionBasedAutoSerializer;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.Util;
 
 
@@ -159,7 +159,7 @@ public class GeodeUtils {
      * @param geodeResultObject Object value returned by Geode query
      * @return List of objects values corresponding to the relDataTypeFields
      */
-    public static Object convertToRowValues( List<RelDataTypeField> relDataTypeFields, Object geodeResultObject ) {
+    public static Object convertToRowValues( List<AlgDataTypeField> relDataTypeFields, Object geodeResultObject ) {
         Object values;
         if ( geodeResultObject instanceof Struct ) {
             values = handleStructEntry( relDataTypeFields, geodeResultObject );
@@ -173,12 +173,12 @@ public class GeodeUtils {
     }
 
 
-    private static Object handleStructEntry( List<RelDataTypeField> relDataTypeFields, Object obj ) {
+    private static Object handleStructEntry( List<AlgDataTypeField> relDataTypeFields, Object obj ) {
         Struct struct = (Struct) obj;
         Object[] values = new Object[relDataTypeFields.size()];
 
         int index = 0;
-        for ( RelDataTypeField relDataTypeField : relDataTypeFields ) {
+        for ( AlgDataTypeField relDataTypeField : relDataTypeFields ) {
             Type javaType = JAVA_TYPE_FACTORY.getJavaClass( relDataTypeField.getType() );
             Object rawValue;
             try {
@@ -199,13 +199,13 @@ public class GeodeUtils {
     }
 
 
-    private static Object handlePdxInstanceEntry( List<RelDataTypeField> relDataTypeFields, Object obj ) {
+    private static Object handlePdxInstanceEntry( List<AlgDataTypeField> relDataTypeFields, Object obj ) {
         PdxInstance pdxEntry = (PdxInstance) obj;
 
         Object[] values = new Object[relDataTypeFields.size()];
 
         int index = 0;
-        for ( RelDataTypeField relDataTypeField : relDataTypeFields ) {
+        for ( AlgDataTypeField relDataTypeField : relDataTypeFields ) {
             Type javaType = JAVA_TYPE_FACTORY.getJavaClass( relDataTypeField.getType() );
             Object rawValue = pdxEntry.getField( relDataTypeField.getName() );
             values[index++] = convert( rawValue, (Class) javaType );
@@ -219,7 +219,7 @@ public class GeodeUtils {
     }
 
 
-    private static Object handleJavaObjectEntry( List<RelDataTypeField> relDataTypeFields, Object obj ) {
+    private static Object handleJavaObjectEntry( List<AlgDataTypeField> relDataTypeFields, Object obj ) {
 
         Class<?> clazz = obj.getClass();
         if ( relDataTypeFields.size() == 1 ) {
@@ -236,7 +236,7 @@ public class GeodeUtils {
         Object[] values = new Object[relDataTypeFields.size()];
 
         int index = 0;
-        for ( RelDataTypeField relDataTypeField : relDataTypeFields ) {
+        for ( AlgDataTypeField relDataTypeField : relDataTypeFields ) {
             try {
                 Field javaField = clazz.getDeclaredField( relDataTypeField.getName() );
                 javaField.setAccessible( true );
@@ -285,7 +285,7 @@ public class GeodeUtils {
      * @param region existing region
      * @return derived data type.
      */
-    public static RelDataType autodetectRelTypeFromRegion( Region<?, ?> region ) {
+    public static AlgDataType autodetectRelTypeFromRegion( Region<?, ?> region ) {
         Objects.requireNonNull( region, "region" );
 
         // try to detect type using value constraints (if they exists)
@@ -314,7 +314,7 @@ public class GeodeUtils {
 
 
     // Create Relational Type by inferring a Geode entry or response instance.
-    private static RelDataType createRelDataType( Object regionEntry ) {
+    private static AlgDataType createRelDataType( Object regionEntry ) {
         JavaTypeFactoryExtImpl typeFactory = new JavaTypeFactoryExtImpl();
         if ( regionEntry instanceof PdxInstance ) {
             return typeFactory.createPdxType( (PdxInstance) regionEntry );

@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql.validate;
 
 import org.polypheny.db.languages.sql.SqlMatchRecognize;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -40,7 +40,7 @@ public class MatchRecognizeNamespace extends AbstractNamespace {
 
 
     @Override
-    public RelDataType validateImpl( RelDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType ) {
         validator.validateMatchRecognize( matchRecognize );
         return rowType;
     }

@@ -19,8 +19,8 @@ package org.polypheny.db.languages.core.volcano;
 
 import static org.junit.Assert.assertTrue;
 import static org.polypheny.db.languages.core.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
-import static org.polypheny.db.languages.core.volcano.PlannerTests.TestLeafRel;
-import static org.polypheny.db.languages.core.volcano.PlannerTests.TestSingleRel;
+import static org.polypheny.db.languages.core.volcano.PlannerTests.TestLeafAlg;
+import static org.polypheny.db.languages.core.volcano.PlannerTests.TestSingleAlg;
 import static org.polypheny.db.languages.core.volcano.PlannerTests.newCluster;
 
 import com.google.common.collect.ImmutableList;
@@ -28,33 +28,34 @@ import java.util.List;
 import org.junit.Test;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AbstractConverter.ExpandConversionRule;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationImpl;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelFieldCollation.Direction;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationImpl;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Unit test for {@link org.polypheny.db.rel.RelCollationTraitDef}.
+ * Unit test for {@link AlgCollationTraitDef}.
  */
 public class CollationConversionTest {
 
-    private static final TestRelCollationImpl LEAF_COLLATION = new TestRelCollationImpl( ImmutableList.of( new RelFieldCollation( 0, Direction.CLUSTERED ) ) );
+    private static final TestRelCollationImpl LEAF_COLLATION = new TestRelCollationImpl( ImmutableList.of( new AlgFieldCollation( 0, Direction.CLUSTERED ) ) );
 
-    private static final TestRelCollationImpl ROOT_COLLATION = new TestRelCollationImpl( ImmutableList.of( new RelFieldCollation( 0 ) ) );
+    private static final TestRelCollationImpl ROOT_COLLATION = new TestRelCollationImpl( ImmutableList.of( new AlgFieldCollation( 0 ) ) );
 
     private static final TestRelCollationTraitDef COLLATION_TRAIT_DEF = new TestRelCollationTraitDef();
 
@@ -62,29 +63,29 @@ public class CollationConversionTest {
     @Test
     public void testCollationConversion() {
         final VolcanoPlanner planner = new VolcanoPlanner();
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
-        planner.addRelTraitDef( COLLATION_TRAIT_DEF );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( COLLATION_TRAIT_DEF );
 
         planner.addRule( new SingleNodeRule() );
         planner.addRule( new LeafTraitRule() );
         planner.addRule( ExpandConversionRule.INSTANCE );
 
-        final RelOptCluster cluster = newCluster( planner );
+        final AlgOptCluster cluster = newCluster( planner );
         final NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
         final NoneSingleRel singleRel = new NoneSingleRel( cluster, leafRel );
-        final RelNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ).plus( ROOT_COLLATION ) );
+        final AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ).plus( ROOT_COLLATION ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
+        AlgNode result = planner.chooseDelegate().findBestExp();
         assertTrue( result instanceof RootSingleRel );
         assertTrue( result.getTraitSet().contains( ROOT_COLLATION ) );
         assertTrue( result.getTraitSet().contains( PHYS_CALLING_CONVENTION ) );
 
-        final RelNode input = result.getInput( 0 );
+        final AlgNode input = result.getInput( 0 );
         assertTrue( input instanceof PhysicalSort );
         assertTrue( result.getTraitSet().contains( ROOT_COLLATION ) );
         assertTrue( input.getTraitSet().contains( PHYS_CALLING_CONVENTION ) );
 
-        final RelNode input2 = input.getInput( 0 );
+        final AlgNode input2 = input.getInput( 0 );
         assertTrue( input2 instanceof LeafRel );
         assertTrue( input2.getTraitSet().contains( LEAF_COLLATION ) );
         assertTrue( input.getTraitSet().contains( PHYS_CALLING_CONVENTION ) );
@@ -92,9 +93,9 @@ public class CollationConversionTest {
 
 
     /**
-     * Converts a NoneSingleRel to RootSingleRel.
+     * Converts a NoneSingleAlg to RootSingleRel.
      */
-    private static class SingleNodeRule extends RelOptRule {
+    private static class SingleNodeRule extends AlgOptRule {
 
         SingleNodeRule() {
             super( operand( NoneSingleRel.class, any() ) );
@@ -108,10 +109,10 @@ public class CollationConversionTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            NoneSingleRel single = call.rel( 0 );
-            RelNode input = single.getInput();
-            RelNode physInput = convert( input,
+        public void onMatch( AlgOptRuleCall call ) {
+            NoneSingleRel single = call.alg( 0 );
+            AlgNode input = single.getInput();
+            AlgNode physInput = convert( input,
                     single.getTraitSet()
                             .replace( PHYS_CALLING_CONVENTION )
                             .plus( ROOT_COLLATION ) );
@@ -123,21 +124,21 @@ public class CollationConversionTest {
     /**
      * Root node with physical convention and ROOT_COLLATION trait.
      */
-    private static class RootSingleRel extends TestSingleRel {
+    private static class RootSingleRel extends TestSingleAlg {
 
-        RootSingleRel( RelOptCluster cluster, RelNode input ) {
+        RootSingleRel( AlgOptCluster cluster, AlgNode input ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ).plus( ROOT_COLLATION ), input );
         }
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new RootSingleRel( getCluster(), sole( inputs ) );
         }
     }
@@ -146,7 +147,7 @@ public class CollationConversionTest {
     /**
      * Converts a {@link NoneLeafRel} (with none convention) to {@link LeafRel} (with physical convention).
      */
-    private static class LeafTraitRule extends RelOptRule {
+    private static class LeafTraitRule extends AlgOptRule {
 
         LeafTraitRule() {
             super( operand( NoneLeafRel.class, any() ) );
@@ -160,8 +161,8 @@ public class CollationConversionTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            NoneLeafRel leafRel = call.rel( 0 );
+        public void onMatch( AlgOptRuleCall call ) {
+            NoneLeafRel leafRel = call.alg( 0 );
             call.transformTo( new LeafRel( leafRel.getCluster(), leafRel.label ) );
         }
     }
@@ -170,21 +171,21 @@ public class CollationConversionTest {
     /**
      * Leaf node with physical convention and LEAF_COLLATION trait.
      */
-    private static class LeafRel extends TestLeafRel {
+    private static class LeafRel extends TestLeafAlg {
 
-        LeafRel( RelOptCluster cluster, String label ) {
+        LeafRel( AlgOptCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ).plus( LEAF_COLLATION ), label );
         }
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new LeafRel( getCluster(), label );
         }
     }
@@ -193,15 +194,15 @@ public class CollationConversionTest {
     /**
      * Leaf node with none convention and LEAF_COLLATION trait.
      */
-    private static class NoneLeafRel extends TestLeafRel {
+    private static class NoneLeafRel extends TestLeafAlg {
 
-        NoneLeafRel( RelOptCluster cluster, String label ) {
+        NoneLeafRel( AlgOptCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ).plus( LEAF_COLLATION ), label );
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             assert traitSet.comprises( Convention.NONE, LEAF_COLLATION );
             assert inputs.isEmpty();
             return this;
@@ -212,15 +213,15 @@ public class CollationConversionTest {
     /**
      * A single-input node with none convention and LEAF_COLLATION trait.
      */
-    private static class NoneSingleRel extends TestSingleRel {
+    private static class NoneSingleRel extends TestSingleAlg {
 
-        NoneSingleRel( RelOptCluster cluster, RelNode input ) {
+        NoneSingleRel( AlgOptCluster cluster, AlgNode input ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ).plus( LEAF_COLLATION ), input );
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             assert traitSet.comprises( Convention.NONE, LEAF_COLLATION );
             return new NoneSingleRel( getCluster(), sole( inputs ) );
         }
@@ -230,15 +231,15 @@ public class CollationConversionTest {
     /**
      * Dummy collation trait implementation for the test.
      */
-    private static class TestRelCollationImpl extends RelCollationImpl {
+    private static class TestRelCollationImpl extends AlgCollationImpl {
 
-        TestRelCollationImpl( ImmutableList<RelFieldCollation> fieldCollations ) {
+        TestRelCollationImpl( ImmutableList<AlgFieldCollation> fieldCollations ) {
             super( fieldCollations );
         }
 
 
         @Override
-        public RelTraitDef getTraitDef() {
+        public AlgTraitDef getTraitDef() {
             return COLLATION_TRAIT_DEF;
         }
     }
@@ -247,11 +248,11 @@ public class CollationConversionTest {
     /**
      * Dummy collation trait def implementation for the test (uses {@link PhysicalSort} below).
      */
-    private static class TestRelCollationTraitDef extends RelTraitDef<RelCollation> {
+    private static class TestRelCollationTraitDef extends AlgTraitDef<AlgCollation> {
 
         @Override
-        public Class<RelCollation> getTraitClass() {
-            return RelCollation.class;
+        public Class<AlgCollation> getTraitClass() {
+            return AlgCollation.class;
         }
 
 
@@ -268,24 +269,24 @@ public class CollationConversionTest {
 
 
         @Override
-        public RelCollation getDefault() {
+        public AlgCollation getDefault() {
             return LEAF_COLLATION;
         }
 
 
         @Override
-        public RelNode convert( RelOptPlanner planner, RelNode rel, RelCollation toCollation, boolean allowInfiniteCostConverters ) {
+        public AlgNode convert( AlgOptPlanner planner, AlgNode alg, AlgCollation toCollation, boolean allowInfiniteCostConverters ) {
             if ( toCollation.getFieldCollations().isEmpty() ) {
                 // An empty sort doesn't make sense.
                 return null;
             }
 
-            return new PhysicalSort( rel.getCluster(), rel.getTraitSet().replace( toCollation ), rel, toCollation, null, null );
+            return new PhysicalSort( alg.getCluster(), alg.getTraitSet().replace( toCollation ), alg, toCollation, null, null );
         }
 
 
         @Override
-        public boolean canConvert( RelOptPlanner planner, RelCollation fromTrait, RelCollation toTrait ) {
+        public boolean canConvert( AlgOptPlanner planner, AlgCollation fromTrait, AlgCollation toTrait ) {
             return true;
         }
     }
@@ -296,19 +297,19 @@ public class CollationConversionTest {
      */
     private static class PhysicalSort extends Sort {
 
-        PhysicalSort( RelOptCluster cluster, RelTraitSet traits, RelNode input, RelCollation collation, RexNode offset, RexNode fetch ) {
+        PhysicalSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
             super( cluster, traits, input, collation, offset, fetch );
         }
 
 
         @Override
-        public Sort copy( RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch ) {
+        public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
             return new PhysicalSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
         }
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
     }

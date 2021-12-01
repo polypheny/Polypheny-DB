@@ -24,7 +24,7 @@ import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -86,7 +86,7 @@ public class SqlFilterOperator extends SqlBinaryOperator {
         }
         validator.validateAggregateParams( aggCall, condition, orderList, scope );
 
-        final RelDataType type = validator.deriveType( scope, condition );
+        final AlgDataType type = validator.deriveType( scope, condition );
         if ( !PolyTypeUtil.inBooleanFamily( type ) ) {
             throw validator.newValidationError( condition, Static.RESOURCE.condMustBeBoolean( "FILTER" ) );
         }
@@ -94,7 +94,7 @@ public class SqlFilterOperator extends SqlBinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator rawValidator, ValidatorScope rawScope, Call rawCall ) {
+    public AlgDataType deriveType( Validator rawValidator, ValidatorScope rawScope, Call rawCall ) {
         SqlValidator validator = (SqlValidator) rawValidator;
         SqlValidatorScope scope = (SqlValidatorScope) rawScope;
         SqlCall call = (SqlCall) rawCall;
@@ -113,7 +113,7 @@ public class SqlFilterOperator extends SqlBinaryOperator {
             }
         };
 
-        RelDataType ret = aggCall.getOperator().inferReturnType( opBinding );
+        AlgDataType ret = aggCall.getOperator().inferReturnType( opBinding );
 
         // Copied from validateOperands
         ((SqlValidatorImpl) validator).setValidatedNodeType( call, ret );

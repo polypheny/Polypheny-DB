@@ -29,7 +29,7 @@ import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -127,11 +127,11 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
         if ( !rightChecker.checkSingleOperandType( callBinding, callBinding.operand( 1 ), 0, throwOnFailure ) ) {
             return false;
         }
-        final RelDataType t0 = callBinding.getOperandType( 0 );
-        final RelDataType t1 = callBinding.getOperandType( 1 );
+        final AlgDataType t0 = callBinding.getOperandType( 0 );
+        final AlgDataType t1 = callBinding.getOperandType( 1 );
         if ( !PolyTypeUtil.isDatetime( t1 ) ) {
-            final RelDataType t00 = t0.getFieldList().get( 0 ).getType();
-            final RelDataType t10 = t1.getFieldList().get( 0 ).getType();
+            final AlgDataType t00 = t0.getFieldList().get( 0 ).getType();
+            final AlgDataType t10 = t1.getFieldList().get( 0 ).getType();
             if ( !PolyTypeUtil.sameNamedType( t00, t10 ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newValidationSignatureError();

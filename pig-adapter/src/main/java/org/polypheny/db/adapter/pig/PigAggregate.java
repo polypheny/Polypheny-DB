@@ -39,20 +39,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.pig.scripting.Pig;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Aggregate} in {@link PigRel#CONVENTION Pig calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Aggregate} in {@link PigAlg#CONVENTION Pig calling convention}.
  */
-public class PigAggregate extends Aggregate implements PigRel {
+public class PigAggregate extends Aggregate implements PigAlg {
 
     public static final String DISTINCT_FIELD_SUFFIX = "_DISTINCT";
 
@@ -60,14 +60,14 @@ public class PigAggregate extends Aggregate implements PigRel {
     /**
      * Creates a PigAggregate.
      */
-    public PigAggregate( RelOptCluster cluster, RelTraitSet traits, RelNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public PigAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
         assert getConvention() == CONVENTION;
     }
 
 
     @Override
-    public Aggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         return new PigAggregate( input.getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
     }
 
@@ -96,7 +96,7 @@ public class PigAggregate extends Aggregate implements PigRel {
      * Override this method so it looks down the tree to find the table this node is acting on.
      */
     @Override
-    public RelOptTable getTable() {
+    public AlgOptTable getTable() {
         return getInput().getTable();
     }
 
@@ -106,7 +106,7 @@ public class PigAggregate extends Aggregate implements PigRel {
      */
     private String getPigGroupBy( Implementor implementor ) {
         final String relAlias = implementor.getPigRelationAlias( this );
-        final List<RelDataTypeField> allFields = getInput().getRowType().getFieldList();
+        final List<AlgDataTypeField> allFields = getInput().getRowType().getFieldList();
         final List<Integer> groupedFieldIndexes = groupSet.asList();
         if ( groupedFieldIndexes.size() < 1 ) {
             return relAlias + " = GROUP " + relAlias + " ALL;";

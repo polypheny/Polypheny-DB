@@ -34,7 +34,7 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ImmutableIntList;
@@ -67,7 +67,7 @@ public interface ModifiableView extends Table {
      * @param rexBuilder Rex builder
      * @param tableRowType Row type of the table that this view maps onto
      */
-    RexNode getConstraint( RexBuilder rexBuilder, RelDataType tableRowType );
+    RexNode getConstraint( RexBuilder rexBuilder, AlgDataType tableRowType );
 
     /**
      * Returns the column mapping onto another table.

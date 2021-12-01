@@ -28,12 +28,12 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.exceptions.ConstraintViolationException;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.util.Pair;
 
@@ -170,7 +170,7 @@ class CoWHashIndex extends Index {
 
 
     @Override
-    public Values getAsValues( PolyXid xid, RelBuilder builder, RelDataType rowType ) {
+    public Values getAsValues( PolyXid xid, AlgBuilder builder, AlgDataType rowType ) {
         final Map<List<Object>, List<Object>> ci = cowIndex.get( xid );
         final RexBuilder rexBuilder = builder.getRexBuilder();
         final List<ImmutableList<RexLiteral>> tuples = new ArrayList<>( index.size() + (ci != null ? ci.size() : 0) );
@@ -195,7 +195,7 @@ class CoWHashIndex extends Index {
 
 
     @Override
-    public Values getAsValues( PolyXid xid, RelBuilder builder, RelDataType rowType, List<Object> key ) {
+    public Values getAsValues( PolyXid xid, AlgBuilder builder, AlgDataType rowType, List<Object> key ) {
         log.error( "{}", index.values().stream().findFirst().get().stream().map( Object::getClass ).collect( Collectors.toList() ) );
         log.error( "{}", key.stream().map( Object::getClass ).collect( Collectors.toList() ) );
         final Map<List<Object>, List<Object>> ci = cowIndex.get( xid );

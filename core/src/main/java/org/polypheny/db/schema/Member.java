@@ -36,7 +36,7 @@ package org.polypheny.db.schema;
 
 import java.util.List;
 import org.apache.calcite.linq4j.Queryable;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -74,7 +74,7 @@ public interface Member {
      *
      * @return Type of result; never null
      */
-    RelDataType getType();
+    AlgDataType getType();
 
     /**
      * Evaluates this member to yield a result. The result is a {@link org.apache.calcite.linq4j.Queryable}.

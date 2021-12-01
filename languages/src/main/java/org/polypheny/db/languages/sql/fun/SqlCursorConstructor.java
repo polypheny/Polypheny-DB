@@ -28,7 +28,7 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -51,7 +51,7 @@ public class SqlCursorConstructor extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         SqlSelect subSelect = call.operand( 0 );
         ((SqlValidator) validator).declareCursor( subSelect, (SqlValidatorScope) scope );
         subSelect.validateExpr( (SqlValidator) validator, (SqlValidatorScope) scope );

@@ -40,9 +40,9 @@ import org.polypheny.db.languages.sql.advise.SqlAdvisor;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidatorWithHints;
-import org.polypheny.db.rel.type.DelegatingTypeSystem;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.DelegatingTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.util.SourceStringReader;
 
 
@@ -69,7 +69,7 @@ public class SqlTestFactory {
     private final MockCatalogReaderFactory catalogReaderFactory;
     private final ValidatorFactory validatorFactory;
 
-    private final Supplier<RelDataTypeFactory> typeFactory;
+    private final Supplier<AlgDataTypeFactory> typeFactory;
     private final Supplier<OperatorTable> operatorTable;
     private final Supplier<ValidatorCatalogReader> catalogReader;
     private final Supplier<ParserConfig> parserConfig;
@@ -167,8 +167,8 @@ public class SqlTestFactory {
     }
 
 
-    private static RelDataTypeFactory createTypeFactory( Conformance conformance ) {
-        RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
+    private static AlgDataTypeFactory createTypeFactory( Conformance conformance ) {
+        AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
         if ( conformance.shouldConvertRaggedUnionTypesToVarying() ) {
             typeSystem = new DelegatingTypeSystem( typeSystem ) {
                 @Override
@@ -193,7 +193,7 @@ public class SqlTestFactory {
      */
     public interface ValidatorFactory {
 
-        SqlValidator create( OperatorTable opTab, ValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance );
+        SqlValidator create( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance );
 
     }
 
@@ -204,7 +204,7 @@ public class SqlTestFactory {
      */
     public interface MockCatalogReaderFactory {
 
-        MockCatalogReader create( RelDataTypeFactory typeFactory, boolean caseSensitive );
+        MockCatalogReader create( AlgDataTypeFactory typeFactory, boolean caseSensitive );
 
     }
 

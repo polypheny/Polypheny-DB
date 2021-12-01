@@ -35,7 +35,7 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -115,8 +115,8 @@ public class SqlSubstringFunction extends SqlFunction {
                 return false;
             }
         } else {
-            RelDataType t1 = validator.deriveType( scope, operands.get( 1 ) );
-            RelDataType t2 = validator.deriveType( scope, operands.get( 2 ) );
+            AlgDataType t1 = validator.deriveType( scope, operands.get( 1 ) );
+            AlgDataType t2 = validator.deriveType( scope, operands.get( 2 ) );
 
             if ( PolyTypeUtil.inCharFamily( t1 ) ) {
                 if ( !OperandTypes.STRING.checkSingleOperandType( callBinding, operands.get( 1 ), 0, throwOnFailure ) ) {

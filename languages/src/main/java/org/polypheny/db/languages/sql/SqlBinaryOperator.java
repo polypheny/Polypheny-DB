@@ -29,7 +29,7 @@ import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -106,9 +106,9 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
 
 
     @Override
-    protected RelDataType adjustType( SqlValidator validator, final SqlCall call, RelDataType type ) {
-        RelDataType operandType1 = validator.getValidatedNodeType( call.operand( 0 ) );
-        RelDataType operandType2 = validator.getValidatedNodeType( call.operand( 1 ) );
+    protected AlgDataType adjustType( SqlValidator validator, final SqlCall call, AlgDataType type ) {
+        AlgDataType operandType1 = validator.getValidatedNodeType( call.operand( 0 ) );
+        AlgDataType operandType2 = validator.getValidatedNodeType( call.operand( 1 ) );
         if ( PolyTypeUtil.inCharFamily( operandType1 ) && PolyTypeUtil.inCharFamily( operandType2 ) ) {
             Charset cs1 = operandType1.getCharset();
             Charset cs2 = operandType2.getCharset();
@@ -133,11 +133,11 @@ public class SqlBinaryOperator extends SqlOperator implements BinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
-        RelDataType type = super.deriveType( validator, scope, call );
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+        AlgDataType type = super.deriveType( validator, scope, call );
 
-        RelDataType operandType1 = validator.getValidatedNodeType( call.operand( 0 ) );
-        RelDataType operandType2 = validator.getValidatedNodeType( call.operand( 1 ) );
+        AlgDataType operandType1 = validator.getValidatedNodeType( call.operand( 0 ) );
+        AlgDataType operandType2 = validator.getValidatedNodeType( call.operand( 1 ) );
         if ( PolyTypeUtil.inCharFamily( operandType1 ) && PolyTypeUtil.inCharFamily( operandType2 ) ) {
             Charset cs1 = operandType1.getCharset();
             Charset cs2 = operandType2.getCharset();

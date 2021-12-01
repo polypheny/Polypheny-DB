@@ -36,11 +36,11 @@ package org.polypheny.db.interpreter;
 
 import java.util.function.Predicate;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -48,23 +48,23 @@ import org.polypheny.db.tools.RelBuilderFactory;
  */
 public class NoneToBindableConverterRule extends ConverterRule {
 
-    public static final ConverterRule INSTANCE = new NoneToBindableConverterRule( RelFactories.LOGICAL_BUILDER );
+    public static final ConverterRule INSTANCE = new NoneToBindableConverterRule( AlgFactories.LOGICAL_BUILDER );
 
 
     /**
      * Creates a NoneToBindableConverterRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public NoneToBindableConverterRule( RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, relBuilderFactory, "NoneToBindableConverterRule" );
+    public NoneToBindableConverterRule( AlgBuilderFactory algBuilderFactory ) {
+        super( AlgNode.class, (Predicate<AlgNode>) r -> true, Convention.NONE, BindableConvention.INSTANCE, algBuilderFactory, "NoneToBindableConverterRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutConvention() );
-        return new InterpretableConverter( rel.getCluster(), newTraitSet, rel );
+    public AlgNode convert( AlgNode alg ) {
+        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutConvention() );
+        return new InterpretableConverter( alg.getCluster(), newTraitSet, alg );
     }
 }
 

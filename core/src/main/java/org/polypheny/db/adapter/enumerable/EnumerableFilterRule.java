@@ -36,12 +36,12 @@ package org.polypheny.db.adapter.enumerable;
 
 import java.util.function.Predicate;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.LogicalFilter;
 
 
 /**
@@ -51,19 +51,19 @@ class EnumerableFilterRule extends ConverterRule {
 
     EnumerableFilterRule() {
         super( LogicalFilter.class,
-                (Predicate<LogicalFilter>) RelOptUtil::containsMultisetOrWindowedAgg,
+                (Predicate<LogicalFilter>) AlgOptUtil::containsMultisetOrWindowedAgg,
                 Convention.NONE, EnumerableConvention.INSTANCE,
-                RelFactories.LOGICAL_BUILDER, "EnumerableFilterRule" );
+                AlgFactories.LOGICAL_BUILDER, "EnumerableFilterRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalFilter filter = (LogicalFilter) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalFilter filter = (LogicalFilter) alg;
         return new EnumerableFilter(
-                rel.getCluster(),
-                rel.getTraitSet().replace( EnumerableConvention.INSTANCE ),
-                RelOptRule.convert( filter.getInput(), filter.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
+                alg.getCluster(),
+                alg.getTraitSet().replace( EnumerableConvention.INSTANCE ),
+                AlgOptRule.convert( filter.getInput(), filter.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
                 filter.getCondition() );
     }
 }

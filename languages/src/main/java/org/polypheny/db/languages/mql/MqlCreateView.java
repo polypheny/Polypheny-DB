@@ -32,9 +32,9 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -69,24 +69,24 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
                 .getProcessor( QueryLanguage.MONGO_QL )
                 .parse( buildQuery() );
 
-        RelRoot relRoot = statement.getTransaction()
+        AlgRoot relRoot = statement.getTransaction()
                 .getProcessor( QueryLanguage.MONGO_QL )
                 .translate( statement, mqlNode, parameters );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
-        RelNode relNode = relRoot.rel;
-        RelCollation relCollation = relRoot.collation;
+        AlgNode algNode = relRoot.alg;
+        AlgCollation relCollation = relRoot.collation;
 
         try {
             DdlManager.getInstance().createView(
                     name,
                     schemaId,
-                    relNode,
+                    algNode,
                     relCollation,
                     true,
                     statement,
                     placementType,
-                    relRoot.rel.getRowType().getFieldNames(),
+                    relRoot.alg.getRowType().getFieldNames(),
                     buildQuery(),
                     Catalog.QueryLanguage.MONGO_QL );
         } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {

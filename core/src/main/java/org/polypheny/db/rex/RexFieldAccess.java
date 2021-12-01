@@ -35,8 +35,8 @@ package org.polypheny.db.rex;
 
 
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 /**
@@ -66,10 +66,10 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 public class RexFieldAccess extends RexNode {
 
     private final RexNode expr;
-    private final RelDataTypeField field;
+    private final AlgDataTypeField field;
 
 
-    RexFieldAccess( RexNode expr, RelDataTypeField field ) {
+    RexFieldAccess( RexNode expr, AlgDataTypeField field ) {
         this.expr = expr;
         this.field = field;
         this.digest = expr + "." + field.getName();
@@ -77,13 +77,13 @@ public class RexFieldAccess extends RexNode {
     }
 
 
-    public RelDataTypeField getField() {
+    public AlgDataTypeField getField() {
         return field;
     }
 
 
     @Override
-    public RelDataType getType() {
+    public AlgDataType getType() {
         return field.getType();
     }
 

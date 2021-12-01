@@ -20,28 +20,28 @@ package org.polypheny.db.adapter.cottontail.rules;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverterRule;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverterRule;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 public class CottontailRules {
 
-    public static List<RelOptRule> rules( CottontailConvention out ) {
-        return rules( out, RelFactories.LOGICAL_BUILDER );
+    public static List<AlgOptRule> rules( CottontailConvention out ) {
+        return rules( out, AlgFactories.LOGICAL_BUILDER );
     }
 
 
-    public static List<RelOptRule> rules( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
+    public static List<AlgOptRule> rules( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
         return ImmutableList.of(
-                new CottontailToEnumerableConverterRule( out, relBuilderFactory ),
-                new CottontailValuesRule( out, relBuilderFactory ),
-                new CottontailTableModificationRule( out, relBuilderFactory ),
-                new CottontailProjectRule( out, relBuilderFactory ),
-                new CottontailFilterRule( out, relBuilderFactory ),
-                new CottontailSortAndProjectRule( out, relBuilderFactory ),
-                new CottontailLimitRule( out, relBuilderFactory )
+                new CottontailToEnumerableConverterRule( out, algBuilderFactory ),
+                new CottontailValuesRule( out, algBuilderFactory ),
+                new CottontailTableModificationRule( out, algBuilderFactory ),
+                new CottontailProjectRule( out, algBuilderFactory ),
+                new CottontailFilterRule( out, algBuilderFactory ),
+                new CottontailSortAndProjectRule( out, algBuilderFactory ),
+                new CottontailLimitRule( out, algBuilderFactory )
         );
     }
 

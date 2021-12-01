@@ -18,22 +18,22 @@ package org.polypheny.db.processing;
 
 
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 public interface QueryProcessor {
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
+    PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot );
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted );
+    PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted );
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery );
+    PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery );
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy );
+    PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy );
 
-    RelOptPlanner getPlanner();
+    AlgOptPlanner getPlanner();
 
     void resetCaches();
 

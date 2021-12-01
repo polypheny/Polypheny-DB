@@ -22,8 +22,8 @@ import java.util.List;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -37,7 +37,7 @@ import org.polypheny.db.type.inference.PolyReturnTypeInference;
  */
 public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implements org.polypheny.db.core.fun.TableFunction {
 
-    public SqlUserDefinedTableFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, TableFunction function ) {
+    public SqlUserDefinedTableFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<AlgDataType> paramTypes, TableFunction function ) {
         super(
                 opName,
                 returnTypeInference,
@@ -67,7 +67,7 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implemen
      * @param operandList arguments of a function call (only literal arguments are passed, nulls for non-literal ones)
      * @return row type of the table
      */
-    public RelDataType getRowType( RelDataTypeFactory typeFactory, List<SqlNode> operandList ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory, List<SqlNode> operandList ) {
         List<Object> arguments = SqlUserDefinedTableMacro.convertArguments( typeFactory, operandList, function, getNameAsId(), false );
         return getFunction().getRowType( typeFactory, arguments );
     }
@@ -79,7 +79,7 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implemen
      * @param operandList arguments of a function call (only literal arguments are passed, nulls for non-literal ones)
      * @return element type of the table (e.g. {@code Object[].class})
      */
-    public Type getElementType( RelDataTypeFactory typeFactory, List<SqlNode> operandList ) {
+    public Type getElementType( AlgDataTypeFactory typeFactory, List<SqlNode> operandList ) {
         List<Object> arguments = SqlUserDefinedTableMacro.convertArguments( typeFactory, operandList, function, getNameAsId(), false );
         return getFunction().getElementType( arguments );
     }

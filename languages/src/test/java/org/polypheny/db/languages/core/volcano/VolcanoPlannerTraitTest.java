@@ -26,29 +26,29 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelWriter;
-import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.util.Pair;
 
 
@@ -60,7 +60,7 @@ public class VolcanoPlannerTraitTest {
     /**
      * Private calling convention representing a generic "physical" calling convention.
      */
-    private static final Convention PHYS_CALLING_CONVENTION = new Convention.Impl( "PHYS", RelNode.class );
+    private static final Convention PHYS_CALLING_CONVENTION = new Convention.Impl( "PHYS", AlgNode.class );
 
     /**
      * Private trait definition for an alternate type of traits.
@@ -97,30 +97,30 @@ public class VolcanoPlannerTraitTest {
     public void testDoubleConversion() {
         VolcanoPlanner planner = new VolcanoPlanner();
 
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
-        planner.addRelTraitDef( ALT_TRAIT_DEF );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ALT_TRAIT_DEF );
 
         planner.addRule( new PhysToIteratorConverterRule() );
         planner.addRule( new AltTraitConverterRule( ALT_TRAIT, ALT_TRAIT2, "AltToAlt2ConverterRule" ) );
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new IterSingleRule() );
 
-        RelOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgOptCluster cluster = PlannerTests.newCluster( planner );
 
-        NoneLeafRel noneLeafRel = RelOptUtil.addTrait( new NoneLeafRel( cluster, "noneLeafRel" ), ALT_TRAIT );
+        NoneLeafRel noneLeafRel = AlgOptUtil.addTrait( new NoneLeafRel( cluster, "noneLeafRel" ), ALT_TRAIT );
 
-        NoneSingleRel noneRel = RelOptUtil.addTrait( new NoneSingleRel( cluster, noneLeafRel ), ALT_TRAIT2 );
+        NoneSingleAlg noneRel = AlgOptUtil.addTrait( new NoneSingleAlg( cluster, noneLeafRel ), ALT_TRAIT2 );
 
-        RelNode convertedRel = planner.changeTraits( noneRel, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ALT_TRAIT2 ) );
+        AlgNode convertedRel = planner.changeTraits( noneRel, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ALT_TRAIT2 ) );
 
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
+        AlgNode result = planner.chooseDelegate().findBestExp();
 
         assertTrue( result instanceof IterSingleRel );
         Assert.assertEquals( EnumerableConvention.INSTANCE, result.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
         Assert.assertEquals( ALT_TRAIT2, result.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
 
-        RelNode child = result.getInputs().get( 0 );
+        AlgNode child = result.getInputs().get( 0 );
         assertTrue( (child instanceof AltTraitConverter) || (child instanceof PhysToIteratorConverter) );
 
         child = child.getInputs().get( 0 );
@@ -135,24 +135,24 @@ public class VolcanoPlannerTraitTest {
     public void testRuleMatchAfterConversion() {
         VolcanoPlanner planner = new VolcanoPlanner();
 
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
-        planner.addRelTraitDef( ALT_TRAIT_DEF );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ALT_TRAIT_DEF );
 
         planner.addRule( new PhysToIteratorConverterRule() );
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new IterSingleRule() );
         planner.addRule( new IterSinglePhysMergeRule() );
 
-        RelOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgOptCluster cluster = PlannerTests.newCluster( planner );
 
-        NoneLeafRel noneLeafRel = RelOptUtil.addTrait( new NoneLeafRel( cluster, "noneLeafRel" ), ALT_TRAIT );
+        NoneLeafRel noneLeafRel = AlgOptUtil.addTrait( new NoneLeafRel( cluster, "noneLeafRel" ), ALT_TRAIT );
 
-        NoneSingleRel noneRel = RelOptUtil.addTrait( new NoneSingleRel( cluster, noneLeafRel ), ALT_EMPTY_TRAIT );
+        NoneSingleAlg noneRel = AlgOptUtil.addTrait( new NoneSingleAlg( cluster, noneLeafRel ), ALT_EMPTY_TRAIT );
 
-        RelNode convertedRel = planner.changeTraits( noneRel, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ALT_EMPTY_TRAIT ) );
+        AlgNode convertedRel = planner.changeTraits( noneRel, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ALT_EMPTY_TRAIT ) );
 
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
+        AlgNode result = planner.chooseDelegate().findBestExp();
 
         assertTrue( result instanceof IterMergedRel );
     }
@@ -163,30 +163,30 @@ public class VolcanoPlannerTraitTest {
     public void testTraitPropagation() {
         VolcanoPlanner planner = new VolcanoPlanner();
 
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
-        planner.addRelTraitDef( ALT_TRAIT_DEF );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ALT_TRAIT_DEF );
 
         planner.addRule( new PhysToIteratorConverterRule() );
         planner.addRule( new AltTraitConverterRule( ALT_TRAIT, ALT_TRAIT2, "AltToAlt2ConverterRule" ) );
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new IterSingleRule2() );
 
-        RelOptCluster cluster = PlannerTests.newCluster( planner );
+        AlgOptCluster cluster = PlannerTests.newCluster( planner );
 
-        NoneLeafRel noneLeafRel = RelOptUtil.addTrait( new NoneLeafRel( cluster, "noneLeafRel" ), ALT_TRAIT );
+        NoneLeafRel noneLeafRel = AlgOptUtil.addTrait( new NoneLeafRel( cluster, "noneLeafRel" ), ALT_TRAIT );
 
-        NoneSingleRel noneRel = RelOptUtil.addTrait( new NoneSingleRel( cluster, noneLeafRel ), ALT_TRAIT2 );
+        NoneSingleAlg noneRel = AlgOptUtil.addTrait( new NoneSingleAlg( cluster, noneLeafRel ), ALT_TRAIT2 );
 
-        RelNode convertedRel = planner.changeTraits( noneRel, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ALT_TRAIT2 ) );
+        AlgNode convertedRel = planner.changeTraits( noneRel, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ALT_TRAIT2 ) );
 
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
+        AlgNode result = planner.chooseDelegate().findBestExp();
 
         assertTrue( result instanceof IterSingleRel );
         Assert.assertEquals( EnumerableConvention.INSTANCE, result.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
         Assert.assertEquals( ALT_TRAIT2, result.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
 
-        RelNode child = result.getInputs().get( 0 );
+        AlgNode child = result.getInputs().get( 0 );
         assertTrue( child instanceof IterSingleRel );
         Assert.assertEquals( EnumerableConvention.INSTANCE, child.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) );
         Assert.assertEquals( ALT_TRAIT2, child.getTraitSet().getTrait( ALT_TRAIT_DEF ) );
@@ -203,9 +203,9 @@ public class VolcanoPlannerTraitTest {
 
 
     /**
-     * Implementation of {@link RelTrait} for testing.
+     * Implementation of {@link AlgTrait} for testing.
      */
-    private static class AltTrait implements RelTrait {
+    private static class AltTrait implements AlgTrait {
 
         private final AltTraitDef traitDef;
         private final int ordinal;
@@ -220,12 +220,12 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public void register( RelOptPlanner planner ) {
+        public void register( AlgOptPlanner planner ) {
         }
 
 
         @Override
-        public RelTraitDef getTraitDef() {
+        public AlgTraitDef getTraitDef() {
             return traitDef;
         }
 
@@ -248,7 +248,7 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public boolean satisfies( RelTrait trait ) {
+        public boolean satisfies( AlgTrait trait ) {
             return trait.equals( ALT_EMPTY_TRAIT ) || equals( trait );
         }
 
@@ -262,9 +262,9 @@ public class VolcanoPlannerTraitTest {
     /**
      * Definition of {@link AltTrait}.
      */
-    private static class AltTraitDef extends RelTraitDef<AltTrait> {
+    private static class AltTraitDef extends AlgTraitDef<AltTrait> {
 
-        private Multimap<RelTrait, Pair<RelTrait, ConverterRule>> conversionMap = HashMultimap.create();
+        private Multimap<AlgTrait, Pair<AlgTrait, ConverterRule>> conversionMap = HashMultimap.create();
 
 
         @Override
@@ -286,17 +286,17 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public RelNode convert( RelOptPlanner planner, RelNode rel, AltTrait toTrait, boolean allowInfiniteCostConverters ) {
-            RelTrait fromTrait = rel.getTraitSet().getTrait( this );
+        public AlgNode convert( AlgOptPlanner planner, AlgNode alg, AltTrait toTrait, boolean allowInfiniteCostConverters ) {
+            AlgTrait fromTrait = alg.getTraitSet().getTrait( this );
 
             if ( conversionMap.containsKey( fromTrait ) ) {
-                final RelMetadataQuery mq = RelMetadataQuery.instance();
-                for ( Pair<RelTrait, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
-                    RelTrait trait = traitAndRule.left;
+                final AlgMetadataQuery mq = AlgMetadataQuery.instance();
+                for ( Pair<AlgTrait, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
+                    AlgTrait trait = traitAndRule.left;
                     ConverterRule rule = traitAndRule.right;
 
                     if ( trait == toTrait ) {
-                        RelNode converted = rule.convert( rel );
+                        AlgNode converted = rule.convert( alg );
                         if ( (converted != null)
                                 && (!planner.getCost( converted, mq ).isInfinite()
                                 || allowInfiniteCostConverters) ) {
@@ -311,9 +311,9 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public boolean canConvert( RelOptPlanner planner, AltTrait fromTrait, AltTrait toTrait ) {
+        public boolean canConvert( AlgOptPlanner planner, AltTrait fromTrait, AltTrait toTrait ) {
             if ( conversionMap.containsKey( fromTrait ) ) {
-                for ( Pair<RelTrait, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
+                for ( Pair<AlgTrait, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
                     if ( traitAndRule.left == toTrait ) {
                         return true;
                     }
@@ -325,13 +325,13 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public void registerConverterRule( RelOptPlanner planner, ConverterRule converterRule ) {
+        public void registerConverterRule( AlgOptPlanner planner, ConverterRule converterRule ) {
             if ( !converterRule.isGuaranteed() ) {
                 return;
             }
 
-            RelTrait fromTrait = converterRule.getInTrait();
-            RelTrait toTrait = converterRule.getOutTrait();
+            AlgTrait fromTrait = converterRule.getInTrait();
+            AlgTrait toTrait = converterRule.getOutTrait();
 
             conversionMap.put( fromTrait, Pair.of( toTrait, converterRule ) );
         }
@@ -341,12 +341,12 @@ public class VolcanoPlannerTraitTest {
     /**
      * A relational expression with zero inputs.
      */
-    private abstract static class TestLeafRel extends AbstractRelNode {
+    private abstract static class TestLeafRel extends AbstractAlgNode {
 
         private String label;
 
 
-        protected TestLeafRel( RelOptCluster cluster, RelTraitSet traits, String label ) {
+        protected TestLeafRel( AlgOptCluster cluster, AlgTraitSet traits, String label ) {
             super( cluster, traits );
             this.label = label;
         }
@@ -357,17 +357,17 @@ public class VolcanoPlannerTraitTest {
         }
 
 
-        // implement RelNode
+        // implement AlgNode
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
 
-        // implement RelNode
+        // implement AlgNode
         @Override
-        protected RelDataType deriveRowType() {
-            final RelDataTypeFactory typeFactory = getCluster().getTypeFactory();
+        protected AlgDataType deriveRowType() {
+            final AlgDataTypeFactory typeFactory = getCluster().getTypeFactory();
             return typeFactory.builder()
                     .add( "this", null, typeFactory.createJavaType( Void.TYPE ) )
                     .build();
@@ -375,13 +375,13 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public RelWriter explainTerms( RelWriter pw ) {
+        public AlgWriter explainTerms( AlgWriter pw ) {
             return super.explainTerms( pw ).item( "label", label );
         }
 
 
         @Override
-        public String relCompareString() {
+        public String algCompareString() {
             return this.getClass().getSimpleName() + "$" + label + "&";
         }
     }
@@ -392,13 +392,13 @@ public class VolcanoPlannerTraitTest {
      */
     private static class NoneLeafRel extends TestLeafRel {
 
-        protected NoneLeafRel( RelOptCluster cluster, String label ) {
+        protected NoneLeafRel( AlgOptCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( Convention.NONE ), label );
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new NoneLeafRel( getCluster(), getLabel() );
         }
     }
@@ -409,14 +409,14 @@ public class VolcanoPlannerTraitTest {
      */
     private static class PhysLeafRel extends TestLeafRel {
 
-        PhysLeafRel( RelOptCluster cluster, String label ) {
+        PhysLeafRel( AlgOptCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( PHYS_CALLING_CONVENTION ), label );
         }
 
 
-        // implement RelNode
+        // implement AlgNode
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
@@ -427,23 +427,23 @@ public class VolcanoPlannerTraitTest {
     /**
      * Relational expression with one input.
      */
-    private abstract static class TestSingleRel extends SingleRel {
+    private abstract static class TestSingleAlg extends SingleAlg {
 
-        protected TestSingleRel( RelOptCluster cluster, RelTraitSet traits, RelNode child ) {
+        protected TestSingleAlg( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child ) {
             super( cluster, traits, child );
         }
 
 
-        // implement RelNode
+        // implement AlgNode
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
 
-        // implement RelNode
+        // implement AlgNode
         @Override
-        protected RelDataType deriveRowType() {
+        protected AlgDataType deriveRowType() {
             return getInput().getRowType();
         }
 
@@ -451,8 +451,8 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public String relCompareString() {
-            return this.getClass().getSimpleName() + "$" + input.relCompareString() + "&";
+        public String algCompareString() {
+            return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
         }
     }
 
@@ -460,29 +460,29 @@ public class VolcanoPlannerTraitTest {
     /**
      * Relational expression with one input, of NONE convention.
      */
-    private static class NoneSingleRel extends TestSingleRel {
+    private static class NoneSingleAlg extends TestSingleAlg {
 
-        protected NoneSingleRel( RelOptCluster cluster, RelNode child ) {
+        protected NoneSingleAlg( AlgOptCluster cluster, AlgNode child ) {
             this( cluster, cluster.traitSetOf( Convention.NONE ), child );
         }
 
 
-        protected NoneSingleRel( RelOptCluster cluster, RelTraitSet traitSet, RelNode child ) {
+        protected NoneSingleAlg( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child ) {
             super( cluster, traitSet, child );
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-            return new NoneSingleRel( getCluster(), traitSet, sole( inputs ) );
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+            return new NoneSingleAlg( getCluster(), traitSet, sole( inputs ) );
         }
     }
 
 
     /**
-     * A mix-in interface to extend {@link RelNode}, for testing.
+     * A mix-in interface to extend {@link AlgNode}, for testing.
      */
-    interface FooRel extends EnumerableRel {
+    interface FooRel extends EnumerableAlg {
 
     }
 
@@ -490,29 +490,29 @@ public class VolcanoPlannerTraitTest {
     /**
      * Relational expression with one input, that implements the {@link FooRel} mix-in interface.
      */
-    private static class IterSingleRel extends TestSingleRel implements FooRel {
+    private static class IterSingleRel extends TestSingleAlg implements FooRel {
 
-        IterSingleRel( RelOptCluster cluster, RelNode child ) {
+        IterSingleRel( AlgOptCluster cluster, AlgNode child ) {
             super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), child );
         }
 
 
-        // implement RelNode
+        // implement AlgNode
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             assert traitSet.comprises( EnumerableConvention.INSTANCE );
             return new IterSingleRel( getCluster(), sole( inputs ) );
         }
 
 
         @Override
-        public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+        public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
             return null;
         }
     }
@@ -521,7 +521,7 @@ public class VolcanoPlannerTraitTest {
     /**
      * Relational expression with zero inputs, of the PHYS convention.
      */
-    private static class PhysLeafRule extends RelOptRule {
+    private static class PhysLeafRule extends AlgOptRule {
 
         PhysLeafRule() {
             super( operand( NoneLeafRel.class, any() ) );
@@ -537,20 +537,20 @@ public class VolcanoPlannerTraitTest {
 
         // implement RelOptRule
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            NoneLeafRel leafRel = call.rel( 0 );
+        public void onMatch( AlgOptRuleCall call ) {
+            NoneLeafRel leafRel = call.alg( 0 );
             call.transformTo( new PhysLeafRel( leafRel.getCluster(), leafRel.getLabel() ) );
         }
     }
 
 
     /**
-     * Planner rule to convert a {@link NoneSingleRel} to ENUMERABLE convention.
+     * Planner rule to convert a {@link NoneSingleAlg} to ENUMERABLE convention.
      */
-    private static class IterSingleRule extends RelOptRule {
+    private static class IterSingleRule extends AlgOptRule {
 
         IterSingleRule() {
-            super( operand( NoneSingleRel.class, any() ) );
+            super( operand( NoneSingleAlg.class, any() ) );
         }
 
 
@@ -562,30 +562,30 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public RelTrait getOutTrait() {
+        public AlgTrait getOutTrait() {
             return getOutConvention();
         }
 
 
         // implement RelOptRule
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            NoneSingleRel rel = call.rel( 0 );
+        public void onMatch( AlgOptRuleCall call ) {
+            NoneSingleAlg alg = call.alg( 0 );
 
-            RelNode converted = convert( rel.getInput( 0 ), rel.getTraitSet().replace( getOutTrait() ) );
+            AlgNode converted = convert( alg.getInput( 0 ), alg.getTraitSet().replace( getOutTrait() ) );
 
-            call.transformTo( new IterSingleRel( rel.getCluster(), converted ) );
+            call.transformTo( new IterSingleRel( alg.getCluster(), converted ) );
         }
     }
 
 
     /**
-     * Another planner rule to convert a {@link NoneSingleRel} to ENUMERABLE convention.
+     * Another planner rule to convert a {@link NoneSingleAlg} to ENUMERABLE convention.
      */
-    private static class IterSingleRule2 extends RelOptRule {
+    private static class IterSingleRule2 extends AlgOptRule {
 
         IterSingleRule2() {
-            super( operand( NoneSingleRel.class, any() ) );
+            super( operand( NoneSingleAlg.class, any() ) );
         }
 
 
@@ -597,21 +597,21 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public RelTrait getOutTrait() {
+        public AlgTrait getOutTrait() {
             return getOutConvention();
         }
 
 
         // implement RelOptRule
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            NoneSingleRel rel = call.rel( 0 );
+        public void onMatch( AlgOptRuleCall call ) {
+            NoneSingleAlg alg = call.alg( 0 );
 
-            RelNode converted = convert( rel.getInput( 0 ), rel.getTraitSet().replace( getOutTrait() ) );
+            AlgNode converted = convert( alg.getInput( 0 ), alg.getTraitSet().replace( getOutTrait() ) );
 
-            IterSingleRel child = new IterSingleRel( rel.getCluster(), converted );
+            IterSingleRel child = new IterSingleRel( alg.getCluster(), converted );
 
-            call.transformTo( new IterSingleRel( rel.getCluster(), child ) );
+            call.transformTo( new IterSingleRel( alg.getCluster(), child ) );
         }
     }
 
@@ -621,18 +621,18 @@ public class VolcanoPlannerTraitTest {
      */
     private static class AltTraitConverterRule extends ConverterRule {
 
-        private final RelTrait toTrait;
+        private final AlgTrait toTrait;
 
 
         private AltTraitConverterRule( AltTrait fromTrait, AltTrait toTrait, String description ) {
-            super( RelNode.class, fromTrait, toTrait, description );
+            super( AlgNode.class, fromTrait, toTrait, description );
             this.toTrait = toTrait;
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            return new AltTraitConverter( rel.getCluster(), rel, toTrait );
+        public AlgNode convert( AlgNode alg ) {
+            return new AltTraitConverter( alg.getCluster(), alg, toTrait );
         }
 
 
@@ -648,18 +648,18 @@ public class VolcanoPlannerTraitTest {
      */
     private static class AltTraitConverter extends ConverterImpl {
 
-        private final RelTrait toTrait;
+        private final AlgTrait toTrait;
 
 
-        private AltTraitConverter( RelOptCluster cluster, RelNode child, RelTrait toTrait ) {
+        private AltTraitConverter( AlgOptCluster cluster, AlgNode child, AlgTrait toTrait ) {
             super( cluster, toTrait.getTraitDef(), child.getTraitSet().replace( toTrait ), child );
             this.toTrait = toTrait;
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-            return new AltTraitConverter( getCluster(), AbstractRelNode.sole( inputs ), toTrait );
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+            return new AltTraitConverter( getCluster(), AbstractAlgNode.sole( inputs ), toTrait );
         }
     }
 
@@ -670,13 +670,13 @@ public class VolcanoPlannerTraitTest {
     private static class PhysToIteratorConverterRule extends ConverterRule {
 
         PhysToIteratorConverterRule() {
-            super( RelNode.class, PHYS_CALLING_CONVENTION, EnumerableConvention.INSTANCE, "PhysToIteratorRule" );
+            super( AlgNode.class, PHYS_CALLING_CONVENTION, EnumerableConvention.INSTANCE, "PhysToIteratorRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            return new PhysToIteratorConverter( rel.getCluster(), rel );
+        public AlgNode convert( AlgNode alg ) {
+            return new PhysToIteratorConverter( alg.getCluster(), alg );
         }
     }
 
@@ -686,14 +686,14 @@ public class VolcanoPlannerTraitTest {
      */
     private static class PhysToIteratorConverter extends ConverterImpl {
 
-        PhysToIteratorConverter( RelOptCluster cluster, RelNode child ) {
+        PhysToIteratorConverter( AlgOptCluster cluster, AlgNode child ) {
             super( cluster, ConventionTraitDef.INSTANCE, child.getTraitSet().replace( EnumerableConvention.INSTANCE ), child );
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-            return new PhysToIteratorConverter( getCluster(), AbstractRelNode.sole( inputs ) );
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+            return new PhysToIteratorConverter( getCluster(), AbstractAlgNode.sole( inputs ) );
         }
     }
 
@@ -701,7 +701,7 @@ public class VolcanoPlannerTraitTest {
     /**
      * Planner rule that converts an {@link IterSingleRel} on a {@link PhysToIteratorConverter} into a {@link IterMergedRel}.
      */
-    private static class IterSinglePhysMergeRule extends RelOptRule {
+    private static class IterSinglePhysMergeRule extends AlgOptRule {
 
         IterSinglePhysMergeRule() {
             super( operand( IterSingleRel.class, operand( PhysToIteratorConverter.class, any() ) ) );
@@ -709,8 +709,8 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            IterSingleRel singleRel = call.rel( 0 );
+        public void onMatch( AlgOptRuleCall call ) {
+            IterSingleRel singleRel = call.alg( 0 );
             call.transformTo( new IterMergedRel( singleRel.getCluster(), null ) );
         }
     }
@@ -721,19 +721,19 @@ public class VolcanoPlannerTraitTest {
      */
     private static class IterMergedRel extends TestLeafRel implements FooRel {
 
-        IterMergedRel( RelOptCluster cluster, String label ) {
+        IterMergedRel( AlgOptCluster cluster, String label ) {
             super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), label );
         }
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeZeroCost();
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             assert traitSet.comprises( EnumerableConvention.INSTANCE );
             assert inputs.isEmpty();
             return new IterMergedRel( getCluster(), this.getLabel() );
@@ -741,7 +741,7 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+        public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
             return null;
         }
     }

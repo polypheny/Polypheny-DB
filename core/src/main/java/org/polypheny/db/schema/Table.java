@@ -36,8 +36,8 @@ package org.polypheny.db.schema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
@@ -65,7 +65,7 @@ public interface Table {
      * @param typeFactory Type factory with which to create the type
      * @return Row type
      */
-    RelDataType getRowType( RelDataTypeFactory typeFactory );
+    AlgDataType getRowType( AlgDataTypeFactory typeFactory );
 
     /**
      * Returns a provider of statistics about this table.

@@ -36,16 +36,16 @@ package org.polypheny.db.adapter.mongodb;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Util;
@@ -54,9 +54,9 @@ import org.polypheny.db.util.Util;
 /**
  * Implementation of {@link Sort} relational expression in MongoDB.
  */
-public class MongoSort extends Sort implements MongoRel {
+public class MongoSort extends Sort implements MongoAlg {
 
-    public MongoSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
+    public MongoSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, child, collation, offset, fetch );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
@@ -64,13 +64,13 @@ public class MongoSort extends Sort implements MongoRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.05 );
     }
 
 
     @Override
-    public Sort copy( RelTraitSet traitSet, RelNode input, RelCollation newCollation, RexNode offset, RexNode fetch ) {
+    public Sort copy( AlgTraitSet traitSet, AlgNode input, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
         return new MongoSort( getCluster(), traitSet, input, collation, offset, fetch );
     }
 
@@ -80,8 +80,8 @@ public class MongoSort extends Sort implements MongoRel {
         implementor.visitChild( 0, getInput() );
         if ( !collation.getFieldCollations().isEmpty() ) {
             final List<String> keys = new ArrayList<>();
-            final List<RelDataTypeField> fields = getRowType().getFieldList();
-            for ( RelFieldCollation fieldCollation : collation.getFieldCollations() ) {
+            final List<AlgDataTypeField> fields = getRowType().getFieldList();
+            for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
                 final String name =
                         fields.get( fieldCollation.getFieldIndex() ).getName();
                 keys.add( name + ": " + direction( fieldCollation ) );
@@ -106,7 +106,7 @@ public class MongoSort extends Sort implements MongoRel {
     }
 
 
-    private int direction( RelFieldCollation fieldCollation ) {
+    private int direction( AlgFieldCollation fieldCollation ) {
         switch ( fieldCollation.getDirection() ) {
             case DESCENDING:
             case STRICTLY_DESCENDING:

@@ -46,23 +46,23 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.core.EquiJoin;
-import org.polypheny.db.rel.core.Join;
-import org.polypheny.db.rel.core.JoinInfo;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.EquiJoin;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.JoinInfo;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -73,21 +73,21 @@ import org.polypheny.db.util.Pair;
 /**
  * Implementation of {@link Join} in {@link EnumerableConvention enumerable calling convention} using a merge algorithm.
  */
-public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
+public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
 
-    EnumerableMergeJoin( RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinRelType joinType ) throws InvalidRelException {
+    EnumerableMergeJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
-        final List<RelCollation> collations = traits.getTraits( RelCollationTraitDef.INSTANCE );
-        assert collations == null || RelCollations.contains( collations, leftKeys );
+        final List<AlgCollation> collations = traits.getTraits( AlgCollationTraitDef.INSTANCE );
+        assert collations == null || AlgCollations.contains( collations, leftKeys );
     }
 
 
-    public static EnumerableMergeJoin create( RelNode left, RelNode right, RexLiteral condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, JoinRelType joinType ) throws InvalidRelException {
-        final RelOptCluster cluster = right.getCluster();
-        RelTraitSet traitSet = cluster.traitSet();
-        if ( traitSet.isEnabled( RelCollationTraitDef.INSTANCE ) ) {
-            final RelMetadataQuery mq = cluster.getMetadataQuery();
-            final List<RelCollation> collations = RelMdCollation.mergeJoin( mq, left, right, leftKeys, rightKeys );
+    public static EnumerableMergeJoin create( AlgNode left, AlgNode right, RexLiteral condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, JoinAlgType joinType ) throws InvalidAlgException {
+        final AlgOptCluster cluster = right.getCluster();
+        AlgTraitSet traitSet = cluster.traitSet();
+        if ( traitSet.isEnabled( AlgCollationTraitDef.INSTANCE ) ) {
+            final AlgMetadataQuery mq = cluster.getMetadataQuery();
+            final List<AlgCollation> collations = AlgMdCollation.mergeJoin( mq, left, right, leftKeys, rightKeys );
             traitSet = traitSet.replace( collations );
         }
         return new EnumerableMergeJoin( cluster, traitSet, left, right, condition, leftKeys, rightKeys, ImmutableSet.of(), joinType );
@@ -95,12 +95,12 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
 
 
     @Override
-    public EnumerableMergeJoin copy( RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone ) {
+    public EnumerableMergeJoin copy( AlgTraitSet traitSet, RexNode condition, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         final JoinInfo joinInfo = JoinInfo.of( left, right, condition );
         assert joinInfo.isEqui();
         try {
             return new EnumerableMergeJoin( getCluster(), traitSet, left, right, condition, joinInfo.leftKeys, joinInfo.rightKeys, variablesSet, joinType );
-        } catch ( InvalidRelException e ) {
+        } catch ( InvalidAlgException e ) {
             // Semantic error not possible. Must be a bug. Convert to internal error.
             throw new AssertionError( e );
         }
@@ -108,7 +108,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // We assume that the inputs are sorted. The price of sorting them has already been paid. The cost of the join is therefore proportional to the input and output size.
         final double rightRowCount = right.estimateRowCount( mq );
         final double leftRowCount = left.estimateRowCount( mq );
@@ -119,12 +119,12 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
-        final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );
+        final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
         final Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
         final ParameterExpression left_ = Expressions.parameter( leftResult.physType.getJavaRowType(), "left" );
-        final Result rightResult = implementor.visitChild( this, 1, (EnumerableRel) right, pref );
+        final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
         final Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
         final ParameterExpression right_ = Expressions.parameter( rightResult.physType.getJavaRowType(), "right" );
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
@@ -132,7 +132,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
         final List<Expression> leftExpressions = new ArrayList<>();
         final List<Expression> rightExpressions = new ArrayList<>();
         for ( Pair<Integer, Integer> pair : Pair.zip( leftKeys, rightKeys ) ) {
-            final RelDataType keyType = typeFactory.leastRestrictive( ImmutableList.of( left.getRowType().getFieldList().get( pair.left ).getType(), right.getRowType().getFieldList().get( pair.right ).getType() ) );
+            final AlgDataType keyType = typeFactory.leastRestrictive( ImmutableList.of( left.getRowType().getFieldList().get( pair.left ).getType(), right.getRowType().getFieldList().get( pair.right ).getType() ) );
             final Type keyClass = typeFactory.getJavaClass( keyType );
             leftExpressions.add( Types.castIfNecessary( keyClass, leftResult.physType.fieldReference( left_, pair.left ) ) );
             rightExpressions.add( Types.castIfNecessary( keyClass, rightResult.physType.fieldReference( right_, pair.right ) ) );

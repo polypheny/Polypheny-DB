@@ -36,11 +36,11 @@ package org.polypheny.db.adapter.enumerable;
 
 import java.util.function.Predicate;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalTableFunctionScan;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -51,24 +51,24 @@ public class EnumerableTableFunctionScanRule extends ConverterRule {
     /**
      * Creates an EnumerableTableFunctionScanRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableTableFunctionScanRule( RelBuilderFactory relBuilderFactory ) {
+    public EnumerableTableFunctionScanRule( AlgBuilderFactory algBuilderFactory ) {
         super( LogicalTableFunctionScan.class,
-                (Predicate<RelNode>) r -> true,
+                (Predicate<AlgNode>) r -> true,
                 Convention.NONE,
                 EnumerableConvention.INSTANCE,
-                relBuilderFactory,
+                algBuilderFactory,
                 "EnumerableTableFunctionScanRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final RelTraitSet traitSet = rel.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        LogicalTableFunctionScan tbl = (LogicalTableFunctionScan) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final AlgTraitSet traitSet = alg.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        LogicalTableFunctionScan tbl = (LogicalTableFunctionScan) alg;
         return new EnumerableTableFunctionScan(
-                rel.getCluster(),
+                alg.getCluster(),
                 traitSet,
                 tbl.getInputs(),
                 tbl.getElementType(),

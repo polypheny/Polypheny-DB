@@ -34,10 +34,10 @@ import java.util.TreeSet;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema.TableEntry;
 import org.polypheny.db.schema.PolyphenyDbSchema.TypeEntry;
@@ -62,7 +62,7 @@ public class ValidatorUtil {
      * @param systemFieldList List of system fields that will be prefixed to output row type; typically empty but must not be null
      * @return join type
      */
-    public static RelDataType deriveJoinRowType( RelDataType leftType, RelDataType rightType, JoinRelType joinType, RelDataTypeFactory typeFactory, List<String> fieldNameList, List<RelDataTypeField> systemFieldList ) {
+    public static AlgDataType deriveJoinRowType( AlgDataType leftType, AlgDataType rightType, JoinAlgType joinType, AlgDataTypeFactory typeFactory, List<String> fieldNameList, List<AlgDataTypeField> systemFieldList ) {
         assert systemFieldList != null;
         switch ( joinType ) {
             case LEFT:
@@ -94,14 +94,14 @@ public class ValidatorUtil {
      * @param systemFieldList List of system fields that will be prefixed to output row type; typically empty but must not be null
      * @return type of row which results when two relations are joined
      */
-    public static RelDataType createJoinType( RelDataTypeFactory typeFactory, RelDataType leftType, RelDataType rightType, List<String> fieldNameList, List<RelDataTypeField> systemFieldList ) {
+    public static AlgDataType createJoinType( AlgDataTypeFactory typeFactory, AlgDataType leftType, AlgDataType rightType, List<String> fieldNameList, List<AlgDataTypeField> systemFieldList ) {
         assert (fieldNameList == null)
                 || (fieldNameList.size()
                 == (systemFieldList.size()
                 + leftType.getFieldCount()
                 + rightType.getFieldCount()));
         List<String> nameList = new ArrayList<>();
-        final List<RelDataType> typeList = new ArrayList<>();
+        final List<AlgDataType> typeList = new ArrayList<>();
 
         // Use a set to keep track of the field names; this is needed to ensure that the contains() call to check for name uniqueness runs in constant time; otherwise, if the number of fields is large, doing a contains() on a list can be expensive.
         final Set<String> uniqueNameList =
@@ -121,8 +121,8 @@ public class ValidatorUtil {
     }
 
 
-    private static void addFields( List<RelDataTypeField> fieldList, List<RelDataType> typeList, List<String> nameList, Set<String> uniqueNames ) {
-        for ( RelDataTypeField field : fieldList ) {
+    private static void addFields( List<AlgDataTypeField> fieldList, List<AlgDataType> typeList, List<String> nameList, Set<String> uniqueNames ) {
+        for ( AlgDataTypeField field : fieldList ) {
             String name = field.getName();
 
             // Ensure that name is unique from all previous field names
@@ -231,16 +231,16 @@ public class ValidatorUtil {
     /**
      * Returns a map from field names to indexes.
      */
-    public static Map<String, Integer> mapNameToIndex( List<RelDataTypeField> fields ) {
+    public static Map<String, Integer> mapNameToIndex( List<AlgDataTypeField> fields ) {
         ImmutableMap.Builder<String, Integer> output = ImmutableMap.builder();
-        for ( RelDataTypeField field : fields ) {
+        for ( AlgDataTypeField field : fields ) {
             output.put( field.getName(), field.getIndex() );
         }
         return output.build();
     }
 
 
-    public static void checkCharsetAndCollateConsistentIfCharType( RelDataType type ) {
+    public static void checkCharsetAndCollateConsistentIfCharType( AlgDataType type ) {
         // (every charset must have a default collation)
         if ( PolyTypeUtil.inCharFamily( type ) ) {
             Charset strCharset = type.getCharset();
@@ -353,11 +353,11 @@ public class ValidatorUtil {
     }
 
 
-    public static RelDataType createTypeFromProjection( RelDataType type, List<String> columnNameList, RelDataTypeFactory typeFactory, boolean caseSensitive ) {
+    public static AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList, AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         // If the names in columnNameList and type have case-sensitive differences, the resulting type will use those from type. These are presumably more canonical.
-        final List<RelDataTypeField> fields = new ArrayList<>( columnNameList.size() );
+        final List<AlgDataTypeField> fields = new ArrayList<>( columnNameList.size() );
         for ( String name : columnNameList ) {
-            RelDataTypeField field = type.getField( name, caseSensitive, false );
+            AlgDataTypeField field = type.getField( name, caseSensitive, false );
             fields.add( type.getFieldList().get( field.getIndex() ) );
         }
         return typeFactory.createStructType( fields );

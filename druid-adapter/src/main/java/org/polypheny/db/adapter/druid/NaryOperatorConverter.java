@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 
@@ -66,7 +66,7 @@ public class NaryOperatorConverter implements DruidSqlOperatorConverter {
 
     @Nullable
     @Override
-    public String toDruidExpression( RexNode rexNode, RelDataType rowType, DruidQuery druidQuery ) {
+    public String toDruidExpression( RexNode rexNode, AlgDataType rowType, DruidQuery druidQuery ) {
         final RexCall call = (RexCall) rexNode;
         final List<String> druidExpressions = DruidExpressions.toDruidExpressions( druidQuery, rowType, call.getOperands() );
         if ( druidExpressions == null ) {

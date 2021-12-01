@@ -38,26 +38,26 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.pig.data.DataType;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.rules.AggregateExpandDistinctAggregatesRule;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**
- * Implementation of {@link TableScan} in {@link PigRel#CONVENTION Pig calling convention}.
+ * Implementation of {@link TableScan} in {@link PigAlg#CONVENTION Pig calling convention}.
  */
-public class PigTableScan extends TableScan implements PigRel {
+public class PigTableScan extends TableScan implements PigAlg {
 
     /**
      * Creates a PigTableScan.
      */
-    public PigTableScan( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table ) {
+    public PigTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
         super( cluster, traitSet, table );
         assert getConvention() == CONVENTION;
     }
@@ -81,14 +81,14 @@ public class PigTableScan extends TableScan implements PigRel {
 
     private String getSchemaForPigStatement( Implementor implementor ) {
         final List<String> fieldNamesAndTypes = new ArrayList<>( getTable().getRowType().getFieldList().size() );
-        for ( RelDataTypeField f : getTable().getRowType().getFieldList() ) {
+        for ( AlgDataTypeField f : getTable().getRowType().getFieldList() ) {
             fieldNamesAndTypes.add( getConcatenatedFieldNameAndTypeForPigSchema( implementor, f ) );
         }
         return String.join( ", ", fieldNamesAndTypes );
     }
 
 
-    private String getConcatenatedFieldNameAndTypeForPigSchema( Implementor implementor, RelDataTypeField field ) {
+    private String getConcatenatedFieldNameAndTypeForPigSchema( Implementor implementor, AlgDataTypeField field ) {
         final PigDataType pigDataType = PigDataType.valueOf( field.getType().getPolyType() );
         final String fieldName = implementor.getFieldName( this, field.getIndex() );
         return fieldName + ':' + DataType.findTypeName( pigDataType.getPigType() );
@@ -96,9 +96,9 @@ public class PigTableScan extends TableScan implements PigRel {
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
+    public void register( AlgOptPlanner planner ) {
         planner.addRule( PigToEnumerableConverterRule.INSTANCE );
-        for ( RelOptRule rule : PigRules.ALL_PIG_OPT_RULES ) {
+        for ( AlgOptRule rule : PigRules.ALL_PIG_OPT_RULES ) {
             planner.addRule( rule );
         }
         // Don't move Aggregates around, otherwise PigAggregate.implement() won't know how to correctly procuce Pig Latin

@@ -42,16 +42,16 @@ import java.util.Objects;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Relational expression that uses Elasticsearch calling convention.
  */
-public interface ElasticsearchRel extends RelNode {
+public interface ElasticsearchRel extends AlgNode {
 
     void implement( Implementor implementor );
 
@@ -73,7 +73,7 @@ public interface ElasticsearchRel extends RelNode {
          *
          * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html">Sort</a>
          */
-        final List<Map.Entry<String, RelFieldCollation.Direction>> sort = new ArrayList<>();
+        final List<Map.Entry<String, AlgFieldCollation.Direction>> sort = new ArrayList<>();
 
         /**
          * Elastic aggregation ({@code MIN / MAX / COUNT} etc.) statements (functions).
@@ -110,7 +110,7 @@ public interface ElasticsearchRel extends RelNode {
          */
         Long fetch;
 
-        RelOptTable table;
+        AlgOptTable table;
         ElasticsearchTable elasticsearchTable;
 
 
@@ -125,7 +125,7 @@ public interface ElasticsearchRel extends RelNode {
         }
 
 
-        void addSort( String field, RelFieldCollation.Direction direction ) {
+        void addSort( String field, AlgFieldCollation.Direction direction ) {
             Objects.requireNonNull( field, "field" );
             sort.add( new Pair<>( field, direction ) );
         }
@@ -155,7 +155,7 @@ public interface ElasticsearchRel extends RelNode {
         }
 
 
-        void visitChild( int ordinal, RelNode input ) {
+        void visitChild( int ordinal, AlgNode input ) {
             assert ordinal == 0;
             ((ElasticsearchRel) input).implement( this );
         }

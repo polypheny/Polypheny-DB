@@ -188,7 +188,7 @@ public class DiffRepository {
             throw new RuntimeException( "error while creating xml parser", e );
         }
         indent = logFile.getPath().contains( "RelOptRulesTest" )
-                || logFile.getPath().contains( "SqlToRelConverterTest" )
+                || logFile.getPath().contains( "SqlToAlgConverterTest" )
                 || logFile.getPath().contains( "SqlLimitsTest" ) ? 4 : 2;
     }
 

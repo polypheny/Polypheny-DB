@@ -20,11 +20,11 @@ package org.polypheny.db.adapter.cottontail;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.adapter.cottontail.rel.CottontailRel;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg;
 import org.polypheny.db.adapter.cottontail.rules.CottontailRules;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 
 
 public class CottontailConvention extends Convention.Impl {
@@ -40,7 +40,7 @@ public class CottontailConvention extends Convention.Impl {
 
 
     public CottontailConvention( String name, Expression expression ) {
-        super( "COTTONTAIL." + name, CottontailRel.class );
+        super( "COTTONTAIL." + name, CottontailAlg.class );
         this.expression = expression;
     }
 
@@ -51,8 +51,8 @@ public class CottontailConvention extends Convention.Impl {
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : CottontailRules.rules( this ) ) {
+    public void register( AlgOptPlanner planner ) {
+        for ( AlgOptRule rule : CottontailRules.rules( this ) ) {
             planner.addRule( rule );
         }
     }

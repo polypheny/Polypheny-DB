@@ -41,13 +41,12 @@ import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.rel.RelDecorrelator;
+import org.polypheny.db.core.algebra.AlgDecorrelator;
 import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.languages.NodeToRelConverter;
-import org.polypheny.db.languages.NodeToRelConverter.Config;
-import org.polypheny.db.languages.NodeToRelConverter.ConfigBuilder;
+import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.ParserPos;
@@ -62,17 +61,17 @@ import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.parser.SqlParser;
 import org.polypheny.db.languages.sql.validate.PolyphenyDbSqlValidator;
-import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
-import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.languages.sql2alg.SqlToAlgConverter;
+import org.polypheny.db.languages.sql2alg.StandardConvertletTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -135,7 +134,7 @@ public class SqlProcessorImpl extends Processor {
 
 
     @Override
-    public Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
+    public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Validating SQL ..." );
@@ -155,7 +154,7 @@ public class SqlProcessorImpl extends Processor {
         validator.setIdentifierExpansion( true );
 
         Node validated;
-        RelDataType type;
+        AlgDataType type;
         try {
             validated = validator.validate( parsed );
             type = validator.getValidatedNodeType( validated );
@@ -177,42 +176,41 @@ public class SqlProcessorImpl extends Processor {
 
 
     @Override
-    public RelRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
         }
         stopWatch.start();
 
-        ConfigBuilder sqlToRelConfigBuilder = NodeToRelConverter.configBuilder();
-        Config sqlToRelConfig = sqlToRelConfigBuilder.build();
+        Config sqlToAlgConfig = NodeToAlgConverter.configBuilder().build();
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
 
-        final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
         final Config config =
-                NodeToRelConverter.configBuilder()
-                        .withConfig( sqlToRelConfig )
-                        .withTrimUnusedFields( false )
-                        .withConvertTableAccess( false )
+                NodeToAlgConverter.configBuilder()
+                        .config( sqlToAlgConfig )
+                        .trimUnusedFields( false )
+                        .convertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
-        RelRoot logicalRoot = sqlToRelConverter.convertQuery( query, false, true );
+        final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( query, false, true );
 
         if ( statement.getTransaction().isAnalyze() ) {
             attachAnalyzer( statement, logicalRoot );
         }
 
         // Decorrelate
-        final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
-        logicalRoot = logicalRoot.withRel( RelDecorrelator.decorrelateQuery( logicalRoot.rel, relBuilder ) );
+        final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
+        logicalRoot = logicalRoot.withAlg( AlgDecorrelator.decorrelateQuery( logicalRoot.alg, algBuilder ) );
 
         // Trim unused fields.
         if ( RuntimeConfig.TRIM_UNUSED_FIELDS.getBoolean() ) {
-            logicalRoot = trimUnusedFields( logicalRoot, sqlToRelConverter );
+            logicalRoot = trimUnusedFields( logicalRoot, sqlToAlgConverter );
         }
 
         if ( log.isTraceEnabled() ) {
-            log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            log.trace( "Logical query plan: [{}]", AlgOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
@@ -242,7 +240,7 @@ public class SqlProcessorImpl extends Processor {
 
 
     @Override
-    public RelDataType getParameterRowType( Node sqlNode ) {
+    public AlgDataType getParameterRowType( Node sqlNode ) {
         return validator.getParameterRowType( sqlNode );
     }
 
@@ -409,27 +407,27 @@ public class SqlProcessorImpl extends Processor {
 
 
     /**
-     * Walks over a tree of relational expressions, replacing each {@link RelNode} with a 'slimmed down' relational expression
+     * Walks over a tree of relational expressions, replacing each {@link AlgNode} with a 'slimmed down' relational expression
      * that projects only the columns required by its consumer.
      *
      * @param root Root of relational expression tree
      * @return Trimmed relational expression
      */
-    protected RelRoot trimUnusedFields( RelRoot root, SqlToRelConverter sqlToRelConverter ) {
-        final Config config = NodeToRelConverter.configBuilder()
-                .withTrimUnusedFields( shouldTrim( root.rel ) )
-                .withExpand( false )
+    protected AlgRoot trimUnusedFields( AlgRoot root, SqlToAlgConverter sqlToAlgConverter ) {
+        final Config config = NodeToAlgConverter.configBuilder()
+                .trimUnusedFields( shouldTrim( root.alg ) )
+                .expand( false )
                 .build();
         final boolean ordered = !root.collation.getFieldCollations().isEmpty();
         final boolean dml = Kind.DML.contains( root.kind );
-        return root.withRel( sqlToRelConverter.trimUnusedFields( dml || ordered, root.rel ) );
+        return root.withAlg( sqlToAlgConverter.trimUnusedFields( dml || ordered, root.alg ) );
     }
 
 
-    private boolean shouldTrim( RelNode rootRel ) {
+    private boolean shouldTrim( AlgNode rootAlg ) {
         // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past
         // joins and seem to prevent join-reordering.
-        return RelOptUtil.countJoins( rootRel ) < 2;
+        return AlgOptUtil.countJoins( rootAlg ) < 2;
     }
 
 }

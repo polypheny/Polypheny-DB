@@ -24,7 +24,7 @@ import org.polypheny.db.core.validate.ValidatorNamespace;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Pair;
 
 
@@ -61,23 +61,23 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
      *
      * @return Row type converted to struct
      */
-    RelDataType getType();
+    AlgDataType getType();
 
     /**
      * Sets the type of this namespace.
      *
-     * Allows the type for the namespace to be explicitly set, but usually is called during {@link #validate(RelDataType)}.
+     * Allows the type for the namespace to be explicitly set, but usually is called during {@link #validate(AlgDataType)}.
      *
      * Implicitly also sets the row type. If the type is not a struct, then the row type is the type wrapped as a struct with a single column, otherwise the type and row type are the same.
      */
-    void setType( RelDataType type );
+    void setType( AlgDataType type );
 
     /**
      * Returns the row type of this namespace, sans any system columns.
      *
      * @return Row type sans system columns
      */
-    RelDataType getRowTypeSansSystemColumns();
+    AlgDataType getRowTypeSansSystemColumns();
 
     /**
      * Validates this namespace.
@@ -88,7 +88,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
      *
      * @param targetRowType Desired row type, must not be null, may be the data type 'unknown'.
      */
-    void validate( RelDataType targetRowType );
+    void validate( AlgDataType targetRowType );
 
     /**
      * Returns the parse tree node at the root of this namespace.
@@ -152,7 +152,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
      *
      * A {@code WITH}) clause defines table names that resolve to queries (the body of the with-item). An {@link IdentifierNamespace} typically resolves to a {@link TableNamespace}.
      *
-     * You must not call this method before {@link #validate(RelDataType)} has completed.
+     * You must not call this method before {@link #validate(AlgDataType)} has completed.
      */
     SqlValidatorNamespace resolve();
 

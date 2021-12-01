@@ -20,8 +20,8 @@ package org.polypheny.db.type.checker;
 import java.util.Objects;
 import org.polypheny.db.core.nodes.CallBinding;
 import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeComparability;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 
 
 /**
@@ -30,11 +30,11 @@ import org.polypheny.db.rel.type.RelDataTypeComparability;
  */
 public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
 
-    private final RelDataTypeComparability requiredComparability;
+    private final AlgDataTypeComparability requiredComparability;
     private final Consistency consistency;
 
 
-    public ComparableOperandTypeChecker( int nOperands, RelDataTypeComparability requiredComparability, Consistency consistency ) {
+    public ComparableOperandTypeChecker( int nOperands, AlgDataTypeComparability requiredComparability, Consistency consistency ) {
         super( nOperands );
         this.requiredComparability = requiredComparability;
         this.consistency = Objects.requireNonNull( consistency );
@@ -45,7 +45,7 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
     public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         boolean b = true;
         for ( int i = 0; i < nOperands; ++i ) {
-            RelDataType type = callBinding.getOperandType( i );
+            AlgDataType type = callBinding.getOperandType( i );
             if ( !checkType( callBinding, throwOnFailure, type ) ) {
                 b = false;
             }
@@ -60,7 +60,7 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
     }
 
 
-    private boolean checkType( CallBinding callBinding, boolean throwOnFailure, RelDataType type ) {
+    private boolean checkType( CallBinding callBinding, boolean throwOnFailure, AlgDataType type ) {
         if ( type.getComparability().ordinal() < requiredComparability.ordinal() ) {
             if ( throwOnFailure ) {
                 throw callBinding.newValidationSignatureError();
@@ -81,7 +81,7 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
     public boolean checkOperandTypes( OperatorBinding callBinding ) {
         boolean b = true;
         for ( int i = 0; i < nOperands; ++i ) {
-            RelDataType type = callBinding.getOperandType( i );
+            AlgDataType type = callBinding.getOperandType( i );
             if ( type.getComparability().ordinal() < requiredComparability.ordinal() ) {
                 b = false;
             }

@@ -28,7 +28,7 @@ import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.InferTypes;
@@ -128,9 +128,9 @@ public class SqlAsOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // special case for AS:  never try to derive type for alias
-        RelDataType nodeType = validator.deriveType( scope, call.operand( 0 ) );
+        AlgDataType nodeType = validator.deriveType( scope, call.operand( 0 ) );
         assert nodeType != null;
         return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }

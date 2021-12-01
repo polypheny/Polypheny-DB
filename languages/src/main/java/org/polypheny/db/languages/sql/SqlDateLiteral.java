@@ -18,8 +18,8 @@ package org.polypheny.db.languages.sql;
 
 
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 
@@ -67,7 +67,7 @@ public class SqlDateLiteral extends SqlAbstractDateTimeLiteral {
 
 
     @Override
-    public RelDataType createSqlType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType createSqlType( AlgDataTypeFactory typeFactory ) {
         return typeFactory.createPolyType( getTypeName() );
     }
 

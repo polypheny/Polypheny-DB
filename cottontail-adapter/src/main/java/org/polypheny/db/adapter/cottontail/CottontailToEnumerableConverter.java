@@ -37,25 +37,25 @@ import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerabl
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailInsertEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailUpdateEnumerable;
-import org.polypheny.db.adapter.cottontail.rel.CottontailRel.CottontailImplementContext;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
@@ -73,7 +73,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
-public class CottontailToEnumerableConverter extends ConverterImpl implements EnumerableRel {
+public class CottontailToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
     public static final List<PolyType> SUPPORTED_ARRAY_COMPONENT_TYPES = ImmutableList.of(
             PolyType.TINYINT,
@@ -91,38 +91,38 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
      *
      * @param cluster planner's cluster
      * @param traits the output traits of this converter
-     * @param child child rel (provides input traits)
+     * @param child child alg (provides input traits)
      */
-    public CottontailToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode child ) {
+    public CottontailToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, child );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new CottontailToEnumerableConverter( getCluster(), traitSet, AbstractRelNode.sole( inputs ) );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new CottontailToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ) );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder list = new BlockBuilder();
         final CottontailImplementContext cottontailContext = new CottontailImplementContext();
         cottontailContext.blockBuilder = list;
         cottontailContext.visitChild( 0, getInput() );
 
         final CottontailConvention convention = (CottontailConvention) getInput().getConvention();
-        final RelDataType rowType = getRowType();
+        final AlgDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
         List<Pair<String, String>> pairs = Pair.zip(
-                rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ),
+                rowType.getFieldList().stream().map( AlgDataTypeField::getPhysicalName ).collect( Collectors.toList() ),
                 rowType.getFieldNames() );
         List<String> physicalFieldNames = pairs.stream()
                 .map( it -> it.left != null ? it.left : it.right )
@@ -252,14 +252,14 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
 
     private void generateGet(
-            RelDataType rowType,
+            AlgDataType rowType,
             List<String> physicalRowNames,
             BlockBuilder blockBuilder,
             ParameterExpression result_, /* This should be a DataMap<String, Data> */
             int i,
             Expression target
     ) {
-        final RelDataType fieldType = rowType.getFieldList().get( i ).getType();
+        final AlgDataType fieldType = rowType.getFieldList().get( i ).getType();
 
         // Fetch Data from DataMap
         // This should generate: `result_.get(<physical field name>)`

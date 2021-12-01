@@ -51,7 +51,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Pair;
 
 
@@ -199,17 +199,17 @@ class HtmlRowConverter {
     }
 
 
-    RelDataType getRowType( JavaTypeFactory typeFactory ) {
+    AlgDataType getRowType( JavaTypeFactory typeFactory ) {
         initialize();
         List<String> names = new ArrayList<>();
-        List<RelDataType> types = new ArrayList<>();
+        List<AlgDataType> types = new ArrayList<>();
 
         // iterate through FieldDefs, populating names and types
         for ( FieldDef f : this.fields ) {
             names.add( f.getName() );
 
             HtmlFieldType fieldType = f.getType();
-            RelDataType type;
+            AlgDataType type;
 
             if ( fieldType == null ) {
                 type = typeFactory.createJavaType( String.class );

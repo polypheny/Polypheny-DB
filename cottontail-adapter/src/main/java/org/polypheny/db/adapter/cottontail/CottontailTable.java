@@ -25,21 +25,21 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
-import org.polypheny.db.adapter.cottontail.rel.CottontailTableScan;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailTableScan;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptTable.ToRelContext;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.SchemaPlus;
@@ -56,7 +56,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 
 public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {  // implements TranslatableTable
 
-    private RelProtoDataType protoRowType;
+    private AlgProtoDataType protoRowType;
     private CottontailSchema cottontailSchema;
 
     @Getter
@@ -78,7 +78,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
             String logicalSchemaName,
             String logicalTableName,
             List<String> logicalColumnNames,
-            RelProtoDataType protoRowType,
+            AlgProtoDataType protoRowType,
             String physicalSchemaName,
             String physicalTableName,
             List<String> physicalColumnNames ) {
@@ -119,11 +119,11 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
 
     @Override
-    public TableModify toModificationRel(
-            RelOptCluster cluster,
-            RelOptTable table,
+    public TableModify toModificationAlg(
+            AlgOptCluster cluster,
+            AlgOptTable table,
             CatalogReader catalogReader,
-            RelNode input,
+            AlgNode input,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
@@ -165,13 +165,13 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
 
     @Override
-    public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
+    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
         return new CottontailTableScan( context.getCluster(), relOptTable, this, this.cottontailSchema.getConvention() );
     }
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
 

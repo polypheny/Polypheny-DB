@@ -31,13 +31,13 @@ import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.RexImplicationChecker;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.rex.RexInputRef;
@@ -64,20 +64,20 @@ import org.polypheny.db.util.TimestampString;
 @SuppressWarnings("WeakerAccess")
 public class TestFixture {
 
-    public final RelDataTypeFactory typeFactory;
+    public final AlgDataTypeFactory typeFactory;
     public final RexBuilder rexBuilder;
-    public final RelDataType boolRelDataType;
-    public final RelDataType intRelDataType;
-    public final RelDataType decRelDataType;
-    public final RelDataType longRelDataType;
-    public final RelDataType shortDataType;
-    public final RelDataType byteDataType;
-    public final RelDataType floatDataType;
-    public final RelDataType charDataType;
-    public final RelDataType dateDataType;
-    public final RelDataType timestampDataType;
-    public final RelDataType timeDataType;
-    public final RelDataType stringDataType;
+    public final AlgDataType boolRelDataType;
+    public final AlgDataType intAlgDataType;
+    public final AlgDataType decRelDataType;
+    public final AlgDataType longRelDataType;
+    public final AlgDataType shortDataType;
+    public final AlgDataType byteDataType;
+    public final AlgDataType floatDataType;
+    public final AlgDataType charDataType;
+    public final AlgDataType dateDataType;
+    public final AlgDataType timestampDataType;
+    public final AlgDataType timeDataType;
+    public final AlgDataType stringDataType;
 
     public final RexNode bl; // a field of Java type "Boolean"
     public final RexNode i; // a field of Java type "Integer"
@@ -93,16 +93,16 @@ public class TestFixture {
     public final RexNode str; // a field of Java type "String"
 
     public final RexImplicationChecker checker;
-    public final RelDataType rowType;
+    public final AlgDataType rowType;
     public final RexExecutorImpl executor;
     public final RexSimplify simplify;
 
 
     public TestFixture() {
-        typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
         boolRelDataType = typeFactory.createJavaType( Boolean.class );
-        intRelDataType = typeFactory.createJavaType( Integer.class );
+        intAlgDataType = typeFactory.createJavaType( Integer.class );
         decRelDataType = typeFactory.createJavaType( Double.class );
         longRelDataType = typeFactory.createJavaType( Long.class );
         shortDataType = typeFactory.createJavaType( Short.class );
@@ -115,7 +115,7 @@ public class TestFixture {
         stringDataType = typeFactory.createJavaType( String.class );
 
         bl = ref( 0, this.boolRelDataType );
-        i = ref( 1, intRelDataType );
+        i = ref( 1, intAlgDataType );
         dec = ref( 2, decRelDataType );
         lg = ref( 3, longRelDataType );
         sh = ref( 4, shortDataType );
@@ -129,7 +129,7 @@ public class TestFixture {
 
         rowType = typeFactory.builder()
                 .add( "bool", null, this.boolRelDataType )
-                .add( "int", null, intRelDataType )
+                .add( "int", null, intAlgDataType )
                 .add( "dec", null, decRelDataType )
                 .add( "long", null, longRelDataType )
                 .add( "short", null, shortDataType )
@@ -163,7 +163,7 @@ public class TestFixture {
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         DataContext dataContext = Schemas.createDataContext( rootSchema );
                         holder.set( new RexExecutorImpl( dataContext ) );
                         return null;
@@ -171,12 +171,12 @@ public class TestFixture {
                 } );
 
         executor = holder.get();
-        simplify = new RexSimplify( rexBuilder, RelOptPredicateList.EMPTY, executor ).withParanoid( true );
+        simplify = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, executor ).withParanoid( true );
         checker = new RexImplicationChecker( rexBuilder, executor, rowType );
     }
 
 
-    public RexInputRef ref( int i, RelDataType type ) {
+    public RexInputRef ref( int i, AlgDataType type ) {
         return new RexInputRef( i, typeFactory.createTypeWithNullability( type, true ) );
     }
 
@@ -276,7 +276,7 @@ public class TestFixture {
     }
 
 
-    public RexNode cast( RelDataType type, RexNode exp ) {
+    public RexNode cast( AlgDataType type, RexNode exp ) {
         return rexBuilder.makeCast( type, exp, true );
     }
 

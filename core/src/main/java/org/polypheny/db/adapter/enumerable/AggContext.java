@@ -36,8 +36,8 @@ package org.polypheny.db.adapter.enumerable;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.core.fun.AggFunction;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -54,30 +54,30 @@ public interface AggContext {
     AggFunction aggregation();
 
     /**
-     * Returns the return type of the aggregate as {@link org.polypheny.db.rel.type.RelDataType}.
-     * This can be helpful to test {@link org.polypheny.db.rel.type.RelDataType#isNullable()}.
+     * Returns the return type of the aggregate as {@link AlgDataType}.
+     * This can be helpful to test {@link AlgDataType#isNullable()}.
      *
      * @return return type of the aggregate
      */
-    RelDataType returnRelType();
+    AlgDataType returnAlgType();
 
     /**
-     * Returns the return type of the aggregate as {@link java.lang.reflect.Type}.
+     * Returns the return type of the aggregate as {@link Type}.
      *
-     * @return return type of the aggregate as {@link java.lang.reflect.Type}
+     * @return return type of the aggregate as {@link Type}
      */
     Type returnType();
 
     /**
-     * Returns the parameter types of the aggregate as {@link org.polypheny.db.rel.type.RelDataType}.
-     * This can be helpful to test {@link org.polypheny.db.rel.type.RelDataType#isNullable()}.
+     * Returns the parameter types of the aggregate as {@link AlgDataType}.
+     * This can be helpful to test {@link AlgDataType#isNullable()}.
      *
      * @return Parameter types of the aggregate
      */
-    List<? extends RelDataType> parameterRelTypes();
+    List<? extends AlgDataType> parameterAlgTypes();
 
     /**
-     * Returns the parameter types of the aggregate as {@link java.lang.reflect.Type}.
+     * Returns the parameter types of the aggregate as {@link Type}.
      *
      * @return Parameter types of the aggregate
      */
@@ -89,12 +89,12 @@ public interface AggContext {
     List<Integer> keyOrdinals();
 
     /**
-     * Returns the types of the group key as {@link org.polypheny.db.rel.type.RelDataType}.
+     * Returns the types of the group key as {@link AlgDataType}.
      */
-    List<? extends RelDataType> keyRelTypes();
+    List<? extends AlgDataType> keyAlgTypes();
 
     /**
-     * Returns the types of the group key as {@link java.lang.reflect.Type}.
+     * Returns the types of the group key as {@link Type}.
      */
     List<? extends Type> keyTypes();
 

@@ -28,8 +28,8 @@ import org.polypheny.db.core.nodes.Literal;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeComparability;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -334,7 +334,7 @@ public abstract class OperandTypes {
     public static final PolyOperandTypeChecker COMPARABLE_ORDERED_COMPARABLE_ORDERED =
             new ComparableOperandTypeChecker(
                     2,
-                    RelDataTypeComparability.ALL,
+                    AlgDataTypeComparability.ALL,
                     PolyOperandTypeChecker.Consistency.COMPARE );
 
     /**
@@ -343,7 +343,7 @@ public abstract class OperandTypes {
     public static final PolyOperandTypeChecker COMPARABLE_ORDERED =
             new ComparableOperandTypeChecker(
                     1,
-                    RelDataTypeComparability.ALL,
+                    AlgDataTypeComparability.ALL,
                     PolyOperandTypeChecker.Consistency.NONE );
 
     /**
@@ -352,7 +352,7 @@ public abstract class OperandTypes {
     public static final PolyOperandTypeChecker COMPARABLE_UNORDERED_COMPARABLE_UNORDERED =
             new ComparableOperandTypeChecker(
                     2,
-                    RelDataTypeComparability.UNORDERED,
+                    AlgDataTypeComparability.UNORDERED,
                     PolyOperandTypeChecker.Consistency.LEAST_RESTRICTIVE );
 
     /**
@@ -441,7 +441,7 @@ public abstract class OperandTypes {
                 @Override
                 public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
                     assert 0 == iFormalOperand;
-                    RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
+                    AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
                     boolean validationError = false;
                     if ( !type.isStruct() ) {
                         validationError = true;
@@ -514,7 +514,7 @@ public abstract class OperandTypes {
                 @Override
                 public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
                     assert 0 == iFormalOperand;
-                    RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
+                    AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
                     boolean validationError = false;
                     if ( !type.isStruct() ) {
                         validationError = true;
@@ -576,11 +576,11 @@ public abstract class OperandTypes {
         @Override
         public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
             assert 0 == iFormalOperand;
-            RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
+            AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
             boolean valid = false;
             if ( type.isStruct() && type.getFieldList().size() == 2 ) {
-                final RelDataType t0 = type.getFieldList().get( 0 ).getType();
-                final RelDataType t1 = type.getFieldList().get( 1 ).getType();
+                final AlgDataType t0 = type.getFieldList().get( 0 ).getType();
+                final AlgDataType t1 = type.getFieldList().get( 1 ).getType();
                 if ( PolyTypeUtil.isDatetime( t0 ) ) {
                     if ( PolyTypeUtil.isDatetime( t1 ) ) {
                         // t0 must be comparable with t1; (DATE, TIMESTAMP) is not valid

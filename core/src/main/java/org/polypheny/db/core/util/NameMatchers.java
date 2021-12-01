@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.Util;
 
 
@@ -155,7 +155,7 @@ public class NameMatchers {
 
 
         @Override
-        public RelDataTypeField field( RelDataType rowType, String fieldName ) {
+        public AlgDataTypeField field( AlgDataType rowType, String fieldName ) {
             return rowType.getField( fieldName, caseSensitive, false );
         }
 

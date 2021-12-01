@@ -26,11 +26,11 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.cql.TableIndex;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
@@ -43,14 +43,14 @@ public class RelBuildTestHelper extends CqlTestHelper {
     protected final JavaTypeFactory typeFactory;
     protected final RexBuilder rexBuilder;
     protected final Map<Long, Integer> tableScanOrdinalities;
-    protected RelBuilder relBuilder;
+    protected AlgBuilder algBuilder;
 
 
     public RelBuildTestHelper( RelBuildLevel relBuildLevel ) throws UnknownIndexException {
         instance = TestHelper.getInstance();
         transaction = instance.getTransaction();
         statement = transaction.createStatement();
-        relBuilder = RelBuilder.create( statement );
+        algBuilder = AlgBuilder.create( statement );
         typeFactory = transaction.getTypeFactory();
         rexBuilder = new RexBuilder( typeFactory );
         tableScanOrdinalities = new HashMap<>();
@@ -59,13 +59,13 @@ public class RelBuildTestHelper extends CqlTestHelper {
 //            If NONE, then don't build any relational algebra.
 //            Else, keep executing more statements.
         } else {
-            relBuilder = relBuilder.scan( "test", "employee" );
-            relBuilder = relBuilder.scan( "test", "dept" );
+            algBuilder = algBuilder.scan( "test", "employee" );
+            algBuilder = algBuilder.scan( "test", "dept" );
             if ( relBuildLevel == RelBuildLevel.TABLE_SCAN ) {
 //                If TABLE_SCAN, then scan has already been done.
 //                Else, keep executing more statements.
             } else {
-                relBuilder = relBuilder.join( JoinRelType.INNER );
+                algBuilder = algBuilder.join( JoinAlgType.INNER );
                 if ( relBuildLevel == RelBuildLevel.TABLE_JOIN ) {
 //                    If TABLE_JOIN, then join has already been done.
 //                    Else, keep executing more statements.
@@ -81,12 +81,12 @@ public class RelBuildTestHelper extends CqlTestHelper {
                         for ( Long columnId : tableIndex.catalogTable.columnIds ) {
                             CatalogColumn column = catalog.getColumn( columnId );
                             columnNames.add( tableIndex.fullyQualifiedName + "." + column.name );
-                            RexInputRef inputRef = rexBuilder.makeInputRef( relBuilder.peek(), inputRefs.size() );
+                            RexInputRef inputRef = rexBuilder.makeInputRef( algBuilder.peek(), inputRefs.size() );
                             tableScanOrdinalities.put( columnId, inputRefs.size() );
                             inputRefs.add( inputRef );
                         }
                     }
-                    relBuilder = relBuilder.project( inputRefs, columnNames, true );
+                    algBuilder = algBuilder.project( inputRefs, columnNames, true );
                     if ( relBuildLevel == RelBuildLevel.INITIAL_PROJECTION ) {
 //                        If INITIAL_PROJECTION, then initial projection has already been done.
                     }

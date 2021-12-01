@@ -20,21 +20,21 @@ package org.polypheny.db.languages.sql;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.externalize.RelJsonReader;
-import org.polypheny.db.rel.externalize.RelJsonWriter;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.externalize.AlgJsonReader;
+import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.tools.Frameworks;
 
 
 /**
- * Runs {@link SqlToRelConverterTest} with extensions.
+ * Runs {@link SqlToAlgConverterTest} with extensions.
  */
-public class SqlToRelConverterExtendedTest extends SqlToRelConverterTest {
+public class SqlToRelConverterExtendedTest extends SqlToAlgConverterTest {
 
     Closeable closeable;
 
@@ -54,27 +54,27 @@ public class SqlToRelConverterExtendedTest extends SqlToRelConverterTest {
     }
 
 
-    public static void foo( RelNode rel ) {
-        // Convert rel tree to JSON.
-        final RelJsonWriter writer = new RelJsonWriter();
-        rel.explain( writer );
+    public static void foo( AlgNode alg ) {
+        // Convert alg tree to JSON.
+        final AlgJsonWriter writer = new AlgJsonWriter();
+        alg.explain( writer );
         final String json = writer.asString();
 
         // Find the schema. If there are no tables in the plan, we won't need one.
-        final RelOptSchema[] schemas = { null };
-        rel.accept( new RelShuttleImpl() {
+        final AlgOptSchema[] schemas = { null };
+        alg.accept( new AlgShuttleImpl() {
             @Override
-            public RelNode visit( TableScan scan ) {
+            public AlgNode visit( TableScan scan ) {
                 schemas[0] = scan.getTable().getRelOptSchema();
                 return super.visit( scan );
             }
         } );
 
-        // Convert JSON back to rel tree.
+        // Convert JSON back to alg tree.
         Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
-            final RelJsonReader reader = new RelJsonReader( cluster, schemas[0], rootSchema );
+            final AlgJsonReader reader = new AlgJsonReader( cluster, schemas[0], rootSchema );
             try {
-                RelNode x = reader.read( json );
+                AlgNode x = reader.read( json );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }

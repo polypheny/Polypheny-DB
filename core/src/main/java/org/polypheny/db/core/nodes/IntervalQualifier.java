@@ -17,7 +17,7 @@
 package org.polypheny.db.core.nodes;
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
 
 public interface IntervalQualifier extends Visitable {
@@ -26,7 +26,7 @@ public interface IntervalQualifier extends Visitable {
 
     int getStartPrecisionPreservingDefault();
 
-    int getFractionalSecondPrecision( RelDataTypeSystem typeSystem );
+    int getFractionalSecondPrecision( AlgDataTypeSystem typeSystem );
 
     int getFractionalSecondPrecisionPreservingDefault();
 

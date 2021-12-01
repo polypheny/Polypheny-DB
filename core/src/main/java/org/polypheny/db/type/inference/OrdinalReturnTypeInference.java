@@ -18,7 +18,7 @@ package org.polypheny.db.type.inference;
 
 
 import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -35,7 +35,7 @@ public class OrdinalReturnTypeInference implements PolyReturnTypeInference {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         return opBinding.getOperandType( ordinal );
     }
 

@@ -21,8 +21,8 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.type.PolyType;
@@ -51,7 +51,7 @@ public class JsonTable extends AbstractTable implements ScannableTable {
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return typeFactory.builder().add(
                 "_MAP",
                 null,

@@ -23,8 +23,8 @@ import java.util.Objects;
 import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.util.Util;
 
 
@@ -51,8 +51,8 @@ class SchemaNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
-        final RelDataTypeFactory.Builder builder = validator.getTypeFactory().builder();
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+        final AlgDataTypeFactory.Builder builder = validator.getTypeFactory().builder();
         for ( Moniker moniker : validator.catalogReader.getAllSchemaObjectNames( names ) ) {
             final List<String> names1 = moniker.getFullyQualifiedNames();
             final ValidatorTable table = validator.catalogReader.getTable( names1 );

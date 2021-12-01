@@ -39,36 +39,36 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Minus;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
  * Implementation of {@link Minus} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableMinus extends Minus implements EnumerableRel {
+public class EnumerableMinus extends Minus implements EnumerableAlg {
 
-    public EnumerableMinus( RelOptCluster cluster, RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
+    public EnumerableMinus( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
         assert !all;
     }
 
 
     @Override
-    public EnumerableMinus copy( RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
+    public EnumerableMinus copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         return new EnumerableMinus( getCluster(), traitSet, inputs, all );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         Expression minusExp = null;
-        for ( Ord<RelNode> ord : Ord.zip( inputs ) ) {
-            EnumerableRel input = (EnumerableRel) ord.e;
+        for ( Ord<AlgNode> ord : Ord.zip( inputs ) ) {
+            EnumerableAlg input = (EnumerableAlg) ord.e;
             final Result result = implementor.visitChild( this, ord.i, input, pref );
             Expression childExp = builder.append( "child" + ord.i, result.block );
 

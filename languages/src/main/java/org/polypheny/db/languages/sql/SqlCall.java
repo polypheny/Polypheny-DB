@@ -31,7 +31,7 @@ import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Litmus;
 
 
@@ -170,7 +170,7 @@ public abstract class SqlCall extends SqlNode implements Call {
     protected String getCallSignature( SqlValidator validator, SqlValidatorScope scope ) {
         List<String> signatureList = new ArrayList<>();
         for ( final Node operand : getSqlOperandList() ) {
-            final RelDataType argType = validator.deriveType( scope, operand );
+            final AlgDataType argType = validator.deriveType( scope, operand );
             if ( null == argType ) {
                 continue;
             }

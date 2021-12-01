@@ -34,7 +34,7 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -61,7 +61,7 @@ class RexCopier extends RexShuttle {
     }
 
 
-    private RelDataType copy( RelDataType type ) {
+    private AlgDataType copy( AlgDataType type ) {
         return builder.getTypeFactory().copyType( type );
     }
 

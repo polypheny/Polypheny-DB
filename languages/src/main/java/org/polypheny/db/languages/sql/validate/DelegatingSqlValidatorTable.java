@@ -21,7 +21,7 @@ import java.util.List;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.util.AccessType;
 import org.polypheny.db.core.validate.ValidatorTable;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -43,7 +43,7 @@ public abstract class DelegatingSqlValidatorTable implements ValidatorTable {
 
 
     @Override
-    public RelDataType getRowType() {
+    public AlgDataType getRowType() {
         return table.getRowType();
     }
 

@@ -50,9 +50,9 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -124,12 +124,12 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-        RelRoot relRoot = sqlProcessor.translate(
+        AlgRoot relRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
 
-        RelNode relNode = relRoot.rel;
-        RelCollation relCollation = relRoot.collation;
+        AlgNode algNode = relRoot.alg;
+        AlgCollation relCollation = relRoot.collation;
 
         List<String> columns = null;
 
@@ -141,7 +141,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
             DdlManager.getInstance().createView(
                     viewName,
                     schemaId,
-                    relNode,
+                    algNode,
                     relCollation,
                     replace,
                     statement,

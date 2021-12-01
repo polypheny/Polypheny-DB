@@ -22,7 +22,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -34,7 +34,7 @@ import org.polypheny.db.transaction.Statement;
 public abstract class StatementEvent extends BaseEvent {
 
     protected String monitoringType;
-    protected RelRoot routed;
+    protected AlgRoot routed;
     protected PolyphenyDbSignature signature;
     protected Statement statement;
     protected List<List<Object>> rows;

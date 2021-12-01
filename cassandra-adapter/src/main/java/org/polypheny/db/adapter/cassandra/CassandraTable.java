@@ -54,18 +54,19 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.SchemaPlus;
@@ -79,10 +80,10 @@ import org.polypheny.db.util.Pair;
  */
 public class CassandraTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
-    RelProtoDataType protoRowType;
+    AlgProtoDataType protoRowType;
     Pair<List<String>, List<String>> keyFields;
     Pair<List<String>, List<String>> physicalKeyFields;
-    List<RelFieldCollation> clusteringOrder;
+    List<AlgFieldCollation> clusteringOrder;
     private final CassandraSchema cassandraSchema;
     private final String columnFamily;
     private final String physicalName;
@@ -131,9 +132,9 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         if ( protoRowType == null ) {
-            protoRowType = cassandraSchema.getRelDataType( physicalName, view );
+            protoRowType = cassandraSchema.getAlgDataType( physicalName, view );
         }
         return protoRowType.apply( typeFactory );
     }
@@ -155,7 +156,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
-    public List<RelFieldCollation> getClusteringOrder() {
+    public List<AlgFieldCollation> getClusteringOrder() {
         if ( clusteringOrder == null ) {
             clusteringOrder = cassandraSchema.getClusteringOrder( physicalName, view );
         }
@@ -271,8 +272,8 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        final RelOptCluster cluster = context.getCluster();
+    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+        final AlgOptCluster cluster = context.getCluster();
         return new CassandraTableScan( cluster, cluster.traitSetOf( cassandraSchema.getConvention() ), relOptTable, this, null );
     }
 
@@ -284,7 +285,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
 
     @Override
-    public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public TableModify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
 //        return new CassandraTableModify( cluster,  )
         cassandraSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );

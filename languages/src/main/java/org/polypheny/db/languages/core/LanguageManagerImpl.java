@@ -37,8 +37,8 @@ import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.NodeToRelConverter;
-import org.polypheny.db.languages.NodeToRelConverter.Config;
+import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.ParserFactory;
@@ -69,16 +69,16 @@ import org.polypheny.db.languages.sql.validate.SqlUserDefinedFunction;
 import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableFunction;
 import org.polypheny.db.languages.sql.validate.SqlUserDefinedTableMacro;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.languages.sql2rel.SqlRexConvertletTable;
-import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
-import org.polypheny.db.languages.sql2rel.StandardConvertletTable;
+import org.polypheny.db.languages.sql2alg.SqlRexConvertletTable;
+import org.polypheny.db.languages.sql2alg.SqlToAlgConverter;
+import org.polypheny.db.languages.sql2alg.StandardConvertletTable;
 import org.polypheny.db.mql.parser.impl.MqlParserImpl;
-import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.TableFunction;
@@ -129,11 +129,11 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public NodeToRelConverter createToRelConverter(
+    public NodeToAlgConverter createToRelConverter(
             QueryLanguage language,
             Validator validator,
             CatalogReader catalogReader,
-            RelOptCluster cluster,
+            AlgOptCluster cluster,
             RexConvertletTable convertletTable,
             Config config ) {
         if ( language == QueryLanguage.SQL ) {
@@ -144,13 +144,13 @@ public class LanguageManagerImpl extends LanguageManager {
     }
 
 
-    private SqlToRelConverter getSqlToRelConverter(
+    private SqlToAlgConverter getSqlToRelConverter(
             SqlValidator validator,
             CatalogReader catalogReader,
-            RelOptCluster cluster,
+            AlgOptCluster cluster,
             SqlRexConvertletTable convertletTable,
             Config config ) {
-        return new SqlToRelConverter( validator, catalogReader, cluster, convertletTable, config );
+        return new SqlToAlgConverter( validator, catalogReader, cluster, convertletTable, config );
     }
 
 
@@ -211,9 +211,9 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Logger getLogger( QueryLanguage language, Class<RelNode> relNodeClass ) {
+    public Logger getLogger( QueryLanguage language, Class<AlgNode> algNodeClass ) {
         if ( language == QueryLanguage.SQL ) {
-            return SqlToRelConverter.SQL2REL_LOGGER;
+            return SqlToAlgConverter.SQL2REL_LOGGER;
         }
 
         throw new UnsupportedLanguageOperation( language );
@@ -384,7 +384,7 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public AggFunction createSumAggFunction( QueryLanguage language, RelDataType type ) {
+    public AggFunction createSumAggFunction( QueryLanguage language, AlgDataType type ) {
         if ( language == QueryLanguage.SQL ) {
             return new SqlSumAggFunction( type );
         }
@@ -437,7 +437,7 @@ public class LanguageManagerImpl extends LanguageManager {
             PolyReturnTypeInference infer,
             PolyOperandTypeInference explicit,
             FamilyOperandTypeChecker typeChecker,
-            List<RelDataType> paramTypes,
+            List<AlgDataType> paramTypes,
             Function function ) {
         if ( language == QueryLanguage.SQL ) {
             return new SqlUserDefinedFunction( (SqlIdentifier) name, infer, explicit, typeChecker, paramTypes, function );
@@ -457,7 +457,7 @@ public class LanguageManagerImpl extends LanguageManager {
             boolean requiresOrder,
             boolean requiresOver,
             Optionality optionality,
-            RelDataTypeFactory typeFactory ) {
+            AlgDataTypeFactory typeFactory ) {
         if ( language == QueryLanguage.SQL ) {
             return new SqlUserDefinedAggFunction(
                     (SqlIdentifier) name,
@@ -481,7 +481,7 @@ public class LanguageManagerImpl extends LanguageManager {
             PolyReturnTypeInference typeInference,
             PolyOperandTypeInference explicit,
             FamilyOperandTypeChecker typeChecker,
-            List<RelDataType> paramTypes,
+            List<AlgDataType> paramTypes,
             TableMacro function ) {
         if ( language == QueryLanguage.SQL ) {
             return new SqlUserDefinedTableMacro( (SqlIdentifier) name, typeInference, explicit, typeChecker, paramTypes, function );
@@ -497,7 +497,7 @@ public class LanguageManagerImpl extends LanguageManager {
             PolyReturnTypeInference typeInference,
             PolyOperandTypeInference explicit,
             FamilyOperandTypeChecker typeChecker,
-            List<RelDataType> paramTypes,
+            List<AlgDataType> paramTypes,
             TableFunction function ) {
         if ( language == QueryLanguage.SQL ) {
             return new SqlUserDefinedTableFunction( (SqlIdentifier) name, typeInference, explicit, typeChecker, paramTypes, function );

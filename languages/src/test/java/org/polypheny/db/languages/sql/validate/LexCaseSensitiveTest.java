@@ -38,18 +38,18 @@ import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
-import org.polypheny.db.tools.RelConversionException;
 import org.polypheny.db.tools.ValidationException;
 
 
@@ -58,7 +58,7 @@ import org.polypheny.db.tools.ValidationException;
  */
 public class LexCaseSensitiveTest {
 
-    private static Planner getPlanner( List<RelTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
+    private static Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks.createRootSchema( true ).add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -81,7 +81,7 @@ public class LexCaseSensitiveTest {
     }
 
 
-    private static void runProjectQueryWithLex( Lex lex, String sql ) throws NodeParseException, ValidationException, RelConversionException {
+    private static void runProjectQueryWithLex( Lex lex, String sql ) throws NodeParseException, ValidationException, AlgConversionException {
         boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
         try {
             ParserConfig javaLex = Parser.configBuilder().setLex( lex ).build();
@@ -89,9 +89,9 @@ public class LexCaseSensitiveTest {
             Planner planner = getPlanner( null, javaLex, Programs.ofRules( Programs.RULE_SET ) );
             Node parse = planner.parse( sql );
             Node validate = planner.validate( parse );
-            RelNode convert = planner.rel( validate ).rel;
-            RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-            RelNode transform = planner.transform( 0, traitSet, convert );
+            AlgNode convert = planner.alg( validate ).alg;
+            AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+            AlgNode transform = planner.transform( 0, traitSet, convert );
             assertThat( transform, instanceOf( EnumerableProject.class ) );
             List<String> fieldNames = transform.getRowType().getFieldNames();
             assertThat( fieldNames.size(), is( 2 ) );
@@ -108,14 +108,14 @@ public class LexCaseSensitiveTest {
 
 
     @Test
-    public void testPolyphenyDbCaseOracle() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseOracle() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select \"empid\" as EMPID, \"empid\" from\n (select \"empid\" from \"emps\" order by \"emps\".\"deptno\")";
         runProjectQueryWithLex( Lex.ORACLE, sql );
     }
 
 
     @Test(expected = ValidationException.class)
-    public void testPolyphenyDbCaseOracleException() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseOracleException() throws NodeParseException, ValidationException, AlgConversionException {
         // Oracle is case sensitive, so EMPID should not be found.
         String sql = "select EMPID, \"empid\" from\n (select \"empid\" from \"emps\" order by \"emps\".\"deptno\")";
         runProjectQueryWithLex( Lex.ORACLE, sql );
@@ -123,56 +123,56 @@ public class LexCaseSensitiveTest {
 
 
     @Test
-    public void testPolyphenyDbCaseMySql() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseMySql() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select empid as EMPID, empid from (\n select empid from emps order by `EMPS`.DEPTNO)";
         runProjectQueryWithLex( Lex.MYSQL, sql );
     }
 
 
     @Test
-    public void testPolyphenyDbCaseMySqlNoException() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseMySqlNoException() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select EMPID, empid from\n (select empid from emps order by emps.deptno)";
         runProjectQueryWithLex( Lex.MYSQL, sql );
     }
 
 
     @Test
-    public void testPolyphenyDbCaseMySqlAnsi() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseMySqlAnsi() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select empid as EMPID, empid from (\n select empid from emps order by EMPS.DEPTNO)";
         runProjectQueryWithLex( Lex.MYSQL_ANSI, sql );
     }
 
 
     @Test
-    public void testPolyphenyDbCaseMySqlAnsiNoException() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseMySqlAnsiNoException() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select EMPID, empid from\n (select empid from emps order by emps.deptno)";
         runProjectQueryWithLex( Lex.MYSQL_ANSI, sql );
     }
 
 
     @Test
-    public void testPolyphenyDbCaseSqlServer() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseSqlServer() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select empid as EMPID, empid from (\n  select empid from emps order by EMPS.DEPTNO)";
         runProjectQueryWithLex( Lex.SQL_SERVER, sql );
     }
 
 
     @Test
-    public void testPolyphenyDbCaseSqlServerNoException() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseSqlServerNoException() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select EMPID, empid from\n (select empid from emps order by emps.deptno)";
         runProjectQueryWithLex( Lex.SQL_SERVER, sql );
     }
 
 
     @Test
-    public void testPolyphenyDbCaseJava() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseJava() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select empid as EMPID, empid from (\n  select empid from emps order by emps.deptno)";
         runProjectQueryWithLex( Lex.JAVA, sql );
     }
 
 
     @Test(expected = ValidationException.class)
-    public void testPolyphenyDbCaseJavaException() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseJavaException() throws NodeParseException, ValidationException, AlgConversionException {
         // JAVA is case sensitive, so EMPID should not be found.
         String sql = "select EMPID, empid from\n (select empid from emps order by emps.deptno)";
         runProjectQueryWithLex( Lex.JAVA, sql );
@@ -180,7 +180,7 @@ public class LexCaseSensitiveTest {
 
 
     @Test
-    public void testPolyphenyDbCaseJoinOracle() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseJoinOracle() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select t.\"empid\" as EMPID, s.\"empid\" from\n"
                 + "(select * from \"emps\" where \"emps\".\"deptno\" > 100) t join\n"
                 + "(select * from \"emps\" where \"emps\".\"deptno\" < 200) s\n"
@@ -190,7 +190,7 @@ public class LexCaseSensitiveTest {
 
 
     @Test
-    public void testPolyphenyDbCaseJoinMySql() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseJoinMySql() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select t.empid as EMPID, s.empid from\n"
                 + "(select * from emps where emps.deptno > 100) t join\n"
                 + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
@@ -199,7 +199,7 @@ public class LexCaseSensitiveTest {
 
 
     @Test
-    public void testPolyphenyDbCaseJoinMySqlAnsi() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseJoinMySqlAnsi() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select t.empid as EMPID, s.empid from\n"
                 + "(select * from emps where emps.deptno > 100) t join\n"
                 + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
@@ -208,7 +208,7 @@ public class LexCaseSensitiveTest {
 
 
     @Test
-    public void testPolyphenyDbCaseJoinSqlServer() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseJoinSqlServer() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select t.empid as EMPID, s.empid from\n"
                 + "(select * from emps where emps.deptno > 100) t join\n"
                 + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";
@@ -217,7 +217,7 @@ public class LexCaseSensitiveTest {
 
 
     @Test
-    public void testPolyphenyDbCaseJoinJava() throws NodeParseException, ValidationException, RelConversionException {
+    public void testPolyphenyDbCaseJoinJava() throws NodeParseException, ValidationException, AlgConversionException {
         String sql = "select t.empid as EMPID, s.empid from\n"
                 + "(select * from emps where emps.deptno > 100) t join\n"
                 + "(select * from emps where emps.deptno < 200) s on t.empid = s.empid";

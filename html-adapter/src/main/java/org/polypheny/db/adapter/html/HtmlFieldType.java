@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -92,7 +92,7 @@ enum HtmlFieldType {
     }
 
 
-    public RelDataType toType( JavaTypeFactory typeFactory ) {
+    public AlgDataType toType( JavaTypeFactory typeFactory ) {
         return typeFactory.createJavaType( clazz );
     }
 

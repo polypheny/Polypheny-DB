@@ -35,9 +35,9 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.ComparableOperandTypeChecker;
@@ -85,24 +85,24 @@ public class SqlInOperator extends SqlBinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         final List<SqlNode> operands = ((SqlCall) call).getSqlOperandList();
         assert operands.size() == 2;
         final SqlNode left = operands.get( 0 );
         final SqlNode right = operands.get( 1 );
 
-        final RelDataTypeFactory typeFactory = validator.getTypeFactory();
-        RelDataType leftType = validator.deriveType( scope, left );
-        RelDataType rightType;
+        final AlgDataTypeFactory typeFactory = validator.getTypeFactory();
+        AlgDataType leftType = validator.deriveType( scope, left );
+        AlgDataType rightType;
 
         // Derive type for RHS.
         if ( right instanceof SqlNodeList ) {
             // Handle the 'IN (expr, ...)' form.
-            List<RelDataType> rightTypeList = new ArrayList<>();
+            List<AlgDataType> rightTypeList = new ArrayList<>();
             SqlNodeList nodeList = (SqlNodeList) right;
             for ( int i = 0; i < nodeList.size(); i++ ) {
                 SqlNode node = nodeList.getSqlList().get( i );
-                RelDataType nodeType = validator.deriveType( scope, node );
+                AlgDataType nodeType = validator.deriveType( scope, node );
                 rightTypeList.add( nodeType );
             }
             rightType = typeFactory.leastRestrictive( rightTypeList );
@@ -112,7 +112,7 @@ public class SqlInOperator extends SqlBinaryOperator {
                 throw validator.newValidationError( right, Static.RESOURCE.incompatibleTypesInList() );
             }
 
-            // Record the RHS type for use by SqlToRelConverter.
+            // Record the RHS type for use by SqlToAlgConverter.
             ((SqlValidatorImpl) validator).setValidatedNodeType( nodeList, rightType );
         } else {
             // Handle the 'IN (query)' form.
@@ -121,8 +121,8 @@ public class SqlInOperator extends SqlBinaryOperator {
 
         // Now check that the left expression is compatible with the type of the list. Same strategy as the '=' operator.
         // Normalize the types on both sides to be row types for the purposes of compatibility-checking.
-        RelDataType leftRowType = PolyTypeUtil.promoteToRowType( typeFactory, leftType, null );
-        RelDataType rightRowType = PolyTypeUtil.promoteToRowType( typeFactory, rightType, null );
+        AlgDataType leftRowType = PolyTypeUtil.promoteToRowType( typeFactory, leftType, null );
+        AlgDataType rightRowType = PolyTypeUtil.promoteToRowType( typeFactory, rightType, null );
 
         final ComparableOperandTypeChecker checker = (ComparableOperandTypeChecker) OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;
         if ( !checker.checkOperandTypes( new ExplicitOperatorBinding( new SqlCallBinding( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call ), ImmutableList.of( leftRowType, rightRowType ) ) ) ) {
@@ -136,8 +136,8 @@ public class SqlInOperator extends SqlBinaryOperator {
     }
 
 
-    private static boolean anyNullable( List<RelDataTypeField> fieldList ) {
-        for ( RelDataTypeField field : fieldList ) {
+    private static boolean anyNullable( List<AlgDataTypeField> fieldList ) {
+        for ( AlgDataTypeField field : fieldList ) {
             if ( field.getType().isNullable() ) {
                 return true;
             }

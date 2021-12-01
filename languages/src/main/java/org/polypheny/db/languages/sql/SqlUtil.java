@@ -51,8 +51,8 @@ import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.Glossary;
@@ -302,7 +302,7 @@ public abstract class SqlUtil {
      * @return matching routine, or null if none found
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4
      */
-    public static SqlOperator lookupRoutine( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, FunctionCategory category, SqlSyntax syntax, Kind Kind ) {
+    public static SqlOperator lookupRoutine( OperatorTable opTab, SqlIdentifier funcName, List<AlgDataType> argTypes, List<String> argNames, FunctionCategory category, SqlSyntax syntax, Kind Kind ) {
         Iterator<SqlOperator> list =
                 lookupSubjectRoutines(
                         opTab,
@@ -338,7 +338,7 @@ public abstract class SqlUtil {
      * @return list of matching routines
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4
      */
-    public static Iterator<SqlOperator> lookupSubjectRoutines( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, List<String> argNames, SqlSyntax sqlSyntax, Kind Kind, FunctionCategory category ) {
+    public static Iterator<SqlOperator> lookupSubjectRoutines( OperatorTable opTab, SqlIdentifier funcName, List<AlgDataType> argTypes, List<String> argNames, SqlSyntax sqlSyntax, Kind Kind, FunctionCategory category ) {
         // start with all routines matching by name
         Iterator<SqlOperator> routines = lookupSubjectRoutinesByName( opTab, funcName, sqlSyntax, category );
 
@@ -377,7 +377,7 @@ public abstract class SqlUtil {
      * @param category category of routine to look up
      * @return true if match found
      */
-    public static boolean matchRoutinesByParameterCount( OperatorTable opTab, SqlIdentifier funcName, List<RelDataType> argTypes, FunctionCategory category ) {
+    public static boolean matchRoutinesByParameterCount( OperatorTable opTab, SqlIdentifier funcName, List<AlgDataType> argTypes, FunctionCategory category ) {
         // start with all routines matching by name
         Iterator<SqlOperator> routines = lookupSubjectRoutinesByName( opTab, funcName, SqlSyntax.FUNCTION, category );
 
@@ -401,7 +401,7 @@ public abstract class SqlUtil {
     }
 
 
-    private static Iterator<SqlOperator> filterRoutinesByParameterCount( Iterator<SqlOperator> routines, final List<RelDataType> argTypes ) {
+    private static Iterator<SqlOperator> filterRoutinesByParameterCount( Iterator<SqlOperator> routines, final List<AlgDataType> argTypes ) {
         return Iterators.filter(
                 routines,
                 operator -> Objects.requireNonNull( operator ).getOperandCountRange().isValidCount( argTypes.size() ) );
@@ -411,7 +411,7 @@ public abstract class SqlUtil {
     /**
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 10.4 Syntax Rule 6.b.iii.2.B
      */
-    private static Iterator<SqlOperator> filterRoutinesByParameterType( SqlSyntax syntax, final Iterator<SqlOperator> routines, final List<RelDataType> argTypes, final List<String> argNames ) {
+    private static Iterator<SqlOperator> filterRoutinesByParameterType( SqlSyntax syntax, final Iterator<SqlOperator> routines, final List<AlgDataType> argTypes, final List<String> argNames ) {
         if ( syntax != SqlSyntax.FUNCTION ) {
             return routines;
         }
@@ -420,12 +420,12 @@ public abstract class SqlUtil {
         return (Iterator) Iterators.filter(
                 Iterators.filter( routines, SqlFunction.class ),
                 function -> {
-                    List<RelDataType> paramTypes = Objects.requireNonNull( function ).getParamTypes();
+                    List<AlgDataType> paramTypes = Objects.requireNonNull( function ).getParamTypes();
                     if ( paramTypes == null ) {
                         // no parameter information for builtins; keep for now
                         return true;
                     }
-                    final List<RelDataType> permutedArgTypes;
+                    final List<AlgDataType> permutedArgTypes;
                     if ( argNames != null ) {
                         // Arguments passed by name. Make sure that the function has parameters of all of these names.
                         final Map<Integer, Integer> map = new HashMap<>();
@@ -449,9 +449,9 @@ public abstract class SqlUtil {
                             paramTypes.add( null );
                         }
                     }
-                    for ( Pair<RelDataType, RelDataType> p : Pair.zip( paramTypes, permutedArgTypes ) ) {
-                        final RelDataType argType = p.right;
-                        final RelDataType paramType = p.left;
+                    for ( Pair<AlgDataType, AlgDataType> p : Pair.zip( paramTypes, permutedArgTypes ) ) {
+                        final AlgDataType argType = p.right;
+                        final AlgDataType paramType = p.left;
                         if ( argType != null && !PolyTypeUtil.canCastFrom( paramType, argType, false ) ) {
                             return false;
                         }
@@ -464,7 +464,7 @@ public abstract class SqlUtil {
     /**
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 9.4
      */
-    private static Iterator<SqlOperator> filterRoutinesByTypePrecedence( SqlSyntax sqlSyntax, Iterator<SqlOperator> routines, List<RelDataType> argTypes ) {
+    private static Iterator<SqlOperator> filterRoutinesByTypePrecedence( SqlSyntax sqlSyntax, Iterator<SqlOperator> routines, List<AlgDataType> argTypes ) {
         if ( sqlSyntax != SqlSyntax.FUNCTION ) {
             return routines;
         }
@@ -472,17 +472,17 @@ public abstract class SqlUtil {
         List<SqlFunction> sqlFunctions =
                 Lists.newArrayList( Iterators.filter( routines, SqlFunction.class ) );
 
-        for ( final Ord<RelDataType> argType : Ord.zip( argTypes ) ) {
-            final RelDataTypePrecedenceList precList = argType.e.getPrecedenceList();
-            final RelDataType bestMatch = bestMatch( sqlFunctions, argType.i, precList );
+        for ( final Ord<AlgDataType> argType : Ord.zip( argTypes ) ) {
+            final AlgDataTypePrecedenceList precList = argType.e.getPrecedenceList();
+            final AlgDataType bestMatch = bestMatch( sqlFunctions, argType.i, precList );
             if ( bestMatch != null ) {
                 sqlFunctions = sqlFunctions.stream()
                         .filter( function -> {
-                            final List<RelDataType> paramTypes = function.getParamTypes();
+                            final List<AlgDataType> paramTypes = function.getParamTypes();
                             if ( paramTypes == null ) {
                                 return false;
                             }
-                            final RelDataType paramType = paramTypes.get( argType.i );
+                            final AlgDataType paramType = paramTypes.get( argType.i );
                             return precList.compareTypePrecedence( paramType, bestMatch ) >= 0;
                         } )
                         .collect( Collectors.toList() );
@@ -493,14 +493,14 @@ public abstract class SqlUtil {
     }
 
 
-    private static RelDataType bestMatch( List<SqlFunction> sqlFunctions, int i, RelDataTypePrecedenceList precList ) {
-        RelDataType bestMatch = null;
+    private static AlgDataType bestMatch( List<SqlFunction> sqlFunctions, int i, AlgDataTypePrecedenceList precList ) {
+        AlgDataType bestMatch = null;
         for ( SqlFunction function : sqlFunctions ) {
-            List<RelDataType> paramTypes = function.getParamTypes();
+            List<AlgDataType> paramTypes = function.getParamTypes();
             if ( paramTypes == null ) {
                 continue;
             }
-            final RelDataType paramType = paramTypes.get( i );
+            final AlgDataType paramType = paramTypes.get( i );
             if ( bestMatch == null ) {
                 bestMatch = paramType;
             } else {

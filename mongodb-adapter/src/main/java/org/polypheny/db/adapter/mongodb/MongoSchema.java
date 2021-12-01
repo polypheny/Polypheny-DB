@@ -49,10 +49,10 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -67,7 +67,7 @@ public class MongoSchema extends AbstractSchema {
     final MongoDatabase database;
 
     @Getter
-    private final Convention convention = MongoRel.CONVENTION;
+    private final Convention convention = MongoAlg.CONVENTION;
 
     private final Map<String, Table> tableMap;
     private final MongoClient connection;
@@ -118,15 +118,15 @@ public class MongoSchema extends AbstractSchema {
 
 
     public MongoTable createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, int storeId, CatalogPartitionPlacement partitionPlacement ) {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
+            AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, MongoStore.getPhysicalColumnName( catalogColumn.name, catalogColumn.id ), sqlType ).nullable( catalogColumn.nullable );
         }
-        MongoTable table = new MongoTable( catalogTable, this, RelDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
+        MongoTable table = new MongoTable( catalogTable, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, storeId, partitionPlacement );
 
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;

@@ -27,7 +27,7 @@ import org.polypheny.db.core.nodes.CallBinding;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -72,7 +72,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
                 return false;
             }
         }
-        RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
+        AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
         PolyType typeName = type.getPolyType();
 
         // Pass type checking for operators if it's of type 'ANY'.

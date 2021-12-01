@@ -28,7 +28,7 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.util.Pair;
@@ -63,12 +63,12 @@ public class SqlRowOperator extends SqlSpecialOperator implements RowOperator {
 
 
     @Override
-    public RelDataType inferReturnType( final OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( final OperatorBinding opBinding ) {
         // The type of a ROW(e1,e2) expression is a record with the types {e1type,e2type}.  According to the standard, field names are implementation-defined.
         return opBinding.getTypeFactory().createStructType(
-                new AbstractList<Map.Entry<String, RelDataType>>() {
+                new AbstractList<Map.Entry<String, AlgDataType>>() {
                     @Override
-                    public Map.Entry<String, RelDataType> get( int index ) {
+                    public Map.Entry<String, AlgDataType> get( int index ) {
                         return Pair.of(
                                 CoreUtil.deriveAliasFromOrdinal( index ),
                                 opBinding.getOperandType( index ) );

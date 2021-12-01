@@ -57,8 +57,8 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 
@@ -77,13 +77,13 @@ public class RexExecutorImpl implements RexExecutor {
 
 
     private String compile( RexBuilder rexBuilder, List<RexNode> constExps, RexToLixTranslator.InputGetter getter ) {
-        final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-        final RelDataType emptyRowType = typeFactory.builder().build();
+        final AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
+        final AlgDataType emptyRowType = typeFactory.builder().build();
         return compile( rexBuilder, constExps, getter, emptyRowType );
     }
 
 
-    private String compile( RexBuilder rexBuilder, List<RexNode> constExps, RexToLixTranslator.InputGetter getter, RelDataType rowType ) {
+    private String compile( RexBuilder rexBuilder, List<RexNode> constExps, RexToLixTranslator.InputGetter getter, AlgDataType rowType ) {
         final RexProgramBuilder programBuilder = new RexProgramBuilder( rowType, rexBuilder );
         for ( RexNode node : constExps ) {
             programBuilder.addProject( node, "c" + programBuilder.getProjectList().size() );
@@ -141,7 +141,7 @@ public class RexExecutorImpl implements RexExecutor {
      * @param exps Expressions
      * @param rowType describes the structure of the input row.
      */
-    public RexExecutable getExecutable( RexBuilder rexBuilder, List<RexNode> exps, RelDataType rowType ) {
+    public RexExecutable getExecutable( RexBuilder rexBuilder, List<RexNode> exps, AlgDataType rowType ) {
         final JavaTypeFactoryImpl typeFactory = new JavaTypeFactoryImpl( rexBuilder.getTypeFactory().getTypeSystem() );
         final InputGetter getter = new DataContextInputGetter( rowType, typeFactory );
         final String code = compile( rexBuilder, exps, getter, rowType );
@@ -171,11 +171,11 @@ public class RexExecutorImpl implements RexExecutor {
      */
     private static class DataContextInputGetter implements InputGetter {
 
-        private final RelDataTypeFactory typeFactory;
-        private final RelDataType rowType;
+        private final AlgDataTypeFactory typeFactory;
+        private final AlgDataType rowType;
 
 
-        DataContextInputGetter( RelDataType rowType, RelDataTypeFactory typeFactory ) {
+        DataContextInputGetter( AlgDataType rowType, AlgDataTypeFactory typeFactory ) {
             this.rowType = rowType;
             this.typeFactory = typeFactory;
         }
@@ -190,7 +190,7 @@ public class RexExecutorImpl implements RexExecutor {
             Expression recFromCtxCasted = RexToLixTranslator.convert( recFromCtx, Object[].class );
             IndexExpression recordAccess = Expressions.arrayIndex( recFromCtxCasted, Expressions.constant( index ) );
             if ( storageType == null ) {
-                final RelDataType fieldType = rowType.getFieldList().get( index ).getType();
+                final AlgDataType fieldType = rowType.getFieldList().get( index ).getType();
                 storageType = ((JavaTypeFactory) typeFactory).getJavaClass( fieldType );
             }
             return RexToLixTranslator.convert( recordAccess, storageType );

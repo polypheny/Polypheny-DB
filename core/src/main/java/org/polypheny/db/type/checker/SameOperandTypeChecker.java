@@ -27,7 +27,7 @@ import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -81,7 +81,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
             nOperandsActual = operatorBinding.getOperandCount();
         }
         assert !(throwOnFailure && (callBinding == null));
-        RelDataType[] types = new RelDataType[nOperandsActual];
+        AlgDataType[] types = new AlgDataType[nOperandsActual];
         final List<Integer> operandList = getOperandList( operatorBinding.getOperandCount() );
         for ( int i : operandList ) {
             types[i] = operatorBinding.getOperandType( i );

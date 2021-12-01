@@ -75,9 +75,9 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -118,9 +118,9 @@ public abstract class Catalog {
 
     public abstract void rollback();
 
-    public abstract Map<Long, RelDataType> getRelTypeInfo();
+    public abstract Map<Long, AlgDataType> getRelTypeInfo();
 
-    public abstract Map<Long, RelNode> getNodeInfo();
+    public abstract Map<Long, AlgNode> getNodeInfo();
 
 
     /**
@@ -396,12 +396,12 @@ public abstract class Catalog {
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views
+     * @param definition {@link AlgNode} used to create Views
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language );
+    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation relCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
 
 
     /**
@@ -412,7 +412,7 @@ public abstract class Catalog {
      * @param ownerId id of the owner
      * @param tableType type of table
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views
+     * @param definition {@link AlgNode} used to create Views
      * @param relCollation relCollation used for materialized view
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
@@ -422,7 +422,7 @@ public abstract class Catalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
+    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation relCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
 
 
     /**

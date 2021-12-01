@@ -40,12 +40,12 @@ import static org.polypheny.db.core.enums.Kind.LITERAL;
 import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -53,21 +53,21 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Implementation of {@link Filter} in {@link PigRel#CONVENTION Pig calling convention}.
+ * Implementation of {@link Filter} in {@link PigAlg#CONVENTION Pig calling convention}.
  */
-public class PigFilter extends Filter implements PigRel {
+public class PigFilter extends Filter implements PigAlg {
 
     /**
      * Creates a PigFilter.
      */
-    public PigFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexNode condition ) {
+    public PigFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         super( cluster, traitSet, input, condition );
         assert getConvention() == CONVENTION;
     }
 
 
     @Override
-    public Filter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
+    public Filter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new PigFilter( getCluster(), traitSet, input, condition );
     }
 
@@ -83,7 +83,7 @@ public class PigFilter extends Filter implements PigRel {
      * Override this method so it looks down the tree to find the table this node is acting on.
      */
     @Override
-    public RelOptTable getTable() {
+    public AlgOptTable getTable() {
         return getInput().getTable();
     }
 
@@ -97,7 +97,7 @@ public class PigFilter extends Filter implements PigRel {
         Preconditions.checkState( containsOnlyConjunctions( condition ) );
         String relationAlias = implementor.getPigRelationAlias( this );
         List<String> filterConditionsConjunction = new ArrayList<>();
-        for ( RexNode node : RelOptUtil.conjunctions( condition ) ) {
+        for ( RexNode node : AlgOptUtil.conjunctions( condition ) ) {
             filterConditionsConjunction.add( getSingleFilterCondition( implementor, node ) );
         }
         String allFilterConditions = String.join( " AND ", filterConditionsConjunction );
@@ -151,7 +151,7 @@ public class PigFilter extends Filter implements PigRel {
 
 
     private boolean containsOnlyConjunctions( RexNode condition ) {
-        return RelOptUtil.disjunctions( condition ).size() == 1;
+        return AlgOptUtil.disjunctions( condition ).size() == 1;
     }
 
 

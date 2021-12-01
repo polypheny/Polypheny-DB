@@ -32,16 +32,16 @@ import org.junit.Test;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.sql.SqlToRelTestBase;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelOptUtil.Logic;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.languages.sql.SqlToAlgTestBase;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgOptUtil.Logic;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.LogicVisitor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
@@ -62,23 +62,23 @@ public class RexTransformerTest {
     RexNode z;
     RexNode trueRex;
     RexNode falseRex;
-    RelDataType boolRelDataType;
-    RelDataTypeFactory typeFactory;
+    AlgDataType boolRelDataType;
+    AlgDataTypeFactory typeFactory;
 
 
     /**
      * Converts a SQL string to a relational expression using mock schema.
      */
-    private static RelNode toRel( String sql ) {
-        final SqlToRelTestBase test = new SqlToRelTestBase() {
+    private static AlgNode toRel( String sql ) {
+        final SqlToAlgTestBase test = new SqlToAlgTestBase() {
         };
-        return test.createTester().convertSqlToRel( sql ).rel;
+        return test.createTester().convertSqlToRel( sql ).alg;
     }
 
 
     @Before
     public void setUp() {
-        typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
         boolRelDataType = typeFactory.createPolyType( PolyType.BOOLEAN );
 
@@ -353,13 +353,13 @@ public class RexTransformerTest {
                 + "INNER JOIN dept b \n"
                 + "ON CAST(a.empno AS int) <> b.deptno";
 
-        final RelNode relNode = toRel( sql );
-        final LogicalProject project = (LogicalProject) relNode;
+        final AlgNode algNode = toRel( sql );
+        final LogicalProject project = (LogicalProject) algNode;
         final LogicalJoin join = (LogicalJoin) project.getInput( 0 );
         final List<RexNode> leftJoinKeys = new ArrayList<>();
         final List<RexNode> rightJoinKeys = new ArrayList<>();
-        final ArrayList<RelDataTypeField> sysFieldList = new ArrayList<>();
-        final RexNode remaining = RelOptUtil.splitJoinCondition(
+        final ArrayList<AlgDataTypeField> sysFieldList = new ArrayList<>();
+        final RexNode remaining = AlgOptUtil.splitJoinCondition(
                 sysFieldList,
                 join.getInputs().get( 0 ),
                 join.getInputs().get( 1 ),

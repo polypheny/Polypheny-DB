@@ -53,22 +53,22 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cassandra.CassandraRel.CassandraImplementContext;
+import org.polypheny.db.adapter.cassandra.CassandraAlg.CassandraImplementContext;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -77,33 +77,33 @@ import org.polypheny.db.util.BuiltInMethod;
  * Relational expression representing a scan of a table in a Cassandra data source.
  */
 @Slf4j
-public class CassandraToEnumerableConverter extends ConverterImpl implements EnumerableRel {
+public class CassandraToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
-    public CassandraToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
+    public CassandraToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new CassandraToEnumerableConverter( getCluster(), traitSet, sole( inputs ) );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         // Generates a call to "query" with the appropriate fields and predicates
         final BlockBuilder list = new BlockBuilder();
         final CassandraImplementContext cassandraContext = new CassandraImplementContext();
         cassandraContext.visitChild( 0, getInput() );
         final CassandraConvention convention = (CassandraConvention) getInput().getConvention();
-        final RelDataType rowType = getRowType();
+        final AlgDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
         String cqlString;

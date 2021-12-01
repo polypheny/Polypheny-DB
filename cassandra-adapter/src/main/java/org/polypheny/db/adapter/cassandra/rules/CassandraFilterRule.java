@@ -26,39 +26,39 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.util.CassandraUtils;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.Pair;
 
 
 /**
- * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalFilter} to a {@link CassandraFilter}.
+ * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link CassandraFilter}.
  */
 @Slf4j
 public class CassandraFilterRule extends CassandraConverterRule {
 
-    CassandraFilterRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Filter.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraFilterRule:" + out.getName() );
+    CassandraFilterRule( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Filter.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraFilterRule:" + out.getName() );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
+    public AlgNode convert( AlgNode alg ) {
         log.debug( "Attempting to convert." );
-        Filter filter = (Filter) rel;
-        final RelTraitSet traitSet = filter.getTraitSet().replace( out );
+        Filter filter = (Filter) alg;
+        final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
         return new CassandraFilter(
                 filter.getCluster(),
                 traitSet,
@@ -68,12 +68,12 @@ public class CassandraFilterRule extends CassandraConverterRule {
 
 
     @Override
-    public boolean matches( RelOptRuleCall call ) {
+    public boolean matches( AlgOptRuleCall call ) {
         log.debug( "Checking whether we can convert to CassandraFilter." );
-        Filter filter = call.rel( 0 );
+        Filter filter = call.alg( 0 );
         RexNode condition = filter.getCondition();
 
-        List<RexNode> disjunctions = RelOptUtil.disjunctions( condition );
+        List<RexNode> disjunctions = AlgOptUtil.disjunctions( condition );
         if ( disjunctions.size() != 1 ) {
             log.debug( "Cannot convert, condition is a disjunction: {}", condition.toString() );
             return false;
@@ -81,8 +81,8 @@ public class CassandraFilterRule extends CassandraConverterRule {
 
         CassandraTable table = null;
         // This is a copy in getRelList, so probably expensive!
-        if ( filter.getInput() instanceof RelSubset ) {
-            RelSubset subset = (RelSubset) filter.getInput();
+        if ( filter.getInput() instanceof AlgSubset ) {
+            AlgSubset subset = (AlgSubset) filter.getInput();
             table = CassandraUtils.getUnderlyingTable( subset, this.out );
         }
 
@@ -94,12 +94,12 @@ public class CassandraFilterRule extends CassandraConverterRule {
         Pair<List<String>, List<String>> keyFields = table.getKeyFields();
         Set<String> partitionKeys = new HashSet<>( keyFields.left );
         // TODO JS: Is this work around still needed with the fix in CassandraSchema?
-        final List<RelDataTypeField> physicalFields = table.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
-        final List<RelDataTypeField> logicalFields = filter.getRowType().getFieldList();
-        final List<RelDataTypeField> fields = new ArrayList<>();
+        final List<AlgDataTypeField> physicalFields = table.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
+        final List<AlgDataTypeField> logicalFields = filter.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = new ArrayList<>();
         List<String> fieldNames = new ArrayList<>();
-        for ( RelDataTypeField field : logicalFields ) {
-            for ( RelDataTypeField physicalField : physicalFields ) {
+        for ( AlgDataTypeField field : logicalFields ) {
+            for ( AlgDataTypeField physicalField : physicalFields ) {
                 if ( field.getName().equals( physicalField.getName() ) ) {
                     fields.add( physicalField );
                     fieldNames.add( field.getName() );
@@ -111,7 +111,7 @@ public class CassandraFilterRule extends CassandraConverterRule {
 
         // Check that all conjunctions are primary key equalities
         condition = disjunctions.get( 0 );
-        for ( RexNode predicate : RelOptUtil.conjunctions( condition ) ) {
+        for ( RexNode predicate : AlgOptUtil.conjunctions( condition ) ) {
             if ( !isEqualityOnKey( predicate, fieldNames, partitionKeys, keyFields.right ) ) {
                 return false;
             }

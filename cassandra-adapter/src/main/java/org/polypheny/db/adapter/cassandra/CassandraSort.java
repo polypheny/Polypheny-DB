@@ -38,25 +38,25 @@ import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
  * Implementation of {@link Sort} relational expression in Cassandra.
  */
-public class CassandraSort extends Sort implements CassandraRel {
+public class CassandraSort extends Sort implements CassandraAlg {
 
-    public CassandraSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
+    public CassandraSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, child, collation, offset, fetch );
 
         // TODO JS: Check this
@@ -66,8 +66,8 @@ public class CassandraSort extends Sort implements CassandraRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        RelOptCost cost = super.computeSelfCost( planner, mq );
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        AlgOptCost cost = super.computeSelfCost( planner, mq );
         if ( !collation.getFieldCollations().isEmpty() ) {
             return cost.multiplyBy( 0.05 );
         } else {
@@ -77,7 +77,7 @@ public class CassandraSort extends Sort implements CassandraRel {
 
 
     @Override
-    public Sort copy( RelTraitSet traitSet, RelNode input, RelCollation newCollation, RexNode offset, RexNode fetch ) {
+    public Sort copy( AlgTraitSet traitSet, AlgNode input, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
         return new CassandraSort( getCluster(), traitSet, input, collation, offset, fetch );
     }
 
@@ -86,12 +86,12 @@ public class CassandraSort extends Sort implements CassandraRel {
     public void implement( CassandraImplementContext context ) {
         context.visitChild( 0, getInput() );
 
-        List<RelFieldCollation> sortCollations = collation.getFieldCollations();
+        List<AlgFieldCollation> sortCollations = collation.getFieldCollations();
         Map<String, ClusteringOrder> fieldOrder = new LinkedHashMap<>();
         if ( !sortCollations.isEmpty() ) {
             // Construct a series of order clauses from the desired collation
-            final List<RelDataTypeField> fields = getRowType().getFieldList();
-            for ( RelFieldCollation fieldCollation : sortCollations ) {
+            final List<AlgDataTypeField> fields = getRowType().getFieldList();
+            for ( AlgFieldCollation fieldCollation : sortCollations ) {
                 final String name =
                         fields.get( fieldCollation.getFieldIndex() ).getPhysicalName();
                 final ClusteringOrder direction;

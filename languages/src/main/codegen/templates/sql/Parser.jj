@@ -67,7 +67,7 @@ import org.polypheny.db.core.operators.OperatorName;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.languages.sql.SqlAlter;
@@ -107,7 +107,7 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.parser.SqlAbstractParserImpl;
 import org.polypheny.db.languages.ParserFactory;
-import org.polypheny.db.rel.metadata.Metadata;
+import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.languages.sql.SqlNumericLiteral;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlOrderBy;
@@ -4078,8 +4078,8 @@ SqlIntervalQualifier IntervalQualifier() :
 {
     TimeUnit start;
     TimeUnit end = null;
-    int startPrec = RelDataType.PRECISION_NOT_SPECIFIED;
-    int secondFracPrec = RelDataType.PRECISION_NOT_SPECIFIED;
+    int startPrec = AlgDataType.PRECISION_NOT_SPECIFIED;
+    int secondFracPrec = AlgDataType.PRECISION_NOT_SPECIFIED;
 }
 {
     (

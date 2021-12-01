@@ -36,8 +36,8 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlWindow;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.util.Pair;
 
 
@@ -141,7 +141,7 @@ public interface SqlValidatorScope extends ValidatorScope {
      * @param ctx Context for exception
      * @return Type of column, if found and unambiguous; null if not found
      */
-    RelDataType resolveColumn( String name, SqlNode ctx );
+    AlgDataType resolveColumn( String name, SqlNode ctx );
 
     /**
      * Returns the scope within which operands to a call are to be validated.
@@ -178,7 +178,7 @@ public interface SqlValidatorScope extends ValidatorScope {
     /**
      * Converts the type of an expression to nullable, if the context warrants it.
      */
-    RelDataType nullifyType( SqlNode node, RelDataType type );
+    AlgDataType nullifyType( SqlNode node, AlgDataType type );
 
     /**
      * Returns whether this scope is enclosed within {@code scope2} in such a way that it can see the contents of {@code scope2}.
@@ -213,7 +213,7 @@ public interface SqlValidatorScope extends ValidatorScope {
         /**
          * Creates a path that consists of this path plus one additional step.
          */
-        public Step plus( RelDataType rowType, int i, String name, StructKind kind ) {
+        public Step plus( AlgDataType rowType, int i, String name, StructKind kind ) {
             return new Step( this, rowType, i, name, kind );
         }
 
@@ -269,13 +269,13 @@ public interface SqlValidatorScope extends ValidatorScope {
     class Step extends Path {
 
         final Path parent;
-        final RelDataType rowType;
+        final AlgDataType rowType;
         public final int i;
         public final String name;
         final StructKind kind;
 
 
-        Step( Path parent, RelDataType rowType, int i, String name, StructKind kind ) {
+        Step( Path parent, AlgDataType rowType, int i, String name, StructKind kind ) {
             this.parent = Objects.requireNonNull( parent );
             this.rowType = rowType; // may be null
             this.i = i;
@@ -371,7 +371,7 @@ public interface SqlValidatorScope extends ValidatorScope {
         /**
          * The row type of the found namespace, nullable if the lookup has looked into outer joins.
          */
-        public RelDataType rowType() {
+        public AlgDataType rowType() {
             return namespace.getValidator()
                     .getTypeFactory()
                     .createTypeWithNullability( namespace.getRowType(), nullable );

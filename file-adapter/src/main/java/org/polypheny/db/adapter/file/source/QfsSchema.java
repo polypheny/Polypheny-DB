@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.Condition;
 import org.polypheny.db.adapter.file.FileConvention;
-import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableTable;
 import org.polypheny.db.adapter.file.Value;
@@ -42,10 +42,10 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
@@ -93,8 +93,8 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
 
 
     public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         ArrayList<Long> columnIds = new ArrayList<>();
         ArrayList<PolyType> columnTypes = new ArrayList<>();
         ArrayList<String> columnNames = new ArrayList<>();
@@ -123,7 +123,7 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
                 }
             }
         }
-        RelProtoDataType protoRowType = RelDataTypeImpl.proto( fieldInfo.build() );
+        AlgProtoDataType protoRowType = AlgDataTypeImpl.proto( fieldInfo.build() );
         List<Long> pkIds;
         if ( catalogTable.primaryKey != null ) {
             CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );

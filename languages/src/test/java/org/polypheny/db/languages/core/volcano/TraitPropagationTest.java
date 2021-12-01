@@ -38,39 +38,39 @@ import org.polypheny.db.jdbc.PolyphenyDbServerStatement;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptAbstractTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.AlgOptAbstractTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AbstractConverter.ExpandConversionRule;
-import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.rules.SortRemoveRule;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.rules.SortRemoveRule;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.SchemaPlus;
@@ -93,18 +93,18 @@ import org.polypheny.db.util.ImmutableBitSet;
 public class TraitPropagationTest {
 
     static final Convention PHYSICAL = new Convention.Impl( "PHYSICAL", Phys.class );
-    static final RelCollation COLLATION = RelCollations.of( new RelFieldCollation( 0, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.FIRST ) );
+    static final AlgCollation COLLATION = AlgCollations.of( new AlgFieldCollation( 0, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.FIRST ) );
 
     static final RuleSet RULES = RuleSets.ofList( PhysAggRule.INSTANCE, PhysProjRule.INSTANCE, PhysTableRule.INSTANCE, PhysSortRule.INSTANCE, SortRemoveRule.INSTANCE, ExpandConversionRule.INSTANCE );
 
 
     @Test
     public void testOne() throws Exception {
-        RelNode planned = run( new PropAction(), RULES );
+        AlgNode planned = run( new PropAction(), RULES );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
-            System.out.println( RelOptUtil.dumpPlan( "LOGICAL PLAN", planned, ExplainFormat.TEXT, ExplainLevel.ALL_ATTRIBUTES ) );
+            System.out.println( AlgOptUtil.dumpPlan( "LOGICAL PLAN", planned, ExplainFormat.TEXT, ExplainLevel.ALL_ATTRIBUTES ) );
         }
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
+        final AlgMetadataQuery mq = AlgMetadataQuery.instance();
         assertEquals( "Sortedness was not propagated", 3, mq.getCumulativeCost( planned ).getRows(), 0 );
     }
 
@@ -114,19 +114,19 @@ public class TraitPropagationTest {
      */
     private static class PropAction {
 
-        public RelNode apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
-            final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
+        public AlgNode apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
+            final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
             final RexBuilder rexBuilder = cluster.getRexBuilder();
-            final RelOptPlanner planner = cluster.getPlanner();
+            final AlgOptPlanner planner = cluster.getPlanner();
 
-            final RelDataType stringType = typeFactory.createJavaType( String.class );
-            final RelDataType integerType = typeFactory.createJavaType( Integer.class );
-            final RelDataType sqlBigInt = typeFactory.createPolyType( PolyType.BIGINT );
+            final AlgDataType stringType = typeFactory.createJavaType( String.class );
+            final AlgDataType integerType = typeFactory.createJavaType( Integer.class );
+            final AlgDataType sqlBigInt = typeFactory.createPolyType( PolyType.BIGINT );
 
             // SELECT * from T;
             final Table table = new AbstractTable() {
                 @Override
-                public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+                public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                     return typeFactory.builder()
                             .add( "s", null, stringType )
                             .add( "i", null, integerType ).build();
@@ -139,7 +139,7 @@ public class TraitPropagationTest {
                 }
             };
 
-            final RelOptAbstractTable t1 = new RelOptAbstractTable( relOptSchema, "t1", table.getRowType( typeFactory ) ) {
+            final AlgOptAbstractTable t1 = new AlgOptAbstractTable( relOptSchema, "t1", table.getRowType( typeFactory ) ) {
                 @Override
                 public <T> T unwrap( Class<T> clazz ) {
                     return clazz.isInstance( table )
@@ -148,23 +148,23 @@ public class TraitPropagationTest {
                 }
             };
 
-            final RelNode rt1 = EnumerableTableScan.create( cluster, t1 );
+            final AlgNode rt1 = EnumerableTableScan.create( cluster, t1 );
 
             // project s column
-            RelNode project = LogicalProject.create( rt1,
+            AlgNode project = LogicalProject.create( rt1,
                     ImmutableList.of( (RexNode) rexBuilder.makeInputRef( stringType, 0 ), rexBuilder.makeInputRef( integerType, 1 ) ),
                     typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build() );
 
             // aggregate on s, count
-            AggregateCall aggCall = AggregateCall.create( OperatorRegistry.getAgg( OperatorName.COUNT ), false, false, Collections.singletonList( 1 ), -1, RelCollations.EMPTY, sqlBigInt, "cnt" );
-            RelNode agg = new LogicalAggregate( cluster, cluster.traitSetOf( Convention.NONE ), project, false, ImmutableBitSet.of( 0 ), null, Collections.singletonList( aggCall ) );
+            AggregateCall aggCall = AggregateCall.create( OperatorRegistry.getAgg( OperatorName.COUNT ), false, false, Collections.singletonList( 1 ), -1, AlgCollations.EMPTY, sqlBigInt, "cnt" );
+            AlgNode agg = new LogicalAggregate( cluster, cluster.traitSetOf( Convention.NONE ), project, false, ImmutableBitSet.of( 0 ), null, Collections.singletonList( aggCall ) );
 
-            final RelNode rootRel = agg;
+            final AlgNode rootRel = agg;
 
-            RelOptUtil.dumpPlan( "LOGICAL PLAN", rootRel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
+            AlgOptUtil.dumpPlan( "LOGICAL PLAN", rootRel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
 
-            RelTraitSet desiredTraits = rootRel.getTraitSet().replace( PHYSICAL );
-            final RelNode rootRel2 = planner.changeTraits( rootRel, desiredTraits );
+            AlgTraitSet desiredTraits = rootRel.getTraitSet().replace( PHYSICAL );
+            final AlgNode rootRel2 = planner.changeTraits( rootRel, desiredTraits );
             planner.setRoot( rootRel2 );
             return planner.findBestExp();
         }
@@ -177,7 +177,7 @@ public class TraitPropagationTest {
     /**
      * Rule for PhysAgg
      */
-    private static class PhysAggRule extends RelOptRule {
+    private static class PhysAggRule extends AlgOptRule {
 
         static final PhysAggRule INSTANCE = new PhysAggRule();
 
@@ -188,15 +188,15 @@ public class TraitPropagationTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            RelTraitSet empty = call.getPlanner().emptyTraitSet();
-            LogicalAggregate rel = call.rel( 0 );
-            assert rel.getGroupSet().cardinality() == 1;
-            int aggIndex = rel.getGroupSet().iterator().next();
-            RelTrait collation = RelCollations.of( new RelFieldCollation( aggIndex, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.FIRST ) );
-            RelTraitSet desiredTraits = empty.replace( PHYSICAL ).replace( collation );
-            RelNode convertedInput = convert( rel.getInput(), desiredTraits );
-            call.transformTo( new PhysAgg( rel.getCluster(), empty.replace( PHYSICAL ), convertedInput, rel.indicator, rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList() ) );
+        public void onMatch( AlgOptRuleCall call ) {
+            AlgTraitSet empty = call.getPlanner().emptyTraitSet();
+            LogicalAggregate alg = call.alg( 0 );
+            assert alg.getGroupSet().cardinality() == 1;
+            int aggIndex = alg.getGroupSet().iterator().next();
+            AlgTrait collation = AlgCollations.of( new AlgFieldCollation( aggIndex, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.FIRST ) );
+            AlgTraitSet desiredTraits = empty.replace( PHYSICAL ).replace( collation );
+            AlgNode convertedInput = convert( alg.getInput(), desiredTraits );
+            call.transformTo( new PhysAgg( alg.getCluster(), empty.replace( PHYSICAL ), convertedInput, alg.indicator, alg.getGroupSet(), alg.getGroupSets(), alg.getAggCallList() ) );
         }
 
     }
@@ -205,7 +205,7 @@ public class TraitPropagationTest {
     /**
      * Rule for PhysProj
      */
-    private static class PhysProjRule extends RelOptRule {
+    private static class PhysProjRule extends AlgOptRule {
 
         static final PhysProjRule INSTANCE = new PhysProjRule( false );
 
@@ -213,30 +213,30 @@ public class TraitPropagationTest {
 
 
         private PhysProjRule( boolean subsetHack ) {
-            super( RelOptRule.operand( LogicalProject.class, anyChild( RelNode.class ) ), "PhysProj" );
+            super( AlgOptRule.operand( LogicalProject.class, anyChild( AlgNode.class ) ), "PhysProj" );
             this.subsetHack = subsetHack;
         }
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            LogicalProject rel = call.rel( 0 );
-            RelNode rawInput = call.rel( 1 );
-            RelNode input = convert( rawInput, PHYSICAL );
+        public void onMatch( AlgOptRuleCall call ) {
+            LogicalProject alg = call.alg( 0 );
+            AlgNode rawInput = call.alg( 1 );
+            AlgNode input = convert( rawInput, PHYSICAL );
 
-            if ( subsetHack && input instanceof RelSubset ) {
-                RelSubset subset = (RelSubset) input;
-                for ( RelNode child : subset.getRels() ) {
+            if ( subsetHack && input instanceof AlgSubset ) {
+                AlgSubset subset = (AlgSubset) input;
+                for ( AlgNode child : subset.getAlgs() ) {
                     // skip logical nodes
                     if ( child.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) == Convention.NONE ) {
                         continue;
                     } else {
-                        RelTraitSet outcome = child.getTraitSet().replace( PHYSICAL );
-                        call.transformTo( new PhysProj( rel.getCluster(), outcome, convert( child, outcome ), rel.getChildExps(), rel.getRowType() ) );
+                        AlgTraitSet outcome = child.getTraitSet().replace( PHYSICAL );
+                        call.transformTo( new PhysProj( alg.getCluster(), outcome, convert( child, outcome ), alg.getChildExps(), alg.getRowType() ) );
                     }
                 }
             } else {
-                call.transformTo( PhysProj.create( input, rel.getChildExps(), rel.getRowType() ) );
+                call.transformTo( PhysProj.create( input, alg.getChildExps(), alg.getRowType() ) );
             }
         }
 
@@ -257,10 +257,10 @@ public class TraitPropagationTest {
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final Sort sort = (Sort) rel;
-            final RelNode input = convert( sort.getInput(), rel.getCluster().traitSetOf( PHYSICAL ) );
-            return new PhysSort( rel.getCluster(), input.getTraitSet().plus( sort.getCollation() ), convert( input, input.getTraitSet().replace( PHYSICAL ) ), sort.getCollation(), null, null );
+        public AlgNode convert( AlgNode alg ) {
+            final Sort sort = (Sort) alg;
+            final AlgNode input = convert( sort.getInput(), alg.getCluster().traitSetOf( PHYSICAL ) );
+            return new PhysSort( alg.getCluster(), input.getTraitSet().plus( sort.getCollation() ), convert( input, input.getTraitSet().replace( PHYSICAL ) ), sort.getCollation(), null, null );
         }
 
     }
@@ -269,7 +269,7 @@ public class TraitPropagationTest {
     /**
      * Rule for PhysTable
      */
-    private static class PhysTableRule extends RelOptRule {
+    private static class PhysTableRule extends AlgOptRule {
 
         static final PhysTableRule INSTANCE = new PhysTableRule();
 
@@ -280,9 +280,9 @@ public class TraitPropagationTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            EnumerableTableScan rel = call.rel( 0 );
-            call.transformTo( new PhysTable( rel.getCluster() ) );
+        public void onMatch( AlgOptRuleCall call ) {
+            EnumerableTableScan alg = call.alg( 0 );
+            call.transformTo( new PhysTable( alg.getCluster() ) );
         }
 
     }
@@ -293,29 +293,29 @@ public class TraitPropagationTest {
     /**
      * Market interface for Phys nodes
      */
-    private interface Phys extends RelNode {
+    private interface Phys extends AlgNode {
 
     }
 
 
     /**
-     * Physical Aggregate RelNode
+     * Physical Aggregate AlgNode
      */
     private static class PhysAgg extends Aggregate implements Phys {
 
-        PhysAgg( RelOptCluster cluster, RelTraitSet traits, RelNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        PhysAgg( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
             super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
         }
 
 
         @Override
-        public Aggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
             return new PhysAgg( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
         }
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
 
@@ -323,34 +323,34 @@ public class TraitPropagationTest {
 
 
     /**
-     * Physical Project RelNode
+     * Physical Project AlgNode
      */
     private static class PhysProj extends Project implements Phys {
 
-        PhysProj( RelOptCluster cluster, RelTraitSet traits, RelNode child, List<RexNode> exps, RelDataType rowType ) {
+        PhysProj( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, List<RexNode> exps, AlgDataType rowType ) {
             super( cluster, traits, child, exps, rowType );
         }
 
 
-        public static PhysProj create( final RelNode input, final List<RexNode> projects, RelDataType rowType ) {
-            final RelOptCluster cluster = input.getCluster();
-            final RelMetadataQuery mq = RelMetadataQuery.instance();
-            final RelTraitSet traitSet = cluster.traitSet().replace( PHYSICAL )
+        public static PhysProj create( final AlgNode input, final List<RexNode> projects, AlgDataType rowType ) {
+            final AlgOptCluster cluster = input.getCluster();
+            final AlgMetadataQuery mq = AlgMetadataQuery.instance();
+            final AlgTraitSet traitSet = cluster.traitSet().replace( PHYSICAL )
                     .replaceIfs(
-                            RelCollationTraitDef.INSTANCE,
-                            () -> RelMdCollation.project( mq, input, projects ) );
+                            AlgCollationTraitDef.INSTANCE,
+                            () -> AlgMdCollation.project( mq, input, projects ) );
             return new PhysProj( cluster, traitSet, input, projects, rowType );
         }
 
 
         @Override
-        public PhysProj copy( RelTraitSet traitSet, RelNode input, List<RexNode> exps, RelDataType rowType ) {
+        public PhysProj copy( AlgTraitSet traitSet, AlgNode input, List<RexNode> exps, AlgDataType rowType ) {
             return new PhysProj( getCluster(), traitSet, input, exps, rowType );
         }
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
 
@@ -358,23 +358,23 @@ public class TraitPropagationTest {
 
 
     /**
-     * Physical Sort RelNode
+     * Physical Sort AlgNode
      */
     private static class PhysSort extends Sort implements Phys {
 
-        PhysSort( RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
+        PhysSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
             super( cluster, traits, child, collation, offset, fetch );
         }
 
 
         @Override
-        public PhysSort copy( RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch ) {
+        public PhysSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
             return new PhysSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
         }
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
 
@@ -382,27 +382,27 @@ public class TraitPropagationTest {
 
 
     /**
-     * Physical Table RelNode
+     * Physical Table AlgNode
      */
-    private static class PhysTable extends AbstractRelNode implements Phys {
+    private static class PhysTable extends AbstractAlgNode implements Phys {
 
-        PhysTable( RelOptCluster cluster ) {
+        PhysTable( AlgOptCluster cluster ) {
             super( cluster, cluster.traitSet().replace( PHYSICAL ).replace( COLLATION ) );
-            RelDataTypeFactory typeFactory = cluster.getTypeFactory();
-            final RelDataType stringType = typeFactory.createJavaType( String.class );
-            final RelDataType integerType = typeFactory.createJavaType( Integer.class );
+            AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
+            final AlgDataType stringType = typeFactory.createJavaType( String.class );
+            final AlgDataType integerType = typeFactory.createJavaType( Integer.class );
             this.rowType = typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build();
         }
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
 
 
         @Override
-        public String relCompareString() {
+        public String algCompareString() {
             // Compare makes no sense here. Use hashCode() to avoid errors.
             return this.getClass().getSimpleName() + "$" + hashCode() + "&";
         }
@@ -411,13 +411,13 @@ public class TraitPropagationTest {
 
 
     /* UTILS */
-    public static RelOptRuleOperand anyChild( Class<? extends RelNode> first ) {
-        return RelOptRule.operand( first, RelOptRule.any() );
+    public static AlgOptRuleOperand anyChild( Class<? extends AlgNode> first ) {
+        return AlgOptRule.operand( first, AlgOptRule.any() );
     }
 
 
     // Created so that we can control when the TraitDefs are defined (e.g. before the cluster is created).
-    private static RelNode run( PropAction action, RuleSet rules ) throws Exception {
+    private static AlgNode run( PropAction action, RuleSet rules ) throws Exception {
 
         FrameworkConfig config = Frameworks.newConfigBuilder().ruleSets( rules ).build();
 
@@ -428,19 +428,19 @@ public class TraitPropagationTest {
         final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
         PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( prepareContext.getRootSchema(), prepareContext.getDefaultSchemaPath(), typeFactory );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-        final RelOptPlanner planner = new VolcanoPlanner( config.getCostFactory(), config.getContext() );
+        final AlgOptPlanner planner = new VolcanoPlanner( config.getCostFactory(), config.getContext() );
 
         // set up rules before we generate cluster
         planner.clearRelTraitDefs();
-        planner.addRelTraitDef( RelCollationTraitDef.INSTANCE );
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         planner.clear();
-        for ( RelOptRule r : rules ) {
+        for ( AlgOptRule r : rules ) {
             planner.addRule( r );
         }
 
-        final RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
         return action.apply( cluster, catalogReader, prepareContext.getRootSchema().plus() );
     }
 

@@ -26,7 +26,7 @@ import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.file.FileRel.FileImplementor;
+import org.polypheny.db.adapter.file.FileAlg.FileImplementor;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -53,7 +53,7 @@ public class Value {
     /**
      * Value constructor
      *
-     * @param columnReference May be null. Used by generated code, see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
+     * @param columnReference May be null. Used by generated code, see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.algebra.FileToEnumerableConverter#implement}
      * @param literalOrIndex Either a literal or a literalIndex. The third parameter {@code isLiteralIndex} specifies if it is a literal or a literalIndex
      * @param isLiteralIndex True if the second parameter is a literalIndex. In this case, it has to be a Long
      */

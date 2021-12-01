@@ -71,8 +71,8 @@ import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.plan.Strong.Policy;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.test.PolyphenyDbAssert;
@@ -7752,7 +7752,7 @@ public abstract class SqlOperatorBaseTest extends LanguageManagerDependant {
         }
         final SqlValidatorImpl validator = (SqlValidatorImpl) tester.getValidator();
         final SqlValidatorScope scope = validator.getEmptyScope();
-        final RelDataTypeFactory typeFactory = validator.getTypeFactory();
+        final AlgDataTypeFactory typeFactory = validator.getTypeFactory();
         final Builder builder = new Builder( typeFactory );
         builder.add0( PolyType.BOOLEAN, true, false );
         builder.add0( PolyType.TINYINT, 0, 1, -3, Byte.MAX_VALUE, Byte.MIN_VALUE );
@@ -7976,19 +7976,19 @@ public abstract class SqlOperatorBaseTest extends LanguageManagerDependant {
      */
     static class ValueType {
 
-        final RelDataType type;
+        final AlgDataType type;
         final Object value;
         final SqlNode node;
 
 
-        ValueType( RelDataType type, Object value ) {
+        ValueType( AlgDataType type, Object value ) {
             this.type = type;
             this.value = value;
             this.node = literal( type, value );
         }
 
 
-        private SqlNode literal( RelDataType type, Object value ) {
+        private SqlNode literal( AlgDataType type, Object value ) {
             if ( value == null ) {
                 int precision = type.getPrecision();
                 int scale = type.getScale();
@@ -8029,12 +8029,12 @@ public abstract class SqlOperatorBaseTest extends LanguageManagerDependant {
      */
     static class Builder {
 
-        final RelDataTypeFactory typeFactory;
-        final List<RelDataType> types = new ArrayList<>();
+        final AlgDataTypeFactory typeFactory;
+        final List<AlgDataType> types = new ArrayList<>();
         final List<ValueType> values = new ArrayList<>();
 
 
-        Builder( RelDataTypeFactory typeFactory ) {
+        Builder( AlgDataTypeFactory typeFactory ) {
             this.typeFactory = typeFactory;
         }
 
@@ -8049,7 +8049,7 @@ public abstract class SqlOperatorBaseTest extends LanguageManagerDependant {
         }
 
 
-        private void add( RelDataType type, Object[] values ) {
+        private void add( AlgDataType type, Object[] values ) {
             types.add( type );
             for ( Object value : values ) {
                 this.values.add( new ValueType( type, value ) );

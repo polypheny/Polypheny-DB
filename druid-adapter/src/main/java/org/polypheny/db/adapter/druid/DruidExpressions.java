@@ -47,7 +47,7 @@ import java.util.TimeZone;
 import javax.annotation.Nullable;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -115,7 +115,7 @@ public class DruidExpressions {
      * @return Druid Expression or null when can not convert the RexNode
      */
     @Nullable
-    public static String toDruidExpression( final RexNode rexNode, final RelDataType inputRowType, final DruidQuery druidRel ) {
+    public static String toDruidExpression( final RexNode rexNode, final AlgDataType inputRowType, final DruidQuery druidRel ) {
         Kind kind = rexNode.getKind();
         PolyType polyType = rexNode.getType().getPolyType();
 
@@ -247,7 +247,7 @@ public class DruidExpressions {
      * @return list of Druid expressions in the same order as rexNodes, or null if not possible. If a non-null list is returned, all elements will be non-null.
      */
     @Nullable
-    public static List<String> toDruidExpressions( final DruidQuery druidRel, final RelDataType rowType, final List<RexNode> rexNodes ) {
+    public static List<String> toDruidExpressions( final DruidQuery druidRel, final AlgDataType rowType, final List<RexNode> rexNodes ) {
         final List<String> retVal = new ArrayList<>( rexNodes.size() );
         for ( RexNode rexNode : rexNodes ) {
             final String druidExpression = toDruidExpression( rexNode, rowType, druidRel );

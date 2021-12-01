@@ -180,7 +180,7 @@ public class RexMultisetUtil {
     /**
      * A RexShuttle that traverse all RexNode and counts total number of RexCalls traversed and number of multiset calls traversed.
      *
-     * totalCount >= multisetCount always holds true.
+     * totalCount {@code >=} multisetCount always holds true.
      */
     private static class RexCallMultisetOperatorCounter extends RexVisitorImpl<Void> {
 

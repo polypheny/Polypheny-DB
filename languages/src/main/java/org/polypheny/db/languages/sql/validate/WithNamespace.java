@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.validate;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWith;
 import org.polypheny.db.languages.sql.SqlWithItem;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Util;
 
 
@@ -46,13 +46,13 @@ public class WithNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         for ( SqlNode withItem : with.withList.getSqlList() ) {
             validator.validateWithItem( (SqlWithItem) withItem );
         }
         final SqlValidatorScope scope2 = validator.getWithScope( Util.last( with.withList.getSqlList() ) );
         validator.validateQuery( with.body, scope2, targetRowType );
-        final RelDataType rowType = validator.getValidatedNodeType( with.body );
+        final AlgDataType rowType = validator.getValidatedNodeType( with.body );
         validator.setValidatedNodeType( with, rowType );
         return rowType;
     }

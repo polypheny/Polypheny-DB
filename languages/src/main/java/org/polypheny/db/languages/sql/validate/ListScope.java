@@ -31,9 +31,9 @@ import org.polypheny.db.core.util.MonikerImpl;
 import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -214,14 +214,14 @@ public abstract class ListScope extends DelegatingScope {
 
 
     @Override
-    public RelDataType resolveColumn( String columnName, SqlNode ctx ) {
+    public AlgDataType resolveColumn( String columnName, SqlNode ctx ) {
         final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
         int found = 0;
-        RelDataType type = null;
+        AlgDataType type = null;
         for ( ScopeChild child : children ) {
             SqlValidatorNamespace childNs = child.namespace;
-            final RelDataType childRowType = childNs.getRowType();
-            final RelDataTypeField field = nameMatcher.field( childRowType, columnName );
+            final AlgDataType childRowType = childNs.getRowType();
+            final AlgDataTypeField field = nameMatcher.field( childRowType, columnName );
             if ( field != null ) {
                 found++;
                 type = field.getType();

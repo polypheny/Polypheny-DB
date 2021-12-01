@@ -21,36 +21,36 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
-import org.polypheny.db.core.rel.RelDecorrelator;
-import org.polypheny.db.languages.sql.SqlToRelTestBase;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.core.algebra.AlgDecorrelator;
+import org.polypheny.db.languages.sql.SqlToAlgTestBase;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.mutable.MutableRel;
-import org.polypheny.db.rel.mutable.MutableRels;
-import org.polypheny.db.rel.rules.FilterJoinRule;
-import org.polypheny.db.rel.rules.FilterProjectTransposeRule;
-import org.polypheny.db.rel.rules.FilterToCalcRule;
-import org.polypheny.db.rel.rules.ProjectMergeRule;
-import org.polypheny.db.rel.rules.ProjectToWindowRule;
-import org.polypheny.db.rel.rules.SemiJoinRule;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.mutable.MutableAlg;
+import org.polypheny.db.algebra.mutable.MutableAlgs;
+import org.polypheny.db.algebra.rules.FilterJoinRule;
+import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
+import org.polypheny.db.algebra.rules.FilterToCalcRule;
+import org.polypheny.db.algebra.rules.ProjectMergeRule;
+import org.polypheny.db.algebra.rules.ProjectToWindowRule;
+import org.polypheny.db.algebra.rules.SemiJoinRule;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Litmus;
 
 
 /**
- * Tests for {@link MutableRel} sub-classes.
+ * Tests for {@link MutableAlg} sub-classes.
  */
 public class MutableRelTest {
 
     @Test
     public void testConvertAggregate() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Aggregate",
                 "select empno, sum(sal) from emp group by empno" );
     }
@@ -58,7 +58,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertFilter() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Filter",
                 "select * from emp where ename = 'DUMMY'" );
     }
@@ -66,7 +66,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertProject() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Project",
                 "select ename from emp" );
     }
@@ -74,7 +74,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertSort() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Sort",
                 "select * from emp order by ename" );
     }
@@ -82,7 +82,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertCalc() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Calc",
                 "select * from emp where ename = 'DUMMY'",
                 false,
@@ -92,7 +92,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertWindow() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Window",
                 "select sal, avg(sal) over (partition by deptno) from emp",
                 false,
@@ -102,7 +102,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertCollect() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Collect",
                 "select multiset(select deptno from dept) from (values(true))" );
     }
@@ -110,7 +110,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertUncollect() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Uncollect",
                 "select * from unnest(multiset[1,2])" );
     }
@@ -118,7 +118,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertTableModify() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "TableModify",
                 "insert into dept select empno, ename from emp" );
     }
@@ -126,7 +126,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertSample() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Sample",
                 "select * from emp tablesample system(50) where empno > 5" );
     }
@@ -134,7 +134,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertTableFunctionScan() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "TableFunctionScan",
                 "select * from table(ramp(3))" );
     }
@@ -142,7 +142,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertValues() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Values",
                 "select * from (values (1, 2))" );
     }
@@ -150,7 +150,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertJoin() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Join",
                 "select * from emp join dept using (deptno)" );
     }
@@ -162,7 +162,7 @@ public class MutableRelTest {
                 + "  select * from emp\n"
                 + "  where emp.deptno = dept.deptno\n"
                 + "  and emp.sal > 100)";
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "SemiJoin",
                 sql,
                 true,
@@ -176,13 +176,13 @@ public class MutableRelTest {
                 + "  select * from emp\n"
                 + "  where emp.deptno = dept.deptno\n"
                 + "  and emp.sal > 100)";
-        checkConvertMutableRel( "Correlate", sql );
+        checkConvertMutableAlg( "Correlate", sql );
     }
 
 
     @Test
     public void testConvertUnion() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Union",
                 "select * from emp where deptno = 10 union select * from emp where ename like 'John%'" );
     }
@@ -190,7 +190,7 @@ public class MutableRelTest {
 
     @Test
     public void testConvertMinus() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Minus",
                 "select * from emp where deptno = 10 except select * from emp where ename like 'John%'" );
     }
@@ -198,30 +198,30 @@ public class MutableRelTest {
 
     @Test
     public void testConvertIntersect() {
-        checkConvertMutableRel(
+        checkConvertMutableAlg(
                 "Intersect",
                 "select * from emp where deptno = 10 intersect select * from emp where ename like 'John%'" );
     }
 
 
     /**
-     * Verifies that after conversion to and from a MutableRel, the new RelNode remains identical to the original RelNode.
+     * Verifies that after conversion to and from a MutableRel, the new {@link AlgNode} remains identical to the original AlgNode.
      */
-    private static void checkConvertMutableRel( String rel, String sql ) {
-        checkConvertMutableRel( rel, sql, false, null );
+    private static void checkConvertMutableAlg( String alg, String sql ) {
+        checkConvertMutableAlg( alg, sql, false, null );
     }
 
 
     /**
-     * Verifies that after conversion to and from a MutableRel, the new RelNode remains identical to the original RelNode.
+     * Verifies that after conversion to and from a MutableRel, the new {@link AlgNode} remains identical to the original AlgNode.
      */
-    private static void checkConvertMutableRel( String rel, String sql, boolean decorrelate, List<RelOptRule> rules ) {
-        final SqlToRelTestBase test = new SqlToRelTestBase() {
+    private static void checkConvertMutableAlg( String alg, String sql, boolean decorrelate, List<AlgOptRule> rules ) {
+        final SqlToAlgTestBase test = new SqlToAlgTestBase() {
         };
-        RelNode origRel = test.createTester().convertSqlToRel( sql ).rel;
+        AlgNode origRel = test.createTester().convertSqlToRel( sql ).alg;
         if ( decorrelate ) {
-            final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( origRel.getCluster(), null );
-            origRel = RelDecorrelator.decorrelateQuery( origRel, relBuilder );
+            final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( origRel.getCluster(), null );
+            origRel = AlgDecorrelator.decorrelateQuery( origRel, algBuilder );
         }
         if ( rules != null ) {
             final HepProgram hepProgram = new HepProgramBuilder().addRuleCollection( rules ).build();
@@ -229,28 +229,28 @@ public class MutableRelTest {
             hepPlanner.setRoot( origRel );
             origRel = hepPlanner.findBestExp();
         }
-        // Convert to and from a mutable rel.
-        final MutableRel mutableRel = MutableRels.toMutable( origRel );
-        final RelNode newRel = MutableRels.fromMutable( mutableRel );
+        // Convert to and from a mutable alg.
+        final MutableAlg mutableRel = MutableAlgs.toMutable( origRel );
+        final AlgNode newRel = MutableAlgs.fromMutable( mutableRel );
 
-        // Check if the mutable rel digest contains the target rel.
+        // Check if the mutable alg digest contains the target alg.
         final String mutableRelStr = mutableRel.deep();
-        final String msg1 = "Mutable rel: " + mutableRelStr + " does not contain target rel: " + rel;
-        Assert.assertTrue( msg1, mutableRelStr.contains( rel ) );
+        final String msg1 = "Mutable rel: " + mutableRelStr + " does not contain target rel: " + alg;
+        Assert.assertTrue( msg1, mutableRelStr.contains( alg ) );
 
         // Check if the mutable rel's row-type is identical to the original rel's row-type.
-        final RelDataType origRelType = origRel.getRowType();
-        final RelDataType mutableRelType = mutableRel.rowType;
-        final String msg2 = "Mutable rel's row type does not match with the original rel.\n"
-                + "Original rel type: " + origRelType + ";\nMutable rel type: " + mutableRelType;
+        final AlgDataType origRelType = origRel.getRowType();
+        final AlgDataType mutableRelType = mutableRel.rowType;
+        final String msg2 = "Mutable rel's row type does not match with the original alg.\n"
+                + "Original alg type: " + origRelType + ";\nMutable alg type: " + mutableRelType;
         Assert.assertTrue(
                 msg2,
-                RelOptUtil.equal( "origRelType", origRelType, "mutableRelType", mutableRelType, Litmus.IGNORE ) );
+                AlgOptUtil.equal( "origRelType", origRelType, "mutableRelType", mutableRelType, Litmus.IGNORE ) );
 
-        // Check if the new rel converted from the mutable rel is identical to the original rel.
-        final String origRelStr = RelOptUtil.toString( origRel );
-        final String newRelStr = RelOptUtil.toString( newRel );
-        final String msg3 = "The converted new rel is different from the original rel.\n"
+        // Check if the new alg converted from the mutable alg is identical to the original alg.
+        final String origRelStr = AlgOptUtil.toString( origRel );
+        final String newRelStr = AlgOptUtil.toString( newRel );
+        final String msg3 = "The converted new alg is different from the original alg.\n"
                 + "Original rel: " + origRelStr + ";\nNew rel: " + newRelStr;
         Assert.assertEquals( msg3, origRelStr, newRelStr );
     }

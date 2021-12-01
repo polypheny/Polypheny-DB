@@ -35,41 +35,41 @@ package org.polypheny.db.adapter.csv;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
  * Planner rule that projects from a {@link CsvTableScan} scan just the columns needed to satisfy a projection. If the projection's expressions are trivial, the projection is removed.
  */
-public class CsvProjectTableScanRule extends RelOptRule {
+public class CsvProjectTableScanRule extends AlgOptRule {
 
-    public static final CsvProjectTableScanRule INSTANCE = new CsvProjectTableScanRule( RelFactories.LOGICAL_BUILDER );
+    public static final CsvProjectTableScanRule INSTANCE = new CsvProjectTableScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
     /**
      * Creates a CsvProjectTableScanRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public CsvProjectTableScanRule( RelBuilderFactory relBuilderFactory ) {
+    public CsvProjectTableScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
                 operand( LogicalProject.class, operand( CsvTableScan.class, none() ) ),
-                relBuilderFactory,
+                algBuilderFactory,
                 "CsvProjectTableScanRule"
         );
     }
 
 
     @Override
-    public void onMatch( RelOptRuleCall call ) {
-        final LogicalProject project = call.rel( 0 );
-        final CsvTableScan scan = call.rel( 1 );
+    public void onMatch( AlgOptRuleCall call ) {
+        final LogicalProject project = call.alg( 0 );
+        final CsvTableScan scan = call.alg( 1 );
         int[] fields = getProjectFields( project.getProjects() );
         if ( fields == null ) {
             // Project contains expressions more complex than just field references.

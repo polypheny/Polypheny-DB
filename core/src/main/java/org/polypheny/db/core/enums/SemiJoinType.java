@@ -19,7 +19,7 @@ package org.polypheny.db.core.enums;
 
 import java.util.Locale;
 import org.apache.calcite.linq4j.CorrelateJoinType;
-import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.algebra.core.JoinAlgType;
 
 
 /**
@@ -55,7 +55,7 @@ public enum SemiJoinType {
     public final String lowerName = name().toLowerCase( Locale.ROOT );
 
 
-    public static SemiJoinType of( JoinRelType joinType ) {
+    public static SemiJoinType of( JoinAlgType joinType ) {
         switch ( joinType ) {
             case INNER:
                 return INNER;
@@ -66,12 +66,12 @@ public enum SemiJoinType {
     }
 
 
-    public JoinRelType toJoinType() {
+    public JoinAlgType toJoinType() {
         switch ( this ) {
             case INNER:
-                return JoinRelType.INNER;
+                return JoinAlgType.INNER;
             case LEFT:
-                return JoinRelType.LEFT;
+                return JoinAlgType.LEFT;
         }
         throw new IllegalStateException( "Unable to convert " + this + " to JoinRelType" );
     }

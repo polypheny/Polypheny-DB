@@ -40,18 +40,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Util;
 
 
 /**
- * SqlTypeExplicitPrecedenceList implements the {@link RelDataTypePrecedenceList} interface via an explicit
+ * SqlTypeExplicitPrecedenceList implements the {@link AlgDataTypePrecedenceList} interface via an explicit
  * list of {@link PolyType} entries.
  */
-public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList {
+public class PolyTypeExplicitPrecedenceList implements AlgDataTypePrecedenceList {
 
     // NOTE: The null entries delimit equivalence classes
     private static final List<PolyType> NUMERIC_TYPES =
@@ -138,7 +138,7 @@ public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList
 
     // implement RelDataTypePrecedenceList
     @Override
-    public boolean containsType( RelDataType type ) {
+    public boolean containsType( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         return typeName != null && typeNames.contains( typeName );
     }
@@ -146,7 +146,7 @@ public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList
 
     // implement RelDataTypePrecedenceList
     @Override
-    public int compareTypePrecedence( RelDataType type1, RelDataType type2 ) {
+    public int compareTypePrecedence( AlgDataType type1, AlgDataType type2 ) {
         assert containsType( type1 ) : type1;
         assert containsType( type2 ) : type2;
 
@@ -170,7 +170,7 @@ public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList
     }
 
 
-    static RelDataTypePrecedenceList getListForType( RelDataType type ) {
+    static AlgDataTypePrecedenceList getListForType( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return null;

@@ -56,14 +56,15 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelectKeyword;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
@@ -80,7 +81,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
     final DruidSchema schema;
     final String dataSource;
-    final RelProtoDataType protoRowType;
+    final AlgProtoDataType protoRowType;
     final ImmutableSet<String> metricFieldNames;
     final ImmutableList<Interval> intervals;
     final String timestampFieldName;
@@ -98,7 +99,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
      * @param intervals Default interval if query does not constrain the time, or null
      * @param timestampFieldName Name of the column that contains the time
      */
-    public DruidTable( DruidSchema schema, String dataSource, RelProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
+    public DruidTable( DruidSchema schema, String dataSource, AlgProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
         this.timestampFieldName = Objects.requireNonNull( timestampFieldName );
         this.schema = Objects.requireNonNull( schema );
         this.dataSource = Objects.requireNonNull( dataSource );
@@ -228,8 +229,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-        final RelDataType rowType = protoRowType.apply( typeFactory );
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+        final AlgDataType rowType = protoRowType.apply( typeFactory );
         final List<String> fieldNames = rowType.getFieldNames();
         Preconditions.checkArgument( fieldNames.contains( timestampFieldName ) );
         Preconditions.checkArgument( fieldNames.containsAll( metricFieldNames ) );
@@ -238,8 +239,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        final RelOptCluster cluster = context.getCluster();
+    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+        final AlgOptCluster cluster = context.getCluster();
         // ViewTableScan needed for Views
         final LogicalTableScan scan = LogicalTableScan.create( cluster, relOptTable );
         return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), relOptTable, this, ImmutableList.of( scan ) );
@@ -252,9 +253,9 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     /**
-     * Creates a {@link RelDataType} from a map of field names and types.
+     * Creates a {@link AlgDataType} from a map of field names and types.
      */
-    private static class MapRelProtoDataType implements RelProtoDataType {
+    private static class MapRelProtoDataType implements AlgProtoDataType {
 
         private final ImmutableMap<String, PolyType> fields;
         private final String timestampColumn;
@@ -273,8 +274,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
         @Override
-        public RelDataType apply( RelDataTypeFactory typeFactory ) {
-            final RelDataTypeFactory.Builder builder = typeFactory.builder();
+        public AlgDataType apply( AlgDataTypeFactory typeFactory ) {
+            final AlgDataTypeFactory.Builder builder = typeFactory.builder();
             for ( Map.Entry<String, PolyType> field : fields.entrySet() ) {
                 final String key = field.getKey();
                 // TODO (PCP)

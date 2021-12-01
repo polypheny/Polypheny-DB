@@ -45,14 +45,44 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgShuttle;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.LogicalExchange;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalIntersect;
+import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.LogicalMatch;
+import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.SchemaTypeVisitor;
@@ -63,10 +93,10 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.DeadlockException;
+import org.polypheny.db.core.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.rel.RelStructuredTypeFlattener;
 import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -78,42 +108,12 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.RelShuttle;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.ConditionalExecute.Condition;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.core.TableFunctionScan;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
-import org.polypheny.db.rel.logical.LogicalCorrelate;
-import org.polypheny.db.rel.logical.LogicalExchange;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalIntersect;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalMatch;
-import org.polypheny.db.rel.logical.LogicalMinus;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalSort;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalUnion;
-import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -124,9 +124,9 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.document.DataModelShuttle;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
-import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -163,25 +163,25 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot ) {
-        return prepareQuery( logicalRoot, logicalRoot.rel.getCluster().getTypeFactory().builder().build(), false );
+    public PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot ) {
+        return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), false );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
+    public PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted ) {
         return prepareQuery( logicalRoot, parameterRowType, isRouted, false );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+    public PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
         return prepareQuery( logicalRoot, parameterRowType, isRouted, isSubquery, false );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy ) {
+    public PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
         SchemaType schemaType = null;
@@ -202,7 +202,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         stopWatch.start();
 
-        logicalRoot.rel.accept( new DataModelShuttle() );
+        logicalRoot.alg.accept( new DataModelShuttle() );
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
 
@@ -219,11 +219,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         //Update which tables where changed used for Materialized Views
         TableUpdateVisitor visitor = new TableUpdateVisitor();
-        logicalRoot.rel.accept( visitor );
+        logicalRoot.alg.accept( visitor );
         MaterializedViewManager.getInstance().addTables( statement.getTransaction(), visitor.getNames() );
 
         SchemaTypeVisitor schemaTypeVisitor = new SchemaTypeVisitor();
-        logicalRoot.rel.accept( schemaTypeVisitor );
+        logicalRoot.alg.accept( schemaTypeVisitor );
         schemaType = schemaTypeVisitor.getSchemaTypes();
 
         if ( isAnalyze ) {
@@ -235,7 +235,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        RelRoot routedRoot;
+        AlgRoot routedRoot;
         if ( !isRouted ) {
             if ( lock ) {
                 // Locking
@@ -246,7 +246,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
                     LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
                     // Get locks for individual tables
-                    TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+                    TableAccessMap accessMap = new TableAccessMap( logicalRoot.alg );
                     for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
                         Mode mode = accessMap.getTableAccessMode( tableIdentifier );
                         if ( mode == Mode.READ_ACCESS ) {
@@ -265,7 +265,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getProcessingDuration().stop( "Locking" );
                 statement.getProcessingDuration().start( "Index Update" );
             }
-            RelRoot indexUpdateRoot = logicalRoot;
+            AlgRoot indexUpdateRoot = logicalRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
                 IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
                 indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
@@ -276,7 +276,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getProcessingDuration().stop( "Index Update" );
                 statement.getProcessingDuration().start( "Constraint Enforcement" );
             }
-            RelRoot constraintsRoot = indexUpdateRoot;
+            AlgRoot constraintsRoot = indexUpdateRoot;
             if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
                 ConstraintEnforcer constraintEnforcer = new EnumerableConstraintEnforcer();
                 constraintsRoot = constraintEnforcer.enforce( constraintsRoot, statement );
@@ -287,7 +287,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getProcessingDuration().stop( "Constraint Enforcement" );
                 statement.getProcessingDuration().start( "Index Lookup Rewrite" );
             }
-            RelRoot indexLookupRoot = constraintsRoot;
+            AlgRoot indexLookupRoot = constraintsRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
                 indexLookupRoot = indexLookup( indexLookupRoot, statement, executionTimeMonitor );
             }
@@ -298,12 +298,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             }
             routedRoot = route( indexLookupRoot, statement, executionTimeMonitor );
 
-            RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
-                    RelBuilder.create( statement, routedRoot.rel.getCluster() ),
-                    routedRoot.rel.getCluster().getRexBuilder(),
-                    routedRoot.rel::getCluster,
+            AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
+                    AlgBuilder.create( statement, routedRoot.alg.getCluster() ),
+                    routedRoot.alg.getCluster().getRexBuilder(),
+                    routedRoot.alg::getCluster,
                     true );
-            routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
+            routedRoot = routedRoot.withAlg( typeFlattener.rewrite( routedRoot.alg ) );
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Routing" );
             }
@@ -313,13 +313,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         // Validate parameterValues
         ParameterValueValidator pmValidator = new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() );
-        pmValidator.visit( routedRoot.rel );
+        pmValidator.visit( routedRoot.alg );
 
         //
         // Parameterize
-        RelRoot parameterizedRoot = null;
+        AlgRoot parameterizedRoot = null;
         if ( statement.getDataContext().getParameterValues().size() == 0 && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )) ) {
-            Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+            Pair<AlgRoot, AlgDataType> parameterized = parameterize( routedRoot, parameterRowType );
             parameterizedRoot = parameterized.left;
             parameterRowType = parameterized.right;
         } else {
@@ -333,7 +333,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getProcessingDuration().start( "Implementation Caching" );
         }
         if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-            PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
+            PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
                 if ( isAnalyze ) {
@@ -368,9 +368,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getProcessingDuration().stop( "Implementation Caching" );
             statement.getProcessingDuration().start( "Plan Caching" );
         }
-        RelNode optimalNode;
+        AlgNode optimalNode;
         if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-            optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
+            optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
         } else {
             parameterizedRoot = routedRoot;
             optimalNode = null;
@@ -392,13 +392,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             //}
 
             if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-                QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNode );
+                QueryPlanCache.INSTANCE.put( parameterizedRoot.alg, optimalNode );
             }
         }
 
-        final RelDataType rowType = parameterizedRoot.rel.getRowType();
+        final AlgDataType rowType = parameterizedRoot.alg.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        RelRoot optimalRoot = new RelRoot( optimalNode, rowType, parameterizedRoot.kind, fields, relCollation( parameterizedRoot.rel ) );
+        AlgRoot optimalRoot = new AlgRoot( optimalNode, rowType, parameterizedRoot.kind, fields, relCollation( parameterizedRoot.alg ) );
 
         //
         // Implementation
@@ -411,8 +411,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         // Cache implementation
         if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
-            if ( optimalRoot.rel.isImplementationCacheable() ) {
-                ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
+            if ( optimalRoot.alg.isImplementationCacheable() ) {
+                ImplementationCache.INSTANCE.put( parameterizedRoot.alg, preparedResult );
             } else {
                 ImplementationCache.INSTANCE.countUncacheable();
             }
@@ -452,12 +452,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private RelRoot indexUpdate( RelRoot root, Statement statement, RelDataType parameterRowType ) {
+    private AlgRoot indexUpdate( AlgRoot root, Statement statement, AlgDataType parameterRowType ) {
         if ( root.kind.belongsTo( Kind.DML ) ) {
-            final RelShuttle shuttle = new RelShuttleImpl() {
+            final AlgShuttle shuttle = new AlgShuttleImpl() {
 
                 @Override
-                public RelNode visit( RelNode node ) {
+                public AlgNode visit( AlgNode node ) {
                     RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
                     if ( node instanceof LogicalTableModify ) {
                         final Catalog catalog = Catalog.getInstance();
@@ -491,7 +491,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         }
 
                         if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
-                            final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new RelDeepCopyShuttle() );
+                            final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new AlgDeepCopyShuttle() );
                             for ( final Index index : indices ) {
                                 final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lvalues.tuples.size() );
                                 for ( final ImmutableList<RexLiteral> row : lvalues.getTuples() ) {
@@ -514,7 +514,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                                 index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
                             }
                         } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalProject && ((LogicalProject) ltm.getInput()).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                            final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new RelDeepCopyShuttle() );
+                            final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new AlgDeepCopyShuttle() );
                             for ( final Index index : indices ) {
                                 final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lproject.getProjects().size() );
                                 final List<Object> rowValues = new ArrayList<>();
@@ -555,7 +555,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         } else if ( ltm.isDelete() || ltm.isUpdate() || ltm.isMerge() || (ltm.isInsert() && !(ltm.getInput() instanceof Values)) ) {
                             final Map<String, Integer> nameMap = new HashMap<>();
                             final Map<String, Integer> newValueMap = new HashMap<>();
-                            RelNode original = ltm.getInput().accept( new RelDeepCopyShuttle() );
+                            AlgNode original = ltm.getInput().accept( new AlgDeepCopyShuttle() );
                             if ( !(original instanceof LogicalProject) ) {
                                 original = LogicalProject.identity( original );
                             }
@@ -603,7 +603,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 //                                RelDataType type = transaction.getTypeFactory().createStructType( types, originalProject.getRowType().getFieldNames() );
 //                                originalProject = LogicalProject.create( originalProject, expr, type );
 //                            }
-                            RelRoot scanRoot = RelRoot.of( originalProject, Kind.SELECT );
+                            AlgRoot scanRoot = AlgRoot.of( originalProject, Kind.SELECT );
                             final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, false, true );
                             final Iterable<Object> enumerable = scanSig.enumerable( statement.getDataContext() );
                             final Iterator<Object> iterator = enumerable.iterator();
@@ -613,7 +613,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                             for ( final List<Object> row : rows ) {
                                 final List<RexLiteral> record = new ArrayList<>();
                                 for ( int i = 0; i < row.size(); ++i ) {
-                                    RelDataType fieldType = originalProject.getRowType().getFieldList().get( i ).getType();
+                                    AlgDataType fieldType = originalProject.getRowType().getFieldList().get( i ).getType();
                                     Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) row.get( i ), fieldType );
                                     record.add( new RexLiteral(
                                             converted.left,
@@ -624,8 +624,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                                 records.add( ImmutableList.copyOf( record ) );
                             }
                             final ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.copyOf( records );
-                            final RelNode newValues = LogicalValues.create( originalProject.getCluster(), originalProject.getRowType(), values );
-                            final RelNode newProject = LogicalProject.identity( newValues );
+                            final AlgNode newValues = LogicalValues.create( originalProject.getCluster(), originalProject.getRowType(), values );
+                            final AlgNode newProject = LogicalProject.identity( newValues );
 //                            List<RexNode> sourceExpr = ltm.getSourceExpressionList();
 //                            if ( ltm.isUpdate() || ltm.isMerge() ) {
 //                                //FIXME(s3lph): Wrong index
@@ -633,7 +633,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 //                                        .mapToObj( i -> rexBuilder.makeFieldAccess( rexBuilder.makeInputRef( newProject, i ), 0 ) )
 //                                        .collect( Collectors.toList() );
 //                            }
-//                            final RelNode replacement = LogicalTableModify.create(
+//                            final {@link AlgNode} replacement = LogicalTableModify.create(
 //                                    ltm.getTable(),
 //                                    transaction.getCatalogReader(),
 //                                    newProject,
@@ -642,7 +642,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 //                                    sourceExpr,
 //                                    ltm.isFlattened()
 //                            );
-                            final RelNode replacement = ltm.copy( ltm.getTraitSet(), Collections.singletonList( newProject ) );
+                            final AlgNode replacement = ltm.copy( ltm.getTraitSet(), Collections.singletonList( newProject ) );
                             // Schedule the index deletions
                             if ( !ltm.isInsert() ) {
                                 for ( final Index index : indices ) {
@@ -705,23 +705,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 }
 
             };
-            final RelNode newRoot = shuttle.visit( root.rel );
-            return RelRoot.of( newRoot, root.kind );
+            final AlgNode newRoot = shuttle.visit( root.alg );
+            return AlgRoot.of( newRoot, root.kind );
 
         }
         return root;
     }
 
 
-    private RelRoot indexLookup( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
-        final RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
+    private AlgRoot indexLookup( AlgRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+        final AlgBuilder builder = AlgBuilder.create( statement, logicalRoot.alg.getCluster() );
         final RexBuilder rexBuilder = builder.getRexBuilder();
-        RelNode newRoot = logicalRoot.rel;
+        AlgNode newRoot = logicalRoot.alg;
         if ( logicalRoot.kind.belongsTo( Kind.DML ) ) {
-            final RelShuttle shuttle = new RelShuttleImpl() {
+            final AlgShuttle shuttle = new AlgShuttleImpl() {
 
                 @Override
-                public RelNode visit( RelNode node ) {
+                public AlgNode visit( AlgNode node ) {
                     if ( node instanceof LogicalConditionalExecute ) {
                         final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
                         final Index index = IndexManager.getInstance().getIndex(
@@ -755,23 +755,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             };
             newRoot = newRoot.accept( shuttle );
         }
-        final RelShuttle shuttle2 = new RelShuttleImpl() {
+        final AlgShuttle shuttle2 = new AlgShuttleImpl() {
 
             @Override
-            public RelNode visit( LogicalProject project ) {
+            public AlgNode visit( LogicalProject project ) {
                 if ( project.getInput() instanceof LogicalTableScan ) {
                     // Figure out the original column names required for index lookup
                     final LogicalTableScan scan = (LogicalTableScan) project.getInput();
                     final String table = scan.getTable().getQualifiedName().get( scan.getTable().getQualifiedName().size() - 1 );
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
-                    final List<RelDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
+                    final List<AlgDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
                     for ( final RexNode expr : project.getChildExps() ) {
                         if ( !(expr instanceof RexInputRef) ) {
                             IndexManager.getInstance().incrementMiss();
                             return super.visit( project );
                         }
                         final RexInputRef rir = (RexInputRef) expr;
-                        final RelDataTypeField field = scan.getRowType().getFieldList().get( rir.getIndex() );
+                        final AlgDataTypeField field = scan.getRowType().getFieldList().get( rir.getIndex() );
                         final String column = field.getName();
                         columns.add( column );
                         ctypes.add( field.getType() );
@@ -794,7 +794,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         return super.visit( project );
                     }
                     // TODO: Avoid copying stuff around
-                    final RelDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
+                    final AlgDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
                     final Values replacement = idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
                     final LogicalProject rProject = new LogicalProject(
                             replacement.getCluster(),
@@ -812,7 +812,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
             @Override
-            public RelNode visit( RelNode node ) {
+            public AlgNode visit( AlgNode node ) {
                 if ( node instanceof LogicalProject ) {
                     final LogicalProject lp = (LogicalProject) node;
                     lp.getMapping();
@@ -822,14 +822,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         };
         newRoot = newRoot.accept( shuttle2 );
-        return RelRoot.of( newRoot, logicalRoot.kind );
+        return AlgRoot.of( newRoot, logicalRoot.kind );
     }
 
 
-    private RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
-        RelRoot routedRoot = statement.getRouter().route( logicalRoot, statement, executionTimeMonitor );
+    private AlgRoot route( AlgRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+        AlgRoot routedRoot = statement.getRouter().route( logicalRoot, statement, executionTimeMonitor );
         if ( log.isTraceEnabled() ) {
-            log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            log.trace( "Routed query plan: [{}]", AlgOptUtil.dumpPlan( "-- Routed Plan", routedRoot.alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -840,22 +840,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             queryAnalyzer.addGroup( group );
             InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
                     group,
-                    RelOptUtil.dumpPlan( "Routed Query Plan", routedRoot.rel, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
+                    AlgOptUtil.dumpPlan( "Routed Query Plan", routedRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
         return routedRoot;
     }
 
 
-    private Pair<RelRoot, RelDataType> parameterize( RelRoot routedRoot, RelDataType parameterRowType ) {
-        RelNode routed = routedRoot.rel;
-        List<RelDataType> parameterRowTypeList = new ArrayList<>();
+    private Pair<AlgRoot, AlgDataType> parameterize( AlgRoot routedRoot, AlgDataType parameterRowType ) {
+        AlgNode routed = routedRoot.alg;
+        List<AlgDataType> parameterRowTypeList = new ArrayList<>();
         parameterRowType.getFieldList().forEach( relDataTypeField -> parameterRowTypeList.add( relDataTypeField.getType() ) );
 
         // Parameterize
         QueryParameterizer queryParameterizer = new QueryParameterizer( parameterRowType.getFieldCount(), parameterRowTypeList );
-        RelNode parameterized = routed.accept( queryParameterizer );
-        List<RelDataType> types = queryParameterizer.getTypes();
+        AlgNode parameterized = routed.accept( queryParameterizer );
+        List<AlgDataType> types = queryParameterizer.getTypes();
 
         // Add values to data context
         for ( List<DataContext.ParameterValue> values : queryParameterizer.getValues().values() ) {
@@ -867,7 +867,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
         // parameterRowType
-        RelDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(
+        AlgDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(
                 types,
                 new AbstractList<String>() {
                     @Override
@@ -883,17 +883,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 } );
 
         return new Pair<>(
-                new RelRoot( parameterized, routedRoot.validatedRowType, routedRoot.kind, routedRoot.fields, routedRoot.collation ),
+                new AlgRoot( parameterized, routedRoot.validatedRowType, routedRoot.kind, routedRoot.fields, routedRoot.collation ),
                 newParameterRowType
         );
     }
 
 
-    private PolyphenyDbSignature createSignature( PreparedResult preparedResult, RelRoot optimalRoot, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
-        final RelDataType jdbcType = makeStruct( optimalRoot.rel.getCluster().getTypeFactory(), optimalRoot.validatedRowType );
+    private PolyphenyDbSignature createSignature( PreparedResult preparedResult, AlgRoot optimalRoot, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
+        final AlgDataType jdbcType = makeStruct( optimalRoot.alg.getCluster().getTypeFactory(), optimalRoot.validatedRowType );
         final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( RelDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
-            RelDataType type = field.getType();
+        for ( AlgDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
+            AlgDataType type = field.getType();
             parameters.add(
                     new AvaticaParameter(
                             false,
@@ -905,14 +905,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                             field.getName() ) );
         }
 
-        final RelDataType x;
+        final AlgDataType x;
         switch ( optimalRoot.kind ) {
             case INSERT:
             case DELETE:
             case UPDATE:
             case EXPLAIN:
                 // FIXME: getValidatedNodeType is wrong for DML
-                x = RelOptUtil.createDmlRowType( optimalRoot.kind, statement.getTransaction().getTypeFactory() );
+                x = AlgOptUtil.createDmlRowType( optimalRoot.kind, statement.getTransaction().getTypeFactory() );
                 break;
             default:
                 x = optimalRoot.validatedRowType;
@@ -948,35 +948,35 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private RelNode optimize( RelRoot logicalRoot, Convention resultConvention ) {
-        RelNode logicalPlan = logicalRoot.rel;
+    private AlgNode optimize( AlgRoot logicalRoot, Convention resultConvention ) {
+        AlgNode logicalPlan = logicalRoot.alg;
 
-        final RelTraitSet desiredTraits = logicalPlan.getTraitSet()
+        final AlgTraitSet desiredTraits = logicalPlan.getTraitSet()
                 .replace( resultConvention )
                 .replace( relCollation( logicalPlan ) )
                 .simplify();
 
         final Program program = Programs.standard();
-        final RelNode rootRel4 = program.run( getPlanner(), logicalPlan, desiredTraits );
+        final AlgNode rootAlg4 = program.run( getPlanner(), logicalPlan, desiredTraits );
 
-        //final RelNode relNode = getPlanner().changeTraits( root.rel, desiredTraits );
-        //getPlanner().setRoot(relNode);
-        //final RelNode rootRel4 = getPlanner().findBestExp();
+        //final {@link AlgNode} algNode = getPlanner().changeTraits( root.alg, desiredTraits );
+        //getPlanner().setRoot(algNode);
+        //final {@link AlgNode} rootAlg4 = getPlanner().findBestExp();
 
-        return rootRel4;
+        return rootAlg4;
     }
 
 
-    private RelCollation relCollation( RelNode node ) {
+    private AlgCollation relCollation( AlgNode node ) {
         return node instanceof Sort
                 ? ((Sort) node).collation
-                : RelCollations.EMPTY;
+                : AlgCollations.EMPTY;
     }
 
 
-    private PreparedResult implement( RelRoot root, RelDataType parameterRowType ) {
+    private PreparedResult implement( AlgRoot root, AlgDataType parameterRowType ) {
         if ( log.isTraceEnabled() ) {
-            log.trace( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", root.rel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            log.trace( "Physical query plan: [{}]", AlgOptUtil.dumpPlan( "-- Physical Plan", root.alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -987,11 +987,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             queryAnalyzer.addGroup( group );
             InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
                     group,
-                    RelOptUtil.dumpPlan( "Physical Query Plan", root.rel, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
+                    AlgOptUtil.dumpPlan( "Physical Query Plan", root.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
 
-        final RelDataType jdbcType = makeStruct( root.rel.getCluster().getTypeFactory(), root.validatedRowType );
+        final AlgDataType jdbcType = makeStruct( root.alg.getCluster().getTypeFactory(), root.validatedRowType );
         List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
 
         final Prefer prefer = Prefer.ARRAY;
@@ -1002,9 +1002,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         final Bindable bindable;
         if ( resultConvention == BindableConvention.INSTANCE ) {
-            bindable = Interpreters.bindable( root.rel );
+            bindable = Interpreters.bindable( root.alg );
         } else {
-            EnumerableRel enumerable = (EnumerableRel) root.rel;
+            EnumerableAlg enumerable = (EnumerableAlg) root.alg;
             if ( !root.isRefTrivial() ) {
                 final List<RexNode> projects = new ArrayList<>();
                 final RexBuilder rexBuilder = enumerable.getCluster().getRexBuilder();
@@ -1029,7 +1029,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             }
         }
 
-        RelDataType resultType = root.rel.getRowType();
+        AlgDataType resultType = root.alg.getRowType();
         boolean isDml = root.kind.belongsTo( Kind.DML );
 
         return new PreparedResultImpl(
@@ -1039,7 +1039,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 root.collation.getFieldCollations().isEmpty()
                         ? ImmutableList.of()
                         : ImmutableList.of( root.collation ),
-                root.rel,
+                root.alg,
                 mapTableModOp( isDml, root.kind ),
                 isDml ) {
             @Override
@@ -1071,7 +1071,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
+    private static AlgDataType makeStruct( AlgDataTypeFactory typeFactory, AlgDataType type ) {
         if ( type.isStruct() ) {
             return type;
         }
@@ -1087,26 +1087,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private static int getScale( RelDataType type ) {
-        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+    private static int getScale( AlgDataType type ) {
+        return type.getScale() == AlgDataType.SCALE_NOT_SPECIFIED
                 ? 0
                 : type.getScale();
     }
 
 
-    private static int getPrecision( RelDataType type ) {
-        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
+    private static int getPrecision( AlgDataType type ) {
+        return type.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED
                 ? 0
                 : type.getPrecision();
     }
 
 
-    private static String getClassName( RelDataType type ) {
+    private static String getClassName( AlgDataType type ) {
         return Object.class.getName();
     }
 
 
-    private static int getTypeOrdinal( RelDataType type ) {
+    private static int getTypeOrdinal( AlgDataType type ) {
         return type.getPolyType().getJdbcOrdinal();
     }
 
@@ -1130,19 +1130,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, RelDataType x, RelDataType jdbcType, List<List<String>> originList ) {
+    private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, AlgDataType x, AlgDataType jdbcType, List<List<String>> originList ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( Ord<RelDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
-            final RelDataTypeField field = pair.e;
-            final RelDataType type = field.getType();
-            final RelDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
+        for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
+            final AlgDataTypeField field = pair.e;
+            final AlgDataType type = field.getType();
+            final AlgDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
             columns.add( metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
         }
         return columns;
     }
 
 
-    private ColumnMetaData.AvaticaType avaticaType( JavaTypeFactory typeFactory, RelDataType type, RelDataType fieldType ) {
+    private ColumnMetaData.AvaticaType avaticaType( JavaTypeFactory typeFactory, AlgDataType type, AlgDataType fieldType ) {
         final String typeName = type.getPolyType().getTypeName();
         if ( type.getComponentType() != null ) {
             final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
@@ -1156,7 +1156,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             switch ( typeOrdinal ) {
                 case Types.STRUCT:
                     final List<ColumnMetaData> columns = new ArrayList<>();
-                    for ( RelDataTypeField field : type.getFieldList() ) {
+                    for ( AlgDataTypeField field : type.getFieldList() ) {
                         columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
                     }
                     return ColumnMetaData.struct( columns );
@@ -1177,8 +1177,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             JavaTypeFactory typeFactory,
             int ordinal,
             String fieldName,
-            RelDataType type,
-            RelDataType fieldType,
+            AlgDataType type,
+            AlgDataType fieldType,
             List<String> origins ) {
         final ColumnMetaData.AvaticaType avaticaType = avaticaType( typeFactory, type, fieldType );
         return new ColumnMetaData(
@@ -1216,120 +1216,120 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    static class RelDeepCopyShuttle extends RelShuttleImpl {
+    static class AlgDeepCopyShuttle extends AlgShuttleImpl {
 
-        private RelTraitSet copy( final RelTraitSet other ) {
-            return RelTraitSet.createEmpty().merge( other );
+        private AlgTraitSet copy( final AlgTraitSet other ) {
+            return AlgTraitSet.createEmpty().merge( other );
         }
 
 
         @Override
-        public RelNode visit( TableScan scan ) {
-            final RelNode node = super.visit( scan );
+        public AlgNode visit( TableScan scan ) {
+            final AlgNode node = super.visit( scan );
             return new LogicalTableScan( node.getCluster(), copy( node.getTraitSet() ), node.getTable() );
         }
 
 
         @Override
-        public RelNode visit( TableFunctionScan scan ) {
-            final RelNode node = super.visit( scan );
+        public AlgNode visit( TableFunctionScan scan ) {
+            final AlgNode node = super.visit( scan );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
-        public RelNode visit( LogicalValues values ) {
+        public AlgNode visit( LogicalValues values ) {
             final Values node = (Values) super.visit( values );
             return new LogicalValues( node.getCluster(), copy( node.getTraitSet() ), node.getRowType(), node.getTuples() );
         }
 
 
         @Override
-        public RelNode visit( LogicalFilter filter ) {
+        public AlgNode visit( LogicalFilter filter ) {
             final LogicalFilter node = (LogicalFilter) super.visit( filter );
             return new LogicalFilter( node.getCluster(), copy( node.getTraitSet() ), node.getInput().accept( this ), node.getCondition(), node.getVariablesSet() );
         }
 
 
         @Override
-        public RelNode visit( LogicalProject project ) {
+        public AlgNode visit( LogicalProject project ) {
             final Project node = (Project) super.visit( project );
             return new LogicalProject( node.getCluster(), copy( node.getTraitSet() ), node.getInput(), node.getProjects(), node.getRowType() );
         }
 
 
         @Override
-        public RelNode visit( LogicalJoin join ) {
-            final RelNode node = super.visit( join );
+        public AlgNode visit( LogicalJoin join ) {
+            final AlgNode node = super.visit( join );
             return new LogicalJoin( node.getCluster(), copy( node.getTraitSet() ), this.visit( join.getLeft() ), this.visit( join.getRight() ), join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone(), ImmutableList.copyOf( join.getSystemFieldList() ) );
         }
 
 
         @Override
-        public RelNode visit( LogicalCorrelate correlate ) {
-            final RelNode node = super.visit( correlate );
+        public AlgNode visit( LogicalCorrelate correlate ) {
+            final AlgNode node = super.visit( correlate );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
-        public RelNode visit( LogicalUnion union ) {
-            final RelNode node = super.visit( union );
+        public AlgNode visit( LogicalUnion union ) {
+            final AlgNode node = super.visit( union );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
-        public RelNode visit( LogicalIntersect intersect ) {
-            final RelNode node = super.visit( intersect );
+        public AlgNode visit( LogicalIntersect intersect ) {
+            final AlgNode node = super.visit( intersect );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
-        public RelNode visit( LogicalMinus minus ) {
-            final RelNode node = super.visit( minus );
+        public AlgNode visit( LogicalMinus minus ) {
+            final AlgNode node = super.visit( minus );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
-        public RelNode visit( LogicalAggregate aggregate ) {
-            final RelNode node = super.visit( aggregate );
+        public AlgNode visit( LogicalAggregate aggregate ) {
+            final AlgNode node = super.visit( aggregate );
             return new LogicalAggregate( node.getCluster(), copy( node.getTraitSet() ), visit( aggregate.getInput() ), aggregate.indicator, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
         }
 
 
         @Override
-        public RelNode visit( LogicalMatch match ) {
-            final RelNode node = super.visit( match );
+        public AlgNode visit( LogicalMatch match ) {
+            final AlgNode node = super.visit( match );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
-        public RelNode visit( LogicalSort sort ) {
-            final RelNode node = super.visit( sort );
+        public AlgNode visit( LogicalSort sort ) {
+            final AlgNode node = super.visit( sort );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
-        public RelNode visit( LogicalExchange exchange ) {
-            final RelNode node = super.visit( exchange );
+        public AlgNode visit( LogicalExchange exchange ) {
+            final AlgNode node = super.visit( exchange );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
-        public RelNode visit( LogicalConditionalExecute lce ) {
+        public AlgNode visit( LogicalConditionalExecute lce ) {
             return new LogicalConditionalExecute( lce.getCluster(), copy( lce.getTraitSet() ), visit( lce.getLeft() ), visit( lce.getRight() ), lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
         }
 
 
         @Override
-        public RelNode visit( RelNode other ) {
-            final RelNode node = super.visit( other );
+        public AlgNode visit( AlgNode other ) {
+            final AlgNode node = super.visit( other );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 

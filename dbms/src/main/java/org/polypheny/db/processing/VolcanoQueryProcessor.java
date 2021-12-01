@@ -30,34 +30,34 @@ import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.rules.AggregateExpandDistinctAggregatesRule;
-import org.polypheny.db.rel.rules.AggregateReduceFunctionsRule;
-import org.polypheny.db.rel.rules.AggregateValuesRule;
-import org.polypheny.db.rel.rules.FilterAggregateTransposeRule;
-import org.polypheny.db.rel.rules.FilterJoinRule;
-import org.polypheny.db.rel.rules.FilterProjectTransposeRule;
-import org.polypheny.db.rel.rules.FilterTableScanRule;
-import org.polypheny.db.rel.rules.JoinAssociateRule;
-import org.polypheny.db.rel.rules.JoinCommuteRule;
-import org.polypheny.db.rel.rules.JoinPushExpressionsRule;
-import org.polypheny.db.rel.rules.JoinPushThroughJoinRule;
-import org.polypheny.db.rel.rules.ProjectFilterTransposeRule;
-import org.polypheny.db.rel.rules.ProjectMergeRule;
-import org.polypheny.db.rel.rules.ProjectTableScanRule;
-import org.polypheny.db.rel.rules.ProjectWindowTransposeRule;
-import org.polypheny.db.rel.rules.ReduceExpressionsRule;
-import org.polypheny.db.rel.rules.SortJoinTransposeRule;
-import org.polypheny.db.rel.rules.SortProjectTransposeRule;
-import org.polypheny.db.rel.rules.SortRemoveConstantKeysRule;
-import org.polypheny.db.rel.rules.SortUnionTransposeRule;
-import org.polypheny.db.rel.rules.TableScanRule;
-import org.polypheny.db.rel.rules.ValuesReduceRule;
-import org.polypheny.db.rel.stream.StreamRules;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
+import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
+import org.polypheny.db.algebra.rules.AggregateValuesRule;
+import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
+import org.polypheny.db.algebra.rules.FilterJoinRule;
+import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
+import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.JoinAssociateRule;
+import org.polypheny.db.algebra.rules.JoinCommuteRule;
+import org.polypheny.db.algebra.rules.JoinPushExpressionsRule;
+import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
+import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
+import org.polypheny.db.algebra.rules.ProjectMergeRule;
+import org.polypheny.db.algebra.rules.ProjectTableScanRule;
+import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
+import org.polypheny.db.algebra.rules.ReduceExpressionsRule;
+import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
+import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
+import org.polypheny.db.algebra.rules.SortRemoveConstantKeysRule;
+import org.polypheny.db.algebra.rules.SortUnionTransposeRule;
+import org.polypheny.db.algebra.rules.TableScanRule;
+import org.polypheny.db.algebra.rules.ValuesReduceRule;
+import org.polypheny.db.algebra.stream.StreamRules;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.transaction.Statement;
 
@@ -68,7 +68,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
     private final VolcanoPlanner planner;
 
 
-    public static final List<RelOptRule> ENUMERABLE_RULES =
+    public static final List<AlgOptRule> ENUMERABLE_RULES =
             ImmutableList.of(
                     EnumerableRules.ENUMERABLE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
@@ -94,7 +94,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE );
 
-    public static final List<RelOptRule> DEFAULT_RULES =
+    public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     TableScanRule.INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
@@ -117,7 +117,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     SortRemoveConstantKeysRule.INSTANCE,
                     SortUnionTransposeRule.INSTANCE );
 
-    public static final List<RelOptRule> CONSTANT_REDUCTION_RULES =
+    public static final List<AlgOptRule> CONSTANT_REDUCTION_RULES =
             ImmutableList.of(
                     ReduceExpressionsRule.PROJECT_INSTANCE,
                     ReduceExpressionsRule.FILTER_INSTANCE,
@@ -132,17 +132,17 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
     public VolcanoQueryProcessor( Statement statement ) {
         super( statement );
         planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( statement.getPrepareContext().config() ) );
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
-            planner.addRelTraitDef( RelCollationTraitDef.INSTANCE );
+            planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
             planner.registerAbstractRelationalRules();
         }
-        RelOptUtil.registerAbstractRels( planner );
-        for ( RelOptRule rule : DEFAULT_RULES ) {
+        AlgOptUtil.registerAbstractAlgs( planner );
+        for ( AlgOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );
         }
         if ( ENABLE_BINDABLE ) {
-            for ( RelOptRule rule : Bindables.RULES ) {
+            for ( AlgOptRule rule : Bindables.RULES ) {
                 planner.addRule( rule );
             }
         }
@@ -151,7 +151,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
         planner.addRule( ProjectTableScanRule.INTERPRETER );
 
         if ( ENABLE_ENUMERABLE ) {
-            for ( RelOptRule rule : ENUMERABLE_RULES ) {
+            for ( AlgOptRule rule : ENUMERABLE_RULES ) {
                 planner.addRule( rule );
             }
             planner.addRule( EnumerableInterpreterRule.INSTANCE );
@@ -162,14 +162,14 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
         }
 
         if ( ENABLE_STREAM ) {
-            for ( RelOptRule rule : StreamRules.RULES ) {
+            for ( AlgOptRule rule : StreamRules.RULES ) {
                 planner.addRule( rule );
             }
         }
 
         // Change the below to enable constant-reduction.
         if ( CONSTANT_REDUCTION ) {
-            for ( RelOptRule rule : CONSTANT_REDUCTION_RULES ) {
+            for ( AlgOptRule rule : CONSTANT_REDUCTION_RULES ) {
                 planner.addRule( rule );
             }
         }
@@ -179,13 +179,13 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
             spark.registerRules(
                     new RuleSetBuilder() {
                         @Override
-                        public void addRule( RelOptRule rule ) {
+                        public void addRule( AlgOptRule rule ) {
                             // TODO:
                         }
 
 
                         @Override
-                        public void removeRule( RelOptRule rule ) {
+                        public void removeRule( AlgOptRule rule ) {
                             // TODO:
                         }
                     } );

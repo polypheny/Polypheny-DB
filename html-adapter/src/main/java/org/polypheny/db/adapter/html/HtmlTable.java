@@ -45,11 +45,12 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
@@ -63,7 +64,7 @@ import org.polypheny.db.util.Source;
  */
 class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
 
-    private final RelProtoDataType protoRowType;
+    private final AlgProtoDataType protoRowType;
     private HtmlReader reader;
     private HtmlRowConverter converter;
 
@@ -71,7 +72,7 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
     /**
      * Creates a HtmlTable.
      */
-    private HtmlTable( Source source, String selector, Integer index, RelProtoDataType protoRowType, List<Map<String, Object>> fieldConfigs ) throws Exception {
+    private HtmlTable( Source source, String selector, Integer index, AlgProtoDataType protoRowType, List<Map<String, Object>> fieldConfigs ) throws Exception {
         super( Object[].class );
 
         this.protoRowType = protoRowType;
@@ -103,7 +104,7 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
         }
@@ -146,7 +147,7 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
+    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
         return new EnumerableTableScan( context.getCluster(), context.getCluster().traitSetOf( EnumerableConvention.INSTANCE ), relOptTable, (Class) getElementType() );
     }
 }

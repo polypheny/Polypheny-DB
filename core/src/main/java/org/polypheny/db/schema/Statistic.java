@@ -35,9 +35,9 @@ package org.polypheny.db.schema;
 
 
 import java.util.List;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelDistribution;
-import org.polypheny.db.rel.RelReferentialConstraint;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -63,16 +63,16 @@ public interface Statistic {
     /**
      * Returns the collection of referential constraints (foreign-keys) for this table.
      */
-    List<RelReferentialConstraint> getReferentialConstraints();
+    List<AlgReferentialConstraint> getReferentialConstraints();
 
     /**
      * Returns the collections of columns on which this table is sorted.
      */
-    List<RelCollation> getCollations();
+    List<AlgCollation> getCollations();
 
     /**
      * Returns the distribution of the data in this table.
      */
-    RelDistribution getDistribution();
+    AlgDistribution getDistribution();
 }
 

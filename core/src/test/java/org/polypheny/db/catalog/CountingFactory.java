@@ -25,9 +25,9 @@ import org.polypheny.db.core.InitializerContext;
 import org.polypheny.db.core.InitializerExpressionFactory;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
@@ -51,8 +51,8 @@ public class CountingFactory extends NullInitializerExpressionFactory {
 
 
     @Override
-    public ColumnStrategy generationStrategy( RelOptTable table, int iColumn ) {
-        final RelDataTypeField field = table.getRowType().getFieldList().get( iColumn );
+    public ColumnStrategy generationStrategy( AlgOptTable table, int iColumn ) {
+        final AlgDataTypeField field = table.getRowType().getFieldList().get( iColumn );
         if ( defaultColumns.contains( field.getName() ) ) {
             return ColumnStrategy.DEFAULT;
         }
@@ -61,9 +61,9 @@ public class CountingFactory extends NullInitializerExpressionFactory {
 
 
     @Override
-    public RexNode newColumnDefaultValue( RelOptTable table, int iColumn, InitializerContext context ) {
+    public RexNode newColumnDefaultValue( AlgOptTable table, int iColumn, InitializerContext context ) {
         THREAD_CALL_COUNT.get().incrementAndGet();
-        final RelDataTypeField field = table.getRowType().getFieldList().get( iColumn );
+        final AlgDataTypeField field = table.getRowType().getFieldList().get( iColumn );
         if ( defaultColumns.contains( field.getName() ) ) {
             final RexBuilder rexBuilder = context.getRexBuilder();
             return rexBuilder.makeExactLiteral( BigDecimal.ONE );
@@ -73,7 +73,7 @@ public class CountingFactory extends NullInitializerExpressionFactory {
 
 
     @Override
-    public RexNode newAttributeInitializer( RelDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
+    public RexNode newAttributeInitializer( AlgDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
         THREAD_CALL_COUNT.get().incrementAndGet();
         return super.newAttributeInitializer( type, constructor, iAttribute, constructorArgs, context );
     }

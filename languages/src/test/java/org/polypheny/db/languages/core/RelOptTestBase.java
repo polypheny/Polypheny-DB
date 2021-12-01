@@ -29,32 +29,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.polypheny.db.core.rel.RelDecorrelator;
-import org.polypheny.db.languages.sql.SqlToRelTestBase;
+import org.polypheny.db.core.algebra.AlgDecorrelator;
+import org.polypheny.db.languages.sql.SqlToAlgTestBase;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.metadata.ChainedRelMetadataProvider;
-import org.polypheny.db.rel.metadata.DefaultRelMetadataProvider;
-import org.polypheny.db.rel.metadata.RelMetadataProvider;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.metadata.ChainedAlgMetadataProvider;
+import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
+import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Closer;
 
 
 /**
  * RelOptTestBase is an abstract base for tests which exercise a planner and/or rules via {@link DiffRepository}.
  */
-abstract class RelOptTestBase extends SqlToRelTestBase {
+abstract class RelOptTestBase extends SqlToAlgTestBase {
 
     @Override
     public Tester createTester() {
@@ -73,7 +73,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
      * @param rule Planner rule
      * @param sql SQL query
      */
-    protected void checkPlanning( RelOptRule rule, String sql ) {
+    protected void checkPlanning( AlgOptRule rule, String sql ) {
         HepProgramBuilder programBuilder = HepProgram.builder();
         programBuilder.addRuleInstance( rule );
 
@@ -87,7 +87,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
      * @param rule Planner rule
      * @param sql SQL query
      */
-    protected void checkPlanningDynamic( RelOptRule rule, String sql ) {
+    protected void checkPlanningDynamic( AlgOptRule rule, String sql ) {
         HepProgramBuilder programBuilder = HepProgram.builder();
         programBuilder.addRuleInstance( rule );
         checkPlanning( createDynamicTester(), null, new HepPlanner( programBuilder.build() ), sql );
@@ -121,7 +121,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
      * @param planner Planner
      * @param sql SQL query
      */
-    protected void checkPlanning( RelOptPlanner planner, String sql ) {
+    protected void checkPlanning( AlgOptPlanner planner, String sql ) {
         checkPlanning( tester, null, planner, sql );
     }
 
@@ -132,7 +132,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
      * @param planner Planner
      * @param sql SQL query
      */
-    protected void checkPlanUnchanged( RelOptPlanner planner, String sql ) {
+    protected void checkPlanUnchanged( AlgOptPlanner planner, String sql ) {
         checkPlanning( tester, null, planner, sql, true );
     }
 
@@ -145,7 +145,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
      * @param planner Planner
      * @param sql SQL query
      */
-    protected void checkPlanning( Tester tester, HepProgram preProgram, RelOptPlanner planner, String sql ) {
+    protected void checkPlanning( Tester tester, HepProgram preProgram, AlgOptPlanner planner, String sql ) {
         checkPlanning( tester, preProgram, planner, sql, false );
     }
 
@@ -159,22 +159,22 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
      * @param sql SQL query
      * @param unchanged Whether the rule is to have no effect
      */
-    protected void checkPlanning( Tester tester, HepProgram preProgram, RelOptPlanner planner, String sql, boolean unchanged ) {
+    protected void checkPlanning( Tester tester, HepProgram preProgram, AlgOptPlanner planner, String sql, boolean unchanged ) {
         final DiffRepository diffRepos = getDiffRepos();
         String sql2 = diffRepos.expand( "sql", sql );
-        final RelRoot root = tester.convertSqlToRel( sql2 );
-        final RelNode relInitial = root.rel;
+        final AlgRoot root = tester.convertSqlToRel( sql2 );
+        final AlgNode relInitial = root.alg;
 
         assertNotNull( relInitial );
 
-        List<RelMetadataProvider> list = new ArrayList<>();
-        list.add( DefaultRelMetadataProvider.INSTANCE );
+        List<AlgMetadataProvider> list = new ArrayList<>();
+        list.add( DefaultAlgMetadataProvider.INSTANCE );
         planner.registerMetadataProviders( list );
-        RelMetadataProvider plannerChain = ChainedRelMetadataProvider.of( list );
-        final RelOptCluster cluster = relInitial.getCluster();
+        AlgMetadataProvider plannerChain = ChainedAlgMetadataProvider.of( list );
+        final AlgOptCluster cluster = relInitial.getCluster();
         cluster.setMetadataProvider( plannerChain );
 
-        RelNode relBefore;
+        AlgNode relBefore;
         if ( preProgram == null ) {
             relBefore = relInitial;
         } else {
@@ -185,20 +185,20 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
 
         assertThat( relBefore, notNullValue() );
 
-        final String planBefore = NL + RelOptUtil.toString( relBefore );
+        final String planBefore = NL + AlgOptUtil.toString( relBefore );
         diffRepos.assertEquals( "planBefore", "${planBefore}", planBefore );
-        SqlToRelTestBase.assertValid( relBefore );
+        SqlToAlgTestBase.assertValid( relBefore );
 
         planner.setRoot( relBefore );
-        RelNode r = planner.findBestExp();
+        AlgNode r = planner.findBestExp();
         if ( tester.isLateDecorrelate() ) {
-            final String planMid = NL + RelOptUtil.toString( r );
+            final String planMid = NL + AlgOptUtil.toString( r );
             diffRepos.assertEquals( "planMid", "${planMid}", planMid );
-            SqlToRelTestBase.assertValid( r );
-            final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( cluster, null );
-            r = RelDecorrelator.decorrelateQuery( r, relBuilder );
+            SqlToAlgTestBase.assertValid( r );
+            final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( cluster, null );
+            r = AlgDecorrelator.decorrelateQuery( r, algBuilder );
         }
-        final String planAfter = NL + RelOptUtil.toString( r );
+        final String planAfter = NL + AlgOptUtil.toString( r );
         if ( unchanged ) {
             assertThat( planAfter, is( planBefore ) );
         } else {
@@ -208,7 +208,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
                         + "You must use unchanged=true or call checkUnchanged" );
             }
         }
-        SqlToRelTestBase.assertValid( r );
+        SqlToAlgTestBase.assertValid( r );
     }
 
 
@@ -256,7 +256,7 @@ abstract class RelOptTestBase extends SqlToRelTestBase {
         }
 
 
-        public Sql withRule( RelOptRule rule ) {
+        public Sql withRule( AlgOptRule rule ) {
             return with( HepProgram.builder().addRuleInstance( rule ).build() );
         }
 

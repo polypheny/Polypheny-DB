@@ -54,25 +54,25 @@ import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptAbstractTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.AlgOptAbstractTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AbstractConverter;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.RelDistributionTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
+import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -92,7 +92,7 @@ import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Programs;
-import org.polypheny.db.tools.RelConversionException;
+import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.type.PolyType;
@@ -107,14 +107,14 @@ public class FrameworksTest extends LanguageManagerDependant {
 
     @Test
     public void testOptimize() {
-        RelNode x =
+        AlgNode x =
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
-                    final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
+                    final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
                     final Table table = new AbstractTable() {
                         @Override
-                        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                            final RelDataType stringType = typeFactory.createJavaType( String.class );
-                            final RelDataType integerType = typeFactory.createJavaType( Integer.class );
+                        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+                            final AlgDataType stringType = typeFactory.createJavaType( String.class );
+                            final AlgDataType integerType = typeFactory.createJavaType( Integer.class );
                             return typeFactory.builder()
                                     .add( "s", null, stringType )
                                     .add( "i", null, integerType )
@@ -123,7 +123,7 @@ public class FrameworksTest extends LanguageManagerDependant {
                     };
 
                     // "SELECT * FROM myTable"
-                    final RelOptAbstractTable relOptTable = new RelOptAbstractTable( relOptSchema, "myTable", table.getRowType( typeFactory ) ) {
+                    final AlgOptAbstractTable relOptTable = new AlgOptAbstractTable( relOptSchema, "myTable", table.getRowType( typeFactory ) ) {
                     };
                     final EnumerableTableScan tableRel = EnumerableTableScan.create( cluster, relOptTable );
 
@@ -137,16 +137,16 @@ public class FrameworksTest extends LanguageManagerDependant {
                     final LogicalFilter filter = LogicalFilter.create( tableRel, condition );
 
                     // Specify that the result should be in Enumerable convention.
-                    final RelNode rootRel = filter;
-                    final RelOptPlanner planner = cluster.getPlanner();
-                    RelTraitSet desiredTraits = cluster.traitSet().replace( EnumerableConvention.INSTANCE );
-                    final RelNode rootRel2 = planner.changeTraits( rootRel, desiredTraits );
+                    final AlgNode rootRel = filter;
+                    final AlgOptPlanner planner = cluster.getPlanner();
+                    AlgTraitSet desiredTraits = cluster.traitSet().replace( EnumerableConvention.INSTANCE );
+                    final AlgNode rootRel2 = planner.changeTraits( rootRel, desiredTraits );
                     planner.setRoot( rootRel2 );
 
                     // Now, plan.
                     return planner.findBestExp();
                 } );
-        String s = RelOptUtil.dumpPlan( "", x, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
+        String s = AlgOptUtil.dumpPlan( "", x, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
         assertThat(
                 Util.toLinux( s ),
                 equalTo( "EnumerableFilter(condition=[>($1, 1)])\n  EnumerableTableScan(table=[[myTable]])\n" ) );
@@ -221,8 +221,8 @@ public class FrameworksTest extends LanguageManagerDependant {
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
-                        final RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.DECIMAL, 30, 2 );
+                    public Void apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                        final AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.DECIMAL, 30, 2 );
                         final RexLiteral literal = cluster.getRexBuilder().makeExactLiteral( BigDecimal.ONE, type );
                         final RexNode call = cluster.getRexBuilder().makeCall( OperatorRegistry.get( OperatorName.PLUS ), literal, literal );
                         assertEquals( expected, call.getType().getPrecision() );
@@ -314,9 +314,9 @@ public class FrameworksTest extends LanguageManagerDependant {
         final SchemaPlus rootSchema = Frameworks.createRootSchema( true );
         SchemaPlus schema = rootSchema.add( "x", new AbstractSchema(), SchemaType.RELATIONAL );
         schema.add( "MYTABLE", table );
-        List<RelTraitDef> traitDefs = new ArrayList<>();
+        List<AlgTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
-        traitDefs.add( RelDistributionTraitDef.INSTANCE );
+        traitDefs.add( AlgDistributionTraitDef.INSTANCE );
         ParserConfig parserConfig =
                 Parser.configBuilder( ParserConfig.DEFAULT )
                         .setCaseSensitive( false )
@@ -346,29 +346,29 @@ public class FrameworksTest extends LanguageManagerDependant {
     }
 
 
-    private void executeQuery( FrameworkConfig config, @SuppressWarnings("SameParameterValue") String query, boolean debug ) throws RelConversionException, NodeParseException, ValidationException {
+    private void executeQuery( FrameworkConfig config, @SuppressWarnings("SameParameterValue") String query, boolean debug ) throws AlgConversionException, NodeParseException, ValidationException {
         Planner planner = Frameworks.getPlanner( config );
         if ( debug ) {
             System.out.println( "Query:" + query );
         }
         Node n = planner.parse( query );
         n = planner.validate( n );
-        RelNode root = planner.rel( n ).project();
+        AlgNode root = planner.alg( n ).project();
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Logical Plan", root, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( AlgOptUtil.dumpPlan( "-- Logical Plan", root, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        RelOptCluster cluster = root.getCluster();
-        final RelOptPlanner optPlanner = cluster.getPlanner();
+        AlgOptCluster cluster = root.getCluster();
+        final AlgOptPlanner optPlanner = cluster.getPlanner();
 
-        RelTraitSet desiredTraits = cluster.traitSet().replace( EnumerableConvention.INSTANCE );
-        final RelNode newRoot = optPlanner.changeTraits( root, desiredTraits );
+        AlgTraitSet desiredTraits = cluster.traitSet().replace( EnumerableConvention.INSTANCE );
+        final AlgNode newRoot = optPlanner.changeTraits( root, desiredTraits );
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Mid Plan", newRoot, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( AlgOptUtil.dumpPlan( "-- Mid Plan", newRoot, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         optPlanner.setRoot( newRoot );
-        RelNode bestExp = optPlanner.findBestExp();
+        AlgNode bestExp = optPlanner.findBestExp();
         if ( debug ) {
-            System.out.println( RelOptUtil.dumpPlan( "-- Best Plan", bestExp, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+            System.out.println( AlgOptUtil.dumpPlan( "-- Best Plan", bestExp, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
     }
 
@@ -383,7 +383,7 @@ public class FrameworksTest extends LanguageManagerDependant {
 
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "id", null, typeFactory.createPolyType( PolyType.INTEGER ) )
                     .add( "name", null, typeFactory.createPolyType( PolyType.INTEGER ) )
@@ -410,7 +410,7 @@ public class FrameworksTest extends LanguageManagerDependant {
 
 
         @Override
-        public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+        public TableModify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
 
@@ -438,9 +438,9 @@ public class FrameworksTest extends LanguageManagerDependant {
     /**
      * Dummy type system, similar to Hive's, accessed via an INSTANCE member.
      */
-    public static class HiveLikeTypeSystem extends RelDataTypeSystemImpl {
+    public static class HiveLikeTypeSystem extends AlgDataTypeSystemImpl {
 
-        public static final RelDataTypeSystem INSTANCE = new HiveLikeTypeSystem();
+        public static final AlgDataTypeSystem INSTANCE = new HiveLikeTypeSystem();
 
 
         private HiveLikeTypeSystem() {
@@ -459,7 +459,7 @@ public class FrameworksTest extends LanguageManagerDependant {
     /**
      * Dummy type system, similar to Hive's, accessed via a public default constructor.
      */
-    public static class HiveLikeTypeSystem2 extends RelDataTypeSystemImpl {
+    public static class HiveLikeTypeSystem2 extends AlgDataTypeSystemImpl {
 
         public HiveLikeTypeSystem2() {
         }

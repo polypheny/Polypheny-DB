@@ -21,7 +21,7 @@ import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 
 
@@ -43,9 +43,9 @@ public class ProcedureNamespace extends AbstractNamespace {
 
 
     @Override
-    public RelDataType validateImpl( RelDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType ) {
         validator.inferUnknownTypes( validator.unknownType, scope, call );
-        final RelDataType type = validator.deriveTypeImpl( scope, call );
+        final AlgDataType type = validator.deriveTypeImpl( scope, call );
         final Operator operator = call.getOperator();
         final SqlCallBinding callBinding = new SqlCallBinding( validator, scope, call );
         if ( operator instanceof SqlUserDefinedTableFunction ) {

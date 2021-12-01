@@ -37,7 +37,7 @@ import org.polypheny.db.languages.sql.fun.SqlTrimFunction;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Static;
@@ -432,12 +432,12 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // Override SqlFunction.deriveType, because function-resolution is not relevant to a JDBC function call.
         // REVIEW: jhyde: Should SqlJdbcFunctionCall even be a subclass of SqlFunction?
 
         for ( Node operand : call.getOperandList() ) {
-            RelDataType nodeType = validator.deriveType( scope, operand );
+            AlgDataType nodeType = validator.deriveType( scope, operand );
             ((SqlValidatorImpl) validator).setValidatedNodeType( (SqlNode) operand, nodeType );
         }
         return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
@@ -445,7 +445,7 @@ public class SqlJdbcFunctionCall extends SqlFunction {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         // only expected to come here if validator called this method
         SqlCallBinding callBinding = (SqlCallBinding) opBinding;
 

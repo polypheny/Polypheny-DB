@@ -39,16 +39,16 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelDistributionTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelWriter;
-import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMdDistribution;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMdDistribution;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -58,7 +58,7 @@ import org.polypheny.db.util.BuiltInMethod;
 /**
  * Relational expression that applies a limit and/or offset to its input.
  */
-public class EnumerableLimit extends SingleRel implements EnumerableRel {
+public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
 
     public final RexNode offset;
     public final RexNode fetch;
@@ -69,7 +69,7 @@ public class EnumerableLimit extends SingleRel implements EnumerableRel {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableLimit( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexNode offset, RexNode fetch ) {
+    public EnumerableLimit( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input );
         this.offset = offset;
         this.fetch = fetch;
@@ -81,34 +81,34 @@ public class EnumerableLimit extends SingleRel implements EnumerableRel {
     /**
      * Creates an EnumerableLimit.
      */
-    public static EnumerableLimit create( final RelNode input, RexNode offset, RexNode fetch ) {
-        final RelOptCluster cluster = input.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet =
+    public static EnumerableLimit create( final AlgNode input, RexNode offset, RexNode fetch ) {
+        final AlgOptCluster cluster = input.getCluster();
+        final AlgMetadataQuery mq = cluster.getMetadataQuery();
+        final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
-                        .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.limit( mq, input ) )
-                        .replaceIf( RelDistributionTraitDef.INSTANCE, () -> RelMdDistribution.limit( mq, input ) );
+                        .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.limit( mq, input ) )
+                        .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.limit( mq, input ) );
         return new EnumerableLimit( cluster, traitSet, input, offset, fetch );
     }
 
 
     @Override
-    public EnumerableLimit copy( RelTraitSet traitSet, List<RelNode> newInputs ) {
+    public EnumerableLimit copy( AlgTraitSet traitSet, List<AlgNode> newInputs ) {
         return new EnumerableLimit( getCluster(), traitSet, sole( newInputs ), offset, fetch );
     }
 
 
     @Override
-    public String relCompareString() {
+    public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
-                input.relCompareString() + "$" +
+                input.algCompareString() + "$" +
                 (offset != null ? offset.hashCode() + "$" : "") +
                 (fetch != null ? fetch.hashCode() : "") + "&";
     }
 
 
     @Override
-    public RelWriter explainTerms( RelWriter pw ) {
+    public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .itemIf( "offset", offset, offset != null )
                 .itemIf( "fetch", fetch, fetch != null );
@@ -116,9 +116,9 @@ public class EnumerableLimit extends SingleRel implements EnumerableRel {
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final EnumerableRel child = (EnumerableRel) getInput();
+        final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), result.format );
 

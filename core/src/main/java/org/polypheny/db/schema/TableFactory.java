@@ -35,7 +35,7 @@ package org.polypheny.db.schema;
 
 
 import java.util.Map;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -97,6 +97,6 @@ public interface TableFactory<T extends Table> {
      * @param operand The "operand" JSON property
      * @param rowType Row type. Specified if the "columns" JSON property.
      */
-    T create( SchemaPlus schema, String name, Map<String, Object> operand, RelDataType rowType );
+    T create( SchemaPlus schema, String name, Map<String, Object> operand, AlgDataType rowType );
 }
 

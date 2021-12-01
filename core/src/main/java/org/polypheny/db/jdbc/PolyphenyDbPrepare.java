@@ -49,13 +49,13 @@ import org.polypheny.db.core.util.CyclicDefinitionException;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.schema.Table;
@@ -101,7 +101,7 @@ public interface PolyphenyDbPrepare {
      */
     interface SparkHandler {
 
-        RelNode flattenTypes( RelOptPlanner planner, RelNode rootRel, boolean restructure );
+        AlgNode flattenTypes( AlgOptPlanner planner, AlgNode rootRel, boolean restructure );
 
         void registerRules( RuleSetBuilder builder );
 
@@ -116,9 +116,9 @@ public interface PolyphenyDbPrepare {
          */
         interface RuleSetBuilder {
 
-            void addRule( RelOptRule rule );
+            void addRule( AlgOptRule rule );
 
-            void removeRule( RelOptRule rule );
+            void removeRule( AlgOptRule rule );
 
         }
 
@@ -194,7 +194,7 @@ public interface PolyphenyDbPrepare {
         private static class TrivialSparkHandler implements SparkHandler {
 
             @Override
-            public RelNode flattenTypes( RelOptPlanner planner, RelNode rootRel, boolean restructure ) {
+            public AlgNode flattenTypes( AlgOptPlanner planner, AlgNode rootRel, boolean restructure ) {
                 return rootRel;
             }
 
@@ -234,11 +234,11 @@ public interface PolyphenyDbPrepare {
         public final PolyphenyDbPrepareImpl prepare;
         public final String sql; // for debug
         public final Node sqlNode;
-        public final RelDataType rowType;
-        public final RelDataTypeFactory typeFactory;
+        public final AlgDataType rowType;
+        public final AlgDataTypeFactory typeFactory;
 
 
-        public ParseResult( PolyphenyDbPrepareImpl prepare, Validator validator, String sql, Node sqlNode, RelDataType rowType ) {
+        public ParseResult( PolyphenyDbPrepareImpl prepare, Validator validator, String sql, Node sqlNode, AlgDataType rowType ) {
             super();
             this.prepare = prepare;
             this.sql = sql;
@@ -274,10 +274,10 @@ public interface PolyphenyDbPrepare {
      */
     class ConvertResult extends ParseResult {
 
-        public final RelRoot root;
+        public final AlgRoot root;
 
 
-        public ConvertResult( PolyphenyDbPrepareImpl prepare, Validator validator, String sql, Node sqlNode, RelDataType rowType, RelRoot root ) {
+        public ConvertResult( PolyphenyDbPrepareImpl prepare, Validator validator, String sql, Node sqlNode, AlgDataType rowType, AlgRoot root ) {
             super( prepare, validator, sql, sqlNode, rowType );
             this.root = root;
         }
@@ -305,8 +305,8 @@ public interface PolyphenyDbPrepare {
                 Validator validator,
                 String sql,
                 Node sqlNode,
-                RelDataType rowType,
-                RelRoot root,
+                AlgDataType rowType,
+                AlgRoot root,
                 Table table,
                 ImmutableList<String> tablePath,
                 RexNode constraint,
@@ -325,7 +325,7 @@ public interface PolyphenyDbPrepare {
 
 
     /**
-     * A union type of the three possible ways of expressing a query: as a SQL string, a {@link Queryable} or a {@link RelNode}. Exactly one must be provided.
+     * A union type of the three possible ways of expressing a query: as a SQL string, a {@link Queryable} or a {@link AlgNode}. Exactly one must be provided.
      *
      * @param <T> element type
      */
@@ -333,15 +333,15 @@ public interface PolyphenyDbPrepare {
 
         public final String sql;
         public final Queryable<T> queryable;
-        public final RelNode rel;
+        public final AlgNode alg;
 
 
-        private Query( String sql, Queryable<T> queryable, RelNode rel ) {
+        private Query( String sql, Queryable<T> queryable, AlgNode alg ) {
             this.sql = sql;
             this.queryable = queryable;
-            this.rel = rel;
+            this.alg = alg;
 
-            assert (sql == null ? 0 : 1) + (queryable == null ? 0 : 1) + (rel == null ? 0 : 1) == 1;
+            assert (sql == null ? 0 : 1) + (queryable == null ? 0 : 1) + (this.alg == null ? 0 : 1) == 1;
         }
 
 
@@ -355,8 +355,8 @@ public interface PolyphenyDbPrepare {
         }
 
 
-        public static <T> Query<T> of( RelNode rel ) {
-            return new Query<>( null, null, rel );
+        public static <T> Query<T> of( AlgNode alg ) {
+            return new Query<>( null, null, alg );
         }
 
     }

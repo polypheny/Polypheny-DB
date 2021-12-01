@@ -98,10 +98,10 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -651,7 +651,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getTypeInfo( ConnectionHandle {} )", ch );
             }
             final StatementHandle statementHandle = createStatement( ch );
-            final RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
+            final AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
             final List<Object> objects = new LinkedList<>();
             for ( PolyType polyType : PolyType.values() ) {
                 objects.add(
@@ -966,8 +966,8 @@ public class DbmsMeta implements ProtobufMeta {
             Node parsed = sqlProcessor.parse( sql );
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
             // JDBC driver would expect more parameter fields than there actually are in the query.
-            Pair<Node, RelDataType> validated = sqlProcessor.validate( transaction, parsed, false );
-            RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate( transaction, parsed, false );
+            AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             List<AvaticaParameter> avaticaParameters = deriveAvaticaParameters( parameterRowType );
 
@@ -1233,12 +1233,12 @@ public class DbmsMeta implements ProtobufMeta {
         if ( parsed.isA( Kind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, null );
         } else {
-            Pair<Node, RelDataType> validated = sqlProcessor.validate(
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate(
                     statementHandle.getStatement().getTransaction(),
                     parsed,
                     RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            RelRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, null );
-            RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
+            AlgRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, null );
+            AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
             signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, false );
@@ -1623,15 +1623,15 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    public List<AvaticaParameter> deriveAvaticaParameters( RelDataType parameterRowType ) {
+    public List<AvaticaParameter> deriveAvaticaParameters( AlgDataType parameterRowType ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( RelDataTypeField field : parameterRowType.getFieldList() ) {
-            RelDataType type = field.getType();
+        for ( AlgDataTypeField field : parameterRowType.getFieldList() ) {
+            AlgDataType type = field.getType();
             parameters.add(
                     new AvaticaParameter(
                             false,
-                            type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED ? 0 : type.getPrecision(),
-                            type.getScale() == RelDataType.SCALE_NOT_SPECIFIED ? 0 : type.getScale(),
+                            type.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED ? 0 : type.getPrecision(),
+                            type.getScale() == AlgDataType.SCALE_NOT_SPECIFIED ? 0 : type.getScale(),
                             type.getPolyType().getJdbcOrdinal(),
                             type.getPolyType().getTypeName(),
                             Object.class.getName(),

@@ -34,6 +34,8 @@
 package org.polypheny.db.plan.hep;
 
 
+import org.polypheny.db.algebra.AlgNode;
+
 /**
  * HepMatchOrder specifies the order of graph traversal when looking for rule matches.
  */
@@ -56,8 +58,8 @@ public enum HepMatchOrder {
     /**
      * Match in depth-first order.
      *
-     * It avoids applying a rule to the previous {@link org.polypheny.db.rel.RelNode} repeatedly after new vertex is generated in one rule application. It can therefore be more efficient than
-     * {@link #ARBITRARY} in cases such as {@link org.polypheny.db.rel.core.Union} with large fan-out.
+     * It avoids applying a rule to the previous {@link AlgNode} repeatedly after new vertex is generated in one rule application. It can therefore be more efficient than
+     * {@link #ARBITRARY} in cases such as {@link org.polypheny.db.algebra.core.Union} with large fan-out.
      */
     DEPTH_FIRST
 }

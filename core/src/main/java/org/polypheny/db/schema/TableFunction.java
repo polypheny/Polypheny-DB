@@ -36,8 +36,8 @@ package org.polypheny.db.schema;
 
 import java.lang.reflect.Type;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
@@ -54,7 +54,7 @@ public interface TableFunction extends Function {
      * @param arguments arguments of a function call (only literal arguments are passed, nulls for non-literal ones)
      * @return row type of the table
      */
-    RelDataType getRowType( RelDataTypeFactory typeFactory, List<Object> arguments );
+    AlgDataType getRowType( AlgDataTypeFactory typeFactory, List<Object> arguments );
 
     /**
      * Returns the row type of the table yielded by this function when applied to given arguments. Only literal arguments are passed, non-literal are replaced with default values (null, 0, false, etc).

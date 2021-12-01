@@ -33,8 +33,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
 import org.polypheny.db.util.NameSet;
@@ -137,7 +137,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     protected abstract TableEntry getImplicitTable( String tableName, boolean caseSensitive );
 
     /**
-     * Returns a type with a given name that is defined implicitly (that is, by the underlying {@link Schema} object, not explicitly by a call to {@link #add(String, RelProtoDataType)}), or null.
+     * Returns a type with a given name that is defined implicitly (that is, by the underlying {@link Schema} object, not explicitly by a call to {@link #add(String, AlgProtoDataType)}), or null.
      */
     protected abstract TypeEntry getImplicitType( String name, boolean caseSensitive );
 
@@ -195,7 +195,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     /**
      * Creates a TableEntryImpl with no SQLs.
      */
-    protected TypeEntryImpl typeEntry( String name, RelProtoDataType relProtoDataType ) {
+    protected TypeEntryImpl typeEntry( String name, AlgProtoDataType relProtoDataType ) {
         return new TypeEntryImpl( this, name, relProtoDataType );
     }
 
@@ -224,7 +224,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
      * Defines a type within this schema.
      */
     @Override
-    public TypeEntry add( String name, RelProtoDataType type ) {
+    public TypeEntry add( String name, AlgProtoDataType type ) {
         final TypeEntry entry = new TypeEntryImpl( this, name, type );
         typeMap.put( name, entry );
         return entry;
@@ -551,7 +551,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
         @Override
-        public RelProtoDataType getType( String name ) {
+        public AlgProtoDataType getType( String name ) {
             final TypeEntry entry = AbstractPolyphenyDbSchema.this.getType( name, true );
             return entry == null ? null : entry.getType();
         }
@@ -629,7 +629,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
         @Override
-        public void add( String name, RelProtoDataType type ) {
+        public void add( String name, AlgProtoDataType type ) {
             AbstractPolyphenyDbSchema.this.add( name, type );
         }
 

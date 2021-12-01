@@ -19,8 +19,8 @@ package org.polypheny.db.core;
 
 import java.util.List;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
 
@@ -36,9 +36,9 @@ public interface InitializerExpressionFactory {
      * @param table the table containing the column
      * @param iColumn the 0-based offset of the column in the table
      * @return generation strategy, never null
-     * @see RelOptTable#getColumnStrategies()
+     * @see AlgOptTable#getColumnStrategies()
      */
-    ColumnStrategy generationStrategy( RelOptTable table, int iColumn );
+    ColumnStrategy generationStrategy( AlgOptTable table, int iColumn );
 
     /**
      * Creates an expression which evaluates to the default value for a particular column.
@@ -48,7 +48,7 @@ public interface InitializerExpressionFactory {
      * @param context Context for creating the expression
      * @return default value expression
      */
-    RexNode newColumnDefaultValue( RelOptTable table, int iColumn, InitializerContext context );
+    RexNode newColumnDefaultValue( AlgOptTable table, int iColumn, InitializerContext context );
 
     /**
      * Creates an expression which evaluates to the initializer expression for a particular attribute of a structured type.
@@ -60,6 +60,6 @@ public interface InitializerExpressionFactory {
      * @param context Context for creating the expression
      * @return default value expression
      */
-    RexNode newAttributeInitializer( RelDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context );
+    RexNode newAttributeInitializer( AlgDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context );
 }
 

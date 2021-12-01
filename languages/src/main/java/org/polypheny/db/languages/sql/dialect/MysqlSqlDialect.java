@@ -39,8 +39,8 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.fun.SqlCase;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -118,7 +118,7 @@ public class MysqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public SqlNode getCastSpec( RelDataType type ) {
+    public SqlNode getCastSpec( AlgDataType type ) {
         switch ( type.getPolyType() ) {
             case VARCHAR:
                 // MySQL doesn't have a VARCHAR type, only CHAR.
@@ -244,7 +244,7 @@ public class MysqlSqlDialect extends SqlDialect {
 
     @Override
     public void unparseSqlIntervalQualifier( SqlWriter writer,
-            SqlIntervalQualifier qualifier, RelDataTypeSystem typeSystem ) {
+            SqlIntervalQualifier qualifier, AlgDataTypeSystem typeSystem ) {
 
         //  Unit Value         | Expected Format
         // --------------------+-------------------------------------------

@@ -33,14 +33,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.IntervalPolyType;
@@ -50,12 +50,12 @@ import org.polypheny.db.util.TimeString;
 
 
 @Slf4j
-public class CassandraValues extends Values implements CassandraRel {
+public class CassandraValues extends Values implements CassandraAlg {
 
-    private final RelDataType logicalRowType;
+    private final AlgDataType logicalRowType;
 
 
-    public CassandraValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
+    public CassandraValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
         this.logicalRowType = rowType;
     }
@@ -74,7 +74,7 @@ public class CassandraValues extends Values implements CassandraRel {
 
 
     public static Object getJavaClass( RexLiteral literal ) {
-        RelDataType type = literal.getType();
+        AlgDataType type = literal.getType();
         if ( type instanceof BasicPolyType || type instanceof IntervalPolyType ) {
             switch ( type.getPolyType() ) {
                 case VARCHAR:
@@ -160,7 +160,7 @@ public class CassandraValues extends Values implements CassandraRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
     }
 
@@ -170,11 +170,11 @@ public class CassandraValues extends Values implements CassandraRel {
 
         List<Map<String, Term>> items = new LinkedList<>();
         // TODO JS: Is this work around still needed with the fix in CassandraSchema?
-        final List<RelDataTypeField> physicalFields = context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
-        final List<RelDataTypeField> logicalFields = rowType.getFieldList();
-        final List<RelDataTypeField> fields = new ArrayList<>();
-        for ( RelDataTypeField field : logicalFields ) {
-            for ( RelDataTypeField physicalField : physicalFields ) {
+        final List<AlgDataTypeField> physicalFields = context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
+        final List<AlgDataTypeField> logicalFields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = new ArrayList<>();
+        for ( AlgDataTypeField field : logicalFields ) {
+            for ( AlgDataTypeField physicalField : physicalFields ) {
                 if ( field.getName().equals( physicalField.getName() ) ) {
                     fields.add( physicalField );
                     break;
@@ -185,7 +185,7 @@ public class CassandraValues extends Values implements CassandraRel {
         for ( List<RexLiteral> tuple : tuples ) {
             final List<Expression> literals = new ArrayList<>();
             Map<String, Term> oneInsert = new LinkedHashMap<>();
-            for ( Pair<RelDataTypeField, RexLiteral> pair : Pair.zip( fields, tuple ) ) {
+            for ( Pair<AlgDataTypeField, RexLiteral> pair : Pair.zip( fields, tuple ) ) {
                 try {
                     oneInsert.put( pair.left.getPhysicalName(), QueryBuilder.literal( literalValue( pair.right ) ) );
 //                    oneInsert.put( pair.left.getName(), QueryBuilder.literal( literalValue( pair.right ) ) );

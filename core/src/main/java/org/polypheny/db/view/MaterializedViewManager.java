@@ -24,12 +24,12 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
@@ -66,7 +66,7 @@ public abstract class MaterializedViewManager {
             Transaction transaction,
             List<DataStore> stores,
             Map<Integer, List<CatalogColumn>> addedColumns,
-            RelRoot relRoot,
+            AlgRoot relRoot,
             CatalogMaterializedView materializedView );
 
     public abstract void addTables( Transaction transaction, List<String> names );
@@ -83,14 +83,14 @@ public abstract class MaterializedViewManager {
     /**
      * to trek updates on tables for materialized views with update freshness
      */
-    public static class TableUpdateVisitor extends RelShuttleImpl {
+    public static class TableUpdateVisitor extends AlgShuttleImpl {
 
         @Getter
         private final List<String> names = new ArrayList<>();
 
 
         @Override
-        public RelNode visit( RelNode other ) {
+        public AlgNode visit( AlgNode other ) {
             if ( other instanceof LogicalTableModify ) {
                 if ( ((TableModify) other).getOperation() != Operation.MERGE ) {
                     if ( (other.getTable().getTable() instanceof LogicalTable) ) {

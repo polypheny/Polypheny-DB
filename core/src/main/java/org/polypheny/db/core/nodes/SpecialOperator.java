@@ -19,16 +19,11 @@ package org.polypheny.db.core.nodes;
 import java.util.List;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Syntax;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.nodes.Literal;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.core.nodes.OperatorImpl;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -58,19 +53,19 @@ public class SpecialOperator extends OperatorImpl {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         return null;
     }
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         return null;
     }
 
 
     @Override
-    public RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes ) {
+    public AlgDataType inferReturnType( AlgDataTypeFactory typeFactory, List<AlgDataType> operandTypes ) {
         return null;
     }
 

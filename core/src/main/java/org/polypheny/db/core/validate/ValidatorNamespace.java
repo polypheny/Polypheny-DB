@@ -16,7 +16,7 @@
 
 package org.polypheny.db.core.validate;
 
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 public interface ValidatorNamespace {
 
@@ -26,6 +26,6 @@ public interface ValidatorNamespace {
      *
      * @return Row type of this namespace, never null, always a struct
      */
-    RelDataType getRowType();
+    AlgDataType getRowType();
 
 }

@@ -32,7 +32,7 @@ import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -73,7 +73,7 @@ public class SqlJsonObjectFunction extends SqlFunction {
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final int count = callBinding.getOperandCount();
         for ( int i = 1; i < count; i += 2 ) {
-            RelDataType nameType = callBinding.getOperandType( i );
+            AlgDataType nameType = callBinding.getOperandType( i );
             if ( !PolyTypeUtil.inCharFamily( nameType ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newError( Static.RESOURCE.expectedCharacter() );

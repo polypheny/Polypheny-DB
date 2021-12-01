@@ -21,7 +21,7 @@ import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlIntervalLiteral;
 import org.polypheny.db.languages.sql.SqlIntervalQualifier;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 
 
 /**
@@ -53,7 +53,7 @@ public class Db2SqlDialect extends SqlDialect {
 
 
     @Override
-    public void unparseSqlIntervalQualifier( SqlWriter writer, SqlIntervalQualifier qualifier, RelDataTypeSystem typeSystem ) {
+    public void unparseSqlIntervalQualifier( SqlWriter writer, SqlIntervalQualifier qualifier, AlgDataTypeSystem typeSystem ) {
 
         // DB2 supported qualifiers. Singular form of these keywords are also acceptable.
         // YEAR/YEARS
@@ -96,7 +96,7 @@ public class Db2SqlDialect extends SqlDialect {
             writer.print( "-" );
         }
         writer.literal( literal.getValue().toString() );
-        unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), RelDataTypeSystem.DEFAULT );
+        unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), AlgDataTypeSystem.DEFAULT );
     }
 
 }

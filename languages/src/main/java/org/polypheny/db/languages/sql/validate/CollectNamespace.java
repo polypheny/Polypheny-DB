@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.validate;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -59,7 +59,7 @@ public class CollectNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         return child.getOperator().deriveType( validator, scope, child );
     }
 

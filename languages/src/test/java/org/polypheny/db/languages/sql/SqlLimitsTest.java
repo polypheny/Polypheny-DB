@@ -33,9 +33,9 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.core.DiffRepository;
 import org.polypheny.db.languages.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -59,7 +59,7 @@ public class SqlLimitsTest {
     /**
      * Returns a list of typical types.
      */
-    public static List<RelDataType> getTypes( RelDataTypeFactory typeFactory ) {
+    public static List<AlgDataType> getTypes( AlgDataTypeFactory typeFactory ) {
         final int maxPrecision = typeFactory.getTypeSystem().getMaxPrecision( PolyType.DECIMAL );
         return ImmutableList.of(
                 typeFactory.createPolyType( PolyType.BOOLEAN ),
@@ -98,8 +98,8 @@ public class SqlLimitsTest {
     public void testPrintLimits() {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
-        final List<RelDataType> types = getTypes( new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT ) );
-        for ( RelDataType type : types ) {
+        final List<AlgDataType> types = getTypes( new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ) );
+        for ( AlgDataType type : types ) {
             pw.println( type.toString() );
             printLimit(
                     pw,
@@ -171,7 +171,7 @@ public class SqlLimitsTest {
     }
 
 
-    private void printLimit( PrintWriter pw, String desc, RelDataType type, boolean sign, PolyType.Limit limit, boolean beyond ) {
+    private void printLimit( PrintWriter pw, String desc, AlgDataType type, boolean sign, PolyType.Limit limit, boolean beyond ) {
         Object o = ((BasicPolyType) type).getLimit( sign, limit, beyond );
         if ( o == null ) {
             return;

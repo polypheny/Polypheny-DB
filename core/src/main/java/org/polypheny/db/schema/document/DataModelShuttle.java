@@ -17,26 +17,26 @@
 package org.polypheny.db.schema.document;
 
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.logical.LogicalDocuments;
-import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalValues;
 
 
 /**
  * Shuttle, which transforms a normal LogicalValues to LogicalValues
  */
-public class DataModelShuttle extends RelShuttleImpl {
+public class DataModelShuttle extends AlgShuttleImpl {
 
     @Override
-    public RelNode visit( LogicalValues values ) {
+    public AlgNode visit( LogicalValues values ) {
         return super.visit( values );
     }
 
 
     @Override
-    public RelNode visit( RelNode other ) {
+    public AlgNode visit( AlgNode other ) {
         if ( other instanceof TableModify ) {
             TableModify modify = (TableModify) other;
             if ( modify.getTable().getTable().getSchemaType() == SchemaType.DOCUMENT ) {

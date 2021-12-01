@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -61,11 +61,11 @@ public class SqlMultisetMemberOfOperator extends SqlBinaryOperator {
                         callBinding.getScope(),
                         callBinding.operand( 1 ) );
 
-        RelDataType t0 =
+        AlgDataType t0 =
                 callBinding.getValidator().deriveType(
                         callBinding.getScope(),
                         callBinding.operand( 0 ) );
-        RelDataType t1 = mt.getComponentType();
+        AlgDataType t1 = mt.getComponentType();
 
         if ( t0.getFamily() != t1.getFamily() ) {
             if ( throwOnFailure ) {

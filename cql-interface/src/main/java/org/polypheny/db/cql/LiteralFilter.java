@@ -20,8 +20,8 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
@@ -45,11 +45,11 @@ public class LiteralFilter implements Filter {
 
 
     @Override
-    public RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> filterMap ) {
+    public RexNode convert2RexNode( AlgNode baseNode, RexBuilder rexBuilder, Map<String, AlgDataTypeField> filterMap ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "Converting '{}' to RexNode.", this );
         }
-        RelDataTypeField typeField = filterMap.get( columnIndex.fullyQualifiedName );
+        AlgDataTypeField typeField = filterMap.get( columnIndex.fullyQualifiedName );
         RexNode lhs = rexBuilder.makeInputRef( baseNode, typeField.getIndex() );
         RexNode rhs = rexBuilder.makeLiteral( searchTerm );
         rhs = rexBuilder.makeCast( typeField.getType(), rhs );

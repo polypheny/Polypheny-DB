@@ -25,12 +25,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.prepare.RelOptTableImpl;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelVisitor;
-import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgVisitor;
+import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.schema.LogicalTable;
 
 
@@ -77,15 +77,15 @@ public class TableAccessMap {
 
 
     /**
-     * Constructs a TableAccessMap for all tables accessed by a RelNode and its descendants.
+     * Constructs a TableAccessMap for all tables accessed by a {@link AlgNode} and its descendants.
      *
-     * @param rel the RelNode for which to build the map
+     * @param alg the {@link AlgNode} for which to build the map
      */
-    public TableAccessMap( RelNode rel ) {
-        // NOTE: This method must NOT retain a reference to the input rel, because we use it for cached statements, and we
-        // don't want to retain any rel references after preparation completes.
+    public TableAccessMap( AlgNode alg ) {
+        // NOTE: This method must NOT retain a reference to the input alg, because we use it for cached statements, and we
+        // don't want to retain any alg references after preparation completes.
         accessMap = new HashMap<>();
-        RelOptUtil.go( new TableRelVisitor(), rel );
+        AlgOptUtil.go( new TableRelVisitor(), alg );
     }
 
 
@@ -165,26 +165,26 @@ public class TableAccessMap {
      * @param table table of interest
      * @return qualified name
      */
-    public TableIdentifier getQualifiedName( RelOptTable table ) {
-        if ( !(table instanceof RelOptTableImpl) ) {
+    public TableIdentifier getQualifiedName( AlgOptTable table ) {
+        if ( !(table instanceof AlgOptTableImpl) ) {
             throw new RuntimeException( "Unexpected table type: " + table.getClass() );
         }
-        if ( !(((RelOptTableImpl) table).getTable() instanceof LogicalTable) ) {
-            throw new RuntimeException( "Unexpected table type: " + ((RelOptTableImpl) table).getTable().getClass() );
+        if ( !(((AlgOptTableImpl) table).getTable() instanceof LogicalTable) ) {
+            throw new RuntimeException( "Unexpected table type: " + ((AlgOptTableImpl) table).getTable().getClass() );
         }
-        return new TableIdentifier( ((LogicalTable) ((RelOptTableImpl) table).getTable()).getTableId() );
+        return new TableIdentifier( ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId() );
     }
 
 
     /**
      * Visitor that finds all tables in a tree.
      */
-    private class TableRelVisitor extends RelVisitor {
+    private class TableRelVisitor extends AlgVisitor {
 
         @Override
-        public void visit( RelNode p, int ordinal, RelNode parent ) {
+        public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             super.visit( p, ordinal, parent );
-            RelOptTable table = p.getTable();
+            AlgOptTable table = p.getTable();
             if ( table == null ) {
                 return;
             }
@@ -192,7 +192,7 @@ public class TableAccessMap {
 
             // FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
             //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
-            //  RelNode interface.
+            //  {@link AlgNode} interface.
             if ( p instanceof TableModify ) {
                 newAccess = Mode.WRITE_ACCESS;
             } else {

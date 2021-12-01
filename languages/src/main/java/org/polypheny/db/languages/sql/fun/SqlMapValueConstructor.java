@@ -23,8 +23,8 @@ import java.util.List;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlCallBinding;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -43,8 +43,8 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
-        Pair<RelDataType, RelDataType> type = getComponentTypes( opBinding.getTypeFactory(), opBinding.collectOperandTypes() );
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        Pair<AlgDataType, AlgDataType> type = getComponentTypes( opBinding.getTypeFactory(), opBinding.collectOperandTypes() );
         if ( null == type ) {
             return null;
         }
@@ -58,7 +58,7 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
 
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        final List<RelDataType> argTypes =
+        final List<AlgDataType> argTypes =
                 PolyTypeUtil.deriveAndCollectTypes(
                         callBinding.getValidator(),
                         callBinding.getScope(),
@@ -69,7 +69,7 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
         if ( argTypes.size() % 2 > 0 ) {
             throw callBinding.newValidationError( RESOURCE.mapRequiresEvenArgCount() );
         }
-        final Pair<RelDataType, RelDataType> componentType = getComponentTypes( callBinding.getTypeFactory(), argTypes );
+        final Pair<AlgDataType, AlgDataType> componentType = getComponentTypes( callBinding.getTypeFactory(), argTypes );
         if ( null == componentType.left || null == componentType.right ) {
             if ( throwOnFailure ) {
                 throw callBinding.newValidationError( RESOURCE.needSameTypeParameter() );
@@ -80,7 +80,7 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
     }
 
 
-    private Pair<RelDataType, RelDataType> getComponentTypes( RelDataTypeFactory typeFactory, List<RelDataType> argTypes ) {
+    private Pair<AlgDataType, AlgDataType> getComponentTypes( AlgDataTypeFactory typeFactory, List<AlgDataType> argTypes ) {
         return Pair.of(
                 typeFactory.leastRestrictive( Util.quotientList( argTypes, 2, 0 ) ),
                 typeFactory.leastRestrictive( Util.quotientList( argTypes, 2, 1 ) ) );

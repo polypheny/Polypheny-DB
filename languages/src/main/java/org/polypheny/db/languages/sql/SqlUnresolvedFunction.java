@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql;
 import java.util.List;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -45,7 +45,7 @@ public class SqlUnresolvedFunction extends SqlFunction {
      * @param paramTypes           array of parameter types
      * @param funcType             function category
      */
-    public SqlUnresolvedFunction( SqlIdentifier sqlIdentifier, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, FunctionCategory funcType ) {
+    public SqlUnresolvedFunction( SqlIdentifier sqlIdentifier, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<AlgDataType> paramTypes, FunctionCategory funcType ) {
         super( sqlIdentifier, returnTypeInference, operandTypeInference, operandTypeChecker, paramTypes, funcType );
     }
 
@@ -56,8 +56,8 @@ public class SqlUnresolvedFunction extends SqlFunction {
      * The operator class for this function isn't resolved to the correct class. This happens in the case of user defined functions. Return the return type to be 'ANY', so we don't fail.
      */
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
     }
 }

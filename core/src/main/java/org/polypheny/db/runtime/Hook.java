@@ -40,6 +40,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.Query;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Holder;
 
 
@@ -60,7 +62,7 @@ public enum Hook {
     STANDARD_STREAMS,
 
     /**
-     * Returns a boolean value, whether RelBuilder should simplify expressions.
+     * Returns a boolean value, whether{@link AlgBuilder}  should simplify expressions.
      * Default true.
      */
     REL_BUILDER_SIMPLIFY,
@@ -77,7 +79,7 @@ public enum Hook {
     PARSE_TREE,
 
     /**
-     * Converts a SQL string to a {@link Query} object. This hook is an opportunity to execute a {@link org.polypheny.db.rel.RelNode} query
+     * Converts a SQL string to a {@link Query} object. This hook is an opportunity to execute a {@link AlgNode} query
      * plan in the JDBC driver rather than the usual SQL string.
      */
     STRING_TO_QUERY,

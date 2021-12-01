@@ -27,8 +27,8 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.transaction.Statement;
 
@@ -41,20 +41,20 @@ public class SimpleRouter extends AbstractRouter {
 
 
     @Override
-    protected void analyze( Statement statement, RelRoot logicalRoot ) {
+    protected void analyze( Statement statement, AlgRoot logicalRoot ) {
         // Nothing to do. Simple router does nothing sophisticated...
     }
 
 
     @Override
-    protected void wrapUp( Statement statement, RelNode routed ) {
+    protected void wrapUp( Statement statement, AlgNode routed ) {
         // Nothing to do. Simple router does nothing sophisticated...
     }
 
 
     // Execute the table scan on the first placement of a table
     @Override
-    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
+    protected List<CatalogColumnPlacement> selectPlacement( AlgNode node, CatalogTable table ) {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;

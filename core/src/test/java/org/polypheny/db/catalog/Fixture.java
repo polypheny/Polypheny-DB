@@ -19,11 +19,11 @@ package org.polypheny.db.catalog;
 
 import java.util.Arrays;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeComparability;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeComparability;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -33,28 +33,28 @@ import org.polypheny.db.type.PolyType;
  */
 final class Fixture {
 
-    final RelDataType intType;
-    final RelDataType intTypeNull;
-    final RelDataType varchar10Type;
-    final RelDataType varchar10TypeNull;
-    final RelDataType varchar20Type;
-    final RelDataType varchar20TypeNull;
-    final RelDataType timestampType;
-    final RelDataType timestampTypeNull;
-    final RelDataType dateType;
-    final RelDataType booleanType;
-    final RelDataType booleanTypeNull;
-    final RelDataType rectilinearCoordType;
-    final RelDataType rectilinearPeekCoordType;
-    final RelDataType rectilinearPeekNoExpandCoordType;
-    final RelDataType abRecordType;
-    final RelDataType skillRecordType;
-    final RelDataType empRecordType;
-    final RelDataType empListType;
+    final AlgDataType intType;
+    final AlgDataType intTypeNull;
+    final AlgDataType varchar10Type;
+    final AlgDataType varchar10TypeNull;
+    final AlgDataType varchar20Type;
+    final AlgDataType varchar20TypeNull;
+    final AlgDataType timestampType;
+    final AlgDataType timestampTypeNull;
+    final AlgDataType dateType;
+    final AlgDataType booleanType;
+    final AlgDataType booleanTypeNull;
+    final AlgDataType rectilinearCoordType;
+    final AlgDataType rectilinearPeekCoordType;
+    final AlgDataType rectilinearPeekNoExpandCoordType;
+    final AlgDataType abRecordType;
+    final AlgDataType skillRecordType;
+    final AlgDataType empRecordType;
+    final AlgDataType empListType;
     final ObjectPolyType addressType;
 
 
-    Fixture( RelDataTypeFactory typeFactory ) {
+    Fixture( AlgDataTypeFactory typeFactory ) {
         intType = typeFactory.createPolyType( PolyType.INTEGER );
         intTypeNull = typeFactory.createTypeWithNullability( intType, true );
         varchar10Type = typeFactory.createPolyType( PolyType.VARCHAR, 10 );
@@ -116,11 +116,11 @@ final class Fixture {
                         new MockIdentifier( "ADDRESS", ParserPos.ZERO ),
                         false,
                         Arrays.asList(
-                                new RelDataTypeFieldImpl( "STREET", 0, varchar20Type ),
-                                new RelDataTypeFieldImpl( "CITY", 1, varchar20Type ),
-                                new RelDataTypeFieldImpl( "ZIP", 2, intType ),
-                                new RelDataTypeFieldImpl( "STATE", 3, varchar20Type ) ),
-                        RelDataTypeComparability.NONE );
+                                new AlgDataTypeFieldImpl( "STREET", 0, varchar20Type ),
+                                new AlgDataTypeFieldImpl( "CITY", 1, varchar20Type ),
+                                new AlgDataTypeFieldImpl( "ZIP", 2, intType ),
+                                new AlgDataTypeFieldImpl( "STATE", 3, varchar20Type ) ),
+                        AlgDataTypeComparability.NONE );
     }
 
 }

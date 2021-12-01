@@ -28,13 +28,13 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlUtil;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -161,7 +161,7 @@ public class AggregatingSelectScope extends DelegatingScope implements Aggregati
 
 
     @Override
-    public RelDataType nullifyType( SqlNode node, RelDataType type ) {
+    public AlgDataType nullifyType( SqlNode node, AlgDataType type ) {
         final Resolved r = this.resolved.get();
         for ( Ord<SqlNode> groupExpr : Ord.zip( r.groupExprList ) ) {
             if ( groupExpr.e.equalsDeep( node, Litmus.IGNORE ) ) {

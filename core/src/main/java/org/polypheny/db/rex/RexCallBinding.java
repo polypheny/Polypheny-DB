@@ -44,10 +44,10 @@ import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
 
@@ -60,10 +60,10 @@ public class RexCallBinding extends OperatorBinding {
     @Getter
     private final List<RexNode> operands;
 
-    private final List<RelCollation> inputCollations;
+    private final List<AlgCollation> inputCollations;
 
 
-    public RexCallBinding( RelDataTypeFactory typeFactory, Operator sqlOperator, List<? extends RexNode> operands, List<RelCollation> inputCollations ) {
+    public RexCallBinding( AlgDataTypeFactory typeFactory, Operator sqlOperator, List<? extends RexNode> operands, List<AlgCollation> inputCollations ) {
         super( typeFactory, sqlOperator );
         this.operands = ImmutableList.copyOf( operands );
         this.inputCollations = ImmutableList.copyOf( inputCollations );
@@ -73,7 +73,7 @@ public class RexCallBinding extends OperatorBinding {
     /**
      * Creates a binding of the appropriate type.
      */
-    public static RexCallBinding create( RelDataTypeFactory typeFactory, RexCall call, List<RelCollation> inputCollations ) {
+    public static RexCallBinding create( AlgDataTypeFactory typeFactory, RexCall call, List<AlgCollation> inputCollations ) {
         if ( call.getKind() == Kind.CAST ) {
             return new RexCastCallBinding( typeFactory, call.getOperator(), call.getOperands(), call.getType(), inputCollations );
         }
@@ -96,12 +96,12 @@ public class RexCallBinding extends OperatorBinding {
         RexNode operand = operands.get( ordinal );
 
         if ( operand instanceof RexInputRef ) {
-            for ( RelCollation ic : inputCollations ) {
+            for ( AlgCollation ic : inputCollations ) {
                 if ( ic.getFieldCollations().isEmpty() ) {
                     continue;
                 }
 
-                for ( RelFieldCollation rfc : ic.getFieldCollations() ) {
+                for ( AlgFieldCollation rfc : ic.getFieldCollations() ) {
                     if ( rfc.getFieldIndex() == ((RexInputRef) operand).getIndex() ) {
                         return rfc.direction.monotonicity();
                         // TODO: Is it possible to have more than one RelFieldCollation for a RexInputRef?
@@ -138,7 +138,7 @@ public class RexCallBinding extends OperatorBinding {
 
     // implement SqlOperatorBinding
     @Override
-    public RelDataType getOperandType( int ordinal ) {
+    public AlgDataType getOperandType( int ordinal ) {
         return operands.get( ordinal ).getType();
     }
 
@@ -154,17 +154,17 @@ public class RexCallBinding extends OperatorBinding {
      */
     private static class RexCastCallBinding extends RexCallBinding {
 
-        private final RelDataType type;
+        private final AlgDataType type;
 
 
-        RexCastCallBinding( RelDataTypeFactory typeFactory, Operator sqlOperator, List<? extends RexNode> operands, RelDataType type, List<RelCollation> inputCollations ) {
+        RexCastCallBinding( AlgDataTypeFactory typeFactory, Operator sqlOperator, List<? extends RexNode> operands, AlgDataType type, List<AlgCollation> inputCollations ) {
             super( typeFactory, sqlOperator, operands, inputCollations );
             this.type = type;
         }
 
 
         @Override
-        public RelDataType getOperandType( int ordinal ) {
+        public AlgDataType getOperandType( int ordinal ) {
             if ( ordinal == 1 ) {
                 return type;
             }

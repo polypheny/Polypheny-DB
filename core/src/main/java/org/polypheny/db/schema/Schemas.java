@@ -64,9 +64,9 @@ import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.ParseResult;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -84,7 +84,7 @@ public final class Schemas {
     }
 
 
-    public static FunctionEntry resolve( RelDataTypeFactory typeFactory, String name, Collection<FunctionEntry> functionEntries, List<RelDataType> argumentTypes ) {
+    public static FunctionEntry resolve( AlgDataTypeFactory typeFactory, String name, Collection<FunctionEntry> functionEntries, List<AlgDataType> argumentTypes ) {
         final List<FunctionEntry> matches = new ArrayList<>();
         for ( FunctionEntry entry : functionEntries ) {
             if ( matches( typeFactory, entry.getFunction(), argumentTypes ) ) {
@@ -102,13 +102,13 @@ public final class Schemas {
     }
 
 
-    private static boolean matches( RelDataTypeFactory typeFactory, Function member, List<RelDataType> argumentTypes ) {
+    private static boolean matches( AlgDataTypeFactory typeFactory, Function member, List<AlgDataType> argumentTypes ) {
         List<FunctionParameter> parameters = member.getParameters();
         if ( parameters.size() != argumentTypes.size() ) {
             return false;
         }
         for ( int i = 0; i < argumentTypes.size(); i++ ) {
-            RelDataType argumentType = argumentTypes.get( i );
+            AlgDataType argumentType = argumentTypes.get( i );
             FunctionParameter parameter = parameters.get( i );
             if ( !canConvert( argumentType, parameter.getType( typeFactory ) ) ) {
                 return false;
@@ -118,7 +118,7 @@ public final class Schemas {
     }
 
 
-    private static boolean canConvert( RelDataType fromType, RelDataType toType ) {
+    private static boolean canConvert( AlgDataType fromType, AlgDataType toType ) {
         return PolyTypeUtil.canAssignFrom( toType, fromType );
     }
 
@@ -457,17 +457,17 @@ public final class Schemas {
 
 
     /**
-     * Returns an implementation of {@link RelProtoDataType} that asks a given table for its row type with a given type factory.
+     * Returns an implementation of {@link AlgProtoDataType} that asks a given table for its row type with a given type factory.
      */
-    public static RelProtoDataType proto( final Table table ) {
+    public static AlgProtoDataType proto( final Table table ) {
         return table::getRowType;
     }
 
 
     /**
-     * Returns an implementation of {@link RelProtoDataType} that asks a given scalar function for its return type with a given type factory.
+     * Returns an implementation of {@link AlgProtoDataType} that asks a given scalar function for its return type with a given type factory.
      */
-    public static RelProtoDataType proto( final ScalarFunction function ) {
+    public static AlgProtoDataType proto( final ScalarFunction function ) {
         return function::getReturnType;
     }
 
@@ -594,13 +594,13 @@ public final class Schemas {
 
 
         @Override
-        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
             throw new UnsupportedOperationException();
         }
 
 
         @Override
-        public RelDataType getParameterType( long index ) {
+        public AlgDataType getParameterType( long index ) {
             throw new UnsupportedOperationException();
         }
 

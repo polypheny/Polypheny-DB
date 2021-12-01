@@ -79,7 +79,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.languages.sql.SqlDialect.IntervalParameterStrategy;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
@@ -270,7 +270,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
      * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, RelDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
+    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
         // an one hour shift, as we lose this timezone information on retrieval
         // therefore we use the offset if needed
@@ -307,7 +307,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             if ( connectionHandler.getDialect().supportsNestedArrays() ) {
                 SqlType componentType;
                 if ( type != null ) {
-                    RelDataType t = type;
+                    AlgDataType t = type;
                     while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
                         t = t.getComponentType();
                     }

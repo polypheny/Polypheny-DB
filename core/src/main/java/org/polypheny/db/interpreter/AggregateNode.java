@@ -57,13 +57,13 @@ import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.interpreter.Row.RowBuilder;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
@@ -83,24 +83,24 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     private final DataContext dataContext;
 
 
-    public AggregateNode( Compiler compiler, Aggregate rel ) {
-        super( compiler, rel );
+    public AggregateNode( Compiler compiler, Aggregate alg ) {
+        super( compiler, alg );
         this.dataContext = compiler.getDataContext();
 
         ImmutableBitSet union = ImmutableBitSet.of();
 
-        if ( rel.getGroupSets() != null ) {
-            for ( ImmutableBitSet group : rel.getGroupSets() ) {
+        if ( alg.getGroupSets() != null ) {
+            for ( ImmutableBitSet group : alg.getGroupSets() ) {
                 union = union.union( group );
                 groups.add( new Grouping( group ) );
             }
         }
 
         this.unionGroups = union;
-        this.outputRowLength = unionGroups.cardinality() + (rel.indicator ? unionGroups.cardinality() : 0) + rel.getAggCallList().size();
+        this.outputRowLength = unionGroups.cardinality() + (alg.indicator ? unionGroups.cardinality() : 0) + alg.getAggCallList().size();
 
         ImmutableList.Builder<AccumulatorFactory> builder = ImmutableList.builder();
-        for ( AggregateCall aggregateCall : rel.getAggCallList() ) {
+        for ( AggregateCall aggregateCall : alg.getAggCallList() ) {
             builder.add( getAccumulator( aggregateCall, false ) );
         }
         accumulatorFactories = builder.build();
@@ -190,13 +190,13 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             }
             return new UdaAccumulatorFactory( AggregateFunctionImpl.create( clazz ), call, true );
         } else {
-            final JavaTypeFactory typeFactory = (JavaTypeFactory) rel.getCluster().getTypeFactory();
+            final JavaTypeFactory typeFactory = (JavaTypeFactory) alg.getCluster().getTypeFactory();
             int stateOffset = 0;
             final AggImpState agg = new AggImpState( 0, call, false );
             int stateSize = agg.state.size();
 
             final BlockBuilder builder2 = new BlockBuilder();
-            final PhysType inputPhysType = PhysTypeImpl.of( typeFactory, rel.getInput().getRowType(), JavaRowFormat.ARRAY );
+            final PhysType inputPhysType = PhysTypeImpl.of( typeFactory, alg.getInput().getRowType(), JavaRowFormat.ARRAY );
             final Builder builder = typeFactory.builder();
             for ( Expression expression : agg.state ) {
                 builder.add( "a", null, typeFactory.createJavaType( (Class) expression.getType() ) );
@@ -248,7 +248,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             final ParameterExpression context_ = Expressions.parameter( Context.class, "context" );
             final ParameterExpression outputValues_ = Expressions.parameter( Object[].class, "outputValues" );
             Scalar addScalar = JaninoRexCompiler.baz( context_, outputValues_, builder2.toBlock(), dataContext );
-            return new ScalarAccumulatorDef( null, addScalar, null, rel.getInput().getRowType().getFieldCount(), stateSize, dataContext );
+            return new ScalarAccumulatorDef( null, addScalar, null, alg.getInput().getRowType().getFieldCount(), stateSize, dataContext );
         }
     }
 
@@ -411,7 +411,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                 for ( Integer groupPos : unionGroups ) {
                     if ( grouping.get( groupPos ) ) {
                         rb.set( index, key.getObject( index ) );
-                        if ( rel.indicator ) {
+                        if ( alg.indicator ) {
                             rb.set( unionGroups.cardinality() + index, true );
                         }
                     }

@@ -17,11 +17,11 @@
 package org.polypheny.db.core.nodes;
 
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.core.util.SqlValidatorException;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 
@@ -41,12 +41,12 @@ public interface CallBinding {
 
     int getOperandCount();
 
-    RelDataType getOperandType( int ordinal );
+    AlgDataType getOperandType( int ordinal );
 
     /**
      * @return factory for type creation
      */
-    RelDataTypeFactory getTypeFactory();
+    AlgDataTypeFactory getTypeFactory();
 
     PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e );
 

@@ -37,9 +37,9 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -102,9 +102,9 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         final Node operand = call.getOperandList().get( 0 );
-        final RelDataType nodeType = validator.deriveType( scope, operand );
+        final AlgDataType nodeType = validator.deriveType( scope, operand );
         assert nodeType != null;
         if ( !nodeType.isStruct() ) {
             throw CoreUtil.newContextException( operand.getPos(), Static.RESOURCE.incompatibleTypes() );
@@ -112,11 +112,11 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
         final SqlNode fieldId = call.operand( 1 );
         final String fieldName = fieldId.toString();
-        final RelDataTypeField field = nodeType.getField( fieldName, false, false );
+        final AlgDataTypeField field = nodeType.getField( fieldName, false, false );
         if ( field == null ) {
             throw CoreUtil.newContextException( fieldId.getPos(), Static.RESOURCE.unknownField( fieldName ) );
         }
-        RelDataType type = field.getType();
+        AlgDataType type = field.getType();
 
         // Validate and determine coercibility and resulting collation name of binary operator if needed.
         type = adjustType( (SqlValidator) validator, (SqlCall) call, type );
@@ -138,19 +138,19 @@ public class SqlDotOperator extends SqlSpecialOperator {
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final SqlNode left = (SqlNode) callBinding.operand( 0 );
         final SqlNode right = (SqlNode) callBinding.operand( 1 );
-        final RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), left );
+        final AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), left );
         if ( type.getPolyType() != PolyType.ROW ) {
             return false;
         } else if ( ((SqlIdentifier) type.getSqlIdentifier()).isStar() ) {
             return false;
         }
-        final RelDataType operandType = callBinding.getOperandType( 0 );
+        final AlgDataType operandType = callBinding.getOperandType( 0 );
         final PolySingleOperandTypeChecker checker = getChecker( operandType );
         return checker.checkSingleOperandType( callBinding, right, 0, throwOnFailure );
     }
 
 
-    private PolySingleOperandTypeChecker getChecker( RelDataType operandType ) {
+    private PolySingleOperandTypeChecker getChecker( AlgDataType operandType ) {
         switch ( operandType.getPolyType() ) {
             case ROW:
                 return OperandTypes.family( PolyTypeFamily.STRING );
@@ -173,13 +173,13 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType recordType = opBinding.getOperandType( 0 );
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataType recordType = opBinding.getOperandType( 0 );
         switch ( recordType.getPolyType() ) {
             case ROW:
                 final String fieldName = opBinding.getOperandLiteralValue( 1, String.class );
-                final RelDataType type = opBinding.getOperandType( 0 )
+                final AlgDataType type = opBinding.getOperandType( 0 )
                         .getField( fieldName, false, false )
                         .getType();
                 if ( recordType.isNullable() ) {

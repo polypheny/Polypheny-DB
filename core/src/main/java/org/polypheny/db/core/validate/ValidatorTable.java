@@ -21,7 +21,7 @@ import java.util.List;
 import org.polypheny.db.core.util.AccessType;
 import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.Wrapper;
 
 
@@ -33,7 +33,7 @@ import org.polypheny.db.schema.Wrapper;
 public interface ValidatorTable extends Wrapper {
 
 
-    RelDataType getRowType();
+    AlgDataType getRowType();
 
     List<String> getQualifiedName();
 

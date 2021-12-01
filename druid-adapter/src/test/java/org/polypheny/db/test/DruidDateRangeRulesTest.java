@@ -50,7 +50,7 @@ import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.languages.core.TestFixture;
-import org.polypheny.db.rel.rules.DateRangeRules;
+import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
@@ -200,8 +200,8 @@ public class DruidDateRangeRulesTest extends LanguageManagerDependant {
 
         Fixture2() {
             exYear = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.YEAR ), ts ) );
-            exMonth = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.MONTH ), ts ) );
-            exDay = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.DAY ), ts ) );
+            exMonth = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.MONTH ), ts ) );
+            exDay = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.DAY ), ts ) );
         }
 
 

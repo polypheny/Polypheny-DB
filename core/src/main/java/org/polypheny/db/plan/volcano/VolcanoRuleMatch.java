@@ -36,10 +36,10 @@ package org.polypheny.db.plan.volcano;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.util.Litmus;
 
 
@@ -48,8 +48,8 @@ import org.polypheny.db.util.Litmus;
  */
 class VolcanoRuleMatch extends VolcanoRuleCall {
 
-    private final RelSet targetSet;
-    private RelSubset targetSubset;
+    private final AlgSet targetSet;
+    private AlgSubset targetSubset;
     private String digest;
     private double cachedImportance = Double.NaN;
 
@@ -61,7 +61,7 @@ class VolcanoRuleMatch extends VolcanoRuleCall {
      * @param rels List of targets; copied by the constructor, so the client can modify it later
      * @param nodeInputs Map from relational expressions to their inputs
      */
-    VolcanoRuleMatch( VolcanoPlanner volcanoPlanner, RelOptRuleOperand operand0, RelNode[] rels, Map<RelNode, List<RelNode>> nodeInputs ) {
+    VolcanoRuleMatch( VolcanoPlanner volcanoPlanner, AlgOptRuleOperand operand0, AlgNode[] rels, Map<AlgNode, List<AlgNode>> nodeInputs ) {
         super( volcanoPlanner, operand0, rels.clone(), nodeInputs );
         assert allNotNull( rels, Litmus.THROW );
 
@@ -107,13 +107,13 @@ class VolcanoRuleMatch extends VolcanoRuleCall {
      * @return importance of this rule match
      */
     double computeImportance() {
-        assert rels[0] != null;
-        RelSubset subset = volcanoPlanner.getSubset( rels[0] );
+        assert algs[0] != null;
+        AlgSubset subset = volcanoPlanner.getSubset( algs[0] );
         double importance = 0;
         if ( subset != null ) {
             importance = volcanoPlanner.ruleQueue.getImportance( subset );
         }
-        final RelSubset targetSubset = guessSubset();
+        final AlgSubset targetSubset = guessSubset();
         if ( (targetSubset != null) && (targetSubset != subset) ) {
             // If this rule will generate a member of an equivalence class which is more important, use that importance.
             final double targetImportance = volcanoPlanner.ruleQueue.getImportance( targetSubset );
@@ -143,11 +143,11 @@ class VolcanoRuleMatch extends VolcanoRuleCall {
      */
     private String computeDigest() {
         StringBuilder buf = new StringBuilder( "rule [" + getRule() + "] rels [" );
-        for ( int i = 0; i < rels.length; i++ ) {
+        for ( int i = 0; i < algs.length; i++ ) {
             if ( i > 0 ) {
                 buf.append( ", " );
             }
-            buf.append( rels[i].toString() );
+            buf.append( algs[i].toString() );
         }
         buf.append( "]" );
         return buf.toString();
@@ -167,13 +167,13 @@ class VolcanoRuleMatch extends VolcanoRuleCall {
      *
      * @return expected subset, or null if we cannot guess
      */
-    private RelSubset guessSubset() {
+    private AlgSubset guessSubset() {
         if ( targetSubset != null ) {
             return targetSubset;
         }
-        final RelTrait targetTrait = getRule().getOutTrait();
+        final AlgTrait targetTrait = getRule().getOutTrait();
         if ( (targetSet != null) && (targetTrait != null) ) {
-            final RelTraitSet targetTraitSet = rels[0].getTraitSet().replace( targetTrait );
+            final AlgTraitSet targetTraitSet = algs[0].getTraitSet().replace( targetTrait );
 
             // Find the subset in the target set which matches the expected/ set of traits. It may not exist yet.
             targetSubset = targetSet.getSubset( targetTraitSet );

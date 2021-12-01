@@ -36,18 +36,18 @@ import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.ScottSchema;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Frameworks;
-import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.TestUtil;
@@ -55,7 +55,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Unit test for {@link RelOptUtil} and other classes in this package.
+ * Unit test for {@link AlgOptUtil} and other classes in this package.
  */
 @Ignore
 public class RelOptUtilTest {
@@ -86,14 +86,14 @@ public class RelOptUtilTest {
     }
 
 
-    private static final RelBuilder REL_BUILDER = RelBuilder.create( config().build() );
-    private static final RelNode EMP_SCAN = REL_BUILDER.scan( "EMP" ).build();
-    private static final RelNode DEPT_SCAN = REL_BUILDER.scan( "DEPT" ).build();
+    private static final AlgBuilder REL_BUILDER = AlgBuilder.create( config().build() );
+    private static final AlgNode EMP_SCAN = REL_BUILDER.scan( "EMP" ).build();
+    private static final AlgNode DEPT_SCAN = REL_BUILDER.scan( "DEPT" ).build();
 
-    private static final RelDataType EMP_ROW = EMP_SCAN.getRowType();
-    private static final RelDataType DEPT_ROW = DEPT_SCAN.getRowType();
+    private static final AlgDataType EMP_ROW = EMP_SCAN.getRowType();
+    private static final AlgDataType DEPT_ROW = DEPT_SCAN.getRowType();
 
-    private static final List<RelDataTypeField> EMP_DEPT_JOIN_REL_FIELDS = Lists.newArrayList( Iterables.concat( EMP_ROW.getFieldList(), DEPT_ROW.getFieldList() ) );
+    private static final List<AlgDataTypeField> EMP_DEPT_JOIN_REL_FIELDS = Lists.newArrayList( Iterables.concat( EMP_ROW.getFieldList(), DEPT_ROW.getFieldList() ) );
 
 
     public RelOptUtilTest() {
@@ -102,16 +102,16 @@ public class RelOptUtilTest {
 
     @Test
     public void testTypeDump() {
-        RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        RelDataType t1 = typeFactory.builder()
+        AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        AlgDataType t1 = typeFactory.builder()
                 .add( "f0", null, PolyType.DECIMAL, 5, 2 )
                 .add( "f1", null, PolyType.VARCHAR, 10 )
                 .build();
         TestUtil.assertEqualsVerbose(
                 TestUtil.fold( "f0 DECIMAL(5, 2) NOT NULL,", "f1 VARCHAR(10) NOT NULL" ),
-                Util.toLinux( RelOptUtil.dumpType( t1 ) + "\n" ) );
+                Util.toLinux( AlgOptUtil.dumpType( t1 ) + "\n" ) );
 
-        RelDataType t2 = typeFactory.builder()
+        AlgDataType t2 = typeFactory.builder()
                 .add( "f0", null, t1 )
                 .add( "f1", null, typeFactory.createMultisetType( t1, -1 ) )
                 .build();
@@ -123,7 +123,7 @@ public class RelOptUtilTest {
                         "f1 RECORD (",
                         "  f0 DECIMAL(5, 2) NOT NULL,",
                         "  f1 VARCHAR(10) NOT NULL) NOT NULL MULTISET NOT NULL" ),
-                Util.toLinux( RelOptUtil.dumpType( t2 ) + "\n" ) );
+                Util.toLinux( AlgOptUtil.dumpType( t2 ) + "\n" ) );
     }
 
 
@@ -132,12 +132,12 @@ public class RelOptUtilTest {
      */
     @Test
     public void testRuleGuessDescription() {
-        assertEquals( "Bar", RelOptRule.guessDescription( "com.foo.Bar" ) );
-        assertEquals( "Baz", RelOptRule.guessDescription( "com.flatten.Bar$Baz" ) );
+        assertEquals( "Bar", AlgOptRule.guessDescription( "com.foo.Bar" ) );
+        assertEquals( "Baz", AlgOptRule.guessDescription( "com.flatten.Bar$Baz" ) );
 
         // yields "1" (which as an integer is an invalid
         try {
-            Util.discard( RelOptRule.guessDescription( "com.foo.Bar$1" ) );
+            Util.discard( AlgOptRule.guessDescription( "com.foo.Bar$1" ) );
             fail( "expected exception" );
         } catch ( RuntimeException e ) {
             assertEquals( "Derived description of rule class com.foo.Bar$1 is an integer, not valid. Supply a description manually.", e.getMessage() );
@@ -146,7 +146,7 @@ public class RelOptUtilTest {
 
 
     /**
-     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition
+     * Test {@link AlgOptUtil#splitJoinCondition(AlgNode, AlgNode, RexNode, List, List, List)} where the join condition
      * contains just one which is a EQUAL operator.
      */
     @Test
@@ -169,7 +169,7 @@ public class RelOptUtilTest {
 
 
     /**
-     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition
+     * Test {@link AlgOptUtil#splitJoinCondition(AlgNode, AlgNode, RexNode, List, List, List)} where the join condition
      * contains just one which is a IS NOT DISTINCT operator.
      */
     @Test
@@ -192,7 +192,7 @@ public class RelOptUtilTest {
 
 
     /**
-     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition
+     * Test {@link AlgOptUtil#splitJoinCondition(AlgNode, AlgNode, RexNode, List, List, List)} where the join condition
      * contains an expanded version of IS NOT DISTINCT
      */
     @Test
@@ -229,7 +229,7 @@ public class RelOptUtilTest {
         List<Integer> actRightKeys = new ArrayList<>();
         List<Boolean> actFilterNulls = new ArrayList<>();
 
-        RexNode actRemaining = RelOptUtil.splitJoinCondition( EMP_SCAN, DEPT_SCAN, joinCond, actLeftKeys, actRightKeys, actFilterNulls );
+        RexNode actRemaining = AlgOptUtil.splitJoinCondition( EMP_SCAN, DEPT_SCAN, joinCond, actLeftKeys, actRightKeys, actFilterNulls );
 
         assertEquals( expRemaining.toString(), actRemaining.toString() );
         assertEquals( expFilterNulls, actFilterNulls );

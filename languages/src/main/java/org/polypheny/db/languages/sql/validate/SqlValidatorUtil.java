@@ -48,14 +48,14 @@ import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.plan.RelOptSchemaWithSampling;
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.AlgOptSchemaWithSampling;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
@@ -78,7 +78,7 @@ public class SqlValidatorUtil {
 
 
     /**
-     * Converts a {@link SqlValidatorScope} into a {@link RelOptTable}. This is only possible if the scope represents an identifier, such as "sales.emp".
+     * Converts a {@link SqlValidatorScope} into a {@link AlgOptTable}. This is only possible if the scope represents an identifier, such as "sales.emp".
      * Otherwise, returns null.
      *
      * @param namespace Namespace
@@ -86,33 +86,33 @@ public class SqlValidatorUtil {
      * @param datasetName Name of sample dataset to substitute, or null to use the regular table
      * @param usedDataset Output parameter which is set to true if a sample dataset is found; may be null
      */
-    public static RelOptTable getRelOptTable( SqlValidatorNamespace namespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset ) {
+    public static AlgOptTable getAlgOptTable( SqlValidatorNamespace namespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset ) {
         if ( namespace.isWrapperFor( TableNamespace.class ) ) {
             final TableNamespace tableNamespace = namespace.unwrap( TableNamespace.class );
-            return getRelOptTable( tableNamespace, catalogReader, datasetName, usedDataset, tableNamespace.extendedFields );
+            return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, tableNamespace.extendedFields );
         } else if ( namespace.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
             final SqlValidatorImpl.DmlNamespace dmlNamespace = namespace.unwrap( SqlValidatorImpl.DmlNamespace.class );
             final SqlValidatorNamespace resolvedNamespace = dmlNamespace.resolve();
             if ( resolvedNamespace.isWrapperFor( TableNamespace.class ) ) {
                 final TableNamespace tableNamespace = resolvedNamespace.unwrap( TableNamespace.class );
                 final ValidatorTable validatorTable = tableNamespace.getTable();
-                final RelDataTypeFactory typeFactory = catalogReader.getTypeFactory();
-                final List<RelDataTypeField> extendedFields =
+                final AlgDataTypeFactory typeFactory = catalogReader.getTypeFactory();
+                final List<AlgDataTypeField> extendedFields =
                         dmlNamespace.extendList == null
                                 ? ImmutableList.of()
                                 : getExtendedColumns( typeFactory, validatorTable, dmlNamespace.extendList );
-                return getRelOptTable( tableNamespace, catalogReader, datasetName, usedDataset, extendedFields );
+                return getAlgOptTable( tableNamespace, catalogReader, datasetName, usedDataset, extendedFields );
             }
         }
         return null;
     }
 
 
-    private static RelOptTable getRelOptTable( TableNamespace tableNamespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset, List<RelDataTypeField> extendedFields ) {
+    private static AlgOptTable getAlgOptTable( TableNamespace tableNamespace, Prepare.CatalogReader catalogReader, String datasetName, boolean[] usedDataset, List<AlgDataTypeField> extendedFields ) {
         final List<String> names = tableNamespace.getTable().getQualifiedName();
-        RelOptTable table;
-        if ( datasetName != null && catalogReader instanceof RelOptSchemaWithSampling ) {
-            final RelOptSchemaWithSampling reader = (RelOptSchemaWithSampling) catalogReader;
+        AlgOptTable table;
+        if ( datasetName != null && catalogReader instanceof AlgOptSchemaWithSampling ) {
+            final AlgOptSchemaWithSampling reader = (AlgOptSchemaWithSampling) catalogReader;
             table = reader.getTableForMember( names, datasetName, usedDataset );
         } else {
             // Schema does not support substitution. Ignore the data set, if any.
@@ -128,8 +128,8 @@ public class SqlValidatorUtil {
     /**
      * Gets a list of extended columns with field indices to the underlying table.
      */
-    public static List<RelDataTypeField> getExtendedColumns( RelDataTypeFactory typeFactory, ValidatorTable table, SqlNodeList extendedColumns ) {
-        final ImmutableList.Builder<RelDataTypeField> extendedFields = ImmutableList.builder();
+    public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, ValidatorTable table, SqlNodeList extendedColumns ) {
+        final ImmutableList.Builder<AlgDataTypeField> extendedFields = ImmutableList.builder();
         final ExtensibleTable extTable = table.unwrap( ExtensibleTable.class );
         int extendedFieldOffset =
                 extTable == null
@@ -138,7 +138,7 @@ public class SqlValidatorUtil {
         for ( final Pair<SqlIdentifier, SqlDataTypeSpec> pair : pairs( extendedColumns ) ) {
             final SqlIdentifier identifier = pair.left;
             final SqlDataTypeSpec type = pair.right;
-            extendedFields.add( new RelDataTypeFieldImpl( identifier.toString(), extendedFieldOffset++, type.deriveType( typeFactory ) ) );
+            extendedFields.add( new AlgDataTypeFieldImpl( identifier.toString(), extendedFieldOffset++, type.deriveType( typeFactory ) ) );
         }
         return extendedFields.build();
     }
@@ -160,10 +160,10 @@ public class SqlValidatorUtil {
      * @param sourceFields The source of column names that determine indexes
      * @param targetFields The target fields to be indexed
      */
-    public static ImmutableMap<Integer, RelDataTypeField> getIndexToFieldMap( List<RelDataTypeField> sourceFields, RelDataType targetFields ) {
-        final ImmutableMap.Builder<Integer, RelDataTypeField> output = ImmutableMap.builder();
-        for ( final RelDataTypeField source : sourceFields ) {
-            final RelDataTypeField target = targetFields.getField( source.getName(), true, false );
+    public static ImmutableMap<Integer, AlgDataTypeField> getIndexToFieldMap( List<AlgDataTypeField> sourceFields, AlgDataType targetFields ) {
+        final ImmutableMap.Builder<Integer, AlgDataTypeField> output = ImmutableMap.builder();
+        for ( final AlgDataTypeField source : sourceFields ) {
+            final AlgDataTypeField target = targetFields.getField( source.getName(), true, false );
             if ( target != null ) {
                 output.put( source.getIndex(), target );
             }
@@ -178,8 +178,8 @@ public class SqlValidatorUtil {
      * @param sourceRowType The source upon which to ordinate the bit set.
      * @param targetRowType The target to overlay on the source to create the bit set.
      */
-    public static ImmutableBitSet getOrdinalBitSet( RelDataType sourceRowType, RelDataType targetRowType ) {
-        Map<Integer, RelDataTypeField> indexToField = getIndexToFieldMap( sourceRowType.getFieldList(), targetRowType );
+    public static ImmutableBitSet getOrdinalBitSet( AlgDataType sourceRowType, AlgDataType targetRowType ) {
+        Map<Integer, AlgDataTypeField> indexToField = getIndexToFieldMap( sourceRowType.getFieldList(), targetRowType );
         return getOrdinalBitSet( sourceRowType, indexToField );
     }
 
@@ -190,8 +190,8 @@ public class SqlValidatorUtil {
      * @param sourceRowType The source upon which to ordinate the bit set.
      * @param indexToField The map of ordinals to target fields.
      */
-    public static ImmutableBitSet getOrdinalBitSet( RelDataType sourceRowType, Map<Integer, RelDataTypeField> indexToField ) {
-        ImmutableBitSet source = ImmutableBitSet.of( Lists.transform( sourceRowType.getFieldList(), RelDataTypeField::getIndex ) );
+    public static ImmutableBitSet getOrdinalBitSet( AlgDataType sourceRowType, Map<Integer, AlgDataTypeField> indexToField ) {
+        ImmutableBitSet source = ImmutableBitSet.of( Lists.transform( sourceRowType.getFieldList(), AlgDataTypeField::getIndex ) );
         ImmutableBitSet target = ImmutableBitSet.of( indexToField.keySet() );
         return source.intersect( target );
     }
@@ -259,12 +259,12 @@ public class SqlValidatorUtil {
     /**
      * Factory method for {@link SqlValidator}.
      */
-    public static SqlValidatorWithHints newValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
+    public static SqlValidatorWithHints newValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
         return new SqlValidatorImpl( opTab, catalogReader, typeFactory, conformance );
     }
 
 
-    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, RelOptTable table ) {
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptTable table ) {
         return getTargetField( rowType, typeFactory, id, catalogReader, table, false );
     }
 
@@ -277,21 +277,21 @@ public class SqlValidatorUtil {
      * @param table the target table or null if it is not a RelOptTable instance
      * @return the target field or null if the name cannot be resolved
      */
-    public static RelDataTypeField getTargetField( RelDataType rowType, RelDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, RelOptTable table, boolean isDocument ) {
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, ValidatorCatalogReader catalogReader, AlgOptTable table, boolean isDocument ) {
         final Table t = table == null ? null : table.unwrap( Table.class );
 
         if ( !(t instanceof CustomColumnResolvingTable) ) {
             final NameMatcher nameMatcher = catalogReader.nameMatcher();
-            RelDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
+            AlgDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
 
             if ( typeField == null && isDocument ) {
-                return new RelDataTypeFieldImpl( id.getSimple(), -1, new BasicPolyType( RelDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) );
+                return new AlgDataTypeFieldImpl( id.getSimple(), -1, new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) );
             }
 
             return typeField;
         }
 
-        final List<Pair<RelDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, typeFactory, id.names );
+        final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, typeFactory, id.names );
         switch ( entries.size() ) {
             case 1:
                 if ( !entries.get( 0 ).getValue().isEmpty() ) {
@@ -364,7 +364,7 @@ public class SqlValidatorUtil {
      * @param rightRowType Row type of right input to the join
      * @return List of columns that occur once on each side
      */
-    public static List<String> deriveNaturalJoinColumnList( NameMatcher nameMatcher, RelDataType leftRowType, RelDataType rightRowType ) {
+    public static List<String> deriveNaturalJoinColumnList( NameMatcher nameMatcher, AlgDataType leftRowType, AlgDataType rightRowType ) {
         final List<String> naturalColumnNames = new ArrayList<>();
         final List<String> leftNames = leftRowType.getFieldNames();
         final List<String> rightNames = rightRowType.getFieldNames();
@@ -508,7 +508,7 @@ public class SqlValidatorUtil {
 
             assert resolved.count() == 1;
             final SqlValidatorScope.Resolve resolve = resolved.only();
-            final RelDataType rowType = resolve.rowType();
+            final AlgDataType rowType = resolve.rowType();
             final int childNamespaceIndex = resolve.path.steps().get( 0 ).i;
 
             int namespaceOffset = 0;
@@ -524,7 +524,7 @@ public class SqlValidatorUtil {
                 }
             }
 
-            RelDataTypeField field = nameMatcher.field( rowType, originalFieldName );
+            AlgDataTypeField field = nameMatcher.field( rowType, originalFieldName );
             int origPos = namespaceOffset + field.getIndex();
 
             groupAnalyzer.groupExprProjection.put( origPos, ref );

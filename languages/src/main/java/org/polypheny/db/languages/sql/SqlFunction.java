@@ -31,7 +31,7 @@ import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -48,7 +48,7 @@ public class SqlFunction extends SqlOperator implements Function {
 
     private final SqlIdentifier sqlIdentifier;
 
-    private final List<RelDataType> paramTypes;
+    private final List<AlgDataType> paramTypes;
 
 
     /**
@@ -84,7 +84,7 @@ public class SqlFunction extends SqlOperator implements Function {
             PolyReturnTypeInference returnTypeInference,
             PolyOperandTypeInference operandTypeInference,
             PolyOperandTypeChecker operandTypeChecker,
-            List<RelDataType> paramTypes,
+            List<AlgDataType> paramTypes,
             FunctionCategory funcType ) {
         this(
                 Util.last( sqlIdentifier.names ),
@@ -108,7 +108,7 @@ public class SqlFunction extends SqlOperator implements Function {
             PolyReturnTypeInference returnTypeInference,
             PolyOperandTypeInference operandTypeInference,
             PolyOperandTypeChecker operandTypeChecker,
-            List<RelDataType> paramTypes,
+            List<AlgDataType> paramTypes,
             FunctionCategory category ) {
         super( name, kind, 100, 100, returnTypeInference, operandTypeInference, operandTypeChecker );
 
@@ -144,7 +144,7 @@ public class SqlFunction extends SqlOperator implements Function {
     /**
      * @return array of parameter types, or null for builtin function
      */
-    public List<RelDataType> getParamTypes() {
+    public List<AlgDataType> getParamTypes() {
         return paramTypes;
     }
 
@@ -206,12 +206,12 @@ public class SqlFunction extends SqlOperator implements Function {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         return deriveType( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call, true );
     }
 
 
-    private RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call, boolean convertRowArgToColumnList ) {
+    private AlgDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call, boolean convertRowArgToColumnList ) {
         // Scope for operands. Usually the same as 'scope'.
         final SqlValidatorScope operandScope = scope.getOperandScope( call );
 
@@ -222,7 +222,7 @@ public class SqlFunction extends SqlOperator implements Function {
 
         final List<Node> args = constructOperandList( validator, call, argNames );
 
-        final List<RelDataType> argTypes = constructArgTypeList( validator, scope, call, args, convertRowArgToColumnList );
+        final List<AlgDataType> argTypes = constructArgTypeList( validator, scope, call, args, convertRowArgToColumnList );
 
         final SqlFunction function = (SqlFunction) SqlUtil.lookupRoutine( validator.getOperatorTable(), getNameAsId(), argTypes, argNames, getFunctionCategory(), SqlSyntax.FUNCTION, getKind() );
         try {

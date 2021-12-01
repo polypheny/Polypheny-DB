@@ -28,20 +28,20 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.tools.Frameworks;
-import org.polypheny.db.tools.PigRelBuilder;
+import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Util;
 
 
 /**
- * Unit test for {@link PigRelBuilder}.
+ * Unit test for {@link PigAlgBuilder}.
  */
 @Ignore
 public class PigRelBuilderTest {
@@ -56,7 +56,7 @@ public class PigRelBuilderTest {
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder()
                 .parserConfig( ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
-                .traitDefs( (List<RelTraitDef>) null )
+                .traitDefs( (List<AlgTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( rootSchema ),
@@ -77,8 +77,8 @@ public class PigRelBuilderTest {
     /**
      * Converts a relational expression to a sting with linux line-endings.
      */
-    private String str( RelNode r ) {
-        return Util.toLinux( RelOptUtil.toString( r ) );
+    private String str( AlgNode r ) {
+        return Util.toLinux( AlgOptUtil.toString( r ) );
     }
 
 
@@ -87,8 +87,8 @@ public class PigRelBuilderTest {
         // Equivalent SQL:
         //   SELECT *
         //   FROM emp
-        final PigRelBuilder builder = PigRelBuilder.create( config().build() );
-        final RelNode root = builder.scan( "EMP" ).build();
+        final PigAlgBuilder builder = PigAlgBuilder.create( config().build() );
+        final AlgNode root = builder.scan( "EMP" ).build();
         assertThat( str( root ), is( "LogicalTableScan(table=[[scott, EMP]])\n" ) );
     }
 
@@ -117,8 +117,8 @@ public class PigRelBuilderTest {
     public void testDistinct() {
         // Syntax:
         //   alias = DISTINCT alias [PARTITION BY partitioner] [PARALLEL n];
-        final PigRelBuilder builder = PigRelBuilder.create( config().build() );
-        final RelNode root = builder
+        final PigAlgBuilder builder = PigAlgBuilder.create( config().build() );
+        final AlgNode root = builder
                 .scan( "EMP" )
                 .project( builder.field( "DEPTNO" ) )
                 .distinct()
@@ -136,8 +136,8 @@ public class PigRelBuilderTest {
         //  FILTER name BY expr
         // Example:
         //  output_var = FILTER input_var BY (field1 is not null);
-        final PigRelBuilder builder = PigRelBuilder.create( config().build() );
-        final RelNode root = builder
+        final PigAlgBuilder builder = PigAlgBuilder.create( config().build() );
+        final AlgNode root = builder
                 .load( "EMP.csv", null, null )
                 .filter( builder.isNotNull( builder.field( "MGR" ) ) )
                 .build();
@@ -160,8 +160,8 @@ public class PigRelBuilderTest {
         //     [PARTITION BY partitioner] [PARALLEL n];
         // Equivalent to Pig Latin:
         //   r = GROUP e BY (deptno, job);
-        final PigRelBuilder builder = PigRelBuilder.create( config().build() );
-        final RelNode root = builder
+        final PigAlgBuilder builder = PigAlgBuilder.create( config().build() );
+        final AlgNode root = builder
                 .scan( "EMP" )
                 .group( null, null, -1, builder.groupKey( "DEPTNO", "JOB" ).alias( "e" ) )
                 .build();
@@ -177,8 +177,8 @@ public class PigRelBuilderTest {
     public void testGroup2() {
         // Equivalent to Pig Latin:
         //   r = GROUP e BY deptno, d BY deptno;
-        final PigRelBuilder builder = PigRelBuilder.create( config().build() );
-        final RelNode root = builder
+        final PigAlgBuilder builder = PigAlgBuilder.create( config().build() );
+        final AlgNode root = builder
                 .scan( "EMP" )
                 .scan( "DEPT" )
                 .group( null, null, -1,
@@ -221,8 +221,8 @@ public class PigRelBuilderTest {
         //   LOAD 'data' [USING function] [AS schema];
         // Equivalent to Pig Latin:
         //   LOAD 'EMPS.csv'
-        final PigRelBuilder builder = PigRelBuilder.create( config().build() );
-        final RelNode root = builder
+        final PigAlgBuilder builder = PigAlgBuilder.create( config().build() );
+        final AlgNode root = builder
                 .load( "EMP.csv", null, null )
                 .build();
         assertThat( str( root ), is( "LogicalTableScan(table=[[scott, EMP]])\n" ) );

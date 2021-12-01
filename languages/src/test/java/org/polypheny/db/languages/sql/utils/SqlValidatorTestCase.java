@@ -34,7 +34,7 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -242,14 +242,14 @@ public class SqlValidatorTestCase {
          *
          * @see #getResultType(String)
          */
-        RelDataType getColumnType( String sql );
+        AlgDataType getColumnType( String sql );
 
         /**
          * Returns the data type of the row returned by a SQL query.
          *
          * For example, <code>getResultType("VALUES (1, 'foo')")</code> returns <code>RecordType(INTEGER EXPR$0, CHAR(3) EXPR#1)</code>.
          */
-        RelDataType getResultType( String sql );
+        AlgDataType getResultType( String sql );
 
         void checkCollation( String sql, String expectedCollationName, Coercibility expectedCoercibility );
 

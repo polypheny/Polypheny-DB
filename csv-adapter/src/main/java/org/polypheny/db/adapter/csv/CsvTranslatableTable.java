@@ -43,9 +43,10 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
@@ -61,7 +62,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     /**
      * Creates a CsvTable.
      */
-    CsvTranslatableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    CsvTranslatableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 
@@ -107,7 +108,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
+    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
         // Request all fields.
         return new CsvTableScan( context.getCluster(), relOptTable, this, fields );
     }

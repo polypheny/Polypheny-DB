@@ -31,7 +31,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlQualified;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.DynamicRecordType;
+import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 

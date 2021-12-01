@@ -44,9 +44,9 @@ import org.polypheny.db.information.InformationKeyValue;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -134,13 +134,13 @@ public class HttpCqlInterface extends QueryInterface {
             requestCounter.incrementAndGet();
             Transaction transaction = getTransaction();
             Statement statement = transaction.createStatement();
-            RelBuilder relBuilder = RelBuilder.create( statement );
+            AlgBuilder algBuilder = AlgBuilder.create( statement );
             JavaTypeFactory typeFactory = transaction.getTypeFactory();
             RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
             Cql2RelConverter cql2RelConverter = new Cql2RelConverter( cqlQuery );
 
-            RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
+            AlgRoot relRoot = cql2RelConverter.convert2Rel( algBuilder, rexBuilder );
 
             return executeAndTransformRelAlg( relRoot, statement, response );
         } catch ( ParseException e ) {
@@ -165,12 +165,12 @@ public class HttpCqlInterface extends QueryInterface {
     }
 
 
-    public String executeAndTransformRelAlg( RelRoot relRoot, final Statement statement, final Response res ) {
+    public String executeAndTransformRelAlg( AlgRoot relRoot, final Statement statement, final Response res ) {
         Result result;
         try {
             // Prepare
             PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
-            log.debug( "RelRoot was prepared." );
+            log.debug( "AlgRoot was prepared." );
 
             @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();

@@ -21,7 +21,7 @@ import lombok.experimental.Accessors;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Function.FunctionType;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -33,9 +33,9 @@ import org.polypheny.db.rex.RexVisitorImpl;
  */
 public class DocumentRules {
 
-    public static boolean containsJson( SingleRel rel ) {
+    public static boolean containsJson( SingleAlg alg ) {
         JsonVisitor visitor = new JsonVisitor();
-        for ( RexNode node : rel.getChildExps() ) {
+        for ( RexNode node : alg.getChildExps() ) {
             node.accept( visitor );
             if ( visitor.containsJson() ) {
                 return true;
@@ -45,7 +45,7 @@ public class DocumentRules {
     }
 
 
-    public static boolean containsDocument( SingleRel project ) {
+    public static boolean containsDocument( SingleAlg project ) {
         DocumentVisitor visitor = new DocumentVisitor();
         for ( RexNode node : project.getChildExps() ) {
             node.accept( visitor );

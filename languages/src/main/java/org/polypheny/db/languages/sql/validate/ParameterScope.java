@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.validate;
 import java.util.Map;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -31,12 +31,12 @@ import org.polypheny.db.rel.type.RelDataType;
 public class ParameterScope extends EmptyScope {
 
     /**
-     * Map from the simple names of the parameters to types of the parameters ({@link RelDataType}).
+     * Map from the simple names of the parameters to types of the parameters ({@link AlgDataType}).
      */
-    private final Map<String, RelDataType> nameToTypeMap;
+    private final Map<String, AlgDataType> nameToTypeMap;
 
 
-    public ParameterScope( SqlValidatorImpl validator, Map<String, RelDataType> nameToTypeMap ) {
+    public ParameterScope( SqlValidatorImpl validator, Map<String, AlgDataType> nameToTypeMap ) {
         super( validator );
         this.nameToTypeMap = nameToTypeMap;
     }

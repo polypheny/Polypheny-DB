@@ -52,9 +52,9 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.enums.SemiJoinType;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
@@ -86,13 +86,13 @@ public class EnumUtils {
     }
 
 
-    static Type javaClass( JavaTypeFactory typeFactory, RelDataType type ) {
+    static Type javaClass( JavaTypeFactory typeFactory, AlgDataType type ) {
         final Type clazz = typeFactory.getJavaClass( type );
         return clazz instanceof Class ? clazz : Object[].class;
     }
 
 
-    public static Class javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
+    public static Class javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
         if ( type.isStruct() && type.getFieldCount() == 1 ) {
             type = type.getFieldList().get( 0 ).getType();
         }
@@ -101,7 +101,7 @@ public class EnumUtils {
     }
 
 
-    static List<Type> fieldTypes( final JavaTypeFactory typeFactory, final List<? extends RelDataType> inputTypes ) {
+    static List<Type> fieldTypes( final JavaTypeFactory typeFactory, final List<? extends AlgDataType> inputTypes ) {
         return new AbstractList<Type>() {
             @Override
             public Type get( int index ) {
@@ -117,11 +117,11 @@ public class EnumUtils {
     }
 
 
-    static List<RelDataType> fieldRowTypes( final RelDataType inputRowType, final List<? extends RexNode> extraInputs, final List<Integer> argList ) {
-        final List<RelDataTypeField> inputFields = inputRowType.getFieldList();
-        return new AbstractList<RelDataType>() {
+    static List<AlgDataType> fieldRowTypes( final AlgDataType inputRowType, final List<? extends RexNode> extraInputs, final List<Integer> argList ) {
+        final List<AlgDataTypeField> inputFields = inputRowType.getFieldList();
+        return new AbstractList<AlgDataType>() {
             @Override
-            public RelDataType get( int index ) {
+            public AlgDataType get( int index ) {
                 final int arg = argList.get( index );
                 return arg < inputFields.size()
                         ? inputFields.get( arg ).getType()
@@ -138,18 +138,18 @@ public class EnumUtils {
 
 
     static Expression joinSelector( SemiJoinType semiJoinType, PhysType physType, List<PhysType> inputPhysTypes ) {
-        JoinRelType joinRelType;
+        JoinAlgType joinAlgType;
         if ( semiJoinType.returnsJustFirstInput() ) {
             // Actual join type does not matter much, joinSelector would skip selection of the columns that are not required (see if (expressions.size() == outputFieldCount) {)
-            joinRelType = JoinRelType.INNER;
+            joinAlgType = JoinAlgType.INNER;
         } else {
-            joinRelType = semiJoinType.toJoinType();
+            joinAlgType = semiJoinType.toJoinType();
         }
-        return joinSelector( joinRelType, physType, inputPhysTypes );
+        return joinSelector( joinAlgType, physType, inputPhysTypes );
     }
 
 
-    static Expression joinSelector( JoinRelType joinType, PhysType physType, List<PhysType> inputPhysTypes ) {
+    static Expression joinSelector( JoinAlgType joinType, PhysType physType, List<PhysType> inputPhysTypes ) {
         // A parameter for each input.
         final List<ParameterExpression> parameters = new ArrayList<>();
 
@@ -233,7 +233,7 @@ public class EnumUtils {
     }
 
 
-    static Type toInternal( RelDataType type ) {
+    static Type toInternal( AlgDataType type ) {
         switch ( type.getPolyType() ) {
             case DATE:
             case TIME:

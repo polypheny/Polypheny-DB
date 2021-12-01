@@ -35,9 +35,9 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Sort;
 
 
 /**
@@ -51,12 +51,12 @@ class EnumerableSortRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final Sort sort = (Sort) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final Sort sort = (Sort) alg;
         if ( sort.offset != null || sort.fetch != null ) {
             return null;
         }
-        final RelNode input = sort.getInput();
+        final AlgNode input = sort.getInput();
         return EnumerableSort.create(
                 convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
                 sort.getCollation(),

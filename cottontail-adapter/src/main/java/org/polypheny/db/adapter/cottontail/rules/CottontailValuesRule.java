@@ -18,23 +18,23 @@ package org.polypheny.db.adapter.cottontail.rules;
 
 
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailValues;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailValues;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 public class CottontailValuesRule extends CottontailConverterRule {
 
-    CottontailValuesRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Values.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraValuesRule:" + out.getName() );
+    CottontailValuesRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Values.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraValuesRule:" + out.getName() );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        Values values = (Values) rel;
+    public AlgNode convert( AlgNode alg ) {
+        Values values = (Values) alg;
 
         return new CottontailValues(
                 values.getCluster(),

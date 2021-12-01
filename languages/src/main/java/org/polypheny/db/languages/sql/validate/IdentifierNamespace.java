@@ -34,8 +34,8 @@ import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 
@@ -151,7 +151,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     @Override
-    public RelDataType validateImpl( RelDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType ) {
         resolvedNamespace = Objects.requireNonNull( resolveImpl( id ) );
         if ( resolvedNamespace instanceof TableNamespace ) {
             ValidatorTable table = resolvedNamespace.getTable();
@@ -174,7 +174,7 @@ public class IdentifierNamespace extends AbstractNamespace {
             }
         }
 
-        RelDataType rowType = resolvedNamespace.getRowType();
+        AlgDataType rowType = resolvedNamespace.getRowType();
 
         if ( extendList != null ) {
             if ( !(resolvedNamespace instanceof TableNamespace) ) {
@@ -186,8 +186,8 @@ public class IdentifierNamespace extends AbstractNamespace {
 
         // Build a list of monotonic expressions.
         final ImmutableList.Builder<Pair<SqlNode, Monotonicity>> builder = ImmutableList.builder();
-        List<RelDataTypeField> fields = rowType.getFieldList();
-        for ( RelDataTypeField field : fields ) {
+        List<AlgDataTypeField> fields = rowType.getFieldList();
+        for ( AlgDataTypeField field : fields ) {
             final String fieldName = field.getName();
             final Monotonicity monotonicity = resolvedNamespace.getMonotonicity( fieldName );
             if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {

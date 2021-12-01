@@ -41,7 +41,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.polypheny.db.plan.RelOptRule.operand;
+import static org.polypheny.db.plan.AlgOptRule.operand;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -59,7 +59,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.JdbcConvention;
 import org.polypheny.db.adapter.jdbc.JdbcImplementor;
-import org.polypheny.db.adapter.jdbc.JdbcRel;
+import org.polypheny.db.adapter.jdbc.JdbcAlg;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.enums.ExplainFormat;
@@ -83,36 +83,36 @@ import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.rules.FilterMergeRule;
-import org.polypheny.db.rel.rules.LoptOptimizeJoinRule;
-import org.polypheny.db.rel.rules.ProjectMergeRule;
-import org.polypheny.db.rel.rules.ProjectToWindowRule;
-import org.polypheny.db.rel.rules.SortJoinTransposeRule;
-import org.polypheny.db.rel.rules.SortProjectTransposeRule;
-import org.polypheny.db.rel.rules.SortRemoveRule;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.rules.FilterMergeRule;
+import org.polypheny.db.algebra.rules.LoptOptimizeJoinRule;
+import org.polypheny.db.algebra.rules.ProjectMergeRule;
+import org.polypheny.db.algebra.rules.ProjectToWindowRule;
+import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
+import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
+import org.polypheny.db.algebra.rules.SortRemoveRule;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TpchSchema;
 import org.polypheny.db.test.PolyphenyDbAssert;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.tools.RelConversionException;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.tools.ValidationException;
@@ -134,8 +134,8 @@ public class PlannerTest {
         assertThat( Util.toLinux( parse.toString() ), equalTo( queryFromParseTree ) );
 
         Node validate = planner.validate( parse );
-        RelNode rel = planner.rel( validate ).project();
-        assertThat( toString( rel ), equalTo( expectedRelExpr ) );
+        AlgNode alg = planner.alg( validate ).project();
+        assertThat( toString( alg ), equalTo( expectedRelExpr ) );
     }
 
 
@@ -187,8 +187,8 @@ public class PlannerTest {
     }
 
 
-    private String toString( RelNode rel ) {
-        return Util.toLinux( RelOptUtil.dumpPlan( "", rel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
+    private String toString( AlgNode alg ) {
+        return Util.toLinux( AlgOptUtil.dumpPlan( "", alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
     }
 
 
@@ -273,12 +273,12 @@ public class PlannerTest {
     }
 
 
-    private Planner getPlanner( List<RelTraitDef> traitDefs, Program... programs ) {
+    private Planner getPlanner( List<AlgTraitDef> traitDefs, Program... programs ) {
         return getPlanner( traitDefs, Parser.ParserConfig.DEFAULT, programs );
     }
 
 
-    private Planner getPlanner( List<RelTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
+    private Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
@@ -306,15 +306,15 @@ public class PlannerTest {
 
 
     /**
-     * Tests that planner throws an error if you pass to {@link Planner#rel(Node)} a {@link SqlNode} that has been parsed but not validated.
+     * Tests that planner throws an error if you pass to {@link Planner#alg(Node)} a {@link SqlNode} that has been parsed but not validated.
      */
     @Test
     public void testConvertWithoutValidateFails() throws Exception {
         Planner planner = getPlanner( null );
         Node parse = planner.parse( "select * from \"emps\"" );
         try {
-            RelRoot rel = planner.rel( parse );
-            fail( "expected error, got " + rel );
+            AlgRoot alg = planner.alg( parse );
+            fail( "expected error, got " + alg );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), containsString( "cannot move from STATE_3_PARSED to STATE_4_VALIDATED" ) );
         }
@@ -322,15 +322,15 @@ public class PlannerTest {
 
 
     /**
-     * Helper method for testing {@link RelMetadataQuery#getPulledUpPredicates} metadata.
+     * Helper method for testing {@link AlgMetadataQuery#getPulledUpPredicates} metadata.
      */
     private void checkMetadataPredicates( String sql, String expectedPredicates ) throws Exception {
         Planner planner = getPlanner( null );
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
-        RelNode rel = planner.rel( validate ).project();
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
-        final RelOptPredicateList predicates = mq.getPulledUpPredicates( rel );
+        AlgNode alg = planner.alg( validate ).project();
+        final AlgMetadataQuery mq = AlgMetadataQuery.instance();
+        final AlgOptPredicateList predicates = mq.getPulledUpPredicates( alg );
         final String buf = predicates.pulledUpPredicates.toString();
         assertThat( buf, equalTo( expectedPredicates ) );
     }
@@ -417,9 +417,9 @@ public class PlannerTest {
         Planner planner = getPlanner( null, program );
         Node parse = planner.parse( "select * from \"emps\"" );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).project();
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode convert = planner.alg( validate ).project();
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
                 equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
@@ -435,9 +435,9 @@ public class PlannerTest {
         Planner planner = getPlanner( null, Programs.of( ruleSet ) );
         Node parse = planner.parse( "select * from \"emps\" order by \"emps\".\"deptno\"" );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).project();
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode convert = planner.alg( validate ).project();
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat( toString( transform ),
                 equalTo( "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
@@ -464,9 +464,9 @@ public class PlannerTest {
         Planner planner = getPlanner( null, Programs.of( ruleSet ) );
         Node parse = planner.parse( "select e.\"deptno\" from \"emps\" e left outer join \"depts\" d on e.\"deptno\" = d.\"deptno\" order by e.\"deptno\" limit 10" );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE ).simplify();
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode convert = planner.alg( validate ).alg;
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE ).simplify();
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat( toString( transform ),
                 equalTo( "EnumerableProject(deptno=[$1])\n"
                         + "  EnumerableLimit(fetch=[10])\n"
@@ -481,7 +481,7 @@ public class PlannerTest {
 
     /**
      * Unit test that parses, validates, converts and plans for query using two duplicate order by.
-     * The duplicate order by should be removed by SqlToRelConverter.
+     * The duplicate order by should be removed by SqlToAlgConverter.
      */
     @Test
     public void testDuplicateSortPlan() throws Exception {
@@ -495,7 +495,7 @@ public class PlannerTest {
 
     /**
      * Unit test that parses, validates, converts and plans for query using two duplicate order by.
-     * The duplicate order by should be removed by SqlToRelConverter.
+     * The duplicate order by should be removed by SqlToAlgConverter.
      */
     @Test
     public void testDuplicateSortPlanWithExpr() throws Exception {
@@ -551,21 +551,21 @@ public class PlannerTest {
     }
 
 
-    // If proper "SqlParseException, ValidationException, RelConversionException" is used, then checkstyle fails with
+    // If proper "SqlParseException, ValidationException, AlgConversionException" is used, then checkstyle fails with
     // "Redundant throws: 'ValidationException' listed more then one time"
-    // "Redundant throws: 'RelConversionException' listed more then one time"
+    // "Redundant throws: 'AlgConversionException' listed more then one time"
     private void runDuplicateSortCheck( String sql, String plan ) throws Exception {
         RuleSet ruleSet = RuleSets.ofList( SortRemoveRule.INSTANCE, EnumerableRules.ENUMERABLE_PROJECT_RULE, EnumerableRules.ENUMERABLE_WINDOW_RULE, EnumerableRules.ENUMERABLE_SORT_RULE, ProjectToWindowRule.PROJECT );
         Planner planner = getPlanner( null, Parser.configBuilder().setLex( Lex.JAVA ).build(), Programs.of( ruleSet ) );
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        if ( traitSet.getTrait( RelCollationTraitDef.INSTANCE ) == null ) {
+        AlgNode convert = planner.alg( validate ).alg;
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        if ( traitSet.getTrait( AlgCollationTraitDef.INSTANCE ) == null ) {
             // SortRemoveRule can only work if collation trait is enabled.
             return;
         }
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat( toString( transform ), equalTo( plan ) );
     }
 
@@ -584,9 +584,9 @@ public class PlannerTest {
                         + "order by \"emps\".\"deptno\") "
                         + "order by \"deptno\"" );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode convert = planner.alg( validate ).alg;
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat( toString( transform ),
                 equalTo( "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(empid=[$0], deptno=[$1])\n"
@@ -600,17 +600,17 @@ public class PlannerTest {
     @Test
     public void testPlanWithExplicitTraitDefs() throws Exception {
         RuleSet ruleSet = RuleSets.ofList( FilterMergeRule.INSTANCE, EnumerableRules.ENUMERABLE_FILTER_RULE, EnumerableRules.ENUMERABLE_PROJECT_RULE );
-        final List<RelTraitDef> traitDefs = new ArrayList<>();
+        final List<AlgTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
-        traitDefs.add( RelCollationTraitDef.INSTANCE );
+        traitDefs.add( AlgCollationTraitDef.INSTANCE );
 
         Planner planner = getPlanner( traitDefs, Programs.of( ruleSet ) );
 
         Node parse = planner.parse( "select * from \"emps\"" );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).project();
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode convert = planner.alg( validate ).project();
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
                 equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
@@ -626,10 +626,10 @@ public class PlannerTest {
         Planner planner = getPlanner( null, Programs.of( ruleSet ) );
         Node parse = planner.parse( "select * from \"emps\"" );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).project();
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
-        RelNode transform2 = planner.transform( 0, traitSet, transform );
+        AlgNode convert = planner.alg( validate ).project();
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode transform2 = planner.transform( 0, traitSet, transform );
         assertThat(
                 toString( transform2 ),
                 equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
@@ -642,27 +642,27 @@ public class PlannerTest {
     @Test
     public void testPlanTransformWithRuleNameConflicts() throws Exception {
         // Create two dummy rules with identical rules.
-        RelOptRule rule1 = new RelOptRule( operand( LogicalProject.class, operand( LogicalFilter.class, RelOptRule.any() ) ), "MYRULE" ) {
+        AlgOptRule rule1 = new AlgOptRule( operand( LogicalProject.class, operand( LogicalFilter.class, AlgOptRule.any() ) ), "MYRULE" ) {
             @Override
-            public boolean matches( RelOptRuleCall call ) {
+            public boolean matches( AlgOptRuleCall call ) {
                 return false;
             }
 
 
             @Override
-            public void onMatch( RelOptRuleCall call ) {
+            public void onMatch( AlgOptRuleCall call ) {
             }
         };
 
-        RelOptRule rule2 = new RelOptRule( operand( LogicalFilter.class, operand( LogicalProject.class, RelOptRule.any() ) ), "MYRULE" ) {
+        AlgOptRule rule2 = new AlgOptRule( operand( LogicalFilter.class, operand( LogicalProject.class, AlgOptRule.any() ) ), "MYRULE" ) {
             @Override
-            public boolean matches( RelOptRuleCall call ) {
+            public boolean matches( AlgOptRuleCall call ) {
                 return false;
             }
 
 
             @Override
-            public void onMatch( RelOptRuleCall call ) {
+            public void onMatch( AlgOptRuleCall call ) {
             }
         };
 
@@ -673,10 +673,10 @@ public class PlannerTest {
         Planner planner = getPlanner( null, Programs.of( ruleSet1 ), Programs.of( ruleSet2 ) );
         Node parse = planner.parse( "select * from \"emps\"" );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
-        RelNode transform2 = planner.transform( 1, traitSet, transform );
+        AlgNode convert = planner.alg( validate ).alg;
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode transform2 = planner.transform( 1, traitSet, transform );
         assertThat(
                 toString( transform2 ),
                 equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
@@ -714,14 +714,14 @@ public class PlannerTest {
         Node parse = planner.parse( "select T1.\"name\" from \"emps\" as T1 " );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).project();
+        AlgNode convert = planner.alg( validate ).project();
 
-        RelTraitSet traitSet0 = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgTraitSet traitSet0 = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
 
-        RelTraitSet traitSet1 = convert.getTraitSet().replace( out );
+        AlgTraitSet traitSet1 = convert.getTraitSet().replace( out );
 
-        RelNode transform = planner.transform( 0, traitSet0, convert );
-        RelNode transform2 = planner.transform( 1, traitSet1, transform );
+        AlgNode transform = planner.transform( 0, traitSet0, convert );
+        AlgNode transform2 = planner.transform( 1, traitSet1, transform );
         assertThat(
                 toString( transform2 ),
                 equalTo( "JdbcProject(name=[$2])\n  MockJdbcTableScan(table=[[hr, emps]])\n" ) );
@@ -778,9 +778,9 @@ public class PlannerTest {
         Node parse = planner.parse( buf.toString() );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).project();
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode convert = planner.alg( validate ).project();
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
                 containsString( "EnumerableJoin(condition=[=($0, $5)], joinType=[inner])" ) );
@@ -859,9 +859,9 @@ public class PlannerTest {
         Planner planner = getPlanner( null, Programs.heuristicJoinOrder( Programs.RULE_SET, false, 0 ) );
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode convert = planner.alg( validate ).alg;
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat( toString( transform ), containsString( expected ) );
     }
 
@@ -1019,7 +1019,7 @@ public class PlannerTest {
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( schema )
-                .traitDefs( (List<RelTraitDef>) null )
+                .traitDefs( (List<AlgTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( schema ),
@@ -1038,9 +1038,9 @@ public class PlannerTest {
         Node parse = planner.parse( sql );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).project();
-        RelTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode transform = planner.transform( 0, traitSet, convert );
+        AlgNode convert = planner.alg( validate ).project();
+        AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat( toString( transform ), containsString( expected ) );
     }
 
@@ -1056,11 +1056,11 @@ public class PlannerTest {
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final EnumerableProject project = (EnumerableProject) rel;
+        public AlgNode convert( AlgNode alg ) {
+            final EnumerableProject project = (EnumerableProject) alg;
             return new JdbcRules.JdbcProject(
-                    rel.getCluster(),
-                    rel.getTraitSet().replace( getOutConvention() ),
+                    alg.getCluster(),
+                    alg.getTraitSet().replace( getOutConvention() ),
                     convert( project.getInput(), project.getInput().getTraitSet().replace( getOutConvention() ) ),
                     project.getProjects(),
                     project.getRowType() );
@@ -1080,8 +1080,8 @@ public class PlannerTest {
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final EnumerableTableScan scan = (EnumerableTableScan) rel;
+        public AlgNode convert( AlgNode alg ) {
+            final EnumerableTableScan scan = (EnumerableTableScan) alg;
             return new MockJdbcTableScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
         }
 
@@ -1091,23 +1091,23 @@ public class PlannerTest {
     /**
      * Relational expression representing a "mock" scan of a table in a JDBC data source.
      */
-    private static class MockJdbcTableScan extends TableScan implements JdbcRel {
+    private static class MockJdbcTableScan extends TableScan implements JdbcAlg {
 
-        MockJdbcTableScan( RelOptCluster cluster, RelOptTable table, JdbcConvention jdbcConvention ) {
+        MockJdbcTableScan( AlgOptCluster cluster, AlgOptTable table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new MockJdbcTableScan( getCluster(), table, (JdbcConvention) getConvention() );
         }
 
 
         @Override
-        public void register( RelOptPlanner planner ) {
+        public void register( AlgOptPlanner planner ) {
             final JdbcConvention out = (JdbcConvention) getConvention();
-            for ( RelOptRule rule : JdbcRules.rules( out ) ) {
+            for ( AlgOptRule rule : JdbcRules.rules( out ) ) {
                 planner.addRule( rule );
             }
         }
@@ -1169,8 +1169,8 @@ public class PlannerTest {
         try ( Planner p = Frameworks.getPlanner( config ) ) {
             Node n = p.parse( tpchTestQuery );
             n = p.validate( n );
-            RelNode r = p.rel( n ).project();
-            plan = RelOptUtil.toString( r );
+            AlgNode r = p.alg( n ).project();
+            plan = AlgOptUtil.toString( r );
         }
         return plan;
     }
@@ -1188,7 +1188,7 @@ public class PlannerTest {
 
 
         @Override
-        public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+        public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
             // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
             if ( call.isCountStar() ) {
                 return validator.getTypeFactory().createPolyType( PolyType.BIGINT );
@@ -1213,9 +1213,9 @@ public class PlannerTest {
                 + "order by ps.psPartkey, ps.psSupplyCost) t \n"
                 + "order by t.psPartkey";
 
-        List<RelTraitDef> traitDefs = new ArrayList<>();
+        List<AlgTraitDef> traitDefs = new ArrayList<>();
         traitDefs.add( ConventionTraitDef.INSTANCE );
-        traitDefs.add( RelCollationTraitDef.INSTANCE );
+        traitDefs.add( AlgCollationTraitDef.INSTANCE );
         final ParserConfig parserConfig = Parser.configBuilder().setLex( Lex.MYSQL ).build();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
@@ -1239,8 +1239,8 @@ public class PlannerTest {
         try ( Planner p = Frameworks.getPlanner( config ) ) {
             Node n = p.parse( query );
             n = p.validate( n );
-            RelNode r = p.rel( n ).project();
-            plan = RelOptUtil.toString( r );
+            AlgNode r = p.alg( n ).project();
+            plan = AlgOptUtil.toString( r );
             plan = Util.toLinux( plan );
         }
         assertThat(
@@ -1256,7 +1256,7 @@ public class PlannerTest {
      */
     @Test
     public void testMergeProjectForceMode() throws Exception {
-        RuleSet ruleSet = RuleSets.ofList( new ProjectMergeRule( true, RelBuilder.proto( RelFactories.DEFAULT_PROJECT_FACTORY ) ) );
+        RuleSet ruleSet = RuleSets.ofList( new ProjectMergeRule( true, AlgBuilder.proto( AlgFactories.DEFAULT_PROJECT_FACTORY ) ) );
         Planner planner = getPlanner( null, Programs.of( ruleSet ) );
         planner.close();
     }
@@ -1286,7 +1286,7 @@ public class PlannerTest {
     }
 
 
-    private void checkView( String sql, Matcher<String> matcher ) throws NodeParseException, ValidationException, RelConversionException {
+    private void checkView( String sql, Matcher<String> matcher ) throws NodeParseException, ValidationException, AlgConversionException {
         final SchemaPlus schema = Frameworks
                 .createRootSchema( true )
                 .add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
@@ -1309,8 +1309,8 @@ public class PlannerTest {
         final Planner planner = Frameworks.getPlanner( config );
         Node parse = planner.parse( sql );
         final Node validate = planner.validate( parse );
-        final RelRoot root = planner.rel( validate );
-        assertThat( toString( root.rel ), matcher );
+        final AlgRoot root = planner.alg( validate );
+        assertThat( toString( root.alg ), matcher );
     }
 
 }

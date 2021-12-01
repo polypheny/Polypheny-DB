@@ -129,7 +129,7 @@ select distinct count(*) as c from emp group by deptno order by 1 desc;
 
 !ok
 
-# Test cases for "RelBuilder wrongly skips creation of Aggregate that prunes columns if input is unique"
+# Test cases for "AlgBuilder wrongly skips creation of Aggregate that prunes columns if input is unique"
 select distinct deptno
 from (select deptno, count(*) from emp group by deptno);
 +--------+

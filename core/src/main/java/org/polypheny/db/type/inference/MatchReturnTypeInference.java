@@ -21,7 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 
@@ -57,9 +57,9 @@ public class MatchReturnTypeInference implements PolyReturnTypeInference {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         for ( int i = start; i < opBinding.getOperandCount(); i++ ) {
-            RelDataType argType = opBinding.getOperandType( i );
+            AlgDataType argType = opBinding.getOperandType( i );
             if ( PolyTypeUtil.isOfSameTypeName( typeNames, argType ) ) {
                 return argType;
             }

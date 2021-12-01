@@ -23,24 +23,24 @@ import static org.junit.Assert.assertThat;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.plan.RelOptListener;
+import org.polypheny.db.plan.AlgOptListener;
 import org.polypheny.db.plan.hep.HepMatchOrder;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalIntersect;
-import org.polypheny.db.rel.logical.LogicalUnion;
-import org.polypheny.db.rel.rules.CalcMergeRule;
-import org.polypheny.db.rel.rules.CoerceInputsRule;
-import org.polypheny.db.rel.rules.FilterToCalcRule;
-import org.polypheny.db.rel.rules.ProjectRemoveRule;
-import org.polypheny.db.rel.rules.ProjectToCalcRule;
-import org.polypheny.db.rel.rules.ReduceExpressionsRule;
-import org.polypheny.db.rel.rules.UnionToDistinctRule;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.LogicalIntersect;
+import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.rules.CalcMergeRule;
+import org.polypheny.db.algebra.rules.CoerceInputsRule;
+import org.polypheny.db.algebra.rules.FilterToCalcRule;
+import org.polypheny.db.algebra.rules.ProjectRemoveRule;
+import org.polypheny.db.algebra.rules.ProjectToCalcRule;
+import org.polypheny.db.algebra.rules.ReduceExpressionsRule;
+import org.polypheny.db.algebra.rules.UnionToDistinctRule;
 
 
 /**
@@ -91,8 +91,8 @@ public class HepPlannerTest extends RelOptTestBase {
 
         HepPlanner planner = new HepPlanner( programBuilder.build() );
 
-        planner.addRule( new CoerceInputsRule( LogicalUnion.class, false, RelFactories.LOGICAL_BUILDER ) );
-        planner.addRule( new CoerceInputsRule( LogicalIntersect.class, false, RelFactories.LOGICAL_BUILDER ) );
+        planner.addRule( new CoerceInputsRule( LogicalUnion.class, false, AlgFactories.LOGICAL_BUILDER ) );
+        planner.addRule( new CoerceInputsRule( LogicalIntersect.class, false, AlgFactories.LOGICAL_BUILDER ) );
 
         checkPlanning( planner, "(select name from dept union select ename from emp) intersect (select fname from customer.contact)" );
     }
@@ -114,7 +114,7 @@ public class HepPlannerTest extends RelOptTestBase {
 
 
     /**
-     * Ensures {@link AbstractRelNode} digest does not include full digest tree.
+     * Ensures {@link AbstractAlgNode} digest does not include full digest tree.
      */
     @Test
     public void relDigestLength() {
@@ -128,9 +128,9 @@ public class HepPlannerTest extends RelOptTestBase {
             sb.append( " union all select name from sales.dept" );
         }
         sb.append( ")" );
-        RelRoot root = tester.convertSqlToRel( sb.toString() );
-        planner.setRoot( root.rel );
-        RelNode best = planner.findBestExp();
+        AlgRoot root = tester.convertSqlToRel( sb.toString() );
+        planner.setRoot( root.alg );
+        AlgNode best = planner.findBestExp();
 
         // Good digest should look like rel#66:LogicalProject(input=rel#64:LogicalUnion)
         // Bad digest includes full tree like rel#66:LogicalProject(input=rel#64:LogicalUnion(...))
@@ -218,8 +218,8 @@ public class HepPlannerTest extends RelOptTestBase {
         planner.addListener( listener );
 
         final String sql = "(select 1 from dept where abs(-1)=20)\n" + "union all\n" + "(select 1 from dept where abs(-1)=20)";
-        planner.setRoot( tester.convertSqlToRel( sql ).rel );
-        RelNode bestRel = planner.findBestExp();
+        planner.setRoot( tester.convertSqlToRel( sql ).alg );
+        AlgNode bestRel = planner.findBestExp();
 
         assertThat( bestRel.getInput( 0 ).equals( bestRel.getInput( 1 ) ), is( true ) );
         assertThat( listener.getApplyTimes() == 1, is( true ) );
@@ -266,10 +266,10 @@ public class HepPlannerTest extends RelOptTestBase {
         programBuilder.addRuleInstance( FilterToCalcRule.INSTANCE );
 
         HepPlanner planner = new HepPlanner( programBuilder.build() );
-        planner.setRoot( tester.convertSqlToRel( "select upper(name) from dept where deptno=20" ).rel );
+        planner.setRoot( tester.convertSqlToRel( "select upper(name) from dept where deptno=20" ).alg );
         planner.findBestExp();
         // Reuse of HepPlanner (should trigger GC).
-        planner.setRoot( tester.convertSqlToRel( "select upper(name) from dept where deptno=20" ).rel );
+        planner.setRoot( tester.convertSqlToRel( "select upper(name) from dept where deptno=20" ).alg );
         planner.findBestExp();
     }
 
@@ -293,7 +293,7 @@ public class HepPlannerTest extends RelOptTestBase {
         final HepTestListener listener = new HepTestListener( 0 );
         HepPlanner planner = new HepPlanner( programBuilder.build() );
         planner.addListener( listener );
-        planner.setRoot( tester.convertSqlToRel( COMPLEX_UNION_TREE ).rel );
+        planner.setRoot( tester.convertSqlToRel( COMPLEX_UNION_TREE ).alg );
         planner.findBestExp();
         return listener.getApplyTimes();
     }
@@ -302,7 +302,7 @@ public class HepPlannerTest extends RelOptTestBase {
     /**
      * Listener for HepPlannerTest; counts how many times rules fire.
      */
-    private static class HepTestListener implements RelOptListener {
+    private static class HepTestListener implements AlgOptListener {
 
         private long applyTimes;
 

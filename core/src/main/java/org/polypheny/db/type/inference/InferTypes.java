@@ -20,8 +20,8 @@ package org.polypheny.db.type.inference;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 
 
@@ -42,8 +42,8 @@ public abstract class InferTypes {
      */
     public static final PolyOperandTypeInference FIRST_KNOWN =
             ( callBinding, returnType, operandTypes ) -> {
-                final RelDataType unknownType = callBinding.getValidator().getUnknownType();
-                RelDataType knownType = unknownType;
+                final AlgDataType unknownType = callBinding.getValidator().getUnknownType();
+                AlgDataType knownType = unknownType;
                 for ( Node operand : callBinding.operands() ) {
                     knownType = callBinding.getValidator().deriveType( callBinding.getScope(), operand );
                     if ( !knownType.equals( unknownType ) ) {
@@ -78,7 +78,7 @@ public abstract class InferTypes {
      */
     public static final PolyOperandTypeInference BOOLEAN =
             ( callBinding, returnType, operandTypes ) -> {
-                RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
+                AlgDataTypeFactory typeFactory = callBinding.getTypeFactory();
                 for ( int i = 0; i < operandTypes.length; ++i ) {
                     operandTypes[i] = typeFactory.createPolyType( PolyType.BOOLEAN );
                 }
@@ -91,7 +91,7 @@ public abstract class InferTypes {
      */
     public static final PolyOperandTypeInference VARCHAR_1024 =
             ( callBinding, returnType, operandTypes ) -> {
-                RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
+                AlgDataTypeFactory typeFactory = callBinding.getTypeFactory();
                 for ( int i = 0; i < operandTypes.length; ++i ) {
                     operandTypes[i] = typeFactory.createPolyType( PolyType.VARCHAR, 1024 );
                 }
@@ -101,7 +101,7 @@ public abstract class InferTypes {
     /**
      * Returns an {@link PolyOperandTypeInference} that returns a given list of types.
      */
-    public static PolyOperandTypeInference explicit( List<RelDataType> types ) {
+    public static PolyOperandTypeInference explicit( List<AlgDataType> types ) {
         return new ExplicitOperandTypeInference( ImmutableList.copyOf( types ) );
     }
 

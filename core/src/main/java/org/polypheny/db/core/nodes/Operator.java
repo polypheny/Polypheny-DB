@@ -26,8 +26,8 @@ import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.util.Litmus;
 
 public interface Operator {
@@ -40,11 +40,11 @@ public interface Operator {
 
     Call createCall( Literal functionQualifier, ParserPos pos, Node... operands );
 
-    RelDataType inferReturnType( OperatorBinding opBinding );
+    AlgDataType inferReturnType( OperatorBinding opBinding );
 
-    RelDataType deriveType( Validator validator, ValidatorScope scope, Call call );
+    AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call );
 
-    RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes );
+    AlgDataType inferReturnType( AlgDataTypeFactory typeFactory, List<AlgDataType> operandTypes );
 
     abstract Kind getKind();
 

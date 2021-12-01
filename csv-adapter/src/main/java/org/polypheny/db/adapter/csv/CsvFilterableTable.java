@@ -41,7 +41,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -60,7 +60,7 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    public CsvFilterableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 

@@ -35,6 +35,24 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.ConditionalExecute;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.SetOp;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -53,28 +71,10 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.prepare.RelOptTableImpl;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.ConditionalExecute;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.core.SetOp;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
-import org.polypheny.db.rel.logical.LogicalDocuments;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalModifyCollect;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -87,7 +87,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -102,7 +102,7 @@ public abstract class AbstractRouter implements Router {
 
 
     private final Map<Integer, List<String>> filterMap = new HashMap<>();
-    private static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
+    private static final Cache<Integer, AlgNode> joinedTableScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
 
@@ -112,7 +112,7 @@ public abstract class AbstractRouter implements Router {
 
 
     @Override
-    public RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+    public AlgRoot route( AlgRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         this.executionTimeMonitor = executionTimeMonitor;
         this.selectedAdapter = new HashMap<>();
 
@@ -123,15 +123,15 @@ public abstract class AbstractRouter implements Router {
             queryAnalyzer.addPage( page );
         }
 
-        RelNode routed;
+        AlgNode routed;
         analyze( statement, logicalRoot );
-        if ( logicalRoot.rel instanceof LogicalTableModify ) {
-            routed = routeDml( logicalRoot.rel, statement );
-        } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
-            routed = handleConditionalExecute( logicalRoot.rel, statement );
+        if ( logicalRoot.alg instanceof LogicalTableModify ) {
+            routed = routeDml( logicalRoot.alg, statement );
+        } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
+            routed = handleConditionalExecute( logicalRoot.alg, statement );
         } else {
-            RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
-            builder = buildDql( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster() );
+            AlgBuilder builder = AlgBuilder.create( statement, logicalRoot.alg.getCluster() );
+            builder = buildDql( logicalRoot.alg, builder, statement, logicalRoot.alg.getCluster() );
             routed = builder.build();
         }
 
@@ -151,7 +151,7 @@ public abstract class AbstractRouter implements Router {
             statement.getTransaction().getQueryAnalyzer().registerInformation( table );
         }
 
-        return new RelRoot(
+        return new AlgRoot(
                 routed,
                 logicalRoot.validatedRowType,
                 logicalRoot.kind,
@@ -160,15 +160,15 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected abstract void analyze( Statement statement, RelRoot logicalRoot );
+    protected abstract void analyze( Statement statement, AlgRoot logicalRoot );
 
-    protected abstract void wrapUp( Statement statement, RelNode routed );
+    protected abstract void wrapUp( Statement statement, AlgNode routed );
 
     // Select the placement on which a table scan should be executed
-    protected abstract List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable catalogTable );
+    protected abstract List<CatalogColumnPlacement> selectPlacement( AlgNode node, CatalogTable catalogTable );
 
 
-    protected RelBuilder buildDql( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+    protected AlgBuilder buildDql( AlgNode node, AlgBuilder builder, Statement statement, AlgOptCluster cluster ) {
         if ( node instanceof SetOp ) {
             return buildSetOp( node, builder, statement, cluster );
         } else {
@@ -177,12 +177,12 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+    protected AlgBuilder buildSelect( AlgNode node, AlgBuilder builder, Statement statement, AlgOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             // Check if partition used in general to reduce overhead if not for un-partitioned
             if ( node instanceof LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
 
-                RelOptTableImpl table = (RelOptTableImpl) ((LogicalFilter) node).getInput().getTable();
+                AlgOptTableImpl table = (AlgOptTableImpl) ((LogicalFilter) node).getInput().getTable();
 
                 if ( table.getTable() instanceof LogicalTable ) {
                     LogicalTable t = ((LogicalTable) table.getTable());
@@ -190,9 +190,9 @@ public abstract class AbstractRouter implements Router {
                     catalogTable = Catalog.getInstance().getTable( t.getTableId() );
                     if ( catalogTable.isPartitioned ) {
                         WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
-                        node.accept( new RelShuttleImpl() {
+                        node.accept( new AlgShuttleImpl() {
                             @Override
-                            public RelNode visit( LogicalFilter filter ) {
+                            public AlgNode visit( LogicalFilter filter ) {
                                 super.visit( filter );
                                 filter.accept( whereClauseVisitor );
                                 return filter;
@@ -226,7 +226,7 @@ public abstract class AbstractRouter implements Router {
         }
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
-            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
 
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
@@ -305,10 +305,10 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildSetOp( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+    protected AlgBuilder buildSetOp( AlgNode node, AlgBuilder builder, Statement statement, AlgOptCluster cluster ) {
         buildDql( node.getInput( 0 ), builder, statement, cluster );
 
-        RelBuilder builder0 = RelBuilder.create( statement, cluster );
+        AlgBuilder builder0 = AlgBuilder.create( statement, cluster );
         buildDql( node.getInput( 1 ), builder0, statement, cluster );
 
         builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek(), builder0.build() ) ) );
@@ -316,10 +316,10 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelNode recursiveCopy( RelNode node ) {
-        List<RelNode> inputs = new LinkedList<>();
+    protected AlgNode recursiveCopy( AlgNode node ) {
+        List<AlgNode> inputs = new LinkedList<>();
         if ( node.getInputs() != null && node.getInputs().size() > 0 ) {
-            for ( RelNode input : node.getInputs() ) {
+            for ( AlgNode input : node.getInputs() ) {
                 inputs.add( recursiveCopy( input ) );
             }
         }
@@ -327,11 +327,11 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelNode handleConditionalExecute( RelNode node, Statement statement ) {
+    protected AlgNode handleConditionalExecute( AlgNode node, Statement statement ) {
         LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
-        RelBuilder builder = RelBuilder.create( statement, node.getCluster() );
+        AlgBuilder builder = AlgBuilder.create( statement, node.getCluster() );
         buildSelect( lce.getLeft(), builder, statement, node.getCluster() );
-        RelNode action;
+        AlgNode action;
         if ( lce.getRight() instanceof LogicalConditionalExecute ) {
             action = handleConditionalExecute( lce.getRight(), statement );
         } else if ( lce.getRight() instanceof TableModify ) {
@@ -344,11 +344,11 @@ public abstract class AbstractRouter implements Router {
 
 
     // Default implementation: Execute DML on all placements
-    protected RelNode routeDml( RelNode node, Statement statement ) {
-        RelOptCluster cluster = node.getCluster();
+    protected AlgNode routeDml( AlgNode node, Statement statement ) {
+        AlgOptCluster cluster = node.getCluster();
 
         if ( node.getTable() != null ) {
-            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 // Get placements of this table
@@ -440,9 +440,9 @@ public abstract class AbstractRouter implements Router {
                         // partitionManager.validatePartitionGroupDistribution( catalogTable );
 
                         WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
-                        node.accept( new RelShuttleImpl() {
+                        node.accept( new AlgShuttleImpl() {
                             @Override
-                            public RelNode visit( LogicalFilter filter ) {
+                            public AlgNode visit( LogicalFilter filter ) {
                                 super.visit( filter );
                                 filter.accept( whereClauseVisitor );
                                 return filter;
@@ -542,9 +542,9 @@ public abstract class AbstractRouter implements Router {
                                             RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
-                                            RelNode input = buildDml(
+                                            {@link AlgNode} input = buildDml(
                                                     recursiveCopy( node.getInput( 0 ) ),
-                                                    RelBuilder.create( statement, cluster ),
+                                                    AlgBuilder.create( statement, cluster ),
                                                     catalogTable,
                                                     placementsOnAdapter,
                                                     catalog.getPartitionPlacement( pkPlacement.adapterId, currentPart ),
@@ -579,9 +579,9 @@ public abstract class AbstractRouter implements Router {
                                             RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
-                                            RelNode input = buildDml(
+                                            {@link AlgNode} input = buildDml(
                                                     recursiveCopy( node.getInput( 0 ) ),
-                                                    RelBuilder.create( statement, cluster ),
+                                                    AlgBuilder.create( statement, cluster ),
                                                     catalogTable,
                                                     placementsOnAdapter,
                                                     catalog.getPartitionPlacement( pkPlacement.adapterId, identifiedPartitionForSetValue ),
@@ -684,9 +684,9 @@ public abstract class AbstractRouter implements Router {
                                                 (((LogicalTableModify) node).getInput()).getRowType(),
                                                 ImmutableList.copyOf( ImmutableList.of( row ) ) );
 
-                                        RelNode input = buildDml(
+                                        AlgNode input = buildDml(
                                                 newLogicalValues,
-                                                RelBuilder.create( statement, cluster ),
+                                                AlgBuilder.create( statement, cluster ),
                                                 catalogTable,
                                                 placementsOnAdapter,
                                                 catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
@@ -702,13 +702,13 @@ public abstract class AbstractRouter implements Router {
                                                         pkPlacement.physicalSchemaName
                                                 ),
                                                 t.getLogicalTableName() + "_" + currentPartitionId );
-                                        RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                                        AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                                         // Build DML
                                         TableModify modify;
 
-                                        modify = modifiableTable.toModificationRel(
+                                        modify = modifiableTable.toModificationAlg(
                                                 cluster,
                                                 physical,
                                                 catalogReader,
@@ -761,9 +761,9 @@ public abstract class AbstractRouter implements Router {
                                                 parameterValues.add( new HashMap<>( newParameterValues ) );
                                                 parameterValues.get( 0 ).putAll( currentRow );
 
-                                                RelNode input = buildDml(
+                                                AlgNode input = buildDml(
                                                         recursiveCopy( node.getInput( 0 ) ),
-                                                        RelBuilder.create( statement, cluster ),
+                                                        AlgBuilder.create( statement, cluster ),
                                                         catalogTable,
                                                         placementsOnAdapter,
                                                         catalog.getPartitionPlacement( pkPlacement.adapterId, tempPartitionId ),
@@ -781,13 +781,13 @@ public abstract class AbstractRouter implements Router {
                                                                 pkPlacement.physicalSchemaName
                                                         ),
                                                         t.getLogicalTableName() + "_" + tempPartitionId );
-                                                RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                                                AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                                 ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                                                 // Build DML
                                                 TableModify modify;
 
-                                                modify = modifiableTable.toModificationRel(
+                                                modify = modifiableTable.toModificationAlg(
                                                         cluster,
                                                         physical,
                                                         catalogReader,
@@ -874,14 +874,14 @@ public abstract class AbstractRouter implements Router {
                                             pkPlacement.physicalSchemaName
                                     ),
                                     t.getLogicalTableName() + "_" + partitionId );
-                            RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                            AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                             // Build DML
                             TableModify modify;
-                            RelNode input = buildDml(
+                            AlgNode input = buildDml(
                                     recursiveCopy( node.getInput( 0 ) ),
-                                    RelBuilder.create( statement, cluster ),
+                                    AlgBuilder.create( statement, cluster ),
                                     catalogTable,
                                     placementsOnAdapter,
                                     catalog.getPartitionPlacement( pkPlacement.adapterId, partitionId ),
@@ -890,7 +890,7 @@ public abstract class AbstractRouter implements Router {
                                     false,
                                     statement.getDataContext().getParameterValues() ).build();
                             if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
-                                modify = modifiableTable.toModificationRel(
+                                modify = modifiableTable.toModificationAlg(
                                         cluster,
                                         physical,
                                         catalogReader,
@@ -931,7 +931,7 @@ public abstract class AbstractRouter implements Router {
                 if ( modifies.size() == 1 ) {
                     return modifies.get( 0 );
                 } else {
-                    RelBuilder builder = RelBuilder.create( statement, cluster );
+                    AlgBuilder builder = AlgBuilder.create( statement, cluster );
                     for ( int i = 0; i < modifies.size(); i++ ) {
                         if ( i == 0 ) {
                             builder.push( modifies.get( i ) );
@@ -952,7 +952,7 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, RelOptCluster cluster, boolean remapParameterValues, List<Map<Long, Object>> parameterValues ) {
+    protected AlgBuilder buildDml( AlgNode node, AlgBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, CatalogPartitionPlacement partitionPlacement, Statement statement, AlgOptCluster cluster, boolean remapParameterValues, List<Map<Long, Object>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             buildDml( node.getInput( i ), builder, catalogTable, placements, partitionPlacement, statement, cluster, remapParameterValues, parameterValues );
         }
@@ -965,7 +965,7 @@ public abstract class AbstractRouter implements Router {
         }
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
-            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
 
             if ( table.getTable() instanceof LogicalTable ) {
                 // Special handling for INSERT INTO foo SELECT * FROM foo2
@@ -1052,7 +1052,7 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    private RelBuilder remapParameterizedDml( RelNode node, RelBuilder builder, Statement statement, List<Map<Long, Object>> parameterValues ) {
+    private AlgBuilder remapParameterizedDml( AlgNode node, AlgBuilder builder, Statement statement, List<Map<Long, Object>> parameterValues ) {
         if ( parameterValues.size() != 1 ) {
             throw new RuntimeException( "The parameter values is expected to have a size of one in this case!" );
         }
@@ -1062,7 +1062,7 @@ public abstract class AbstractRouter implements Router {
             if ( project instanceof RexDynamicParam ) {
                 long newIndex = parameterValues.get( 0 ).size();
                 long oldIndex = ((RexDynamicParam) project).getIndex();
-                RelDataType type = statement.getDataContext().getParameterType( oldIndex );
+                AlgDataType type = statement.getDataContext().getParameterType( oldIndex );
                 if ( type == null ) {
                     type = project.getType();
                 }
@@ -1087,7 +1087,7 @@ public abstract class AbstractRouter implements Router {
     private void dmlConditionCheck( LogicalFilter node, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, RexNode operand ) {
         if ( operand instanceof RexInputRef ) {
             int index = ((RexInputRef) operand).getIndex();
-            RelDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
+            AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
             CatalogColumn column;
             try {
                 String columnName;
@@ -1128,11 +1128,11 @@ public abstract class AbstractRouter implements Router {
 
 
     @Override
-    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
-        RelBuilder builder = RelBuilder.create( statement, cluster );
+    public AlgNode buildJoinedTableScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
+        AlgBuilder builder = AlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            RelNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
+            AlgNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
             if ( cachedNode != null ) {
                 return cachedNode;
             }
@@ -1233,7 +1233,7 @@ public abstract class AbstractRouter implements Router {
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ),
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ) ) );
                         }
-                        builder.join( JoinRelType.INNER, joinConditions );
+                        builder.join( JoinAlgType.INNER, joinConditions );
 
                     }
                 }
@@ -1256,7 +1256,7 @@ public abstract class AbstractRouter implements Router {
             builder.union( true, placements.size() );
         }
 
-        RelNode node = builder.build();
+        AlgNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
             joinedTableScanCache.put( placements.hashCode(), node );
         }
@@ -1264,8 +1264,8 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder handleTableScan(
-            RelBuilder builder,
+    protected AlgBuilder handleTableScan(
+            AlgBuilder builder,
             long tableId,
             String storeUniqueName,
             String logicalSchemaName,
@@ -1282,17 +1282,17 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder handleDocuments( LogicalDocuments node, RelBuilder builder ) {
+    protected AlgBuilder handleDocuments( LogicalDocuments node, AlgBuilder builder ) {
         return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
     }
 
 
-    protected RelBuilder handleValues( LogicalValues node, RelBuilder builder ) {
+    protected AlgBuilder handleValues( LogicalValues node, AlgBuilder builder ) {
         return builder.values( node.tuples, node.getRowType() );
     }
 
 
-    protected RelBuilder handleGeneric( RelNode node, RelBuilder builder ) {
+    protected AlgBuilder handleGeneric( AlgNode node, AlgBuilder builder ) {
         if ( node.getInputs().size() == 1 ) {
             builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
         } else if ( node.getInputs().size() == 2 ) { // Joins, SetOperations

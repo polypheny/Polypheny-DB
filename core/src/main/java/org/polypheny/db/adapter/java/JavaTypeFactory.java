@@ -36,14 +36,14 @@ package org.polypheny.db.adapter.java;
 
 import java.lang.reflect.Type;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
  * Type factory that can register Java classes as record types.
  */
-public interface JavaTypeFactory extends RelDataTypeFactory {
+public interface JavaTypeFactory extends AlgDataTypeFactory {
 
     /**
      * Creates a record type based upon the public fields of a Java class.
@@ -51,7 +51,7 @@ public interface JavaTypeFactory extends RelDataTypeFactory {
      * @param clazz Java class
      * @return Record type that remembers its Java class
      */
-    RelDataType createStructType( Class clazz );
+    AlgDataType createStructType( Class clazz );
 
     /**
      * Creates a type, deducing whether a record, scalar or primitive type is needed.
@@ -59,9 +59,9 @@ public interface JavaTypeFactory extends RelDataTypeFactory {
      * @param type Java type, such as a {@link Class}
      * @return Record or scalar type
      */
-    RelDataType createType( Type type );
+    AlgDataType createType( Type type );
 
-    Type getJavaClass( RelDataType type );
+    Type getJavaClass( AlgDataType type );
 
     /**
      * Creates a synthetic Java class whose fields have the given Java types.
@@ -71,6 +71,6 @@ public interface JavaTypeFactory extends RelDataTypeFactory {
     /**
      * Converts a type in Java format to a SQL-oriented type.
      */
-    RelDataType toSql( RelDataType type );
+    AlgDataType toSql( AlgDataType type );
 }
 

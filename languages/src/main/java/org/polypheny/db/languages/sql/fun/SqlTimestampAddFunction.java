@@ -21,8 +21,8 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -61,7 +61,7 @@ public class SqlTimestampAddFunction extends SqlFunction {
 
     private static final PolyReturnTypeInference RETURN_TYPE_INFERENCE =
             opBinding -> {
-                final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+                final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
                 return deduceType(
                         typeFactory,
                         opBinding.getOperandLiteralValue( 0, TimeUnit.class ),
@@ -70,8 +70,8 @@ public class SqlTimestampAddFunction extends SqlFunction {
             };
 
 
-    public static RelDataType deduceType( RelDataTypeFactory typeFactory, TimeUnit timeUnit, RelDataType operandType1, RelDataType operandType2 ) {
-        final RelDataType type;
+    public static AlgDataType deduceType( AlgDataTypeFactory typeFactory, TimeUnit timeUnit, AlgDataType operandType1, AlgDataType operandType2 ) {
+        final AlgDataType type;
         switch ( timeUnit ) {
             case HOUR:
             case MINUTE:

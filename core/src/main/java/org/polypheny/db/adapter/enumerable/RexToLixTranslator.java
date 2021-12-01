@@ -68,8 +68,8 @@ import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -185,7 +185,7 @@ public class RexToLixTranslator {
             InputGetter inputGetter, Function1<String, InputGetter> correlates, UnwindContext unwindContext ) {
         List<Type> storageTypes = null;
         if ( outputPhysType != null ) {
-            final RelDataType rowType = outputPhysType.getRowType();
+            final AlgDataType rowType = outputPhysType.getRowType();
             storageTypes = new ArrayList<>( rowType.getFieldCount() );
             for ( int i = 0; i < rowType.getFieldCount(); i++ ) {
                 storageTypes.add( outputPhysType.getJavaFieldType( i ) );
@@ -232,7 +232,7 @@ public class RexToLixTranslator {
     }
 
 
-    Expression translateCast( RelDataType sourceType, RelDataType targetType, Expression operand ) {
+    Expression translateCast( AlgDataType sourceType, AlgDataType targetType, Expression operand ) {
         Expression convert = null;
         switch ( targetType.getPolyType() ) {
             case ANY:
@@ -544,7 +544,7 @@ public class RexToLixTranslator {
                 break;
             case TIMESTAMP:
                 int targetScale = targetType.getScale();
-                if ( targetScale == RelDataType.SCALE_NOT_SPECIFIED ) {
+                if ( targetScale == AlgDataType.SCALE_NOT_SPECIFIED ) {
                     targetScale = 0;
                 }
                 if ( targetScale < sourceType.getScale() ) {
@@ -733,7 +733,7 @@ public class RexToLixTranslator {
      *
      * @throws AlwaysNull if literal is null but {@code nullAs} is {@link org.polypheny.db.adapter.enumerable.RexImpTable.NullAs#NOT_POSSIBLE}.
      */
-    public static Expression translateLiteral( RexLiteral literal, RelDataType type, JavaTypeFactory typeFactory, RexImpTable.NullAs nullAs ) {
+    public static Expression translateLiteral( RexLiteral literal, AlgDataType type, JavaTypeFactory typeFactory, RexImpTable.NullAs nullAs ) {
         if ( literal.isNull() ) {
             switch ( nullAs ) {
                 case TRUE:
@@ -1196,7 +1196,7 @@ public class RexToLixTranslator {
     }
 
 
-    public RelDataType nullifyType( RelDataType type, boolean nullable ) {
+    public AlgDataType nullifyType( AlgDataType type, boolean nullable ) {
         if ( !nullable ) {
             final Primitive primitive = javaPrimitive( type );
             if ( primitive != null ) {
@@ -1207,9 +1207,9 @@ public class RexToLixTranslator {
     }
 
 
-    private Primitive javaPrimitive( RelDataType type ) {
-        if ( type instanceof RelDataTypeFactoryImpl.JavaType ) {
-            return Primitive.ofBox( ((RelDataTypeFactoryImpl.JavaType) type).getJavaClass() );
+    private Primitive javaPrimitive( AlgDataType type ) {
+        if ( type instanceof AlgDataTypeFactoryImpl.JavaType ) {
+            return Primitive.ofBox( ((AlgDataTypeFactoryImpl.JavaType) type).getJavaClass() );
         }
         return null;
     }
@@ -1220,7 +1220,7 @@ public class RexToLixTranslator {
     }
 
 
-    private static Expression scaleIntervalToNumber( RelDataType sourceType, RelDataType targetType, Expression operand ) {
+    private static Expression scaleIntervalToNumber( AlgDataType sourceType, AlgDataType targetType, Expression operand ) {
         switch ( targetType.getPolyType().getFamily() ) {
             case NUMERIC:
                 switch ( sourceType.getPolyType() ) {

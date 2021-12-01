@@ -204,7 +204,7 @@ public interface PolyphenyDbResource {
     ExInst<SqlValidatorException> notValidJson( String a0, String a1 );
 
     /**
-     * Same message as {@link #tableNameNotFound(String)} but a different kind of exception, so it can be used in {@code RelBuilder}.
+     * Same message as {@link #tableNameNotFound(String)} but a different kind of exception, so it can be used in {@code AlgBuilder}.
      */
     @BaseMessage("Table ''{0}'' not found")
     ExInst<PolyphenyDbException> tableNotFound( String tableName );

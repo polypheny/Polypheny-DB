@@ -20,10 +20,10 @@ package org.polypheny.db.processing;
 import lombok.Getter;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rel.rules.AggregateReduceFunctionsRule;
-import org.polypheny.db.rel.rules.CalcSplitRule;
-import org.polypheny.db.rel.rules.FilterTableScanRule;
-import org.polypheny.db.rel.rules.ProjectTableScanRule;
+import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
+import org.polypheny.db.algebra.rules.CalcSplitRule;
+import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.ProjectTableScanRule;
 import org.polypheny.db.transaction.Statement;
 
 

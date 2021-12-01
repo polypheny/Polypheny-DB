@@ -52,8 +52,8 @@ import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.hamcrest.core.Is;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.util.Util;
 
 
@@ -182,13 +182,13 @@ public class Matchers {
 
 
     /**
-     * Creates a Matcher that matches a {@link RelNode} its string representation, after converting Windows-style line endings ("\r\n") to Unix-style line endings ("\n"), is equal to the given {@code value}.
+     * Creates a Matcher that matches a {@link AlgNode} its string representation, after converting Windows-style line endings ("\r\n") to Unix-style line endings ("\n"), is equal to the given {@code value}.
      */
     @Factory
-    public static Matcher<RelNode> hasTree( final String value ) {
+    public static Matcher<AlgNode> hasTree( final String value ) {
         return compose( Is.is( value ), input -> {
-            // Convert RelNode to a string with Linux line-endings
-            return Util.toLinux( RelOptUtil.toString( input ) );
+            // Convert {@link AlgNode} to a string with Linux line-endings
+            return Util.toLinux( AlgOptUtil.toString( input ) );
         } );
     }
 

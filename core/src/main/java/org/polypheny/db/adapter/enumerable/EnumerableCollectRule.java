@@ -35,14 +35,14 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.Collect;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Collect;
 
 
 /**
- * Rule to convert an {@link org.polypheny.db.rel.core.Collect} to an {@link EnumerableCollect}.
+ * Rule to convert an {@link org.polypheny.db.algebra.core.Collect} to an {@link EnumerableCollect}.
  */
 class EnumerableCollectRule extends ConverterRule {
 
@@ -52,12 +52,12 @@ class EnumerableCollectRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final Collect collect = (Collect) rel;
-        final RelTraitSet traitSet = collect.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        final RelNode input = collect.getInput();
+    public AlgNode convert( AlgNode alg ) {
+        final Collect collect = (Collect) alg;
+        final AlgTraitSet traitSet = collect.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        final AlgNode input = collect.getInput();
         return new EnumerableCollect(
-                rel.getCluster(),
+                alg.getCluster(),
                 traitSet,
                 convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
                 collect.getFieldName() );

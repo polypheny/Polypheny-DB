@@ -58,17 +58,18 @@ import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.languages.sql.util.SqlString;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ScannableTable;
@@ -89,7 +90,7 @@ import org.polypheny.db.util.Util;
  */
 public class JdbcTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
 
-    private RelProtoDataType protoRowType;
+    private AlgProtoDataType protoRowType;
     private JdbcSchema jdbcSchema;
 
     private final String physicalSchemaName;
@@ -109,7 +110,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             String logicalTableName,
             List<String> logicalColumnNames,
             TableType jdbcTableType,
-            RelProtoDataType protoRowType,
+            AlgProtoDataType protoRowType,
             String physicalSchemaName,
             String physicalTableName,
             List<String> physicalColumnNames ) {
@@ -139,15 +140,15 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
 
 
     private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
-        final RelDataType rowType = protoRowType.apply( typeFactory );
+        final AlgDataType rowType = protoRowType.apply( typeFactory );
         return Lists.transform( rowType.getFieldList(), f -> {
-            final RelDataType type = f.getType();
+            final AlgDataType type = f.getType();
             final Class clazz = (Class) typeFactory.getJavaClass( type );
             final ColumnMetaData.Rep rep = Util.first( ColumnMetaData.Rep.of( clazz ), ColumnMetaData.Rep.OBJECT );
             return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
@@ -212,7 +213,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
+    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
         return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.getConvention() );
     }
 
@@ -241,11 +242,11 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public TableModify toModificationRel(
-            RelOptCluster cluster,
-            RelOptTable table,
+    public TableModify toModificationAlg(
+            AlgOptCluster cluster,
+            AlgOptTable table,
             CatalogReader catalogReader,
-            RelNode input,
+            AlgNode input,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,

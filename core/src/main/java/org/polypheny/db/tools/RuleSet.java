@@ -34,12 +34,12 @@
 package org.polypheny.db.tools;
 
 
-import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.AlgOptRule;
 
 
 /**
  * A set rules associated with a particular type of invocation of the {@link Planner}.
  */
-public interface RuleSet extends Iterable<RelOptRule> {
+public interface RuleSet extends Iterable<AlgOptRule> {
 
 }

@@ -22,8 +22,8 @@ import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 public class LangFunctionOperator extends OperatorImpl {
 
@@ -45,19 +45,19 @@ public class LangFunctionOperator extends OperatorImpl {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         throw new RuntimeException( "Not Implemented" );
     }
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         throw new RuntimeException( "Not Implemented" );
     }
 
 
     @Override
-    public RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes ) {
+    public AlgDataType inferReturnType( AlgDataTypeFactory typeFactory, List<AlgDataType> operandTypes ) {
         return null;
     }
 

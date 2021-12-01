@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.enums.Lex;
 import org.polypheny.db.core.enums.Monotonicity;
@@ -65,8 +67,6 @@ import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -159,16 +159,16 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
 
     @Override
-    public RelDataType getColumnType( String sql ) {
-        RelDataType rowType = getResultType( sql );
-        final List<RelDataTypeField> fields = rowType.getFieldList();
+    public AlgDataType getColumnType( String sql ) {
+        AlgDataType rowType = getResultType( sql );
+        final List<AlgDataTypeField> fields = rowType.getFieldList();
         assertEquals( "expected query to return 1 field", 1, fields.size() );
         return fields.get( 0 ).getType();
     }
 
 
     @Override
-    public RelDataType getResultType( String sql ) {
+    public AlgDataType getResultType( String sql ) {
         SqlValidator validator = getValidator();
         SqlNode n = parseAndValidate( validator, sql );
 
@@ -200,7 +200,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
     @Override
     public void checkColumnType( String sql, String expected ) {
-        RelDataType actualType = getColumnType( sql );
+        AlgDataType actualType = getColumnType( sql );
         String actual = SqlTests.getTypeString( actualType );
         assertEquals( expected, actual );
     }
@@ -236,7 +236,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
     @Override
     public void checkResultType( String sql, String expected ) {
-        RelDataType actualType = getResultType( sql );
+        AlgDataType actualType = getResultType( sql );
         String actual = SqlTests.getTypeString( actualType );
         assertEquals( expected, actual );
     }
@@ -278,7 +278,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public void checkCollation( String expression, String expectedCollationName, Coercibility expectedCoercibility ) {
         for ( String sql : buildQueries( expression ) ) {
-            RelDataType actualType = getColumnType( sql );
+            AlgDataType actualType = getColumnType( sql );
             Collation collation = actualType.getCollation();
 
             assertEquals( expectedCollationName, collation.getCollationName() );
@@ -290,7 +290,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public void checkCharset( String expression, Charset expectedCharset ) {
         for ( String sql : buildQueries( expression ) ) {
-            RelDataType actualType = getColumnType( sql );
+            AlgDataType actualType = getColumnType( sql );
             Charset actualCharset = actualType.getCharset();
 
             if ( !expectedCharset.equals( actualCharset ) ) {
@@ -477,7 +477,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
             Util.discard( getResultType( query ) );
         } else {
             // Parse and validate. There should be no errors. There must be 1 column. Get its type.
-            RelDataType actualType = getColumnType( query );
+            AlgDataType actualType = getColumnType( query );
 
             // Check result type.
             typeChecker.checkType( actualType );
@@ -485,7 +485,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
         SqlValidator validator = getValidator();
         SqlNode n = parseAndValidate( validator, query );
-        final RelDataType parameterRowType = validator.getParameterRowType( n );
+        final AlgDataType parameterRowType = validator.getParameterRowType( n );
         parameterChecker.checkParameters( parameterRowType );
     }
 
@@ -494,7 +494,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     public void checkMonotonic( String query, Monotonicity expectedMonotonicity ) {
         SqlValidator validator = getValidator();
         SqlNode n = parseAndValidate( validator, query );
-        final RelDataType rowType = validator.getValidatedNodeType( n );
+        final AlgDataType rowType = validator.getValidatedNodeType( n );
         final SqlValidatorNamespace selectNamespace = validator.getSqlNamespace( n );
         final String field0 = rowType.getFieldList().get( 0 ).getName();
         final Monotonicity monotonicity = selectNamespace.getMonotonicity( field0 );

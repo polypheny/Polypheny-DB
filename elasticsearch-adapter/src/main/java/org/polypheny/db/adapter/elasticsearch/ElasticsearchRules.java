@@ -44,18 +44,18 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -71,7 +71,7 @@ import org.polypheny.db.type.PolyType;
  */
 class ElasticsearchRules {
 
-    static final RelOptRule[] RULES = {
+    static final AlgOptRule[] RULES = {
             ElasticsearchSortRule.INSTANCE,
             ElasticsearchFilterRule.INSTANCE,
             ElasticsearchProjectRule.INSTANCE,
@@ -117,7 +117,7 @@ class ElasticsearchRules {
     }
 
 
-    static List<String> elasticsearchFieldNames( final RelDataType rowType ) {
+    static List<String> elasticsearchFieldNames( final AlgDataType rowType ) {
         return ValidatorUtil.uniquify(
                 new AbstractList<String>() {
                     @Override
@@ -219,7 +219,7 @@ class ElasticsearchRules {
         final Convention out;
 
 
-        ElasticsearchConverterRule( Class<? extends RelNode> clazz, RelTrait in, Convention out, String description ) {
+        ElasticsearchConverterRule( Class<? extends AlgNode> clazz, AlgTrait in, Convention out, String description ) {
             super( clazz, in, out, description );
             this.out = out;
         }
@@ -241,17 +241,17 @@ class ElasticsearchRules {
 
 
         @Override
-        public RelNode convert( RelNode relNode ) {
-            final Sort sort = (Sort) relNode;
-            final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
-            return new ElasticsearchSort( relNode.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
+        public AlgNode convert( AlgNode algNode ) {
+            final Sort sort = (Sort) algNode;
+            final AlgTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
+            return new ElasticsearchSort( algNode.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( AlgCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
         }
 
     }
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalFilter} to an {@link ElasticsearchFilter}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to an {@link ElasticsearchFilter}.
      */
     private static class ElasticsearchFilterRule extends ElasticsearchConverterRule {
 
@@ -264,21 +264,21 @@ class ElasticsearchRules {
 
 
         @Override
-        public RelNode convert( RelNode relNode ) {
-            final LogicalFilter filter = (LogicalFilter) relNode;
-            final RelTraitSet traitSet = filter.getTraitSet().replace( out );
-            return new ElasticsearchFilter( relNode.getCluster(), traitSet, convert( filter.getInput(), out ), filter.getCondition() );
+        public AlgNode convert( AlgNode algNode ) {
+            final LogicalFilter filter = (LogicalFilter) algNode;
+            final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
+            return new ElasticsearchFilter( algNode.getCluster(), traitSet, convert( filter.getInput(), out ), filter.getCondition() );
         }
 
     }
 
 
     /**
-     * Rule to convert an {@link org.polypheny.db.rel.logical.LogicalAggregate} to an {@link ElasticsearchAggregate}.
+     * Rule to convert an {@link org.polypheny.db.algebra.logical.LogicalAggregate} to an {@link ElasticsearchAggregate}.
      */
     private static class ElasticsearchAggregateRule extends ElasticsearchConverterRule {
 
-        static final RelOptRule INSTANCE = new ElasticsearchAggregateRule();
+        static final AlgOptRule INSTANCE = new ElasticsearchAggregateRule();
 
 
         private ElasticsearchAggregateRule() {
@@ -287,12 +287,12 @@ class ElasticsearchRules {
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalAggregate agg = (LogicalAggregate) rel;
-            final RelTraitSet traitSet = agg.getTraitSet().replace( out );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalAggregate agg = (LogicalAggregate) alg;
+            final AlgTraitSet traitSet = agg.getTraitSet().replace( out );
             try {
-                return new ElasticsearchAggregate( rel.getCluster(), traitSet, convert( agg.getInput(), traitSet.simplify() ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
-            } catch ( InvalidRelException e ) {
+                return new ElasticsearchAggregate( alg.getCluster(), traitSet, convert( agg.getInput(), traitSet.simplify() ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
+            } catch ( InvalidAlgException e ) {
                 return null;
             }
         }
@@ -301,7 +301,7 @@ class ElasticsearchRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalProject} to an {@link ElasticsearchProject}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to an {@link ElasticsearchProject}.
      */
     private static class ElasticsearchProjectRule extends ElasticsearchConverterRule {
 
@@ -314,9 +314,9 @@ class ElasticsearchRules {
 
 
         @Override
-        public RelNode convert( RelNode relNode ) {
-            final LogicalProject project = (LogicalProject) relNode;
-            final RelTraitSet traitSet = project.getTraitSet().replace( out );
+        public AlgNode convert( AlgNode algNode ) {
+            final LogicalProject project = (LogicalProject) algNode;
+            final AlgTraitSet traitSet = project.getTraitSet().replace( out );
             return new ElasticsearchProject( project.getCluster(), traitSet, convert( project.getInput(), out ), project.getProjects(), project.getRowType() );
         }
 

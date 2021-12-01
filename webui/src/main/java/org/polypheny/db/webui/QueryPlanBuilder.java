@@ -23,14 +23,14 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.models.SortDirection;
 import org.polypheny.db.webui.models.SortState;
-import org.polypheny.db.webui.models.UIRelNode;
+import org.polypheny.db.webui.models.UIAlgNode;
 
 
 public class QueryPlanBuilder {
@@ -40,7 +40,7 @@ public class QueryPlanBuilder {
     }
 
 
-    private static RelBuilder createRelBuilder( final Statement statement ) {
+    private static AlgBuilder createRelBuilder( final Statement statement ) {
         /*final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParserConfig.DEFAULT )
@@ -59,38 +59,38 @@ public class QueryPlanBuilder {
                         0,
                         0,
                         transaction ) ).build();
-        return RelBuilder.create( config );
+        return AlgBuilder.create( config );
                          */
-        return RelBuilder.create( statement );
+        return AlgBuilder.create( statement );
     }
 
 
     /**
-     * Build a tree using the RelBuilder
+     * Build a tree using the AlgBuilder
      *
      * @param topNode top node from the tree from the user interface, with its children
      * @param statement transaction
      */
-    public static RelNode buildFromTree( final UIRelNode topNode, final Statement statement ) {
-        RelBuilder b = createRelBuilder( statement );
+    public static AlgNode buildFromTree( final UIAlgNode topNode, final Statement statement ) {
+        AlgBuilder b = createRelBuilder( statement );
         buildStep( b, topNode );
         return b.build();
     }
 
 
-    public static RelNode buildFromJsonRel( Statement statement, String json ) {
+    public static AlgNode buildFromJsonRel( Statement statement, String json ) {
         Gson gson = new Gson();
-        RelBuilder b = createRelBuilder( statement );
-        return buildFromTree( gson.fromJson( json, UIRelNode.class ), statement );
+        AlgBuilder b = createRelBuilder( statement );
+        return buildFromTree( gson.fromJson( json, UIAlgNode.class ), statement );
     }
 
 
     /**
-     * Set up the RelBuilder recursively
+     * Set up the{@link AlgBuilder}  recursively
      */
-    private static RelBuilder buildStep( RelBuilder builder, final UIRelNode node ) {
+    private static AlgBuilder buildStep( AlgBuilder builder, final UIAlgNode node ) {
         if ( node.children != null ) {
-            for ( UIRelNode n : node.children ) {
+            for ( UIAlgNode n : node.children ) {
                 builder = buildStep( builder, n );
             }
         }
@@ -126,7 +126,7 @@ public class QueryPlanBuilder {
                 builder.project( fields );
                 return builder;
             case "Aggregate":
-                RelBuilder.AggCall aggregation;
+                AlgBuilder.AggCall aggregation;
                 String[] aggFields = node.field.split( "\\." );
                 switch ( node.aggregation ) {
                     case "SUM":
@@ -175,7 +175,7 @@ public class QueryPlanBuilder {
     }
 
 
-    private static ArrayList<RexNode> getFields( String[] fields, int inputCount, RelBuilder builder ) {
+    private static ArrayList<RexNode> getFields( String[] fields, int inputCount, AlgBuilder builder ) {
         ArrayList<RexNode> nodes = new ArrayList<>();
         for ( String f : fields ) {
             if ( f.equals( "" ) ) {

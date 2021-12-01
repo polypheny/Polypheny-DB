@@ -39,8 +39,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.util.Pair;
 
 
@@ -97,16 +97,16 @@ public class RexFieldCollation extends Pair<RexNode, ImmutableSet<Kind>> {
 
     public Direction getDirection() {
         return right.contains( Kind.DESCENDING )
-                ? RelFieldCollation.Direction.DESCENDING
-                : RelFieldCollation.Direction.ASCENDING;
+                ? AlgFieldCollation.Direction.DESCENDING
+                : AlgFieldCollation.Direction.ASCENDING;
     }
 
 
-    public RelFieldCollation.NullDirection getNullDirection() {
+    public AlgFieldCollation.NullDirection getNullDirection() {
         return right.contains( Kind.NULLS_LAST )
-                ? RelFieldCollation.NullDirection.LAST
+                ? AlgFieldCollation.NullDirection.LAST
                 : right.contains( Kind.NULLS_FIRST )
-                        ? RelFieldCollation.NullDirection.FIRST
+                        ? AlgFieldCollation.NullDirection.FIRST
                         : getDirection().defaultNullDirection();
     }
 

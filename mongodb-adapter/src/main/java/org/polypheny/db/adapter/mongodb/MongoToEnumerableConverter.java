@@ -44,24 +44,24 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.polypheny.db.adapter.enumerable.EnumUtils;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -71,32 +71,32 @@ import org.polypheny.db.util.Pair;
  * Relational expression representing a scan of a table in a Mongo data source.
  */
 @Slf4j
-public class MongoToEnumerableConverter extends ConverterImpl implements EnumerableRel {
+public class MongoToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
-    protected MongoToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
+    protected MongoToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new MongoToEnumerableConverter( getCluster(), traitSet, AbstractRelNode.sole( inputs ) );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new MongoToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ) );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder list = new BlockBuilder();
-        final MongoRel.Implementor mongoImplementor = new MongoRel.Implementor();
+        final MongoAlg.Implementor mongoImplementor = new MongoAlg.Implementor();
         mongoImplementor.visitChild( 0, getInput() );
 
-        final RelDataType rowType = getRowType();
+        final AlgDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
         if ( mongoImplementor.table == null ) {
@@ -122,7 +122,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
                                         } ),
                                 Pair.class ) );
 
-        List<RelDataTypeField> fieldList = rowType.getFieldList();
+        List<AlgDataTypeField> fieldList = rowType.getFieldList();
 
         final Expression arrayClassFields =
                 list.append( "arrayClassFields",

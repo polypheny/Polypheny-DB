@@ -40,9 +40,9 @@ import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.nodes.IntervalQualifier;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 
 
 /**
@@ -50,14 +50,14 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
  */
 public class IntervalPolyType extends AbstractPolyType {
 
-    private final RelDataTypeSystem typeSystem;
+    private final AlgDataTypeSystem typeSystem;
     private final PolyIntervalQualifier intervalQualifier;
 
 
     /**
      * Constructs an IntervalSqlType. This should only be called from a factory method.
      */
-    public IntervalPolyType( RelDataTypeSystem typeSystem, IntervalQualifier intervalQualifier, boolean isNullable ) {
+    public IntervalPolyType( AlgDataTypeSystem typeSystem, IntervalQualifier intervalQualifier, boolean isNullable ) {
         super( intervalQualifier.typeName(), isNullable, null );
         this.typeSystem = Objects.requireNonNull( typeSystem );
         this.intervalQualifier = PolyIntervalQualifier.fromSqlQualifier( intervalQualifier );
@@ -90,7 +90,7 @@ public class IntervalPolyType extends AbstractPolyType {
      * <code>INTERVAL SECOND</code> is<br>
      * <code>INTERVAL DAY TO SECOND</code>
      */
-    public IntervalPolyType combine( RelDataTypeFactoryImpl typeFactory, IntervalPolyType that ) {
+    public IntervalPolyType combine( AlgDataTypeFactoryImpl typeFactory, IntervalPolyType that ) {
         assert this.typeName.isYearMonth() == that.typeName.isYearMonth();
         boolean nullable = isNullable || that.isNullable;
         TimeUnit thisStart = Objects.requireNonNull( typeName.getStartUnit() );
@@ -125,7 +125,7 @@ public class IntervalPolyType extends AbstractPolyType {
             }
         }
 
-        RelDataType intervalType = typeFactory.createSqlIntervalType( LanguageManager.getInstance().createIntervalQualifier(
+        AlgDataType intervalType = typeFactory.createSqlIntervalType( LanguageManager.getInstance().createIntervalQualifier(
                 QueryLanguage.SQL,
                 thisStart,
                 secondPrec,

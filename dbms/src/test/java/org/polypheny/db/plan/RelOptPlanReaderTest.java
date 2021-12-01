@@ -42,21 +42,21 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.externalize.RelJson;
-import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.externalize.AlgJson;
+import org.polypheny.db.algebra.logical.LogicalProject;
 
 
 /**
- * Unit test for {@link org.polypheny.db.rel.externalize.RelJson}.
+ * Unit test for {@link AlgJson}.
  */
 public class RelOptPlanReaderTest {
 
     @Test
     public void testTypeToClass() {
-        RelJson relJson = new RelJson( null );
+        AlgJson relJson = new AlgJson( null );
 
-        // in org.polypheny.db.rel package
+        // in org.polypheny.db.alg package
         assertThat( relJson.classToTypeName( LogicalProject.class ), is( "LogicalProject" ) );
         assertThat( relJson.typeNameToClass( "LogicalProject" ), sameInstance( LogicalProject.class ) );
 
@@ -71,10 +71,10 @@ public class RelOptPlanReaderTest {
             assertThat( e.getMessage(), is( "unknown type NonExistentRel" ) );
         }
         try {
-            Class clazz = relJson.typeNameToClass( "org.polypheny.db.rel.NonExistentRel" );
+            Class clazz = relJson.typeNameToClass( "org.polypheny.db.alg.NonExistentRel" );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
-            assertThat( e.getMessage(), is( "unknown type org.polypheny.db.rel.NonExistentRel" ) );
+            assertThat( e.getMessage(), is( "unknown type org.polypheny.db.alg.NonExistentRel" ) );
         }
 
         // In this class; no special treatment. Note: '$MyRel' not '.MyRel'.
@@ -94,15 +94,15 @@ public class RelOptPlanReaderTest {
     /**
      * Dummy relational expression.
      */
-    public static class MyRel extends AbstractRelNode {
+    public static class MyRel extends AbstractAlgNode {
 
-        public MyRel( RelOptCluster cluster, RelTraitSet traitSet ) {
+        public MyRel( AlgOptCluster cluster, AlgTraitSet traitSet ) {
             super( cluster, traitSet );
         }
 
 
         @Override
-        public String relCompareString() {
+        public String algCompareString() {
             // Compare makes no sense here. Use hashCode() to avoid errors.
             return this.getClass().getSimpleName() + "$" + hashCode() + "&";
         }

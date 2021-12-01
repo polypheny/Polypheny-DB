@@ -21,8 +21,8 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
@@ -38,14 +38,14 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    public Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
+    public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
         throw new RuntimeException("JsonProcessor does not support validation!");
     }
 
 
     @Override
-    public RelRoot translate( Statement statement, Node query, QueryParameters parameters ) {
-        return RelRoot.of( QueryPlanBuilder.buildFromJsonRel( statement, parameters.getQuery() ), Kind.SELECT );
+    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+        return AlgRoot.of( QueryPlanBuilder.buildFromJsonRel( statement, parameters.getQuery() ), Kind.SELECT );
     }
 
 
@@ -74,7 +74,7 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    public RelDataType getParameterRowType( Node left ) {
+    public AlgDataType getParameterRowType( Node left ) {
         throw new RuntimeException("JsonProcessor does not support getParameterRowType!");
     }
 

@@ -24,23 +24,23 @@ import org.junit.Test;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.helper.RelBuildTestHelper;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
 
 
 public class FilterTest extends RelBuildTestHelper {
 
-    private final RelNode baseNode;
-    private final Map<String, RelDataTypeField> filterMap = new HashMap<>();
+    private final AlgNode baseNode;
+    private final Map<String, AlgDataTypeField> filterMap = new HashMap<>();
 
 
     public FilterTest() throws UnknownIndexException {
         super( RelBuildLevel.INITIAL_PROJECTION );
-        baseNode = relBuilder.peek();
-        RelDataType filtersRowType = baseNode.getRowType();
-        List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
+        baseNode = algBuilder.peek();
+        AlgDataType filtersRowType = baseNode.getRowType();
+        List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
         filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
     }
 

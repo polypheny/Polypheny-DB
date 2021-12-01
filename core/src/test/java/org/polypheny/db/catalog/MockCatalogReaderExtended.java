@@ -20,7 +20,7 @@ package org.polypheny.db.catalog;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
@@ -37,7 +37,7 @@ public class MockCatalogReaderExtended extends MockCatalogReaderSimple {
      * @param typeFactory Type factory
      * @param caseSensitive case sensitivity
      */
-    public MockCatalogReaderExtended( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
+    public MockCatalogReaderExtended( AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         super( typeFactory, caseSensitive );
     }
 

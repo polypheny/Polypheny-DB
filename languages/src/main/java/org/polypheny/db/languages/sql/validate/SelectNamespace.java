@@ -21,7 +21,7 @@ import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSelect;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -57,7 +57,7 @@ public class SelectNamespace extends AbstractNamespace {
 
 
     @Override
-    public RelDataType validateImpl( RelDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType ) {
         validator.validateSelect( select, targetRowType );
         return rowType;
     }
@@ -71,7 +71,7 @@ public class SelectNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final RelDataType rowType = this.getRowTypeSansSystemColumns();
+        final AlgDataType rowType = this.getRowTypeSansSystemColumns();
         final int field = PolyTypeUtil.findField( rowType, columnName );
         final SqlNode selectItem = validator.getRawSelectScope( select ).getExpandedSelectList().get( field );
         return validator.getSelectScope( select ).getMonotonicity( selectItem );

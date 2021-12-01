@@ -34,8 +34,8 @@ import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.ArrayType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
@@ -245,11 +245,11 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
     public static class RowTypeParser implements Function1<Map<String, Literal>, Object[]> {
 
-        private final RelDataType rowType;
+        private final AlgDataType rowType;
         private final List<String> physicalColumnNames;
 
 
-        public RowTypeParser( RelDataType rowType, List<String> physicalColumnNames ) {
+        public RowTypeParser( AlgDataType rowType, List<String> physicalColumnNames ) {
             this.rowType = rowType;
             this.physicalColumnNames = physicalColumnNames;
         }
@@ -259,9 +259,9 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         public Object[] apply( Map<String, Literal> a0 ) {
             Object[] returnValue = new Object[this.physicalColumnNames.size()];
 
-            List<RelDataTypeField> fieldList = this.rowType.getFieldList();
+            List<AlgDataTypeField> fieldList = this.rowType.getFieldList();
             for ( int i = 0; i < fieldList.size(); i++ ) {
-                RelDataType type = fieldList.get( i ).getType();
+                AlgDataType type = fieldList.get( i ).getType();
                 String columnName = this.physicalColumnNames.get( i );
                 returnValue[i] = this.parseSingleField( a0.get( columnName ), type );
             }
@@ -270,7 +270,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         }
 
 
-        private Object parseSingleField( Literal data, RelDataType type ) {
+        private Object parseSingleField( Literal data, AlgDataType type ) {
             switch ( type.getPolyType() ) {
                 case BOOLEAN:
                     return data.getBooleanData();

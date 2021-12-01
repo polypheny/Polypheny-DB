@@ -60,12 +60,12 @@ import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
@@ -106,7 +106,7 @@ public class RexBuilder {
     private static final BigDecimal INT_MAX = BigDecimal.valueOf( Integer.MAX_VALUE );
 
 
-    protected final RelDataTypeFactory typeFactory;
+    protected final AlgDataTypeFactory typeFactory;
     private final RexLiteral booleanTrue;
     private final RexLiteral booleanFalse;
     private final RexLiteral charEmpty;
@@ -118,7 +118,7 @@ public class RexBuilder {
      *
      * @param typeFactory Type factory
      */
-    public RexBuilder( RelDataTypeFactory typeFactory ) {
+    public RexBuilder( AlgDataTypeFactory typeFactory ) {
         this.typeFactory = typeFactory;
         this.booleanTrue =
                 makeLiteral(
@@ -146,7 +146,7 @@ public class RexBuilder {
     /**
      * Creates a list of {@link RexInputRef} expressions, projecting the fields of a given record type.
      */
-    public List<? extends RexNode> identityProjects( final RelDataType rowType ) {
+    public List<? extends RexNode> identityProjects( final AlgDataType rowType ) {
         return Lists.transform( rowType.getFieldList(), input -> new RexInputRef( input.getIndex(), input.getType() ) );
     }
 
@@ -156,7 +156,7 @@ public class RexBuilder {
      *
      * @return type factory
      */
-    public RelDataTypeFactory getTypeFactory() {
+    public AlgDataTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
@@ -173,8 +173,8 @@ public class RexBuilder {
      * @return Expression accessing a given named field
      */
     public RexNode makeFieldAccess( RexNode expr, String fieldName, boolean caseSensitive ) {
-        final RelDataType type = expr.getType();
-        final RelDataTypeField field = type.getField( fieldName, caseSensitive, false );
+        final AlgDataType type = expr.getType();
+        final AlgDataTypeField field = type.getField( fieldName, caseSensitive, false );
         if ( field == null ) {
             throw new AssertionError( "Type '" + type + "' has no field '" + fieldName + "'" );
         }
@@ -190,8 +190,8 @@ public class RexBuilder {
      * @return Expression accessing given field
      */
     public RexNode makeFieldAccess( RexNode expr, int i ) {
-        final RelDataType type = expr.getType();
-        final List<RelDataTypeField> fields = type.getFieldList();
+        final AlgDataType type = expr.getType();
+        final List<AlgDataTypeField> fields = type.getFieldList();
         if ( (i < 0) || (i >= fields.size()) ) {
             throw new AssertionError( "Field ordinal " + i + " is invalid for type '" + type + "'" );
         }
@@ -206,7 +206,7 @@ public class RexBuilder {
      * @param field Field
      * @return Expression accessing given field
      */
-    private RexNode makeFieldAccessInternal( RexNode expr, final RelDataTypeField field ) {
+    private RexNode makeFieldAccessInternal( RexNode expr, final AlgDataTypeField field ) {
         if ( expr instanceof RexRangeRef ) {
             RexRangeRef range = (RexRangeRef) expr;
             if ( field.getIndex() < 0 ) {
@@ -226,7 +226,7 @@ public class RexBuilder {
     /**
      * Creates a call with a list of arguments and a predetermined type.
      */
-    public RexNode makeCall( RelDataType returnType, Operator op, List<RexNode> exprs ) {
+    public RexNode makeCall( AlgDataType returnType, Operator op, List<RexNode> exprs ) {
         return new RexCall( returnType, op, exprs );
     }
 
@@ -234,10 +234,10 @@ public class RexBuilder {
     /**
      * Creates a call with an array of arguments.
      * <p>
-     * If you already know the return type of the call, then {@link #makeCall(RelDataType, Operator, java.util.List)} is preferred.
+     * If you already know the return type of the call, then {@link #makeCall(AlgDataType, Operator, java.util.List)} is preferred.
      */
     public RexNode makeCall( Operator op, List<? extends RexNode> exprs ) {
-        final RelDataType type = deriveReturnType( op, exprs );
+        final AlgDataType type = deriveReturnType( op, exprs );
         return new RexCall( type, op, exprs );
     }
 
@@ -259,7 +259,7 @@ public class RexBuilder {
      * @param exprs actual operands
      * @return derived type
      */
-    public RelDataType deriveReturnType( Operator op, List<? extends RexNode> exprs ) {
+    public AlgDataType deriveReturnType( Operator op, List<? extends RexNode> exprs ) {
         return op.inferReturnType( new RexCallBinding( typeFactory, op, exprs, ImmutableList.of() ) );
     }
 
@@ -278,7 +278,7 @@ public class RexBuilder {
      * @param aggArgTypes Argument types, not null
      * @return Rex expression for the given aggregate call
      */
-    public RexNode addAggCall( AggregateCall aggCall, int groupCount, boolean indicator, List<AggregateCall> aggCalls, Map<AggregateCall, RexNode> aggCallMapping, final List<RelDataType> aggArgTypes ) {
+    public RexNode addAggCall( AggregateCall aggCall, int groupCount, boolean indicator, List<AggregateCall> aggCalls, Map<AggregateCall, RexNode> aggCallMapping, final List<AlgDataType> aggArgTypes ) {
         if ( aggCall.getAggregation().getFunctionType() == FunctionType.COUNT && !aggCall.isDistinct() ) {
             final List<Integer> args = aggCall.getArgList();
             final List<Integer> nullableArgs = nullableArgs( args, aggArgTypes );
@@ -297,9 +297,9 @@ public class RexBuilder {
     }
 
 
-    private static List<Integer> nullableArgs( List<Integer> list0, List<RelDataType> types ) {
+    private static List<Integer> nullableArgs( List<Integer> list0, List<AlgDataType> types ) {
         final List<Integer> list = new ArrayList<>();
-        for ( Pair<Integer, RelDataType> pair : Pair.zip( list0, types ) ) {
+        for ( Pair<Integer, AlgDataType> pair : Pair.zip( list0, types ) ) {
             if ( pair.right.isNullable() ) {
                 list.add( pair.left );
             }
@@ -311,7 +311,7 @@ public class RexBuilder {
     /**
      * Creates a call to a windowed agg.
      */
-    public RexNode makeOver( RelDataType type, AggFunction operator, List<RexNode> exprs, List<RexNode> partitionKeys, ImmutableList<RexFieldCollation> orderKeys, RexWindowBound lowerBound, RexWindowBound upperBound, boolean physical, boolean allowPartial, boolean nullWhenCountZero, boolean distinct ) {
+    public RexNode makeOver( AlgDataType type, AggFunction operator, List<RexNode> exprs, List<RexNode> partitionKeys, ImmutableList<RexFieldCollation> orderKeys, RexWindowBound lowerBound, RexWindowBound upperBound, boolean physical, boolean allowPartial, boolean nullWhenCountZero, boolean distinct ) {
         assert operator != null;
         assert exprs != null;
         assert partitionKeys != null;
@@ -323,7 +323,7 @@ public class RexBuilder {
         // This should be correct but need time to go over test results.
         // Also want to look at combing with section below.
         if ( nullWhenCountZero ) {
-            final RelDataType bigintType = getTypeFactory().createPolyType( PolyType.BIGINT );
+            final AlgDataType bigintType = getTypeFactory().createPolyType( PolyType.BIGINT );
             result = makeCall(
                     OperatorRegistry.get( OperatorName.CASE ),
                     makeCall(
@@ -351,7 +351,7 @@ public class RexBuilder {
         }
         if ( !allowPartial ) {
             Preconditions.checkArgument( physical, "DISALLOW PARTIAL over RANGE" );
-            final RelDataType bigintType = getTypeFactory().createPolyType( PolyType.BIGINT );
+            final AlgDataType bigintType = getTypeFactory().createPolyType( PolyType.BIGINT );
             // todo: read bound
             result =
                     makeCall(
@@ -405,7 +405,7 @@ public class RexBuilder {
      * @param type Type of variable
      * @return Correlation variable
      */
-    public RexNode makeCorrel( RelDataType type, CorrelationId id ) {
+    public RexNode makeCorrel( AlgDataType type, CorrelationId id ) {
         return new RexCorrelVariable( id, type );
     }
 
@@ -417,7 +417,7 @@ public class RexBuilder {
      * @param exprs Arguments to NEW operator
      * @return Expression invoking NEW operator
      */
-    public RexNode makeNewInvocation( RelDataType type, List<RexNode> exprs ) {
+    public RexNode makeNewInvocation( AlgDataType type, List<RexNode> exprs ) {
         return new RexCall( type, OperatorRegistry.get( OperatorName.NEW ), exprs );
     }
 
@@ -429,7 +429,7 @@ public class RexBuilder {
      * @param exp Expression being cast
      * @return Call to CAST operator
      */
-    public RexNode makeCast( RelDataType type, RexNode exp ) {
+    public RexNode makeCast( AlgDataType type, RexNode exp ) {
         return makeCast( type, exp, false );
     }
 
@@ -444,7 +444,7 @@ public class RexBuilder {
      * @param matchNullability Whether to ensure the result has the same nullability as {@code type}
      * @return Call to CAST operator
      */
-    public RexNode makeCast( RelDataType type, RexNode exp, boolean matchNullability ) {
+    public RexNode makeCast( AlgDataType type, RexNode exp, boolean matchNullability ) {
         // MV: This might be a bad idea. It would be better to implement cast support for array columns
         if ( exp.getType().getPolyType() == PolyType.ARRAY ) {
             return exp;
@@ -524,7 +524,7 @@ public class RexBuilder {
     }
 
 
-    boolean canRemoveCastFromLiteral( RelDataType toType, Comparable value, PolyType fromTypeName ) {
+    boolean canRemoveCastFromLiteral( AlgDataType toType, Comparable value, PolyType fromTypeName ) {
         final PolyType sqlType = toType.getPolyType();
         if ( !RexLiteral.valueMatchesType( value, sqlType, false ) ) {
             return false;
@@ -559,12 +559,12 @@ public class RexBuilder {
     }
 
 
-    private RexNode makeCastExactToBoolean( RelDataType toType, RexNode exp ) {
+    private RexNode makeCastExactToBoolean( AlgDataType toType, RexNode exp ) {
         return makeCall( toType, OperatorRegistry.get( OperatorName.NOT_EQUALS ), ImmutableList.of( exp, makeZeroLiteral( exp.getType() ) ) );
     }
 
 
-    private RexNode makeCastBooleanToExact( RelDataType toType, RexNode exp ) {
+    private RexNode makeCastBooleanToExact( AlgDataType toType, RexNode exp ) {
         final RexNode casted =
                 makeCall(
                         OperatorRegistry.get( OperatorName.CASE ),
@@ -583,7 +583,7 @@ public class RexBuilder {
     }
 
 
-    private RexNode makeCastIntervalToExact( RelDataType toType, RexNode exp ) {
+    private RexNode makeCastIntervalToExact( AlgDataType toType, RexNode exp ) {
         final TimeUnit endUnit = exp.getType().getPolyType().getEndUnit();
         final TimeUnit baseUnit = baseUnit( exp.getType().getPolyType() );
         final BigDecimal multiplier = baseUnit.multiplier;
@@ -591,7 +591,7 @@ public class RexBuilder {
         BigDecimal divider = endUnit.multiplier.scaleByPowerOfTen( -scale );
         RexNode value = multiplyDivide( decodeIntervalOrDecimal( exp ), multiplier, divider );
         if ( scale > 0 ) {
-            RelDataType decimalType =
+            AlgDataType decimalType =
                     getTypeFactory().createPolyType(
                             PolyType.DECIMAL,
                             scale + exp.getType().getPrecision(),
@@ -630,8 +630,8 @@ public class RexBuilder {
      * @param checkOverflow indicates whether an overflow check is required when reinterpreting this particular value as the decimal type. A check usually not required for arithmetic, but is often required for rounding and explicit casts.
      * @return the integer reinterpreted as an opaque decimal type
      */
-    public RexNode encodeIntervalOrDecimal( RexNode value, RelDataType type, boolean checkOverflow ) {
-        RelDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
+    public RexNode encodeIntervalOrDecimal( RexNode value, AlgDataType type, boolean checkOverflow ) {
+        AlgDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
         RexNode cast = ensureType( bigintType, value, true );
         return makeReinterpretCast( type, cast, makeLiteral( checkOverflow ) );
     }
@@ -645,7 +645,7 @@ public class RexBuilder {
      */
     public RexNode decodeIntervalOrDecimal( RexNode node ) {
         assert PolyTypeUtil.isDecimal( node.getType() ) || PolyTypeUtil.isInterval( node.getType() );
-        RelDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
+        AlgDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
         return makeReinterpretCast( matchNullability( bigintType, node ), node, makeLiteral( false ) );
     }
 
@@ -657,7 +657,7 @@ public class RexBuilder {
      * @param exp Expression being cast
      * @return Call to CAST operator
      */
-    public RexNode makeAbstractCast( RelDataType type, RexNode exp ) {
+    public RexNode makeAbstractCast( AlgDataType type, RexNode exp ) {
         return new RexCall( type, OperatorRegistry.get( OperatorName.CAST ), ImmutableList.of( exp ) );
     }
 
@@ -670,7 +670,7 @@ public class RexBuilder {
      * @param checkOverflow whether an overflow check is required
      * @return a RexCall with two operands and a special return type
      */
-    public RexNode makeReinterpretCast( RelDataType type, RexNode exp, RexNode checkOverflow ) {
+    public RexNode makeReinterpretCast( AlgDataType type, RexNode exp, RexNode checkOverflow ) {
         List<RexNode> args;
         if ( (checkOverflow != null) && checkOverflow.isAlwaysTrue() ) {
             args = ImmutableList.of( exp, checkOverflow );
@@ -685,11 +685,11 @@ public class RexBuilder {
      * Makes a cast of a value to NOT NULL; no-op if the type already has NOT NULL.
      */
     public RexNode makeNotNull( RexNode exp ) {
-        final RelDataType type = exp.getType();
+        final AlgDataType type = exp.getType();
         if ( !type.isNullable() ) {
             return exp;
         }
-        final RelDataType notNullType = typeFactory.createTypeWithNullability( type, false );
+        final AlgDataType notNullType = typeFactory.createTypeWithNullability( type, false );
         return makeAbstractCast( notNullType, exp );
     }
 
@@ -699,7 +699,7 @@ public class RexBuilder {
      *
      * @param input Input relational expression
      */
-    public RexNode makeRangeReference( RelNode input ) {
+    public RexNode makeRangeReference( AlgNode input ) {
         return new RexRangeRef( input.getRowType(), 0 );
     }
 
@@ -713,7 +713,7 @@ public class RexBuilder {
      * @param offset Index of first field.
      * @param nullable Whether the record is nullable.
      */
-    public RexRangeRef makeRangeReference( RelDataType type, int offset, boolean nullable ) {
+    public RexRangeRef makeRangeReference( AlgDataType type, int offset, boolean nullable ) {
         if ( nullable && !type.isNullable() ) {
             type = typeFactory.createTypeWithNullability( type, nullable );
         }
@@ -728,7 +728,7 @@ public class RexBuilder {
      * @param i Ordinal of field
      * @return Reference to field
      */
-    public RexInputRef makeInputRef( RelDataType type, int i ) {
+    public RexInputRef makeInputRef( AlgDataType type, int i ) {
         type = PolyTypeUtil.addCharsetAndCollation( type, typeFactory );
         return new RexInputRef( i, type );
     }
@@ -740,9 +740,9 @@ public class RexBuilder {
      * @param input Input relational expression
      * @param i Ordinal of field
      * @return Reference to field
-     * @see #identityProjects(RelDataType)
+     * @see #identityProjects(AlgDataType)
      */
-    public RexInputRef makeInputRef( RelNode input, int i ) {
+    public RexInputRef makeInputRef( AlgNode input, int i ) {
         return makeInputRef( input.getRowType().getFieldList().get( i ).getType(), i );
     }
 
@@ -755,7 +755,7 @@ public class RexBuilder {
      * @param i Ordinal of field
      * @return Reference to field of pattern
      */
-    public RexPatternFieldRef makePatternFieldRef( String alpha, RelDataType type, int i ) {
+    public RexPatternFieldRef makePatternFieldRef( String alpha, AlgDataType type, int i ) {
         type = PolyTypeUtil.addCharsetAndCollation( type, typeFactory );
         return new RexPatternFieldRef( alpha, i, type );
     }
@@ -781,7 +781,7 @@ public class RexBuilder {
      * @param typeName SQL type of literal
      * @return Literal
      */
-    protected RexLiteral makeLiteral( Comparable o, RelDataType type, PolyType typeName ) {
+    protected RexLiteral makeLiteral( Comparable o, AlgDataType type, PolyType typeName ) {
         // All literals except NULL have NOT NULL types.
         type = typeFactory.createTypeWithNullability( type, o == null );
         int p;
@@ -800,7 +800,7 @@ public class RexBuilder {
             case TIME:
                 assert o instanceof TimeString;
                 p = type.getPrecision();
-                if ( p == RelDataType.PRECISION_NOT_SPECIFIED ) {
+                if ( p == AlgDataType.PRECISION_NOT_SPECIFIED ) {
                     p = 0;
                 }
                 o = ((TimeString) o).round( p );
@@ -808,7 +808,7 @@ public class RexBuilder {
             case TIME_WITH_LOCAL_TIME_ZONE:
                 assert o instanceof TimeString;
                 p = type.getPrecision();
-                if ( p == RelDataType.PRECISION_NOT_SPECIFIED ) {
+                if ( p == AlgDataType.PRECISION_NOT_SPECIFIED ) {
                     p = 0;
                 }
                 o = ((TimeString) o).round( p );
@@ -816,7 +816,7 @@ public class RexBuilder {
             case TIMESTAMP:
                 assert o instanceof TimestampString;
                 p = type.getPrecision();
-                if ( p == RelDataType.PRECISION_NOT_SPECIFIED ) {
+                if ( p == AlgDataType.PRECISION_NOT_SPECIFIED ) {
                     p = 0;
                 }
                 o = ((TimestampString) o).round( p );
@@ -824,7 +824,7 @@ public class RexBuilder {
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 assert o instanceof TimestampString;
                 p = type.getPrecision();
-                if ( p == RelDataType.PRECISION_NOT_SPECIFIED ) {
+                if ( p == AlgDataType.PRECISION_NOT_SPECIFIED ) {
                     p = 0;
                 }
                 o = ((TimestampString) o).round( p );
@@ -845,7 +845,7 @@ public class RexBuilder {
      * Creates a numeric literal.
      */
     public RexLiteral makeExactLiteral( BigDecimal bd ) {
-        RelDataType relType;
+        AlgDataType relType;
         int scale = bd.scale();
         assert scale >= 0;
         assert scale <= typeFactory.getTypeSystem().getMaxNumericScale() : scale;
@@ -873,7 +873,7 @@ public class RexBuilder {
      * Creates a BIGINT literal.
      */
     public RexLiteral makeBigintLiteral( BigDecimal bd ) {
-        RelDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
+        AlgDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
         return makeLiteral( bd, bigintType, PolyType.DECIMAL );
     }
 
@@ -881,7 +881,7 @@ public class RexBuilder {
     /**
      * Creates a numeric literal.
      */
-    public RexLiteral makeExactLiteral( BigDecimal bd, RelDataType type ) {
+    public RexLiteral makeExactLiteral( BigDecimal bd, AlgDataType type ) {
         return makeLiteral( bd, type, PolyType.DECIMAL );
     }
 
@@ -917,7 +917,7 @@ public class RexBuilder {
      * @param type approximate numeric type
      * @return new literal
      */
-    public RexLiteral makeApproxLiteral( BigDecimal bd, RelDataType type ) {
+    public RexLiteral makeApproxLiteral( BigDecimal bd, AlgDataType type ) {
         assert PolyTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( type.getPolyType() );
         return makeLiteral( bd, type, PolyType.DOUBLE );
     }
@@ -968,8 +968,8 @@ public class RexBuilder {
      * @param matchNullability whether to correct nullability of specified type to match the expression; this usually should be true, except for explicit casts which can override default nullability
      * @return a casted expression or the original expression
      */
-    public RexNode ensureType( RelDataType type, RexNode node, boolean matchNullability ) {
-        RelDataType targetType = type;
+    public RexNode ensureType( AlgDataType type, RexNode node, boolean matchNullability ) {
+        AlgDataType targetType = type;
         if ( matchNullability ) {
             targetType = matchNullability( type, node );
         }
@@ -995,7 +995,7 @@ public class RexBuilder {
     /**
      * Ensures that a type's nullability matches a value's nullability.
      */
-    public RelDataType matchNullability( RelDataType type, RexNode value ) {
+    public AlgDataType matchNullability( AlgDataType type, RexNode value ) {
         boolean typeNullability = type.isNullable();
         boolean valueNullability = value.getType().isNullable();
         if ( typeNullability != valueNullability ) {
@@ -1014,7 +1014,7 @@ public class RexBuilder {
      */
     public RexLiteral makeCharLiteral( NlsString str ) {
         assert str != null;
-        RelDataType type = CoreUtil.createNlsStringType( typeFactory, str );
+        AlgDataType type = CoreUtil.createNlsStringType( typeFactory, str );
         return makeLiteral( str, type, PolyType.CHAR );
     }
 
@@ -1098,7 +1098,7 @@ public class RexBuilder {
      * @param index Index of dynamic parameter
      * @return Expression referencing dynamic parameter
      */
-    public RexDynamicParam makeDynamicParam( RelDataType type, int index ) {
+    public RexDynamicParam makeDynamicParam( AlgDataType type, int index ) {
         return new RexDynamicParam( type, index );
     }
 
@@ -1112,7 +1112,7 @@ public class RexBuilder {
      * @param type Type to cast NULL to
      * @return NULL literal of given type
      */
-    public RexLiteral makeNullLiteral( RelDataType type ) {
+    public RexLiteral makeNullLiteral( AlgDataType type ) {
         if ( !type.isNullable() ) {
             type = typeFactory.createTypeWithNullability( type, true );
         }
@@ -1121,11 +1121,11 @@ public class RexBuilder {
 
 
     /**
-     * Creates a copy of an expression, which may have been created using a different RexBuilder and/or {@link RelDataTypeFactory}, using this RexBuilder.
+     * Creates a copy of an expression, which may have been created using a different RexBuilder and/or {@link AlgDataTypeFactory}, using this RexBuilder.
      *
      * @param expr Expression
      * @return Copy of expression
-     * @see RelDataTypeFactory#copyType(RelDataType)
+     * @see AlgDataTypeFactory#copyType(AlgDataType)
      */
     public RexNode copy( RexNode expr ) {
         return expr.accept( new RexCopier( this ) );
@@ -1148,12 +1148,12 @@ public class RexBuilder {
      * @param type Type
      * @return Simple literal, or cast simple literal
      */
-    public RexNode makeZeroLiteral( RelDataType type ) {
+    public RexNode makeZeroLiteral( AlgDataType type ) {
         return makeLiteral( zeroValue( type ), type, false );
     }
 
 
-    private static Comparable zeroValue( RelDataType type ) {
+    private static Comparable zeroValue( AlgDataType type ) {
         switch ( type.getPolyType() ) {
             case CHAR:
                 return new NlsString( Spaces.of( type.getPrecision() ), null, null );
@@ -1197,12 +1197,12 @@ public class RexBuilder {
      * @param allowCast Whether to allow a cast. If false, value is always a {@link RexLiteral} but may not be the exact type
      * @return Simple literal, or cast simple literal
      */
-    public RexNode makeLiteral( Object value, RelDataType type, boolean allowCast ) {
+    public RexNode makeLiteral( Object value, AlgDataType type, boolean allowCast ) {
         if ( value == null ) {
             return makeCast( type, constantNull );
         }
         if ( type.isNullable() ) {
-            final RelDataType typeNotNull = typeFactory.createTypeWithNullability( type, false );
+            final AlgDataType typeNotNull = typeFactory.createTypeWithNullability( type, false );
             RexNode literalNotNull = makeLiteral( value, typeNotNull, allowCast );
             return makeAbstractCast( type, literalNotNull );
         }
@@ -1299,7 +1299,7 @@ public class RexBuilder {
             case ROW:
                 operands = new ArrayList<>();
                 //noinspection unchecked
-                for ( Pair<RelDataTypeField, Object> pair : Pair.zip( type.getFieldList(), (List<Object>) value ) ) {
+                for ( Pair<AlgDataTypeField, Object> pair : Pair.zip( type.getFieldList(), (List<Object>) value ) ) {
                     final RexNode e =
                             pair.right instanceof RexLiteral
                                     ? (RexNode) pair.right
@@ -1318,7 +1318,7 @@ public class RexBuilder {
     /**
      * Converts the type of a value to comply with {@link RexLiteral#valueMatchesType}.
      */
-    private static Object clean( Object o, RelDataType type ) {
+    private static Object clean( Object o, AlgDataType type ) {
         if ( o == null ) {
             return null;
         }
@@ -1413,7 +1413,7 @@ public class RexBuilder {
     }
 
 
-    private RelDataType guessType( Object value ) {
+    private AlgDataType guessType( Object value ) {
         if ( value == null ) {
             return typeFactory.createPolyType( PolyType.NULL );
         }

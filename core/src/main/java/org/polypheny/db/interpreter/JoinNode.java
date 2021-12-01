@@ -37,7 +37,7 @@ package org.polypheny.db.interpreter;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.rel.core.Join;
+import org.polypheny.db.algebra.core.Join;
 
 
 /**
@@ -48,17 +48,17 @@ public class JoinNode implements Node {
     private final Source leftSource;
     private final Source rightSource;
     private final Sink sink;
-    private final Join rel;
+    private final Join alg;
     private final Scalar condition;
     private final Context context;
 
 
-    public JoinNode( Compiler compiler, Join rel ) {
-        this.leftSource = compiler.source( rel, 0 );
-        this.rightSource = compiler.source( rel, 1 );
-        this.sink = compiler.sink( rel );
-        this.condition = compiler.compile( ImmutableList.of( rel.getCondition() ), compiler.combinedRowType( rel.getInputs() ) );
-        this.rel = rel;
+    public JoinNode( Compiler compiler, Join alg ) {
+        this.leftSource = compiler.source( alg, 0 );
+        this.rightSource = compiler.source( alg, 1 );
+        this.sink = compiler.sink( alg );
+        this.condition = compiler.compile( ImmutableList.of( alg.getCondition() ), compiler.combinedRowType( alg.getInputs() ) );
+        this.alg = alg;
         this.context = compiler.createContext();
 
     }
@@ -67,9 +67,9 @@ public class JoinNode implements Node {
     @Override
     public void run() throws InterruptedException {
         List<Row> rightList = null;
-        final int leftCount = rel.getLeft().getRowType().getFieldCount();
-        final int rightCount = rel.getRight().getRowType().getFieldCount();
-        context.values = new Object[rel.getRowType().getFieldCount()];
+        final int leftCount = alg.getLeft().getRowType().getFieldCount();
+        final int rightCount = alg.getRight().getRowType().getFieldCount();
+        context.values = new Object[alg.getRowType().getFieldCount()];
         Row left;
         Row right;
         while ( (left = leftSource.receive()) != null ) {

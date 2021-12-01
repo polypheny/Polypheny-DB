@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -35,7 +35,7 @@ class FieldNamespace extends AbstractNamespace {
      * @param validator Validator
      * @param dataType Data type of field
      */
-    FieldNamespace( SqlValidatorImpl validator, RelDataType dataType ) {
+    FieldNamespace( SqlValidatorImpl validator, AlgDataType dataType ) {
         super( validator, null );
         assert dataType != null;
         this.rowType = dataType;
@@ -43,13 +43,13 @@ class FieldNamespace extends AbstractNamespace {
 
 
     @Override
-    public void setType( RelDataType type ) {
+    public void setType( AlgDataType type ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         return rowType;
     }
 

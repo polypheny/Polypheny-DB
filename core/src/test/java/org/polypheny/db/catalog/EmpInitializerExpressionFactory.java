@@ -20,8 +20,8 @@ package org.polypheny.db.catalog;
 import java.math.BigDecimal;
 import org.polypheny.db.core.InitializerContext;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
@@ -34,7 +34,7 @@ import org.polypheny.db.type.PolyType;
 class EmpInitializerExpressionFactory extends NullInitializerExpressionFactory {
 
     @Override
-    public ColumnStrategy generationStrategy( RelOptTable table, int iColumn ) {
+    public ColumnStrategy generationStrategy( AlgOptTable table, int iColumn ) {
         switch ( iColumn ) {
             case 0:
             case 1:
@@ -47,9 +47,9 @@ class EmpInitializerExpressionFactory extends NullInitializerExpressionFactory {
 
 
     @Override
-    public RexNode newColumnDefaultValue( RelOptTable table, int iColumn, InitializerContext context ) {
+    public RexNode newColumnDefaultValue( AlgOptTable table, int iColumn, InitializerContext context ) {
         final RexBuilder rexBuilder = context.getRexBuilder();
-        final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
+        final AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
         switch ( iColumn ) {
             case 0:
                 return rexBuilder.makeExactLiteral( new BigDecimal( 123 ), typeFactory.createPolyType( PolyType.INTEGER ) );

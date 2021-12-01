@@ -38,9 +38,9 @@ import java.lang.reflect.Type;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Pair;
 
 
@@ -77,7 +77,7 @@ public interface PhysType {
     /**
      * Returns the SQL row type.
      */
-    RelDataType getRowType();
+    AlgDataType getRowType();
 
     /**
      * Returns the Java class of the field with the given ordinal.
@@ -172,12 +172,12 @@ public interface PhysType {
     /**
      * Returns a lambda to create a collation key and a comparator. The comparator is sometimes null.
      */
-    Pair<Expression, Expression> generateCollationKey( List<RelFieldCollation> collations );
+    Pair<Expression, Expression> generateCollationKey( List<AlgFieldCollation> collations );
 
     /**
      * Returns a comparator. Unlike the comparator returned by {@link #generateCollationKey(java.util.List)}, this comparator acts on the whole element.
      */
-    Expression generateComparator( RelCollation collation );
+    Expression generateComparator( AlgCollation collation );
 
     /**
      * Returns a expression that yields a comparer, or null if this type is comparable.

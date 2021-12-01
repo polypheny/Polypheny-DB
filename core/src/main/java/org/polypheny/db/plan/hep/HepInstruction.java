@@ -37,7 +37,7 @@ package org.polypheny.db.plan.hep;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.AlgOptRule;
 
 
 /**
@@ -58,14 +58,14 @@ abstract class HepInstruction {
      *
      * @param <R> rule type
      */
-    static class RuleClass<R extends RelOptRule> extends HepInstruction {
+    static class RuleClass<R extends AlgOptRule> extends HepInstruction {
 
         Class<R> ruleClass;
 
         /**
          * Actual rule set instantiated during planning by filtering all of the planner's rules through ruleClass.
          */
-        Set<RelOptRule> ruleSet;
+        Set<AlgOptRule> ruleSet;
 
 
         @Override
@@ -92,7 +92,7 @@ abstract class HepInstruction {
         /**
          * Collection of rules to apply.
          */
-        Collection<RelOptRule> rules;
+        Collection<AlgOptRule> rules;
 
 
         @Override
@@ -112,7 +112,7 @@ abstract class HepInstruction {
         /**
          * Actual rule set instantiated during planning by filtering all of the planner's rules, looking for the desired converters.
          */
-        Set<RelOptRule> ruleSet;
+        Set<AlgOptRule> ruleSet;
 
 
         @Override
@@ -127,7 +127,7 @@ abstract class HepInstruction {
      */
     static class CommonRelSubExprRules extends HepInstruction {
 
-        Set<RelOptRule> ruleSet;
+        Set<AlgOptRule> ruleSet;
 
 
         @Override
@@ -150,7 +150,7 @@ abstract class HepInstruction {
         /**
          * Explicitly specified rule, or rule looked up by planner from description.
          */
-        RelOptRule rule;
+        AlgOptRule rule;
 
 
         @Override
@@ -252,7 +252,7 @@ abstract class HepInstruction {
         /**
          * Actual rule set instantiated during planning by collecting grouped rules.
          */
-        Set<RelOptRule> ruleSet;
+        Set<AlgOptRule> ruleSet;
 
         boolean collecting;
 

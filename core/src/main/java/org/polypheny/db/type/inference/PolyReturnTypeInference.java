@@ -19,7 +19,7 @@ package org.polypheny.db.type.inference;
 
 import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.nodes.OperatorImpl;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Glossary;
 
 
@@ -37,7 +37,7 @@ public interface PolyReturnTypeInference {
      * @param opBinding description of operator binding
      * @return inferred type; may be null
      */
-    RelDataType inferReturnType( OperatorBinding opBinding );
+    AlgDataType inferReturnType( OperatorBinding opBinding );
 
 }
 

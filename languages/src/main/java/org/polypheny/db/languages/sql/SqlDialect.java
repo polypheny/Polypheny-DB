@@ -44,10 +44,10 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.dialect.JethroDataSqlDialect;
 import org.polypheny.db.languages.sql.util.SqlBuilder;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -126,7 +126,7 @@ public class SqlDialect {
     private final String identifierEscapedQuote;
     private final DatabaseProduct databaseProduct;
     protected final NullCollation nullCollation;
-    private final RelDataTypeSystem dataTypeSystem;
+    private final AlgDataTypeSystem dataTypeSystem;
 
 
     /**
@@ -171,7 +171,7 @@ public class SqlDialect {
                 -1,
                 null,
                 NullCollation.HIGH,
-                RelDataTypeSystemImpl.DEFAULT,
+                AlgDataTypeSystemImpl.DEFAULT,
                 JethroDataSqlDialect.JethroInfo.EMPTY );
     }
 
@@ -179,7 +179,7 @@ public class SqlDialect {
     /**
      * Returns the type system implementation for this dialect.
      */
-    public RelDataTypeSystem getTypeSystem() {
+    public AlgDataTypeSystem getTypeSystem() {
         return dataTypeSystem;
     }
 
@@ -298,7 +298,7 @@ public class SqlDialect {
      * Converts an interval qualifier to a SQL string. The default implementation returns strings such as
      * <code>INTERVAL '1 2:3:4' DAY(4) TO SECOND(4)</code>.
      */
-    public void unparseSqlIntervalQualifier( SqlWriter writer, SqlIntervalQualifier qualifier, RelDataTypeSystem typeSystem ) {
+    public void unparseSqlIntervalQualifier( SqlWriter writer, SqlIntervalQualifier qualifier, AlgDataTypeSystem typeSystem ) {
         final String start = qualifier.timeUnitRange.startUnit.name();
         final int fractionalSecondPrecision = qualifier.getFractionalSecondPrecision( typeSystem );
         final int startPrecision = qualifier.getStartPrecision( typeSystem );
@@ -351,7 +351,7 @@ public class SqlDialect {
             writer.print( "-" );
         }
         writer.literal( "'" + literal.getValue().toString() + "'" );
-        unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), RelDataTypeSystem.DEFAULT );
+        unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), AlgDataTypeSystem.DEFAULT );
     }
 
 
@@ -529,7 +529,7 @@ public class SqlDialect {
      * Returns whether this dialect supports a given function or operator.
      * It only applies to built-in scalar functions and operators, since user-defined functions and procedures should be read by JdbcSchema.
      */
-    public boolean supportsFunction( SqlOperator operator, RelDataType type, List<RelDataType> paramTypes ) {
+    public boolean supportsFunction( SqlOperator operator, AlgDataType type, List<AlgDataType> paramTypes ) {
         switch ( operator.kind ) {
             case AND:
             case BETWEEN:
@@ -569,12 +569,12 @@ public class SqlDialect {
     }
 
 
-    public SqlNode getCastSpec( RelDataType type ) {
+    public SqlNode getCastSpec( AlgDataType type ) {
         if ( type instanceof BasicPolyType ) {
             int precision = type.getPrecision();
             if ( type.getPolyType() == PolyType.JSON ) {
                 precision = 2024;
-                type = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
+                type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
             }
             switch ( type.getPolyType() ) {
                 case JSON:
@@ -622,7 +622,7 @@ public class SqlDialect {
      *
      * @param node The SqlNode representing the expression
      * @param nullsFirst Whether nulls should come first
-     * @param desc Whether the sort direction is {@link org.polypheny.db.rel.RelFieldCollation.Direction#DESCENDING} or {@link org.polypheny.db.rel.RelFieldCollation.Direction#STRICTLY_DESCENDING}
+     * @param desc Whether the sort direction is {@link AlgFieldCollation.Direction#DESCENDING} or {@link AlgFieldCollation.Direction#STRICTLY_DESCENDING}
      * @return A SqlNode for null direction emulation or <code>null</code> if not required
      */
     public SqlNode emulateNullDirection( SqlNode node, boolean nullsFirst, boolean desc ) {
@@ -733,20 +733,20 @@ public class SqlDialect {
     /**
      * Returns whether NULL values are sorted first or last, in this dialect, in an ORDER BY item of a given direction.
      */
-    public RelFieldCollation.NullDirection defaultNullDirection( RelFieldCollation.Direction direction ) {
+    public AlgFieldCollation.NullDirection defaultNullDirection( AlgFieldCollation.Direction direction ) {
         switch ( direction ) {
             case ASCENDING:
             case STRICTLY_ASCENDING:
                 return getNullCollation().last( false )
-                        ? RelFieldCollation.NullDirection.LAST
-                        : RelFieldCollation.NullDirection.FIRST;
+                        ? AlgFieldCollation.NullDirection.LAST
+                        : AlgFieldCollation.NullDirection.FIRST;
             case DESCENDING:
             case STRICTLY_DESCENDING:
                 return getNullCollation().last( true )
-                        ? RelFieldCollation.NullDirection.LAST
-                        : RelFieldCollation.NullDirection.FIRST;
+                        ? AlgFieldCollation.NullDirection.LAST
+                        : AlgFieldCollation.NullDirection.FIRST;
             default:
-                return RelFieldCollation.NullDirection.UNSPECIFIED;
+                return AlgFieldCollation.NullDirection.UNSPECIFIED;
         }
     }
 
@@ -961,9 +961,9 @@ public class SqlDialect {
         Context withNullCollation( @Nonnull NullCollation nullCollation );
 
         @Nonnull
-        RelDataTypeSystem dataTypeSystem();
+        AlgDataTypeSystem dataTypeSystem();
 
-        Context withDataTypeSystem( @Nonnull RelDataTypeSystem dataTypeSystem );
+        Context withDataTypeSystem( @Nonnull AlgDataTypeSystem dataTypeSystem );
 
         JethroDataSqlDialect.JethroInfo jethroInfo();
 
@@ -984,7 +984,7 @@ public class SqlDialect {
         private final int databaseMinorVersion;
         private final String identifierQuoteString;
         private final NullCollation nullCollation;
-        private final RelDataTypeSystem dataTypeSystem;
+        private final AlgDataTypeSystem dataTypeSystem;
         private final JethroDataSqlDialect.JethroInfo jethroInfo;
 
 
@@ -996,7 +996,7 @@ public class SqlDialect {
                 int databaseMinorVersion,
                 String identifierQuoteString,
                 NullCollation nullCollation,
-                RelDataTypeSystem dataTypeSystem,
+                AlgDataTypeSystem dataTypeSystem,
                 JethroDataSqlDialect.JethroInfo jethroInfo ) {
             this.databaseProduct = Objects.requireNonNull( databaseProduct );
             this.databaseProductName = databaseProductName;
@@ -1161,13 +1161,13 @@ public class SqlDialect {
 
         @Override
         @Nonnull
-        public RelDataTypeSystem dataTypeSystem() {
+        public AlgDataTypeSystem dataTypeSystem() {
             return dataTypeSystem;
         }
 
 
         @Override
-        public Context withDataTypeSystem( @Nonnull RelDataTypeSystem dataTypeSystem ) {
+        public Context withDataTypeSystem( @Nonnull AlgDataTypeSystem dataTypeSystem ) {
             return new ContextImpl(
                     databaseProduct,
                     databaseProductName,

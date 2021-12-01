@@ -4,16 +4,16 @@
  *
  * <h2>Life-cycle</h2>
  *
- * A {@link org.polypheny.db.sql2rel.SqlToRelConverter} converts a SQL parse tree consisting of {@link org.polypheny.db.sql.SqlNode} objects into a relational expression ({@link org.polypheny.db.rel.RelNode}).
+ * A {@link org.polypheny.db.languages.NodeToAlgConverter} converts an SQL parse tree consisting of {@link org.polypheny.db.interpreter.Node} objects into a relational expression ({@link org.polypheny.db.algebra.AlgNode}).
  * Several kinds of nodes in this tree have row expressions ({@link org.polypheny.db.rex.RexNode}).
  *
- * After the relational expression has been optimized, a {@link org.polypheny.db.adapter.enumerable.JavaRelImplementor} converts it into to a plan. If the plan is a Java parse tree, row-expressions are
+ * After the relational expression has been optimized, a {@link org.polypheny.db.adapter.enumerable.JavaAlgImplementor} converts it into to a plan. If the plan is a Java parse tree, row-expressions are
  * translated into equivalent Java expressions.
  *
  * <h2>Expressions</h2>
  *
  *
- * Every row-expression has a type. (Compare with {@link org.polypheny.db.sql.SqlNode}, which is created before validation, and therefore types may not be available.)
+ * Every row-expression has a type. (Compare with {@link org.polypheny.db.interpreter.Node}, which is created before validation, and therefore types may not be available.)
  *
  * Every node in the parse tree is a {@link org.polypheny.db.rex.RexNode}. Sub-types are:
  * <ul>
@@ -33,7 +33,7 @@
  * <h2>Related packages</h2>
  * <ul>
  * <li>{@code org.polypheny.db.sql} SQL object model</li>
- * <li>{@code org.polypheny.db.plan} Core classes, including {@link org.polypheny.db.rel.type.RelDataType} and {@link org.polypheny.db.rel.type.RelDataTypeFactory}.</li>
+ * <li>{@code org.polypheny.db.plan} Core classes, including {@link org.polypheny.db.algebra.type.AlgDataType} and {@link org.polypheny.db.algebra.type.AlgDataTypeFactory}.</li>
  * </ul>
  */
 

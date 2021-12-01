@@ -45,28 +45,28 @@ import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.util.NameMatchers;
 import org.polypheny.db.core.util.ValidatorUtil;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelDistribution;
-import org.polypheny.db.rel.RelDistributions;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelReferentialConstraint;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.type.DynamicRecordTypeImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeComparability;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.rel.type.RelRecordType;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgDistributions;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgReferentialConstraint;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeComparability;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.ExtensibleTable;
@@ -103,7 +103,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
      *
      * @param typeFactory Type factory
      */
-    public MockCatalogReader( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
+    public MockCatalogReader( AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         super(
                 AbstractPolyphenyDbSchema.createRootSchema( DEFAULT_CATALOG ),
                 NameMatchers.withCaseSensitive( caseSensitive ),
@@ -157,7 +157,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
-    protected void registerType( final List<String> names, final RelProtoDataType relProtoDataType ) {
+    protected void registerType( final List<String> names, final AlgProtoDataType relProtoDataType ) {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
         final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, NameMatchers.withCaseSensitive( true ) );
@@ -201,20 +201,20 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
-    private static List<RelCollation> deduceMonotonicity( Prepare.PreparingTable table ) {
-        final List<RelCollation> collationList = new ArrayList<>();
+    private static List<AlgCollation> deduceMonotonicity( Prepare.PreparingTable table ) {
+        final List<AlgCollation> collationList = new ArrayList<>();
 
         // Deduce which fields the table is sorted on.
         int i = -1;
-        for ( RelDataTypeField field : table.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : table.getRowType().getFieldList() ) {
             ++i;
             final Monotonicity monotonicity = table.getMonotonicity( field.getName() );
             if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {
-                final RelFieldCollation.Direction direction =
+                final AlgFieldCollation.Direction direction =
                         monotonicity.isDecreasing()
-                                ? RelFieldCollation.Direction.DESCENDING
-                                : RelFieldCollation.Direction.ASCENDING;
-                collationList.add( RelCollations.of( new RelFieldCollation( i, direction ) ) );
+                                ? AlgFieldCollation.Direction.DESCENDING
+                                : AlgFieldCollation.Direction.ASCENDING;
+                collationList.add( AlgCollations.of( new AlgFieldCollation( i, direction ) ) );
             }
         }
         return collationList;
@@ -226,7 +226,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
      */
     public interface ColumnResolver {
 
-        List<Pair<RelDataTypeField, List<String>>> resolveColumn( RelDataType rowType, RelDataTypeFactory typeFactory, List<String> names );
+        List<Pair<AlgDataTypeField, List<String>>> resolveColumn( AlgDataType rowType, AlgDataTypeFactory typeFactory, List<String> names );
 
     }
 
@@ -271,11 +271,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         protected final MockCatalogReader catalogReader;
         protected final boolean stream;
         protected final double rowCount;
-        protected final List<Map.Entry<String, RelDataType>> columnList = new ArrayList<>();
+        protected final List<Map.Entry<String, AlgDataType>> columnList = new ArrayList<>();
         protected final List<Integer> keyList = new ArrayList<>();
-        protected final List<RelReferentialConstraint> referentialConstraints = new ArrayList<>();
-        protected RelDataType rowType;
-        protected List<RelCollation> collationList;
+        protected final List<AlgReferentialConstraint> referentialConstraints = new ArrayList<>();
+        protected AlgDataType rowType;
+        protected List<AlgCollation> collationList;
         protected final List<String> names;
         protected final Set<String> monotonicColumnSet = new HashSet<>();
         protected StructKind kind = StructKind.FULLY_QUALIFIED;
@@ -308,7 +308,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         /**
          * Copy constructor.
          */
-        protected MockTable( MockCatalogReader catalogReader, boolean stream, double rowCount, List<Map.Entry<String, RelDataType>> columnList, List<Integer> keyList, RelDataType rowType, List<RelCollation> collationList,
+        protected MockTable( MockCatalogReader catalogReader, boolean stream, double rowCount, List<Map.Entry<String, AlgDataType>> columnList, List<Integer> keyList, AlgDataType rowType, List<AlgCollation> collationList,
                 List<String> names, Set<String> monotonicColumnSet, StructKind kind, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
             this.catalogReader = catalogReader;
             this.stream = stream;
@@ -336,7 +336,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+            public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.createStructType( MockTable.this.getRowType().getFieldList() );
             }
 
@@ -377,11 +377,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public Table extend( final List<RelDataTypeField> fields ) {
+            public Table extend( final List<AlgDataTypeField> fields ) {
                 return new ModifiableTable( Util.last( names ) ) {
                     @Override
-                    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                        ImmutableList<RelDataTypeField> allFields = ImmutableList.copyOf( Iterables.concat( ModifiableTable.this.getRowType( typeFactory ).getFieldList(), fields ) );
+                    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+                        ImmutableList<AlgDataTypeField> allFields = ImmutableList.copyOf( Iterables.concat( ModifiableTable.this.getRowType( typeFactory ).getFieldList(), fields ) );
                         return typeFactory.createStructType( allFields );
                     }
                 };
@@ -397,10 +397,10 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        protected RelOptTable extend( final Table extendedTable ) {
+        protected AlgOptTable extend( final Table extendedTable ) {
             return new MockTable( catalogReader, names, stream, rowCount, resolver, initializerFactory ) {
                 @Override
-                public RelDataType getRowType() {
+                public AlgDataType getRowType() {
                     return extendedTable.getRowType( catalogReader.typeFactory );
                 }
             };
@@ -457,26 +457,26 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public RelOptSchema getRelOptSchema() {
+        public AlgOptSchema getRelOptSchema() {
             return catalogReader;
         }
 
 
         @Override
-        public RelNode toRel( ToRelContext context ) {
+        public AlgNode toRel( ToAlgContext context ) {
             return LogicalTableScan.create( context.getCluster(), this );
         }
 
 
         @Override
-        public List<RelCollation> getCollationList() {
+        public List<AlgCollation> getCollationList() {
             return collationList;
         }
 
 
         @Override
-        public RelDistribution getDistribution() {
-            return RelDistributions.BROADCAST_DISTRIBUTED;
+        public AlgDistribution getDistribution() {
+            return AlgDistributions.BROADCAST_DISTRIBUTED;
         }
 
 
@@ -487,13 +487,13 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public List<RelReferentialConstraint> getReferentialConstraints() {
+        public List<AlgReferentialConstraint> getReferentialConstraints() {
             return referentialConstraints;
         }
 
 
         @Override
-        public RelDataType getRowType() {
+        public AlgDataType getRowType() {
             return rowType;
         }
 
@@ -504,7 +504,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-        public void onRegister( RelDataTypeFactory typeFactory ) {
+        public void onRegister( AlgDataTypeFactory typeFactory ) {
             rowType = typeFactory.createStructType( kind, Pair.right( columnList ), Pair.left( columnList ) );
             collationList = deduceMonotonicity( this );
         }
@@ -536,12 +536,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-        public void addColumn( String name, RelDataType type ) {
+        public void addColumn( String name, AlgDataType type ) {
             addColumn( name, type, false );
         }
 
 
-        public void addColumn( String name, RelDataType type, boolean isKey ) {
+        public void addColumn( String name, AlgDataType type, boolean isKey ) {
             if ( isKey ) {
                 keyList.add( columnList.size() );
             }
@@ -576,7 +576,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
-            public List<Pair<RelDataTypeField, List<String>>> resolveColumn( RelDataType rowType, RelDataTypeFactory typeFactory, List<String> names ) {
+            public List<Pair<AlgDataTypeField, List<String>>> resolveColumn( AlgDataType rowType, AlgDataTypeFactory typeFactory, List<String> names ) {
                 return resolver.resolveColumn( rowType, typeFactory, names );
             }
 
@@ -596,7 +596,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public void onRegister( RelDataTypeFactory typeFactory ) {
+        public void onRegister( AlgDataTypeFactory typeFactory ) {
             rowType = new DynamicRecordTypeImpl( typeFactory );
         }
 
@@ -605,9 +605,9 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
          * Recreates an immutable rowType, if the table has Dynamic Record Type, when converts table to Rel.
          */
         @Override
-        public RelNode toRel( ToRelContext context ) {
+        public AlgNode toRel( ToAlgContext context ) {
             if ( rowType.isDynamicStruct() ) {
-                rowType = new RelRecordType( rowType.getFieldList() );
+                rowType = new AlgRecordType( rowType.getFieldList() );
             }
             return super.toRel( context );
         }
@@ -618,13 +618,13 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     /**
      * Struct type based on another struct type.
      */
-    private static class DelegateStructType implements RelDataType {
+    private static class DelegateStructType implements AlgDataType {
 
-        private RelDataType delegate;
+        private AlgDataType delegate;
         private StructKind structKind;
 
 
-        DelegateStructType( RelDataType delegate, StructKind structKind ) {
+        DelegateStructType( AlgDataType delegate, StructKind structKind ) {
             assert delegate.isStruct();
             this.delegate = delegate;
             this.structKind = structKind;
@@ -644,7 +644,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public List<RelDataTypeField> getFieldList() {
+        public List<AlgDataTypeField> getFieldList() {
             return delegate.getFieldList();
         }
 
@@ -668,7 +668,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public RelDataTypeField getField( String fieldName, boolean caseSensitive, boolean elideRecord ) {
+        public AlgDataTypeField getField( String fieldName, boolean caseSensitive, boolean elideRecord ) {
             return delegate.getField( fieldName, caseSensitive, elideRecord );
         }
 
@@ -680,19 +680,19 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public RelDataType getComponentType() {
+        public AlgDataType getComponentType() {
             return delegate.getComponentType();
         }
 
 
         @Override
-        public RelDataType getKeyType() {
+        public AlgDataType getKeyType() {
             return delegate.getKeyType();
         }
 
 
         @Override
-        public RelDataType getValueType() {
+        public AlgDataType getValueType() {
             return delegate.getValueType();
         }
 
@@ -752,19 +752,19 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public RelDataTypeFamily getFamily() {
+        public AlgDataTypeFamily getFamily() {
             return delegate.getFamily();
         }
 
 
         @Override
-        public RelDataTypePrecedenceList getPrecedenceList() {
+        public AlgDataTypePrecedenceList getPrecedenceList() {
             return delegate.getPrecedenceList();
         }
 
 
         @Override
-        public RelDataTypeComparability getComparability() {
+        public AlgDataTypeComparability getComparability() {
             return delegate.getComparability();
         }
 
@@ -795,7 +795,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return table.getRowType();
         }
 
@@ -816,19 +816,19 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
                 @Override
-                public List<RelReferentialConstraint> getReferentialConstraints() {
+                public List<AlgReferentialConstraint> getReferentialConstraints() {
                     return table.getReferentialConstraints();
                 }
 
 
                 @Override
-                public List<RelCollation> getCollations() {
+                public List<AlgCollation> getCollations() {
                     return table.collationList;
                 }
 
 
                 @Override
-                public RelDistribution getDistribution() {
+                public AlgDistribution getDistribution() {
                     return table.getDistribution();
                 }
             };

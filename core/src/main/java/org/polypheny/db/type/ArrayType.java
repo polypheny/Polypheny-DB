@@ -38,9 +38,9 @@ import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
-import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 
 
 /**
@@ -49,7 +49,7 @@ import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 @Accessors(chain = true)
 public class ArrayType extends AbstractPolyType {
 
-    private final RelDataType elementType;
+    private final AlgDataType elementType;
     @Getter
     @Setter
     private long cardinality;
@@ -61,7 +61,7 @@ public class ArrayType extends AbstractPolyType {
     /**
      * Creates an ArrayType. This constructor should only be called from a factory method.
      */
-    public ArrayType( RelDataType elementType, boolean isNullable ) {
+    public ArrayType( AlgDataType elementType, boolean isNullable ) {
         this( elementType, isNullable, -1, -1 );
     }
 
@@ -69,7 +69,7 @@ public class ArrayType extends AbstractPolyType {
     /**
      * Creates an ArrayType. This constructor should only be called from a factory method.
      */
-    public ArrayType( final RelDataType elementType, final boolean isNullable, final long cardinality, final long dimension ) {
+    public ArrayType( final AlgDataType elementType, final boolean isNullable, final long cardinality, final long dimension ) {
         super( PolyType.ARRAY, isNullable, null );
         this.elementType = Objects.requireNonNull( elementType );
         this.cardinality = cardinality;
@@ -95,7 +95,7 @@ public class ArrayType extends AbstractPolyType {
 
     // implement RelDataType
     @Override
-    public RelDataType getComponentType() {
+    public AlgDataType getComponentType() {
         return elementType;
     }
 
@@ -103,7 +103,7 @@ public class ArrayType extends AbstractPolyType {
     /*
     * @return This returns the type of a nested ArrayType. E.g. for an array of an array of Integers, this will return the Integer type.
     */
-    public RelDataType getNestedComponentType() {
+    public AlgDataType getNestedComponentType() {
         if( this.getComponentType().getPolyType() == PolyType.ARRAY ) {
             return ((ArrayType) this.elementType).getNestedComponentType();
         } else {
@@ -129,16 +129,16 @@ public class ArrayType extends AbstractPolyType {
 
     // implement RelDataType
     @Override
-    public RelDataTypeFamily getFamily() {
+    public AlgDataTypeFamily getFamily() {
         return this;
     }
 
 
     @Override
-    public RelDataTypePrecedenceList getPrecedenceList() {
-        return new RelDataTypePrecedenceList() {
+    public AlgDataTypePrecedenceList getPrecedenceList() {
+        return new AlgDataTypePrecedenceList() {
             @Override
-            public boolean containsType( RelDataType type ) {
+            public boolean containsType( AlgDataType type ) {
                 return type.getPolyType() == getPolyType()
                         && type.getComponentType() != null
                         && getComponentType().getPrecedenceList().containsType( type.getComponentType() );
@@ -146,7 +146,7 @@ public class ArrayType extends AbstractPolyType {
 
 
             @Override
-            public int compareTypePrecedence( RelDataType type1, RelDataType type2 ) {
+            public int compareTypePrecedence( AlgDataType type1, AlgDataType type2 ) {
                 if ( !containsType( type1 ) ) {
                     throw new IllegalArgumentException( "must contain type: " + type1 );
                 }

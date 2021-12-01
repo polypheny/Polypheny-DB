@@ -40,13 +40,13 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 
 
 /**
  * Relational expression that can implement itself using an interpreter.
  */
-public interface InterpretableRel extends RelNode {
+public interface InterpretableRel extends AlgNode {
 
     /**
      * Creates an interpreter node to implement this relational expression.
@@ -54,7 +54,7 @@ public interface InterpretableRel extends RelNode {
     Node implement( InterpreterImplementor implementor );
 
     /**
-     * Context when a {@link RelNode} is being converted to an interpreter {@link Node}.
+     * Context when a {@link AlgNode} is being converted to an interpreter {@link Node}.
      */
     class InterpreterImplementor {
 
@@ -62,7 +62,7 @@ public interface InterpretableRel extends RelNode {
         public final Map<String, Object> internalParameters = new LinkedHashMap<>();
         public final SparkHandler spark;
         public final DataContext dataContext;
-        public final Map<RelNode, List<Sink>> relSinks = new HashMap<>();
+        public final Map<AlgNode, List<Sink>> relSinks = new HashMap<>();
 
 
         public InterpreterImplementor( Compiler compiler, SparkHandler spark, DataContext dataContext ) {

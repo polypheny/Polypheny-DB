@@ -50,23 +50,23 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.processing.AbstractQueryProcessor.RelDeepCopyShuttle;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.ConditionalExecute.Condition;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.exceptions.ConstraintViolationException;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.processing.AbstractQueryProcessor.AlgDeepCopyShuttle;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -75,7 +75,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -83,14 +83,14 @@ import org.polypheny.db.transaction.Statement;
 public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
 
     @Override
-    public RelRoot enforce( RelRoot logicalRoot, Statement statement ) {
+    public AlgRoot enforce( AlgRoot logicalRoot, Statement statement ) {
         if ( !logicalRoot.kind.belongsTo( Kind.DML ) ) {
             return logicalRoot;
         }
-        if ( !(logicalRoot.rel instanceof TableModify) ) {
+        if ( !(logicalRoot.alg instanceof TableModify) ) {
             return logicalRoot;
         }
-        final TableModify root = (TableModify) logicalRoot.rel;
+        final TableModify root = (TableModify) logicalRoot.alg;
 
         final Catalog catalog = Catalog.getInstance();
         final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
@@ -125,14 +125,14 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             return logicalRoot;
         }
 
-        RelNode lceRoot = root;
+        AlgNode lceRoot = root;
 
         //
         //  Enforce UNIQUE constraints in INSERT operations
         //
         if ( root.isInsert() && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            RelBuilder builder = RelBuilder.create( statement );
-            final RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+            AlgBuilder builder = AlgBuilder.create( statement );
+            final AlgNode input = root.getInput().accept( new AlgDeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
@@ -140,7 +140,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     continue;
                 }
                 // Enforce uniqueness between the already existing values and the new values
-                final RelNode scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
+                final AlgNode scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 //
                 // TODO: Here we get issues with batch queries
@@ -161,8 +161,8 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 // TODO MV: Changed JOIN Type from LEFT to INNER to fix issues row types in index based query simplification.
                 //  Make sure this is ok!
                 //
-                final RelNode join = builder.join( JoinRelType.INNER, joinCondition ).build();
-                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
+                final AlgNode join = builder.join( JoinAlgType.INNER, joinCondition ).build();
+                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO,
                         ConstraintViolationException.class,
                         String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -225,7 +225,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     builder.push( input );
                     builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) ), builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" ) );
                     builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
-                    final RelNode innerCheck = builder.build();
+                    final AlgNode innerCheck = builder.build();
                     final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                             String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                     ilce.setCheckDescription( String.format( "Source-internal enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -238,12 +238,12 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         //  Enforce FOREIGN KEY constraints in INSERT operations
         //
         if ( root.isInsert() && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            RelBuilder builder = RelBuilder.create( statement );
-            final RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+            AlgBuilder builder = AlgBuilder.create( statement );
+            final AlgNode input = root.getInput().accept( new AlgDeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
-                final RelOptSchema relOptSchema = root.getCatalogReader();
-                final RelOptTable relOptTable = relOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
+                final AlgOptSchema relOptSchema = root.getCatalogReader();
+                final AlgOptTable relOptTable = relOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
                 final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), relOptTable );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
@@ -261,8 +261,8 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     joinCondition = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), joinCondition, joinComparison );
                 }
 
-                final RelNode join = builder.join( JoinRelType.LEFT, joinCondition ).build();
-                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
+                final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
+                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Insert violates foreign key constraint `%s`.`%s`", table.name, foreignKey.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
@@ -274,7 +274,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         //  Enforce UNIQUE constraints in UPDATE operations
         //
         if ( (root.isUpdate() || root.isMerge()) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            RelBuilder builder = RelBuilder.create( statement );
+            AlgBuilder builder = AlgBuilder.create( statement );
             RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
@@ -292,7 +292,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 if ( !affected ) {
                     continue;
                 }
-                RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+                AlgNode input = root.getInput().accept( new AlgDeepCopyShuttle() );
                 Map<String, Integer> nameMap = new HashMap<>();
                 for ( int i = 0; i < root.getUpdateColumnList().size(); ++i ) {
                     nameMap.put( root.getUpdateColumnList().get( i ), i );
@@ -318,7 +318,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 }
                 builder.project( projects );
                 builder.scan( table.name );
-                builder.join( JoinRelType.INNER, builder.literal( true ) );
+                builder.join( JoinAlgType.INNER, builder.literal( true ) );
 
                 List<RexNode> conditionList1 = primaryKey.getColumnNames().stream().map( c ->
                         builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
@@ -346,7 +346,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                                         conditionList2.get( 0 )
                         );
                 condition = RexUtil.flatten( rexBuilder, condition );
-                RelNode check = builder.build();
+                AlgNode check = builder.build();
                 check = new LogicalFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -371,7 +371,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                         builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" )
                 );
                 builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
-                final RelNode innerCheck = builder.build();
+                final AlgNode innerCheck = builder.build();
                 final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 ilce.setCheckDescription( String.format( "Source-internal enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -383,11 +383,11 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         //  Enforce FOREIGN KEY constraints in UPDATE operations
         //
         if ( (root.isUpdate() || root.isMerge()) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            RelBuilder builder = RelBuilder.create( statement );
+            AlgBuilder builder = AlgBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
-                RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+                AlgNode input = root.getInput().accept( new AlgDeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
                 final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
@@ -416,7 +416,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                         targetIndex = input.getRowType().getField( columnName, true, false ).getIndex();
                         newValue = rexBuilder.makeInputRef( input, targetIndex );
                     }
-                    RexNode foreignValue = rexBuilder.makeInputRef( foreignColumn.getRelDataType( rexBuilder.getTypeFactory() ), targetIndex );
+                    RexNode foreignValue = rexBuilder.makeInputRef( foreignColumn.getAlgDataType( rexBuilder.getTypeFactory() ), targetIndex );
                     projects.add( newValue );
                     foreignProjects.add( foreignValue );
                 }
@@ -434,8 +434,8 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                             )
                     );
                 }
-                final RelNode join = builder.join( JoinRelType.LEFT, condition ).build();
-                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
+                final AlgNode join = builder.join( JoinAlgType.LEFT, condition ).build();
+                final AlgNode check = LogicalFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );
@@ -448,7 +448,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         //  Enforce reverse FOREIGN KEY constraints in UPDATE and DELETE operations
         //
         if ( (root.isDelete() || root.isUpdate() || root.isMerge()) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            RelBuilder builder = RelBuilder.create( statement );
+            AlgBuilder builder = AlgBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : exportedKeys ) {
                 final String constraintRule = root.isDelete() ? "ON DELETE " + foreignKey.deleteRule : "ON UPDATE " + foreignKey.updateRule;
@@ -458,11 +458,11 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     default:
                         throw new NotImplementedException( String.format( "The foreign key option %s is not yet implemented.", constraintRule ) );
                 }
-                RelNode pInput;
+                AlgNode pInput;
                 if ( root.getInput() instanceof Project ) {
-                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new RelDeepCopyShuttle() );
+                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new AlgDeepCopyShuttle() );
                 } else {
-                    pInput = root.getInput().accept( new RelDeepCopyShuttle() );
+                    pInput = root.getInput().accept( new AlgDeepCopyShuttle() );
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
@@ -497,7 +497,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                             )
                     );
                 }
-                final RelNode join = builder.join( JoinRelType.INNER, condition ).build();
+                final AlgNode join = builder.join( JoinAlgType.INNER, condition ).build();
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( join, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "%s violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 root.isUpdate() ? "Update" : "Delete",
@@ -507,7 +507,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             }
         }
 
-        RelRoot enforcementRoot = new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        AlgRoot enforcementRoot = new AlgRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
         // Send the generated tree with all unoptimized constraint enforcement checks to the UI
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -518,7 +518,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             queryAnalyzer.addGroup( group );
             InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
                     group,
-                    RelOptUtil.dumpPlan( "Constraint Enforcement Plan", enforcementRoot.rel, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
+                    AlgOptUtil.dumpPlan( "Constraint Enforcement Plan", enforcementRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
         return enforcementRoot;

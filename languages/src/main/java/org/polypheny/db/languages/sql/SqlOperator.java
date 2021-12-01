@@ -39,8 +39,8 @@ import org.polypheny.db.languages.sql.fun.SqlBetweenOperator;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -311,7 +311,7 @@ public abstract class SqlOperator extends OperatorImpl {
      * @param call call to be validated
      * @return inferred type
      */
-    public final RelDataType validateOperands( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+    public final AlgDataType validateOperands( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // Let subclasses know what's up.
         preValidateCall( validator, scope, call );
 
@@ -323,7 +323,7 @@ public abstract class SqlOperator extends OperatorImpl {
         checkOperandTypes( opBinding, true );
 
         // Now infer the result type.
-        RelDataType ret = inferReturnType( opBinding );
+        AlgDataType ret = inferReturnType( opBinding );
         ((SqlValidatorImpl) validator).setValidatedNodeType( call, ret );
         return ret;
     }
@@ -347,9 +347,9 @@ public abstract class SqlOperator extends OperatorImpl {
      * @return inferred return type
      */
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         if ( returnTypeInference != null ) {
-            RelDataType returnType = returnTypeInference.inferReturnType( opBinding );
+            AlgDataType returnType = returnTypeInference.inferReturnType( opBinding );
             if ( returnType == null ) {
                 throw new IllegalArgumentException( "Cannot infer return type for " + opBinding.getOperator() + "; operand types: " + opBinding.collectOperandTypes() );
             }
@@ -372,15 +372,15 @@ public abstract class SqlOperator extends OperatorImpl {
      * @return Type of call
      */
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         for ( Node operand : call.getOperandList() ) {
-            RelDataType nodeType = validator.deriveType( scope, operand );
+            AlgDataType nodeType = validator.deriveType( scope, operand );
             assert nodeType != null;
         }
 
         final List<Node> args = constructOperandList( validator, call, null );
 
-        final List<RelDataType> argTypes = constructArgTypeList( validator, scope, call, args, false );
+        final List<AlgDataType> argTypes = constructArgTypeList( validator, scope, call, args, false );
 
         SqlOperator sqlOperator =
                 SqlUtil.lookupRoutine(
@@ -401,7 +401,7 @@ public abstract class SqlOperator extends OperatorImpl {
         }
 
         ((SqlBasicCall) call).setOperator( sqlOperator );
-        RelDataType type = ((SqlOperator) call.getOperator()).validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
+        AlgDataType type = ((SqlOperator) call.getOperator()).validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
 
         // Validate and determine coercibility and resulting collation name of binary operator if needed.
         type = adjustType( (SqlValidator) validator, (SqlCall) call, type );
@@ -451,17 +451,17 @@ public abstract class SqlOperator extends OperatorImpl {
     }
 
 
-    protected List<RelDataType> constructArgTypeList( Validator validator, ValidatorScope scope, Call call, List<Node> args, boolean convertRowArgToColumnList ) {
+    protected List<AlgDataType> constructArgTypeList( Validator validator, ValidatorScope scope, Call call, List<Node> args, boolean convertRowArgToColumnList ) {
         // Scope for operands. Usually the same as 'scope'.
         final SqlValidatorScope operandScope = ((SqlValidatorScope) scope).getOperandScope( (SqlCall) call );
 
-        final ImmutableList.Builder<RelDataType> argTypeBuilder = ImmutableList.builder();
+        final ImmutableList.Builder<AlgDataType> argTypeBuilder = ImmutableList.builder();
         for ( Node operand : args ) {
-            RelDataType nodeType;
+            AlgDataType nodeType;
             // For row arguments that should be converted to ColumnList types, set the nodeType to a ColumnList type but defer validating the arguments of the row constructor until we know
             // for sure that the row argument maps to a ColumnList type
             if ( operand.getKind() == Kind.ROW && convertRowArgToColumnList ) {
-                RelDataTypeFactory typeFactory = validator.getTypeFactory();
+                AlgDataTypeFactory typeFactory = validator.getTypeFactory();
                 nodeType = typeFactory.createPolyType( PolyType.COLUMN_LIST );
                 ((SqlValidatorImpl) validator).setValidatedNodeType( (SqlNode) operand, nodeType );
             } else {
@@ -487,7 +487,7 @@ public abstract class SqlOperator extends OperatorImpl {
     /**
      * Validates and determines coercibility and resulting collation name of binary operator if needed.
      */
-    protected RelDataType adjustType( SqlValidator validator, final SqlCall call, RelDataType type ) {
+    protected AlgDataType adjustType( SqlValidator validator, final SqlCall call, AlgDataType type ) {
         return type;
     }
 
@@ -496,7 +496,7 @@ public abstract class SqlOperator extends OperatorImpl {
      * Infers the type of a call to this operator with a given set of operand types. Shorthand for {@link #inferReturnType(OperatorBinding)}.
      */
     @Override
-    public final RelDataType inferReturnType( RelDataTypeFactory typeFactory, List<RelDataType> operandTypes ) {
+    public final AlgDataType inferReturnType( AlgDataTypeFactory typeFactory, List<AlgDataType> operandTypes ) {
         return inferReturnType( new ExplicitOperatorBinding( typeFactory, this, operandTypes ) );
     }
 

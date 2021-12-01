@@ -25,7 +25,7 @@ import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -71,7 +71,7 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
-    public SqlNode getCastSpec( RelDataType type ) {
+    public SqlNode getCastSpec( AlgDataType type ) {
         String castSpec;
         switch ( type.getPolyType() ) {
             case ARRAY:

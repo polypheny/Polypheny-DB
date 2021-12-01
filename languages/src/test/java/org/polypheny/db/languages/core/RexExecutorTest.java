@@ -45,10 +45,10 @@ import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlBinaryOperator;
 import org.polypheny.db.languages.sql.fun.SqlMonotonicBinaryOperator;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutable;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -102,7 +102,7 @@ public class RexExecutorTest {
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final RexBuilder rexBuilder = cluster.getRexBuilder();
                         DataContext dataContext = Schemas.createDataContext( rootSchema );
                         final RexExecutorImpl executor = new RexExecutorImpl( dataContext );
@@ -121,9 +121,9 @@ public class RexExecutorTest {
         check( ( rexBuilder, executor ) -> {
             Object[] values = new Object[1];
             final DataContext testContext = new TestDataContext( values );
-            final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-            final RelDataType varchar = typeFactory.createPolyType( PolyType.VARCHAR );
-            final RelDataType integer = typeFactory.createPolyType( PolyType.INTEGER );
+            final AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
+            final AlgDataType varchar = typeFactory.createPolyType( PolyType.VARCHAR );
+            final AlgDataType integer = typeFactory.createPolyType( PolyType.INTEGER );
             // Polypheny-DB is internally creating the input ref via a RexRangeRef
             // which eventually leads to a RexInputRef. So we are good.
             final RexInputRef input = rexBuilder.makeInputRef( varchar, 0 );
@@ -131,7 +131,7 @@ public class RexExecutorTest {
             final RexNode substr = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.SUBSTRING ), input, lengthArg );
             ImmutableList<RexNode> constExps = ImmutableList.of( substr );
 
-            final RelDataType rowType = typeFactory.builder()
+            final AlgDataType rowType = typeFactory.builder()
                     .add( "someStr", null, varchar )
                     .build();
 
@@ -390,13 +390,13 @@ public class RexExecutorTest {
 
 
         @Override
-        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
             throw new UnsupportedOperationException();
         }
 
 
         @Override
-        public RelDataType getParameterType( long index ) {
+        public AlgDataType getParameterType( long index ) {
             throw new UnsupportedOperationException();
         }
 

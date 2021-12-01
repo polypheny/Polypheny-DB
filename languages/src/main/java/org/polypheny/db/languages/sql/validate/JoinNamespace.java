@@ -19,8 +19,8 @@ package org.polypheny.db.languages.sql.validate;
 
 import org.polypheny.db.languages.sql.SqlJoin;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
@@ -38,10 +38,10 @@ class JoinNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
-        RelDataType leftType = validator.getSqlNamespace( join.getLeft() ).getRowType();
-        RelDataType rightType = validator.getSqlNamespace( join.getRight() ).getRowType();
-        final RelDataTypeFactory typeFactory = validator.getTypeFactory();
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
+        AlgDataType leftType = validator.getSqlNamespace( join.getLeft() ).getRowType();
+        AlgDataType rightType = validator.getSqlNamespace( join.getRight() ).getRowType();
+        final AlgDataTypeFactory typeFactory = validator.getTypeFactory();
         switch ( join.getJoinType() ) {
             case LEFT:
                 rightType = typeFactory.createTypeWithNullability( rightType, true );

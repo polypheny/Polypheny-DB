@@ -34,8 +34,8 @@ import org.polypheny.db.languages.sql.validate.OverScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Util;
@@ -49,7 +49,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
     private final Set<SqlValidatorNamespace> activeNamespaces = new HashSet<>();
 
-    private final RelDataType emptyStructType = PolyTypeUtil.createEmptyStructType( typeFactory );
+    private final AlgDataType emptyStructType = PolyTypeUtil.createEmptyStructType( typeFactory );
 
 
     /**
@@ -60,7 +60,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
      * @param typeFactory Type factory
      * @param conformance Compatibility mode
      */
-    public SqlAdvisorValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, RelDataTypeFactory typeFactory, Conformance conformance ) {
+    public SqlAdvisorValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
         super( opTab, catalogReader, typeFactory, conformance );
     }
 
@@ -111,7 +111,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
      * @param operand
      */
     @Override
-    public RelDataType deriveType( ValidatorScope scope, Node operand ) {
+    public AlgDataType deriveType( ValidatorScope scope, Node operand ) {
         // REVIEW: Do not mask Error (indicates a serious system problem) or UnsupportedOperationException (a bug). I have to mask UnsupportedOperationException because SqlValidatorImpl.getValidatedNodeType
         // throws it for an unrecognized identifier node I have to mask Error as well because AbstractNamespace.getRowType  called in super.deriveType can do a Util.permAssert that throws Error
         try {
@@ -124,7 +124,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
     // we do not need to validate from clause for traversing the parse tree because there is no SqlIdentifier in from clause that need to be registered into {@link #idPositions} map
     @Override
-    protected void validateFrom( SqlNode node, RelDataType targetRowType, SqlValidatorScope scope ) {
+    protected void validateFrom( SqlNode node, AlgDataType targetRowType, SqlValidatorScope scope ) {
         try {
             super.validateFrom( node, targetRowType, scope );
         } catch ( PolyphenyDbException e ) {
@@ -178,7 +178,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
 
     @Override
-    protected void validateNamespace( final SqlValidatorNamespace namespace, RelDataType targetRowType ) {
+    protected void validateNamespace( final SqlValidatorNamespace namespace, AlgDataType targetRowType ) {
         // Only attempt to validate each namespace once. Otherwise if validation fails, we may end up cycling.
         if ( activeNamespaces.add( namespace ) ) {
             super.validateNamespace( namespace, targetRowType );

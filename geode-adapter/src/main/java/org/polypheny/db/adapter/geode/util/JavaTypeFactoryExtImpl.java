@@ -44,10 +44,10 @@ import org.apache.geode.pdx.PdxInstance;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.jdbc.JavaRecordType;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
-import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 
 
 /**
@@ -61,21 +61,21 @@ public class JavaTypeFactoryExtImpl extends JavaTypeFactoryImpl {
      * See <a href="http://stackoverflow.com/questions/16966629/what-is-the-difference-between-getfields-and-getdeclaredfields-in-java-reflectio"> the difference between fields and declared fields</a>.
      */
     @Override
-    public RelDataType createStructType( Class type ) {
-        final List<RelDataTypeField> list = new ArrayList<>();
+    public AlgDataType createStructType( Class type ) {
+        final List<AlgDataTypeField> list = new ArrayList<>();
         for ( Field field : type.getDeclaredFields() ) {
             if ( !Modifier.isStatic( field.getModifiers() ) ) {
                 // FIXME: watch out for recursion
                 final Type fieldType = field.getType();
-                list.add( new RelDataTypeFieldImpl( field.getName(), list.size(), createType( fieldType ) ) );
+                list.add( new AlgDataTypeFieldImpl( field.getName(), list.size(), createType( fieldType ) ) );
             }
         }
         return canonize( new JavaRecordType( list, type ) );
     }
 
 
-    public RelDataType createPdxType( PdxInstance pdxInstance ) {
-        final List<RelDataTypeField> list = new ArrayList<>();
+    public AlgDataType createPdxType( PdxInstance pdxInstance ) {
+        final List<AlgDataTypeField> list = new ArrayList<>();
         for ( String fieldName : pdxInstance.getFieldNames() ) {
             Object field = pdxInstance.getField( fieldName );
             Type fieldType;
@@ -89,29 +89,29 @@ public class JavaTypeFactoryExtImpl extends JavaTypeFactoryImpl {
                 fieldType = field.getClass();
             }
 
-            list.add( new RelDataTypeFieldImpl( fieldName, list.size(), createType( fieldType ) ) );
+            list.add( new AlgDataTypeFieldImpl( fieldName, list.size(), createType( fieldType ) ) );
         }
 
-        return canonize( new RelRecordType( list ) );
+        return canonize( new AlgRecordType( list ) );
     }
 
 
     // Experimental flattering the nested structures.
-    public RelDataType createPdxType2( PdxInstance pdxInstance ) {
-        final List<RelDataTypeField> list = new ArrayList<>();
+    public AlgDataType createPdxType2( PdxInstance pdxInstance ) {
+        final List<AlgDataTypeField> list = new ArrayList<>();
         recursiveCreatePdxType( pdxInstance, list, "" );
-        return canonize( new RelRecordType( list ) );
+        return canonize( new AlgRecordType( list ) );
     }
 
 
-    private void recursiveCreatePdxType( PdxInstance pdxInstance, List<RelDataTypeField> list, String fieldNamePrefix ) {
+    private void recursiveCreatePdxType( PdxInstance pdxInstance, List<AlgDataTypeField> list, String fieldNamePrefix ) {
         for ( String fieldName : pdxInstance.getFieldNames() ) {
             Object field = pdxInstance.getField( fieldName );
             final Type fieldType = field.getClass();
             if ( fieldType instanceof PdxInstance ) {
                 recursiveCreatePdxType( (PdxInstance) field, list, fieldNamePrefix + fieldName + "." );
             } else {
-                list.add( new RelDataTypeFieldImpl( fieldNamePrefix + fieldName, list.size(), createType( fieldType ) ) );
+                list.add( new AlgDataTypeFieldImpl( fieldNamePrefix + fieldName, list.size(), createType( fieldType ) ) );
             }
         }
     }

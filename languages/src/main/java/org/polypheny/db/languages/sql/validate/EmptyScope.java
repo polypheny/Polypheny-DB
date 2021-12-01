@@ -35,11 +35,11 @@ import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlWindow;
-import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.prepare.RelOptTableImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
@@ -151,9 +151,9 @@ class EmptyScope implements SqlValidatorScope {
                     table2 = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
                 }
                 if ( table2 == null ) {
-                    final RelOptSchema relOptSchema = validator.catalogReader.unwrap( RelOptSchema.class );
-                    final RelDataType rowType = table.getRowType( validator.typeFactory );
-                    table2 = RelOptTableImpl.create( relOptSchema, rowType, entry, null );
+                    final AlgOptSchema relOptSchema = validator.catalogReader.unwrap( AlgOptSchema.class );
+                    final AlgDataType rowType = table.getRowType( validator.typeFactory );
+                    table2 = AlgOptTableImpl.create( relOptSchema, rowType, entry, null );
                 }
                 namespace = new TableNamespace( validator, table2 );
                 resolved.found( namespace, false, null, path, remainingNames );
@@ -169,7 +169,7 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public RelDataType nullifyType( SqlNode node, RelDataType type ) {
+    public AlgDataType nullifyType( SqlNode node, AlgDataType type ) {
         return type;
     }
 
@@ -189,7 +189,7 @@ class EmptyScope implements SqlValidatorScope {
 
 
     @Override
-    public RelDataType resolveColumn( String name, SqlNode ctx ) {
+    public AlgDataType resolveColumn( String name, SqlNode ctx ) {
         return null;
     }
 

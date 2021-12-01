@@ -16,11 +16,11 @@
 
 package org.polypheny.db.processing;
 
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.transaction.Statement;
 
 public interface ConstraintEnforcer {
 
-    RelRoot enforce( RelRoot logicalRoot, Statement statement );
+    AlgRoot enforce( AlgRoot logicalRoot, Statement statement );
 
 }

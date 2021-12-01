@@ -58,24 +58,24 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.processing.QueryParameterizer;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.TableFunctionScan;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalCorrelate;
-import org.polypheny.db.rel.logical.LogicalExchange;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalIntersect;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalMatch;
-import org.polypheny.db.rel.logical.LogicalMinus;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalSort;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.logical.LogicalUnion;
-import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.LogicalExchange;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalIntersect;
+import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.LogicalMatch;
+import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.transaction.Statement;
@@ -129,16 +129,16 @@ public class IcarusRouter extends AbstractRouter {
 
 
     @Override
-    protected void analyze( Statement statement, RelRoot logicalRoot ) {
-        if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
+    protected void analyze( Statement statement, AlgRoot logicalRoot ) {
+        if ( !(logicalRoot.alg instanceof LogicalTableModify) ) {
             if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.ICARUS_SHUTTLE ) {
                 IcarusShuttle icarusShuttle = new IcarusShuttle();
-                logicalRoot.rel.accept( icarusShuttle );
+                logicalRoot.alg.accept( icarusShuttle );
                 queryClassString = icarusShuttle.hashBasis.toString();
             } else if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.QUERY_PARAMETERIZER ) {
                 QueryParameterizer parameterizer = new QueryParameterizer( 0, new LinkedList<>() );
-                RelNode parameterized = logicalRoot.rel.accept( parameterizer );
-                queryClassString = parameterized.relCompareString();
+                AlgNode parameterized = logicalRoot.alg.accept( parameterizer );
+                queryClassString = parameterized.algCompareString();
             } else {
                 throw new RuntimeException( "Unknown value for QUERY_CLASS_PROVIDER config: " + QUERY_CLASS_PROVIDER.getEnum().name() );
             }
@@ -234,7 +234,7 @@ public class IcarusRouter extends AbstractRouter {
 
 
     @Override
-    protected void wrapUp( Statement statement, RelNode routed ) {
+    protected void wrapUp( Statement statement, AlgNode routed ) {
         if ( TRAINING.getBoolean() ) {
             executionTimeMonitor.subscribe( routingTable, selectedAdapterId + "-" + queryClassString );
         }
@@ -258,7 +258,7 @@ public class IcarusRouter extends AbstractRouter {
     // therefore assumes that there is either no placement of a table on a adapter or a full placement.
     //
     @Override
-    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
+    protected List<CatalogColumnPlacement> selectPlacement( AlgNode node, CatalogTable table ) {
         // Update known adapters
         updateKnownAdapters( table.placementsByAdapter.keySet() );
 
@@ -646,110 +646,110 @@ public class IcarusRouter extends AbstractRouter {
 
 
     // TODO MV: This should be improved to include more information on the used tables and columns
-    private static class IcarusShuttle extends RelShuttleImpl {
+    private static class IcarusShuttle extends AlgShuttleImpl {
 
         private final HashSet<String> hashBasis = new HashSet<>();
 
 
         @Override
-        public RelNode visit( LogicalAggregate aggregate ) {
+        public AlgNode visit( LogicalAggregate aggregate ) {
             hashBasis.add( "LogicalAggregate#" + aggregate.getAggCallList() );
             return visitChild( aggregate, 0, aggregate.getInput() );
         }
 
 
         @Override
-        public RelNode visit( LogicalMatch match ) {
+        public AlgNode visit( LogicalMatch match ) {
             hashBasis.add( "LogicalMatch#" + match.getTable().getQualifiedName() );
             return visitChild( match, 0, match.getInput() );
         }
 
 
         @Override
-        public RelNode visit( TableScan scan ) {
+        public AlgNode visit( TableScan scan ) {
             hashBasis.add( "TableScan#" + scan.getTable().getQualifiedName() );
             return scan;
         }
 
 
         @Override
-        public RelNode visit( TableFunctionScan scan ) {
+        public AlgNode visit( TableFunctionScan scan ) {
             hashBasis.add( "TableFunctionScan#" + scan.getTable().getQualifiedName() ); // TODO: This is most probably not sufficient
             return visitChildren( scan );
         }
 
 
         @Override
-        public RelNode visit( LogicalValues values ) {
+        public AlgNode visit( LogicalValues values ) {
             return values;
         }
 
 
         @Override
-        public RelNode visit( LogicalFilter filter ) {
+        public AlgNode visit( LogicalFilter filter ) {
             hashBasis.add( "LogicalFilter" );
             return visitChild( filter, 0, filter.getInput() );
         }
 
 
         @Override
-        public RelNode visit( LogicalProject project ) {
+        public AlgNode visit( LogicalProject project ) {
             hashBasis.add( "LogicalProject#" + project.getProjects().size() );
             return visitChild( project, 0, project.getInput() );
         }
 
 
         @Override
-        public RelNode visit( LogicalJoin join ) {
+        public AlgNode visit( LogicalJoin join ) {
             hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
             return visitChildren( join );
         }
 
 
         @Override
-        public RelNode visit( LogicalCorrelate correlate ) {
+        public AlgNode visit( LogicalCorrelate correlate ) {
             hashBasis.add( "LogicalCorrelate" );
             return visitChildren( correlate );
         }
 
 
         @Override
-        public RelNode visit( LogicalUnion union ) {
+        public AlgNode visit( LogicalUnion union ) {
             hashBasis.add( "LogicalUnion" );
             return visitChildren( union );
         }
 
 
         @Override
-        public RelNode visit( LogicalIntersect intersect ) {
+        public AlgNode visit( LogicalIntersect intersect ) {
             hashBasis.add( "LogicalIntersect" );
             return visitChildren( intersect );
         }
 
 
         @Override
-        public RelNode visit( LogicalMinus minus ) {
+        public AlgNode visit( LogicalMinus minus ) {
             hashBasis.add( "LogicalMinus" );
             return visitChildren( minus );
         }
 
 
         @Override
-        public RelNode visit( LogicalSort sort ) {
+        public AlgNode visit( LogicalSort sort ) {
             hashBasis.add( "LogicalSort" );
             return visitChildren( sort );
         }
 
 
         @Override
-        public RelNode visit( LogicalExchange exchange ) {
+        public AlgNode visit( LogicalExchange exchange ) {
             hashBasis.add( "LogicalExchange#" + exchange.distribution.getType().shortName );
             return visitChildren( exchange );
         }
 
 
         @Override
-        public RelNode visit( RelNode other ) {
+        public AlgNode visit( AlgNode other ) {
             hashBasis.add( "other#" + other.getClass().getSimpleName() );
             return visitChildren( other );
         }

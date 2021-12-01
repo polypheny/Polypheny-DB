@@ -28,7 +28,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.RexImplicationChecker;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -359,7 +359,7 @@ public class RexImplicationCheckerTest extends LanguageManagerDependant {
 
         // The cast is nullable, while the literal is not nullable. When we simplify it, we end up with the literal. If defaultSimplifier is used, a CAST is introduced on top of the expression, as nullability of the new expression
         // does not match the nullability of the original one. If nonMatchingNullabilitySimplifier is used, the CAST is not added and the simplified expression only consists of the literal.
-        final RexNode e = f.cast( f.intRelDataType, f.literal( 2014 ) );
+        final RexNode e = f.cast( f.intAlgDataType, f.literal( 2014 ) );
         assertThat(
                 f.simplify.simplifyPreservingType( e, RexUnknownAs.UNKNOWN, true ).toString(),
                 is( "CAST(2014):JavaType(class java.lang.Integer)" ) );
@@ -368,7 +368,7 @@ public class RexImplicationCheckerTest extends LanguageManagerDependant {
                 is( "2014" ) );
 
         // In this case, the cast is not nullable. Thus, in both cases, the simplified expression only consists of the literal.
-        RelDataType notNullIntRelDataType = f.typeFactory.createJavaType( int.class );
+        AlgDataType notNullIntRelDataType = f.typeFactory.createJavaType( int.class );
         final RexNode e2 = f.cast( notNullIntRelDataType, f.cast( notNullIntRelDataType, f.literal( 2014 ) ) );
         assertThat(
                 f.simplify.simplifyPreservingType( e2, RexUnknownAs.UNKNOWN, true ).toString(),

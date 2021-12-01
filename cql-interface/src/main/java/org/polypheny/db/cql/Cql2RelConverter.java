@@ -33,23 +33,23 @@ import org.polypheny.db.cql.utils.Tree;
 import org.polypheny.db.cql.utils.Tree.NodeType;
 import org.polypheny.db.cql.utils.Tree.TraversalType;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Packaging information and algorithm to convert a {@link CqlQuery}
- * to relational algebra ({@link RelNode}, {@link RelRoot}, {@link RexNode})
+ * to relational algebra ({@link AlgNode}, {@link AlgRoot}, {@link RexNode})
  */
 @Slf4j
 public class Cql2RelConverter {
@@ -70,48 +70,48 @@ public class Cql2RelConverter {
      * Packaging of all algorithms involved in converting {@link CqlQuery}
      * to relational algebra.
      *
-     * @param relBuilder {@link RelBuilder}.
+     * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
-     * @return {@link RelRoot}.
+     * @return {@link AlgRoot}.
      */
-    public RelRoot convert2Rel( RelBuilder relBuilder, RexBuilder rexBuilder ) {
-        relBuilder = generateTableScan( relBuilder, rexBuilder );
+    public AlgRoot convert2Rel( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+        algBuilder = generateTableScan( algBuilder, rexBuilder );
         if ( cqlQuery.filters != null ) {
-            relBuilder = generateProjections( relBuilder, rexBuilder );
-            relBuilder = generateFilters( relBuilder, rexBuilder );
+            algBuilder = generateProjections( algBuilder, rexBuilder );
+            algBuilder = generateFilters( algBuilder, rexBuilder );
             if ( cqlQuery.projections.exists() ) {
-                relBuilder = cqlQuery.projections.convert2Rel( tableScanColumnOrdinalities, relBuilder, rexBuilder );
+                algBuilder = cqlQuery.projections.convert2Rel( tableScanColumnOrdinalities, algBuilder, rexBuilder );
                 projectionColumnOrdinalities.putAll( cqlQuery.projections.getProjectionColumnOrdinalities() );
             }
         } else {
             if ( cqlQuery.projections.exists() ) {
                 setTableScanColumnOrdinalities();
                 if ( cqlQuery.projections.hasAggregations() ) {
-                    relBuilder = cqlQuery.projections
-                            .convert2Rel( tableScanColumnOrdinalities, relBuilder, rexBuilder );
+                    algBuilder = cqlQuery.projections
+                            .convert2Rel( tableScanColumnOrdinalities, algBuilder, rexBuilder );
                 } else {
-                    relBuilder = cqlQuery.projections
-                            .convert2RelForSingleProjection( tableScanColumnOrdinalities, relBuilder, rexBuilder );
+                    algBuilder = cqlQuery.projections
+                            .convert2RelForSingleProjection( tableScanColumnOrdinalities, algBuilder, rexBuilder );
                 }
                 projectionColumnOrdinalities.putAll( cqlQuery.projections.getProjectionColumnOrdinalities() );
             } else {
-                relBuilder = generateProjections( relBuilder, rexBuilder );
+                algBuilder = generateProjections( algBuilder, rexBuilder );
             }
         }
         if ( cqlQuery.sortSpecifications != null && cqlQuery.sortSpecifications.size() != 0 ) {
-            relBuilder = generateSort( relBuilder, rexBuilder );
+            algBuilder = generateSort( algBuilder, rexBuilder );
         }
-        RelNode relNode = relBuilder.build();
+        AlgNode algNode = algBuilder.build();
 
-        final RelDataType rowType = relNode.getRowType();
+        final AlgDataType rowType = algNode.getRowType();
         final List<Pair<Integer, String>> fields =
                 Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        final RelCollation collation =
-                relNode instanceof Sort
-                        ? ((Sort) relNode).collation
-                        : RelCollations.EMPTY;
+        final AlgCollation collation =
+                algNode instanceof Sort
+                        ? ((Sort) algNode).collation
+                        : AlgCollations.EMPTY;
 
-        return new RelRoot( relNode, relNode.getRowType(), Kind.SELECT, fields, collation );
+        return new AlgRoot( algNode, algNode.getRowType(), Kind.SELECT, fields, collation );
     }
 
 
@@ -132,27 +132,27 @@ public class Cql2RelConverter {
      * Generates table scan i.e. Combines all the tables that
      * are to be queried using the {@link Combiner}.
      *
-     * @param relBuilder {@link RelBuilder}.
+     * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
-     * @return {@link RelBuilder}.
+     * @return {@link AlgBuilder}.
      */
-    private RelBuilder generateTableScan( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    private AlgBuilder generateTableScan( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating table scan." );
         Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation;
-        AtomicReference<RelBuilder> relBuilderAtomicReference = new AtomicReference<>( relBuilder );
+        AtomicReference<AlgBuilder> algBuilderAtomicReference = new AtomicReference<>( algBuilder );
 
         tableOperations.traverse( TraversalType.POSTORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 try {
                     if ( treeNode.isLeaf() ) {
                         CatalogTable catalogTable = treeNode.getExternalNode().catalogTable;
-                        relBuilderAtomicReference.set(
-                                relBuilderAtomicReference.get().scan( catalogTable.getSchemaName(), catalogTable.name )
+                        algBuilderAtomicReference.set(
+                                algBuilderAtomicReference.get().scan( catalogTable.getSchemaName(), catalogTable.name )
                         );
                     } else {
                         Combiner combiner = treeNode.getInternalNode();
-                        relBuilderAtomicReference.set(
-                                combiner.combine( relBuilderAtomicReference.get(), rexBuilder )
+                        algBuilderAtomicReference.set(
+                                combiner.combine( algBuilderAtomicReference.get(), rexBuilder )
                         );
                     }
                 } catch ( UnexpectedTypeException e ) {
@@ -163,7 +163,7 @@ public class Cql2RelConverter {
             return true;
         } );
 
-        return relBuilderAtomicReference.get();
+        return algBuilderAtomicReference.get();
     }
 
 
@@ -173,18 +173,18 @@ public class Cql2RelConverter {
      * to the order in which columns are placed.
      *
      * These projections and ordinalities will be later used for getting column
-     * references for filtering ({@link #generateFilters(RelBuilder, RexBuilder)}),
-     * sorting ({@link #generateSort(RelBuilder, RexBuilder)}), aggregating
-     * ({@link Projections#convert2Rel(Map, RelBuilder, RexBuilder)}), etc.
+     * references for filtering ({@link #generateFilters(AlgBuilder, RexBuilder)}),
+     * sorting ({@link #generateSort(AlgBuilder, RexBuilder)}), aggregating
+     * ({@link Projections#convert2Rel(Map, AlgBuilder, RexBuilder)}), etc.
      *
-     * @param relBuilder {@link RelBuilder}.
+     * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
-     * @return {@link RelBuilder}.
+     * @return {@link AlgBuilder}.
      */
-    private RelBuilder generateProjections( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    private AlgBuilder generateProjections( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating initial projection." );
         Tree<Combiner, TableIndex> queryRelation = cqlQuery.queryRelation;
-        RelNode baseNode = relBuilder.peek();
+        AlgNode baseNode = algBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> columnNames = new ArrayList<>();
         Catalog catalog = Catalog.getInstance();
@@ -212,31 +212,31 @@ public class Cql2RelConverter {
             return true;
         } );
 
-        relBuilder = relBuilder.project( inputRefs, columnNames, true );
-        return relBuilder;
+        algBuilder = algBuilder.project( inputRefs, columnNames, true );
+        return algBuilder;
     }
 
 
     /**
      * Convert {@link Filter}s to relational algebra.
      *
-     * @param relBuilder {@link RelBuilder}.
+     * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
-     * @return {@link RelBuilder}.
+     * @return {@link AlgBuilder}.
      */
-    private RelBuilder generateFilters( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    private AlgBuilder generateFilters( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating filters." );
         Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters = cqlQuery.filters;
         if ( filters == null ) {
-            return relBuilder;
+            return algBuilder;
         }
-        RelNode baseNode = relBuilder.peek();
+        AlgNode baseNode = algBuilder.peek();
         AtomicReference<RexNode> lastRexNode = new AtomicReference<>();
         AtomicReference<RexNode> secondToLastRexNode = new AtomicReference<>();
 
-        RelDataType filtersRowType = baseNode.getRowType();
-        List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
-        Map<String, RelDataTypeField> filterMap = new HashMap<>();
+        AlgDataType filtersRowType = baseNode.getRowType();
+        List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
+        Map<String, AlgDataTypeField> filterMap = new HashMap<>();
         filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
 
         filters.traverse( TraversalType.POSTORDER, ( treeNode, nodeType, direction, frame ) -> {
@@ -290,24 +290,24 @@ public class Cql2RelConverter {
             return true;
         } );
 
-        relBuilder = relBuilder.filter( lastRexNode.get() );
+        algBuilder = algBuilder.filter( lastRexNode.get() );
 
-        return relBuilder;
+        return algBuilder;
     }
 
 
     /**
      * Convert sort specifications to relational algebra.
      *
-     * @param relBuilder {@link RelBuilder}.
+     * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
-     * @return {@link RelBuilder}.
+     * @return {@link AlgBuilder}.
      */
-    private RelBuilder generateSort( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    private AlgBuilder generateSort( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating sort." );
         List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications = cqlQuery.sortSpecifications;
         List<RexNode> sortingNodes = new ArrayList<>();
-        RelNode baseNode = relBuilder.peek();
+        AlgNode baseNode = algBuilder.peek();
         for ( Pair<ColumnIndex, Map<String, Modifier>> sortSpecification : sortSpecifications ) {
             ColumnIndex columnIndex = sortSpecification.left;
             int ordinality = projectionColumnOrdinalities.get( columnIndex.catalogColumn.id );
@@ -318,8 +318,8 @@ public class Cql2RelConverter {
             sortingNodes.add( sortingNode );
         }
 
-        relBuilder = relBuilder.sort( sortingNodes );
-        return relBuilder;
+        algBuilder = algBuilder.sort( sortingNodes );
+        return algBuilder;
     }
 
 }

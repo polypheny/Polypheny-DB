@@ -39,8 +39,8 @@ import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ScannableTable;
@@ -113,13 +113,13 @@ public class InterpreterTest extends LanguageManagerDependant {
 
 
         @Override
-        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
             throw new UnsupportedOperationException();
         }
 
 
         @Override
-        public RelDataType getParameterType( long index ) {
+        public AlgDataType getParameterType( long index ) {
             throw new UnsupportedOperationException();
         }
 
@@ -173,7 +173,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select y, x\n" + "from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)\n" + "where x > 1" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[b, 2]", "[c, 3]" );
@@ -188,7 +188,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         final String sql = "select y\n" + "from (values (1, 'a'), (2, 'b'), (3, 'c')) as t(x, y)\n" + "order by -x";
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).project();
+        AlgNode convert = planner.alg( validate ).project();
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[c]", "[b]", "[a]" );
@@ -227,7 +227,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select * from \"hr\".\"emps\" order by \"empid\"" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[100, 1, Bill, 4000, 2]", "[150, 1, Sebastian, 6000, 2]", "[150, 4, Hans, 4400, 10]", "[200, 2, Eric, 2500, 3]" );
@@ -243,7 +243,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select * from \"beatles\" order by \"i\"" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[4, John]", "[4, Paul]", "[5, Ringo]", "[6, George]" );
@@ -256,7 +256,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select  count(*) from \"beatles\"" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[4]" );
@@ -269,7 +269,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select  max(\"i\") from \"beatles\"" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[6]" );
@@ -282,7 +282,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select  min(\"i\") from \"beatles\"" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[4]" );
@@ -295,7 +295,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select \"j\", count(*) from \"beatles\" group by \"j\"" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRowsUnordered( interpreter, "[George, 1]", "[Paul, 1]", "[John, 1]", "[Ringo, 1]" );
@@ -308,7 +308,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         final String sql = "select \"j\",\n" + "  count(*) filter (where char_length(\"j\") > 4)\n" + "from \"beatles\" group by \"j\"";
         Node parse = planner.parse( sql );
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRowsUnordered( interpreter, "[George, 1]", "[Paul, 0]", "[John, 0]", "[Ringo, 1]" );
@@ -324,7 +324,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select * from \"simple\" limit 2" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[0]", "[10]" );
@@ -340,7 +340,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select * from \"simple\"\n" + "union all\n" + "select * from \"simple\"\n" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[0]", "[10]", "[20]", "[30]", "[0]", "[10]", "[20]", "[30]" );
@@ -356,7 +356,7 @@ public class InterpreterTest extends LanguageManagerDependant {
         Node parse = planner.parse( "select * from \"simple\"\n" + "union\n" + "select * from \"simple\"\n" );
 
         Node validate = planner.validate( parse );
-        RelNode convert = planner.rel( validate ).rel;
+        AlgNode convert = planner.alg( validate ).alg;
 
         final Interpreter interpreter = new Interpreter( dataContext, convert );
         assertRows( interpreter, "[0]", "[10]", "[20]", "[30]" );

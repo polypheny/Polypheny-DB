@@ -21,8 +21,8 @@ import static org.junit.Assert.assertNotEquals;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -44,7 +44,7 @@ public class RexBuilderTest {
      */
     @Test
     public void testEnsureTypeWithDifference() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
         RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );

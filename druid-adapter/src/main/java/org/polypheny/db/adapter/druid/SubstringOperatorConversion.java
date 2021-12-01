@@ -39,7 +39,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -58,7 +58,7 @@ public class SubstringOperatorConversion implements DruidSqlOperatorConverter {
 
     @Nullable
     @Override
-    public String toDruidExpression( RexNode rexNode, RelDataType rowType, DruidQuery query ) {
+    public String toDruidExpression( RexNode rexNode, AlgDataType rowType, DruidQuery query ) {
         final RexCall call = (RexCall) rexNode;
         final String arg = DruidExpressions.toDruidExpression( call.getOperands().get( 0 ), rowType, query );
         if ( arg == null ) {

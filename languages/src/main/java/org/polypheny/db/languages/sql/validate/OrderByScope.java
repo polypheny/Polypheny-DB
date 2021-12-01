@@ -26,8 +26,8 @@ import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSelect;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 /**
@@ -75,10 +75,10 @@ public class OrderByScope extends DelegatingScope {
         if ( identifier.isSimple() && validator.getConformance().isSortByAlias() ) {
             final String name = identifier.names.get( 0 );
             final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
-            final RelDataType rowType = selectNs.getRowType();
+            final AlgDataType rowType = selectNs.getRowType();
 
             final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
-            final RelDataTypeField field = nameMatcher.field( rowType, name );
+            final AlgDataTypeField field = nameMatcher.field( rowType, name );
             final int aliasCount = aliasCount( nameMatcher, name );
             if ( aliasCount > 1 ) {
                 // More than one column has this alias.
@@ -109,11 +109,11 @@ public class OrderByScope extends DelegatingScope {
 
 
     @Override
-    public RelDataType resolveColumn( String name, SqlNode ctx ) {
+    public AlgDataType resolveColumn( String name, SqlNode ctx ) {
         final SqlValidatorNamespace selectNs = validator.getSqlNamespace( select );
-        final RelDataType rowType = selectNs.getRowType();
+        final AlgDataType rowType = selectNs.getRowType();
         final NameMatcher nameMatcher = validator.catalogReader.nameMatcher();
-        final RelDataTypeField field = nameMatcher.field( rowType, name );
+        final AlgDataTypeField field = nameMatcher.field( rowType, name );
         if ( field != null ) {
             return field.getType();
         }

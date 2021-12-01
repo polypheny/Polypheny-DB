@@ -34,29 +34,29 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelDistributionTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMdDistribution;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMdDistribution;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
  * Implementation of {@link Filter} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableFilter extends Filter implements EnumerableRel {
+public class EnumerableFilter extends Filter implements EnumerableAlg {
 
     /**
      * Creates an EnumerableFilter.
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition ) {
+    public EnumerableFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
         super( cluster, traitSet, child, condition );
         assert getConvention() instanceof EnumerableConvention;
     }
@@ -65,25 +65,25 @@ public class EnumerableFilter extends Filter implements EnumerableRel {
     /**
      * Creates an EnumerableFilter.
      */
-    public static EnumerableFilter create( final RelNode input, RexNode condition ) {
-        final RelOptCluster cluster = input.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet =
+    public static EnumerableFilter create( final AlgNode input, RexNode condition ) {
+        final AlgOptCluster cluster = input.getCluster();
+        final AlgMetadataQuery mq = cluster.getMetadataQuery();
+        final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
-                        .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.filter( mq, input ) )
-                        .replaceIf( RelDistributionTraitDef.INSTANCE, () -> RelMdDistribution.filter( mq, input ) );
+                        .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.filter( mq, input ) )
+                        .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.filter( mq, input ) );
         return new EnumerableFilter( cluster, traitSet, input, condition );
     }
 
 
     @Override
-    public EnumerableFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
+    public EnumerableFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new EnumerableFilter( getCluster(), traitSet, input, condition );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         // EnumerableCalc is always better
         throw new UnsupportedOperationException();
     }

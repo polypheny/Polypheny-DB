@@ -35,54 +35,54 @@ package org.polypheny.db.plan.volcano;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelWriter;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
  * Converts a relational expression to any given output convention.
  *
- * Unlike most {@link org.polypheny.db.rel.convert.Converter}s, an abstract converter is always abstract. You would typically create an <code>AbstractConverter</code> when it is necessary to transform a relational
+ * Unlike most {@link org.polypheny.db.algebra.convert.Converter}s, an abstract converter is always abstract. You would typically create an <code>AbstractConverter</code> when it is necessary to transform a relational
  * expression immediately; later, rules will transform it into relational expressions which can be implemented.
  *
  * If an abstract converter cannot be satisfied immediately (because the source subset is abstract), the set is flagged, so this converter will be expanded as soon as a non-abstract relexp is added to the set.</p>
  */
 public class AbstractConverter extends ConverterImpl {
 
-    public AbstractConverter( RelOptCluster cluster, RelSubset rel, RelTraitDef traitDef, RelTraitSet traits ) {
-        super( cluster, traitDef, traits, rel );
+    public AbstractConverter( AlgOptCluster cluster, AlgSubset alg, AlgTraitDef traitDef, AlgTraitSet traits ) {
+        super( cluster, traitDef, traits, alg );
         assert traits.allSimple();
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new AbstractConverter( getCluster(), (RelSubset) sole( inputs ), traitDef, traitSet );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new AbstractConverter( getCluster(), (AlgSubset) sole( inputs ), traitDef, traitSet );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeInfiniteCost();
     }
 
 
     @Override
-    public RelWriter explainTerms( RelWriter pw ) {
+    public AlgWriter explainTerms( AlgWriter pw ) {
         super.explainTerms( pw );
-        for ( RelTrait trait : traitSet ) {
+        for ( AlgTrait trait : traitSet ) {
             pw.item( trait.getTraitDef().getSimpleName(), trait );
         }
         return pw;
@@ -99,27 +99,27 @@ public class AbstractConverter extends ConverterImpl {
      *
      * AbstractConverters can be messy, so they restrain themselves: they don't fire if the target subset already has an implementation (with less than infinite cost).
      */
-    public static class ExpandConversionRule extends RelOptRule {
+    public static class ExpandConversionRule extends AlgOptRule {
 
-        public static final ExpandConversionRule INSTANCE = new ExpandConversionRule( RelFactories.LOGICAL_BUILDER );
+        public static final ExpandConversionRule INSTANCE = new ExpandConversionRule( AlgFactories.LOGICAL_BUILDER );
 
 
         /**
          * Creates an ExpandConversionRule.
          *
-         * @param relBuilderFactory Builder for relational expressions
+         * @param algBuilderFactory Builder for relational expressions
          */
-        public ExpandConversionRule( RelBuilderFactory relBuilderFactory ) {
-            super( operand( AbstractConverter.class, any() ), relBuilderFactory, null );
+        public ExpandConversionRule( AlgBuilderFactory algBuilderFactory ) {
+            super( operand( AbstractConverter.class, any() ), algBuilderFactory, null );
         }
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
+        public void onMatch( AlgOptRuleCall call ) {
             final VolcanoPlanner planner = (VolcanoPlanner) call.getPlanner();
-            AbstractConverter converter = call.rel( 0 );
-            final RelNode child = converter.getInput();
-            RelNode converted = planner.changeTraitsUsingConverters( child, converter.traitSet );
+            AbstractConverter converter = call.alg( 0 );
+            final AlgNode child = converter.getInput();
+            AlgNode converted = planner.changeTraitsUsingConverters( child, converter.traitSet );
             if ( converted != null ) {
                 call.transformTo( converted );
             }

@@ -35,13 +35,13 @@ package org.polypheny.db.plan;
 
 
 import java.io.Serializable;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 
 
 /**
  * Calling convention trait.
  */
-public interface Convention extends RelTrait, Serializable {
+public interface Convention extends AlgTrait, Serializable {
 
     /**
      * Convention that for a relational expression that does not support any convention. It is not implementable, and has to be transformed to something else in order to be implemented.
@@ -50,7 +50,7 @@ public interface Convention extends RelTrait, Serializable {
      *
      * Such expressions always have infinite cost.
      */
-    Convention NONE = new Impl( "NONE", RelNode.class );
+    Convention NONE = new Impl( "NONE", AlgNode.class );
 
     Class getInterface();
 
@@ -70,11 +70,11 @@ public interface Convention extends RelTrait, Serializable {
      * The convention decides whether it wants to handle other trait conversions, e.g. collation, distribution, etc.  For a given convention, we will only add abstract converters to handle the
      * trait (convention, collation, distribution, etc.) conversions if this function returns true.
      *
-     * @param fromTraits Traits of the RelNode that we are converting from
+     * @param fromTraits Traits of the {@link AlgNode} that we are converting from
      * @param toTraits Target traits
      * @return Whether we should add converters
      */
-    boolean useAbstractConvertersForConversion( RelTraitSet fromTraits, RelTraitSet toTraits );
+    boolean useAbstractConvertersForConversion( AlgTraitSet fromTraits, AlgTraitSet toTraits );
 
     /**
      * Default implementation.
@@ -82,10 +82,10 @@ public interface Convention extends RelTrait, Serializable {
     class Impl implements Convention {
 
         private final String name;
-        private final transient Class<? extends RelNode> relClass;
+        private final transient Class<? extends AlgNode> relClass;
 
 
-        public Impl( String name, Class<? extends RelNode> relClass ) {
+        public Impl( String name, Class<? extends AlgNode> relClass ) {
             this.name = name;
             this.relClass = relClass;
         }
@@ -98,12 +98,12 @@ public interface Convention extends RelTrait, Serializable {
 
 
         @Override
-        public void register( RelOptPlanner planner ) {
+        public void register( AlgOptPlanner planner ) {
         }
 
 
         @Override
-        public boolean satisfies( RelTrait trait ) {
+        public boolean satisfies( AlgTrait trait ) {
             return this == trait;
         }
 
@@ -121,7 +121,7 @@ public interface Convention extends RelTrait, Serializable {
 
 
         @Override
-        public RelTraitDef getTraitDef() {
+        public AlgTraitDef getTraitDef() {
             return ConventionTraitDef.INSTANCE;
         }
 
@@ -133,7 +133,7 @@ public interface Convention extends RelTrait, Serializable {
 
 
         @Override
-        public boolean useAbstractConvertersForConversion( RelTraitSet fromTraits, RelTraitSet toTraits ) {
+        public boolean useAbstractConvertersForConversion( AlgTraitSet fromTraits, AlgTraitSet toTraits ) {
             return false;
         }
 

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.Node;
 
@@ -289,7 +290,7 @@ public enum Kind {
     /**
      * The "NOT IN" operator.
      *
-     * Only occurs in SqlNode trees. Is expanded to NOT(IN ...) before entering RelNode land.
+     * Only occurs in SqlNode trees. Is expanded to NOT(IN ...) before entering {@link AlgNode} land.
      */
     NOT_IN( "NOT IN" ),
 

@@ -18,7 +18,7 @@ package org.polypheny.db.languages.sql.validate;
 
 
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -28,10 +28,10 @@ import org.polypheny.db.rel.type.RelDataType;
  */
 class ParameterNamespace extends AbstractNamespace {
 
-    private final RelDataType type;
+    private final AlgDataType type;
 
 
-    ParameterNamespace( SqlValidatorImpl validator, RelDataType type ) {
+    ParameterNamespace( SqlValidatorImpl validator, AlgDataType type ) {
         super( validator, null );
         this.type = type;
     }
@@ -44,13 +44,13 @@ class ParameterNamespace extends AbstractNamespace {
 
 
     @Override
-    public RelDataType validateImpl( RelDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType ) {
         return type;
     }
 
 
     @Override
-    public RelDataType getRowType() {
+    public AlgDataType getRowType() {
         return type;
     }
 }

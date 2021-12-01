@@ -41,7 +41,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -76,7 +76,7 @@ public class RexTransformer {
 
 
     private boolean isBoolean( RexNode node ) {
-        RelDataType type = node.getType();
+        AlgDataType type = node.getType();
         return PolyTypeUtil.inBooleanFamily( type );
     }
 

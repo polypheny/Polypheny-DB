@@ -28,9 +28,9 @@ import org.polypheny.db.core.fun.UserDefined;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFactoryImpl.JavaType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl.JavaType;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.type.PolyType;
@@ -55,7 +55,7 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction implements UserDef
      * This field is is technical debt; see "Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor".
      */
     @Experimental
-    public final RelDataTypeFactory typeFactory;
+    public final AlgDataTypeFactory typeFactory;
 
 
     /**
@@ -70,7 +70,7 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction implements UserDef
             boolean requiresOrder,
             boolean requiresOver,
             Optionality requiresGroupOrder,
-            RelDataTypeFactory typeFactory ) {
+            AlgDataTypeFactory typeFactory ) {
         super(
                 Util.last( opName.names ),
                 opName,
@@ -88,22 +88,22 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction implements UserDef
 
 
     @Override
-    public List<RelDataType> getParamTypes() {
-        List<RelDataType> argTypes = new ArrayList<>();
+    public List<AlgDataType> getParamTypes() {
+        List<AlgDataType> argTypes = new ArrayList<>();
         for ( FunctionParameter o : function.getParameters() ) {
-            final RelDataType type = o.getType( typeFactory );
+            final AlgDataType type = o.getType( typeFactory );
             argTypes.add( type );
         }
         return toSql( argTypes );
     }
 
 
-    private List<RelDataType> toSql( List<RelDataType> types ) {
+    private List<AlgDataType> toSql( List<AlgDataType> types ) {
         return Lists.transform( types, this::toSql );
     }
 
 
-    private RelDataType toSql( RelDataType type ) {
+    private AlgDataType toSql( AlgDataType type ) {
         if ( type instanceof JavaType && ((JavaType) type).getJavaClass() == Object.class ) {
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }

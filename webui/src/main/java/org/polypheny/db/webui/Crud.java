@@ -170,12 +170,12 @@ import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoCol
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -702,7 +702,7 @@ public class Crud implements InformationObserver {
                     } else {
                         values.add( "?" );
                         FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( fih ) );
+                        statement.getDataContext().addParameterValues( i++, catalogColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( fih ) );
                     }
                 }
             }
@@ -2896,7 +2896,7 @@ public class Crud implements InformationObserver {
 
         InformationManager queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
 
-        RelNode result;
+        AlgNode result;
         try {
             temp = System.nanoTime();
             result = QueryPlanBuilder.buildFromTree( request.topNode, statement );
@@ -2905,14 +2905,14 @@ public class Crud implements InformationObserver {
             return new Result( e );
         }
 
-        // Wrap RelNode into a RelRoot
-        final RelDataType rowType = result.getRowType();
+        // Wrap {@link AlgNode} into a RelRoot
+        final AlgDataType rowType = result.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        final RelCollation collation =
+        final AlgCollation collation =
                 result instanceof Sort
                         ? ((Sort) result).collation
-                        : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
+                        : AlgCollations.EMPTY;
+        AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
         PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
@@ -2932,7 +2932,7 @@ public class Crud implements InformationObserver {
                 PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
                 List<String> columns = new ArrayList<>();
-                root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+                root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
 
                 //default Schema
                 long schemaId = transaction.getDefaultSchema().id;
@@ -2985,7 +2985,7 @@ public class Crud implements InformationObserver {
                 PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
                 List<String> columns = new ArrayList<>();
-                root.rel.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+                root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
 
                 // Default Schema
                 long schemaId = transaction.getDefaultSchema().id;
@@ -2996,7 +2996,7 @@ public class Crud implements InformationObserver {
                     DdlManager.getInstance().createView(
                             viewName,
                             schemaId,
-                            root.rel,
+                            root.alg,
                             root.collation,
                             replace,
                             statement,
@@ -3965,11 +3965,11 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature<?> signature;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
         Node parsed = sqlProcessor.parse( sql );
-        RelRoot logicalRoot = null;
+        AlgRoot logicalRoot = null;
         if ( parsed.isA( Kind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed, null );
         } else {
-            Pair<Node, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             logicalRoot = sqlProcessor.translate( statement, validated.left, null );
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
         }

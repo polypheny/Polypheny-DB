@@ -26,8 +26,8 @@ import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.nodes.Select;
 import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Static;
@@ -49,11 +49,11 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
     @Override
     public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         assert callBinding.getOperandCount() == 2 : "setops are binary (for now)";
-        final RelDataType[] argTypes = new RelDataType[callBinding.getOperandCount()];
+        final AlgDataType[] argTypes = new AlgDataType[callBinding.getOperandCount()];
         int colCount = -1;
         final Validator validator = callBinding.getValidator();
         for ( int i = 0; i < argTypes.length; i++ ) {
-            final RelDataType argType = argTypes[i] = callBinding.getOperandType( i );
+            final AlgDataType argType = argTypes[i] = callBinding.getOperandType( i );
             if ( !argType.isStruct() ) {
                 if ( throwOnFailure ) {
                     throw new AssertionError( "setop arg must be a struct" );
@@ -63,7 +63,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
             }
 
             // Each operand must have the same number of columns.
-            final List<RelDataTypeField> fields = argType.getFieldList();
+            final List<AlgDataTypeField> fields = argType.getFieldList();
             if ( i == 0 ) {
                 colCount = fields.size();
                 continue;
@@ -85,11 +85,11 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
         // The columns must be pairwise union compatible. For each column ordinal, form a 'slice' containing the types of the ordinal'th column j.
         for ( int i = 0; i < colCount; i++ ) {
             final int i2 = i;
-            final RelDataType type =
+            final AlgDataType type =
                     callBinding.getTypeFactory().leastRestrictive(
-                            new AbstractList<RelDataType>() {
+                            new AbstractList<AlgDataType>() {
                                 @Override
-                                public RelDataType get( int index ) {
+                                public AlgDataType get( int index ) {
                                     return argTypes[index].getFieldList().get( i2 ).getType();
                                 }
 

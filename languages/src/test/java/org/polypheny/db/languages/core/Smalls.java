@@ -58,8 +58,8 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.ScannableTable;
@@ -113,7 +113,7 @@ public class Smalls {
 
 
             @Override
-            public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+            public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.builder().add( "c", null, PolyType.INTEGER ).build();
             }
         };
@@ -131,7 +131,7 @@ public class Smalls {
     public static QueryableTable generateStrings( final Integer count ) {
         return new AbstractQueryableTable( IntString.class ) {
             @Override
-            public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+            public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.createJavaType( IntString.class );
             }
 
@@ -195,10 +195,10 @@ public class Smalls {
         final int offs = offset == null ? 0 : offset;
         return new AbstractQueryableTable( Object[].class ) {
             @Override
-            public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                final RelDataTypeFactory.Builder builder = typeFactory.builder();
+            public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+                final AlgDataTypeFactory.Builder builder = typeFactory.builder();
                 builder.add( "row_name", null, typeFactory.createJavaType( String.class ) );
-                final RelDataType int_ = typeFactory.createJavaType( int.class );
+                final AlgDataType int_ = typeFactory.createJavaType( int.class );
                 for ( int i = 1; i <= ncol; i++ ) {
                     builder.add( "c" + i, null, int_ );
                 }
@@ -245,7 +245,7 @@ public class Smalls {
     public static ScannableTable fibonacciTableWithLimit( final long limit ) {
         return new ScannableTable() {
             @Override
-            public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+            public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.builder().add( "N", null, PolyType.BIGINT ).build();
             }
 
@@ -326,7 +326,7 @@ public class Smalls {
     public static QueryableTable processCursor( final int offset, final Enumerable<Object[]> a ) {
         return new AbstractQueryableTable( Object[].class ) {
             @Override
-            public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+            public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
                         .add( "result", null, PolyType.INTEGER )
                         .build();
@@ -349,7 +349,7 @@ public class Smalls {
     public static QueryableTable processCursors( final int offset, final Enumerable<Object[]> a, final Enumerable<IntString> b ) {
         return new AbstractQueryableTable( Object[].class ) {
             @Override
-            public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+            public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
                         .add( "result", null, PolyType.INTEGER )
                         .build();
@@ -1072,7 +1072,7 @@ public class Smalls {
 
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "S", null, PolyType.VARCHAR, 12 )
                     .build();

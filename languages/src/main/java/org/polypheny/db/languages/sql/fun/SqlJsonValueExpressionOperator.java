@@ -23,7 +23,7 @@ import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 
@@ -43,12 +43,12 @@ public class SqlJsonValueExpressionOperator extends SqlSpecialOperator {
                 100,
                 true,
                 opBinding -> {
-                    final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+                    final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
                     return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                 },
                 ( callBinding, returnType, operandTypes ) -> {
                     if ( ((SqlCallBinding) callBinding).isOperandNull( 0, false ) ) {
-                        final RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
+                        final AlgDataTypeFactory typeFactory = callBinding.getTypeFactory();
                         operandTypes[0] = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                     }
                 },

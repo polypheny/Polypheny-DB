@@ -36,7 +36,7 @@ package org.polypheny.db.rex;
 
 import java.util.AbstractList;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -53,7 +53,7 @@ public abstract class RexSlot extends RexVariable {
      * @param index Index of the field in the underlying rowtype
      * @param type Type of the column
      */
-    protected RexSlot( String name, int index, RelDataType type ) {
+    protected RexSlot( String name, int index, AlgDataType type ) {
         super( name, type );
         assert index >= 0;
         this.index = index;

@@ -56,7 +56,7 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.view.MaterializedViewManager;
@@ -150,7 +150,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         PlacementType placementType = store.size() > 0 ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-        RelRoot relRoot = sqlProcessor.translate(
+        AlgRoot relRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate(
                         statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );

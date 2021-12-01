@@ -27,8 +27,8 @@ import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
 import org.polypheny.db.adapter.cassandra.CassandraTableScan;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.volcano.AlgSubset;
+import org.polypheny.db.algebra.AlgNode;
 
 
 public class CassandraUtils {
@@ -39,32 +39,32 @@ public class CassandraUtils {
      * @param relSubset the subset.
      * @return the {@link CassandraTable} or <code>null</code> if not found.
      */
-    public static CassandraTable getUnderlyingTable( RelSubset relSubset, Convention targetConvention ) {
-        return getUnderlyingTable( relSubset.getRelList(), targetConvention );
+    public static CassandraTable getUnderlyingTable( AlgSubset relSubset, Convention targetConvention ) {
+        return getUnderlyingTable( relSubset.getAlgList(), targetConvention );
     }
 
 
-    private static CassandraTable getUnderlyingTable( List<RelNode> rels, Convention targetConvention ) {
-        Set<RelNode> alreadyChecked = new HashSet<>();
-        Deque<RelNode> innerLevel = new LinkedList<>();
+    private static CassandraTable getUnderlyingTable( List<AlgNode> rels, Convention targetConvention ) {
+        Set<AlgNode> alreadyChecked = new HashSet<>();
+        Deque<AlgNode> innerLevel = new LinkedList<>();
 
         innerLevel.addAll( rels );
 
         while ( !innerLevel.isEmpty() ) {
-            RelNode relNode = innerLevel.pop();
-            alreadyChecked.add( relNode );
-            if ( relNode instanceof CassandraTableScan ) {
-                if ( relNode.getConvention().equals( targetConvention ) ) {
-                    return ((CassandraTableScan) relNode).cassandraTable;
+            AlgNode algNode = innerLevel.pop();
+            alreadyChecked.add( algNode );
+            if ( algNode instanceof CassandraTableScan ) {
+                if ( algNode.getConvention().equals( targetConvention ) ) {
+                    return ((CassandraTableScan) algNode).cassandraTable;
                 }
-            } else if ( relNode instanceof CassandraTableModify ) {
-                if ( relNode.getConvention().equals( targetConvention ) ) {
-                    return ((CassandraTableModify) relNode).cassandraTable;
+            } else if ( algNode instanceof CassandraTableModify ) {
+                if ( algNode.getConvention().equals( targetConvention ) ) {
+                    return ((CassandraTableModify) algNode).cassandraTable;
                 }
             } else {
-                for ( RelNode innerNode : relNode.getInputs() ) {
-                    if ( innerNode instanceof RelSubset ) {
-                        for ( RelNode possibleNewRel : ((RelSubset) innerNode).getRelList() ) {
+                for ( AlgNode innerNode : algNode.getInputs() ) {
+                    if ( innerNode instanceof AlgSubset ) {
+                        for ( AlgNode possibleNewRel : ((AlgSubset) innerNode).getAlgList() ) {
                             if ( !alreadyChecked.contains( possibleNewRel ) ) {
                                 innerLevel.addLast( possibleNewRel );
                             }
@@ -84,11 +84,11 @@ public class CassandraUtils {
      * @param relSubset the subset.
      * @return the {@link CassandraFilter} or <code>null</code> if not found.
      */
-    public static CassandraFilter getUnderlyingFilter( RelSubset relSubset ) {
-        List<RelNode> rels = relSubset.getRelList();
-        for ( RelNode relNode : rels ) {
-            if ( relNode instanceof CassandraFilter ) {
-                return (CassandraFilter) relNode;
+    public static CassandraFilter getUnderlyingFilter( AlgSubset relSubset ) {
+        List<AlgNode> rels = relSubset.getAlgList();
+        for ( AlgNode algNode : rels ) {
+            if ( algNode instanceof CassandraFilter ) {
+                return (CassandraFilter) algNode;
             }
         }
 

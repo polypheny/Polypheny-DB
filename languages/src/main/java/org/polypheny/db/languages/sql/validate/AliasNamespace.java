@@ -21,14 +21,14 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.util.Util;
 
 
@@ -57,11 +57,11 @@ public class AliasNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         final List<String> nameList = new ArrayList<>();
         final List<SqlNode> operands = call.getSqlOperandList();
         final SqlValidatorNamespace childNs = validator.getSqlNamespace( operands.get( 0 ) );
-        final RelDataType rowType = childNs.getRowTypeSansSystemColumns();
+        final AlgDataType rowType = childNs.getRowTypeSansSystemColumns();
         final List<SqlNode> columnNames = Util.skip( operands, 2 );
         for ( final SqlNode operand : columnNames ) {
             String name = ((SqlIdentifier) operand).getSimple();
@@ -78,18 +78,18 @@ public class AliasNamespace extends AbstractNamespace {
                             : new SqlNodeList( columnNames, ParserPos.sum( columnNames ) );
             throw validator.newValidationError( node, RESOURCE.aliasListDegree( rowType.getFieldCount(), getString( rowType ), nameList.size() ) );
         }
-        final List<RelDataType> typeList = new ArrayList<>();
-        for ( RelDataTypeField field : rowType.getFieldList() ) {
+        final List<AlgDataType> typeList = new ArrayList<>();
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
             typeList.add( field.getType() );
         }
         return validator.getTypeFactory().createStructType( typeList, nameList );
     }
 
 
-    private String getString( RelDataType rowType ) {
+    private String getString( AlgDataType rowType ) {
         StringBuilder buf = new StringBuilder();
         buf.append( "(" );
-        for ( RelDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
             if ( field.getIndex() > 0 ) {
                 buf.append( ", " );
             }
@@ -110,9 +110,9 @@ public class AliasNamespace extends AbstractNamespace {
 
     @Override
     public String translate( String name ) {
-        final RelDataType underlyingRowType = validator.getValidatedNodeType( call.operand( 0 ) );
+        final AlgDataType underlyingRowType = validator.getValidatedNodeType( call.operand( 0 ) );
         int i = 0;
-        for ( RelDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
             if ( field.getName().equals( name ) ) {
                 return underlyingRowType.getFieldList().get( i ).getName();
             }

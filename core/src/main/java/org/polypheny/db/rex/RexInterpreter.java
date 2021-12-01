@@ -45,7 +45,7 @@ import java.util.function.IntPredicate;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.rel.metadata.NullSentinel;
+import org.polypheny.db.algebra.metadata.NullSentinel;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Util;
 

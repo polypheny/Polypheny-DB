@@ -18,11 +18,11 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalModifyCollect;
-import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.LogicalUnion;
 
 
 /**
@@ -36,11 +36,11 @@ class EnumerableModifyCollectRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalModifyCollect union = (LogicalModifyCollect) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalModifyCollect union = (LogicalModifyCollect) alg;
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
-        final RelTraitSet traitSet = union.getTraitSet().replace( out );
-        return new EnumerableModifyCollect( rel.getCluster(), traitSet, convertList( union.getInputs(), out ), true );
+        final AlgTraitSet traitSet = union.getTraitSet().replace( out );
+        return new EnumerableModifyCollect( alg.getCluster(), traitSet, convertList( union.getInputs(), out ), true );
     }
 }
 

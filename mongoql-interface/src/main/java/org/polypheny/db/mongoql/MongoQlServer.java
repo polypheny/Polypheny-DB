@@ -64,7 +64,7 @@ import org.polypheny.db.mongoql.model.QueryRequest;
 import org.polypheny.db.mongoql.model.Result;
 import org.polypheny.db.mongoql.model.SortState;
 import org.polypheny.db.processing.MqlProcessor;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -172,7 +172,7 @@ public class MongoQlServer extends QueryInterface {
                 Result result = new Result( 1 ).setGeneratedQuery( mql ).setXid( statement.getTransaction().getXid().toString() );
                 results.add( result );
             } else {
-                RelRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
+                AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
 
                 // Prepare
                 signature = statement.getQueryProcessor().prepareQuery( logicalRoot );

@@ -43,20 +43,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -66,23 +66,23 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * Implementation of a {@link org.polypheny.db.rel.core.Filter}
+ * Implementation of a {@link Filter}
  * relational expression in Cassandra.
  */
-public class CassandraFilter extends Filter implements CassandraRel {
+public class CassandraFilter extends Filter implements CassandraAlg {
 
     private Boolean singlePartition;
-    private RelCollation implicitCollation;
+    private AlgCollation implicitCollation;
 
 
     public CassandraFilter(
-            RelOptCluster cluster,
-            RelTraitSet traitSet,
-            RelNode child,
+            AlgOptCluster cluster,
+            AlgTraitSet traitSet,
+            AlgNode child,
             RexNode condition,
             List<String> partitionKeys,
             List<String> clusteringKeys,
-            List<RelFieldCollation> implicitFieldCollations ) {
+            List<AlgFieldCollation> implicitFieldCollations ) {
         super( cluster, traitSet, child, condition );
 
         this.singlePartition = false;
@@ -100,19 +100,19 @@ public class CassandraFilter extends Filter implements CassandraRel {
     }
 
 
-    public CassandraFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode convert, RexNode condition ) {
+    public CassandraFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode convert, RexNode condition ) {
         this( cluster, traitSet, convert, condition, new ArrayList<>(), new ArrayList<>(), new ArrayList<>() );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
     }
 
 
     @Override
-    public CassandraFilter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
+    public CassandraFilter copy( AlgTraitSet traitSet, AlgNode input, RexNode condition ) {
         return new CassandraFilter( getCluster(), traitSet, input, condition );
     }
 
@@ -148,7 +148,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
      *
      * @return The implicit collation based on the natural sorting by clustering keys
      */
-    public RelCollation getImplicitCollation() {
+    public AlgCollation getImplicitCollation() {
         return implicitCollation;
     }
 
@@ -158,15 +158,15 @@ public class CassandraFilter extends Filter implements CassandraRel {
      */
     static class Translator {
 
-        private final RelDataType rowType;
+        private final AlgDataType rowType;
         private final List<String> fieldNames;
         private final Set<String> partitionKeys;
         private final List<String> clusteringKeys;
         private int restrictedClusteringKeys;
-        private final List<RelFieldCollation> implicitFieldCollations;
+        private final List<AlgFieldCollation> implicitFieldCollations;
 
 
-        Translator( RelDataType rowType, List<String> partitionKeys, List<String> clusteringKeys, List<RelFieldCollation> implicitFieldCollations ) {
+        Translator( AlgDataType rowType, List<String> partitionKeys, List<String> clusteringKeys, List<AlgFieldCollation> implicitFieldCollations ) {
             this.rowType = rowType;
             this.fieldNames = CassandraRules.cassandraPhysicalFieldNames( rowType );
             this.partitionKeys = new HashSet<>( partitionKeys );
@@ -191,21 +191,21 @@ public class CassandraFilter extends Filter implements CassandraRel {
          *
          * @return The collation of the filtered results
          */
-        public RelCollation getImplicitCollation() {
+        public AlgCollation getImplicitCollation() {
             // No collation applies if we aren't restricted to a single partition
             if ( !isSinglePartition() ) {
-                return RelCollations.EMPTY;
+                return AlgCollations.EMPTY;
             }
 
             // Pull out the correct fields along with their original collations
-            List<RelFieldCollation> fieldCollations = new ArrayList<>();
+            List<AlgFieldCollation> fieldCollations = new ArrayList<>();
             for ( int i = restrictedClusteringKeys; i < clusteringKeys.size(); i++ ) {
                 int fieldIndex = fieldNames.indexOf( clusteringKeys.get( i ) );
-                RelFieldCollation.Direction direction = implicitFieldCollations.get( i ).getDirection();
-                fieldCollations.add( new RelFieldCollation( fieldIndex, direction ) );
+                AlgFieldCollation.Direction direction = implicitFieldCollations.get( i ).getDirection();
+                fieldCollations.add( new AlgFieldCollation( fieldIndex, direction ) );
             }
 
-            return RelCollations.of( fieldCollations );
+            return AlgCollations.of( fieldCollations );
         }
 
 
@@ -217,7 +217,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
          */
         private List<Relation> translateMatch( RexNode condition ) {
             // CQL does not support disjunctions
-            List<RexNode> disjunctions = RelOptUtil.disjunctions( condition );
+            List<RexNode> disjunctions = AlgOptUtil.disjunctions( condition );
             if ( disjunctions.size() == 1 ) {
                 return translateAnd( disjunctions.get( 0 ) );
             } else {
@@ -246,7 +246,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
          */
         private List<Relation> translateAnd( RexNode condition ) {
             List<Relation> predicates = new ArrayList<>();
-            for ( RexNode node : RelOptUtil.conjunctions( condition ) ) {
+            for ( RexNode node : AlgOptUtil.conjunctions( condition ) ) {
                 predicates.add( translateMatch2( node ) );
             }
 
@@ -340,19 +340,19 @@ public class CassandraFilter extends Filter implements CassandraRel {
                 }
             }
 
-            ColumnRelationBuilder<Relation> rel = Relation.column( name );
+            ColumnRelationBuilder<Relation> alg = Relation.column( name );
             Term term = QueryBuilder.literal( value );
             switch ( op ) {
                 case EQUALS:
-                    return rel.isEqualTo( term );
+                    return alg.isEqualTo( term );
                 case LESS_THAN:
-                    return rel.isLessThan( term );
+                    return alg.isLessThan( term );
                 case LESS_THAN_OR_EQUAL:
-                    return rel.isLessThanOrEqualTo( term );
+                    return alg.isLessThanOrEqualTo( term );
                 case GREATER_THAN:
-                    return rel.isGreaterThan( term );
+                    return alg.isGreaterThan( term );
                 case GREATER_THAN_OR_EQUAL:
-                    return rel.isLessThanOrEqualTo( term );
+                    return alg.isLessThanOrEqualTo( term );
                 default:
                     throw new AssertionError( "cannot translate op " + op + " name " + name + " valuestring " + valueString );
             }

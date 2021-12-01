@@ -19,8 +19,8 @@ package org.polypheny.db.core;
 
 import java.util.List;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
 
@@ -38,7 +38,7 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
 
 
     @Override
-    public ColumnStrategy generationStrategy( RelOptTable table, int iColumn ) {
+    public ColumnStrategy generationStrategy( AlgOptTable table, int iColumn ) {
         return table.getRowType().getFieldList().get( iColumn ).getType().isNullable()
                 ? ColumnStrategy.NULLABLE
                 : ColumnStrategy.NOT_NULLABLE;
@@ -46,13 +46,13 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
 
 
     @Override
-    public RexNode newColumnDefaultValue( RelOptTable table, int iColumn, InitializerContext context ) {
+    public RexNode newColumnDefaultValue( AlgOptTable table, int iColumn, InitializerContext context ) {
         return context.getRexBuilder().constantNull();
     }
 
 
     @Override
-    public RexNode newAttributeInitializer( RelDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
+    public RexNode newAttributeInitializer( AlgDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
         return context.getRexBuilder().constantNull();
     }
 }

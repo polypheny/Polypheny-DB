@@ -34,8 +34,8 @@ import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -65,8 +65,8 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
-        RelDataType type =
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        AlgDataType type =
                 getComponentType(
                         opBinding.getTypeFactory(),
                         opBinding.collectOperandTypes() );
@@ -80,19 +80,19 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
     }
 
 
-    private RelDataType getComponentType( RelDataTypeFactory typeFactory, List<RelDataType> argTypes ) {
+    private AlgDataType getComponentType( AlgDataTypeFactory typeFactory, List<AlgDataType> argTypes ) {
         return typeFactory.leastRestrictive( argTypes );
     }
 
 
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        final List<RelDataType> argTypes =
+        final List<AlgDataType> argTypes =
                 PolyTypeUtil.deriveAndCollectTypes(
                         callBinding.getValidator(),
                         callBinding.getScope(),
                         callBinding.operands() );
-        final RelDataType componentType =
+        final AlgDataType componentType =
                 getComponentType(
                         callBinding.getTypeFactory(),
                         argTypes );
@@ -107,7 +107,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         SqlSelect subSelect = call.operand( 0 );
         subSelect.validateExpr( (SqlValidator) validator, (SqlValidatorScope) scope );
         SqlValidatorNamespace ns = ((SqlValidator) validator).getSqlNamespace( subSelect );

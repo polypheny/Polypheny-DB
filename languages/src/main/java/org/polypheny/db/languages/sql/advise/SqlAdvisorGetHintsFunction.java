@@ -33,8 +33,8 @@ import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.core.util.Moniker;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.TableFunction;
@@ -79,7 +79,7 @@ public class SqlAdvisorGetHintsFunction implements TableFunction, ImplementableF
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory, List<Object> arguments ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory, List<Object> arguments ) {
         return typeFactory.createJavaType( SqlAdvisorHint.class );
     }
 

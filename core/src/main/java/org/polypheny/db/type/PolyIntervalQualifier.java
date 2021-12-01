@@ -34,8 +34,8 @@ package org.polypheny.db.type;
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.nodes.IntervalQualifier;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 
 public class PolyIntervalQualifier {
 
@@ -57,7 +57,7 @@ public class PolyIntervalQualifier {
 
 
     public static int combineFractionalSecondPrecisionPreservingDefault(
-            RelDataTypeSystem typeSystem,
+            AlgDataTypeSystem typeSystem,
             PolyIntervalQualifier qual1,
             PolyIntervalQualifier qual2 ) {
         final int p1 = qual1.getFractionalSecondPrecision( typeSystem );
@@ -86,7 +86,7 @@ public class PolyIntervalQualifier {
 
 
     public static int combineStartPrecisionPreservingDefault(
-            RelDataTypeSystem typeSystem,
+            AlgDataTypeSystem typeSystem,
             PolyIntervalQualifier qual1,
             PolyIntervalQualifier qual2 ) {
         final int start1 = qual1.getStartPrecision( typeSystem );
@@ -114,8 +114,8 @@ public class PolyIntervalQualifier {
     }
 
 
-    public int getFractionalSecondPrecision( RelDataTypeSystem typeSystem ) {
-        if ( fractionalSecondPrecision == RelDataType.PRECISION_NOT_SPECIFIED ) {
+    public int getFractionalSecondPrecision( AlgDataTypeSystem typeSystem ) {
+        if ( fractionalSecondPrecision == AlgDataType.PRECISION_NOT_SPECIFIED ) {
             return typeName().getDefaultScale();
         } else {
             return fractionalSecondPrecision;
@@ -125,15 +125,15 @@ public class PolyIntervalQualifier {
 
     public int getFractionalSecondPrecisionPreservingDefault() {
         if ( useDefaultFractionalSecondPrecision() ) {
-            return RelDataType.PRECISION_NOT_SPECIFIED;
+            return AlgDataType.PRECISION_NOT_SPECIFIED;
         } else {
             return fractionalSecondPrecision;
         }
     }
 
 
-    public int getStartPrecision( RelDataTypeSystem typeSystem ) {
-        if ( startPrecision == RelDataType.PRECISION_NOT_SPECIFIED ) {
+    public int getStartPrecision( AlgDataTypeSystem typeSystem ) {
+        if ( startPrecision == AlgDataType.PRECISION_NOT_SPECIFIED ) {
             return typeSystem.getDefaultPrecision( typeName() );
         } else {
             return startPrecision;
@@ -150,7 +150,7 @@ public class PolyIntervalQualifier {
      * Returns {@code true} if start precision is not specified.
      */
     public boolean useDefaultStartPrecision() {
-        return startPrecision == RelDataType.PRECISION_NOT_SPECIFIED;
+        return startPrecision == AlgDataType.PRECISION_NOT_SPECIFIED;
     }
 
 
@@ -158,7 +158,7 @@ public class PolyIntervalQualifier {
      * Returns {@code true} if fractional second precision is not specified.
      */
     public boolean useDefaultFractionalSecondPrecision() {
-        return fractionalSecondPrecision == RelDataType.PRECISION_NOT_SPECIFIED;
+        return fractionalSecondPrecision == AlgDataType.PRECISION_NOT_SPECIFIED;
     }
 
 

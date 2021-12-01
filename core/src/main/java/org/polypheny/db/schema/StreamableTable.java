@@ -34,7 +34,7 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.stream.Delta;
+import org.polypheny.db.algebra.stream.Delta;
 
 
 /**

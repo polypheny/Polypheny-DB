@@ -49,7 +49,7 @@ import org.polypheny.db.core.nodes.Function;
 import org.polypheny.db.core.nodes.Function.FunctionType;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexExecutable;
@@ -79,10 +79,10 @@ public class RexImplicationChecker {
 
     final RexBuilder builder;
     final RexExecutorImpl executor;
-    final RelDataType rowType;
+    final AlgDataType rowType;
 
 
-    public RexImplicationChecker( RexBuilder builder, RexExecutorImpl executor, RelDataType rowType ) {
+    public RexImplicationChecker( RexBuilder builder, RexExecutorImpl executor, AlgDataType rowType ) {
         this.builder = Objects.requireNonNull( builder );
         this.executor = Objects.requireNonNull( executor );
         this.rowType = Objects.requireNonNull( rowType );
@@ -125,8 +125,8 @@ public class RexImplicationChecker {
         //   z > 90
         //
         // Similarly, decompose CNF into a list of conditions, each of which is a disjunction.
-        List<RexNode> firsts = RelOptUtil.disjunctions( firstDnf );
-        List<RexNode> seconds = RelOptUtil.disjunctions( secondDnf );
+        List<RexNode> firsts = AlgOptUtil.disjunctions( firstDnf );
+        List<RexNode> seconds = AlgOptUtil.disjunctions( secondDnf );
 
         for ( RexNode f : firsts ) {
             // Check if f implies at least one of the conjunctions in list secondDnfs.
@@ -168,7 +168,7 @@ public class RexImplicationChecker {
         }
         switch ( first.getKind() ) {
             case AND:
-                for ( RexNode f : RelOptUtil.conjunctions( first ) ) {
+                for ( RexNode f : AlgOptUtil.conjunctions( first ) ) {
                     if ( implies2( f, second ) ) {
                         return true;
                     }
@@ -484,7 +484,7 @@ public class RexImplicationChecker {
 
 
         private Operator reverse( Operator op ) {
-            return RelOptUtil.op( op.getKind().reverse(), op );
+            return AlgOptUtil.op( op.getKind().reverse(), op );
         }
 
 

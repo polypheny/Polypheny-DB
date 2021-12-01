@@ -36,14 +36,14 @@ package org.polypheny.db.util;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptPlanner;
 
 
 /**
  * CancelFlag is used to post and check cancellation requests.
  *
- * Pass it to {@link RelOptPlanner} by putting it into a {@link Context}.
+ * Pass it to {@link AlgOptPlanner} by putting it into a {@link Context}.
  */
 public class CancelFlag {
 

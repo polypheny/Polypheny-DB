@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import org.polypheny.db.core.nodes.CallBinding;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -56,7 +56,7 @@ public class MultisetOperandTypeChecker implements PolyOperandTypeChecker {
         }
 
         // TODO: this won't work if element types are of ROW types and there is a mismatch.
-        RelDataType biggest =
+        AlgDataType biggest =
                 callBinding.getTypeFactory().leastRestrictive(
                         ImmutableList.of(
                                 callBinding.getValidator()

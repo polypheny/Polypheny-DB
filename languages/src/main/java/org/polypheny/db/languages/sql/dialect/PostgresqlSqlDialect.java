@@ -32,9 +32,9 @@ import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.fun.SqlFloorFunction;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -47,8 +47,8 @@ public class PostgresqlSqlDialect extends SqlDialect {
     /**
      * PostgreSQL type system.
      */
-    private static final RelDataTypeSystem POSTGRESQL_TYPE_SYSTEM =
-            new RelDataTypeSystemImpl() {
+    private static final AlgDataTypeSystem POSTGRESQL_TYPE_SYSTEM =
+            new AlgDataTypeSystemImpl() {
                 @Override
                 public int getMaxPrecision( PolyType typeName ) {
                     switch ( typeName ) {
@@ -98,7 +98,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public SqlNode getCastSpec( RelDataType type ) {
+    public SqlNode getCastSpec( AlgDataType type ) {
         String castSpec;
         switch ( type.getPolyType() ) {
             case TINYINT:
@@ -116,7 +116,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 castSpec = "_BYTEA";
                 break;
             case ARRAY:
-                RelDataType tt = type;
+                AlgDataType tt = type;
                 StringBuilder brackets = new StringBuilder( "[]" );
                 while ( tt.getComponentType().getPolyType() == PolyType.ARRAY ) {
                     tt = tt.getComponentType();

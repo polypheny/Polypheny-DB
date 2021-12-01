@@ -35,17 +35,17 @@ package org.polypheny.db.interpreter;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.core.Join;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.core.Union;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.core.Window;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -55,11 +55,11 @@ import org.polypheny.db.rex.RexNode;
 public class Nodes {
 
     /**
-     * Extension to {@link Interpreter.CompilerImpl} that knows how to handle the core logical {@link RelNode}s.
+     * Extension to {@link Interpreter.CompilerImpl} that knows how to handle the core logical {@link AlgNode}s.
      */
     public static class CoreCompiler extends Interpreter.CompilerImpl {
 
-        CoreCompiler( Interpreter interpreter, RelOptCluster cluster ) {
+        CoreCompiler( Interpreter interpreter, AlgOptCluster cluster ) {
             super( interpreter, cluster );
         }
 

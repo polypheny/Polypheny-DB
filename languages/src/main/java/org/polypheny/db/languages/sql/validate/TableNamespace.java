@@ -44,10 +44,10 @@ import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlNodeList;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.util.Static;
@@ -60,13 +60,13 @@ import org.polypheny.db.util.Util;
 class TableNamespace extends AbstractNamespace {
 
     private final ValidatorTable table;
-    public final ImmutableList<RelDataTypeField> extendedFields;
+    public final ImmutableList<AlgDataTypeField> extendedFields;
 
 
     /**
      * Creates a TableNamespace.
      */
-    private TableNamespace( SqlValidatorImpl validator, ValidatorTable table, List<RelDataTypeField> fields ) {
+    private TableNamespace( SqlValidatorImpl validator, ValidatorTable table, List<AlgDataTypeField> fields ) {
         super( validator, null );
         this.table = Objects.requireNonNull( table );
         this.extendedFields = ImmutableList.copyOf( fields );
@@ -79,7 +79,7 @@ class TableNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         if ( extendedFields.isEmpty() ) {
             return table.getRowType();
         }
@@ -118,14 +118,14 @@ class TableNamespace extends AbstractNamespace {
     public TableNamespace extend( SqlNodeList extendList ) {
         final List<SqlNode> identifierList = Util.quotientList( extendList.getSqlList(), 2, 0 );
         SqlValidatorUtil.checkIdentifierListForDuplicates( identifierList, validator.getValidationErrorFunction() );
-        final ImmutableList.Builder<RelDataTypeField> builder = ImmutableList.builder();
+        final ImmutableList.Builder<AlgDataTypeField> builder = ImmutableList.builder();
         builder.addAll( this.extendedFields );
         builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
-        final List<RelDataTypeField> extendedFields = builder.build();
+        final List<AlgDataTypeField> extendedFields = builder.build();
         final Table schemaTable = table.unwrap( Table.class );
-        if ( schemaTable != null && table instanceof RelOptTable && schemaTable instanceof ExtensibleTable ) {
+        if ( schemaTable != null && table instanceof AlgOptTable && schemaTable instanceof ExtensibleTable ) {
             checkExtendedColumnTypes( extendList );
-            final RelOptTable relOptTable = ((RelOptTable) table).extend( extendedFields );
+            final AlgOptTable relOptTable = ((AlgOptTable) table).extend( extendedFields );
             final ValidatorTable validatorTable = relOptTable.unwrap( ValidatorTable.class );
             return new TableNamespace( validator, validatorTable, ImmutableList.of() );
         }
@@ -136,7 +136,7 @@ class TableNamespace extends AbstractNamespace {
     /**
      * Gets the data-type of all columns in a table (for a view table: including columns of the underlying table)
      */
-    private RelDataType getBaseRowType() {
+    private AlgDataType getBaseRowType() {
         final Table schemaTable = table.unwrap( Table.class );
         return schemaTable.getRowType( validator.typeFactory );
     }
@@ -146,16 +146,16 @@ class TableNamespace extends AbstractNamespace {
      * Ensures that extended columns that have the same name as a base column also have the same data-type.
      */
     private void checkExtendedColumnTypes( SqlNodeList extendList ) {
-        final List<RelDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendList );
-        final List<RelDataTypeField> baseFields = getBaseRowType().getFieldList();
+        final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendList );
+        final List<AlgDataTypeField> baseFields = getBaseRowType().getFieldList();
         final Map<String, Integer> nameToIndex = ValidatorUtil.mapNameToIndex( baseFields );
 
-        for ( final RelDataTypeField extendedField : extendedFields ) {
+        for ( final AlgDataTypeField extendedField : extendedFields ) {
             final String extFieldName = extendedField.getName();
             if ( nameToIndex.containsKey( extFieldName ) ) {
                 final Integer baseIndex = nameToIndex.get( extFieldName );
-                final RelDataType baseType = baseFields.get( baseIndex ).getType();
-                final RelDataType extType = extendedField.getType();
+                final AlgDataType baseType = baseFields.get( baseIndex ).getType();
+                final AlgDataType extType = extendedField.getType();
 
                 if ( !extType.equals( baseType ) ) {
                     // Get the extended column node that failed validation.

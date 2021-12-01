@@ -20,10 +20,10 @@ package org.polypheny.db.type.checker;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.core.nodes.CallBinding;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -36,7 +36,7 @@ import org.polypheny.db.util.Pair;
  */
 public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
 
-    private final List<RelDataType> paramTypes;
+    private final List<AlgDataType> paramTypes;
     private final ImmutableList<String> paramNames;
 
 
@@ -46,7 +46,7 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
      * @param paramTypes parameter types for operands; index in this array corresponds to operand number
      * @param paramNames parameter names, or null
      */
-    public AssignableOperandTypeChecker( List<RelDataType> paramTypes, List<String> paramNames ) {
+    public AssignableOperandTypeChecker( List<AlgDataType> paramTypes, List<String> paramNames ) {
         this.paramTypes = ImmutableList.copyOf( paramTypes );
         this.paramNames = paramNames == null ? null : ImmutableList.copyOf( paramNames );
     }
@@ -69,8 +69,8 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
         // Do not use callBinding.operands(). We have not resolved to a function yet, therefore we do not know the ordered
         // parameter names.
         final List<Node> operands = callBinding.getCall().getOperandList();
-        for ( Pair<RelDataType, Node> pair : Pair.zip( paramTypes, operands ) ) {
-            RelDataType argType = callBinding.getValidator().deriveType( callBinding.getScope(), pair.right );
+        for ( Pair<AlgDataType, Node> pair : Pair.zip( paramTypes, operands ) ) {
+            AlgDataType argType = callBinding.getValidator().deriveType( callBinding.getScope(), pair.right );
             if ( !PolyTypeUtil.canAssignFrom( pair.left, argType ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newValidationSignatureError();
@@ -88,7 +88,7 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
         StringBuilder sb = new StringBuilder();
         sb.append( opName );
         sb.append( "(" );
-        for ( Ord<RelDataType> paramType : Ord.zip( paramTypes ) ) {
+        for ( Ord<AlgDataType> paramType : Ord.zip( paramTypes ) ) {
             if ( paramType.i > 0 ) {
                 sb.append( ", " );
             }

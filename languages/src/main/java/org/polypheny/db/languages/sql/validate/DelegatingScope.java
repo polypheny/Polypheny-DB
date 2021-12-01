@@ -39,10 +39,10 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlSelect;
 import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.type.DynamicRecordType;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.algebra.type.DynamicRecordType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.util.Pair;
@@ -98,15 +98,15 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             resolved.found( ns, nullable, this, path, null );
             return;
         }
-        final RelDataType rowType = ns.getRowType();
+        final AlgDataType rowType = ns.getRowType();
         if ( rowType.isStruct() ) {
             ValidatorTable validatorTable = ns.getTable();
             if ( validatorTable instanceof Prepare.PreparingTable ) {
                 Table t = ((Prepare.PreparingTable) validatorTable).unwrap( Table.class );
                 if ( t instanceof CustomColumnResolvingTable ) {
-                    final List<Pair<RelDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, validator.getTypeFactory(), names );
-                    for ( Pair<RelDataTypeField, List<String>> entry : entries ) {
-                        final RelDataTypeField field = entry.getKey();
+                    final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingTable) t).resolveColumn( rowType, validator.getTypeFactory(), names );
+                    for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {
+                        final AlgDataTypeField field = entry.getKey();
                         final List<String> remainder = entry.getValue();
                         final SqlValidatorNamespace ns2 = new FieldNamespace( validator, field.getType() );
                         final Step path2 = path.plus( rowType, field.getIndex(), field.getName(), StructKind.FULLY_QUALIFIED );
@@ -117,13 +117,13 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             }
 
             final String name = names.get( 0 );
-            final RelDataTypeField field0 = nameMatcher.field( rowType, name );
+            final AlgDataTypeField field0 = nameMatcher.field( rowType, name );
             if ( field0 != null ) {
                 final SqlValidatorNamespace ns2 = ns.lookupChild( field0.getName() );
                 final Step path2 = path.plus( rowType, field0.getIndex(), field0.getName(), StructKind.FULLY_QUALIFIED );
                 resolveInNamespace( ns2, nullable, names.subList( 1, names.size() ), nameMatcher, path2, resolved );
             } else {
-                for ( RelDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFieldList() ) {
                     switch ( field.getType().getStructKind() ) {
                         case PEEK_FIELDS:
                         case PEEK_FIELDS_DEFAULT:
@@ -139,7 +139,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
 
     protected void addColumnNames( SqlValidatorNamespace ns, List<Moniker> colNames ) {
-        final RelDataType rowType;
+        final AlgDataType rowType;
         try {
             rowType = ns.getRowType();
         } catch ( Error e ) {
@@ -147,7 +147,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             return;
         }
 
-        for ( RelDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
             colNames.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
         }
     }
@@ -180,13 +180,13 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
 
     @Override
-    public RelDataType resolveColumn( String name, SqlNode ctx ) {
+    public AlgDataType resolveColumn( String name, SqlNode ctx ) {
         return parent.resolveColumn( name, ctx );
     }
 
 
     @Override
-    public RelDataType nullifyType( SqlNode node, RelDataType type ) {
+    public AlgDataType nullifyType( SqlNode node, AlgDataType type ) {
         return parent.nullifyType( node, type );
     }
 
@@ -247,7 +247,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                             if ( !map2.isEmpty() ) {
                                 final List<String> list = new ArrayList<>();
                                 for ( ScopeChild entry : map2.values() ) {
-                                    final RelDataTypeField field = liberalMatcher.field( entry.namespace.getRowType(), columnName );
+                                    final AlgDataTypeField field = liberalMatcher.field( entry.namespace.getRowType(), columnName );
                                     list.add( field.getName() );
                                 }
                                 Collections.sort( list );
@@ -265,7 +265,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
                 final ResolvedImpl resolved = new ResolvedImpl();
                 resolveInNamespace( namespace, false, identifier.names, nameMatcher, Path.EMPTY, resolved );
-                final RelDataTypeField field = nameMatcher.field( namespace.getRowType(), columnName );
+                final AlgDataTypeField field = nameMatcher.field( namespace.getRowType(), columnName );
                 if ( field != null ) {
                     if ( hasAmbiguousUnresolvedStar( namespace.getRowType(), field, columnName ) ) {
                         throw validator.newValidationError( identifier, Static.RESOURCE.columnAmbiguous( columnName ) );
@@ -286,7 +286,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             default: {
                 SqlValidatorNamespace fromNs = null;
                 Path fromPath = null;
-                RelDataType fromRowType = null;
+                AlgDataType fromRowType = null;
                 final ResolvedImpl resolved = new ResolvedImpl();
                 int size = identifier.names.size();
                 int i = size - 1;
@@ -330,7 +330,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
 
                             // Adding table name is for RecordType column with StructKind.PEEK_FIELDS or StructKind.PEEK_FIELDS only.
                             // Access to a field in a RecordType column of other StructKind should always be qualified with table name.
-                            final RelDataTypeField field = nameMatcher.field( fromNs.getRowType(), columnName );
+                            final AlgDataTypeField field = nameMatcher.field( fromNs.getRowType(), columnName );
                             if ( field != null ) {
                                 switch ( field.getType().getStructKind() ) {
                                     case PEEK_FIELDS:
@@ -451,7 +451,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                     if ( step.i < 0 ) {
                         throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
                     }
-                    final RelDataTypeField field0 = step.rowType.getFieldList().get( step.i );
+                    final AlgDataTypeField field0 = step.rowType.getFieldList().get( step.i );
                     final String fieldName = field0.getName();
                     switch ( step.kind ) {
                         case PEEK_FIELDS:
@@ -521,10 +521,10 @@ public abstract class DelegatingScope implements SqlValidatorScope {
      * Returns whether {@code rowType} contains more than one star column.
      * Having more than one star columns implies ambiguous column.
      */
-    private boolean hasAmbiguousUnresolvedStar( RelDataType rowType, RelDataTypeField field, String columnName ) {
+    private boolean hasAmbiguousUnresolvedStar( AlgDataType rowType, AlgDataTypeField field, String columnName ) {
         if ( field.isDynamicStar() && !DynamicRecordType.isDynamicStarColName( columnName ) ) {
             int count = 0;
-            for ( RelDataTypeField possibleStar : rowType.getFieldList() ) {
+            for ( AlgDataTypeField possibleStar : rowType.getFieldList() ) {
                 if ( possibleStar.isDynamicStar() ) {
                     if ( ++count > 1 ) {
                         return true;

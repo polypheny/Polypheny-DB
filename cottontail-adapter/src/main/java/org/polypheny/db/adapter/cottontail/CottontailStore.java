@@ -44,10 +44,10 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
@@ -177,8 +177,8 @@ public class CottontailStore extends DataStore {
 
     @Override
     public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<String> logicalColumnNames = new LinkedList<>();
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = null;
@@ -194,7 +194,7 @@ public class CottontailStore extends DataStore {
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
 
-            RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
+            AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             logicalColumnNames.add( catalogColumn.name );
             physicalColumnNames.add( placement.physicalColumnName != null ? placement.physicalColumnName : "col" + placement.columnId );
@@ -205,7 +205,7 @@ public class CottontailStore extends DataStore {
                 combinedTable.getSchemaName(),
                 combinedTable.name,
                 logicalColumnNames,
-                RelDataTypeImpl.proto( fieldInfo.build() ),
+                AlgDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
                 physicalTableName,
                 physicalColumnNames

@@ -39,8 +39,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import lombok.Getter;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.core.util.Collation;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.util.SerializableCharset;
 
 
@@ -53,7 +53,7 @@ public class BasicPolyType extends AbstractPolyType {
 
     private final int precision;
     private final int scale;
-    private final RelDataTypeSystem typeSystem;
+    private final AlgDataTypeSystem typeSystem;
     @Getter
     private final Collation collation;
     private final SerializableCharset wrappedCharset;
@@ -65,7 +65,7 @@ public class BasicPolyType extends AbstractPolyType {
      * @param typeSystem Type system
      * @param typeName Type name
      */
-    public BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName ) {
+    public BasicPolyType( AlgDataTypeSystem typeSystem, PolyType typeName ) {
         this( typeSystem, typeName, false, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED, null, null );
         checkPrecScale( typeName, false, false );
     }
@@ -88,7 +88,7 @@ public class BasicPolyType extends AbstractPolyType {
      * @param typeName Type name
      * @param precision Precision (called length for some types)
      */
-    public BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName, int precision ) {
+    public BasicPolyType( AlgDataTypeSystem typeSystem, PolyType typeName, int precision ) {
         this( typeSystem, typeName, false, precision, SCALE_NOT_SPECIFIED, null, null );
         checkPrecScale( typeName, true, false );
     }
@@ -102,7 +102,7 @@ public class BasicPolyType extends AbstractPolyType {
      * @param precision Precision (called length for some types)
      * @param scale Scale
      */
-    public BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName, int precision, int scale ) {
+    public BasicPolyType( AlgDataTypeSystem typeSystem, PolyType typeName, int precision, int scale ) {
         this( typeSystem, typeName, false, precision, scale, null, null );
         checkPrecScale( typeName, true, true );
     }
@@ -112,7 +112,7 @@ public class BasicPolyType extends AbstractPolyType {
      * Internal constructor.
      */
     private BasicPolyType(
-            RelDataTypeSystem typeSystem,
+            AlgDataTypeSystem typeSystem,
             PolyType typeName,
             boolean nullable,
             int precision,

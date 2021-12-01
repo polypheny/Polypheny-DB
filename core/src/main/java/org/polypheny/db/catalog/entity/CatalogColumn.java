@@ -25,8 +25,8 @@ import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 
 
@@ -90,8 +90,8 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     }
 
 
-    public RelDataType getRelDataType( final RelDataTypeFactory typeFactory ) {
-        RelDataType elementType;
+    public AlgDataType getAlgDataType( final AlgDataTypeFactory typeFactory ) {
+        AlgDataType elementType;
         if ( this.length != null && this.scale != null && this.type.allowsPrecScale( true, true ) ) {
             elementType = typeFactory.createPolyType( this.type, this.length, this.scale );
         } else if ( this.length != null && this.type.allowsPrecNoScale() ) {

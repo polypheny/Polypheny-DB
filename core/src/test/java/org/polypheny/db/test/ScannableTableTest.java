@@ -50,8 +50,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -437,7 +437,7 @@ public class ScannableTableTest {
     public static class SimpleTable extends AbstractTable implements ScannableTable {
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder().add( "i", null, PolyType.INTEGER ).build();
         }
 
@@ -461,7 +461,7 @@ public class ScannableTableTest {
     public static class BeatlesTable extends AbstractTable implements ScannableTable {
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", null, PolyType.INTEGER )
                     .add( "j", null, PolyType.VARCHAR )
@@ -498,7 +498,7 @@ public class ScannableTableTest {
 
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", null, PolyType.INTEGER )
                     .add( "j", null, PolyType.VARCHAR )
@@ -537,7 +537,7 @@ public class ScannableTableTest {
 
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", null, PolyType.INTEGER )
                     .add( "j", null, PolyType.VARCHAR )

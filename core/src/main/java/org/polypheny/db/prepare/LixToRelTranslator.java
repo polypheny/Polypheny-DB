@@ -47,53 +47,53 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable.ToRelContext;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Translates a tree of linq4j {@link Queryable} nodes to a tree of {@link RelNode} planner nodes.
+ * Translates a tree of linq4j {@link Queryable} nodes to a tree of {@link AlgNode} planner nodes.
  *
- * @see QueryableRelBuilder
+ * @see QueryableAlgBuilder
  */
 class LixToRelTranslator {
 
-    final RelOptCluster cluster;
+    final AlgOptCluster cluster;
     final JavaTypeFactory typeFactory;
 
 
-    LixToRelTranslator( RelOptCluster cluster ) {
+    LixToRelTranslator( AlgOptCluster cluster ) {
         this.cluster = cluster;
         this.typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
     }
 
 
-    ToRelContext toRelContext() {
+    ToAlgContext toRelContext() {
         return () -> cluster;
     }
 
 
-    public <T> RelNode translate( Queryable<T> queryable ) {
-        QueryableRelBuilder<T> translatorQueryable = new QueryableRelBuilder<>( this );
+    public <T> AlgNode translate( Queryable<T> queryable ) {
+        QueryableAlgBuilder<T> translatorQueryable = new QueryableAlgBuilder<>( this );
         return translatorQueryable.toRel( queryable );
     }
 
 
-    public RelNode translate( Expression expression ) {
+    public AlgNode translate( Expression expression ) {
         if ( expression instanceof MethodCallExpression ) {
             final MethodCallExpression call = (MethodCallExpression) expression;
             BuiltInMethod method = BuiltInMethod.MAP.get( call.method );
             if ( method == null ) {
                 throw new UnsupportedOperationException( "unknown method " + call.method );
             }
-            RelNode input;
+            AlgNode input;
             switch ( method ) {
                 case SELECT:
                     input = translate( call.targetExpression );
@@ -111,7 +111,7 @@ class LixToRelTranslator {
                 case AS_QUERYABLE:
                     return LogicalTableScan.create(
                             cluster,
-                            RelOptTableImpl.create(
+                            AlgOptTableImpl.create(
                                     null,
                                     typeFactory.createJavaType( Types.toClass( Types.getElementType( call.targetExpression.getType() ) ) ),
                                     ImmutableList.of(),
@@ -120,7 +120,7 @@ class LixToRelTranslator {
                 case SCHEMA_GET_TABLE:
                     return LogicalTableScan.create(
                             cluster,
-                            RelOptTableImpl.create(
+                            AlgOptTableImpl.create(
                                     null,
                                     typeFactory.createJavaType( (Class) ((ConstantExpression) call.expressions.get( 1 )).value ),
                                     ImmutableList.of(),
@@ -134,7 +134,7 @@ class LixToRelTranslator {
     }
 
 
-    private List<RexNode> toRex( RelNode child, FunctionExpression expression ) {
+    private List<RexNode> toRex( AlgNode child, FunctionExpression expression ) {
         RexBuilder rexBuilder = cluster.getRexBuilder();
         List<RexNode> list = Collections.singletonList( rexBuilder.makeRangeReference( child ) );
         PolyphenyDbPrepareImpl.ScalarTranslator translator =
@@ -159,10 +159,10 @@ class LixToRelTranslator {
     }
 
 
-    List<RexNode> toRexList( FunctionExpression expression, RelNode... inputs ) {
+    List<RexNode> toRexList( FunctionExpression expression, AlgNode... inputs ) {
         List<RexNode> list = new ArrayList<>();
         RexBuilder rexBuilder = cluster.getRexBuilder();
-        for ( RelNode input : inputs ) {
+        for ( AlgNode input : inputs ) {
             list.add( rexBuilder.makeRangeReference( input ) );
         }
         return PolyphenyDbPrepareImpl.EmptyScalarTranslator.empty( rexBuilder )
@@ -171,10 +171,10 @@ class LixToRelTranslator {
     }
 
 
-    RexNode toRex( FunctionExpression expression, RelNode... inputs ) {
+    RexNode toRex( FunctionExpression expression, AlgNode... inputs ) {
         List<RexNode> list = new ArrayList<>();
         RexBuilder rexBuilder = cluster.getRexBuilder();
-        for ( RelNode input : inputs ) {
+        for ( AlgNode input : inputs ) {
             list.add( rexBuilder.makeRangeReference( input ) );
         }
         return PolyphenyDbPrepareImpl.EmptyScalarTranslator.empty( rexBuilder )

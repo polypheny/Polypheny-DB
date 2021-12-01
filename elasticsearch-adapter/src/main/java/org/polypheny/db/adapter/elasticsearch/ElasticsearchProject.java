@@ -38,24 +38,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.Pair;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Project} relational expression in Elasticsearch.
+ * Implementation of {@link org.polypheny.db.algebra.core.Project} relational expression in Elasticsearch.
  */
 public class ElasticsearchProject extends Project implements ElasticsearchRel {
 
-    ElasticsearchProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
+    ElasticsearchProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert getConvention() == ElasticsearchRel.CONVENTION;
         assert getConvention() == input.getConvention();
@@ -63,13 +63,13 @@ public class ElasticsearchProject extends Project implements ElasticsearchRel {
 
 
     @Override
-    public Project copy( RelTraitSet relTraitSet, RelNode input, List<RexNode> projects, RelDataType relDataType ) {
+    public Project copy( AlgTraitSet relTraitSet, AlgNode input, List<RexNode> projects, AlgDataType relDataType ) {
         return new ElasticsearchProject( getCluster(), traitSet, input, projects, relDataType );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 

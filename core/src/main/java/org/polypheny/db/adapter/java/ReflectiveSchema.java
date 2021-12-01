@@ -56,9 +56,9 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rel.RelReferentialConstraint;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgReferentialConstraint;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
@@ -137,10 +137,10 @@ public class ReflectiveSchema extends AbstractSchema {
         Map<String, Table> tableMap = builder.build();
         // Unique-Key - Foreign-Key
         for ( Field field : clazz.getFields() ) {
-            if ( RelReferentialConstraint.class.isAssignableFrom( field.getType() ) ) {
-                RelReferentialConstraint rc;
+            if ( AlgReferentialConstraint.class.isAssignableFrom( field.getType() ) ) {
+                AlgReferentialConstraint rc;
                 try {
-                    rc = (RelReferentialConstraint) field.get( target );
+                    rc = (AlgReferentialConstraint) field.get( target );
                 } catch ( IllegalAccessException e ) {
                     throw new RuntimeException( "Error while accessing field " + field, e );
                 }
@@ -255,7 +255,7 @@ public class ReflectiveSchema extends AbstractSchema {
 
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return ((JavaTypeFactory) typeFactory).createType( elementType );
         }
 

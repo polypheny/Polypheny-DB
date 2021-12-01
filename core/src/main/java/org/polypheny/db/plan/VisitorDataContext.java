@@ -44,9 +44,9 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.nodes.Function;
 import org.polypheny.db.core.nodes.Function.FunctionType;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -112,13 +112,13 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+    public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
         throw new RuntimeException( "Unsupported" );
     }
 
 
     @Override
-    public RelDataType getParameterType( long index ) {
+    public AlgDataType getParameterType( long index ) {
         throw new RuntimeException( "Unsupported" );
     }
 
@@ -129,12 +129,12 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( RelNode targetRel, LogicalFilter queryRel ) {
+    public static DataContext of( AlgNode targetRel, LogicalFilter queryRel ) {
         return of( targetRel.getRowType(), queryRel.getCondition() );
     }
 
 
-    public static DataContext of( RelDataType rowType, RexNode rex ) {
+    public static DataContext of( AlgDataType rowType, RexNode rex ) {
         final int size = rowType.getFieldList().size();
         final Object[] values = new Object[size];
         final List<RexNode> operands = ((RexCall) rex).getOperands();
@@ -151,7 +151,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( RelDataType rowType, List<Pair<RexInputRef, RexNode>> usageList ) {
+    public static DataContext of( AlgDataType rowType, List<Pair<RexInputRef, RexNode>> usageList ) {
         final int size = rowType.getFieldList().size();
         final Object[] values = new Object[size];
         for ( Pair<RexInputRef, RexNode> elem : usageList ) {
@@ -174,7 +174,7 @@ public class VisitorDataContext implements DataContext {
         if ( inputRef instanceof RexInputRef && literal instanceof RexLiteral ) {
             final int index = ((RexInputRef) inputRef).getIndex();
             final RexLiteral rexLiteral = (RexLiteral) literal;
-            final RelDataType type = inputRef.getType();
+            final AlgDataType type = inputRef.getType();
 
             if ( type.getPolyType() == null ) {
                 log.warn( "{} returned null PolyType", inputRef.toString() );

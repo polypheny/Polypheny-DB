@@ -37,17 +37,17 @@ package org.polypheny.db.adapter.enumerable;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.JoinInfo;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.JoinInfo;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.logical.LogicalJoin;
 
 
 /**
- * Planner rule that converts a {@link org.polypheny.db.rel.logical.LogicalJoin} relational expression {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalJoin} relational expression {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
 class EnumerableJoinRule extends ConverterRule {
 
@@ -57,39 +57,39 @@ class EnumerableJoinRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        LogicalJoin join = (LogicalJoin) rel;
-        List<RelNode> newInputs = new ArrayList<>();
-        for ( RelNode input : join.getInputs() ) {
+    public AlgNode convert( AlgNode alg ) {
+        LogicalJoin join = (LogicalJoin) alg;
+        List<AlgNode> newInputs = new ArrayList<>();
+        for ( AlgNode input : join.getInputs() ) {
             if ( !(input.getConvention() instanceof EnumerableConvention) ) {
                 input = convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
             }
             newInputs.add( input );
         }
-        final RelOptCluster cluster = join.getCluster();
-        final RelNode left = newInputs.get( 0 );
-        final RelNode right = newInputs.get( 1 );
+        final AlgOptCluster cluster = join.getCluster();
+        final AlgNode left = newInputs.get( 0 );
+        final AlgNode right = newInputs.get( 1 );
         final JoinInfo info = JoinInfo.of( left, right, join.getCondition() );
-        if ( !info.isEqui() && join.getJoinType() != JoinRelType.INNER ) {
+        if ( !info.isEqui() && join.getJoinType() != JoinAlgType.INNER ) {
             // EnumerableJoinRel only supports equi-join. We can put a filter on top if it is an inner join.
             try {
                 return EnumerableThetaJoin.create( left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType() );
-            } catch ( InvalidRelException e ) {
+            } catch ( InvalidAlgException e ) {
                 EnumerableRules.LOGGER.debug( e.toString() );
                 return null;
             }
         }
-        RelNode newRel;
+        AlgNode newAlg;
         try {
-            newRel = EnumerableJoin.create( left, right, info.getEquiCondition( left, right, cluster.getRexBuilder() ), info.leftKeys, info.rightKeys, join.getVariablesSet(), join.getJoinType() );
-        } catch ( InvalidRelException e ) {
+            newAlg = EnumerableJoin.create( left, right, info.getEquiCondition( left, right, cluster.getRexBuilder() ), info.leftKeys, info.rightKeys, join.getVariablesSet(), join.getJoinType() );
+        } catch ( InvalidAlgException e ) {
             EnumerableRules.LOGGER.debug( e.toString() );
             return null;
         }
         if ( !info.isEqui() ) {
-            newRel = new EnumerableFilter( cluster, newRel.getTraitSet(), newRel, info.getRemaining( cluster.getRexBuilder() ) );
+            newAlg = new EnumerableFilter( cluster, newAlg.getTraitSet(), newAlg, info.getRemaining( cluster.getRexBuilder() ) );
         }
-        return newRel;
+        return newAlg;
     }
 }
 

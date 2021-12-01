@@ -36,7 +36,7 @@ package org.polypheny.db.adapter.druid;
 
 import javax.annotation.Nullable;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -62,7 +62,7 @@ public interface DruidSqlOperatorConverter {
      * @return valid Druid expression or null if it can not convert the rexNode
      */
     @Nullable
-    String toDruidExpression( RexNode rexNode, RelDataType rowType, DruidQuery druidQuery );
+    String toDruidExpression( RexNode rexNode, AlgDataType rowType, DruidQuery druidQuery );
 
 }
 

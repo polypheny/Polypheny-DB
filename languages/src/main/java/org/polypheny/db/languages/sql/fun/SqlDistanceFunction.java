@@ -26,7 +26,7 @@ import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -71,7 +71,7 @@ public class SqlDistanceFunction extends SqlFunction {
         public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
 
             int nOperandsActual = callBinding.getOperandCount();
-            RelDataType[] types = new RelDataType[nOperandsActual];
+            AlgDataType[] types = new AlgDataType[nOperandsActual];
             final List<Integer> operandList = Util.range( 0, nOperandsActual );
             for ( int i : operandList ) {
                 types[i] = callBinding.getOperandType( i );

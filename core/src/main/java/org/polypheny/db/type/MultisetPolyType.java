@@ -34,9 +34,9 @@
 package org.polypheny.db.type;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
-import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 
 
 /**
@@ -44,13 +44,13 @@ import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
  */
 public class MultisetPolyType extends AbstractPolyType {
 
-    private final RelDataType elementType;
+    private final AlgDataType elementType;
 
 
     /**
      * Constructs a new MultisetSqlType. This constructor should only be called from a factory method.
      */
-    public MultisetPolyType( RelDataType elementType, boolean isNullable ) {
+    public MultisetPolyType( AlgDataType elementType, boolean isNullable ) {
         super( PolyType.MULTISET, isNullable, null );
         assert elementType != null;
         this.elementType = elementType;
@@ -72,14 +72,14 @@ public class MultisetPolyType extends AbstractPolyType {
 
     // implement RelDataType
     @Override
-    public RelDataType getComponentType() {
+    public AlgDataType getComponentType() {
         return elementType;
     }
 
 
     // implement RelDataType
     @Override
-    public RelDataTypeFamily getFamily() {
+    public AlgDataTypeFamily getFamily() {
         // TODO: This gives each multiset type its own family. But that's not quite correct; the family should be based on
         //  the element type for proper comparability semantics (per 4.10.4 of SQL/2003). So either this should make up
         //  canonical families dynamically, or the comparison type-checking should not rely on this.
@@ -89,10 +89,10 @@ public class MultisetPolyType extends AbstractPolyType {
 
 
     @Override
-    public RelDataTypePrecedenceList getPrecedenceList() {
-        return new RelDataTypePrecedenceList() {
+    public AlgDataTypePrecedenceList getPrecedenceList() {
+        return new AlgDataTypePrecedenceList() {
             @Override
-            public boolean containsType( RelDataType type ) {
+            public boolean containsType( AlgDataType type ) {
                 return type.getPolyType() == getPolyType()
                         && type.getComponentType() != null
                         && getComponentType().getPrecedenceList().containsType( type.getComponentType() );
@@ -100,7 +100,7 @@ public class MultisetPolyType extends AbstractPolyType {
 
 
             @Override
-            public int compareTypePrecedence( RelDataType type1, RelDataType type2 ) {
+            public int compareTypePrecedence( AlgDataType type1, AlgDataType type2 ) {
                 if ( !containsType( type1 ) ) {
                     throw new IllegalArgumentException( "must contain type: " + type1 );
                 }

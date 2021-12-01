@@ -39,8 +39,8 @@ import com.google.common.collect.ImmutableMap;
 import java.sql.Types;
 import java.util.Collection;
 import java.util.Map;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 
 
 /**
@@ -54,7 +54,7 @@ import org.polypheny.db.rel.type.RelDataTypeFamily;
  * type strategies for more specific or more general categorization than the primary families. Secondary families are never
  * returned by RelDataType.getFamily().
  */
-public enum PolyTypeFamily implements RelDataTypeFamily {
+public enum PolyTypeFamily implements AlgDataTypeFamily {
     // Primary families.
     CHARACTER,
     BINARY,
@@ -195,7 +195,7 @@ public enum PolyTypeFamily implements RelDataTypeFamily {
     }
 
 
-    public boolean contains( RelDataType type ) {
+    public boolean contains( AlgDataType type ) {
         return PolyTypeUtil.isOfSameTypeName( getTypeNames(), type );
     }
 }

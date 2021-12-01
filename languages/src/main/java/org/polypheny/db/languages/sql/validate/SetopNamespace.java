@@ -23,7 +23,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -89,7 +89,7 @@ public class SetopNamespace extends AbstractNamespace {
 
 
     @Override
-    public RelDataType validateImpl( RelDataType targetRowType ) {
+    public AlgDataType validateImpl( AlgDataType targetRowType ) {
         switch ( call.getKind() ) {
             case UNION:
             case INTERSECT:

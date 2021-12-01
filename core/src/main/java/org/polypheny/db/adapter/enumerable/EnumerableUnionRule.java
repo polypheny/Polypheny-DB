@@ -35,10 +35,10 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalUnion;
 
 
 /**
@@ -52,11 +52,11 @@ class EnumerableUnionRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalUnion union = (LogicalUnion) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalUnion union = (LogicalUnion) alg;
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
-        final RelTraitSet traitSet = union.getTraitSet().replace( out );
-        return new EnumerableUnion( rel.getCluster(), traitSet, convertList( union.getInputs(), out ), union.all );
+        final AlgTraitSet traitSet = union.getTraitSet().replace( out );
+        return new EnumerableUnion( alg.getCluster(), traitSet, convertList( union.getInputs(), out ), union.all );
     }
 }
 

@@ -46,17 +46,17 @@ import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.NodeToRelConverter;
+import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCostFactory;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCostFactory;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.prepare.PlannerImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -92,7 +92,7 @@ public class Frameworks {
      */
     public interface PlannerAction<R> {
 
-        R apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema );
+        R apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema );
 
     }
 
@@ -120,8 +120,8 @@ public class Frameworks {
 
 
         public abstract R apply(
-                RelOptCluster cluster,
-                RelOptSchema relOptSchema,
+                AlgOptCluster cluster,
+                AlgOptSchema relOptSchema,
                 SchemaPlus rootSchema );
 
     }
@@ -138,7 +138,7 @@ public class Frameworks {
         return withPrepare(
                 new Frameworks.PrepareAction<R>( config ) {
                     @Override
-                    public R apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                    public R apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
                         final PolyphenyDbSchema schema = PolyphenyDbSchema.from( Util.first( config.getDefaultSchema(), rootSchema ) );
                         return action.apply( cluster, relOptSchema, schema.root().plus() );
                     }
@@ -182,7 +182,7 @@ public class Frameworks {
     public static <R> R withPrepare( PrepareAction<R> action ) {
         try {
             final Properties info = new Properties();
-            if ( action.config.getTypeSystem() != RelDataTypeSystem.DEFAULT ) {
+            if ( action.config.getTypeSystem() != AlgDataTypeSystem.DEFAULT ) {
                 info.setProperty(
                         PolyphenyDbConnectionProperty.TYPE_SYSTEM.camelName(),
                         action.config.getTypeSystem().getClass().getName() );
@@ -232,13 +232,13 @@ public class Frameworks {
         private OperatorTable operatorTable;
         private ImmutableList<Program> programs;
         private Context context;
-        private ImmutableList<RelTraitDef> traitDefs;
+        private ImmutableList<AlgTraitDef> traitDefs;
         private ParserConfig parserConfig;
-        private NodeToRelConverter.Config sqlToRelConverterConfig;
+        private NodeToAlgConverter.Config sqlToRelConverterConfig;
         private SchemaPlus defaultSchema;
         private RexExecutor executor;
-        private RelOptCostFactory costFactory;
-        private RelDataTypeSystem typeSystem;
+        private AlgOptCostFactory costFactory;
+        private AlgDataTypeSystem typeSystem;
         private org.polypheny.db.jdbc.Context prepareContext;
 
 
@@ -250,8 +250,8 @@ public class Frameworks {
             operatorTable = LanguageManager.getInstance().getStdOperatorTable();
             programs = ImmutableList.of();
             parserConfig = ParserConfig.DEFAULT;
-            sqlToRelConverterConfig = NodeToRelConverter.Config.DEFAULT;
-            typeSystem = RelDataTypeSystem.DEFAULT;
+            sqlToRelConverterConfig = NodeToAlgConverter.Config.DEFAULT;
+            typeSystem = AlgDataTypeSystem.DEFAULT;
         }
 
 
@@ -315,7 +315,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder traitDefs( List<RelTraitDef> traitDefs ) {
+        public ConfigBuilder traitDefs( List<AlgTraitDef> traitDefs ) {
             if ( traitDefs == null ) {
                 this.traitDefs = null;
             } else {
@@ -325,7 +325,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder traitDefs( RelTraitDef... traitDefs ) {
+        public ConfigBuilder traitDefs( AlgTraitDef... traitDefs ) {
             this.traitDefs = ImmutableList.copyOf( traitDefs );
             return this;
         }
@@ -337,7 +337,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder sqlToRelConverterConfig( NodeToRelConverter.Config sqlToRelConverterConfig ) {
+        public ConfigBuilder sqlToRelConverterConfig( NodeToAlgConverter.Config sqlToRelConverterConfig ) {
             this.sqlToRelConverterConfig = Objects.requireNonNull( sqlToRelConverterConfig );
             return this;
         }
@@ -349,7 +349,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder costFactory( RelOptCostFactory costFactory ) {
+        public ConfigBuilder costFactory( AlgOptCostFactory costFactory ) {
             this.costFactory = costFactory;
             return this;
         }
@@ -377,7 +377,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder typeSystem( RelDataTypeSystem typeSystem ) {
+        public ConfigBuilder typeSystem( AlgDataTypeSystem typeSystem ) {
             this.typeSystem = Objects.requireNonNull( typeSystem );
             return this;
         }
@@ -400,12 +400,12 @@ public class Frameworks {
         private final RexConvertletTable convertletTable;
         private final OperatorTable operatorTable;
         private final ImmutableList<Program> programs;
-        private final ImmutableList<RelTraitDef> traitDefs;
+        private final ImmutableList<AlgTraitDef> traitDefs;
         private final ParserConfig parserConfig;
-        private final NodeToRelConverter.Config sqlToRelConverterConfig;
+        private final NodeToAlgConverter.Config sqlToRelConverterConfig;
         private final SchemaPlus defaultSchema;
-        private final RelOptCostFactory costFactory;
-        private final RelDataTypeSystem typeSystem;
+        private final AlgOptCostFactory costFactory;
+        private final AlgDataTypeSystem typeSystem;
         private final RexExecutor executor;
         private final org.polypheny.db.jdbc.Context prepareContext;
 
@@ -415,12 +415,12 @@ public class Frameworks {
                 RexConvertletTable convertletTable,
                 OperatorTable operatorTable,
                 ImmutableList<Program> programs,
-                ImmutableList<RelTraitDef> traitDefs,
+                ImmutableList<AlgTraitDef> traitDefs,
                 ParserConfig parserConfig,
-                NodeToRelConverter.Config sqlToRelConverterConfig,
+                NodeToAlgConverter.Config sqlToRelConverterConfig,
                 SchemaPlus defaultSchema,
-                RelOptCostFactory costFactory,
-                RelDataTypeSystem typeSystem,
+                AlgOptCostFactory costFactory,
+                AlgDataTypeSystem typeSystem,
                 RexExecutor executor,
                 org.polypheny.db.jdbc.Context prepareContext ) {
             this.context = context;
@@ -445,7 +445,7 @@ public class Frameworks {
 
 
         @Override
-        public NodeToRelConverter.Config getSqlToRelConverterConfig() {
+        public NodeToAlgConverter.Config getSqlToRelConverterConfig() {
             return sqlToRelConverterConfig;
         }
 
@@ -469,13 +469,13 @@ public class Frameworks {
 
 
         @Override
-        public RelOptCostFactory getCostFactory() {
+        public AlgOptCostFactory getCostFactory() {
             return costFactory;
         }
 
 
         @Override
-        public ImmutableList<RelTraitDef> getTraitDefs() {
+        public ImmutableList<AlgTraitDef> getTraitDefs() {
             return traitDefs;
         }
 
@@ -499,7 +499,7 @@ public class Frameworks {
 
 
         @Override
-        public RelDataTypeSystem getTypeSystem() {
+        public AlgDataTypeSystem getTypeSystem() {
             return typeSystem;
         }
 

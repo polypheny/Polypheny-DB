@@ -21,7 +21,7 @@ import java.util.List;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.util.NameMatcher;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
 
@@ -57,7 +57,7 @@ public interface ValidatorCatalogReader extends Wrapper {
      * @param typeName Name of type
      * @return named type, or null if not found
      */
-    RelDataType getNamedType( Identifier typeName );
+    AlgDataType getNamedType( Identifier typeName );
 
     /**
      * Given fully qualified schema name, returns schema object names as specified. They can be schema, table, function, view.
@@ -80,7 +80,7 @@ public interface ValidatorCatalogReader extends Wrapper {
      */
     NameMatcher nameMatcher();
 
-    RelDataType createTypeFromProjection( RelDataType type, List<String> columnNameList );
+    AlgDataType createTypeFromProjection( AlgDataType type, List<String> columnNameList );
 
     /**
      * Returns the root namespace for name resolution.

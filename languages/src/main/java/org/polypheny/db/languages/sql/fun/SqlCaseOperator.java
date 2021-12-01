@@ -41,8 +41,8 @@ import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -143,7 +143,7 @@ public class SqlCaseOperator extends SqlOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // Do not try to derive the types of the operands. We will do that later, top down.
         return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }
@@ -159,7 +159,7 @@ public class SqlCaseOperator extends SqlOperator {
         // checking that search conditions are ok...
         for ( SqlNode node : whenList.getSqlList() ) {
             // should throw validation error if something wrong...
-            RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
+            AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
             if ( !PolyTypeUtil.inBooleanFamily( type ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newError( RESOURCE.expectedBoolean() );
@@ -191,7 +191,7 @@ public class SqlCaseOperator extends SqlOperator {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         // REVIEW jvs 4-June-2005:  can't these be unified?
         if ( !(opBinding instanceof SqlCallBinding) ) {
             return inferTypeFromOperands( opBinding.getTypeFactory(), opBinding.collectOperandTypes() );
@@ -200,11 +200,11 @@ public class SqlCaseOperator extends SqlOperator {
     }
 
 
-    private RelDataType inferTypeFromValidator( SqlCallBinding callBinding ) {
+    private AlgDataType inferTypeFromValidator( SqlCallBinding callBinding ) {
         SqlCase caseCall = (SqlCase) callBinding.getCall();
         SqlNodeList thenList = caseCall.getThenOperands();
         ArrayList<SqlNode> nullList = new ArrayList<>();
-        List<RelDataType> argTypes = new ArrayList<>();
+        List<AlgDataType> argTypes = new ArrayList<>();
         for ( SqlNode node : thenList.getSqlList() ) {
             argTypes.add( callBinding.getValidator().deriveType( callBinding.getScope(), node ) );
             if ( CoreUtil.isNullLiteral( node, false ) ) {
@@ -217,7 +217,7 @@ public class SqlCaseOperator extends SqlOperator {
             nullList.add( elseOp );
         }
 
-        RelDataType ret = callBinding.getTypeFactory().leastRestrictive( argTypes );
+        AlgDataType ret = callBinding.getTypeFactory().leastRestrictive( argTypes );
         if ( null == ret ) {
             throw callBinding.newValidationError( RESOURCE.illegalMixingOfTypes() );
         }
@@ -229,10 +229,10 @@ public class SqlCaseOperator extends SqlOperator {
     }
 
 
-    private RelDataType inferTypeFromOperands( RelDataTypeFactory typeFactory, List<RelDataType> argTypes ) {
+    private AlgDataType inferTypeFromOperands( AlgDataTypeFactory typeFactory, List<AlgDataType> argTypes ) {
         assert (argTypes.size() % 2) == 1 : "odd number of arguments expected: " + argTypes.size();
         assert argTypes.size() > 1 : argTypes.size();
-        List<RelDataType> thenTypes = new ArrayList<>();
+        List<AlgDataType> thenTypes = new ArrayList<>();
         for ( int j = 1; j < (argTypes.size() - 1); j += 2 ) {
             thenTypes.add( argTypes.get( j ) );
         }

@@ -100,12 +100,12 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -191,12 +191,12 @@ public class CatalogImpl extends Catalog {
 
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
 
-    // RelNode used to create view and materialized view
+    // {@link AlgNode} used to create view and materialized view
     @Getter
-    private final Map<Long, RelNode> nodeInfo = new HashMap<>();
-    // RelDataTypes used to create view and materialized view
+    private final Map<Long, AlgNode> nodeInfo = new HashMap<>();
+    // AlgDataTypes used to create view and materialized view
     @Getter
-    private final Map<Long, RelDataType> relTypeInfo = new HashMap<>();
+    private final Map<Long, AlgDataType> relTypeInfo = new HashMap<>();
 
 
     public CatalogImpl() {
@@ -430,7 +430,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * On restart, all RelNodes used in views and materialized views need to be recreated.
+     * On restart, all AlgNodes used in views and materialized views need to be recreated.
      * Depending on the query language, different methods are used.
      */
     @Override
@@ -453,27 +453,27 @@ public class CatalogImpl extends Catalog {
                     case SQL:
                         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
                         Node sqlNode = sqlProcessor.parse( query );
-                        RelRoot relRoot = sqlProcessor.translate(
+                        AlgRoot relRoot = sqlProcessor.translate(
                                 statement,
                                 sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
                                 new QueryParameters( query ) );
-                        nodeInfo.put( c.id, relRoot.rel );
+                        nodeInfo.put( c.id, relRoot.alg );
                         relTypeInfo.put( c.id, relRoot.validatedRowType );
                         break;
 
                     case REL_ALG:
                         Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
-                        RelNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query ) ).rel;
+                        AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query ) ).alg;
 
-                        final RelDataType rowType = result.getRowType();
+                        final AlgDataType rowType = result.getRowType();
                         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-                        final RelCollation collation =
+                        final AlgCollation collation =
                                 result instanceof Sort
                                         ? ((Sort) result).collation
-                                        : RelCollations.EMPTY;
-                        RelRoot root = new RelRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
+                                        : AlgCollations.EMPTY;
+                        AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
-                        nodeInfo.put( c.id, root.rel );
+                        nodeInfo.put( c.id, root.alg );
                         relTypeInfo.put( c.id, root.validatedRowType );
                         break;
 
@@ -481,11 +481,11 @@ public class CatalogImpl extends Catalog {
                         Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
                         Node mqlNode = mqlProcessor.parse( query );
 
-                        RelRoot mqlRel = mqlProcessor.translate(
+                        AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,
                                 new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name ) );
-                        nodeInfo.put( c.id, mqlRel.rel );
+                        nodeInfo.put( c.id, mqlRel.alg );
                         relTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;
                 }
@@ -1468,13 +1468,13 @@ public class CatalogImpl extends Catalog {
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views
+     * @param definition {@link AlgNode} used to create Views
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language ) {
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation relCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1527,7 +1527,7 @@ public class CatalogImpl extends Catalog {
      * @param ownerId id of the owner
      * @param tableType type of table
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views
+     * @param definition {@link AlgNode} used to create Views
      * @param relCollation relCollation used for materialized view
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
@@ -1538,7 +1538,7 @@ public class CatalogImpl extends Catalog {
      * @return id of the inserted materialized view
      */
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation relCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1817,7 +1817,7 @@ public class CatalogImpl extends Catalog {
                         old.partitionColumnId,
                         old.isPartitioned,
                         old.partitionProperty,
-                        ((CatalogMaterializedView) old).getRelCollation(),
+                        ((CatalogMaterializedView) old).getAlgCollation(),
                         old.connectedViews,
                         ((CatalogMaterializedView) old).getUnderlyingTables(),
                         ((CatalogMaterializedView) old).getLanguage(),
@@ -1856,7 +1856,7 @@ public class CatalogImpl extends Catalog {
                         keyId,
                         old.placementsByAdapter,
                         old.modifiable,
-                        ((CatalogMaterializedView) old).getRelCollation(),
+                        ((CatalogMaterializedView) old).getAlgCollation(),
                         ((CatalogMaterializedView) old).getUnderlyingTables(),
                         ((CatalogMaterializedView) old).getLanguage(),
                         ((CatalogMaterializedView) old).getMaterializedCriteria(),
@@ -1959,7 +1959,7 @@ public class CatalogImpl extends Catalog {
                             old.partitionColumnId,
                             old.isPartitioned,
                             old.partitionProperty,
-                            ((CatalogMaterializedView) old).getRelCollation(),
+                            ((CatalogMaterializedView) old).getAlgCollation(),
                             old.connectedViews,
                             ((CatalogMaterializedView) old).getUnderlyingTables(),
                             ((CatalogMaterializedView) old).getLanguage(),
@@ -2003,7 +2003,7 @@ public class CatalogImpl extends Catalog {
                             old.partitionColumnId,
                             old.isPartitioned,
                             old.partitionProperty,
-                            ((CatalogMaterializedView) old).getRelCollation(),
+                            ((CatalogMaterializedView) old).getAlgCollation(),
                             old.connectedViews,
                             ((CatalogMaterializedView) old).getUnderlyingTables(),
                             ((CatalogMaterializedView) old).getLanguage(),
@@ -2119,7 +2119,7 @@ public class CatalogImpl extends Catalog {
                 old.partitionColumnId,
                 old.isPartitioned,
                 old.partitionProperty,
-                old.getRelCollation(),
+                old.getAlgCollation(),
                 old.connectedViews,
                 old.getUnderlyingTables(),
                 old.getLanguage(),

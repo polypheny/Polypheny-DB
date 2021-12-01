@@ -37,9 +37,9 @@ import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlUtil;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.schema.TableMacro;
@@ -63,7 +63,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
     private final TableMacro tableMacro;
 
 
-    public SqlUserDefinedTableMacro( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, TableMacro tableMacro ) {
+    public SqlUserDefinedTableMacro( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<AlgDataType> paramTypes, TableMacro tableMacro ) {
         super(
                 Util.last( opName.names ),
                 opName,
@@ -86,7 +86,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
     /**
      * Returns the table in this UDF, or null if there is no table.
      */
-    public TranslatableTable getTable( RelDataTypeFactory typeFactory, List<SqlNode> operandList ) {
+    public TranslatableTable getTable( AlgDataTypeFactory typeFactory, List<SqlNode> operandList ) {
         List<Object> arguments = convertArguments( typeFactory, operandList, tableMacro, getNameAsId(), true );
         return tableMacro.apply( arguments );
     }
@@ -102,7 +102,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
      * @param failOnNonLiteral true when conversion should fail on non-literal
      * @return converted list of arguments
      */
-    public static List<Object> convertArguments( RelDataTypeFactory typeFactory, List<SqlNode> operandList, Function function, SqlIdentifier opName, boolean failOnNonLiteral ) {
+    public static List<Object> convertArguments( AlgDataTypeFactory typeFactory, List<SqlNode> operandList, Function function, SqlIdentifier opName, boolean failOnNonLiteral ) {
         List<Object> arguments = new ArrayList<>( operandList.size() );
         // Construct a list of arguments, if they are all constants.
         for ( Pair<FunctionParameter, SqlNode> pair : Pair.zip( function.getParameters(), operandList ) ) {
@@ -114,7 +114,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
                 if ( failOnNonLiteral ) {
                     throw new IllegalArgumentException( "All arguments of call to macro " + opName + " should be literal. Actual argument #" + pair.left.getOrdinal() + " (" + pair.left.getName() + ") is not literal: " + pair.right );
                 }
-                final RelDataType type = pair.left.getType( typeFactory );
+                final AlgDataType type = pair.left.getType( typeFactory );
                 final Object value;
                 if ( type.isNullable() ) {
                     value = null;
@@ -160,14 +160,14 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
     }
 
 
-    private static Object coerce( Object o, RelDataType type ) {
+    private static Object coerce( Object o, AlgDataType type ) {
         if ( o == null ) {
             return null;
         }
-        if ( !(type instanceof RelDataTypeFactoryImpl.JavaType) ) {
+        if ( !(type instanceof AlgDataTypeFactoryImpl.JavaType) ) {
             return null;
         }
-        final RelDataTypeFactoryImpl.JavaType javaType = (RelDataTypeFactoryImpl.JavaType) type;
+        final AlgDataTypeFactoryImpl.JavaType javaType = (AlgDataTypeFactoryImpl.JavaType) type;
         final Class clazz = javaType.getJavaClass();
         //noinspection unchecked
         if ( clazz.isAssignableFrom( o.getClass() ) ) {

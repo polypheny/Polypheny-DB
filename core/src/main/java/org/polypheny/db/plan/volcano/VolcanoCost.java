@@ -35,9 +35,9 @@ package org.polypheny.db.plan.volcano;
 
 
 import java.util.Objects;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptCostFactory;
-import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptCostFactory;
+import org.polypheny.db.plan.AlgOptUtil;
 
 
 /**
@@ -45,7 +45,7 @@ import org.polypheny.db.plan.RelOptUtil;
  *
  * This class is immutable: none of the methods modify any member variables.
  */
-public class VolcanoCost implements RelOptCost {
+public class VolcanoCost implements AlgOptCost {
 
     static final VolcanoCost INFINITY =
             new VolcanoCost( Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ) {
@@ -75,7 +75,7 @@ public class VolcanoCost implements RelOptCost {
                 }
             };
 
-    public static final RelOptCostFactory FACTORY = new Factory();
+    public static final AlgOptCostFactory FACTORY = new Factory();
 
 
     final double cpu;
@@ -112,7 +112,7 @@ public class VolcanoCost implements RelOptCost {
 
 
     @Override
-    public boolean isLe( RelOptCost other ) {
+    public boolean isLe( AlgOptCost other ) {
         VolcanoCost that = (VolcanoCost) other;
         if ( true ) {
             return this == that || this.rowCount <= that.rowCount;
@@ -125,7 +125,7 @@ public class VolcanoCost implements RelOptCost {
 
 
     @Override
-    public boolean isLt( RelOptCost other ) {
+    public boolean isLt( AlgOptCost other ) {
         if ( true ) {
             VolcanoCost that = (VolcanoCost) other;
             return this.rowCount < that.rowCount;
@@ -147,7 +147,7 @@ public class VolcanoCost implements RelOptCost {
 
 
     @Override
-    public boolean equals( RelOptCost other ) {
+    public boolean equals( AlgOptCost other ) {
         return this == other
                 || other instanceof VolcanoCost
                 && (this.rowCount == ((VolcanoCost) other).rowCount)
@@ -166,20 +166,20 @@ public class VolcanoCost implements RelOptCost {
 
 
     @Override
-    public boolean isEqWithEpsilon( RelOptCost other ) {
+    public boolean isEqWithEpsilon( AlgOptCost other ) {
         if ( !(other instanceof VolcanoCost) ) {
             return false;
         }
         VolcanoCost that = (VolcanoCost) other;
         return (this == that)
-                || ((Math.abs( this.rowCount - that.rowCount ) < RelOptUtil.EPSILON)
-                && (Math.abs( this.cpu - that.cpu ) < RelOptUtil.EPSILON)
-                && (Math.abs( this.io - that.io ) < RelOptUtil.EPSILON));
+                || ((Math.abs( this.rowCount - that.rowCount ) < AlgOptUtil.EPSILON)
+                && (Math.abs( this.cpu - that.cpu ) < AlgOptUtil.EPSILON)
+                && (Math.abs( this.io - that.io ) < AlgOptUtil.EPSILON));
     }
 
 
     @Override
-    public RelOptCost minus( RelOptCost other ) {
+    public AlgOptCost minus( AlgOptCost other ) {
         if ( this == INFINITY ) {
             return this;
         }
@@ -192,7 +192,7 @@ public class VolcanoCost implements RelOptCost {
 
 
     @Override
-    public RelOptCost multiplyBy( double factor ) {
+    public AlgOptCost multiplyBy( double factor ) {
         if ( this == INFINITY ) {
             return this;
         }
@@ -201,7 +201,7 @@ public class VolcanoCost implements RelOptCost {
 
 
     @Override
-    public double divideBy( RelOptCost cost ) {
+    public double divideBy( AlgOptCost cost ) {
         // Compute the geometric average of the ratios of all of the factors which are non-zero and finite.
         VolcanoCost that = (VolcanoCost) cost;
         double d = 1;
@@ -235,7 +235,7 @@ public class VolcanoCost implements RelOptCost {
 
 
     @Override
-    public RelOptCost plus( RelOptCost other ) {
+    public AlgOptCost plus( AlgOptCost other ) {
         VolcanoCost that = (VolcanoCost) other;
         if ( (this == INFINITY) || (that == INFINITY) ) {
             return INFINITY;
@@ -253,36 +253,36 @@ public class VolcanoCost implements RelOptCost {
 
 
     /**
-     * Implementation of {@link org.polypheny.db.plan.RelOptCostFactory} that creates {@link org.polypheny.db.plan.volcano.VolcanoCost}s.
+     * Implementation of {@link AlgOptCostFactory} that creates {@link org.polypheny.db.plan.volcano.VolcanoCost}s.
      */
-    private static class Factory implements RelOptCostFactory {
+    private static class Factory implements AlgOptCostFactory {
 
         @Override
-        public RelOptCost makeCost( double dRows, double dCpu, double dIo ) {
+        public AlgOptCost makeCost( double dRows, double dCpu, double dIo ) {
             return new VolcanoCost( dRows, dCpu, dIo );
         }
 
 
         @Override
-        public RelOptCost makeHugeCost() {
+        public AlgOptCost makeHugeCost() {
             return VolcanoCost.HUGE;
         }
 
 
         @Override
-        public RelOptCost makeInfiniteCost() {
+        public AlgOptCost makeInfiniteCost() {
             return VolcanoCost.INFINITY;
         }
 
 
         @Override
-        public RelOptCost makeTinyCost() {
+        public AlgOptCost makeTinyCost() {
             return VolcanoCost.TINY;
         }
 
 
         @Override
-        public RelOptCost makeZeroCost() {
+        public AlgOptCost makeZeroCost() {
             return VolcanoCost.ZERO;
         }
     }

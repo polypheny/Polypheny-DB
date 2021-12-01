@@ -40,9 +40,9 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.List;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.graph.DefaultDirectedGraph;
 import org.polypheny.db.util.graph.DefaultEdge;
@@ -58,7 +58,7 @@ import org.polypheny.db.util.graph.Graphs.FrozenGraph;
  * Conversion data is held in a {@link LoadingCache} with weak keys so that the JVM's garbage collector may reclaim the conversion data after the planner itself has been
  * garbage collected. The conversion information consists of a graph of conversions (from one calling convention to another) and a map of graph arcs to {@link ConverterRule}s.
  */
-public class ConventionTraitDef extends RelTraitDef<Convention> {
+public class ConventionTraitDef extends AlgTraitDef<Convention> {
 
     public static final ConventionTraitDef INSTANCE = new ConventionTraitDef();
 
@@ -67,7 +67,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
      * Weak-key cache of RelOptPlanner to ConversionData. The idea is that when
      * the planner goes away, so does the cache entry.
      */
-    private final LoadingCache<RelOptPlanner, ConversionData> conversionCache = CacheBuilder.newBuilder().weakKeys().build( CacheLoader.from( ConversionData::new ) );
+    private final LoadingCache<AlgOptPlanner, ConversionData> conversionCache = CacheBuilder.newBuilder().weakKeys().build( CacheLoader.from( ConversionData::new ) );
 
     //~ Constructors -----------------------------------------------------------
 
@@ -97,7 +97,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
 
 
     @Override
-    public void registerConverterRule( RelOptPlanner planner, ConverterRule converterRule ) {
+    public void registerConverterRule( AlgOptPlanner planner, ConverterRule converterRule ) {
         if ( converterRule.isGuaranteed() ) {
             ConversionData conversionData = getConversionData( planner );
 
@@ -113,7 +113,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
 
 
     @Override
-    public void deregisterConverterRule( RelOptPlanner planner, ConverterRule converterRule ) {
+    public void deregisterConverterRule( AlgOptPlanner planner, ConverterRule converterRule ) {
         if ( converterRule.isGuaranteed() ) {
             ConversionData conversionData = getConversionData( planner );
 
@@ -129,11 +129,11 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
 
     // implement RelTraitDef
     @Override
-    public RelNode convert( RelOptPlanner planner, RelNode rel, Convention toConvention, boolean allowInfiniteCostConverters ) {
-        final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    public AlgNode convert( AlgOptPlanner planner, AlgNode alg, Convention toConvention, boolean allowInfiniteCostConverters ) {
+        final AlgMetadataQuery mq = alg.getCluster().getMetadataQuery();
         final ConversionData conversionData = getConversionData( planner );
 
-        final Convention fromConvention = rel.getConvention();
+        final Convention fromConvention = alg.getConvention();
 
         List<List<Convention>> conversionPaths = conversionData.getPaths( fromConvention, toConvention );
 
@@ -141,7 +141,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
         for ( List<Convention> conversionPath : conversionPaths ) {
             assert conversionPath.get( 0 ) == fromConvention;
             assert conversionPath.get( conversionPath.size() - 1 ) == toConvention;
-            RelNode converted = rel;
+            AlgNode converted = alg;
             Convention previous = null;
             for ( Convention arc : conversionPath ) {
                 if ( planner.getCost( converted, mq ).isInfinite() && !allowInfiniteCostConverters ) {
@@ -165,15 +165,15 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
     /**
      * Tries to convert a relational expression to the target convention of an arc.
      */
-    private RelNode changeConvention( RelNode rel, Convention source, Convention target, final Multimap<Pair<Convention, Convention>, ConverterRule> mapArcToConverterRule ) {
-        assert source == rel.getConvention();
+    private AlgNode changeConvention( AlgNode alg, Convention source, Convention target, final Multimap<Pair<Convention, Convention>, ConverterRule> mapArcToConverterRule ) {
+        assert source == alg.getConvention();
 
         // Try to apply each converter rule for this arc's source/target calling conventions.
         final Pair<Convention, Convention> key = Pair.of( source, target );
         for ( ConverterRule rule : mapArcToConverterRule.get( key ) ) {
             assert rule.getInTrait() == source;
             assert rule.getOutTrait() == target;
-            RelNode converted = rule.convert( rel );
+            AlgNode converted = rule.convert( alg );
             if ( converted != null ) {
                 return converted;
             }
@@ -183,13 +183,13 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
 
 
     @Override
-    public boolean canConvert( RelOptPlanner planner, Convention fromConvention, Convention toConvention ) {
+    public boolean canConvert( AlgOptPlanner planner, Convention fromConvention, Convention toConvention ) {
         ConversionData conversionData = getConversionData( planner );
         return fromConvention.canConvertConvention( toConvention ) || conversionData.getShortestPath( fromConvention, toConvention ) != null;
     }
 
 
-    private ConversionData getConversionData( RelOptPlanner planner ) {
+    private ConversionData getConversionData( AlgOptPlanner planner ) {
         return conversionCache.getUnchecked( planner );
     }
 

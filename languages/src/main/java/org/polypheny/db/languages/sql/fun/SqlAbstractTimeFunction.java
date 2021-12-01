@@ -24,7 +24,7 @@ import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperatorBinding;
 import org.polypheny.db.languages.sql.SqlSyntax;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -55,11 +55,11 @@ public class SqlAbstractTimeFunction extends SqlFunction {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         // REVIEW jvs: Need to take care of time zones.
         int precision = 0;
         if ( opBinding.getOperandCount() == 1 ) {
-            RelDataType type = opBinding.getOperandType( 0 );
+            AlgDataType type = opBinding.getOperandType( 0 );
             if ( PolyTypeUtil.isNumeric( type ) ) {
                 precision = ((SqlOperatorBinding) opBinding).getOperandLiteralValue( 0, Integer.class );
             }

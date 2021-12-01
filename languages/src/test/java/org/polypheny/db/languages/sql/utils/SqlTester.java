@@ -27,7 +27,7 @@ import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.languages.sql.SqlTestFactory;
 import org.polypheny.db.languages.sql.utils.SqlValidatorTestCase.Tester;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -306,7 +306,7 @@ public interface SqlTester extends AutoCloseable, Tester {
      */
     interface TypeChecker {
 
-        void checkType( RelDataType type );
+        void checkType( AlgDataType type );
 
     }
 
@@ -316,7 +316,7 @@ public interface SqlTester extends AutoCloseable, Tester {
      */
     interface ParameterChecker {
 
-        void checkParameters( RelDataType parameterRowType );
+        void checkParameters( AlgDataType parameterRowType );
 
     }
 

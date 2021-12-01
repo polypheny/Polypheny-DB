@@ -21,20 +21,20 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.util.SqlValidatorException;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
 import org.polypheny.db.util.NlsString;
 
 public abstract class OperatorBinding {
 
-    protected final RelDataTypeFactory typeFactory;
+    protected final AlgDataTypeFactory typeFactory;
     @Getter
     protected final Operator operator;
 
 
-    public OperatorBinding( RelDataTypeFactory typeFactory, Operator sqlOperator ) {
+    public OperatorBinding( AlgDataTypeFactory typeFactory, Operator sqlOperator ) {
         this.typeFactory = typeFactory;
         this.operator = sqlOperator;
     }
@@ -63,7 +63,7 @@ public abstract class OperatorBinding {
     /**
      * @return factory for type creation
      */
-    public RelDataTypeFactory getTypeFactory() {
+    public AlgDataTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
@@ -105,7 +105,7 @@ public abstract class OperatorBinding {
      * @param ordinal zero-based ordinal of operand of interest
      * @return bound operand type
      */
-    public abstract RelDataType getOperandType( int ordinal );
+    public abstract AlgDataType getOperandType( int ordinal );
 
 
     /**
@@ -113,10 +113,10 @@ public abstract class OperatorBinding {
      *
      * @return collected list
      */
-    public List<RelDataType> collectOperandTypes() {
-        return new AbstractList<RelDataType>() {
+    public List<AlgDataType> collectOperandTypes() {
+        return new AbstractList<AlgDataType>() {
             @Override
-            public RelDataType get( int index ) {
+            public AlgDataType get( int index ) {
                 return getOperandType( index );
             }
 
@@ -159,7 +159,7 @@ public abstract class OperatorBinding {
      * @param ordinal Ordinal of the operand
      * @return Rowtype of the query underlying the cursor
      */
-    public RelDataType getCursorOperand( int ordinal ) {
+    public AlgDataType getCursorOperand( int ordinal ) {
         throw new UnsupportedOperationException();
     }
 

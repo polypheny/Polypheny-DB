@@ -35,14 +35,14 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalIntersect;
 
 
 /**
- * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalIntersect} to an {@link EnumerableIntersect}.
+ * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalIntersect} to an {@link EnumerableIntersect}.
  */
 class EnumerableIntersectRule extends ConverterRule {
 
@@ -52,14 +52,14 @@ class EnumerableIntersectRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalIntersect intersect = (LogicalIntersect) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalIntersect intersect = (LogicalIntersect) alg;
         if ( intersect.all ) {
             return null; // INTERSECT ALL not implemented
         }
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
-        final RelTraitSet traitSet = intersect.getTraitSet().replace( out );
-        return new EnumerableIntersect( rel.getCluster(), traitSet, convertList( intersect.getInputs(), out ), false );
+        final AlgTraitSet traitSet = intersect.getTraitSet().replace( out );
+        return new EnumerableIntersect( alg.getCluster(), traitSet, convertList( intersect.getInputs(), out ), false );
     }
 }
 

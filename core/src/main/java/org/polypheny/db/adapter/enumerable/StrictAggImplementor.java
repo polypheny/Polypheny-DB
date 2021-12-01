@@ -49,7 +49,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.enumerable.RexImpTable.CountImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable.SumImplementor;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -67,7 +67,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
 
 
     protected boolean nonDefaultOnEmptySet( AggContext info ) {
-        return info.returnRelType().isNullable();
+        return info.returnAlgType().isNullable();
     }
 
 
@@ -93,7 +93,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
         if ( !needTrackEmptySet ) {
             return subState;
         }
-        final boolean hasNullableArgs = anyNullable( info.parameterRelTypes() );
+        final boolean hasNullableArgs = anyNullable( info.parameterAlgTypes() );
         trackNullsPerRow = !(info instanceof WinAggContext) || hasNullableArgs;
 
         List<Type> res = new ArrayList<>( subState.size() + 1 );
@@ -103,8 +103,8 @@ public abstract class StrictAggImplementor implements AggImplementor {
     }
 
 
-    private boolean anyNullable( List<? extends RelDataType> types ) {
-        for ( RelDataType type : types ) {
+    private boolean anyNullable( List<? extends AlgDataType> types ) {
+        for ( AlgDataType type : types ) {
             if ( type.isNullable() ) {
                 return true;
             }

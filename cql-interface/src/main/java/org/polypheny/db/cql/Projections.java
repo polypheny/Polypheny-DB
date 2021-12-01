@@ -26,14 +26,14 @@ import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.cql.utils.ExclusiveComparisons;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.tools.RelBuilder.AggCall;
-import org.polypheny.db.tools.RelBuilder.GroupKey;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.tools.AlgBuilder.AggCall;
+import org.polypheny.db.tools.AlgBuilder.GroupKey;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -120,16 +120,16 @@ public class Projections {
      * Creates projection. Used when there are no Filters.
      *
      * @param tableScanOrdinalities Ordinalities of the columns after table scan.
-     * @param relBuilder {@link RelBuilder}.
+     * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
-     * @return {@link RelBuilder}.
+     * @return {@link AlgBuilder}.
      */
-    public RelBuilder convert2RelForSingleProjection( Map<Long, Integer> tableScanOrdinalities, RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    public AlgBuilder convert2RelForSingleProjection( Map<Long, Integer> tableScanOrdinalities, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         setColumnOrdinalities();
 
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> aliases = new ArrayList<>();
-        RelNode baseNode = relBuilder.peek();
+        AlgNode baseNode = algBuilder.peek();
 
         for ( Projection projection : projections ) {
             int ordinality = tableScanOrdinalities.get( projection.getColumnId() );
@@ -139,25 +139,25 @@ public class Projections {
         }
 
         log.debug( "Generating projection." );
-        relBuilder = relBuilder.project( inputRefs, aliases, true );
+        algBuilder = algBuilder.project( inputRefs, aliases, true );
 
-        return relBuilder;
+        return algBuilder;
     }
 
 
     /**
-     * Makes the call to {@link RelBuilder#aggregate(GroupKey, AggCall...)}
+     * Makes the call to {@link AlgBuilder#aggregate(GroupKey, AggCall...)}
      * if there are any aggregations.
      * Makes the final projection.
      *
      * @param tableScanOrdinalities Ordinalities of the columns after table scan /
      * initial projection.
-     * @param relBuilder {@link RelBuilder}.
+     * @param algBuilder {@link AlgBuilder}.
      * @param rexBuilder {@link RexBuilder}.
-     * @return {@link RelBuilder}.
+     * @return {@link AlgBuilder}.
      */
-    public RelBuilder convert2Rel( Map<Long, Integer> tableScanOrdinalities, RelBuilder relBuilder, RexBuilder rexBuilder ) {
-        RelNode baseNode = relBuilder.peek();
+    public AlgBuilder convert2Rel( Map<Long, Integer> tableScanOrdinalities, AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+        AlgNode baseNode = algBuilder.peek();
 
         if ( !aggregations.isEmpty() ) {
             log.debug( "Found aggregations. Creating AggregateCalls." );
@@ -184,16 +184,16 @@ public class Projections {
                 );
             }
 
-            GroupKey groupKey = relBuilder.groupKey( ImmutableBitSet.of( groupByOrdinals ) );
+            GroupKey groupKey = algBuilder.groupKey( ImmutableBitSet.of( groupByOrdinals ) );
             log.debug( "Generating aggregates." );
-            relBuilder = relBuilder.aggregate( groupKey, aggregateCalls );
+            algBuilder = algBuilder.aggregate( groupKey, aggregateCalls );
         }
 
         setColumnOrdinalities();
 
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> aliases = new ArrayList<>();
-        baseNode = relBuilder.peek();
+        baseNode = algBuilder.peek();
 
         for ( Projection projection : projections ) {
             int ordinality = projectedColumnOrdinalities.get( projection.getColumnId() );
@@ -203,15 +203,15 @@ public class Projections {
         }
 
         log.debug( "Generating final projection." );
-        relBuilder = relBuilder.project( inputRefs, aliases, true );
+        algBuilder = algBuilder.project( inputRefs, aliases, true );
 
-        return relBuilder;
+        return algBuilder;
     }
 
 
     /**
      * Sets the column ordinalities to match the order in the aggregation
-     * rel node i.e. {@link #groupings} followed by {@link #aggregations}.
+     * alg node i.e. {@link #groupings} followed by {@link #aggregations}.
      */
     private void setColumnOrdinalities() {
         assert projectedColumnOrdinalities.size() == 0;
@@ -298,7 +298,7 @@ public class Projections {
         }
 
 
-        public RexNode createRexNode( RexBuilder rexBuilder, RelNode baseNode, int ordinality ) {
+        public RexNode createRexNode( RexBuilder rexBuilder, AlgNode baseNode, int ordinality ) {
             return rexBuilder.makeInputRef( baseNode, ordinality );
         }
 
@@ -322,7 +322,7 @@ public class Projections {
         }
 
 
-        public AggregateCall getAggregateCall( RelNode baseNode, int ordinality, int groupCount ) {
+        public AggregateCall getAggregateCall( AlgNode baseNode, int ordinality, int groupCount ) {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Creating AggregateCall for '{}'.", getProjectionName() );
             }
@@ -334,7 +334,7 @@ public class Projections {
                     false,
                     inputFields,
                     -1,
-                    RelCollations.EMPTY,
+                    AlgCollations.EMPTY,
                     groupCount,
                     baseNode,
                     null,

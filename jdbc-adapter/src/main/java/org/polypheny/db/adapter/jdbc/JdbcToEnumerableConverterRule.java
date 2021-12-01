@@ -36,10 +36,10 @@ package org.polypheny.db.adapter.jdbc;
 
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -50,20 +50,20 @@ public class JdbcToEnumerableConverterRule extends ConverterRule {
     /**
      * Creates a JdbcToEnumerableConverterRule.
      */
-    public JdbcToEnumerableConverterRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
+    public JdbcToEnumerableConverterRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
         super(
-                RelNode.class,
-                (Predicate<RelNode>) r -> true,
+                AlgNode.class,
+                (Predicate<AlgNode>) r -> true,
                 out,
                 EnumerableConvention.INSTANCE,
-                relBuilderFactory,
+                algBuilderFactory,
                 "JdbcToEnumerableConverterRule:" + out );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
-        return new JdbcToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
+    public AlgNode convert( AlgNode alg ) {
+        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutTrait() );
+        return new JdbcToEnumerableConverter( alg.getCluster(), newTraitSet, alg );
     }
 }

@@ -23,7 +23,7 @@ import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Static;
@@ -75,7 +75,7 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
         }
         final SqlNodeList orderList = call.operand( 1 );
         for ( SqlNode order : orderList.getSqlList() ) {
-            RelDataType nodeType = validator.deriveType( scope, order );
+            AlgDataType nodeType = validator.deriveType( scope, order );
             assert nodeType != null;
         }
         validator.validateAggregateParams( aggCall, null, orderList, scope );
@@ -83,7 +83,7 @@ public class SqlWithinGroupOperator extends SqlBinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // Validate type of the inner aggregate call
         return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );
     }

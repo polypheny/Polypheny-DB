@@ -35,25 +35,25 @@ package org.polypheny.db.adapter.cassandra;
 
 
 import java.util.List;
-import org.polypheny.db.adapter.cassandra.CassandraRel.CassandraImplementContext.Type;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.adapter.cassandra.CassandraAlg.CassandraImplementContext.Type;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
  * Relational expression representing a scan of a Cassandra collection.
  */
-public class CassandraTableScan extends TableScan implements CassandraRel {
+public class CassandraTableScan extends TableScan implements CassandraAlg {
 
     public final CassandraTable cassandraTable;
-    final RelDataType projectRowType;
+    final AlgDataType projectRowType;
 
 
     /**
@@ -65,7 +65,7 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
      * @param cassandraTable Cassandra table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    protected CassandraTableScan( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, CassandraTable cassandraTable, RelDataType projectRowType ) {
+    protected CassandraTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, CassandraTable cassandraTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
         this.cassandraTable = cassandraTable;
         this.projectRowType = projectRowType;
@@ -77,26 +77,26 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
         return new CassandraTableScan( getCluster(), traitSet, this.table, this.cassandraTable, this.projectRowType );
     }
 
 
     @Override
-    public RelDataType deriveRowType() {
+    public AlgDataType deriveRowType() {
         return projectRowType != null ? projectRowType : super.deriveRowType();
     }
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
+    public void register( AlgOptPlanner planner ) {
         getConvention().register( planner );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
     }
 

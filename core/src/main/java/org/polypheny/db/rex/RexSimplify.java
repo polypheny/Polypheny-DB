@@ -62,12 +62,12 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.metadata.NullSentinel;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.metadata.NullSentinel;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Bug;
@@ -82,7 +82,7 @@ public class RexSimplify {
 
     private final boolean paranoid;
     public final RexBuilder rexBuilder;
-    private final RelOptPredicateList predicates;
+    private final AlgOptPredicateList predicates;
     /**
      * How to treat UNKNOWN values, if one of the deprecated {@code simplify} methods without an {@code unknownAs} argument is called.
      */
@@ -99,7 +99,7 @@ public class RexSimplify {
      * @param predicates Predicates known to hold on input fields
      * @param executor Executor for constant reduction, not null
      */
-    public RexSimplify( RexBuilder rexBuilder, RelOptPredicateList predicates, RexExecutor executor ) {
+    public RexSimplify( RexBuilder rexBuilder, AlgOptPredicateList predicates, RexExecutor executor ) {
         this( rexBuilder, predicates, UNKNOWN, true, false, executor );
     }
 
@@ -107,7 +107,7 @@ public class RexSimplify {
     /**
      * Internal constructor.
      */
-    private RexSimplify( RexBuilder rexBuilder, RelOptPredicateList predicates, RexUnknownAs defaultUnknownAs, boolean predicateElimination, boolean paranoid, RexExecutor executor ) {
+    private RexSimplify( RexBuilder rexBuilder, AlgOptPredicateList predicates, RexUnknownAs defaultUnknownAs, boolean predicateElimination, boolean paranoid, RexExecutor executor ) {
         this.rexBuilder = Objects.requireNonNull( rexBuilder );
         this.predicates = Objects.requireNonNull( predicates );
         this.defaultUnknownAs = Objects.requireNonNull( defaultUnknownAs );
@@ -121,7 +121,7 @@ public class RexSimplify {
     /**
      * Returns a RexSimplify the same as this but with a specified {@link #predicates} value.
      */
-    public RexSimplify withPredicates( RelOptPredicateList predicates ) {
+    public RexSimplify withPredicates( AlgOptPredicateList predicates ) {
         return predicates == this.predicates
                 ? this
                 : new RexSimplify( rexBuilder, predicates, defaultUnknownAs, predicateElimination, paranoid, executor );
@@ -361,7 +361,7 @@ public class RexSimplify {
         final List<RexNode> terms = new ArrayList<>();
         final List<RexNode> notTerms = new ArrayList<>();
         for ( RexNode e : nodes ) {
-            RelOptUtil.decomposeConjunction( e, terms, notTerms );
+            AlgOptUtil.decomposeConjunction( e, terms, notTerms );
         }
         simplifyList( terms, UNKNOWN );
         simplifyList( notTerms, UNKNOWN );
@@ -388,7 +388,7 @@ public class RexSimplify {
                 continue;
             }
             terms.set( i, simplify.simplify( t, UNKNOWN ) );
-            RelOptPredicateList newPredicates = simplify.predicates.union( rexBuilder, RelOptPredicateList.of( rexBuilder, terms.subList( i, i + 1 ) ) );
+            AlgOptPredicateList newPredicates = simplify.predicates.union( rexBuilder, AlgOptPredicateList.of( rexBuilder, terms.subList( i, i + 1 ) ) );
             simplify = simplify.withPredicates( newPredicates );
         }
         for ( int i = 0; i < terms.size(); i++ ) {
@@ -413,7 +413,7 @@ public class RexSimplify {
             final RexNode t2 = simplify.simplify( t, RexUnknownAs.UNKNOWN );
             terms.set( i, t2 );
             final RexNode inverse = simplify.simplify( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_TRUE ), t2 ), RexUnknownAs.UNKNOWN );
-            final RelOptPredicateList newPredicates = simplify.predicates.union( rexBuilder, RelOptPredicateList.of( rexBuilder, ImmutableList.of( inverse ) ) );
+            final AlgOptPredicateList newPredicates = simplify.predicates.union( rexBuilder, AlgOptPredicateList.of( rexBuilder, ImmutableList.of( inverse ) ) );
             simplify = simplify.withPredicates( newPredicates );
         }
         for ( int i = 0; i < terms.size(); i++ ) {
@@ -653,9 +653,9 @@ public class RexSimplify {
         List<CaseBranch> inputBranches = CaseBranch.fromCaseOperands( rexBuilder, new ArrayList<>( call.getOperands() ) );
 
         // run simplification on all operands
-        RexSimplify condSimplifier = this.withPredicates( RelOptPredicateList.EMPTY );
+        RexSimplify condSimplifier = this.withPredicates( AlgOptPredicateList.EMPTY );
         RexSimplify valueSimplifier = this;
-        RelDataType caseType = call.getType();
+        AlgDataType caseType = call.getType();
 
         boolean conditionNeedsSimplify = false;
         CaseBranch lastBranch = null;
@@ -759,7 +759,7 @@ public class RexSimplify {
     /**
      * Return if the new type is the same and at most narrows the nullability.
      */
-    private boolean sameTypeOrNarrowsNullability( RelDataType oldType, RelDataType newType ) {
+    private boolean sameTypeOrNarrowsNullability( AlgDataType oldType, AlgDataType newType ) {
         return oldType.equals( newType )
                 || (PolyTypeUtil.equalSansNullability( rexBuilder.typeFactory, oldType, newType )
                 && oldType.isNullable());
@@ -943,7 +943,7 @@ public class RexSimplify {
     }
 
 
-    private static RexNode simplifyBooleanCase( RexBuilder rexBuilder, List<CaseBranch> inputBranches, RexUnknownAs unknownAs, RelDataType branchType ) {
+    private static RexNode simplifyBooleanCase( RexBuilder rexBuilder, List<CaseBranch> inputBranches, RexUnknownAs unknownAs, AlgDataType branchType ) {
         RexNode result;
 
         // prepare all condition/branches for boolean interpretation
@@ -987,7 +987,7 @@ public class RexSimplify {
      * to
      * <pre>(p1 and x) or (p2 and y and not(p1)) or (true and z and not(p1) and not(p2))</pre>
      */
-    private static RexNode simplifyBooleanCaseGeneric( RexBuilder rexBuilder, List<CaseBranch> branches, RelDataType outputType ) {
+    private static RexNode simplifyBooleanCaseGeneric( RexBuilder rexBuilder, List<CaseBranch> branches, AlgDataType outputType ) {
 
         boolean booleanBranches = branches.stream().allMatch( branch -> branch.value.isAlwaysTrue() || branch.value.isAlwaysFalse() );
         final List<RexNode> terms = new ArrayList<>();
@@ -1017,7 +1017,7 @@ public class RexSimplify {
     RexNode simplifyAnd( RexCall e, RexUnknownAs unknownAs ) {
         final List<RexNode> terms = new ArrayList<>();
         final List<RexNode> notTerms = new ArrayList<>();
-        RelOptUtil.decomposeConjunction( e, terms, notTerms );
+        AlgOptUtil.decomposeConjunction( e, terms, notTerms );
 
         if ( unknownAs == FALSE && predicateElimination ) {
             simplifyAndTerms( terms );
@@ -1052,7 +1052,7 @@ public class RexSimplify {
         // Example #3. x AND y AND NOT (x AND y AND z)  - may be satisfiable
         List<RexNode> notSatisfiableNullables = null;
         for ( RexNode notDisjunction : notTerms ) {
-            final List<RexNode> terms2 = RelOptUtil.conjunctions( notDisjunction );
+            final List<RexNode> terms2 = AlgOptUtil.conjunctions( notDisjunction );
             if ( !terms.containsAll( terms2 ) ) {
                 // may be satisfiable ==> check other terms
                 continue;
@@ -1282,7 +1282,7 @@ public class RexSimplify {
             if ( !RexUtil.isDeterministic( notDisjunction ) ) {
                 continue;
             }
-            final List<RexNode> terms2Set = RelOptUtil.conjunctions( notDisjunction );
+            final List<RexNode> terms2Set = AlgOptUtil.conjunctions( notDisjunction );
             if ( termsSet.containsAll( terms2Set ) ) {
                 return rexBuilder.makeLiteral( false );
             }
@@ -1393,7 +1393,7 @@ public class RexSimplify {
 
     private RexNode simplifyOr( RexCall call, RexUnknownAs unknownAs ) {
         assert call.getKind() == Kind.OR;
-        final List<RexNode> terms = RelOptUtil.disjunctions( call );
+        final List<RexNode> terms = AlgOptUtil.disjunctions( call );
         if ( predicateElimination ) {
             simplifyOrTerms( terms );
         }

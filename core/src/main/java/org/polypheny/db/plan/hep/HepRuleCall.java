@@ -37,22 +37,22 @@ package org.polypheny.db.plan.hep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.algebra.AlgNode;
 
 
 /**
- * HepRuleCall implements {@link RelOptRuleCall} for a {@link HepPlanner}. It remembers transformation results so that the planner can choose which one (if any) should replace the original expression.
+ * HepRuleCall implements {@link AlgOptRuleCall} for a {@link HepPlanner}. It remembers transformation results so that the planner can choose which one (if any) should replace the original expression.
  */
-public class HepRuleCall extends RelOptRuleCall {
+public class HepRuleCall extends AlgOptRuleCall {
 
-    private List<RelNode> results;
+    private List<AlgNode> results;
 
 
-    HepRuleCall( RelOptPlanner planner, RelOptRuleOperand operand, RelNode[] rels, Map<RelNode, List<RelNode>> nodeChildren, List<RelNode> parents ) {
+    HepRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] rels, Map<AlgNode, List<AlgNode>> nodeChildren, List<AlgNode> parents ) {
         super( planner, operand, rels, nodeChildren, parents );
         results = new ArrayList<>();
     }
@@ -60,15 +60,15 @@ public class HepRuleCall extends RelOptRuleCall {
 
     // implement RelOptRuleCall
     @Override
-    public void transformTo( RelNode rel, Map<RelNode, RelNode> equiv ) {
-        final RelNode rel0 = rels[0];
-        RelOptUtil.verifyTypeEquivalence( rel0, rel, rel0 );
-        results.add( rel );
-        rel( 0 ).getCluster().invalidateMetadataQuery();
+    public void transformTo( AlgNode alg, Map<AlgNode, AlgNode> equiv ) {
+        final AlgNode rel0 = algs[0];
+        AlgOptUtil.verifyTypeEquivalence( rel0, alg, rel0 );
+        results.add( alg );
+        alg( 0 ).getCluster().invalidateMetadataQuery();
     }
 
 
-    List<RelNode> getResults() {
+    List<AlgNode> getResults() {
         return results;
     }
 }

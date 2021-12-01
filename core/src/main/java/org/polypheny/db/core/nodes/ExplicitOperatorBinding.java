@@ -21,8 +21,8 @@ import java.util.List;
 import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.util.SqlValidatorException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 
@@ -32,11 +32,11 @@ import org.polypheny.db.runtime.Resources;
  */
 public class ExplicitOperatorBinding extends OperatorBinding {
 
-    private final List<RelDataType> types;
+    private final List<AlgDataType> types;
     private final OperatorBinding delegate;
 
 
-    public ExplicitOperatorBinding( OperatorBinding delegate, List<RelDataType> types ) {
+    public ExplicitOperatorBinding( OperatorBinding delegate, List<AlgDataType> types ) {
         this(
                 delegate,
                 delegate.getTypeFactory(),
@@ -45,12 +45,12 @@ public class ExplicitOperatorBinding extends OperatorBinding {
     }
 
 
-    public ExplicitOperatorBinding( RelDataTypeFactory typeFactory, Operator operator, List<RelDataType> types ) {
+    public ExplicitOperatorBinding( AlgDataTypeFactory typeFactory, Operator operator, List<AlgDataType> types ) {
         this( null, typeFactory, operator, types );
     }
 
 
-    private ExplicitOperatorBinding( OperatorBinding delegate, RelDataTypeFactory typeFactory, Operator operator, List<RelDataType> types ) {
+    private ExplicitOperatorBinding( OperatorBinding delegate, AlgDataTypeFactory typeFactory, Operator operator, List<AlgDataType> types ) {
         super( typeFactory, operator );
         this.types = types;
         this.delegate = delegate;
@@ -66,7 +66,7 @@ public class ExplicitOperatorBinding extends OperatorBinding {
 
     // implement SqlOperatorBinding
     @Override
-    public RelDataType getOperandType( int ordinal ) {
+    public AlgDataType getOperandType( int ordinal ) {
         return types.get( ordinal );
     }
 

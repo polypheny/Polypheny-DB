@@ -35,8 +35,8 @@ import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -196,8 +196,8 @@ public class ExploreQueryProcessor {
             // explore by example should not execute any ddls
             throw new RuntimeException( "No DDL expected here" );
         } else {
-            Pair<Node, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
-            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
+            AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );

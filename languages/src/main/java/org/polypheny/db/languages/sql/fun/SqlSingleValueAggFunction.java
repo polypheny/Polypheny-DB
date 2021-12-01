@@ -20,7 +20,7 @@ package org.polypheny.db.languages.sql.fun;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
@@ -32,7 +32,7 @@ import org.polypheny.db.util.Optionality;
 public class SqlSingleValueAggFunction extends SqlAggFunction {
 
 
-    public SqlSingleValueAggFunction( RelDataType type ) {
+    public SqlSingleValueAggFunction( AlgDataType type ) {
         super(
                 "SINGLE_VALUE",
                 null,

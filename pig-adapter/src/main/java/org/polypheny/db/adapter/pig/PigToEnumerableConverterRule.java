@@ -35,13 +35,13 @@ package org.polypheny.db.adapter.pig;
 
 
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
 
 
 /**
- * Rule to convert a relational expression from {@link PigRel#CONVENTION} to {@link EnumerableConvention}.
+ * Rule to convert a relational expression from {@link PigAlg#CONVENTION} to {@link EnumerableConvention}.
  */
 public class PigToEnumerableConverterRule extends ConverterRule {
 
@@ -49,14 +49,14 @@ public class PigToEnumerableConverterRule extends ConverterRule {
 
 
     private PigToEnumerableConverterRule() {
-        super( RelNode.class, PigRel.CONVENTION, EnumerableConvention.INSTANCE, "PigToEnumerableConverterRule" );
+        super( AlgNode.class, PigAlg.CONVENTION, EnumerableConvention.INSTANCE, "PigToEnumerableConverterRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutConvention() );
-        return new PigToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
+    public AlgNode convert( AlgNode alg ) {
+        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutConvention() );
+        return new PigToEnumerableConverter( alg.getCluster(), newTraitSet, alg );
     }
 }
 

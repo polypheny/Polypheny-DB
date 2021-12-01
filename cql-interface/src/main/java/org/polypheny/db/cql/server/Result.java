@@ -43,8 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import spark.Response;
@@ -56,7 +56,7 @@ public class Result {
 
     private final Kind Kind;
     private final Iterator<Object> iterator;
-    private final RelDataType dataType;
+    private final AlgDataType dataType;
     List<ColumnMetaData> columns;
     private List<Map<String, Object>> result;
     @Getter
@@ -68,7 +68,7 @@ public class Result {
     ZipOutputStream zipOut;
 
 
-    public Result( org.polypheny.db.core.enums.Kind Kind, Iterator<Object> iterator, RelDataType dataType, List<ColumnMetaData> columns ) {
+    public Result( org.polypheny.db.core.enums.Kind Kind, Iterator<Object> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
         this.Kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
@@ -128,7 +128,7 @@ public class Result {
             }
             HashMap<String, Object> temp = new HashMap<>();
             int i = 0;
-            for ( RelDataTypeField type : dataType.getFieldList() ) {
+            for ( AlgDataTypeField type : dataType.getFieldList() ) {
                 Object o = row[i];
                 if ( type.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     if ( o instanceof File ) {

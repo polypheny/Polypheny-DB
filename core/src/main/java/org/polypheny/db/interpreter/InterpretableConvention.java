@@ -34,13 +34,13 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
@@ -60,7 +60,7 @@ public enum InterpretableConvention implements Convention {
 
     @Override
     public Class getInterface() {
-        return EnumerableRel.class;
+        return EnumerableAlg.class;
     }
 
 
@@ -71,19 +71,19 @@ public enum InterpretableConvention implements Convention {
 
 
     @Override
-    public RelTraitDef getTraitDef() {
+    public AlgTraitDef getTraitDef() {
         return ConventionTraitDef.INSTANCE;
     }
 
 
     @Override
-    public boolean satisfies( RelTrait trait ) {
+    public boolean satisfies( AlgTrait trait ) {
         return this == trait;
     }
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
+    public void register( AlgOptPlanner planner ) {
     }
 
 
@@ -94,7 +94,7 @@ public enum InterpretableConvention implements Convention {
 
 
     @Override
-    public boolean useAbstractConvertersForConversion( RelTraitSet fromTraits, RelTraitSet toTraits ) {
+    public boolean useAbstractConvertersForConversion( AlgTraitSet fromTraits, AlgTraitSet toTraits ) {
         return false;
     }
 }

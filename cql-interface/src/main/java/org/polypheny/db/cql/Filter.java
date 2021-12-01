@@ -17,14 +17,14 @@
 package org.polypheny.db.cql;
 
 import java.util.Map;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
 
 public interface Filter {
 
-    RexNode convert2RexNode( RelNode baseNode, RexBuilder rexBuilder, Map<String, RelDataTypeField> filterMap );
+    RexNode convert2RexNode( AlgNode baseNode, RexBuilder rexBuilder, Map<String, AlgDataTypeField> filterMap );
 
 }

@@ -37,9 +37,9 @@ package org.polypheny.db.type;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.nodes.Identifier;
-import org.polypheny.db.rel.type.RelDataTypeComparability;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeComparability;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 /**
@@ -51,10 +51,10 @@ public class ObjectPolyType extends AbstractPolyType {
     private final Identifier sqlIdentifier;
 
     @Getter
-    private final RelDataTypeComparability comparability;
+    private final AlgDataTypeComparability comparability;
 
     @Getter
-    private RelDataTypeFamily family;
+    private AlgDataTypeFamily family;
 
 
     /**
@@ -69,8 +69,8 @@ public class ObjectPolyType extends AbstractPolyType {
             PolyType typeName,
             Identifier sqlIdentifier,
             boolean nullable,
-            List<? extends RelDataTypeField> fields,
-            RelDataTypeComparability comparability ) {
+            List<? extends AlgDataTypeField> fields,
+            AlgDataTypeComparability comparability ) {
         super( typeName, nullable, fields );
         this.sqlIdentifier = sqlIdentifier;
         this.comparability = comparability;
@@ -78,7 +78,7 @@ public class ObjectPolyType extends AbstractPolyType {
     }
 
 
-    public void setFamily( RelDataTypeFamily family ) {
+    public void setFamily( AlgDataTypeFamily family ) {
         this.family = family;
     }
 

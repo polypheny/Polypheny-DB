@@ -46,9 +46,9 @@ import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
@@ -67,7 +67,7 @@ public class RexCall extends RexNode {
 
     public final Operator op;
     public final ImmutableList<RexNode> operands;
-    public final RelDataType type;
+    public final AlgDataType type;
 
     private static final Set<Kind> SIMPLE_BINARY_OPS;
 
@@ -79,7 +79,7 @@ public class RexCall extends RexNode {
     }
 
 
-    public RexCall( RelDataType type, Operator op, List<? extends RexNode> operands ) {
+    public RexCall( AlgDataType type, Operator op, List<? extends RexNode> operands ) {
         this.type = Objects.requireNonNull( type );
         this.op = Objects.requireNonNull( op );
         this.operands = ImmutableList.copyOf( operands );
@@ -90,7 +90,7 @@ public class RexCall extends RexNode {
 
     /**
      * Appends call operands without parenthesis. {@link RexLiteral} might omit data type depending on the context.
-     * For instance, {@code null:BOOLEAN} vs {@code =(true, null)}. The idea here is to omit "obvious" types for readability purposes while still maintain {@link RelNode#getDigest()} contract.
+     * For instance, {@code null:BOOLEAN} vs {@code =(true, null)}. The idea here is to omit "obvious" types for readability purposes while still maintain {@link AlgNode#getDigest()} contract.
      *
      * @param sb destination
      * @return original StringBuilder for fluent API
@@ -126,14 +126,14 @@ public class RexCall extends RexNode {
 
 
     /**
-     * This is a poorman's {@link PolyTypeUtil#equalSansNullability(RelDataTypeFactory, RelDataType, RelDataType)}
-     * {@code SqlTypeUtil} requires {@link RelDataTypeFactory} which we haven't, so we assume that "not null" is represented in the type's digest as a trailing "NOT NULL" (case sensitive)
+     * This is a poorman's {@link PolyTypeUtil#equalSansNullability(AlgDataTypeFactory, AlgDataType, AlgDataType)}
+     * {@code SqlTypeUtil} requires {@link AlgDataTypeFactory} which we haven't, so we assume that "not null" is represented in the type's digest as a trailing "NOT NULL" (case sensitive)
      *
      * @param a first type
      * @param b second type
      * @return true if the types are equal or the only difference is nullability
      */
-    private static boolean equalSansNullability( RelDataType a, RelDataType b ) {
+    private static boolean equalSansNullability( AlgDataType a, AlgDataType b ) {
         String x = a.getFullTypeString();
         String y = b.getFullTypeString();
         if ( x.length() < y.length() ) {
@@ -191,7 +191,7 @@ public class RexCall extends RexNode {
 
 
     @Override
-    public RelDataType getType() {
+    public AlgDataType getType() {
         return type;
     }
 
@@ -259,7 +259,7 @@ public class RexCall extends RexNode {
      * @param operands Operands to call
      * @return New call
      */
-    public RexCall clone( RelDataType type, List<RexNode> operands ) {
+    public RexCall clone( AlgDataType type, List<RexNode> operands ) {
         return new RexCall( type, op, operands );
     }
 

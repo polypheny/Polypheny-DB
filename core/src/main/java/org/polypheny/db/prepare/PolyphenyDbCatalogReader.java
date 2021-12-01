@@ -61,10 +61,10 @@ import org.polypheny.db.core.util.NameMatchers;
 import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
@@ -93,12 +93,12 @@ import org.polypheny.db.util.Util;
 public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     protected final PolyphenyDbSchema rootSchema;
-    protected final RelDataTypeFactory typeFactory;
+    protected final AlgDataTypeFactory typeFactory;
     private final List<List<String>> schemaPaths;
     protected final NameMatcher nameMatcher;
 
 
-    public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, RelDataTypeFactory typeFactory ) {
+    public PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, List<String> defaultSchema, AlgDataTypeFactory typeFactory ) {
         this(
                 rootSchema,
                 NameMatchers.withCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() ),
@@ -107,7 +107,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    protected PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, NameMatcher nameMatcher, List<List<String>> schemaPaths, RelDataTypeFactory typeFactory ) {
+    protected PolyphenyDbCatalogReader( PolyphenyDbSchema rootSchema, NameMatcher nameMatcher, List<List<String>> schemaPaths, AlgDataTypeFactory typeFactory ) {
         this.rootSchema = Objects.requireNonNull( rootSchema );
         this.nameMatcher = nameMatcher;
         this.schemaPaths =
@@ -136,7 +136,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
                     return relOptTable;
                 }
             }
-            return RelOptTableImpl.create( this, table.getRowType( typeFactory ), entry, null );
+            return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, null );
         }
         return null;
     }
@@ -172,7 +172,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public RelDataType getNamedType( Identifier typeName ) {
+    public AlgDataType getNamedType( Identifier typeName ) {
         PolyphenyDbSchema.TypeEntry typeEntry = ValidatorUtil.getTypeEntry( getRootSchema(), typeName );
         if ( typeEntry != null ) {
             return typeEntry.getType().apply( typeFactory );
@@ -235,7 +235,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public RelDataType createTypeFromProjection( final RelDataType type, final List<String> columnNameList ) {
+    public AlgDataType createTypeFromProjection( final AlgDataType type, final List<String> columnNameList ) {
         return ValidatorUtil.createTypeFromProjection( type, columnNameList, typeFactory, nameMatcher.isCaseSensitive() );
     }
 
@@ -272,16 +272,16 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
      *
      * The {@code typeFactory} argument is technical debt; see [POLYPHENYDB-2082] Remove RelDataTypeFactory argument from SqlUserDefinedAggFunction constructor.
      */
-    private static Operator toOp( RelDataTypeFactory typeFactory, Identifier name, final Function function ) {
-        List<RelDataType> argTypes = new ArrayList<>();
+    private static Operator toOp( AlgDataTypeFactory typeFactory, Identifier name, final Function function ) {
+        List<AlgDataType> argTypes = new ArrayList<>();
         List<PolyTypeFamily> typeFamilies = new ArrayList<>();
         for ( FunctionParameter o : function.getParameters() ) {
-            final RelDataType type = o.getType( typeFactory );
+            final AlgDataType type = o.getType( typeFactory );
             argTypes.add( type );
             typeFamilies.add( Util.first( type.getPolyType().getFamily(), PolyTypeFamily.ANY ) );
         }
         final FamilyOperandTypeChecker typeChecker = OperandTypes.family( typeFamilies, i -> function.getParameters().get( i ).isOptional() );
-        final List<RelDataType> paramTypes = toSql( typeFactory, argTypes );
+        final List<AlgDataType> paramTypes = toSql( typeFactory, argTypes );
         if ( function instanceof ScalarFunction ) {
             return LanguageManager.getInstance().createUserDefinedFunction(
                     QueryLanguage.SQL,
@@ -329,8 +329,8 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     private static PolyReturnTypeInference infer( final ScalarFunction function ) {
         return opBinding -> {
-            final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-            final RelDataType type;
+            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+            final AlgDataType type;
             if ( function instanceof ScalarFunctionImpl ) {
                 type = ((ScalarFunctionImpl) function).getReturnType( typeFactory, opBinding );
             } else {
@@ -343,20 +343,20 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     private static PolyReturnTypeInference infer( final AggregateFunction function ) {
         return opBinding -> {
-            final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-            final RelDataType type = function.getReturnType( typeFactory );
+            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+            final AlgDataType type = function.getReturnType( typeFactory );
             return toSql( typeFactory, type );
         };
     }
 
 
-    private static List<RelDataType> toSql( final RelDataTypeFactory typeFactory, List<RelDataType> types ) {
+    private static List<AlgDataType> toSql( final AlgDataTypeFactory typeFactory, List<AlgDataType> types ) {
         return types.stream().map( type -> toSql( typeFactory, type ) ).collect( Collectors.toList() );
     }
 
 
-    private static RelDataType toSql( RelDataTypeFactory typeFactory, RelDataType type ) {
-        if ( type instanceof RelDataTypeFactoryImpl.JavaType && ((RelDataTypeFactoryImpl.JavaType) type).getJavaClass() == Object.class ) {
+    private static AlgDataType toSql( AlgDataTypeFactory typeFactory, AlgDataType type ) {
+        if ( type instanceof AlgDataTypeFactoryImpl.JavaType && ((AlgDataTypeFactoryImpl.JavaType) type).getJavaClass() == Object.class ) {
             return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
         return JavaTypeFactoryImpl.toSql( typeFactory, type );
@@ -376,13 +376,13 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
 
     @Override
-    public RelDataTypeFactory getTypeFactory() {
+    public AlgDataTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
 
     @Override
-    public void registerRules( RelOptPlanner planner ) throws Exception {
+    public void registerRules( AlgOptPlanner planner ) throws Exception {
     }
 
 

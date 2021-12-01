@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.polypheny.db.cql.Projections.AggregationFunctions;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.helper.RelBuildTestHelper;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 
 
 public class ProjectionsTest extends RelBuildTestHelper {
@@ -69,9 +69,9 @@ public class ProjectionsTest extends RelBuildTestHelper {
         Projections projections = new Projections();
         projections.add( empname, empnameModifiers );
         projections.add( deptname, deptnameModifiers );
-        relBuilder = projections.convert2Rel( tableScanOrdinalities, relBuilder, rexBuilder );
-        RelNode relNode = relBuilder.peek();
-        List<String> actualFieldNames = relNode.getRowType().getFieldNames();
+        algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
+        AlgNode algNode = algBuilder.peek();
+        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "test.employee.empname" );
         expectedFieldNames.add( "test.dept.deptname" );
@@ -84,9 +84,9 @@ public class ProjectionsTest extends RelBuildTestHelper {
     public void testConvert2RelWithAggregationWithoutGrouping() {
         empnameModifiers.put( "count", new Modifier( "count" ) );
         projections.add( empname, empnameModifiers );
-        relBuilder = projections.convert2Rel( tableScanOrdinalities, relBuilder, rexBuilder );
-        RelNode relNode = relBuilder.peek();
-        List<String> actualFieldNames = relNode.getRowType().getFieldNames();
+        algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
+        AlgNode algNode = algBuilder.peek();
+        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
         String actualFieldName = actualFieldNames.get( 0 );
         String expectedFieldName = AggregationFunctions.COUNT.getAliasWithColumnName( empname.fullyQualifiedName );
 
@@ -100,9 +100,9 @@ public class ProjectionsTest extends RelBuildTestHelper {
         empnameModifiers.put( "count", new Modifier( "count" ) );
         projections.add( empname, empnameModifiers );
         projections.add( deptname, deptnameModifiers );
-        relBuilder = projections.convert2Rel( tableScanOrdinalities, relBuilder, rexBuilder );
-        RelNode relNode = relBuilder.peek();
-        List<String> actualFieldNames = relNode.getRowType().getFieldNames();
+        algBuilder = projections.convert2Rel( tableScanOrdinalities, algBuilder, rexBuilder );
+        AlgNode algNode = algBuilder.peek();
+        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
         List<String> expectedFiledNames = new ArrayList<>();
         expectedFiledNames.add( AggregationFunctions.COUNT.getAliasWithColumnName( empname.fullyQualifiedName ) );
         expectedFiledNames.add( deptname.fullyQualifiedName );

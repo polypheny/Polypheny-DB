@@ -55,9 +55,9 @@ import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.MqlUseDatabase;
 import org.polypheny.db.processing.MqlProcessor;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -111,7 +111,7 @@ public class LanguageCrud {
             }
 
             Statement statement = transaction.createStatement();
-            RelBuilder relBuilder = RelBuilder.create( statement );
+            AlgBuilder algBuilder = AlgBuilder.create( statement );
             JavaTypeFactory typeFactory = transaction.getTypeFactory();
             RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
@@ -119,7 +119,7 @@ public class LanguageCrud {
 
             Cql2RelConverter cql2RelConverter = new Cql2RelConverter( cqlQuery );
 
-            RelRoot relRoot = cql2RelConverter.convert2Rel( relBuilder, rexBuilder );
+            AlgRoot relRoot = cql2RelConverter.convert2Rel( algBuilder, rexBuilder );
             PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot );
 
             Result result = getResult( LanguageType.CQL, statement, request, cqlQueryStr, signature, request.noLimit );
@@ -185,7 +185,7 @@ public class LanguageCrud {
                 Result result = new Result( 1 ).setGeneratedQuery( query ).setXid( statement.getTransaction().getXid().toString() );
                 results.add( result );
             } else {
-                RelRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
+                AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
 
                 // Prepare
                 signature = statement.getQueryProcessor().prepareQuery( logicalRoot );

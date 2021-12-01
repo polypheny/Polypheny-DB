@@ -19,9 +19,9 @@ package org.polypheny.db.core.validate;
 import java.util.List;
 import org.polypheny.db.core.enums.NullCollation;
 import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.Resources;
 
@@ -35,7 +35,7 @@ public interface Validator {
      * @param field Field
      * @return whether field is a system field
      */
-    boolean isSystemField( RelDataTypeField field );
+    boolean isSystemField( AlgDataTypeField field );
 
     /**
      * Derives the type of a node in a given scope. If the type has already been inferred, returns the previous type.
@@ -44,14 +44,14 @@ public interface Validator {
      * @param operand Parse tree node
      * @return Type of the SqlNode. Should never return <code>NULL</code>
      */
-    RelDataType deriveType( ValidatorScope scope, Node operand );
+    AlgDataType deriveType( ValidatorScope scope, Node operand );
 
     /**
      * Returns the type factory used by this validator.
      *
      * @return type factory
      */
-    RelDataTypeFactory getTypeFactory();
+    AlgDataTypeFactory getTypeFactory();
 
     Node validate( Node node );
 
@@ -74,7 +74,7 @@ public interface Validator {
      * @param node the node of interest
      * @return validated type, never null
      */
-    RelDataType getValidatedNodeType( Node node );
+    AlgDataType getValidatedNodeType( Node node );
 
     /**
      * Enables or disables expansion of identifiers other than column references.
@@ -106,14 +106,14 @@ public interface Validator {
      * @param sqlQuery Query
      * @return Record type
      */
-    RelDataType getParameterRowType( Node sqlQuery );
+    AlgDataType getParameterRowType( Node sqlQuery );
 
     /**
      * Returns an object representing the "unknown" type.
      *
      * @return unknown type
      */
-    RelDataType getUnknownType();
+    AlgDataType getUnknownType();
 
     ValidatorNamespace getNamespace( Node node );
 

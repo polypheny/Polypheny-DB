@@ -35,17 +35,17 @@ package org.polypheny.db.adapter.mongodb;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgRecordType;
 
 
 /**
@@ -53,10 +53,10 @@ import org.polypheny.db.rel.type.RelRecordType;
  *
  * Additional operations might be applied, using the "find" or "aggregate" methods.</p>
  */
-public class MongoTableScan extends TableScan implements MongoRel {
+public class MongoTableScan extends TableScan implements MongoAlg {
 
     final MongoTable mongoTable;
-    final RelDataType projectRowType;
+    final AlgDataType projectRowType;
 
 
     /**
@@ -68,7 +68,7 @@ public class MongoTableScan extends TableScan implements MongoRel {
      * @param mongoTable MongoDB table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    protected MongoTableScan( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, MongoTable mongoTable, RelDataType projectRowType ) {
+    protected MongoTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, MongoTable mongoTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
         this.mongoTable = mongoTable;
         this.projectRowType = projectRowType;
@@ -79,20 +79,20 @@ public class MongoTableScan extends TableScan implements MongoRel {
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
         return this;
     }
 
 
     @Override
-    public RelDataType deriveRowType() {
+    public AlgDataType deriveRowType() {
         return projectRowType != null ? projectRowType : super.deriveRowType();
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // scans with a small project list are cheaper
         final float f = projectRowType == null ? 1f : (float) projectRowType.getFieldCount() / 100f;
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 * f );
@@ -100,8 +100,8 @@ public class MongoTableScan extends TableScan implements MongoRel {
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : MongoRules.RULES ) {
+    public void register( AlgOptPlanner planner ) {
+        for ( AlgOptRule rule : MongoRules.RULES ) {
             planner.addRule( rule );
         }
     }
@@ -111,7 +111,7 @@ public class MongoTableScan extends TableScan implements MongoRel {
     public void implement( Implementor implementor ) {
         implementor.mongoTable = mongoTable;
         implementor.table = table;
-        implementor.setStaticRowType( (RelRecordType) rowType );
+        implementor.setStaticRowType( (AlgRecordType) rowType );
         implementor.physicalMapper.addAll( rowType.getFieldNames() );
     }
 

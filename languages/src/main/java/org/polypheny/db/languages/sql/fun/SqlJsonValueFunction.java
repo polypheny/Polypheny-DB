@@ -36,8 +36,8 @@ import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
@@ -65,7 +65,7 @@ public class SqlJsonValueFunction extends SqlFunction {
                 Kind.OTHER_FUNCTION,
                 null,
                 ( callBinding, returnType, operandTypes ) -> {
-                    RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
+                    AlgDataTypeFactory typeFactory = callBinding.getTypeFactory();
                     for ( int i = 0; i < operandTypes.length; ++i ) {
                         operandTypes[i] = typeFactory.createPolyType( PolyType.ANY );
                     }
@@ -123,9 +123,9 @@ public class SqlJsonValueFunction extends SqlFunction {
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final SqlValidator validator = callBinding.getValidator();
-        RelDataType defaultValueOnEmptyType = validator.getValidatedNodeType( callBinding.operand( 2 ) );
-        RelDataType defaultValueOnErrorType = validator.getValidatedNodeType( callBinding.operand( 4 ) );
-        RelDataType returnType = validator.deriveType( callBinding.getScope(), callBinding.operand( 5 ) );
+        AlgDataType defaultValueOnEmptyType = validator.getValidatedNodeType( callBinding.operand( 2 ) );
+        AlgDataType defaultValueOnErrorType = validator.getValidatedNodeType( callBinding.operand( 4 ) );
+        AlgDataType returnType = validator.deriveType( callBinding.getScope(), callBinding.operand( 5 ) );
         if ( !canCastFrom( callBinding, throwOnFailure, defaultValueOnEmptyType, returnType ) ) {
             return false;
         }
@@ -137,9 +137,9 @@ public class SqlJsonValueFunction extends SqlFunction {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         assert opBinding.getOperandCount() == 5 || opBinding.getOperandCount() == 6;
-        RelDataType ret;
+        AlgDataType ret;
         if ( opBinding.getOperandCount() == 6 ) {
             ret = opBinding.getOperandType( 5 );
         } else {
@@ -194,7 +194,7 @@ public class SqlJsonValueFunction extends SqlFunction {
     }
 
 
-    private boolean canCastFrom( SqlCallBinding callBinding, boolean throwOnFailure, RelDataType inType, RelDataType outType ) {
+    private boolean canCastFrom( SqlCallBinding callBinding, boolean throwOnFailure, AlgDataType inType, AlgDataType outType ) {
         if ( PolyTypeUtil.canCastFrom( outType, inType, true ) ) {
             return true;
         }

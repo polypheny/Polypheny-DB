@@ -43,47 +43,47 @@ import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.rel.RelDecorrelator;
-import org.polypheny.db.core.rel.RelFieldTrimmer;
+import org.polypheny.db.core.algebra.AlgDecorrelator;
+import org.polypheny.db.core.algebra.AlgFieldTrimmer;
 import org.polypheny.db.interpreter.NoneToBindableConverterRule;
-import org.polypheny.db.plan.RelOptCostImpl;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.AlgOptCostImpl;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.hep.HepMatchOrder;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Calc;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.metadata.ChainedRelMetadataProvider;
-import org.polypheny.db.rel.metadata.DefaultRelMetadataProvider;
-import org.polypheny.db.rel.metadata.RelMetadataProvider;
-import org.polypheny.db.rel.rules.AggregateExpandDistinctAggregatesRule;
-import org.polypheny.db.rel.rules.AggregateReduceFunctionsRule;
-import org.polypheny.db.rel.rules.CalcMergeRule;
-import org.polypheny.db.rel.rules.FilterAggregateTransposeRule;
-import org.polypheny.db.rel.rules.FilterCalcMergeRule;
-import org.polypheny.db.rel.rules.FilterJoinRule;
-import org.polypheny.db.rel.rules.FilterProjectTransposeRule;
-import org.polypheny.db.rel.rules.FilterTableScanRule;
-import org.polypheny.db.rel.rules.FilterToCalcRule;
-import org.polypheny.db.rel.rules.JoinAssociateRule;
-import org.polypheny.db.rel.rules.JoinCommuteRule;
-import org.polypheny.db.rel.rules.JoinPushThroughJoinRule;
-import org.polypheny.db.rel.rules.JoinToMultiJoinRule;
-import org.polypheny.db.rel.rules.LoptOptimizeJoinRule;
-import org.polypheny.db.rel.rules.MultiJoin;
-import org.polypheny.db.rel.rules.MultiJoinOptimizeBushyRule;
-import org.polypheny.db.rel.rules.ProjectCalcMergeRule;
-import org.polypheny.db.rel.rules.ProjectMergeRule;
-import org.polypheny.db.rel.rules.ProjectToCalcRule;
-import org.polypheny.db.rel.rules.SemiJoinRule;
-import org.polypheny.db.rel.rules.SortProjectTransposeRule;
-import org.polypheny.db.rel.rules.SubQueryRemoveRule;
-import org.polypheny.db.rel.rules.TableScanRule;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.metadata.ChainedAlgMetadataProvider;
+import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
+import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
+import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
+import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
+import org.polypheny.db.algebra.rules.CalcMergeRule;
+import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
+import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
+import org.polypheny.db.algebra.rules.FilterJoinRule;
+import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
+import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.FilterToCalcRule;
+import org.polypheny.db.algebra.rules.JoinAssociateRule;
+import org.polypheny.db.algebra.rules.JoinCommuteRule;
+import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
+import org.polypheny.db.algebra.rules.JoinToMultiJoinRule;
+import org.polypheny.db.algebra.rules.LoptOptimizeJoinRule;
+import org.polypheny.db.algebra.rules.MultiJoin;
+import org.polypheny.db.algebra.rules.MultiJoinOptimizeBushyRule;
+import org.polypheny.db.algebra.rules.ProjectCalcMergeRule;
+import org.polypheny.db.algebra.rules.ProjectMergeRule;
+import org.polypheny.db.algebra.rules.ProjectToCalcRule;
+import org.polypheny.db.algebra.rules.SemiJoinRule;
+import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
+import org.polypheny.db.algebra.rules.SubQueryRemoveRule;
+import org.polypheny.db.algebra.rules.TableScanRule;
 
 
 /**
@@ -91,7 +91,7 @@ import org.polypheny.db.rel.rules.TableScanRule;
  */
 public class Programs {
 
-    public static final ImmutableList<RelOptRule> CALC_RULES =
+    public static final ImmutableList<AlgOptRule> CALC_RULES =
             ImmutableList.of(
                     NoneToBindableConverterRule.INSTANCE,
                     EnumerableRules.ENUMERABLE_CALC_RULE,
@@ -111,14 +111,14 @@ public class Programs {
     /**
      * Program that converts filters and projects to {@link Calc}s.
      */
-    public static final Program CALC_PROGRAM = calc( DefaultRelMetadataProvider.INSTANCE );
+    public static final Program CALC_PROGRAM = calc( DefaultAlgMetadataProvider.INSTANCE );
 
     /**
      * Program that expands sub-queries.
      */
-    public static final Program SUB_QUERY_PROGRAM = subQuery( DefaultRelMetadataProvider.INSTANCE );
+    public static final Program SUB_QUERY_PROGRAM = subQuery( DefaultAlgMetadataProvider.INSTANCE );
 
-    public static final ImmutableSet<RelOptRule> RULE_SET =
+    public static final ImmutableSet<AlgOptRule> RULE_SET =
             ImmutableSet.of(
                     EnumerableRules.ENUMERABLE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
@@ -189,7 +189,7 @@ public class Programs {
     /**
      * Creates a program from a list of rules.
      */
-    public static Program ofRules( RelOptRule... rules ) {
+    public static Program ofRules( AlgOptRule... rules ) {
         return of( RuleSets.ofList( rules ) );
     }
 
@@ -197,7 +197,7 @@ public class Programs {
     /**
      * Creates a program from a list of rules.
      */
-    public static Program ofRules( Iterable<? extends RelOptRule> rules ) {
+    public static Program ofRules( Iterable<? extends AlgOptRule> rules ) {
         return of( RuleSets.ofList( rules ) );
     }
 
@@ -213,9 +213,9 @@ public class Programs {
     /**
      * Creates a program that executes a list of rules in a HEP planner.
      */
-    public static Program hep( Iterable<? extends RelOptRule> rules, boolean noDag, RelMetadataProvider metadataProvider ) {
+    public static Program hep( Iterable<? extends AlgOptRule> rules, boolean noDag, AlgMetadataProvider metadataProvider ) {
         final HepProgramBuilder builder = HepProgram.builder();
-        for ( RelOptRule rule : rules ) {
+        for ( AlgOptRule rule : rules ) {
             builder.addRuleInstance( rule );
         }
         return of( builder.build(), noDag, metadataProvider );
@@ -225,24 +225,24 @@ public class Programs {
     /**
      * Creates a program that executes a {@link HepProgram}.
      */
-    public static Program of( final HepProgram hepProgram, final boolean noDag, final RelMetadataProvider metadataProvider ) {
-        return ( planner, rel, requiredOutputTraits ) -> {
+    public static Program of( final HepProgram hepProgram, final boolean noDag, final AlgMetadataProvider metadataProvider ) {
+        return ( planner, alg, requiredOutputTraits ) -> {
             final HepPlanner hepPlanner = new HepPlanner(
                     hepProgram,
                     null,
                     noDag,
                     null,
-                    RelOptCostImpl.FACTORY );
+                    AlgOptCostImpl.FACTORY );
 
-            List<RelMetadataProvider> list = new ArrayList<>();
+            List<AlgMetadataProvider> list = new ArrayList<>();
             if ( metadataProvider != null ) {
                 list.add( metadataProvider );
             }
             hepPlanner.registerMetadataProviders( list );
-            RelMetadataProvider plannerChain = ChainedRelMetadataProvider.of( list );
-            rel.getCluster().setMetadataProvider( plannerChain );
+            AlgMetadataProvider plannerChain = ChainedAlgMetadataProvider.of( list );
+            alg.getCluster().setMetadataProvider( plannerChain );
 
-            hepPlanner.setRoot( rel );
+            hepPlanner.setRoot( alg );
             return hepPlanner.findBestExp();
         };
     }
@@ -252,9 +252,9 @@ public class Programs {
      * Creates a program that invokes heuristic join-order optimization (via {@link JoinToMultiJoinRule}, {@link MultiJoin} and
      * {@link LoptOptimizeJoinRule}) if there are 6 or more joins (7 or more relations).
      */
-    public static Program heuristicJoinOrder( final Iterable<? extends RelOptRule> rules, final boolean bushy, final int minJoinCount ) {
-        return ( planner, rel, requiredOutputTraits ) -> {
-            final int joinCount = RelOptUtil.countJoins( rel );
+    public static Program heuristicJoinOrder( final Iterable<? extends AlgOptRule> rules, final boolean bushy, final int minJoinCount ) {
+        return ( planner, alg, requiredOutputTraits ) -> {
+            final int joinCount = AlgOptUtil.countJoins( alg );
             final Program program;
             if ( joinCount < minJoinCount ) {
                 program = ofRules( rules );
@@ -265,11 +265,11 @@ public class Programs {
                         .addMatchOrder( HepMatchOrder.BOTTOM_UP )
                         .addRuleInstance( JoinToMultiJoinRule.INSTANCE )
                         .build();
-                final Program program1 = of( hep, false, DefaultRelMetadataProvider.INSTANCE );
+                final Program program1 = of( hep, false, DefaultAlgMetadataProvider.INSTANCE );
 
                 // Create a program that contains a rule to expand a MultiJoin into heuristically ordered joins.
                 // We use the rule set passed in, but remove JoinCommuteRule and JoinPushThroughJoinRule, because they cause exhaustive search.
-                final List<RelOptRule> list = Lists.newArrayList( rules );
+                final List<AlgOptRule> list = Lists.newArrayList( rules );
                 list.removeAll(
                         ImmutableList.of(
                                 JoinCommuteRule.INSTANCE,
@@ -283,20 +283,20 @@ public class Programs {
 
                 program = sequence( program1, program2 );
             }
-            return program.run( planner, rel, requiredOutputTraits );
+            return program.run( planner, alg, requiredOutputTraits );
         };
     }
 
 
-    public static Program calc( RelMetadataProvider metadataProvider ) {
+    public static Program calc( AlgMetadataProvider metadataProvider ) {
         return hep( CALC_RULES, true, metadataProvider );
     }
 
 
-    public static Program subQuery( RelMetadataProvider metadataProvider ) {
+    public static Program subQuery( AlgMetadataProvider metadataProvider ) {
         return hep(
                 ImmutableList.of(
-                        (RelOptRule) SubQueryRemoveRule.FILTER,
+                        (AlgOptRule) SubQueryRemoveRule.FILTER,
                         SubQueryRemoveRule.PROJECT,
                         SubQueryRemoveRule.JOIN ),
                 true,
@@ -305,7 +305,7 @@ public class Programs {
 
 
     public static Program getProgram() {
-        return ( planner, rel, requiredOutputTraits ) -> null;
+        return ( planner, alg, requiredOutputTraits ) -> null;
     }
 
 
@@ -313,27 +313,27 @@ public class Programs {
      * Returns the standard program used by Prepare.
      */
     public static Program standard() {
-        return standard( DefaultRelMetadataProvider.INSTANCE );
+        return standard( DefaultAlgMetadataProvider.INSTANCE );
     }
 
 
     /**
      * Returns the standard program with user metadata provider.
      */
-    public static Program standard( RelMetadataProvider metadataProvider ) {
+    public static Program standard( AlgMetadataProvider metadataProvider ) {
         final Program program1 =
-                ( planner, rel, requiredOutputTraits ) -> {
-                    planner.setRoot( rel );
+                ( planner, alg, requiredOutputTraits ) -> {
+                    planner.setRoot( alg );
 
-                    final RelNode rootRel2 =
-                            rel.getTraitSet().equals( requiredOutputTraits )
-                                    ? rel
-                                    : planner.changeTraits( rel, requiredOutputTraits );
+                    final AlgNode rootRel2 =
+                            alg.getTraitSet().equals( requiredOutputTraits )
+                                    ? alg
+                                    : planner.changeTraits( alg, requiredOutputTraits );
                     assert rootRel2 != null;
 
                     planner.setRoot( rootRel2 );
-                    final RelOptPlanner planner2 = planner.chooseDelegate();
-                    final RelNode rootRel3 = planner2.findBestExp();
+                    final AlgOptPlanner planner2 = planner.chooseDelegate();
+                    final AlgNode rootRel3 = planner2.findBestExp();
                     assert rootRel3 != null : "could not implement exp";
                     return rootRel3;
                 };
@@ -362,15 +362,15 @@ public class Programs {
 
 
         @Override
-        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             planner.clear();
-            for ( RelOptRule rule : ruleSet ) {
+            for ( AlgOptRule rule : ruleSet ) {
                 planner.addRule( rule );
             }
-            if ( !rel.getTraitSet().equals( requiredOutputTraits ) ) {
-                rel = planner.changeTraits( rel, requiredOutputTraits );
+            if ( !alg.getTraitSet().equals( requiredOutputTraits ) ) {
+                alg = planner.changeTraits( alg, requiredOutputTraits );
             }
-            planner.setRoot( rel );
+            planner.setRoot( alg );
             return planner.findBestExp();
 
         }
@@ -392,11 +392,11 @@ public class Programs {
 
 
         @Override
-        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             for ( Program program : programs ) {
-                rel = program.run( planner, rel, requiredOutputTraits );
+                alg = program.run( planner, alg, requiredOutputTraits );
             }
-            return rel;
+            return alg;
         }
 
     }
@@ -411,13 +411,13 @@ public class Programs {
     private static class DecorrelateProgram implements Program {
 
         @Override
-        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits ) {
+        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
             final PolyphenyDbConnectionConfig config = planner.getContext().unwrap( PolyphenyDbConnectionConfig.class );
             if ( config != null && config.forceDecorrelate() ) {
-                final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( rel.getCluster(), null );
-                return RelDecorrelator.decorrelateQuery( rel, relBuilder );
+                final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
+                return AlgDecorrelator.decorrelateQuery( alg, algBuilder );
             }
-            return rel;
+            return alg;
         }
 
     }
@@ -429,9 +429,9 @@ public class Programs {
     private static class TrimFieldsProgram implements Program {
 
         @Override
-        public RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits ) {
-            final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( rel.getCluster(), null );
-            return new RelFieldTrimmer( null, relBuilder ).trim( rel );
+        public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
+            final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
+            return new AlgFieldTrimmer( null, algBuilder ).trim( alg );
         }
 
     }

@@ -36,8 +36,8 @@ package org.polypheny.db.jdbc;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgRecordType;
 
 
 /**
@@ -45,12 +45,12 @@ import org.polypheny.db.rel.type.RelRecordType;
  *
  * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.
  */
-public class JavaRecordType extends RelRecordType {
+public class JavaRecordType extends AlgRecordType {
 
     final Class clazz;
 
 
-    public JavaRecordType( List<RelDataTypeField> fields, Class clazz ) {
+    public JavaRecordType( List<AlgDataTypeField> fields, Class clazz ) {
         super( fields );
         this.clazz = Objects.requireNonNull( clazz );
     }

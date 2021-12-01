@@ -24,55 +24,55 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
-import org.polypheny.db.adapter.cottontail.rel.CottontailSortAndProject;
-import org.polypheny.db.adapter.cottontail.rel.SortAndProject;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailSortAndProject;
+import org.polypheny.db.adapter.cottontail.algebra.SortAndProject;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.languages.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelFieldCollation.Direction;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.volcano.AlgSubset;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
-public class CottontailSortAndProjectRule extends RelOptRule {
+public class CottontailSortAndProjectRule extends AlgOptRule {
 
     protected final Convention out;
 
 
-    CottontailSortAndProjectRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( operand( Sort.class, operand( Project.class, any() ) ), relBuilderFactory, "CottontailSortAndProjectRule" + out.getName() );
+    CottontailSortAndProjectRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( operand( Sort.class, operand( Project.class, any() ) ), algBuilderFactory, "CottontailSortAndProjectRule" + out.getName() );
         this.out = out;
     }
 
 
     @Override
-    public boolean matches( RelOptRuleCall call ) {
-        final Sort sort = call.rel( 0 );
+    public boolean matches( AlgOptRuleCall call ) {
+        final Sort sort = call.alg( 0 );
 
-        if ( !(call.rel( 1 ) instanceof Project) ) {
+        if ( !(call.alg( 1 ) instanceof Project) ) {
             return false;
         }
 
-        Project project = call.rel( 1 );
+        Project project = call.alg( 1 );
 
         if ( !project.getInput().getConvention().equals( this.out ) ) {
             return false;
         }
 
         // Projection checks
-        Project innerProject = getUnderlyingProject( (RelSubset) project.getInput(), this.out );
+        Project innerProject = getUnderlyingProject( (AlgSubset) project.getInput(), this.out );
 
         if ( innerProject != null ) {
             return false;
@@ -118,7 +118,7 @@ public class CottontailSortAndProjectRule extends RelOptRule {
             return false;
         }
 
-        RelFieldCollation collation = sort.getCollation().getFieldCollations().get( 0 );
+        AlgFieldCollation collation = sort.getCollation().getFieldCollations().get( 0 );
 
         if ( collation.getFieldIndex() != knnColumn ) {
             return false;
@@ -133,13 +133,13 @@ public class CottontailSortAndProjectRule extends RelOptRule {
 
 
     @Override
-    public void onMatch( RelOptRuleCall call ) {
-        final Sort sort = call.rel( 0 );
-        Project project = call.rel( 1 );
+    public void onMatch( AlgOptRuleCall call ) {
+        final Sort sort = call.alg( 0 );
+        Project project = call.alg( 1 );
 
-        final RelTraitSet traitSet = sort.getTraitSet().replace( out );
-        final RelNode input;
-        final RelTraitSet inputTraitSet = project.getInput().getTraitSet().replace( out );
+        final AlgTraitSet traitSet = sort.getTraitSet().replace( out );
+        final AlgNode input;
+        final AlgTraitSet inputTraitSet = project.getInput().getTraitSet().replace( out );
         input = convert( project.getInput(), inputTraitSet );
 
         boolean arrayValueProject = true;
@@ -171,28 +171,28 @@ public class CottontailSortAndProjectRule extends RelOptRule {
      * @param relSubset the subset.
      * @return the {@link Project} or <code>null</code> if not found.
      */
-    public static Project getUnderlyingProject( RelSubset relSubset, Convention targetConvention ) {
-        return getUnderlyingProject( relSubset.getRelList(), targetConvention );
+    public static Project getUnderlyingProject( AlgSubset relSubset, Convention targetConvention ) {
+        return getUnderlyingProject( relSubset.getAlgList(), targetConvention );
     }
 
 
-    private static Project getUnderlyingProject( List<RelNode> rels, Convention targetConvention ) {
-        Set<RelNode> alreadyChecked = new HashSet<>();
-        Deque<RelNode> innerLevel = new LinkedList<>();
+    private static Project getUnderlyingProject( List<AlgNode> rels, Convention targetConvention ) {
+        Set<AlgNode> alreadyChecked = new HashSet<>();
+        Deque<AlgNode> innerLevel = new LinkedList<>();
 
         innerLevel.addAll( rels );
 
         while ( !innerLevel.isEmpty() ) {
-            RelNode relNode = innerLevel.pop();
-            alreadyChecked.add( relNode );
-            if ( relNode instanceof Project ) {
-//                if ( ((Project) relNode).getInput().getConvention().equals( targetConvention ) ) {
-                return (Project) relNode;
+            AlgNode algNode = innerLevel.pop();
+            alreadyChecked.add( algNode );
+            if ( algNode instanceof Project ) {
+//                if ( ((Project) algNode).getInput().getConvention().equals( targetConvention ) ) {
+                return (Project) algNode;
 //                }
             } else {
-                for ( RelNode innerNode : relNode.getInputs() ) {
-                    if ( innerNode instanceof RelSubset ) {
-                        for ( RelNode possibleNewRel : ((RelSubset) innerNode).getRelList() ) {
+                for ( AlgNode innerNode : algNode.getInputs() ) {
+                    if ( innerNode instanceof AlgSubset ) {
+                        for ( AlgNode possibleNewRel : ((AlgSubset) innerNode).getAlgList() ) {
                             if ( !alreadyChecked.contains( possibleNewRel ) ) {
                                 innerLevel.addLast( possibleNewRel );
                             }

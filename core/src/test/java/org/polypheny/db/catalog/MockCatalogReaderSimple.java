@@ -40,8 +40,8 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.InitializerExpressionFactory;
 import org.polypheny.db.core.nodes.Identifier;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
@@ -64,14 +64,14 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
      * @param typeFactory Type factory
      * @param caseSensitive case sensitivity
      */
-    public MockCatalogReaderSimple( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
+    public MockCatalogReaderSimple( AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         super( typeFactory, caseSensitive );
         fixture = new Fixture( typeFactory );
     }
 
 
     @Override
-    public RelDataType getNamedType( Identifier typeName ) {
+    public AlgDataType getNamedType( Identifier typeName ) {
         if ( typeName.equalsDeep( fixture.addressType.getSqlIdentifier(), Litmus.IGNORE ) ) {
             return fixture.addressType;
         } else {

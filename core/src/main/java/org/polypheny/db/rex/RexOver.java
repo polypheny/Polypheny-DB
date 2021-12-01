@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Util;
 
@@ -73,7 +73,7 @@ public class RexOver extends RexCall {
      * @param window Window specification
      * @param distinct Aggregate operator is applied on distinct elements
      */
-    RexOver( RelDataType type, Operator op, List<RexNode> operands, RexWindow window, boolean distinct ) {
+    RexOver( AlgDataType type, Operator op, List<RexNode> operands, RexWindow window, boolean distinct ) {
         super( type, op, operands );
         Preconditions.checkArgument( op.isAggregator() );
         this.window = Objects.requireNonNull( window );
@@ -175,7 +175,7 @@ public class RexOver extends RexCall {
 
 
     @Override
-    public RexCall clone( RelDataType type, List<RexNode> operands ) {
+    public RexCall clone( AlgDataType type, List<RexNode> operands ) {
         throw new UnsupportedOperationException();
     }
 

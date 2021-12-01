@@ -92,7 +92,7 @@ public enum RuntimeConfig {
     ),
 
     REL_WRITER_INSERT_FIELD_NAMES( "runtime/relWriterInsertFieldName",
-            "If the rel writer should add the field names in brackets behind the ordinals in when printing query plans.",
+            "If the alg writer should add the field names in brackets behind the ordinals in when printing query plans.",
             false,
             ConfigType.BOOLEAN ),
 
@@ -119,7 +119,7 @@ public enum RuntimeConfig {
             "parsingGroup" ),
 
     TRIM_UNUSED_FIELDS( "processing/trimUnusedFields",
-            "Walks over a tree of relational expressions, replacing each RelNode with a 'slimmed down' relational expression that projects only the columns required by its consumer.",
+            "Walks over a tree of relational expressions, replacing each {@link AlgNode} with a 'slimmed down' relational expression that projects only the columns required by its consumer.",
             true,
             ConfigType.BOOLEAN,
             "planningGroup" ),

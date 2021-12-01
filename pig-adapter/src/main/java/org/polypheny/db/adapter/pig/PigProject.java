@@ -35,31 +35,31 @@ package org.polypheny.db.adapter.pig;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Implementation of {@link Project} in {@link PigRel#CONVENTION Pig calling convention}.
+ * Implementation of {@link Project} in {@link PigAlg#CONVENTION Pig calling convention}.
  */
-public class PigProject extends Project implements PigRel {
+public class PigProject extends Project implements PigAlg {
 
     /**
      * Creates a PigProject.
      */
-    public PigProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
+    public PigProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert getConvention() == CONVENTION;
     }
 
 
     @Override
-    public Project copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
+    public Project copy( AlgTraitSet traitSet, AlgNode input, List<RexNode> projects, AlgDataType rowType ) {
         return new PigProject( input.getCluster(), traitSet, input, projects, rowType );
     }
 
@@ -74,7 +74,7 @@ public class PigProject extends Project implements PigRel {
      * Override this method so it looks down the tree to find the table this node is acting on.
      */
     @Override
-    public RelOptTable getTable() {
+    public AlgOptTable getTable() {
         return getInput().getTable();
     }
 }

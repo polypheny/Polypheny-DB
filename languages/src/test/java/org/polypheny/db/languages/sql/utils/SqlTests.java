@@ -39,7 +39,7 @@ import org.polypheny.db.languages.sql.parser.SqlParserUtil.StringAndPos;
 import org.polypheny.db.languages.sql.utils.SqlTester.ParameterChecker;
 import org.polypheny.db.languages.sql.utils.SqlTester.ResultChecker;
 import org.polypheny.db.languages.sql.utils.SqlTester.TypeChecker;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.TestUtil;
@@ -89,12 +89,12 @@ public abstract class SqlTests {
      * @param sqlType Type
      * @return String representation of type
      */
-    public static String getTypeString( RelDataType sqlType ) {
+    public static String getTypeString( AlgDataType sqlType ) {
         switch ( sqlType.getPolyType() ) {
             case VARCHAR:
             case CHAR:
                 String actual = sqlType.getPolyType().name();
-                if ( sqlType.getPrecision() != RelDataType.PRECISION_NOT_SPECIFIED ) {
+                if ( sqlType.getPrecision() != AlgDataType.PRECISION_NOT_SPECIFIED ) {
                     actual = actual + "(" + sqlType.getPrecision() + ")";
                 }
                 if ( !sqlType.isNullable() ) {
@@ -480,7 +480,7 @@ public abstract class SqlTests {
 
 
         @Override
-        public void checkType( RelDataType type ) {
+        public void checkType( AlgDataType type ) {
             assertThat( type.toString(), is( typeName.toString() ) );
         }
 
@@ -511,7 +511,7 @@ public abstract class SqlTests {
 
 
         @Override
-        public void checkType( RelDataType type ) {
+        public void checkType( AlgDataType type ) {
             String actual = getTypeString( type );
             assertThat( actual, is( expected ) );
         }

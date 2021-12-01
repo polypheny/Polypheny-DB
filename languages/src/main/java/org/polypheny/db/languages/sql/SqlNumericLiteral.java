@@ -20,8 +20,8 @@ package org.polypheny.db.languages.sql;
 import java.math.BigDecimal;
 import org.polypheny.db.core.nodes.NumericLiteral;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
@@ -85,7 +85,7 @@ public class SqlNumericLiteral extends SqlLiteral implements NumericLiteral {
 
 
     @Override
-    public RelDataType createSqlType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType createSqlType( AlgDataTypeFactory typeFactory ) {
         if ( isExact ) {
             int scaleValue = scale.intValue();
             if ( 0 == scaleValue ) {

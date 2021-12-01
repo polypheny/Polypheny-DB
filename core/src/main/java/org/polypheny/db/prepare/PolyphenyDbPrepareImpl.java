@@ -69,16 +69,51 @@ import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
+import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
+import org.polypheny.db.algebra.rules.AggregateValuesRule;
+import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
+import org.polypheny.db.algebra.rules.FilterJoinRule;
+import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
+import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.JoinAssociateRule;
+import org.polypheny.db.algebra.rules.JoinCommuteRule;
+import org.polypheny.db.algebra.rules.JoinPushExpressionsRule;
+import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
+import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
+import org.polypheny.db.algebra.rules.ProjectMergeRule;
+import org.polypheny.db.algebra.rules.ProjectTableScanRule;
+import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
+import org.polypheny.db.algebra.rules.ReduceExpressionsRule;
+import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
+import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
+import org.polypheny.db.algebra.rules.SortRemoveConstantKeysRule;
+import org.polypheny.db.algebra.rules.SortUnionTransposeRule;
+import org.polypheny.db.algebra.rules.TableScanRule;
+import org.polypheny.db.algebra.rules.ValuesReduceRule;
+import org.polypheny.db.algebra.stream.StreamRules;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
@@ -102,63 +137,29 @@ import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.languages.NodeToRelConverter;
-import org.polypheny.db.languages.NodeToRelConverter.ConfigBuilder;
+import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.languages.NodeToAlgConverter.ConfigBuilder;
+import org.polypheny.db.languages.NodeToAlgConverter.ConfigImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.RexConvertletTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCostFactory;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptPlanner.CannotPlanException;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCostFactory;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptPlanner.CannotPlanException;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedExplain;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.rules.AggregateExpandDistinctAggregatesRule;
-import org.polypheny.db.rel.rules.AggregateReduceFunctionsRule;
-import org.polypheny.db.rel.rules.AggregateValuesRule;
-import org.polypheny.db.rel.rules.FilterAggregateTransposeRule;
-import org.polypheny.db.rel.rules.FilterJoinRule;
-import org.polypheny.db.rel.rules.FilterProjectTransposeRule;
-import org.polypheny.db.rel.rules.FilterTableScanRule;
-import org.polypheny.db.rel.rules.JoinAssociateRule;
-import org.polypheny.db.rel.rules.JoinCommuteRule;
-import org.polypheny.db.rel.rules.JoinPushExpressionsRule;
-import org.polypheny.db.rel.rules.JoinPushThroughJoinRule;
-import org.polypheny.db.rel.rules.ProjectFilterTransposeRule;
-import org.polypheny.db.rel.rules.ProjectMergeRule;
-import org.polypheny.db.rel.rules.ProjectTableScanRule;
-import org.polypheny.db.rel.rules.ProjectWindowTransposeRule;
-import org.polypheny.db.rel.rules.ReduceExpressionsRule;
-import org.polypheny.db.rel.rules.SortJoinTransposeRule;
-import org.polypheny.db.rel.rules.SortProjectTransposeRule;
-import org.polypheny.db.rel.rules.SortRemoveConstantKeysRule;
-import org.polypheny.db.rel.rules.SortUnionTransposeRule;
-import org.polypheny.db.rel.rules.TableScanRule;
-import org.polypheny.db.rel.rules.ValuesReduceRule;
-import org.polypheny.db.rel.stream.StreamRules;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
@@ -215,7 +216,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     "values 1",
                     "VALUES 1" );
 
-    public static final List<RelOptRule> ENUMERABLE_RULES =
+    public static final List<AlgOptRule> ENUMERABLE_RULES =
             ImmutableList.of(
                     EnumerableRules.ENUMERABLE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
@@ -241,7 +242,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE );
 
-    public static final List<RelOptRule> DEFAULT_RULES =
+    public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     TableScanRule.INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
@@ -264,7 +265,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     SortRemoveConstantKeysRule.INSTANCE,
                     SortUnionTransposeRule.INSTANCE );
 
-    public static final List<RelOptRule> CONSTANT_REDUCTION_RULES =
+    public static final List<AlgOptRule> CONSTANT_REDUCTION_RULES =
             ImmutableList.of(
                     ReduceExpressionsRule.PROJECT_INSTANCE,
                     ReduceExpressionsRule.FILTER_INSTANCE,
@@ -330,11 +331,11 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
         final HepPlanner planner = new HepPlanner( new HepProgramBuilder().build() );
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
-        final ConfigBuilder configBuilder = NodeToRelConverter.configBuilder().withTrimUnusedFields( true );
+        final ConfigBuilder configBuilder = NodeToAlgConverter.configBuilder().trimUnusedFields( true );
         if ( analyze ) {
-            configBuilder.withConvertTableAccess( false );
+            configBuilder.convertTableAccess( false );
         }
 
         final PolyphenyDbPreparingStmt preparingStmt = new PolyphenyDbPreparingStmt(
@@ -347,9 +348,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 planner,
                 resultConvention,
                 createConvertletTable() );
-        final NodeToRelConverter converter = preparingStmt.getSqlToRelConverter( validator, catalogReader, configBuilder.build() );
+        final NodeToAlgConverter converter = preparingStmt.getSqlToRelConverter( validator, catalogReader, new ConfigBuilder().build() );
 
-        final RelRoot root = converter.convertQuery( sqlNode1, false, true );
+        final AlgRoot root = converter.convertQuery( sqlNode1, false, true );
         if ( analyze ) {
             return analyze_( validator, sql, sqlNode1, root, fail );
         }
@@ -357,27 +358,27 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private AnalyzeViewResult analyze_( Validator validator, String sql, Node sqlNode, RelRoot root, boolean fail ) {
-        final RexBuilder rexBuilder = root.rel.getCluster().getRexBuilder();
-        RelNode rel = root.rel;
-        final RelNode viewRel = rel;
+    private AnalyzeViewResult analyze_( Validator validator, String sql, Node sqlNode, AlgRoot root, boolean fail ) {
+        final RexBuilder rexBuilder = root.alg.getCluster().getRexBuilder();
+        AlgNode alg = root.alg;
+        final AlgNode viewRel = alg;
         Project project;
-        if ( rel instanceof Project ) {
-            project = (Project) rel;
-            rel = project.getInput();
+        if ( alg instanceof Project ) {
+            project = (Project) alg;
+            alg = project.getInput();
         } else {
             project = null;
         }
         Filter filter;
-        if ( rel instanceof Filter ) {
-            filter = (Filter) rel;
-            rel = filter.getInput();
+        if ( alg instanceof Filter ) {
+            filter = (Filter) alg;
+            alg = filter.getInput();
         } else {
             filter = null;
         }
         TableScan scan;
-        if ( rel instanceof TableScan ) {
-            scan = (TableScan) rel;
+        if ( alg instanceof TableScan ) {
+            scan = (TableScan) alg;
         } else {
             scan = null;
         }
@@ -398,8 +399,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     null,
                     false );
         }
-        final RelOptTable targetRelTable = scan.getTable();
-        final RelDataType targetRowType = targetRelTable.getRowType();
+        final AlgOptTable targetRelTable = scan.getTable();
+        final AlgDataType targetRowType = targetRelTable.getRowType();
         final Table table = targetRelTable.unwrap( Table.class );
         final List<String> tablePath = targetRelTable.getQualifiedName();
         assert table != null;
@@ -451,10 +452,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         // If we put a constraint in projectMap above, then filters will not be empty despite being a modifiable view.
         final List<RexNode> filters2 = new ArrayList<>();
         boolean retry = false;
-        RelOptUtil.inferViewPredicates( projectMap, filters, constraint );
+        AlgOptUtil.inferViewPredicates( projectMap, filters, constraint );
         if ( fail && !filters.isEmpty() ) {
             final Map<Integer, RexNode> projectMap2 = new HashMap<>();
-            RelOptUtil.inferViewPredicates( projectMap2, filters2, constraint );
+            AlgOptUtil.inferViewPredicates( projectMap2, filters2, constraint );
             if ( !filters2.isEmpty() ) {
                 throw validator.newValidationError( sqlNode, Static.RESOURCE.modifiableViewMustHaveOnlyEqualityPredicates() );
             }
@@ -462,7 +463,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
         // Check that all columns that are not projected have a constant value
-        for ( RelDataTypeField field : targetRowType.getFieldList() ) {
+        for ( AlgDataTypeField field : targetRowType.getFieldList() ) {
             final int x = columnMapping.indexOf( field.getIndex() );
             if ( x >= 0 ) {
                 assert Util.skip( columnMapping, x + 1 ).indexOf( field.getIndex() ) < 0
@@ -554,8 +555,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Factory method for cluster.
      */
-    protected RelOptCluster createCluster( RelOptPlanner planner, RexBuilder rexBuilder ) {
-        return RelOptCluster.create( planner, rexBuilder );
+    protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder ) {
+        return AlgOptCluster.create( planner, rexBuilder );
     }
 
 
@@ -570,7 +571,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      * <p>
      * The default implementation returns a factory that calls {@link #createPlanner(Context)}.
      */
-    protected List<Function1<Context, RelOptPlanner>> createPlannerFactories() {
+    protected List<Function1<Context, AlgOptPlanner>> createPlannerFactories() {
         return Collections.singletonList( context -> createPlanner( context, null, null ) );
     }
 
@@ -578,7 +579,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Creates a query planner and initializes it with a default set of rules.
      */
-    protected RelOptPlanner createPlanner( Context prepareContext ) {
+    protected AlgOptPlanner createPlanner( Context prepareContext ) {
         return createPlanner( prepareContext, null, null );
     }
 
@@ -586,22 +587,22 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Creates a query planner and initializes it with a default set of rules.
      */
-    protected RelOptPlanner createPlanner( final Context prepareContext, org.polypheny.db.plan.Context externalContext, RelOptCostFactory costFactory ) {
+    protected AlgOptPlanner createPlanner( final Context prepareContext, org.polypheny.db.plan.Context externalContext, AlgOptCostFactory costFactory ) {
         if ( externalContext == null ) {
             externalContext = Contexts.of( prepareContext.config() );
         }
         final VolcanoPlanner planner = new VolcanoPlanner( costFactory, externalContext );
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
-            planner.addRelTraitDef( RelCollationTraitDef.INSTANCE );
+            planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
             planner.registerAbstractRelationalRules();
         }
-        RelOptUtil.registerAbstractRels( planner );
-        for ( RelOptRule rule : DEFAULT_RULES ) {
+        AlgOptUtil.registerAbstractAlgs( planner );
+        for ( AlgOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );
         }
         if ( enableBindable ) {
-            for ( RelOptRule rule : Bindables.RULES ) {
+            for ( AlgOptRule rule : Bindables.RULES ) {
                 planner.addRule( rule );
             }
         }
@@ -610,7 +611,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         planner.addRule( ProjectTableScanRule.INTERPRETER );
 
         if ( ENABLE_ENUMERABLE ) {
-            for ( RelOptRule rule : ENUMERABLE_RULES ) {
+            for ( AlgOptRule rule : ENUMERABLE_RULES ) {
                 planner.addRule( rule );
             }
             planner.addRule( EnumerableInterpreterRule.INSTANCE );
@@ -621,14 +622,14 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
         if ( ENABLE_STREAM ) {
-            for ( RelOptRule rule : StreamRules.RULES ) {
+            for ( AlgOptRule rule : StreamRules.RULES ) {
                 planner.addRule( rule );
             }
         }
 
         // Change the below to enable constant-reduction.
         if ( false ) {
-            for ( RelOptRule rule : CONSTANT_REDUCTION_RULES ) {
+            for ( AlgOptRule rule : CONSTANT_REDUCTION_RULES ) {
                 planner.addRule( rule );
             }
         }
@@ -638,13 +639,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             spark.registerRules(
                     new RuleSetBuilder() {
                         @Override
-                        public void addRule( RelOptRule rule ) {
+                        public void addRule( AlgOptRule rule ) {
                             // TODO:
                         }
 
 
                         @Override
-                        public void removeRule( RelOptRule rule ) {
+                        public void removeRule( AlgOptRule rule ) {
                             // TODO:
                         }
                     } );
@@ -678,13 +679,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         context.getRootSchema(),
                         context.getDefaultSchemaPath(),
                         typeFactory );
-        final List<Function1<Context, RelOptPlanner>> plannerFactories = createPlannerFactories();
+        final List<Function1<Context, AlgOptPlanner>> plannerFactories = createPlannerFactories();
         if ( plannerFactories.isEmpty() ) {
             throw new AssertionError( "no planner factories" );
         }
         RuntimeException exception = FoundOne.NULL;
-        for ( Function1<Context, RelOptPlanner> plannerFactory : plannerFactories ) {
-            final RelOptPlanner planner = plannerFactory.apply( context );
+        for ( Function1<Context, AlgOptPlanner> plannerFactory : plannerFactories ) {
+            final AlgOptPlanner planner = plannerFactory.apply( context );
             if ( planner == null ) {
                 throw new AssertionError( "factory returned null planner" );
             }
@@ -703,7 +704,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     private <T> PolyphenyDbSignature<T> simplePrepare( Context context, String sql ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final RelDataType x =
+        final AlgDataType x =
                 typeFactory.builder()
                         .add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, PolyType.INTEGER )
                         .build();
@@ -760,7 +761,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    <T> PolyphenyDbSignature<T> prepare2_( Context context, Query<T> query, Type elementType, long maxRowCount, PolyphenyDbCatalogReader catalogReader, RelOptPlanner planner ) {
+    <T> PolyphenyDbSignature<T> prepare2_( Context context, Query<T> query, Type elementType, long maxRowCount, PolyphenyDbCatalogReader catalogReader, AlgOptPlanner planner ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Prefer prefer;
         if ( elementType == Object[].class ) {
@@ -783,7 +784,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 resultConvention,
                 createConvertletTable() );
 
-        final RelDataType x;
+        final AlgDataType x;
         final PreparedResult preparedResult;
         final StatementType statementType;
         if ( query.sql != null ) {
@@ -838,7 +839,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 case UPDATE:
                 case EXPLAIN:
                     // FIXME: getValidatedNodeType is wrong for DML
-                    x = RelOptUtil.createDmlRowType( sqlNode.getKind(), typeFactory );
+                    x = AlgOptUtil.createDmlRowType( sqlNode.getKind(), typeFactory );
                     break;
                 default:
                     x = validator.getValidatedNodeType( sqlNode );
@@ -848,16 +849,16 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             preparedResult = preparingStmt.prepareQueryable( query.queryable, x );
             statementType = getStatementType( preparedResult );
         } else {
-            assert query.rel != null;
-            x = query.rel.getRowType();
-            preparedResult = preparingStmt.prepareRel( query.rel );
+            assert query.alg != null;
+            x = query.alg.getRowType();
+            preparedResult = preparingStmt.prepareRel( query.alg );
             statementType = getStatementType( preparedResult );
         }
 
         final List<AvaticaParameter> parameters = new ArrayList<>();
-        final RelDataType parameterRowType = preparedResult.getParameterRowType();
-        for ( RelDataTypeField field : parameterRowType.getFieldList() ) {
-            RelDataType type = field.getType();
+        final AlgDataType parameterRowType = preparedResult.getParameterRowType();
+        for ( AlgDataTypeField field : parameterRowType.getFieldList() ) {
+            AlgDataType type = field.getType();
             parameters.add(
                     new AvaticaParameter(
                             false,
@@ -869,7 +870,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                             field.getName() ) );
         }
 
-        RelDataType jdbcType = makeStruct( typeFactory, x );
+        AlgDataType jdbcType = makeStruct( typeFactory, x );
         final List<List<String>> originList = preparedResult.getFieldOrigins();
         final List<ColumnMetaData> columns = getColumnMetaDataList( typeFactory, x, jdbcType, originList );
         Class resultClazz = null;
@@ -900,19 +901,19 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, RelDataType x, RelDataType jdbcType, List<List<String>> originList ) {
+    private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, AlgDataType x, AlgDataType jdbcType, List<List<String>> originList ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( Ord<RelDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
-            final RelDataTypeField field = pair.e;
-            final RelDataType type = field.getType();
-            final RelDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
+        for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
+            final AlgDataTypeField field = pair.e;
+            final AlgDataType type = field.getType();
+            final AlgDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
             columns.add( metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
         }
         return columns;
     }
 
 
-    private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, RelDataType type, RelDataType fieldType, List<String> origins ) {
+    private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, AlgDataType type, AlgDataType fieldType, List<String> origins ) {
         final AvaticaType avaticaType = avaticaType( typeFactory, type, fieldType );
         return new ColumnMetaData(
                 ordinal,
@@ -940,7 +941,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private AvaticaType avaticaType( JavaTypeFactory typeFactory, RelDataType type, RelDataType fieldType ) {
+    private AvaticaType avaticaType( JavaTypeFactory typeFactory, AlgDataType type, AlgDataType fieldType ) {
         final String typeName = getTypeName( type );
         if ( type.getComponentType() != null ) {
             final AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
@@ -953,7 +954,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             switch ( typeOrdinal ) {
                 case Types.STRUCT:
                     final List<ColumnMetaData> columns = new ArrayList<>();
-                    for ( RelDataTypeField field : type.getFieldList() ) {
+                    for ( AlgDataTypeField field : type.getFieldList() ) {
                         columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
                     }
                     return ColumnMetaData.struct( columns );
@@ -977,25 +978,25 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private int getTypeOrdinal( RelDataType type ) {
+    private int getTypeOrdinal( AlgDataType type ) {
         return type.getPolyType().getJdbcOrdinal();
     }
 
 
-    private static String getClassName( RelDataType type ) {
+    private static String getClassName( AlgDataType type ) {
         return Object.class.getName(); // POLYPHENYDB-2613
     }
 
 
-    private static int getScale( RelDataType type ) {
-        return type.getScale() == RelDataType.SCALE_NOT_SPECIFIED
+    private static int getScale( AlgDataType type ) {
+        return type.getScale() == AlgDataType.SCALE_NOT_SPECIFIED
                 ? 0
                 : type.getScale();
     }
 
 
-    private static int getPrecision( RelDataType type ) {
-        return type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
+    private static int getPrecision( AlgDataType type ) {
+        return type.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED
                 ? 0
                 : type.getPrecision();
     }
@@ -1005,7 +1006,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      * Returns the type name in string form. Does not include precision, scale or whether nulls are allowed.
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
-    private static String getTypeName( RelDataType type ) {
+    private static String getTypeName( AlgDataType type ) {
         final PolyType polyType = type.getPolyType();
         switch ( polyType ) {
             /*
@@ -1035,7 +1036,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    private static RelDataType makeStruct( RelDataTypeFactory typeFactory, RelDataType type ) {
+    private static AlgDataType makeStruct( AlgDataTypeFactory typeFactory, AlgDataType type ) {
         if ( type.isStruct() ) {
             return type;
         }
@@ -1055,8 +1056,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         : prepareContext.getRootSchema();
         PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( schema.root(), schema.path( null ), typeFactory );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-        final RelOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
-        final RelOptCluster cluster = createCluster( planner, rexBuilder );
+        final AlgOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
+        final AlgOptCluster cluster = createCluster( planner, rexBuilder );
         return action.apply( cluster, catalogReader, prepareContext.getRootSchema().plus() );
     }
 
@@ -1066,11 +1067,11 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     public static class PolyphenyDbPreparingStmt extends Prepare {
 
-        protected final RelOptPlanner planner;
+        protected final AlgOptPlanner planner;
         protected final RexBuilder rexBuilder;
         protected final PolyphenyDbPrepareImpl prepare;
         protected final PolyphenyDbSchema schema;
-        protected final RelDataTypeFactory typeFactory;
+        protected final AlgDataTypeFactory typeFactory;
         protected final RexConvertletTable convertletTable;
         private final Prefer prefer;
         private final Map<String, Object> internalParameters = new LinkedHashMap<>();
@@ -1082,10 +1083,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 PolyphenyDbPrepareImpl prepare,
                 Context context,
                 CatalogReader catalogReader,
-                RelDataTypeFactory typeFactory,
+                AlgDataTypeFactory typeFactory,
                 PolyphenyDbSchema schema,
                 Prefer prefer,
-                RelOptPlanner planner,
+                AlgOptPlanner planner,
                 Convention resultConvention,
                 RexConvertletTable convertletTable ) {
             super( context, catalogReader, resultConvention );
@@ -1104,42 +1105,42 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
-        public PreparedResult prepareQueryable( final Queryable queryable, RelDataType resultType ) {
+        public PreparedResult prepareQueryable( final Queryable queryable, AlgDataType resultType ) {
             return prepare_( () -> {
-                final RelOptCluster cluster = prepare.createCluster( planner, rexBuilder );
+                final AlgOptCluster cluster = prepare.createCluster( planner, rexBuilder );
                 return new LixToRelTranslator( cluster ).translate( queryable );
             }, resultType );
         }
 
 
-        public PreparedResult prepareRel( final RelNode rel ) {
-            return prepare_( () -> rel, rel.getRowType() );
+        public PreparedResult prepareRel( final AlgNode alg ) {
+            return prepare_( () -> alg, alg.getRowType() );
         }
 
 
-        private PreparedResult prepare_( Supplier<RelNode> fn, RelDataType resultType ) {
+        private PreparedResult prepare_( Supplier<AlgNode> fn, AlgDataType resultType ) {
             Class runtimeContextClass = Object.class;
             init( runtimeContextClass );
 
-            final RelNode rel = fn.get();
-            final RelDataType rowType = rel.getRowType();
+            final AlgNode alg = fn.get();
+            final AlgDataType rowType = alg.getRowType();
             final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-            final RelCollation collation =
-                    rel instanceof Sort
-                            ? ((Sort) rel).collation
-                            : RelCollations.EMPTY;
-            RelRoot root = new RelRoot( rel, resultType, Kind.SELECT, fields, collation );
+            final AlgCollation collation =
+                    alg instanceof Sort
+                            ? ((Sort) alg).collation
+                            : AlgCollations.EMPTY;
+            AlgRoot root = new AlgRoot( alg, resultType, Kind.SELECT, fields, collation );
 
             if ( timingTracer != null ) {
                 timingTracer.traceTime( "end sql2rel" );
             }
 
-            final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), resultType );
+            final AlgDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), resultType );
             fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
             parameterRowType = rexBuilder.getTypeFactory().builder().build();
 
             // Structured type flattening, view expansion, and plugging in physical storage.
-            root = root.withRel( flattenTypes( root.rel, true ) );
+            root = root.withAlg( flattenTypes( root.alg, true ) );
 
             // Trim unused fields.
             root = trimUnusedFields( root );
@@ -1155,14 +1156,14 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected NodeToRelConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToRelConverter.Config config ) {
-            final RelOptCluster cluster = prepare.createCluster( planner, rexBuilder );
+        protected NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config ) {
+            final AlgOptCluster cluster = prepare.createCluster( planner, rexBuilder );
             return LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, validator, catalogReader, cluster, convertletTable, config );
         }
 
 
         @Override
-        public RelNode flattenTypes( RelNode rootRel, boolean restructure ) {
+        public AlgNode flattenTypes( AlgNode rootRel, boolean restructure ) {
             final SparkHandler spark = context.spark();
             if ( spark.enabled() ) {
                 return spark.flattenTypes( planner, rootRel, restructure );
@@ -1172,7 +1173,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected RelNode decorrelate( NodeToRelConverter sqlToRelConverter, Node query, RelNode rootRel ) {
+        protected AlgNode decorrelate( NodeToAlgConverter sqlToRelConverter, Node query, AlgNode rootRel ) {
             return sqlToRelConverter.decorrelate( query, rootRel );
         }
 
@@ -1192,20 +1193,20 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected PreparedResult createPreparedExplanation( RelDataType resultType, RelDataType parameterRowType, RelRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
+        protected PreparedResult createPreparedExplanation( AlgDataType resultType, AlgDataType parameterRowType, AlgRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
             return new PolyphenyDbPreparedExplain( resultType, parameterRowType, root, format, detailLevel );
         }
 
 
         @Override
-        protected PreparedResult implement( RelRoot root ) {
-            RelDataType resultType = root.rel.getRowType();
+        protected PreparedResult implement( AlgRoot root ) {
+            AlgDataType resultType = root.alg.getRowType();
             boolean isDml = root.kind.belongsTo( Kind.DML );
             final Bindable bindable;
             if ( resultConvention == BindableConvention.INSTANCE ) {
-                bindable = Interpreters.bindable( root.rel );
+                bindable = Interpreters.bindable( root.alg );
             } else {
-                EnumerableRel enumerable = (EnumerableRel) root.rel;
+                EnumerableAlg enumerable = (EnumerableAlg) root.alg;
                 if ( !root.isRefTrivial() ) {
                     final List<RexNode> projects = new ArrayList<>();
                     final RexBuilder rexBuilder = enumerable.getCluster().getRexBuilder();
@@ -1241,7 +1242,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     root.collation.getFieldCollations().isEmpty()
                             ? ImmutableList.of()
                             : ImmutableList.of( root.collation ),
-                    root.rel,
+                    root.alg,
                     mapTableModOp( isDml, root.kind ),
                     isDml ) {
                 @Override
@@ -1271,7 +1272,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      */
     private static class PolyphenyDbPreparedExplain extends PreparedExplain {
 
-        PolyphenyDbPreparedExplain( RelDataType resultType, RelDataType parameterRowType, RelRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
+        PolyphenyDbPreparedExplain( AlgDataType resultType, AlgDataType parameterRowType, AlgRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
             super( resultType, parameterRowType, root, format, detailLevel );
         }
 
@@ -1420,7 +1421,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
 
-        protected RelDataType type( Expression expression ) {
+        protected AlgDataType type( Expression expression ) {
             final Type type = expression.getType();
             return ((JavaTypeFactory) rexBuilder.getTypeFactory()).createType( type );
         }

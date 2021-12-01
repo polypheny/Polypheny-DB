@@ -30,17 +30,17 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
@@ -91,8 +91,8 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
             CatalogTable catalogTable,
             List<CatalogColumnPlacement> columnPlacementsOnStore,
             CatalogPartitionPlacement partitionPlacement ) {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         ArrayList<Long> columnIds = new ArrayList<>();
         ArrayList<PolyType> columnTypes = new ArrayList<>();
         ArrayList<String> columnNames = new ArrayList<>();
@@ -118,7 +118,7 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
                 }
             }
         }
-        RelProtoDataType protoRowType = RelDataTypeImpl.proto( fieldInfo.build() );
+        AlgProtoDataType protoRowType = AlgDataTypeImpl.proto( fieldInfo.build() );
         List<Long> pkIds;
         if ( catalogTable.primaryKey != null ) {
             CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
@@ -145,7 +145,7 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
     /**
      * Called from generated code
      * Executes SELECT, UPDATE and DELETE operations
-     * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
+     * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.algebra.FileToEnumerableConverter#implement}
      */
     public static Enumerable<Object> execute(
             final Operation operation,
@@ -172,7 +172,7 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
     /**
      * Called from generated code
      * Executes INSERT operations
-     * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
+     * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.algebra.FileToEnumerableConverter#implement}
      */
     public static Enumerable<Object> executeModify(
             final Operation operation,

@@ -19,7 +19,7 @@ package org.polypheny.db.type.inference;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.core.nodes.CallBinding;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -27,19 +27,19 @@ import org.polypheny.db.rel.type.RelDataType;
  */
 public class ExplicitOperandTypeInference implements PolyOperandTypeInference {
 
-    private final ImmutableList<RelDataType> paramTypes;
+    private final ImmutableList<AlgDataType> paramTypes;
 
 
     /**
      * Use {@link InferTypes#explicit(java.util.List)}.
      */
-    ExplicitOperandTypeInference( ImmutableList<RelDataType> paramTypes ) {
+    ExplicitOperandTypeInference( ImmutableList<AlgDataType> paramTypes ) {
         this.paramTypes = paramTypes;
     }
 
 
     @Override
-    public void inferOperandTypes( CallBinding callBinding, RelDataType returnType, RelDataType[] operandTypes ) {
+    public void inferOperandTypes( CallBinding callBinding, AlgDataType returnType, AlgDataType[] operandTypes ) {
         if ( operandTypes.length != paramTypes.size() ) {
             // This call does not match the inference strategy.
             // It's likely that we're just about to give a validation error.

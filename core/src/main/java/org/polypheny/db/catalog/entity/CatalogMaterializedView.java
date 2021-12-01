@@ -27,8 +27,8 @@ import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
 
 
 public class CatalogMaterializedView extends CatalogView {
@@ -42,7 +42,7 @@ public class CatalogMaterializedView extends CatalogView {
     private final QueryLanguage language;
 
     @Getter
-    private final RelCollation relCollation;
+    private final AlgCollation relCollation;
 
     @Getter
     private final String query;
@@ -67,7 +67,7 @@ public class CatalogMaterializedView extends CatalogView {
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
-            RelCollation relCollation,
+            AlgCollation relCollation,
             Map<Long, List<Long>> underlyingTables,
             QueryLanguage language,
             MaterializedCriteria materializedCriteria,
@@ -102,7 +102,7 @@ public class CatalogMaterializedView extends CatalogView {
             long partitionColumnId,
             boolean isPartitioned,
             PartitionProperty partitionProperty,
-            RelCollation relCollation,
+            AlgCollation relCollation,
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
             QueryLanguage language,
@@ -202,7 +202,7 @@ public class CatalogMaterializedView extends CatalogView {
 
 
     @Override
-    public RelNode getDefinition() {
+    public AlgNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
     }
 

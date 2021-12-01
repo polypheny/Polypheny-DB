@@ -33,7 +33,7 @@ import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -70,8 +70,8 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor implem
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
-        RelDataType type = getComponentType( opBinding.getTypeFactory(), opBinding.collectOperandTypes() );
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        AlgDataType type = getComponentType( opBinding.getTypeFactory(), opBinding.collectOperandTypes() );
         if ( null == type ) {
             return null;
         }
@@ -80,8 +80,8 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor implem
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
-        RelDataType type = super.deriveType( validator, scope, call );
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+        AlgDataType type = super.deriveType( validator, scope, call );
         if ( type instanceof ArrayType ) {
             ((ArrayType) type).setCardinality( maxCardinality ).setDimension( dimension );
         }

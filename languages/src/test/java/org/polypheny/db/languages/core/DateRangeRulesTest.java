@@ -30,7 +30,7 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.rules.DateRangeRules;
+import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
@@ -700,23 +700,23 @@ public class DateRangeRulesTest extends LanguageManagerDependant {
 
         Fixture2() {
             exYearTs = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.YEAR ), ts ) );
-            exMonthTs = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.MONTH ), ts ) );
-            exDayTs = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.DAY ), ts ) );
+            exMonthTs = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.MONTH ), ts ) );
+            exDayTs = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.DAY ), ts ) );
             exYearD = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.YEAR ), d ) );
-            exMonthD = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.MONTH ), d ) );
-            exDayD = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.DAY ), d ) );
+            exMonthD = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.MONTH ), d ) );
+            exDayD = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.EXTRACT ), ImmutableList.of( rexBuilder.makeFlag( TimeUnitRange.DAY ), d ) );
 
-            floorYear = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.YEAR ) ) );
-            floorMonth = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.MONTH ) ) );
-            floorDay = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.DAY ) ) );
-            floorHour = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.HOUR ) ) );
-            floorMinute = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.MINUTE ) ) );
+            floorYear = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.YEAR ) ) );
+            floorMonth = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.MONTH ) ) );
+            floorDay = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.DAY ) ) );
+            floorHour = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.HOUR ) ) );
+            floorMinute = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.FLOOR ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.MINUTE ) ) );
 
-            ceilYear = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.YEAR ) ) );
-            ceilMonth = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.MONTH ) ) );
-            ceilDay = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.DAY ) ) );
-            ceilHour = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.HOUR ) ) );
-            ceilMinute = rexBuilder.makeCall( intRelDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.MINUTE ) ) );
+            ceilYear = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.YEAR ) ) );
+            ceilMonth = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.MONTH ) ) );
+            ceilDay = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.DAY ) ) );
+            ceilHour = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.HOUR ) ) );
+            ceilMinute = rexBuilder.makeCall( intAlgDataType, OperatorRegistry.get( OperatorName.CEIL ), ImmutableList.of( ts, rexBuilder.makeFlag( TimeUnitRange.MINUTE ) ) );
         }
 
     }

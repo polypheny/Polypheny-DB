@@ -21,7 +21,7 @@ import java.util.List;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Pair;
 
 
@@ -56,31 +56,31 @@ public abstract class DelegatingNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public RelDataType getRowType() {
+    public AlgDataType getRowType() {
         return namespace.getRowType();
     }
 
 
     @Override
-    public void setType( RelDataType type ) {
+    public void setType( AlgDataType type ) {
         namespace.setType( type );
     }
 
 
     @Override
-    public RelDataType getRowTypeSansSystemColumns() {
+    public AlgDataType getRowTypeSansSystemColumns() {
         return namespace.getRowTypeSansSystemColumns();
     }
 
 
     @Override
-    public RelDataType getType() {
+    public AlgDataType getType() {
         return namespace.getType();
     }
 
 
     @Override
-    public void validate( RelDataType targetRowType ) {
+    public void validate( AlgDataType targetRowType ) {
         namespace.validate( targetRowType );
     }
 

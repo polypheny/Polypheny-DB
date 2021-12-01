@@ -27,13 +27,13 @@ import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.BiRel;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.BiAlg;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.LogicalViewTableScan;
 import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 public class CatalogView extends CatalogTable {
@@ -45,7 +45,7 @@ public class CatalogView extends CatalogTable {
     @Getter
     private final QueryLanguage language;
     @Getter
-    private final RelCollation relCollation;
+    private final AlgCollation algCollation;
     @Getter
     String query;
 
@@ -63,13 +63,13 @@ public class CatalogView extends CatalogTable {
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
-            RelCollation relCollation,
+            AlgCollation algCollation,
             Map<Long, List<Long>> underlyingTables,
             QueryLanguage language,
             PartitionProperty partitionProperty ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable, partitionProperty );
         this.query = query;
-        this.relCollation = relCollation;
+        this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
         this.language = language;
     }
@@ -92,13 +92,13 @@ public class CatalogView extends CatalogTable {
             long partitionColumnId,
             boolean isPartitioned,
             PartitionProperty partitionProperty,
-            RelCollation relCollation,
+            AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
             Map<Long, List<Long>> underlyingTables,
             QueryLanguage language ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty, connectedViews );
         this.query = query;
-        this.relCollation = relCollation;
+        this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
         this.language = language;
     }
@@ -123,7 +123,7 @@ public class CatalogView extends CatalogTable {
                 partitionColumnId,
                 isPartitioned,
                 partitionProperty,
-                relCollation,
+                algCollation,
                 newConnectedViews,
                 underlyingTables,
                 language );
@@ -149,7 +149,7 @@ public class CatalogView extends CatalogTable {
                 partitionColumnId,
                 isPartitioned,
                 partitionProperty,
-                relCollation,
+                algCollation,
                 connectedViews,
                 underlyingTables,
                 language );
@@ -171,15 +171,15 @@ public class CatalogView extends CatalogTable {
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                relCollation,
+                algCollation,
                 underlyingTables,
                 language,
                 partitionProperty );
     }
 
 
-    public RelNode prepareView( RelOptCluster cluster ) {
-        RelNode viewLogicalRoot = getDefinition();
+    public AlgNode prepareView( AlgOptCluster cluster ) {
+        AlgNode viewLogicalRoot = getDefinition();
         prepareView( viewLogicalRoot, cluster );
 
         ViewVisitor materializedVisitor = new ViewVisitor( false );
@@ -189,23 +189,23 @@ public class CatalogView extends CatalogTable {
     }
 
 
-    public void prepareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster ) {
-        if ( viewLogicalRoot instanceof AbstractRelNode ) {
-            ((AbstractRelNode) viewLogicalRoot).setCluster( relOptCluster );
+    public void prepareView( AlgNode viewLogicalRoot, AlgOptCluster relOptCluster ) {
+        if ( viewLogicalRoot instanceof AbstractAlgNode ) {
+            ((AbstractAlgNode) viewLogicalRoot).setCluster( relOptCluster );
         }
-        if ( viewLogicalRoot instanceof BiRel ) {
-            prepareView( ((BiRel) viewLogicalRoot).getLeft(), relOptCluster );
-            prepareView( ((BiRel) viewLogicalRoot).getRight(), relOptCluster );
-        } else if ( viewLogicalRoot instanceof SingleRel ) {
-            prepareView( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster );
+        if ( viewLogicalRoot instanceof BiAlg ) {
+            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), relOptCluster );
+            prepareView( ((BiAlg) viewLogicalRoot).getRight(), relOptCluster );
+        } else if ( viewLogicalRoot instanceof SingleAlg ) {
+            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), relOptCluster );
         }
         if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
-            prepareView( ((LogicalViewTableScan) viewLogicalRoot).getRelNode(), relOptCluster );
+            prepareView( ((LogicalViewTableScan) viewLogicalRoot).getAlgNode(), relOptCluster );
         }
     }
 
 
-    public RelNode getDefinition() {
+    public AlgNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
     }
 

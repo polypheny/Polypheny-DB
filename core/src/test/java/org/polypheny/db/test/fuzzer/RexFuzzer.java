@@ -43,7 +43,7 @@ import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.test.RexProgramBuilderBase;
@@ -108,8 +108,8 @@ public class RexFuzzer extends RexProgramBuilderBase {
 
     private static final int[] INT_VALUES = { -1, 0, 1, 100500 };
 
-    private final RelDataType intType;
-    private final RelDataType nullableIntType;
+    private final AlgDataType intType;
+    private final AlgDataType nullableIntType;
 
 
     /**

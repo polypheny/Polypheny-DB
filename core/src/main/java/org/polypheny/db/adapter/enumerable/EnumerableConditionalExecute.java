@@ -21,23 +21,23 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.ConditionalExecute;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.ConditionalExecute;
 
 
-public class EnumerableConditionalExecute extends ConditionalExecute implements EnumerableRel {
+public class EnumerableConditionalExecute extends ConditionalExecute implements EnumerableAlg {
 
-    private EnumerableConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+    private EnumerableConditionalExecute( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
         super( cluster, traitSet, left, right, condition, exceptionClass, exceptionMessage );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final Result conditionResult = implementor.visitChild( this, 0, (EnumerableRel) getLeft(), pref );
+        final Result conditionResult = implementor.visitChild( this, 0, (EnumerableAlg) getLeft(), pref );
         Expression call = Expressions.call(
                 builder.append( builder.newName( "condition" + System.nanoTime() ), conditionResult.block ),
                 "count" );
@@ -61,7 +61,7 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
                 conditionExp = Expressions.constant( false );
                 break;
         }
-        final Result actionResult = implementor.visitChild( this, 1, (EnumerableRel) getRight(), pref );
+        final Result actionResult = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
         builder.add(
                 Expressions.ifThenElse(
@@ -74,7 +74,7 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
     }
 
 
-    public static EnumerableConditionalExecute create( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+    public static EnumerableConditionalExecute create( AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
         return new EnumerableConditionalExecute(
                 right.getCluster(),
                 right.getTraitSet(),
@@ -87,7 +87,7 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
 
 
     @Override
-    public EnumerableConditionalExecute copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public EnumerableConditionalExecute copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         final EnumerableConditionalExecute ece = new EnumerableConditionalExecute(
                 inputs.get( 0 ).getCluster(),
                 traitSet,

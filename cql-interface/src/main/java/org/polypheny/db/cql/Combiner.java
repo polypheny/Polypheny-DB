@@ -25,9 +25,9 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidMethodInvocation;
 import org.polypheny.db.cql.exception.InvalidModifierException;
-import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 
 
 /**
@@ -170,14 +170,14 @@ public class Combiner {
     }
 
 
-    public RelBuilder combine( RelBuilder relBuilder, RexBuilder rexBuilder ) {
+    public AlgBuilder combine( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Combining." );
         try {
             if ( combinerType.isJoinType() ) {
                 if ( joinOnColumns.length == 0 ) {
-                    return relBuilder.join( combinerType.convertToJoinRelType(), rexBuilder.makeLiteral( true ) );
+                    return algBuilder.join( combinerType.convertToJoinRelType(), rexBuilder.makeLiteral( true ) );
                 } else {
-                    return relBuilder.join( combinerType.convertToJoinRelType(), joinOnColumns );
+                    return algBuilder.join( combinerType.convertToJoinRelType(), joinOnColumns );
                 }
             } else {
 //                TODO: Implement SetOpsType Combiners. (Union, Intersection, etc.)
@@ -222,20 +222,20 @@ public class Combiner {
         }
 
 
-        public JoinRelType convertToJoinRelType() throws InvalidMethodInvocation {
+        public JoinAlgType convertToJoinRelType() throws InvalidMethodInvocation {
             log.debug( "Converting to JoinRelType." );
             if ( !isJoinType ) {
                 log.error( "Cannot convert non-JoinType Combiner to JoinRelType." );
                 throw new InvalidMethodInvocation( "Cannot convert non-JoinType Combiner to JoinRelType." );
             }
             if ( this == JOIN_FULL ) {
-                return JoinRelType.FULL;
+                return JoinAlgType.FULL;
             } else if ( this == JOIN_INNER ) {
-                return JoinRelType.INNER;
+                return JoinAlgType.INNER;
             } else if ( this == JOIN_LEFT ) {
-                return JoinRelType.LEFT;
+                return JoinAlgType.LEFT;
             } else {
-                return JoinRelType.RIGHT;
+                return JoinAlgType.RIGHT;
             }
         }
     }

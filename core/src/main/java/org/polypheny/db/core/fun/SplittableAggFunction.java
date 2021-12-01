@@ -23,11 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
@@ -49,7 +49,7 @@ public interface SplittableAggFunction {
     /**
      * Called to generate an aggregate for the other side of the join than the side aggregate call's arguments come from. Returns null if no aggregate is required.
      */
-    AggregateCall other( RelDataTypeFactory typeFactory, AggregateCall e );
+    AggregateCall other( AlgDataTypeFactory typeFactory, AggregateCall e );
 
     /**
      * Generates an aggregate call to merge sub-totals.
@@ -65,7 +65,7 @@ public interface SplittableAggFunction {
      * @param rightSubTotal Ordinal of the sub-total coming from the right side of the join, or -1 if there is no such sub-total
      * @return Aggregate call
      */
-    AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, RelDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal );
+    AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, AlgDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal );
 
     /**
      * Generates an expression for the value of the aggregate function when applied to a single row.
@@ -84,7 +84,7 @@ public interface SplittableAggFunction {
      * @param aggregateCall Aggregate call
      * @return Expression for single row
      */
-    RexNode singleton( RexBuilder rexBuilder, RelDataType inputRowType, AggregateCall aggregateCall );
+    RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall );
 
     /**
      * Collection in which one can register an element. Registering may return a reference to an existing element.
@@ -116,21 +116,21 @@ public interface SplittableAggFunction {
 
 
         @Override
-        public AggregateCall other( RelDataTypeFactory typeFactory, AggregateCall e ) {
+        public AggregateCall other( AlgDataTypeFactory typeFactory, AggregateCall e ) {
             return AggregateCall.create(
                     OperatorRegistry.getAgg( OperatorName.COUNT ),
                     false,
                     false,
                     ImmutableIntList.of(),
                     -1,
-                    RelCollations.EMPTY,
+                    AlgCollations.EMPTY,
                     typeFactory.createPolyType( PolyType.BIGINT ),
                     null );
         }
 
 
         @Override
-        public AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, RelDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal ) {
+        public AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, AlgDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal ) {
             final List<RexNode> merges = new ArrayList<>();
             if ( leftSubTotal >= 0 ) {
                 merges.add( rexBuilder.makeInputRef( aggregateCall.type, leftSubTotal ) );
@@ -168,10 +168,10 @@ public interface SplittableAggFunction {
          * {@code COUNT(*)}, and {@code COUNT} applied to all NOT NULL arguments, become {@code 1}; otherwise {@code CASE WHEN arg0 IS NOT NULL THEN 1 ELSE 0 END}.
          */
         @Override
-        public RexNode singleton( RexBuilder rexBuilder, RelDataType inputRowType, AggregateCall aggregateCall ) {
+        public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final List<RexNode> predicates = new ArrayList<>();
             for ( Integer arg : aggregateCall.getArgList() ) {
-                final RelDataType type = inputRowType.getFieldList().get( arg ).getType();
+                final AlgDataType type = inputRowType.getFieldList().get( arg ).getType();
                 if ( type.isNullable() ) {
                     predicates.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( type, arg ) ) );
                 }
@@ -202,9 +202,9 @@ public interface SplittableAggFunction {
 
 
         @Override
-        public RexNode singleton( RexBuilder rexBuilder, RelDataType inputRowType, AggregateCall aggregateCall ) {
+        public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final int arg = aggregateCall.getArgList().get( 0 );
-            final RelDataTypeField field = inputRowType.getFieldList().get( arg );
+            final AlgDataTypeField field = inputRowType.getFieldList().get( arg );
             return rexBuilder.makeInputRef( field.getType(), arg );
         }
 
@@ -216,17 +216,17 @@ public interface SplittableAggFunction {
 
 
         @Override
-        public AggregateCall other( RelDataTypeFactory typeFactory, AggregateCall e ) {
+        public AggregateCall other( AlgDataTypeFactory typeFactory, AggregateCall e ) {
             return null; // no aggregate function required on other side
         }
 
 
         @Override
-        public AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, RelDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal ) {
+        public AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, AlgDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal ) {
             assert (leftSubTotal >= 0) != (rightSubTotal >= 0);
             assert aggregateCall.collation.getFieldCollations().isEmpty();
             final int arg = leftSubTotal >= 0 ? leftSubTotal : rightSubTotal;
-            return aggregateCall.copy( ImmutableIntList.of( arg ), -1, RelCollations.EMPTY );
+            return aggregateCall.copy( ImmutableIntList.of( arg ), -1, AlgCollations.EMPTY );
         }
 
     }
@@ -238,9 +238,9 @@ public interface SplittableAggFunction {
     abstract class AbstractSumSplitter implements SplittableAggFunction {
 
         @Override
-        public RexNode singleton( RexBuilder rexBuilder, RelDataType inputRowType, AggregateCall aggregateCall ) {
+        public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final int arg = aggregateCall.getArgList().get( 0 );
-            final RelDataTypeField field = inputRowType.getFieldList().get( arg );
+            final AlgDataTypeField field = inputRowType.getFieldList().get( arg );
             return rexBuilder.makeInputRef( field.getType(), arg );
         }
 
@@ -252,29 +252,29 @@ public interface SplittableAggFunction {
 
 
         @Override
-        public AggregateCall other( RelDataTypeFactory typeFactory, AggregateCall e ) {
+        public AggregateCall other( AlgDataTypeFactory typeFactory, AggregateCall e ) {
             return AggregateCall.create(
                     OperatorRegistry.getAgg( OperatorName.COUNT ),
                     false,
                     false,
                     ImmutableIntList.of(),
                     -1,
-                    RelCollations.EMPTY,
+                    AlgCollations.EMPTY,
                     typeFactory.createPolyType( PolyType.BIGINT ),
                     null );
         }
 
 
         @Override
-        public AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, RelDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal ) {
+        public AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, AlgDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal ) {
             final List<RexNode> merges = new ArrayList<>();
-            final List<RelDataTypeField> fieldList = inputRowType.getFieldList();
+            final List<AlgDataTypeField> fieldList = inputRowType.getFieldList();
             if ( leftSubTotal >= 0 ) {
-                final RelDataType type = fieldList.get( leftSubTotal ).getType();
+                final AlgDataType type = fieldList.get( leftSubTotal ).getType();
                 merges.add( rexBuilder.makeInputRef( type, leftSubTotal ) );
             }
             if ( rightSubTotal >= 0 ) {
-                final RelDataType type = fieldList.get( rightSubTotal ).getType();
+                final AlgDataType type = fieldList.get( rightSubTotal ).getType();
                 merges.add( rexBuilder.makeInputRef( type, rightSubTotal ) );
             }
             RexNode node;

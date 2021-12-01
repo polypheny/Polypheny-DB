@@ -35,8 +35,8 @@ import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.rel.core.Window.Group;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.core.Window.Group;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -601,7 +601,7 @@ public class SqlWindow extends SqlCall implements Window {
                 }
 
                 // get the type family for the sort key for Frame Boundary Val.
-                RelDataType orderType = validator.deriveType( operandScope, orderList.get( 0 ) );
+                AlgDataType orderType = validator.deriveType( operandScope, orderList.get( 0 ) );
                 orderTypeFam = orderType.getPolyType().getFamily();
             } else {
                 // requires an ORDER BY clause if frame is logical(RANGE)
@@ -664,7 +664,7 @@ public class SqlWindow extends SqlCall implements Window {
 
                 // If this is a range spec check and make sure the boundary type and order by type are compatible
                 if ( orderTypeFam != null && !isRows ) {
-                    RelDataType bndType = validator.deriveType( scope, boundVal );
+                    AlgDataType bndType = validator.deriveType( scope, boundVal );
                     PolyTypeFamily bndTypeFam = bndType.getPolyType().getFamily();
                     switch ( orderTypeFam ) {
                         case NUMERIC:

@@ -31,9 +31,9 @@ import org.polypheny.db.languages.rex.RexSqlStandardConvertletTable;
 import org.polypheny.db.languages.rex.RexToSqlNodeConverter;
 import org.polypheny.db.languages.rex.RexToSqlNodeConverterImpl;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlToRelTestBase;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.languages.sql.SqlToAlgTestBase;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
@@ -41,7 +41,7 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
-import org.polypheny.db.tools.RelConversionException;
+import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Closer;
 
@@ -49,7 +49,7 @@ import org.polypheny.db.util.Closer;
 /**
  * Unit test for {@link RexSqlStandardConvertletTable}.
  */
-public class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
+public class RexSqlStandardConvertletTableTest extends SqlToAlgTestBase {
 
     @Test
     public void testCoalesce() {
@@ -81,7 +81,7 @@ public class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
     }
 
 
-    private RelNode convertSqlToRel( String sql, boolean simplifyRex ) {
+    private AlgNode convertSqlToRel( String sql, boolean simplifyRex ) {
         PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( "" );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( rootSchema.plus() )
@@ -104,8 +104,8 @@ public class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
             closer.add( Hook.REL_BUILDER_SIMPLIFY.addThread( Hook.propertyJ( simplifyRex ) ) );
             final Node parsed = planner.parse( sql );
             final Node validated = planner.validate( parsed );
-            return planner.rel( validated ).rel;
-        } catch ( NodeParseException | RelConversionException | ValidationException e ) {
+            return planner.alg( validated ).alg;
+        } catch ( NodeParseException | AlgConversionException | ValidationException e ) {
             throw new RuntimeException( e );
         }
     }

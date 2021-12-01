@@ -54,8 +54,8 @@ import org.polypheny.db.core.util.Collation;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.DateString;
@@ -168,7 +168,7 @@ public class RexLiteral extends RexNode {
     /**
      * The real type of this literal, as reported by {@link #getType}.
      */
-    private final RelDataType type;
+    private final AlgDataType type;
 
     // TODO jvs: Use SqlTypeFamily instead; it exists for exactly this purpose (to avoid the confusion which results from overloading PolyType).
     /**
@@ -183,7 +183,7 @@ public class RexLiteral extends RexNode {
     /**
      * Creates a <code>RexLiteral</code>.
      */
-    public RexLiteral( Comparable value, RelDataType type, PolyType typeName ) {
+    public RexLiteral( Comparable value, AlgDataType type, PolyType typeName ) {
         this.value = value;
         this.type = Objects.requireNonNull( type );
         this.typeName = Objects.requireNonNull( typeName );
@@ -201,7 +201,7 @@ public class RexLiteral extends RexNode {
     }
 
 
-    public RexLiteral( Comparable value, RelDataType type, PolyType typeName, boolean raw ) {
+    public RexLiteral( Comparable value, AlgDataType type, PolyType typeName, boolean raw ) {
         this.value = value;
         this.type = Objects.requireNonNull( type );
         this.typeName = Objects.requireNonNull( typeName );
@@ -214,7 +214,7 @@ public class RexLiteral extends RexNode {
      *
      * The digest does not contain the expression's identity, but does include the identity of children.
      *
-     * Technically speaking 1:INT differs from 1:FLOAT, so we need data type in the literal's digest, however we want to avoid extra verbosity of the {@link RelNode#getDigest()} for readability purposes, so we omit type info in certain cases.
+     * Technically speaking 1:INT differs from 1:FLOAT, so we need data type in the literal's digest, however we want to avoid extra verbosity of the {@link AlgNode#getDigest()} for readability purposes, so we omit type info in certain cases.
      * For instance, 1:INT becomes 1 (INT is implied by default), however 1:BIGINT always holds the type
      *
      * Here's a non-exhaustive list of the "well known cases":
@@ -261,7 +261,7 @@ public class RexLiteral extends RexNode {
     }
 
 
-    public static Pair<Comparable, PolyType> convertType( Comparable value, RelDataType typeName ) {
+    public static Pair<Comparable, PolyType> convertType( Comparable value, AlgDataType typeName ) {
         switch ( typeName.getPolyType() ) {
             case INTEGER:
             case BIGINT:
@@ -408,7 +408,7 @@ public class RexLiteral extends RexNode {
     }
 
 
-    private static String toJavaString( Comparable value, PolyType typeName, RelDataType type, RexDigestIncludeType includeType ) {
+    private static String toJavaString( Comparable value, PolyType typeName, AlgDataType type, RexDigestIncludeType includeType ) {
         assert includeType != RexDigestIncludeType.OPTIONAL : "toJavaString must not be called with includeType=OPTIONAL";
         String fullTypeString = type.getFullTypeString();
         if ( value == null ) {
@@ -443,7 +443,7 @@ public class RexLiteral extends RexNode {
      * @return NO_TYPE when type can be omitted, ALWAYS otherwise
      * @see RexLiteral#computeDigest(RexDigestIncludeType)
      */
-    private static RexDigestIncludeType shouldIncludeType( Comparable value, RelDataType type ) {
+    private static RexDigestIncludeType shouldIncludeType( Comparable value, AlgDataType type ) {
         if ( type.isNullable() ) {
             // This means "null literal", so we require a type for it
             // There might be exceptions like AND(null, true) which are handled by RexCall#computeDigest
@@ -714,98 +714,6 @@ public class RexLiteral extends RexNode {
         }
     }
 
-
-    /**
-     * Converts a Jdbc string into a RexLiteral. This method accepts a string, as returned by the Jdbc method ResultSet.getString(), and restores the string into an equivalent RexLiteral.
-     * It allows one to use Jdbc strings as a common format for data.
-     *
-     * If a null literal is provided, then a null pointer will be returned.
-     *
-     * @param type data type of literal to be read
-     * @param typeName type family of literal
-     * @param literal the (non-SQL encoded) string representation, as returned by the Jdbc call to return a column as a string
-     * @return a typed RexLiteral, or null
-     */
-    /*public static RexLiteral fromJdbcString( RelDataType type, PolyType typeName, String literal ) {
-        if ( literal == null ) {
-            return null;
-        }
-
-        switch ( typeName ) {
-            case CHAR:
-                Charset charset = type.getCharset();
-                Collation collation = type.getCollation();
-                NlsString str = new NlsString( literal, charset.name(), collation );
-                return new RexLiteral( str, type, typeName );
-            case BOOLEAN:
-                boolean b = ConversionUtil.toBoolean( literal );
-                return new RexLiteral( b, type, typeName );
-            case DECIMAL:
-            case DOUBLE:
-                BigDecimal d = new BigDecimal( literal );
-                return new RexLiteral( d, type, typeName );
-            case BINARY:
-                byte[] bytes = ConversionUtil.toByteArrayFromString( literal, 16 );
-                return new RexLiteral( new ByteString( bytes ), type, typeName );
-            case NULL:
-                return new RexLiteral( null, type, typeName );
-            case INTERVAL_DAY:
-            case INTERVAL_DAY_HOUR:
-            case INTERVAL_DAY_MINUTE:
-            case INTERVAL_DAY_SECOND:
-            case INTERVAL_HOUR:
-            case INTERVAL_HOUR_MINUTE:
-            case INTERVAL_HOUR_SECOND:
-            case INTERVAL_MINUTE:
-            case INTERVAL_MINUTE_SECOND:
-            case INTERVAL_SECOND:
-                long millis = ParserUtil.intervalToMillis( literal, type.getIntervalQualifier() );
-                return new RexLiteral( BigDecimal.valueOf( millis ), type, typeName );
-            case INTERVAL_YEAR:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_MONTH:
-                long months = ParserUtil.intervalToMonths( literal, type.getIntervalQualifier() );
-                return new RexLiteral( BigDecimal.valueOf( months ), type, typeName );
-            case DATE:
-            case TIME:
-            case TIMESTAMP:
-                String format = getCalendarFormat( typeName );
-                TimeZone tz = DateTimeUtils.UTC_ZONE;
-                final Comparable v;
-                switch ( typeName ) {
-                    case DATE:
-                        final Calendar cal = DateTimeUtils.parseDateFormat( literal, new SimpleDateFormat( format, Locale.ROOT ), tz );
-                        if ( cal == null ) {
-                            throw new AssertionError( "fromJdbcString: invalid date/time value '" + literal + "'" );
-                        }
-                        v = DateString.fromCalendarFields( cal );
-                        break;
-                    default:
-                        // Allow fractional seconds for times and timestamps
-                        assert format != null;
-                        final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( literal, new SimpleDateFormat( format, Locale.ROOT ), tz, -1 );
-                        if ( ts == null ) {
-                            throw new AssertionError( "fromJdbcString: invalid date/time value '" + literal + "'" );
-                        }
-                        switch ( typeName ) {
-                            case TIMESTAMP:
-                                v = TimestampString.fromCalendarFields( ts.getCalendar() ).withFraction( ts.getFraction() );
-                                break;
-                            case TIME:
-                                v = TimeString.fromCalendarFields( ts.getCalendar() ).withFraction( ts.getFraction() );
-                                break;
-                            default:
-                                throw new AssertionError();
-                        }
-                }
-                return new RexLiteral( v, type, typeName );
-
-            case SYMBOL:
-                // Symbols are for internal use
-            default:
-                throw new AssertionError( "fromJdbcString: unsupported type" );
-        }
-    }*/
     private static String getCalendarFormat( PolyType typeName ) {
         switch ( typeName ) {
             case DATE:
@@ -826,7 +734,7 @@ public class RexLiteral extends RexNode {
 
 
     @Override
-    public RelDataType getType() {
+    public AlgDataType getType() {
         return type;
     }
 

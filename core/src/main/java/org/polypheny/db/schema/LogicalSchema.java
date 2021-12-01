@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 
 public class LogicalSchema implements Schema {
 
@@ -48,7 +48,7 @@ public class LogicalSchema implements Schema {
 
 
     @Override
-    public RelProtoDataType getType( String name ) {
+    public AlgProtoDataType getType( String name ) {
         return null;
     }
 

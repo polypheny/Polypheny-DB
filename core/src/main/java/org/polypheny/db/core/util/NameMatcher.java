@@ -20,8 +20,8 @@ package org.polypheny.db.core.util;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 /**
@@ -64,7 +64,7 @@ public interface NameMatcher {
      * @param fieldName Field name
      * @return Field, or null if not found
      */
-    RelDataTypeField field( RelDataType rowType, String fieldName );
+    AlgDataTypeField field( AlgDataType rowType, String fieldName );
 
     /**
      * Returns how many times a string occurs in a collection.

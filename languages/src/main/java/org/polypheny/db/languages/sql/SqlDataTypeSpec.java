@@ -30,8 +30,8 @@ import org.polypheny.db.core.nodes.NodeVisitor;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
@@ -314,8 +314,8 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
     /**
      * Throws an error if the type is not found.
      */
-    public RelDataType deriveType( SqlValidator validator ) {
-        RelDataType type = null;
+    public AlgDataType deriveType( SqlValidator validator ) {
+        AlgDataType type = null;
         if ( typeName.isSimple() ) {
             if ( null != collectionsTypeName ) {
                 final String collectionName = collectionsTypeName.getSimple();
@@ -324,7 +324,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
                 }
             }
 
-            RelDataTypeFactory typeFactory = validator.getTypeFactory();
+            AlgDataTypeFactory typeFactory = validator.getTypeFactory();
             type = deriveType( typeFactory );
         }
         if ( type == null ) {
@@ -337,19 +337,19 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
     /**
      * Does not throw an error if the type is not built-in.
      */
-    public RelDataType deriveType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType deriveType( AlgDataTypeFactory typeFactory ) {
         return deriveType( typeFactory, false );
     }
 
 
     /**
-     * Converts this type specification to a {@link RelDataType}.
+     * Converts this type specification to a {@link AlgDataType}.
      *
      * Does not throw an error if the type is not built-in.
      *
      * @param nullable Whether the type is nullable if the type specification does not explicitly state
      */
-    public RelDataType deriveType( RelDataTypeFactory typeFactory, boolean nullable ) {
+    public AlgDataType deriveType( AlgDataTypeFactory typeFactory, boolean nullable ) {
         if ( !typeName.isSimple() ) {
             return null;
         }
@@ -360,7 +360,7 @@ public class SqlDataTypeSpec extends SqlNode implements DataTypeSpec {
         }
 
         // NOTE jvs 15-Jan-2009:  earlier validation is supposed to have caught these, which is why it's OK for them to be assertions rather than user-level exceptions.
-        RelDataType type;
+        AlgDataType type;
         if ( (precision >= 0) && (scale >= 0) ) {
             assert polyType.allowsPrecScale( true, true );
             type = typeFactory.createPolyType( polyType, precision, scale );

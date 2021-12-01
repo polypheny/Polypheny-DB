@@ -47,7 +47,7 @@ import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.joda.time.chrono.ISOChronology;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -280,8 +280,8 @@ public class DruidDateTimeUtils {
                 assert node instanceof RexCall;
                 final RexCall call = (RexCall) node;
                 final RexNode operand = call.getOperands().get( 0 );
-                final RelDataType callType = call.getType();
-                final RelDataType operandType = operand.getType();
+                final AlgDataType callType = call.getType();
+                final AlgDataType operandType = operand.getType();
                 if ( operand.getKind() == Kind.LITERAL
                         && callType.getPolyType() == operandType.getPolyType()
                         && (callType.getPolyType() == PolyType.DATE
@@ -322,7 +322,7 @@ public class DruidDateTimeUtils {
         final RexLiteral flag = (RexLiteral) call.operands.get( flagIndex );
         final TimeUnitRange timeUnit = (TimeUnitRange) flag.getValue();
 
-        final RelDataType valueType = value.getType();
+        final AlgDataType valueType = value.getType();
         if ( valueType.getPolyType() == PolyType.DATE || valueType.getPolyType() == PolyType.TIMESTAMP ) {
             // We use 'UTC' for date/timestamp type as Druid needs timezone information
             return Granularities.createGranularity( timeUnit, "UTC" );

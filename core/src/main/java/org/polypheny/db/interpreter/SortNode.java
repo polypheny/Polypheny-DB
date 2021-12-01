@@ -39,8 +39,8 @@ import com.google.common.collect.Ordering;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.rex.RexLiteral;
 
 
@@ -49,25 +49,25 @@ import org.polypheny.db.rex.RexLiteral;
  */
 public class SortNode extends AbstractSingleNode<Sort> {
 
-    public SortNode( Compiler compiler, Sort rel ) {
-        super( compiler, rel );
+    public SortNode( Compiler compiler, Sort alg ) {
+        super( compiler, alg );
     }
 
 
     @Override
     public void run() throws InterruptedException {
         final int offset =
-                rel.offset == null
+                alg.offset == null
                         ? 0
-                        : ((RexLiteral) rel.offset).getValueAs( Integer.class );
+                        : ((RexLiteral) alg.offset).getValueAs( Integer.class );
         final int fetch =
-                rel.fetch == null
+                alg.fetch == null
                         ? -1
-                        : ((RexLiteral) rel.fetch).getValueAs( Integer.class );
+                        : ((RexLiteral) alg.fetch).getValueAs( Integer.class );
         // In pure limit mode. No sort required.
         Row row;
         loop:
-        if ( rel.getCollation().getFieldCollations().isEmpty() ) {
+        if ( alg.getCollation().getFieldCollations().isEmpty() ) {
             for ( int i = 0; i < offset; i++ ) {
                 row = source.receive();
                 if ( row == null ) {
@@ -102,14 +102,14 @@ public class SortNode extends AbstractSingleNode<Sort> {
 
 
     private Comparator<Row> comparator() {
-        if ( rel.getCollation().getFieldCollations().size() == 1 ) {
-            return comparator( rel.getCollation().getFieldCollations().get( 0 ) );
+        if ( alg.getCollation().getFieldCollations().size() == 1 ) {
+            return comparator( alg.getCollation().getFieldCollations().get( 0 ) );
         }
-        return Ordering.compound( Iterables.transform( rel.getCollation().getFieldCollations(), this::comparator ) );
+        return Ordering.compound( Iterables.transform( alg.getCollation().getFieldCollations(), this::comparator ) );
     }
 
 
-    private Comparator<Row> comparator( RelFieldCollation fieldCollation ) {
+    private Comparator<Row> comparator( AlgFieldCollation fieldCollation ) {
         final int nullComparison = fieldCollation.nullDirection.nullComparison;
         final int x = fieldCollation.getFieldIndex();
         switch ( fieldCollation.direction ) {
@@ -117,13 +117,13 @@ public class SortNode extends AbstractSingleNode<Sort> {
                 return ( o1, o2 ) -> {
                     final Comparable c1 = (Comparable) o1.getValues()[x];
                     final Comparable c2 = (Comparable) o2.getValues()[x];
-                    return RelFieldCollation.compare( c1, c2, nullComparison );
+                    return AlgFieldCollation.compare( c1, c2, nullComparison );
                 };
             default:
                 return ( o1, o2 ) -> {
                     final Comparable c1 = (Comparable) o1.getValues()[x];
                     final Comparable c2 = (Comparable) o2.getValues()[x];
-                    return RelFieldCollation.compare( c2, c1, -nullComparison );
+                    return AlgFieldCollation.compare( c2, c1, -nullComparison );
                 };
         }
     }

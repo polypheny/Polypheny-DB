@@ -37,13 +37,13 @@ package org.polypheny.db.adapter.enumerable;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalTableFunctionScan;
-import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -54,17 +54,17 @@ public class EnumerableTableScanRule extends ConverterRule {
     /**
      * Creates an EnumerableTableScanRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableTableScanRule( RelBuilderFactory relBuilderFactory ) {
-        super( LogicalTableScan.class, (Predicate<RelNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, relBuilderFactory, "EnumerableTableScanRule" );
+    public EnumerableTableScanRule( AlgBuilderFactory algBuilderFactory ) {
+        super( LogicalTableScan.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableTableScanRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        LogicalTableScan scan = (LogicalTableScan) rel;
-        final RelOptTable relOptTable = scan.getTable();
+    public AlgNode convert( AlgNode alg ) {
+        LogicalTableScan scan = (LogicalTableScan) alg;
+        final AlgOptTable relOptTable = scan.getTable();
         final Table table = relOptTable.unwrap( Table.class );
         if ( !EnumerableTableScan.canHandle( table ) ) {
             return null;

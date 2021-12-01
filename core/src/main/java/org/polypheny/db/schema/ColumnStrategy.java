@@ -34,14 +34,15 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.core.InitializerExpressionFactory;
+import org.polypheny.db.plan.AlgOptTable;
 
 
 /**
  * Describes how a column gets populated.
  *
- * @see org.polypheny.db.sql2rel.InitializerExpressionFactory#generationStrategy
- * @see RelOptTable#getColumnStrategies()
+ * @see InitializerExpressionFactory#generationStrategy
+ * @see AlgOptTable#getColumnStrategies()
  */
 public enum ColumnStrategy {
 

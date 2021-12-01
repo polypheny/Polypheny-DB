@@ -43,45 +43,45 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSumAggFunction;
 import org.polypheny.db.languages.sql.fun.SqlSumEmptyIsZeroAggFunction;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Aggregate} relational expression in MongoDB.
+ * Implementation of {@link org.polypheny.db.algebra.core.Aggregate} relational expression in MongoDB.
  */
-public class MongoAggregate extends Aggregate implements MongoRel {
+public class MongoAggregate extends Aggregate implements MongoAlg {
 
-    public MongoAggregate( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidRelException {
+    public MongoAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
 
         for ( AggregateCall aggCall : aggCalls ) {
             if ( aggCall.isDistinct() ) {
-                throw new InvalidRelException( "distinct aggregation not supported" );
+                throw new InvalidAlgException( "distinct aggregation not supported" );
             }
         }
         switch ( getGroupType() ) {
             case SIMPLE:
                 break;
             default:
-                throw new InvalidRelException( "unsupported group type: " + getGroupType() );
+                throw new InvalidAlgException( "unsupported group type: " + getGroupType() );
         }
     }
 
 
     @Override
-    public Aggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         try {
             return new MongoAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
-        } catch ( InvalidRelException e ) {
+        } catch ( InvalidAlgException e ) {
             // Semantic error not possible. Must be a bug. Convert to internal error.
             throw new AssertionError( e );
         }

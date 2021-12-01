@@ -39,22 +39,22 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.junit.Assert;
 import org.junit.Test;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelCollations;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
 
 
 /**
- * Test to verify {@link RelCompositeTrait}.
+ * Test to verify {@link AlgCompositeTrait}.
  */
 public class RelTraitTest {
 
-    private static final RelCollationTraitDef COLLATION = RelCollationTraitDef.INSTANCE;
+    private static final AlgCollationTraitDef COLLATION = AlgCollationTraitDef.INSTANCE;
 
 
-    private void assertCanonical( String message, Supplier<List<RelCollation>> collation ) {
-        RelTrait trait1 = RelCompositeTrait.of( COLLATION, collation.get() );
-        RelTrait trait2 = RelCompositeTrait.of( COLLATION, collation.get() );
+    private void assertCanonical( String message, Supplier<List<AlgCollation>> collation ) {
+        AlgTrait trait1 = AlgCompositeTrait.of( COLLATION, collation.get() );
+        AlgTrait trait2 = AlgCompositeTrait.of( COLLATION, collation.get() );
 
         Assert.assertEquals(
                 "RelCompositeTrait.of should return the same instance for " + message,
@@ -71,13 +71,13 @@ public class RelTraitTest {
 
     @Test
     public void compositeOne() {
-        assertCanonical( "composite with one element", () -> ImmutableList.of( RelCollations.of( ImmutableList.of() ) ) );
+        assertCanonical( "composite with one element", () -> ImmutableList.of( AlgCollations.of( ImmutableList.of() ) ) );
     }
 
 
     @Test
     public void compositeTwo() {
-        assertCanonical( "composite with two elements", () -> ImmutableList.of( RelCollations.of( 0 ), RelCollations.of( 1 ) ) );
+        assertCanonical( "composite with two elements", () -> ImmutableList.of( AlgCollations.of( 0 ), AlgCollations.of( 1 ) ) );
     }
 }
 

@@ -41,8 +41,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.polypheny.db.piglet.Handler;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.tools.PigRelBuilder;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.tools.PigAlgBuilder;
 
 
 /**
@@ -53,16 +53,16 @@ class PolyphenyDbHandler extends Handler {
     private final PrintWriter writer;
 
 
-    PolyphenyDbHandler( PigRelBuilder builder, Writer writer ) {
+    PolyphenyDbHandler( PigAlgBuilder builder, Writer writer ) {
         super( builder );
         this.writer = new PrintWriter( writer );
     }
 
 
     @Override
-    protected void dump( RelNode rel ) {
+    protected void dump( AlgNode alg ) {
         throw new RuntimeException( "Unsupported!" );
-        /* try ( PreparedStatement preparedStatement = RelRunners.run( rel ) ) {
+        /* try ( PreparedStatement preparedStatement = RelRunners.run( alg ) ) {
             final ResultSet resultSet = preparedStatement.executeQuery();
             dump( resultSet, true );
         } catch ( SQLException e ) {

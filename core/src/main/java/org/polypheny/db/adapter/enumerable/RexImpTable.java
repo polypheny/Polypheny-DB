@@ -92,9 +92,9 @@ import org.polypheny.db.core.nodes.JsonAgg;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -636,10 +636,10 @@ public class RexImpTable {
      */
     private static List<RexNode> harmonize( final RexToLixTranslator translator, final List<RexNode> operands ) {
         int nullCount = 0;
-        final List<RelDataType> types = new ArrayList<>();
-        final RelDataTypeFactory typeFactory = translator.builder.getTypeFactory();
+        final List<AlgDataType> types = new ArrayList<>();
+        final AlgDataTypeFactory typeFactory = translator.builder.getTypeFactory();
         for ( RexNode operand : operands ) {
-            RelDataType type = operand.getType();
+            AlgDataType type = operand.getType();
             type = toSql( typeFactory, type );
             if ( translator.isNullable( operand ) ) {
                 ++nullCount;
@@ -652,7 +652,7 @@ public class RexImpTable {
             // Operands have the same nullability and type. Return them unchanged.
             return operands;
         }
-        final RelDataType type = typeFactory.leastRestrictive( types );
+        final AlgDataType type = typeFactory.leastRestrictive( types );
         if ( type == null ) {
             // There is no common type. Presumably this is a binary operator with asymmetric arguments (e.g. interval / integer) which is not intended to be harmonized.
             return operands;
@@ -666,8 +666,8 @@ public class RexImpTable {
     }
 
 
-    private static RelDataType toSql( RelDataTypeFactory typeFactory, RelDataType type ) {
-        if ( type instanceof RelDataTypeFactoryImpl.JavaType ) {
+    private static AlgDataType toSql( AlgDataTypeFactory typeFactory, AlgDataType type ) {
+        if ( type instanceof AlgDataTypeFactoryImpl.JavaType ) {
             final PolyType typeName = type.getPolyType();
             if ( typeName != null && typeName != PolyType.OTHER ) {
                 return typeFactory.createTypeWithNullability( typeFactory.createPolyType( typeName ), type.isNullable() );
@@ -949,7 +949,7 @@ public class RexImpTable {
         @Override
         public List<Type> getNotNullState( WinAggContext info ) {
             boolean hasNullable = false;
-            for ( RelDataType type : info.parameterRelTypes() ) {
+            for ( AlgDataType type : info.parameterAlgTypes() ) {
                 if ( type.isNullable() ) {
                     hasNullable = true;
                     break;
@@ -2346,14 +2346,14 @@ public class RexImpTable {
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             assert call.getOperands().size() == 1;
-            final RelDataType sourceType = call.getOperands().get( 0 ).getType();
+            final AlgDataType sourceType = call.getOperands().get( 0 ).getType();
             // It's only possible for the result to be null if both expression and target type are nullable. We assume that the caller did not make a mistake. If expression looks nullable, caller WILL have
             // checked that expression is not null before calling us.
             final boolean nullable =
                     translator.isNullable( call )
                             && sourceType.isNullable()
                             && !Primitive.is( translatedOperands.get( 0 ).getType() );
-            final RelDataType targetType = translator.nullifyType( call.getType(), nullable );
+            final AlgDataType targetType = translator.nullifyType( call.getType(), nullable );
             return translator.translateCast( sourceType, targetType, translatedOperands.get( 0 ) );
         }
 

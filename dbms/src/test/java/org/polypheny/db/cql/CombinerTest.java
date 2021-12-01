@@ -27,7 +27,7 @@ import org.polypheny.db.cql.Combiner.CombinerType;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.helper.RelBuildTestHelper;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 
 
 public class CombinerTest extends RelBuildTestHelper {
@@ -149,9 +149,9 @@ public class CombinerTest extends RelBuildTestHelper {
                 employee,
                 dept
         );
-        relBuilder = combiner.combine( relBuilder, rexBuilder );
-        RelNode relNode = relBuilder.peek();
-        List<String> actualFieldNames = relNode.getRowType().getFieldNames();
+        algBuilder = combiner.combine( algBuilder, rexBuilder );
+        AlgNode algNode = algBuilder.peek();
+        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "empno" );
         expectedFieldNames.add( "empname" );
@@ -183,9 +183,9 @@ public class CombinerTest extends RelBuildTestHelper {
                 employee,
                 dept
         );
-        relBuilder = combiner.combine( relBuilder, rexBuilder );
-        RelNode relNode = relBuilder.peek();
-        List<String> actualFieldNames = relNode.getRowType().getFieldNames();
+        algBuilder = combiner.combine( algBuilder, rexBuilder );
+        AlgNode algNode = algBuilder.peek();
+        List<String> actualFieldNames = algNode.getRowType().getFieldNames();
         List<String> expectedFieldNames = new ArrayList<>();
         expectedFieldNames.add( "empno" );
         expectedFieldNames.add( "empname" );

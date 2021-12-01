@@ -34,17 +34,17 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Sort;
 
 
 /**
  * Rule to convert an {@link Sort} that has {@code offset} or {@code fetch} set to an {@link EnumerableLimit} on top of a "pure" {@code Sort} that has no offset or fetch.
  */
-class EnumerableLimitRule extends RelOptRule {
+class EnumerableLimitRule extends AlgOptRule {
 
     EnumerableLimitRule() {
         super( operand( Sort.class, any() ), "EnumerableLimitRule" );
@@ -52,18 +52,18 @@ class EnumerableLimitRule extends RelOptRule {
 
 
     @Override
-    public void onMatch( RelOptRuleCall call ) {
-        final Sort sort = call.rel( 0 );
+    public void onMatch( AlgOptRuleCall call ) {
+        final Sort sort = call.alg( 0 );
         if ( sort.offset == null && sort.fetch == null ) {
             return;
         }
-        final RelTraitSet traitSet = sort.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        RelNode input = sort.getInput();
+        final AlgTraitSet traitSet = sort.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        AlgNode input = sort.getInput();
         if ( !sort.getCollation().getFieldCollations().isEmpty() ) {
             // Create a sort with the same sort key, but no offset or fetch.
             input = sort.copy( sort.getTraitSet(), input, sort.getCollation(), null, null );
         }
-        RelNode x = convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        AlgNode x = convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         call.transformTo( new EnumerableLimit( sort.getCluster(), traitSet, x, sort.offset, sort.fetch ) );
     }
 }

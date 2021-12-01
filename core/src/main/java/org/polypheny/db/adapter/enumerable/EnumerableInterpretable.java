@@ -63,10 +63,10 @@ import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
@@ -84,13 +84,13 @@ import org.polypheny.db.util.Util;
  */
 public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
 
-    protected EnumerableInterpretable( RelOptCluster cluster, RelNode input ) {
+    protected EnumerableInterpretable( AlgOptCluster cluster, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );
     }
 
 
     @Override
-    public EnumerableInterpretable copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public EnumerableInterpretable copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableInterpretable( getCluster(), sole( inputs ) );
     }
 
@@ -100,8 +100,8 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         final Bindable bindable = toBindable(
                 implementor.internalParameters,
                 implementor.spark,
-                (EnumerableRel) getInput(),
-                EnumerableRel.Prefer.ARRAY,
+                (EnumerableAlg) getInput(),
+                EnumerableAlg.Prefer.ARRAY,
                 implementor.dataContext.getStatement() );
         final ArrayBindable arrayBindable = box( bindable );
         final Enumerable<Object[]> enumerable = arrayBindable.bind( implementor.dataContext );
@@ -109,10 +109,10 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     }
 
 
-    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, Statement statement ) {
-        EnumerableRelImplementor relImplementor = new EnumerableRelImplementor( rel.getCluster().getRexBuilder(), parameters );
+    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableAlg alg, EnumerableAlg.Prefer prefer, Statement statement ) {
+        EnumerableAlgImplementor relImplementor = new EnumerableAlgImplementor( alg.getCluster().getRexBuilder(), parameters );
 
-        final ClassDeclaration expr = relImplementor.implementRoot( rel, prefer );
+        final ClassDeclaration expr = relImplementor.implementRoot( alg, prefer );
         String s = Expressions.toString( expr.memberDeclarations, "\n", false );
 
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
@@ -136,7 +136,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             if ( spark != null && spark.enabled() ) {
                 return spark.compile( expr, s );
             } else {
-                return getBindable( expr, s, rel.getRowType().getFieldCount() );
+                return getBindable( expr, s, alg.getRowType().getFieldCount() );
             }
         } catch ( Exception e ) {
             throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );
@@ -236,9 +236,9 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         private final Sink sink;
 
 
-        EnumerableNode( Enumerable<Object[]> enumerable, Compiler compiler, EnumerableInterpretable rel ) {
+        EnumerableNode( Enumerable<Object[]> enumerable, Compiler compiler, EnumerableInterpretable alg ) {
             this.enumerable = enumerable;
-            this.sink = compiler.sink( rel );
+            this.sink = compiler.sink( alg );
         }
 
 

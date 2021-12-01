@@ -51,8 +51,8 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Syntax;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
@@ -90,7 +90,7 @@ class PredicateAnalyzer {
 
 
     /**
-     * Thrown when {@link RelNode} expression can't be processed (or converted into ES query)
+     * Thrown when {@link AlgNode} expression can't be processed (or converted into ES query)
      */
     static class ExpressionNotAnalyzableException extends Exception {
 
@@ -764,17 +764,17 @@ class PredicateAnalyzer {
      */
     static class SimpleQueryExpression extends QueryExpression {
 
-        private final NamedFieldExpression rel;
+        private final NamedFieldExpression alg;
         private QueryBuilder builder;
 
 
         private String getFieldReference() {
-            return rel.getReference();
+            return alg.getReference();
         }
 
 
-        private SimpleQueryExpression( NamedFieldExpression rel ) {
-            this.rel = rel;
+        private SimpleQueryExpression( NamedFieldExpression alg ) {
+            this.alg = alg;
         }
 
 
@@ -932,11 +932,11 @@ class PredicateAnalyzer {
      */
     static final class CastExpression implements TerminalExpression {
 
-        private final RelDataType type;
+        private final AlgDataType type;
         private final TerminalExpression argument;
 
 
-        private CastExpression( RelDataType type, TerminalExpression argument ) {
+        private CastExpression( AlgDataType type, TerminalExpression argument ) {
             this.type = type;
             this.argument = argument;
         }
@@ -1084,8 +1084,8 @@ class PredicateAnalyzer {
      * @param call current node being evaluated
      */
     private static void checkForIncompatibleDateTimeOperands( RexCall call ) {
-        RelDataType op1 = call.getOperands().get( 0 ).getType();
-        RelDataType op2 = call.getOperands().get( 1 ).getType();
+        AlgDataType op1 = call.getOperands().get( 0 ).getType();
+        AlgDataType op2 = call.getOperands().get( 1 ).getType();
         if ( (PolyTypeFamily.DATETIME.contains( op1 ) && !PolyTypeFamily.DATETIME.contains( op2 ))
                 || (PolyTypeFamily.DATETIME.contains( op2 ) && !PolyTypeFamily.DATETIME.contains( op1 ))
                 || (PolyTypeFamily.DATE.contains( op1 ) && !PolyTypeFamily.DATE.contains( op2 ))

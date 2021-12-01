@@ -37,7 +37,7 @@ package org.polypheny.db.adapter.druid;
 import com.google.common.collect.Iterables;
 import java.util.List;
 import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 
@@ -64,7 +64,7 @@ public class UnarySuffixOperatorConversion implements DruidSqlOperatorConverter 
 
 
     @Override
-    public String toDruidExpression( RexNode rexNode, RelDataType rowType, DruidQuery druidQuery ) {
+    public String toDruidExpression( RexNode rexNode, AlgDataType rowType, DruidQuery druidQuery ) {
         final RexCall call = (RexCall) rexNode;
 
         final List<String> druidExpressions = DruidExpressions.toDruidExpressions( druidQuery, rowType, call.getOperands() );

@@ -34,9 +34,9 @@
 package org.polypheny.db.tools;
 
 
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
 
 
 /**
@@ -47,6 +47,6 @@ import org.polypheny.db.rel.RelNode;
  */
 public interface Program {
 
-    RelNode run( RelOptPlanner planner, RelNode rel, RelTraitSet requiredOutputTraits );
+    AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits );
 }
 

@@ -66,7 +66,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
@@ -90,7 +90,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
 
 
     @Override
-    public Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext ) {
+    public Scalar compile( List<RexNode> nodes, AlgDataType inputRowType, DataContext dataContext ) {
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
         for ( RexNode node : nodes ) {
             programBuilder.addProject( node, null );

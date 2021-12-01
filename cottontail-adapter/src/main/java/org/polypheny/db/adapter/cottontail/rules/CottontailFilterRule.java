@@ -18,30 +18,30 @@ package org.polypheny.db.adapter.cottontail.rules;
 
 
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailFilter;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentRules;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 public class CottontailFilterRule extends CottontailConverterRule {
 
-    CottontailFilterRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Filter.class, r -> !DocumentRules.containsDocument( r ), Convention.NONE, out, relBuilderFactory, "CottontailFilterRule:" + out.getName() );
+    CottontailFilterRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Filter.class, r -> !DocumentRules.containsDocument( r ), Convention.NONE, out, algBuilderFactory, "CottontailFilterRule:" + out.getName() );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        Filter filter = (Filter) rel;
-        final RelTraitSet traitSet = filter.getTraitSet().replace( out );
+    public AlgNode convert( AlgNode alg ) {
+        Filter filter = (Filter) alg;
+        final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
 
         return new CottontailFilter(
                 filter.getCluster(),
@@ -52,8 +52,8 @@ public class CottontailFilterRule extends CottontailConverterRule {
 
 
     @Override
-    public boolean matches( RelOptRuleCall call ) {
-        Filter filter = call.rel( 0 );
+    public boolean matches( AlgOptRuleCall call ) {
+        Filter filter = call.alg( 0 );
         RexNode condition = filter.getCondition();
 
         return this.isValidCondition( condition );

@@ -23,7 +23,7 @@ import java.util.List;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeTransform;
 import org.polypheny.db.type.PolyTypeTransforms;
@@ -62,7 +62,7 @@ public class SqlLeadLagAggFunction extends SqlAggFunction {
                 if ( binding.getOperandCount() < 3 ) {
                     transform = PolyTypeTransforms.FORCE_NULLABLE;
                 } else {
-                    RelDataType defValueType = binding.getOperandType( 2 );
+                    AlgDataType defValueType = binding.getOperandType( 2 );
                     transform = defValueType.isNullable()
                             ? PolyTypeTransforms.FORCE_NULLABLE
                             : PolyTypeTransforms.TO_NOT_NULLABLE;

@@ -23,13 +23,9 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.polypheny.db.languages.core.volcano.PlannerTests.GoodSingleRule;
-import static org.polypheny.db.languages.core.volcano.PlannerTests.NoneLeafRel;
-import static org.polypheny.db.languages.core.volcano.PlannerTests.NoneSingleRel;
 import static org.polypheny.db.languages.core.volcano.PlannerTests.PHYS_CALLING_CONVENTION;
-import static org.polypheny.db.languages.core.volcano.PlannerTests.PhysLeafRel;
 import static org.polypheny.db.languages.core.volcano.PlannerTests.PhysLeafRule;
-import static org.polypheny.db.languages.core.volcano.PlannerTests.PhysSingleRel;
-import static org.polypheny.db.languages.core.volcano.PlannerTests.TestSingleRel;
+import static org.polypheny.db.languages.core.volcano.PlannerTests.TestSingleAlg;
 import static org.polypheny.db.languages.core.volcano.PlannerTests.newCluster;
 import static org.polypheny.db.test.Matchers.isLinux;
 
@@ -41,26 +37,30 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
+import org.polypheny.db.languages.core.volcano.PlannerTests.NoneLeafAlg;
+import org.polypheny.db.languages.core.volcano.PlannerTests.NoneSingleAlg;
+import org.polypheny.db.languages.core.volcano.PlannerTests.PhysLeafAlg;
+import org.polypheny.db.languages.core.volcano.PlannerTests.PhysSingleAlg;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptListener;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptListener;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.rules.ProjectRemoveRule;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.rules.ProjectRemoveRule;
+import org.polypheny.db.tools.AlgBuilder;
 
 
 /**
@@ -79,16 +79,16 @@ public class VolcanoPlannerTest {
     public void testTransformLeaf() {
         VolcanoPlanner planner = new VolcanoPlanner();
 
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         planner.addRule( new PhysLeafRule() );
 
-        RelOptCluster cluster = newCluster( planner );
-        NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
-        RelNode convertedRel = planner.changeTraits( leafRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
+        AlgOptCluster cluster = newCluster( planner );
+        NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
+        AlgNode convertedRel = planner.changeTraits( leafRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
-        assertTrue( result instanceof PhysLeafRel );
+        AlgNode result = planner.chooseDelegate().findBestExp();
+        assertTrue( result instanceof PhysLeafAlg );
     }
 
 
@@ -98,42 +98,42 @@ public class VolcanoPlannerTest {
     @Test
     public void testTransformSingleGood() {
         VolcanoPlanner planner = new VolcanoPlanner();
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new GoodSingleRule() );
 
-        RelOptCluster cluster = newCluster( planner );
-        NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
-        NoneSingleRel singleRel = new NoneSingleRel( cluster, leafRel );
-        RelNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
+        AlgOptCluster cluster = newCluster( planner );
+        NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
+        NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
+        AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
-        assertTrue( result instanceof PhysSingleRel );
+        AlgNode result = planner.chooseDelegate().findBestExp();
+        assertTrue( result instanceof PhysSingleAlg );
     }
 
 
     /**
-     * Tests a rule that is fired once per subset (whereas most rules are fired once per rel in a set or rel in a subset)
+     * Tests a rule that is fired once per subset (whereas most rules are fired once per alg in a set or alg in a subset)
      */
     @Test
     public void testSubsetRule() {
         VolcanoPlanner planner = new VolcanoPlanner();
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new GoodSingleRule() );
         final List<String> buf = new ArrayList<>();
         planner.addRule( new SubsetRule( buf ) );
 
-        RelOptCluster cluster = newCluster( planner );
-        NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
-        NoneSingleRel singleRel = new NoneSingleRel( cluster, leafRel );
-        RelNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
+        AlgOptCluster cluster = newCluster( planner );
+        NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
+        NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
+        AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
-        assertTrue( result instanceof PhysSingleRel );
-        assertThat( sort( buf ), equalTo( sort( "NoneSingleRel:Subset#0.NONE", "PhysSingleRel:Subset#0.NONE", "PhysSingleRel:Subset#0.PHYS" ) ) );
+        AlgNode result = planner.chooseDelegate().findBestExp();
+        assertTrue( result instanceof PhysSingleAlg );
+        assertThat( sort( buf ), equalTo( sort( "NoneSingleAlg:Subset#0.NONE", "PhysSingleAlg:Subset#0.NONE", "PhysSingleAlg:Subset#0.PHYS" ) ) );
     }
 
 
@@ -156,18 +156,18 @@ public class VolcanoPlannerTest {
     @Test
     public void testTransformSingleReformed() {
         VolcanoPlanner planner = new VolcanoPlanner();
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new ReformedSingleRule() );
 
-        RelOptCluster cluster = newCluster( planner );
-        NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
-        NoneSingleRel singleRel = new NoneSingleRel( cluster, leafRel );
-        RelNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
+        AlgOptCluster cluster = newCluster( planner );
+        NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
+        NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
+        AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
-        assertTrue( result instanceof PhysSingleRel );
+        AlgNode result = planner.chooseDelegate().findBestExp();
+        assertTrue( result instanceof PhysSingleAlg );
     }
 
 
@@ -175,7 +175,7 @@ public class VolcanoPlannerTest {
         VolcanoPlanner planner = new VolcanoPlanner();
         planner.ambitious = true;
 
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         if ( useRule ) {
             planner.addRule( ProjectRemoveRule.INSTANCE );
@@ -185,32 +185,32 @@ public class VolcanoPlannerTest {
         planner.addRule( new GoodSingleRule() );
         planner.addRule( new PhysProjectRule() );
 
-        planner.addRule( new ConverterRule( RelNode.class, PHYS_CALLING_CONVENTION, EnumerableConvention.INSTANCE, "PhysToIteratorRule" ) {
+        planner.addRule( new ConverterRule( AlgNode.class, PHYS_CALLING_CONVENTION, EnumerableConvention.INSTANCE, "PhysToIteratorRule" ) {
             @Override
-            public RelNode convert( RelNode rel ) {
+            public AlgNode convert( AlgNode alg ) {
                 return new PhysToIteratorConverter(
-                        rel.getCluster(),
-                        rel );
+                        alg.getCluster(),
+                        alg );
             }
         } );
 
-        RelOptCluster cluster = newCluster( planner );
-        PhysLeafRel leafRel = new PhysLeafRel( cluster, "a" );
-        final RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( leafRel.getCluster(), null );
-        RelNode projectRel =
-                relBuilder.push( leafRel )
-                        .project( relBuilder.alias( relBuilder.field( 0 ), "this" ) )
+        AlgOptCluster cluster = newCluster( planner );
+        PhysLeafAlg leafRel = new PhysLeafAlg( cluster, "a" );
+        final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( leafRel.getCluster(), null );
+        AlgNode projectRel =
+                algBuilder.push( leafRel )
+                        .project( algBuilder.alias( algBuilder.field( 0 ), "this" ) )
                         .build();
-        NoneSingleRel singleRel =
-                new NoneSingleRel(
+        NoneSingleAlg singleRel =
+                new NoneSingleAlg(
                         cluster,
                         projectRel );
-        RelNode convertedRel =
+        AlgNode convertedRel =
                 planner.changeTraits(
                         singleRel,
                         cluster.traitSetOf( EnumerableConvention.INSTANCE ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
+        AlgNode result = planner.chooseDelegate().findBestExp();
         assertTrue( result instanceof PhysToIteratorConverter );
     }
 
@@ -237,19 +237,19 @@ public class VolcanoPlannerTest {
     public void testRemoveSingleReformed() {
         VolcanoPlanner planner = new VolcanoPlanner();
         planner.ambitious = true;
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new ReformedRemoveSingleRule() );
 
-        RelOptCluster cluster = newCluster( planner );
-        NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
-        NoneSingleRel singleRel = new NoneSingleRel( cluster, leafRel );
-        RelNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
+        AlgOptCluster cluster = newCluster( planner );
+        NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
+        NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
+        AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
-        assertTrue( result instanceof PhysLeafRel );
-        PhysLeafRel resultLeaf = (PhysLeafRel) result;
+        AlgNode result = planner.chooseDelegate().findBestExp();
+        assertTrue( result instanceof PhysLeafAlg );
+        PhysLeafAlg resultLeaf = (PhysLeafAlg) result;
         assertEquals( "c", resultLeaf.label );
     }
 
@@ -261,20 +261,20 @@ public class VolcanoPlannerTest {
     public void testRemoveSingleGood() {
         VolcanoPlanner planner = new VolcanoPlanner();
         planner.ambitious = true;
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         planner.addRule( new PhysLeafRule() );
         planner.addRule( new GoodSingleRule() );
         planner.addRule( new GoodRemoveSingleRule() );
 
-        RelOptCluster cluster = newCluster( planner );
-        NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
-        NoneSingleRel singleRel = new NoneSingleRel( cluster, leafRel );
-        RelNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
+        AlgOptCluster cluster = newCluster( planner );
+        NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
+        NoneSingleAlg singleRel = new NoneSingleAlg( cluster, leafRel );
+        AlgNode convertedRel = planner.changeTraits( singleRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
-        assertTrue( result instanceof PhysLeafRel );
-        PhysLeafRel resultLeaf = (PhysLeafRel) result;
+        AlgNode result = planner.chooseDelegate().findBestExp();
+        assertTrue( result instanceof PhysLeafAlg );
+        PhysLeafAlg resultLeaf = (PhysLeafAlg) result;
         assertEquals( "c", resultLeaf.label );
     }
 
@@ -283,37 +283,37 @@ public class VolcanoPlannerTest {
     @Test
     public void testMergeJoin() {
         VolcanoPlanner planner = new VolcanoPlanner();
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         // Below two lines are important for the planner to use collation trait and generate merge join
-        planner.addRelTraitDef( RelCollationTraitDef.INSTANCE );
+        planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
         planner.registerAbstractRelationalRules();
 
         planner.addRule( EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE );
         planner.addRule( EnumerableRules.ENUMERABLE_VALUES_RULE );
         planner.addRule( EnumerableRules.ENUMERABLE_SORT_RULE );
 
-        RelOptCluster cluster = newCluster( planner );
+        AlgOptCluster cluster = newCluster( planner );
 
-        RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create( cluster, null );
-        RelNode logicalPlan = relBuilder
+        AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( cluster, null );
+        AlgNode logicalPlan = algBuilder
                 .values( new String[]{ "id", "name" }, "2", "a", "1", "b" )
                 .values( new String[]{ "id", "name" }, "1", "x", "2", "y" )
-                .join( JoinRelType.INNER, "id" )
+                .join( JoinAlgType.INNER, "id" )
                 .build();
 
-        RelTraitSet desiredTraits = cluster.traitSet().replace( EnumerableConvention.INSTANCE );
-        final RelNode newRoot = planner.changeTraits( logicalPlan, desiredTraits );
+        AlgTraitSet desiredTraits = cluster.traitSet().replace( EnumerableConvention.INSTANCE );
+        final AlgNode newRoot = planner.changeTraits( logicalPlan, desiredTraits );
         planner.setRoot( newRoot );
 
-        RelNode bestExp = planner.findBestExp();
+        AlgNode bestExp = planner.findBestExp();
 
         final String plan = ""
                 + "EnumerableMergeJoin(condition=[=($0, $2)], joinType=[inner])\n"
                 + "  EnumerableSort(sort0=[$0], dir0=[ASC])\n"
                 + "    EnumerableValues(tuples=[[{ '2', 'a' }, { '1', 'b' }]])\n"
                 + "  EnumerableValues(tuples=[[{ '1', 'x' }, { '2', 'y' }]])\n";
-        assertThat( "Merge join + sort is expected", plan, isLinux( RelOptUtil.toString( bestExp ) ) );
+        assertThat( "Merge join + sort is expected", plan, isLinux( AlgOptUtil.toString( bestExp ) ) );
     }
 
 
@@ -328,57 +328,57 @@ public class VolcanoPlannerTest {
         VolcanoPlanner planner = new VolcanoPlanner();
         planner.addListener( listener );
 
-        planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
         planner.addRule( new PhysLeafRule() );
 
-        RelOptCluster cluster = newCluster( planner );
-        NoneLeafRel leafRel = new NoneLeafRel( cluster, "a" );
-        RelNode convertedRel = planner.changeTraits( leafRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
+        AlgOptCluster cluster = newCluster( planner );
+        NoneLeafAlg leafRel = new NoneLeafAlg( cluster, "a" );
+        AlgNode convertedRel = planner.changeTraits( leafRel, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
         planner.setRoot( convertedRel );
-        RelNode result = planner.chooseDelegate().findBestExp();
-        assertTrue( result instanceof PhysLeafRel );
+        AlgNode result = planner.chooseDelegate().findBestExp();
+        assertTrue( result instanceof PhysLeafAlg );
 
-        List<RelOptListener.RelEvent> eventList = listener.getEventList();
+        List<AlgOptListener.RelEvent> eventList = listener.getEventList();
 
         // add node
-        checkEvent( eventList, 0, RelOptListener.RelEquivalenceEvent.class, leafRel, null );
+        checkEvent( eventList, 0, AlgOptListener.RelEquivalenceEvent.class, leafRel, null );
 
         // internal subset
-        checkEvent( eventList, 1, RelOptListener.RelEquivalenceEvent.class, null, null );
+        checkEvent( eventList, 1, AlgOptListener.RelEquivalenceEvent.class, null, null );
 
         // before rule
-        checkEvent( eventList, 2, RelOptListener.RuleAttemptedEvent.class, leafRel, PhysLeafRule.class );
+        checkEvent( eventList, 2, AlgOptListener.RuleAttemptedEvent.class, leafRel, PhysLeafRule.class );
 
         // before rule
-        checkEvent( eventList, 3, RelOptListener.RuleProductionEvent.class, result, PhysLeafRule.class );
+        checkEvent( eventList, 3, AlgOptListener.RuleProductionEvent.class, result, PhysLeafRule.class );
 
         // result of rule
-        checkEvent( eventList, 4, RelOptListener.RelEquivalenceEvent.class, result, null );
+        checkEvent( eventList, 4, AlgOptListener.RelEquivalenceEvent.class, result, null );
 
         // after rule
-        checkEvent( eventList, 5, RelOptListener.RuleProductionEvent.class, result, PhysLeafRule.class );
+        checkEvent( eventList, 5, AlgOptListener.RuleProductionEvent.class, result, PhysLeafRule.class );
 
         // after rule
-        checkEvent( eventList, 6, RelOptListener.RuleAttemptedEvent.class, leafRel, PhysLeafRule.class );
+        checkEvent( eventList, 6, AlgOptListener.RuleAttemptedEvent.class, leafRel, PhysLeafRule.class );
 
         // choose plan
-        checkEvent( eventList, 7, RelOptListener.RelChosenEvent.class, result, null );
+        checkEvent( eventList, 7, AlgOptListener.RelChosenEvent.class, result, null );
 
         // finish choosing plan
-        checkEvent( eventList, 8, RelOptListener.RelChosenEvent.class, null, null );
+        checkEvent( eventList, 8, AlgOptListener.RelChosenEvent.class, null, null );
     }
 
 
-    private void checkEvent( List<RelOptListener.RelEvent> eventList, int iEvent, Class expectedEventClass, RelNode expectedRel, Class<? extends RelOptRule> expectedRuleClass ) {
+    private void checkEvent( List<AlgOptListener.RelEvent> eventList, int iEvent, Class expectedEventClass, AlgNode expectedRel, Class<? extends AlgOptRule> expectedRuleClass ) {
         assertTrue( iEvent < eventList.size() );
-        RelOptListener.RelEvent event = eventList.get( iEvent );
+        AlgOptListener.RelEvent event = eventList.get( iEvent );
         assertSame( expectedEventClass, event.getClass() );
         if ( expectedRel != null ) {
             assertSame( expectedRel, event.getRel() );
         }
         if ( expectedRuleClass != null ) {
-            RelOptListener.RuleEvent ruleEvent = (RelOptListener.RuleEvent) event;
+            AlgOptListener.RuleEvent ruleEvent = (AlgOptListener.RuleEvent) event;
             assertSame( expectedRuleClass, ruleEvent.getRuleCall().getRule().getClass() );
         }
     }
@@ -391,29 +391,29 @@ public class VolcanoPlannerTest {
      */
     static class PhysToIteratorConverter extends ConverterImpl {
 
-        PhysToIteratorConverter( RelOptCluster cluster, RelNode child ) {
+        PhysToIteratorConverter( AlgOptCluster cluster, AlgNode child ) {
             super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( EnumerableConvention.INSTANCE ), child );
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             assert traitSet.comprises( EnumerableConvention.INSTANCE );
-            return new PhysToIteratorConverter( getCluster(), AbstractRelNode.sole( inputs ) );
+            return new PhysToIteratorConverter( getCluster(), AbstractAlgNode.sole( inputs ) );
         }
     }
 
 
     /**
-     * Rule that matches a {@link RelSubset}.
+     * Rule that matches a {@link AlgSubset}.
      */
-    private static class SubsetRule extends RelOptRule {
+    private static class SubsetRule extends AlgOptRule {
 
         private final List<String> buf;
 
 
         SubsetRule( List<String> buf ) {
-            super( operand( TestSingleRel.class, operand( RelSubset.class, any() ) ) );
+            super( operand( TestSingleAlg.class, operand( AlgSubset.class, any() ) ) );
             this.buf = buf;
         }
 
@@ -425,27 +425,27 @@ public class VolcanoPlannerTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
+        public void onMatch( AlgOptRuleCall call ) {
             // Do not transform to anything; just log the calls.
-            TestSingleRel singleRel = call.rel( 0 );
-            RelSubset childRel = call.rel( 1 );
-            assertThat( call.rels.length, equalTo( 2 ) );
+            TestSingleAlg singleRel = call.alg( 0 );
+            AlgSubset childRel = call.alg( 1 );
+            assertThat( call.algs.length, equalTo( 2 ) );
             buf.add( singleRel.getClass().getSimpleName() + ":" + childRel.getDigest() );
         }
     }
 
-    // NOTE: Previously, ReformedSingleRule didn't work because it explicitly specifies PhysLeafRel rather than RelNode for the single input. Since the PhysLeafRel is in a different subset from the original NoneLeafRel,
-    // ReformedSingleRule never saw it.  (GoodSingleRule saw the NoneLeafRel instead and fires off of that; later the NoneLeafRel gets converted into a PhysLeafRel).  Now Volcano supports rules which match across subsets.
+    // NOTE: Previously, ReformedSingleRule didn't work because it explicitly specifies PhysLeafAlg rather than {@link AlgNode} for the single input. Since the PhysLeafAlg is in a different subset from the original NoneLeafAlg,
+    // ReformedSingleRule never saw it.  (GoodSingleRule saw the NoneLeafAlg instead and fires off of that; later the NoneLeafAlg gets converted into a PhysLeafAlg).  Now Volcano supports rules which match across subsets.
 
 
     /**
-     * Planner rule that matches a {@link NoneSingleRel} whose input is
-     * a {@link PhysLeafRel} in a different subset.
+     * Planner rule that matches a {@link NoneSingleAlg} whose input is
+     * a {@link PhysLeafAlg} in a different subset.
      */
-    private static class ReformedSingleRule extends RelOptRule {
+    private static class ReformedSingleRule extends AlgOptRule {
 
         ReformedSingleRule() {
-            super( operand( NoneSingleRel.class, operand( PhysLeafRel.class, any() ) ) );
+            super( operand( NoneSingleAlg.class, operand( PhysLeafAlg.class, any() ) ) );
         }
 
 
@@ -456,11 +456,11 @@ public class VolcanoPlannerTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            NoneSingleRel singleRel = call.rel( 0 );
-            RelNode childRel = call.rel( 1 );
-            RelNode physInput = convert( childRel, singleRel.getTraitSet().replace( PHYS_CALLING_CONVENTION ) );
-            call.transformTo( new PhysSingleRel( singleRel.getCluster(), physInput ) );
+        public void onMatch( AlgOptRuleCall call ) {
+            NoneSingleAlg singleRel = call.alg( 0 );
+            AlgNode childRel = call.alg( 1 );
+            AlgNode physInput = convert( childRel, singleRel.getTraitSet().replace( PHYS_CALLING_CONVENTION ) );
+            call.transformTo( new PhysSingleAlg( singleRel.getCluster(), physInput ) );
         }
     }
 
@@ -468,7 +468,7 @@ public class VolcanoPlannerTest {
     /**
      * Planner rule that converts a {@link LogicalProject} to PHYS convention.
      */
-    private static class PhysProjectRule extends RelOptRule {
+    private static class PhysProjectRule extends AlgOptRule {
 
         PhysProjectRule() {
             super( operand( LogicalProject.class, any() ) );
@@ -482,21 +482,21 @@ public class VolcanoPlannerTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            final LogicalProject project = call.rel( 0 );
-            RelNode childRel = project.getInput();
-            call.transformTo( new PhysLeafRel( childRel.getCluster(), "b" ) );
+        public void onMatch( AlgOptRuleCall call ) {
+            final LogicalProject project = call.alg( 0 );
+            AlgNode childRel = project.getInput();
+            call.transformTo( new PhysLeafAlg( childRel.getCluster(), "b" ) );
         }
     }
 
 
     /**
-     * Planner rule that successfully removes a {@link PhysSingleRel}.
+     * Planner rule that successfully removes a {@link PhysSingleAlg}.
      */
-    private static class GoodRemoveSingleRule extends RelOptRule {
+    private static class GoodRemoveSingleRule extends AlgOptRule {
 
         GoodRemoveSingleRule() {
-            super( operand( PhysSingleRel.class, operand( PhysLeafRel.class, any() ) ) );
+            super( operand( PhysSingleAlg.class, operand( PhysLeafAlg.class, any() ) ) );
         }
 
 
@@ -507,21 +507,21 @@ public class VolcanoPlannerTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            PhysSingleRel singleRel = call.rel( 0 );
-            PhysLeafRel leafRel = call.rel( 1 );
-            call.transformTo( new PhysLeafRel( singleRel.getCluster(), "c" ) );
+        public void onMatch( AlgOptRuleCall call ) {
+            PhysSingleAlg singleRel = call.alg( 0 );
+            PhysLeafAlg leafRel = call.alg( 1 );
+            call.transformTo( new PhysLeafAlg( singleRel.getCluster(), "c" ) );
         }
     }
 
 
     /**
-     * Planner rule that removes a {@link NoneSingleRel}.
+     * Planner rule that removes a {@link NoneSingleAlg}.
      */
-    private static class ReformedRemoveSingleRule extends RelOptRule {
+    private static class ReformedRemoveSingleRule extends AlgOptRule {
 
         ReformedRemoveSingleRule() {
-            super( operand( NoneSingleRel.class, operand( PhysLeafRel.class, any() ) ) );
+            super( operand( NoneSingleAlg.class, operand( PhysLeafAlg.class, any() ) ) );
         }
 
 
@@ -532,18 +532,18 @@ public class VolcanoPlannerTest {
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            NoneSingleRel singleRel = call.rel( 0 );
-            PhysLeafRel leafRel = call.rel( 1 );
-            call.transformTo( new PhysLeafRel( singleRel.getCluster(), "c" ) );
+        public void onMatch( AlgOptRuleCall call ) {
+            NoneSingleAlg singleRel = call.alg( 0 );
+            PhysLeafAlg leafRel = call.alg( 1 );
+            call.transformTo( new PhysLeafAlg( singleRel.getCluster(), "c" ) );
         }
     }
 
 
     /**
-     * Implementation of {@link RelOptListener}.
+     * Implementation of {@link AlgOptListener}.
      */
-    private static class TestListener implements RelOptListener {
+    private static class TestListener implements AlgOptListener {
 
         private List<RelEvent> eventList;
 

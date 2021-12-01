@@ -29,8 +29,8 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -45,11 +45,11 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 public class PolyphenyDbSignature<T> extends Meta.Signature {
 
     @JsonIgnore
-    public final RelDataType rowType;
+    public final AlgDataType rowType;
     @JsonIgnore
     public final PolyphenyDbSchema rootSchema;
     @JsonIgnore
-    private final List<RelCollation> collationList;
+    private final List<AlgCollation> collationList;
     private final long maxRowCount;
     private final Bindable<T> bindable;
     @Getter
@@ -65,11 +65,11 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
             String sql,
             List<AvaticaParameter> parameterList,
             Map<String, Object> internalParameters,
-            RelDataType rowType,
+            AlgDataType rowType,
             List<ColumnMetaData> columns,
             Meta.CursorFactory cursorFactory,
             PolyphenyDbSchema rootSchema,
-            List<RelCollation> collationList,
+            List<AlgCollation> collationList,
             long maxRowCount,
             Bindable<T> bindable,
             Meta.StatementType statementType,
@@ -94,7 +94,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     }
 
 
-    public List<RelCollation> getCollationList() {
+    public List<AlgCollation> getCollationList() {
         return collationList;
     }
 }

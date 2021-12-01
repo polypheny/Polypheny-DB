@@ -45,7 +45,7 @@ import org.polypheny.db.languages.sql.SqlUpdate;
 import org.polypheny.db.languages.sql.SqlWindow;
 import org.polypheny.db.languages.sql.SqlWith;
 import org.polypheny.db.languages.sql.SqlWithItem;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Util;
@@ -125,10 +125,10 @@ public interface SqlValidator extends Validator {
      * Validates an expression tree. You can call this method multiple times, but not reentrantly.
      *
      * @param topNode top of expression tree to be validated
-     * @param nameToTypeMap map of simple name to {@link RelDataType}; used to resolve {@link SqlIdentifier} references
+     * @param nameToTypeMap map of simple name to {@link AlgDataType}; used to resolve {@link SqlIdentifier} references
      * @return validated tree (possibly rewritten)
      */
-    SqlNode validateParameterizedExpression( SqlNode topNode, Map<String, RelDataType> nameToTypeMap );
+    SqlNode validateParameterizedExpression( SqlNode topNode, Map<String, AlgDataType> nameToTypeMap );
 
     /**
      * Checks that a query is valid.
@@ -147,7 +147,7 @@ public interface SqlValidator extends Validator {
      * @param targetRowType Desired row type, must not be null, may be the data type 'unknown'.
      * @throws RuntimeException if the query is not valid
      */
-    void validateQuery( SqlNode node, SqlValidatorScope scope, RelDataType targetRowType );
+    void validateQuery( SqlNode node, SqlValidatorScope scope, AlgDataType targetRowType );
 
     /**
      * Returns the type assigned to a node by validation, or null if unknown.
@@ -156,7 +156,7 @@ public interface SqlValidator extends Validator {
      * @param node the node of interest
      * @return validated type, or null if unknown or not applicable
      */
-    RelDataType getValidatedNodeTypeIfKnown( SqlNode node );
+    AlgDataType getValidatedNodeTypeIfKnown( SqlNode node );
 
     /**
      * Resolves an identifier to a fully-qualified name.
@@ -262,7 +262,7 @@ public interface SqlValidator extends Validator {
      * @param argTypes function arguments
      * @param operands operands passed into the function call
      */
-    void validateColumnListParams( SqlFunction function, List<RelDataType> argTypes, List<Node> operands );
+    void validateColumnListParams( SqlFunction function, List<AlgDataType> argTypes, List<Node> operands );
 
     /**
      * Returns whether a SELECT statement is an aggregation. Criteria are:
@@ -498,7 +498,7 @@ public interface SqlValidator extends Validator {
      * @param argTypes Types of arguments
      * @return Resolved type of constructor
      */
-    RelDataType deriveConstructorType( SqlValidatorScope scope, SqlCall call, SqlFunction unresolvedConstructor, SqlFunction resolvedConstructor, List<RelDataType> argTypes );
+    AlgDataType deriveConstructorType( SqlValidatorScope scope, SqlCall call, SqlFunction unresolvedConstructor, SqlFunction resolvedConstructor, List<AlgDataType> argTypes );
 
     /**
      * Handles a call to a function which cannot be resolved. Returns a an appropriately descriptive error, which caller must throw.
@@ -508,7 +508,7 @@ public interface SqlValidator extends Validator {
      * @param argTypes Types of arguments
      * @param argNames Names of arguments, or null if call by position
      */
-    PolyphenyDbException handleUnresolvedFunction( SqlCall call, SqlFunction unresolvedFunction, List<RelDataType> argTypes, List<String> argNames );
+    PolyphenyDbException handleUnresolvedFunction( SqlCall call, SqlFunction unresolvedFunction, List<AlgDataType> argTypes, List<String> argNames );
 
     /**
      * Expands an expression in the ORDER BY clause into an expression with the same semantics as expressions in the SELECT clause.

@@ -22,7 +22,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -63,10 +63,10 @@ public class SqlPrefixOperator extends SqlOperator {
 
 
     @Override
-    protected RelDataType adjustType( SqlValidator validator, SqlCall call, RelDataType type ) {
+    protected AlgDataType adjustType( SqlValidator validator, SqlCall call, AlgDataType type ) {
         if ( PolyTypeUtil.inCharFamily( type ) ) {
             // Determine coercibility and resulting collation name of unary operator if needed.
-            RelDataType operandType = validator.getValidatedNodeType( call.operand( 0 ) );
+            AlgDataType operandType = validator.getValidatedNodeType( call.operand( 0 ) );
             if ( null == operandType ) {
                 throw new AssertionError( "operand's type should have been derived" );
             }

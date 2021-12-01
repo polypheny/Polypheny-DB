@@ -35,10 +35,10 @@ package org.polypheny.db.rex;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.Litmus;
 
 
@@ -72,9 +72,9 @@ import org.polypheny.db.util.Litmus;
  */
 public class RexChecker extends RexVisitorImpl<Boolean> {
 
-    protected final RelNode.Context context;
+    protected final AlgNode.Context context;
     protected final Litmus litmus;
-    protected final List<RelDataType> inputTypeList;
+    protected final List<AlgDataType> inputTypeList;
     protected int failCount;
 
 
@@ -86,11 +86,11 @@ public class RexChecker extends RexVisitorImpl<Boolean> {
      * Otherwise, each method returns whether its part of the tree is valid.
      *
      * @param inputRowType Input row type
-     * @param context Context of the enclosing {@link RelNode}, or null
+     * @param context Context of the enclosing {@link AlgNode}, or null
      * @param litmus What to do if an invalid node is detected
      */
-    public RexChecker( final RelDataType inputRowType, RelNode.Context context, Litmus litmus ) {
-        this( RelOptUtil.getFieldTypeList( inputRowType ), context, litmus );
+    public RexChecker( final AlgDataType inputRowType, AlgNode.Context context, Litmus litmus ) {
+        this( AlgOptUtil.getFieldTypeList( inputRowType ), context, litmus );
     }
 
 
@@ -102,10 +102,10 @@ public class RexChecker extends RexVisitorImpl<Boolean> {
      * Otherwise, each method returns whether its part of the tree is valid.
      *
      * @param inputTypeList Input row type
-     * @param context Context of the enclosing {@link RelNode}, or null
+     * @param context Context of the enclosing {@link AlgNode}, or null
      * @param litmus What to do if an error is detected
      */
-    public RexChecker( List<RelDataType> inputTypeList, RelNode.Context context, Litmus litmus ) {
+    public RexChecker( List<AlgDataType> inputTypeList, AlgNode.Context context, Litmus litmus ) {
         super( true );
         this.inputTypeList = inputTypeList;
         this.context = context;
@@ -130,7 +130,7 @@ public class RexChecker extends RexVisitorImpl<Boolean> {
             ++failCount;
             return litmus.fail( "RexInputRef index {} out of range 0..{}", index, inputTypeList.size() - 1 );
         }
-        if ( !ref.getType().isStruct() && !RelOptUtil.eq( "ref", ref.getType(), "input", inputTypeList.get( index ), litmus ) ) {
+        if ( !ref.getType().isStruct() && !AlgOptUtil.eq( "ref", ref.getType(), "input", inputTypeList.get( index ), litmus ) ) {
             ++failCount;
             return litmus.fail( null );
         }
@@ -160,16 +160,16 @@ public class RexChecker extends RexVisitorImpl<Boolean> {
     @Override
     public Boolean visitFieldAccess( RexFieldAccess fieldAccess ) {
         super.visitFieldAccess( fieldAccess );
-        final RelDataType refType = fieldAccess.getReferenceExpr().getType();
+        final AlgDataType refType = fieldAccess.getReferenceExpr().getType();
         assert refType.isStruct();
-        final RelDataTypeField field = fieldAccess.getField();
+        final AlgDataTypeField field = fieldAccess.getField();
         final int index = field.getIndex();
         if ( (index < 0) || (index > refType.getFieldList().size()) ) {
             ++failCount;
             return litmus.fail( null );
         }
-        final RelDataTypeField typeField = refType.getFieldList().get( index );
-        if ( !RelOptUtil.eq( "type1", typeField.getType(), "type2", fieldAccess.getType(), litmus ) ) {
+        final AlgDataTypeField typeField = refType.getFieldList().get( index );
+        if ( !AlgOptUtil.eq( "type1", typeField.getType(), "type2", fieldAccess.getType(), litmus ) ) {
             ++failCount;
             return litmus.fail( null );
         }

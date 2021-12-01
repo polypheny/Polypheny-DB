@@ -34,8 +34,8 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
@@ -48,6 +48,6 @@ public interface AggregateFunction extends Function {
      *
      * @param typeFactory Type factory
      */
-    RelDataType getReturnType( RelDataTypeFactory typeFactory );
+    AlgDataType getReturnType( AlgDataTypeFactory typeFactory );
 }
 

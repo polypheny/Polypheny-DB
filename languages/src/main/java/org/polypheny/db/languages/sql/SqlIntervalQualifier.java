@@ -33,8 +33,8 @@ import org.polypheny.db.core.nodes.NodeVisitor;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
@@ -129,9 +129,9 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
             ParserPos pos ) {
         this(
                 startUnit,
-                RelDataType.PRECISION_NOT_SPECIFIED,
+                AlgDataType.PRECISION_NOT_SPECIFIED,
                 endUnit,
-                RelDataType.PRECISION_NOT_SPECIFIED,
+                AlgDataType.PRECISION_NOT_SPECIFIED,
                 pos );
     }
 
@@ -228,8 +228,8 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     }
 
 
-    public int getStartPrecision( RelDataTypeSystem typeSystem ) {
-        if ( startPrecision == RelDataType.PRECISION_NOT_SPECIFIED ) {
+    public int getStartPrecision( AlgDataTypeSystem typeSystem ) {
+        if ( startPrecision == AlgDataType.PRECISION_NOT_SPECIFIED ) {
             return typeSystem.getDefaultPrecision( typeName() );
         } else {
             return startPrecision;
@@ -247,12 +247,12 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * Returns {@code true} if start precision is not specified.
      */
     public boolean useDefaultStartPrecision() {
-        return startPrecision == RelDataType.PRECISION_NOT_SPECIFIED;
+        return startPrecision == AlgDataType.PRECISION_NOT_SPECIFIED;
     }
 
 
     public static int combineStartPrecisionPreservingDefault(
-            RelDataTypeSystem typeSystem,
+            AlgDataTypeSystem typeSystem,
             SqlIntervalQualifier qual1,
             SqlIntervalQualifier qual2 ) {
         final int start1 = qual1.getStartPrecision( typeSystem );
@@ -281,8 +281,8 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
 
 
     @Override
-    public int getFractionalSecondPrecision( RelDataTypeSystem typeSystem ) {
-        if ( fractionalSecondPrecision == RelDataType.PRECISION_NOT_SPECIFIED ) {
+    public int getFractionalSecondPrecision( AlgDataTypeSystem typeSystem ) {
+        if ( fractionalSecondPrecision == AlgDataType.PRECISION_NOT_SPECIFIED ) {
             return typeName().getDefaultScale();
         } else {
             return fractionalSecondPrecision;
@@ -293,7 +293,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     @Override
     public int getFractionalSecondPrecisionPreservingDefault() {
         if ( useDefaultFractionalSecondPrecision() ) {
-            return RelDataType.PRECISION_NOT_SPECIFIED;
+            return AlgDataType.PRECISION_NOT_SPECIFIED;
         } else {
             return fractionalSecondPrecision;
         }
@@ -304,12 +304,12 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * Returns {@code true} if fractional second precision is not specified.
      */
     public boolean useDefaultFractionalSecondPrecision() {
-        return fractionalSecondPrecision == RelDataType.PRECISION_NOT_SPECIFIED;
+        return fractionalSecondPrecision == AlgDataType.PRECISION_NOT_SPECIFIED;
     }
 
 
     public static int combineFractionalSecondPrecisionPreservingDefault(
-            RelDataTypeSystem typeSystem,
+            AlgDataTypeSystem typeSystem,
             SqlIntervalQualifier qual1,
             SqlIntervalQualifier qual2 ) {
         final int p1 = qual1.getFractionalSecondPrecision( typeSystem );
@@ -369,7 +369,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
             int leftPrec,
             int rightPrec ) {
         writer.getDialect()
-                .unparseSqlIntervalQualifier( writer, this, RelDataTypeSystem.DEFAULT );
+                .unparseSqlIntervalQualifier( writer, this, AlgDataTypeSystem.DEFAULT );
     }
 
 
@@ -420,7 +420,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     }
 
 
-    private boolean isLeadFieldInRange( RelDataTypeSystem typeSystem,
+    private boolean isLeadFieldInRange( AlgDataTypeSystem typeSystem,
             BigDecimal value, TimeUnit unit ) {
         // we should never get handed a negative field value
         assert value.compareTo( ZERO ) >= 0;
@@ -433,7 +433,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     }
 
 
-    private void checkLeadFieldInRange( RelDataTypeSystem typeSystem, int sign,
+    private void checkLeadFieldInRange( AlgDataTypeSystem typeSystem, int sign,
             BigDecimal value, TimeUnit unit, ParserPos pos ) {
         if ( !isLeadFieldInRange( typeSystem, value, unit ) ) {
             throw fieldExceedsPrecisionException(
@@ -538,7 +538,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsYear(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -574,7 +574,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsYearToMonth(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -615,7 +615,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsMonth(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -651,7 +651,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsDay(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -687,7 +687,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsDayToHour(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -728,7 +728,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsDayToMinute(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -772,7 +772,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsDayToSecond(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -849,7 +849,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsHour(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -886,7 +886,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsHourToMinute(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -928,7 +928,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsHourToSecond(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -1002,7 +1002,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsMinute(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -1039,7 +1039,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsMinuteToSecond(
-            RelDataTypeSystem typeSystem, int sign,
+            AlgDataTypeSystem typeSystem, int sign,
             String value,
             String originalValue,
             ParserPos pos ) {
@@ -1109,7 +1109,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     private int[] evaluateIntervalLiteralAsSecond(
-            RelDataTypeSystem typeSystem,
+            AlgDataTypeSystem typeSystem,
             int sign,
             String value,
             String originalValue,
@@ -1176,7 +1176,7 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * value is illegal
      */
     public int[] evaluateIntervalLiteral( String value, ParserPos pos,
-            RelDataTypeSystem typeSystem ) {
+            AlgDataTypeSystem typeSystem ) {
         // save original value for if we have to throw
         final String value0 = value;
 

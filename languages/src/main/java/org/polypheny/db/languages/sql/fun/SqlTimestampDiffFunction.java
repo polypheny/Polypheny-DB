@@ -21,7 +21,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlFunction;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -60,7 +60,7 @@ public class SqlTimestampDiffFunction extends SqlFunction {
      */
     private static final PolyReturnTypeInference RETURN_TYPE_INFERENCE =
             opBinding -> {
-                final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+                final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
                 PolyType polyType =
                         opBinding.getOperandLiteralValue( 0, TimeUnit.class ) == TimeUnit.NANOSECOND
                                 ? PolyType.BIGINT

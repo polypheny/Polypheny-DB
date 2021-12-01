@@ -73,17 +73,18 @@ import org.polypheny.db.adapter.mongodb.util.MongoTypeUtil;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.core.util.BsonUtil;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.SchemaPlus;
@@ -102,7 +103,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     @Getter
     private final String collectionName;
     @Getter
-    private final RelProtoDataType protoRowType;
+    private final AlgProtoDataType protoRowType;
     @Getter
     private final MongoSchema mongoSchema;
     @Getter
@@ -118,7 +119,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     /**
      * Creates a MongoTable.
      */
-    MongoTable( CatalogTable catalogTable, MongoSchema schema, RelProtoDataType proto, TransactionProvider transactionProvider, int storeId, CatalogPartitionPlacement partitionPlacement ) {
+    MongoTable( CatalogTable catalogTable, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, int storeId, CatalogPartitionPlacement partitionPlacement ) {
         super( Object[].class );
         this.collectionName = MongoStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
         this.transactionProvider = transactionProvider;
@@ -136,7 +137,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
 
@@ -148,9 +149,9 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        final RelOptCluster cluster = context.getCluster();
-        return new MongoTableScan( cluster, cluster.traitSetOf( MongoRel.CONVENTION ), relOptTable, this, null );
+    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+        final AlgOptCluster cluster = context.getCluster();
+        return new MongoTableScan( cluster, cluster.traitSetOf( MongoAlg.CONVENTION ), relOptTable, this, null );
     }
 
 
@@ -289,11 +290,11 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
 
     @Override
-    public TableModify toModificationRel(
-            RelOptCluster cluster,
-            RelOptTable table,
+    public TableModify toModificationAlg(
+            AlgOptCluster cluster,
+            AlgOptTable table,
             CatalogReader catalogReader,
-            RelNode child,
+            AlgNode child,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,

@@ -61,7 +61,7 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.languages.sql2rel.SqlToRelConverter;
+import org.polypheny.db.languages.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
@@ -526,7 +526,7 @@ public class CsvTest {
         final String sql = "SELECT e.name\n"
                 + "FROM emps AS e\n"
                 + "WHERE cast(e.empno as bigint) in ";
-        final int threshold = SqlToRelConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD;
+        final int threshold = SqlToAlgConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD;
         sql( "smart", sql + range( 130, threshold - 5 ) ).returns( "NAME=Alice" ).ok();
         sql( "smart", sql + range( 130, threshold ) ).returns( "NAME=Alice" ).ok();
         sql( "smart", sql + range( 130, threshold + 1000 ) ).returns( "NAME=Alice" ).ok();
@@ -541,7 +541,7 @@ public class CsvTest {
         final String sql = "SELECT e.name\n"
                 + "FROM emps AS e\n"
                 + "WHERE e.empno in "
-                + range( 130, SqlToRelConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD );
+                + range( 130, SqlToAlgConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD );
         sql( "smart", sql ).returns( "NAME=Alice" ).ok();
     }
 

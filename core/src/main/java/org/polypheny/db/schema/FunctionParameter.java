@@ -34,8 +34,8 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
@@ -65,7 +65,7 @@ public interface FunctionParameter {
      * @param typeFactory Type factory to be used to create the type
      * @return Parameter type.
      */
-    RelDataType getType( RelDataTypeFactory typeFactory );
+    AlgDataType getType( AlgDataTypeFactory typeFactory );
 
     /**
      * Returns whether this parameter is optional.

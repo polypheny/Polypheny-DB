@@ -47,10 +47,10 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -85,18 +85,18 @@ public abstract class RexProgramBuilderBase {
     protected RexLiteral nullInt;
     protected RexLiteral nullVarchar;
 
-    private RelDataType nullableBool;
-    private RelDataType nonNullableBool;
+    private AlgDataType nullableBool;
+    private AlgDataType nonNullableBool;
 
-    private RelDataType nullableInt;
-    private RelDataType nonNullableInt;
+    private AlgDataType nullableInt;
+    private AlgDataType nonNullableInt;
 
-    private RelDataType nullableVarchar;
-    private RelDataType nonNullableVarchar;
+    private AlgDataType nullableVarchar;
+    private AlgDataType nonNullableVarchar;
 
     // Note: JUnit 4 creates new instance for each test method, so we initialize these structures on demand
     // It maps non-nullable type to struct of (10 nullable, 10 non-nullable) fields
-    private Map<RelDataType, RexDynamicParam> dynamicParams;
+    private Map<AlgDataType, RexDynamicParam> dynamicParams;
 
 
     /**
@@ -153,13 +153,13 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
-        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
             throw new UnsupportedOperationException();
         }
 
 
         @Override
-        public RelDataType getParameterType( long index ) {
+        public AlgDataType getParameterType( long index ) {
             throw new UnsupportedOperationException();
         }
 
@@ -173,10 +173,10 @@ public abstract class RexProgramBuilderBase {
 
 
     public void setUp() {
-        typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
         executor = new RexExecutorImpl( new DummyTestDataContext() );
-        simplify = new RexSimplify( rexBuilder, RelOptPredicateList.EMPTY, executor ).withParanoid( true );
+        simplify = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, executor ).withParanoid( true );
         trueLiteral = rexBuilder.makeLiteral( true );
         falseLiteral = rexBuilder.makeLiteral( false );
 
@@ -194,12 +194,12 @@ public abstract class RexProgramBuilderBase {
     }
 
 
-    private RexDynamicParam getDynamicParam( RelDataType type, String fieldNamePrefix ) {
+    private RexDynamicParam getDynamicParam( AlgDataType type, String fieldNamePrefix ) {
         if ( dynamicParams == null ) {
             dynamicParams = new HashMap<>();
         }
         return dynamicParams.computeIfAbsent( type, k -> {
-            RelDataType nullableType = typeFactory.createTypeWithNullability( k, true );
+            AlgDataType nullableType = typeFactory.createTypeWithNullability( k, true );
             Builder builder = typeFactory.builder();
             for ( int i = 0; i < MAX_FIELDS; i++ ) {
                 builder.add( fieldNamePrefix + i, null, nullableType );
@@ -320,7 +320,7 @@ public abstract class RexProgramBuilderBase {
      * @param type type to cast to
      * @return call to CAST operator
      */
-    protected RexNode abstractCast( RexNode e, RelDataType type ) {
+    protected RexNode abstractCast( RexNode e, AlgDataType type ) {
         return rexBuilder.makeAbstractCast( type, e );
     }
 
@@ -334,7 +334,7 @@ public abstract class RexProgramBuilderBase {
      * @param type type to cast to
      * @return input node converted to given type
      */
-    protected RexNode cast( RexNode e, RelDataType type ) {
+    protected RexNode cast( RexNode e, AlgDataType type ) {
         return rexBuilder.makeCast( type, e );
     }
 
@@ -417,7 +417,7 @@ public abstract class RexProgramBuilderBase {
 
 
     // Types
-    protected RelDataType nullable( RelDataType type ) {
+    protected AlgDataType nullable( AlgDataType type ) {
         if ( type.isNullable() ) {
             return type;
         }
@@ -425,32 +425,32 @@ public abstract class RexProgramBuilderBase {
     }
 
 
-    protected RelDataType tVarchar() {
+    protected AlgDataType tVarchar() {
         return nonNullableVarchar;
     }
 
 
-    protected RelDataType tVarchar( boolean nullable ) {
+    protected AlgDataType tVarchar( boolean nullable ) {
         return nullable ? nullableVarchar : nonNullableVarchar;
     }
 
 
-    protected RelDataType tBoolean() {
+    protected AlgDataType tBoolean() {
         return nonNullableBool;
     }
 
 
-    protected RelDataType tBoolean( boolean nullable ) {
+    protected AlgDataType tBoolean( boolean nullable ) {
         return nullable ? nullableBool : nonNullableBool;
     }
 
 
-    protected RelDataType tInt() {
+    protected AlgDataType tInt() {
         return nonNullableInt;
     }
 
 
-    protected RelDataType tInt( boolean nullable ) {
+    protected AlgDataType tInt( boolean nullable ) {
         return nullable ? nullableInt : nonNullableInt;
     }
 
@@ -463,7 +463,7 @@ public abstract class RexProgramBuilderBase {
      * @param type type of required null
      * @return null literal of a given type
      */
-    protected RexLiteral null_( RelDataType type ) {
+    protected RexLiteral null_( AlgDataType type ) {
         return rexBuilder.makeNullLiteral( nullable( type ) );
     }
 
@@ -491,7 +491,7 @@ public abstract class RexProgramBuilderBase {
     }
 
 
-    protected RexNode literal( BigDecimal value, RelDataType type ) {
+    protected RexNode literal( BigDecimal value, AlgDataType type ) {
         return rexBuilder.makeExactLiteral( value, type );
     }
 
@@ -525,7 +525,7 @@ public abstract class RexProgramBuilderBase {
      * @param arg argument index (0-based)
      * @return input ref with given type and index
      */
-    protected RexNode input( RelDataType type, int arg ) {
+    protected RexNode input( AlgDataType type, int arg ) {
         return rexBuilder.makeInputRef( type, arg );
     }
 

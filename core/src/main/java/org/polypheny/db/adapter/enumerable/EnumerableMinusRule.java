@@ -35,15 +35,15 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalMinus;
 
 
 /**
- * Rule to convert an {@link org.polypheny.db.rel.logical.LogicalMinus} to an {@link EnumerableMinus}.
+ * Rule to convert an {@link org.polypheny.db.algebra.logical.LogicalMinus} to an {@link EnumerableMinus}.
  */
 class EnumerableMinusRule extends ConverterRule {
 
@@ -53,14 +53,14 @@ class EnumerableMinusRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalMinus minus = (LogicalMinus) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalMinus minus = (LogicalMinus) alg;
         if ( minus.all ) {
             return null; // EXCEPT ALL not implemented
         }
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
-        final RelTraitSet traitSet = rel.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        return new EnumerableMinus( rel.getCluster(), traitSet, RelOptRule.convertList( minus.getInputs(), out ), false );
+        final AlgTraitSet traitSet = alg.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        return new EnumerableMinus( alg.getCluster(), traitSet, AlgOptRule.convertList( minus.getInputs(), out ), false );
     }
 }
 

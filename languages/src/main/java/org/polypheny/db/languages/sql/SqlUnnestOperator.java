@@ -21,8 +21,8 @@ import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.fun.UnnestOperator;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
@@ -61,11 +61,11 @@ public class SqlUnnestOperator extends SqlFunctionalOperator implements UnnestOp
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataTypeFactory.Builder builder = typeFactory.builder();
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataTypeFactory.Builder builder = typeFactory.builder();
         for ( Integer operand : Util.range( opBinding.getOperandCount() ) ) {
-            RelDataType type = opBinding.getOperandType( operand );
+            AlgDataType type = opBinding.getOperandType( operand );
             if ( type.getPolyType() == PolyType.ANY ) {
                 // Unnest Operator in schema less systems returns one column as the output $unnest is a place holder to specify that one column with type ANY is output.
                 return builder

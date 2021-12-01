@@ -52,8 +52,8 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -99,7 +99,7 @@ public class DruidQueryFilterTest {
     public void testBetweenFilterStringCase() throws IOException {
         final Fixture f = new Fixture();
         final List<RexNode> listRexNodes = ImmutableList.of( f.rexBuilder.makeLiteral( false ), f.rexBuilder.makeInputRef( f.varcharRowType, 0 ), f.rexBuilder.makeLiteral( "lower-bound" ), f.rexBuilder.makeLiteral( "upper-bound" ) );
-        RelDataType relDataType = f.typeFactory.createPolyType( PolyType.BOOLEAN );
+        AlgDataType relDataType = f.typeFactory.createPolyType( PolyType.BOOLEAN );
         RexNode betweenRexNode = f.rexBuilder.makeCall( relDataType, OperatorRegistry.get( OperatorName.BETWEEN ), listRexNodes );
 
         DruidJsonFilter returnValue = DruidJsonFilter.toDruidFilters( betweenRexNode, f.varcharRowType, druidQuery );
@@ -118,11 +118,11 @@ public class DruidQueryFilterTest {
      */
     static class Fixture {
 
-        final JavaTypeFactoryImpl typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final JavaTypeFactoryImpl typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final DruidTable druidTable = new DruidTable( Mockito.mock( DruidSchema.class ), "dataSource", null, ImmutableSet.of(), "timestamp", null, null, null );
-        final RelDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
-        final RelDataType varcharRowType = typeFactory.builder().add( "dimensionName", null, varcharType ).build();
+        final AlgDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
+        final AlgDataType varcharRowType = typeFactory.builder().add( "dimensionName", null, varcharType ).build();
 
     }
 

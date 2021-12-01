@@ -45,12 +45,12 @@ import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
-import org.polypheny.db.rel.metadata.NullSentinel;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.metadata.NullSentinel;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -205,7 +205,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     }
 
 
-    private void checkSimplifyFilter( RexNode node, RelOptPredicateList predicates, String expected ) {
+    private void checkSimplifyFilter( RexNode node, AlgOptPredicateList predicates, String expected ) {
         final RexNode simplified = simplify.withPredicates( predicates ).simplifyUnknownAs( node, RexUnknownAs.FALSE );
         assertThat( simplified.toString(), equalTo( expected ) );
     }
@@ -328,12 +328,12 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     private RexProgramBuilder createProg( int variant ) {
         assert variant >= 0 && variant <= 4;
-        List<RelDataType> types =
+        List<AlgDataType> types =
                 Arrays.asList(
                         typeFactory.createPolyType( PolyType.INTEGER ),
                         typeFactory.createPolyType( PolyType.INTEGER ) );
         List<String> names = Arrays.asList( "x", "y" );
-        RelDataType inputRowType = typeFactory.createStructType( types, names );
+        AlgDataType inputRowType = typeFactory.createStructType( types, names );
         final RexProgramBuilder builder = new RexProgramBuilder( inputRowType, rexBuilder );
         // $t0 = x
         // $t1 = y
@@ -422,7 +422,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testStrong() {
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
 
         final ImmutableBitSet c = ImmutableBitSet.of();
         final ImmutableBitSet c0 = ImmutableBitSet.of( 0 );
@@ -558,16 +558,16 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testLosslessCast() {
-        final RelDataType tinyIntType = typeFactory.createPolyType( PolyType.TINYINT );
-        final RelDataType smallIntType = typeFactory.createPolyType( PolyType.SMALLINT );
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType bigIntType = typeFactory.createPolyType( PolyType.BIGINT );
-        final RelDataType floatType = typeFactory.createPolyType( PolyType.FLOAT );
-        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        final RelDataType charType5 = typeFactory.createPolyType( PolyType.CHAR, 5 );
-        final RelDataType charType6 = typeFactory.createPolyType( PolyType.CHAR, 6 );
-        final RelDataType varCharType10 = typeFactory.createPolyType( PolyType.VARCHAR, 10 );
-        final RelDataType varCharType11 = typeFactory.createPolyType( PolyType.VARCHAR, 11 );
+        final AlgDataType tinyIntType = typeFactory.createPolyType( PolyType.TINYINT );
+        final AlgDataType smallIntType = typeFactory.createPolyType( PolyType.SMALLINT );
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType bigIntType = typeFactory.createPolyType( PolyType.BIGINT );
+        final AlgDataType floatType = typeFactory.createPolyType( PolyType.FLOAT );
+        final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final AlgDataType charType5 = typeFactory.createPolyType( PolyType.CHAR, 5 );
+        final AlgDataType charType6 = typeFactory.createPolyType( PolyType.CHAR, 6 );
+        final AlgDataType varCharType10 = typeFactory.createPolyType( PolyType.VARCHAR, 10 );
+        final AlgDataType varCharType11 = typeFactory.createPolyType( PolyType.VARCHAR, 11 );
 
         // Negative
         assertThat( RexUtil.isLosslessCast( rexBuilder.makeInputRef( intType, 0 ) ), is( false ) );
@@ -666,9 +666,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testCnf() {
-        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, booleanType )
                 .add( "b", null, booleanType )
                 .add( "c", null, booleanType )
@@ -730,8 +730,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testCnf2() {
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "x", null, intType )
                 .add( "y", null, intType )
                 .add( "z", null, intType )
@@ -800,8 +800,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testThresholdCnf() {
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "x", null, intType )
                 .add( "y", null, intType )
                 .build();
@@ -850,13 +850,13 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     private void checkExponentialCnf( int n ) {
-        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        final RelDataTypeFactory.Builder builder = typeFactory.builder();
+        final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final AlgDataTypeFactory.Builder builder = typeFactory.builder();
         for ( int i = 0; i < n; i++ ) {
             builder.add( "x" + i, null, booleanType )
                     .add( "y" + i, null, booleanType );
         }
-        final RelDataType rowType3 = builder.build();
+        final AlgDataType rowType3 = builder.build();
         final RexDynamicParam range3 = rexBuilder.makeDynamicParam( rowType3, 0 );
         final List<RexNode> list = new ArrayList<>();
         for ( int i = 0; i < n; i++ ) {
@@ -878,9 +878,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testPullFactors() {
-        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, booleanType )
                 .add( "b", null, booleanType )
                 .add( "c", null, booleanType )
@@ -934,10 +934,10 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplify() {
-        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType intNullableType = typeFactory.createTypeWithNullability( intType, true );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType intNullableType = typeFactory.createTypeWithNullability( intType, true );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, booleanType )
                 .add( "b", null, booleanType )
                 .add( "c", null, booleanType )
@@ -1168,9 +1168,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyFilter() {
-        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, intType )
                 .add( "b", null, intType )
                 .add( "c", null, booleanType )
@@ -1239,32 +1239,32 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // condition "1 < a && 5 < x" yields "5 < x"
         checkSimplifyFilter(
                 and( lt( literal1, aRef ), lt( literal5, aRef ) ),
-                RelOptPredicateList.EMPTY,
+                AlgOptPredicateList.EMPTY,
                 "<(5, ?0.a)" );
 
         // condition "1 < a && a < 5" is unchanged
         checkSimplifyFilter(
                 and( lt( literal1, aRef ), lt( aRef, literal5 ) ),
-                RelOptPredicateList.EMPTY,
+                AlgOptPredicateList.EMPTY,
                 "AND(<(1, ?0.a), <(?0.a, 5))" );
 
         // condition "1 > a && 5 > x" yields "1 > a"
         checkSimplifyFilter(
                 and( gt( literal1, aRef ), gt( literal5, aRef ) ),
-                RelOptPredicateList.EMPTY,
+                AlgOptPredicateList.EMPTY,
                 ">(1, ?0.a)" );
 
         // condition "1 > a && a > 5" yields false
         checkSimplifyFilter(
                 and( gt( literal1, aRef ), gt( aRef, literal5 ) ),
-                RelOptPredicateList.EMPTY,
+                AlgOptPredicateList.EMPTY,
                 "false" );
 
         // range with no predicates;
         // condition "a > 1 && a < 10 && a < 5" yields "a < 1 && a < 5"
         checkSimplifyFilter(
                 and( gt( aRef, literal1 ), lt( aRef, literal10 ), lt( aRef, literal5 ) ),
-                RelOptPredicateList.EMPTY,
+                AlgOptPredicateList.EMPTY,
                 "AND(>(?0.a, 1), <(?0.a, 5))" );
 
         // condition "a > 1 && a < 10 && a < 5"
@@ -1272,7 +1272,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // yields "false"
         checkSimplifyFilter(
                 and( gt( aRef, literal1 ), lt( aRef, literal10 ), lt( aRef, literal5 ) ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( gt( aRef, literal5 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( gt( aRef, literal5 ) ) ),
                 "false" );
 
         // condition "a > 1 && a < 10 && a <= 5"
@@ -1281,7 +1281,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // "a <= 5" would also be correct, just a little less concise.
         checkSimplifyFilter(
                 and( gt( aRef, literal1 ), lt( aRef, literal10 ), le( aRef, literal5 ) ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( ge( aRef, literal5 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( ge( aRef, literal5 ) ) ),
                 "=(?0.a, 5)" );
 
         // condition "a > 1 && a < 10 && a < 5"
@@ -1289,7 +1289,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // yields "a > 1 and a < 5"
         checkSimplifyFilter(
                 and( gt( aRef, literal1 ), lt( aRef, literal10 ), lt( aRef, literal5 ) ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( lt( bRef, literal10 ), ge( aRef, literal1 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( lt( bRef, literal10 ), ge( aRef, literal1 ) ) ),
                 "AND(>(?0.a, 1), <(?0.a, 5))" );
 
         // condition "a > 1"
@@ -1297,7 +1297,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // yields "true"
         checkSimplifyFilter(
                 gt( aRef, literal1 ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( lt( bRef, literal10 ), gt( aRef, literal5 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( lt( bRef, literal10 ), gt( aRef, literal5 ) ) ),
                 "true" );
 
         // condition "a < 1"
@@ -1305,7 +1305,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // yields "false"
         checkSimplifyFilter(
                 lt( aRef, literal1 ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( lt( bRef, literal10 ), gt( aRef, literal5 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( lt( bRef, literal10 ), gt( aRef, literal5 ) ) ),
                 "false" );
 
         // condition "a > 5"
@@ -1313,7 +1313,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // yields "a > 5"
         checkSimplifyFilter(
                 gt( aRef, literal5 ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( lt( bRef, literal10 ), ge( aRef, literal5 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( lt( bRef, literal10 ), ge( aRef, literal5 ) ) ),
                 ">(?0.a, 5)" );
 
         // condition "a > 5"
@@ -1321,7 +1321,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // yields "false"
         checkSimplifyFilter(
                 gt( aRef, literal5 ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( le( aRef, literal5 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( le( aRef, literal5 ) ) ),
                 "false" );
 
         // condition "a > 5"
@@ -1329,7 +1329,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // yields "false"
         checkSimplifyFilter(
                 gt( aRef, literal5 ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( le( aRef, literal5 ), le( bRef, literal5 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( le( aRef, literal5 ), le( bRef, literal5 ) ) ),
                 "false" );
 
         // condition "a > 5 or b > 5"
@@ -1337,15 +1337,15 @@ public class RexProgramTest extends RexProgramBuilderBase {
         // should yield "false" but yields "a = 5 or b = 5"
         checkSimplifyFilter(
                 or( gt( aRef, literal5 ), gt( bRef, literal5 ) ),
-                RelOptPredicateList.of( rexBuilder, ImmutableList.of( le( aRef, literal5 ), le( bRef, literal5 ) ) ),
+                AlgOptPredicateList.of( rexBuilder, ImmutableList.of( le( aRef, literal5 ), le( bRef, literal5 ) ) ),
                 "false" );
     }
 
 
     @Test
     public void testSimplifyAndPush() {
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, intType )
                 .add( "b", null, intType )
                 .build();
@@ -1405,8 +1405,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyOrTerms() {
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, intType ).nullable( false )
                 .add( "b", null, intType ).nullable( true )
                 .add( "c", null, intType ).nullable( true )
@@ -1498,8 +1498,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyUnknown() {
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, intType ).nullable( true )
                 .build();
 
@@ -1542,8 +1542,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyAnd3() {
-        final RelDataType boolType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType boolType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, boolType ).nullable( true )
                 .build();
 
@@ -1738,8 +1738,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyAnd() {
-        RelDataType booleanNotNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
-        RelDataType booleanNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), true );
+        AlgDataType booleanNotNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
+        AlgDataType booleanNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), true );
         RexNode andCondition = and(
                 rexBuilder.makeInputRef( booleanNotNullableType, 0 ),
                 rexBuilder.makeInputRef( booleanNullableType, 1 ),
@@ -1752,8 +1752,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyIsNotNull() {
-        RelDataType intType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), false );
-        RelDataType intNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), true );
+        AlgDataType intType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), false );
+        AlgDataType intNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), true );
         final RexInputRef i0 = rexBuilder.makeInputRef( intNullableType, 0 );
         final RexInputRef i1 = rexBuilder.makeInputRef( intNullableType, 1 );
         final RexInputRef i2 = rexBuilder.makeInputRef( intType, 2 );
@@ -1806,7 +1806,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
             map.put( literal.getTypeName(), literal );
         }
 
-        final List<RelDataType> types = new ArrayList<>();
+        final List<AlgDataType> types = new ArrayList<>();
         types.add( typeFactory.createPolyType( PolyType.INTEGER ) );
         types.add( typeFactory.createPolyType( PolyType.BIGINT ) );
         types.add( typeFactory.createPolyType( PolyType.SMALLINT ) );
@@ -1823,8 +1823,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         types.add( typeFactory.createPolyType( PolyType.TIME ) );
         types.add( typeFactory.createPolyType( PolyType.DATE ) );
 
-        for ( RelDataType fromType : types ) {
-            for ( RelDataType toType : types ) {
+        for ( AlgDataType fromType : types ) {
+            for ( AlgDataType toType : types ) {
                 if ( PolyTypeAssignmentRules.instance( false ).canCastFrom( toType.getPolyType(), fromType.getPolyType() ) ) {
                     for ( RexLiteral literal : map.get( fromType.getPolyType() ) ) {
                         final RexNode cast = rexBuilder.makeCast( toType, literal );
@@ -1868,11 +1868,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyCastLiteral2() {
         final RexLiteral literalAbc = rexBuilder.makeLiteral( "abc" );
         final RexLiteral literalOne = rexBuilder.makeExactLiteral( BigDecimal.ONE );
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR, 10 );
-        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
-        final RelDataType dateType = typeFactory.createPolyType( PolyType.DATE );
-        final RelDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR, 10 );
+        final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final AlgDataType dateType = typeFactory.createPolyType( PolyType.DATE );
+        final AlgDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
         checkSimplifyUnchanged( cast( literalAbc, intType ) );
         checkSimplifyUnchanged( cast( literalOne, intType ) );
         checkSimplifyUnchanged( cast( literalAbc, varcharType ) );
@@ -1901,12 +1901,12 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexLiteral timestampLTZChar3 = rexBuilder.makeLiteral( "2011-07-20 12:34:56 UTC" );
         final RexLiteral literalTimestampLTZ = rexBuilder.makeTimestampWithLocalTimeZoneLiteral( new TimestampString( 2011, 7, 20, 8, 23, 45 ), 0 );
 
-        final RelDataType dateType = typeFactory.createPolyType( PolyType.DATE );
-        final RelDataType timeType = typeFactory.createPolyType( PolyType.TIME );
-        final RelDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
-        final RelDataType timeLTZType = typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE );
-        final RelDataType timestampLTZType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
-        final RelDataType varCharType = typeFactory.createPolyType( PolyType.VARCHAR, 40 );
+        final AlgDataType dateType = typeFactory.createPolyType( PolyType.DATE );
+        final AlgDataType timeType = typeFactory.createPolyType( PolyType.TIME );
+        final AlgDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
+        final AlgDataType timeLTZType = typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE );
+        final AlgDataType timestampLTZType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+        final AlgDataType varCharType = typeFactory.createPolyType( PolyType.VARCHAR, 40 );
 
         checkSimplify( cast( timeLTZChar1, timeLTZType ), "20:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( timeLTZChar2, timeLTZType ), "12:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
@@ -2051,14 +2051,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
         };
         RexNode n = rexBuilder.makeCall( ndc );
         assertFalse( RexUtil.isDeterministic( n ) );
-        assertEquals( 0, RexUtil.retainDeterministic( RelOptUtil.conjunctions( n ) ).size() );
+        assertEquals( 0, RexUtil.retainDeterministic( AlgOptUtil.conjunctions( n ) ).size() );
     }
 
 
     @Test
     public void testConstantMap() {
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType rowType = typeFactory.builder()
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType rowType = typeFactory.builder()
                 .add( "a", null, intType )
                 .add( "b", null, intType )
                 .add( "c", null, intType )
@@ -2163,7 +2163,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyFalse() {
-        final RelDataType booleanNullableType =
+        final AlgDataType booleanNullableType =
                 typeFactory.createTypeWithNullability(
                         typeFactory.createPolyType( PolyType.BOOLEAN ), true );
         final RexNode booleanInput = input( booleanNullableType, 0 );
@@ -2243,7 +2243,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     private RexNode simplify( RexNode e ) {
-        final RexSimplify simplify = new RexSimplify( rexBuilder, RelOptPredicateList.EMPTY, RexUtil.EXECUTOR ).withParanoid( true );
+        final RexSimplify simplify = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, RexUtil.EXECUTOR ).withParanoid( true );
         return simplify.simplifyUnknownAs( e, RexUnknownAs.UNKNOWN );
     }
 

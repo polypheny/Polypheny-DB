@@ -30,7 +30,7 @@ import org.polypheny.db.languages.sql.SqlGroupedWindowFunction;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.util.ReflectiveSqlOperatorTable;
-import org.polypheny.db.languages.sql2rel.AuxiliaryConverter;
+import org.polypheny.db.languages.sql2alg.AuxiliaryConverter;
 import org.polypheny.db.util.Pair;
 
 

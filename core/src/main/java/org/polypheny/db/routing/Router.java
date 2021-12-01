@@ -21,14 +21,14 @@ import java.util.Map;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.transaction.Statement;
 
 public interface Router {
 
-    RelRoot route( RelRoot relRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor );
+    AlgRoot route( AlgRoot relRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor );
 
     List<DataStore> createTable( long schemaId, Statement statement );
 
@@ -36,7 +36,7 @@ public interface Router {
 
     void dropPlacements( List<CatalogColumnPlacement> placements );
 
-    RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements );
+    AlgNode buildJoinedTableScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements );
 
     void resetCaches();
 

@@ -33,7 +33,7 @@ import org.polypheny.db.languages.sql.SqlNodeList;
 import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.fun.SqlCase;
 import org.polypheny.db.languages.sql.fun.SqlFloorFunction;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -75,7 +75,7 @@ public class HsqldbSqlDialect extends SqlDialect {
 
 
     @Override
-    public SqlNode getCastSpec( RelDataType type ) {
+    public SqlNode getCastSpec( AlgDataType type ) {
         String castSpec;
         switch ( type.getPolyType() ) {
             case ARRAY:

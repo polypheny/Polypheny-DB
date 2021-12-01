@@ -35,7 +35,7 @@ package org.polypheny.db.rex;
 
 
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -44,10 +44,10 @@ import org.polypheny.db.rel.type.RelDataType;
 public abstract class RexVariable extends RexNode {
 
     protected final String name;
-    protected final RelDataType type;
+    protected final AlgDataType type;
 
 
-    protected RexVariable( String name, RelDataType type ) {
+    protected RexVariable( String name, AlgDataType type ) {
         this.name = Objects.requireNonNull( name );
         this.digest = Objects.requireNonNull( name );
         this.type = Objects.requireNonNull( type );
@@ -55,7 +55,7 @@ public abstract class RexVariable extends RexNode {
 
 
     @Override
-    public RelDataType getType() {
+    public AlgDataType getType() {
         return type;
     }
 

@@ -49,8 +49,8 @@ import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.QueryableTable;
@@ -119,7 +119,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory, List<Object> arguments ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory, List<Object> arguments ) {
         return apply( arguments ).getRowType( typeFactory );
     }
 

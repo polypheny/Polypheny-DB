@@ -40,13 +40,13 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.interpreter.Interpreter;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.util.BuiltInMethod;
@@ -55,10 +55,10 @@ import org.polypheny.db.util.BuiltInMethod;
 /**
  * Relational expression that executes its children using an interpreter.
  *
- * Although quite a few kinds of {@link RelNode} can be interpreted, this is only created by default for {@link FilterableTable} and
+ * Although quite a few kinds of {@link AlgNode} can be interpreted, this is only created by default for {@link FilterableTable} and
  * {@link ProjectableFilterableTable}.
  */
-public class EnumerableInterpreter extends SingleRel implements EnumerableRel {
+public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
     private final double factor;
 
@@ -73,7 +73,7 @@ public class EnumerableInterpreter extends SingleRel implements EnumerableRel {
      * @param input Input relation
      * @param factor Cost multiply factor
      */
-    public EnumerableInterpreter( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, double factor ) {
+    public EnumerableInterpreter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, double factor ) {
         super( cluster, traitSet, input );
         assert getConvention() instanceof EnumerableConvention;
         this.factor = factor;
@@ -86,36 +86,36 @@ public class EnumerableInterpreter extends SingleRel implements EnumerableRel {
      * @param input Input relation
      * @param factor Cost multiply factor
      */
-    public static EnumerableInterpreter create( RelNode input, double factor ) {
-        final RelTraitSet traitSet = input.getTraitSet().replace( EnumerableConvention.INSTANCE );
+    public static EnumerableInterpreter create( AlgNode input, double factor ) {
+        final AlgTraitSet traitSet = input.getTraitSet().replace( EnumerableConvention.INSTANCE );
         return new EnumerableInterpreter( input.getCluster(), traitSet, input, factor );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( factor );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableInterpreter( getCluster(), traitSet, sole( inputs ), factor );
     }
 
 
     @Override
-    public String relCompareString() {
-        return this.getClass().getSimpleName() + "$" + input.relCompareString() + "$" + factor + "&";
+    public String algCompareString() {
+        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" + factor + "&";
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
         final PhysType physType = PhysTypeImpl.of( typeFactory, getRowType(), JavaRowFormat.ARRAY );
-        final Expression interpreter_ = builder.append( builder.newName( "interpreter" + System.nanoTime() ), Expressions.new_( Interpreter.class, implementor.getRootExpression(), implementor.stash( getInput(), RelNode.class ) ) );
+        final Expression interpreter_ = builder.append( builder.newName( "interpreter" + System.nanoTime() ), Expressions.new_( Interpreter.class, implementor.getRootExpression(), implementor.stash( getInput(), AlgNode.class ) ) );
         final Expression sliced_ =
                 getRowType().getFieldCount() == 1
                         ? Expressions.call( BuiltInMethod.SLICE0.method, interpreter_ )

@@ -35,7 +35,7 @@ package org.polypheny.db.schema;
 
 
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 /**
@@ -55,7 +55,7 @@ public interface ExtensibleTable extends Table {
     /**
      * Returns a table that has the row type of this table plus the given fields.
      */
-    Table extend( List<RelDataTypeField> fields );
+    Table extend( List<AlgDataTypeField> fields );
 
     /**
      * Returns the starting offset of the first extended column, which may differ from the field count when the table stores metadata columns that are not counted in the row-type field count.

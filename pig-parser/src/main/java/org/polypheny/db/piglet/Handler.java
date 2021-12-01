@@ -42,29 +42,29 @@ import java.util.Map;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.tools.PigRelBuilder;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.PigAlgBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 
 /**
- * Walks over a Pig AST and calls the corresponding methods in a {@link PigRelBuilder}.
+ * Walks over a Pig AST and calls the corresponding methods in a {@link PigAlgBuilder}.
  */
 public class Handler {
 
-    private final PigRelBuilder builder;
-    private final Map<String, RelNode> map = new HashMap<>();
+    private final PigAlgBuilder builder;
+    private final Map<String, AlgNode> map = new HashMap<>();
 
 
-    public Handler( PigRelBuilder builder ) {
+    public Handler( PigAlgBuilder builder ) {
         this.builder = builder;
     }
 
@@ -73,7 +73,7 @@ public class Handler {
      * Creates relational expressions for a given AST node.
      */
     public Handler handle( Ast.Node node ) {
-        final RelNode input;
+        final AlgNode input;
         final List<RexNode> rexNodes;
         switch ( node.op ) {
             case LOAD:
@@ -84,7 +84,7 @@ public class Handler {
 
             case VALUES:
                 final Ast.ValuesStmt values = (Ast.ValuesStmt) node;
-                final RelDataType rowType = toType( values.schema );
+                final AlgDataType rowType = toType( values.schema );
                 builder.values( tuples( values, rowType ), rowType );
                 register( values.target.value );
                 return this;
@@ -108,7 +108,7 @@ public class Handler {
                 input = map.get( foreachNested.source.value );
                 builder.push( input );
                 System.out.println( input.getRowType() );
-                for ( RelDataTypeField field : input.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
                     switch ( field.getType().getPolyType() ) {
                         case ARRAY:
                             System.out.println( field );
@@ -172,7 +172,7 @@ public class Handler {
                 builder.clear();
                 input = map.get( group.source.value );
                 builder.push( input ).as( group.source.value );
-                final List<RelBuilder.GroupKey> groupKeys = new ArrayList<>();
+                final List<AlgBuilder.GroupKey> groupKeys = new ArrayList<>();
                 final List<RexNode> keys = new ArrayList<>();
                 if ( group.keys != null ) {
                     for ( Ast.Node key : group.keys ) {
@@ -180,7 +180,7 @@ public class Handler {
                     }
                 }
                 groupKeys.add( builder.groupKey( keys ) );
-                builder.group( PigRelBuilder.GroupOption.COLLECTED, null, -1, groupKeys );
+                builder.group( PigAlgBuilder.GroupOption.COLLECTED, null, -1, groupKeys );
                 register( group.target.value );
                 return this;
 
@@ -193,8 +193,8 @@ public class Handler {
 
             case DUMP:
                 final Ast.DumpStmt dump = (Ast.DumpStmt) node;
-                final RelNode relNode = map.get( dump.relation.value );
-                dump( relNode );
+                final AlgNode algNode = map.get( dump.relation.value );
+                dump( algNode );
                 return this; // nothing to do; contains no algebra
 
             default:
@@ -208,13 +208,13 @@ public class Handler {
      *
      * The default implementation does nothing.
      *
-     * @param rel Relational expression
+     * @param alg Relational expression
      */
-    protected void dump( RelNode rel ) {
+    protected void dump( AlgNode alg ) {
     }
 
 
-    private ImmutableList<ImmutableList<RexLiteral>> tuples( Ast.ValuesStmt valuesStmt, RelDataType rowType ) {
+    private ImmutableList<ImmutableList<RexLiteral>> tuples( Ast.ValuesStmt valuesStmt, AlgDataType rowType ) {
         final ImmutableList.Builder<ImmutableList<RexLiteral>> listBuilder = ImmutableList.builder();
         for ( List<Ast.Node> nodeList : valuesStmt.tupleList ) {
             listBuilder.add( tuple( nodeList, rowType ) );
@@ -223,18 +223,18 @@ public class Handler {
     }
 
 
-    private ImmutableList<RexLiteral> tuple( List<Ast.Node> nodeList, RelDataType rowType ) {
+    private ImmutableList<RexLiteral> tuple( List<Ast.Node> nodeList, AlgDataType rowType ) {
         final ImmutableList.Builder<RexLiteral> listBuilder = ImmutableList.builder();
-        for ( Pair<Ast.Node, RelDataTypeField> pair : Pair.zip( nodeList, rowType.getFieldList() ) ) {
+        for ( Pair<Ast.Node, AlgDataTypeField> pair : Pair.zip( nodeList, rowType.getFieldList() ) ) {
             final Ast.Node node = pair.left;
-            final RelDataType type = pair.right.getType();
+            final AlgDataType type = pair.right.getType();
             listBuilder.add( item( node, type ) );
         }
         return listBuilder.build();
     }
 
 
-    private ImmutableList<RexLiteral> bag( List<Ast.Node> nodeList, RelDataType type ) {
+    private ImmutableList<RexLiteral> bag( List<Ast.Node> nodeList, AlgDataType type ) {
         final ImmutableList.Builder<RexLiteral> listBuilder = ImmutableList.builder();
         for ( Ast.Node node : nodeList ) {
             listBuilder.add( item( node, type.getComponentType() ) );
@@ -243,7 +243,7 @@ public class Handler {
     }
 
 
-    private RexLiteral item( Ast.Node node, RelDataType type ) {
+    private RexLiteral item( Ast.Node node, AlgDataType type ) {
         final RexBuilder rexBuilder = builder.getRexBuilder();
         switch ( node.op ) {
             case LITERAL:
@@ -266,8 +266,8 @@ public class Handler {
     }
 
 
-    private RelDataType toType( Ast.Schema schema ) {
-        final RelDataTypeFactory.Builder typeBuilder = builder.getTypeFactory().builder();
+    private AlgDataType toType( Ast.Schema schema ) {
+        final AlgDataTypeFactory.Builder typeBuilder = builder.getTypeFactory().builder();
         for ( Ast.FieldSchema fieldSchema : schema.fieldSchemaList ) {
             typeBuilder.add( fieldSchema.id.value, null, toType( fieldSchema.type ) );
         }
@@ -275,7 +275,7 @@ public class Handler {
     }
 
 
-    private RelDataType toType( Ast.Type type ) {
+    private AlgDataType toType( Ast.Type type ) {
         switch ( type.op ) {
             case SCALAR_TYPE:
                 return toType( (Ast.ScalarType) type );
@@ -291,8 +291,8 @@ public class Handler {
     }
 
 
-    private RelDataType toType( Ast.ScalarType type ) {
-        final RelDataTypeFactory typeFactory = builder.getTypeFactory();
+    private AlgDataType toType( Ast.ScalarType type ) {
+        final AlgDataTypeFactory typeFactory = builder.getTypeFactory();
         switch ( type.name ) {
             case "boolean":
                 return typeFactory.createPolyType( PolyType.BOOLEAN );
@@ -306,24 +306,24 @@ public class Handler {
     }
 
 
-    private RelDataType toType( Ast.BagType type ) {
-        final RelDataTypeFactory typeFactory = builder.getTypeFactory();
-        final RelDataType t = toType( type.componentType );
+    private AlgDataType toType( Ast.BagType type ) {
+        final AlgDataTypeFactory typeFactory = builder.getTypeFactory();
+        final AlgDataType t = toType( type.componentType );
         return typeFactory.createMultisetType( t, -1 );
     }
 
 
-    private RelDataType toType( Ast.MapType type ) {
-        final RelDataTypeFactory typeFactory = builder.getTypeFactory();
-        final RelDataType k = toType( type.keyType );
-        final RelDataType v = toType( type.valueType );
+    private AlgDataType toType( Ast.MapType type ) {
+        final AlgDataTypeFactory typeFactory = builder.getTypeFactory();
+        final AlgDataType k = toType( type.keyType );
+        final AlgDataType v = toType( type.valueType );
         return typeFactory.createMapType( k, v );
     }
 
 
-    private RelDataType toType( Ast.TupleType type ) {
-        final RelDataTypeFactory typeFactory = builder.getTypeFactory();
-        final RelDataTypeFactory.Builder builder = typeFactory.builder();
+    private AlgDataType toType( Ast.TupleType type ) {
+        final AlgDataTypeFactory typeFactory = builder.getTypeFactory();
+        final AlgDataTypeFactory.Builder builder = typeFactory.builder();
         for ( Ast.FieldSchema fieldSchema : type.fieldSchemaList ) {
             builder.add( fieldSchema.id.value, null, toType( fieldSchema.type ) );
         }

@@ -60,18 +60,18 @@ import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.core.util.ValidatorUtil.Suggester;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.core.Join;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.RexTableInputRef.RelTableRef;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -121,12 +121,12 @@ public class RexUtil {
      * @param rhsRowType source row type; fields must be 1-to-1 with lhsRowType, in same order
      * @return cast expressions
      */
-    public static List<RexNode> generateCastExpressions( RexBuilder rexBuilder, RelDataType lhsRowType, RelDataType rhsRowType ) {
-        final List<RelDataTypeField> fieldList = rhsRowType.getFieldList();
+    public static List<RexNode> generateCastExpressions( RexBuilder rexBuilder, AlgDataType lhsRowType, AlgDataType rhsRowType ) {
+        final List<AlgDataTypeField> fieldList = rhsRowType.getFieldList();
         int n = fieldList.size();
         assert n == lhsRowType.getFieldCount() : "field count: lhs [" + lhsRowType + "] rhs [" + rhsRowType + "]";
         List<RexNode> rhsExps = new ArrayList<>();
-        for ( RelDataTypeField field : fieldList ) {
+        for ( AlgDataTypeField field : fieldList ) {
             rhsExps.add( rexBuilder.makeInputRef( field.getType(), field.getIndex() ) );
         }
         return generateCastExpressions( rexBuilder, lhsRowType, rhsExps );
@@ -141,14 +141,14 @@ public class RexUtil {
      * @param rhsExps expressions to be cast
      * @return cast expressions
      */
-    public static List<RexNode> generateCastExpressions( RexBuilder rexBuilder, RelDataType lhsRowType, List<RexNode> rhsExps ) {
-        List<RelDataTypeField> lhsFields = lhsRowType.getFieldList();
+    public static List<RexNode> generateCastExpressions( RexBuilder rexBuilder, AlgDataType lhsRowType, List<RexNode> rhsExps ) {
+        List<AlgDataTypeField> lhsFields = lhsRowType.getFieldList();
         List<RexNode> castExps = new ArrayList<>();
-        for ( Pair<RelDataTypeField, RexNode> pair : Pair.zip( lhsFields, rhsExps, true ) ) {
-            RelDataTypeField lhsField = pair.left;
-            RelDataType lhsType = lhsField.getType();
+        for ( Pair<AlgDataTypeField, RexNode> pair : Pair.zip( lhsFields, rhsExps, true ) ) {
+            AlgDataTypeField lhsField = pair.left;
+            AlgDataType lhsType = lhsField.getType();
             final RexNode rhsExp = pair.right;
-            RelDataType rhsType = rhsExp.getType();
+            AlgDataType rhsType = rhsExp.getType();
             if ( lhsType.equals( rhsType ) ) {
                 castExps.add( rhsExp );
             } else {
@@ -284,7 +284,7 @@ public class RexUtil {
     /**
      * Returns whether an expression is a cast just for the purposes of nullability, not changing any other aspect of the type.
      */
-    public static boolean isNullabilityCast( RelDataTypeFactory typeFactory, RexNode node ) {
+    public static boolean isNullabilityCast( AlgDataTypeFactory typeFactory, RexNode node ) {
         switch ( node.getKind() ) {
             case CAST:
                 final RexCall call = (RexCall) node;
@@ -300,7 +300,7 @@ public class RexUtil {
      *
      * For example, {@code CAST(1 = 0 AS BOOLEAN)} becomes {@code 1 = 0}.
      */
-    public static RexNode removeNullabilityCast( RelDataTypeFactory typeFactory, RexNode node ) {
+    public static RexNode removeNullabilityCast( AlgDataTypeFactory typeFactory, RexNode node ) {
         while ( isNullabilityCast( typeFactory, node ) ) {
             node = ((RexCall) node).operands.get( 0 );
         }
@@ -441,7 +441,7 @@ public class RexUtil {
      * <li>{@code canAssignFrom(BIGINT, VARCHAR)} returns {@code false}</li>
      * </ul>
      */
-    private static boolean canAssignFrom( RelDataType type1, RelDataType type2 ) {
+    private static boolean canAssignFrom( AlgDataType type1, AlgDataType type2 ) {
         final PolyType name1 = type1.getPolyType();
         final PolyType name2 = type2.getPolyType();
         if ( name1.getFamily() == name2.getFamily() ) {
@@ -695,8 +695,8 @@ public class RexUtil {
                 localCheck = false;
                 break;
             case CAST:
-                RelDataType lhsType = call.getType();
-                RelDataType rhsType = call.operands.get( 0 ).getType();
+                AlgDataType lhsType = call.getType();
+                AlgDataType rhsType = call.operands.get( 0 ).getType();
                 if ( rhsType.getPolyType() == PolyType.NULL ) {
                     return false;
                 }
@@ -787,7 +787,7 @@ public class RexUtil {
      * @param litmus What to do if an error is detected (there is a forward reference)
      * @return Whether there is a forward reference
      */
-    public static boolean containNoForwardRefs( List<RexNode> exprs, RelDataType inputRowType, Litmus litmus ) {
+    public static boolean containNoForwardRefs( List<RexNode> exprs, AlgDataType inputRowType, Litmus litmus ) {
         final ForwardRefFinder visitor = new ForwardRefFinder( inputRowType );
         for ( int i = 0; i < exprs.size(); i++ ) {
             RexNode expr = exprs.get( i );
@@ -903,7 +903,7 @@ public class RexUtil {
      * @param exprs Expressions
      * @return Record type
      */
-    public static RelDataType createStructType( RelDataTypeFactory typeFactory, final List<RexNode> exprs ) {
+    public static AlgDataType createStructType( AlgDataTypeFactory typeFactory, final List<RexNode> exprs ) {
         return createStructType( typeFactory, exprs, null, null );
     }
 
@@ -920,11 +920,11 @@ public class RexUtil {
      * @param suggester Generates alternative names if {@code names} is not null and its elements are not unique
      * @return Record type
      */
-    public static RelDataType createStructType( RelDataTypeFactory typeFactory, final List<? extends RexNode> exprs, List<String> names, Suggester suggester ) {
+    public static AlgDataType createStructType( AlgDataTypeFactory typeFactory, final List<? extends RexNode> exprs, List<String> names, Suggester suggester ) {
         if ( names != null && suggester != null ) {
             names = ValidatorUtil.uniquify( names, suggester, typeFactory.getTypeSystem().isSchemaCaseSensitive() );
         }
-        final RelDataTypeFactory.Builder builder = typeFactory.builder();
+        final AlgDataTypeFactory.Builder builder = typeFactory.builder();
         for ( int i = 0; i < exprs.size(); i++ ) {
             String name;
             if ( names == null || (name = names.get( i )) == null ) {
@@ -943,17 +943,17 @@ public class RexUtil {
      * @param type Type
      * @param litmus What to do if an error is detected (there is a mismatch)
      * @return Whether every expression has the same type as the corresponding member of the struct type
-     * @see RelOptUtil#eq(String, RelDataType, String, RelDataType, org.polypheny.db.util.Litmus)
+     * @see AlgOptUtil#eq(String, AlgDataType, String, AlgDataType, org.polypheny.db.util.Litmus)
      */
-    public static boolean compatibleTypes( List<RexNode> exprs, RelDataType type, Litmus litmus ) {
-        final List<RelDataTypeField> fields = type.getFieldList();
+    public static boolean compatibleTypes( List<RexNode> exprs, AlgDataType type, Litmus litmus ) {
+        final List<AlgDataTypeField> fields = type.getFieldList();
         if ( exprs.size() != fields.size() ) {
             return litmus.fail( "rowtype mismatches expressions" );
         }
         for ( int i = 0; i < fields.size(); i++ ) {
-            final RelDataType exprType = exprs.get( i ).getType();
-            final RelDataType fieldType = fields.get( i ).getType();
-            if ( !RelOptUtil.eq( "type1", exprType, "type2", fieldType, litmus ) ) {
+            final AlgDataType exprType = exprs.get( i ).getType();
+            final AlgDataType fieldType = fields.get( i ).getType();
+            if ( !AlgOptUtil.eq( "type1", exprType, "type2", fieldType, litmus ) ) {
                 return litmus.fail( null );
             }
         }
@@ -973,8 +973,8 @@ public class RexUtil {
     /**
      * Returns whether the leading edge of a given array of expressions is wholly {@link RexInputRef} objects with types corresponding to the underlying datatype.
      */
-    public static boolean containIdentity( List<? extends RexNode> exprs, RelDataType rowType, Litmus litmus ) {
-        final List<RelDataTypeField> fields = rowType.getFieldList();
+    public static boolean containIdentity( List<? extends RexNode> exprs, AlgDataType rowType, Litmus litmus ) {
+        final List<AlgDataTypeField> fields = rowType.getFieldList();
         if ( exprs.size() < fields.size() ) {
             return litmus.fail( "exprs/rowType length mismatch" );
         }
@@ -986,7 +986,7 @@ public class RexUtil {
             if ( inputRef.getIndex() != i ) {
                 return litmus.fail( "expr[{}] has ordinal {}", i, inputRef.getIndex() );
             }
-            if ( !RelOptUtil.eq( "type1", exprs.get( i ).getType(), "type2", fields.get( i ).getType(), litmus ) ) {
+            if ( !AlgOptUtil.eq( "type1", exprs.get( i ).getType(), "type2", fields.get( i ).getType(), litmus ) ) {
                 return litmus.fail( null );
             }
         }
@@ -997,7 +997,7 @@ public class RexUtil {
     /**
      * Returns whether a list of expressions projects the incoming fields.
      */
-    public static boolean isIdentity( List<? extends RexNode> exps, RelDataType inputRowType ) {
+    public static boolean isIdentity( List<? extends RexNode> exps, AlgDataType inputRowType ) {
         return inputRowType.getFieldCount() == exps.size() && containIdentity( exps, inputRowType, Litmus.IGNORE );
     }
 
@@ -1149,12 +1149,12 @@ public class RexUtil {
      * @param collationList Collation list
      * @return collation list with mapping applied to each field
      */
-    public static List<RelCollation> apply( TargetMapping mapping, List<RelCollation> collationList ) {
-        final List<RelCollation> newCollationList = new ArrayList<>();
-        for ( RelCollation collation : collationList ) {
-            final List<RelFieldCollation> newFieldCollationList = new ArrayList<>();
-            for ( RelFieldCollation fieldCollation : collation.getFieldCollations() ) {
-                final RelFieldCollation newFieldCollation = apply( mapping, fieldCollation );
+    public static List<AlgCollation> apply( TargetMapping mapping, List<AlgCollation> collationList ) {
+        final List<AlgCollation> newCollationList = new ArrayList<>();
+        for ( AlgCollation collation : collationList ) {
+            final List<AlgFieldCollation> newFieldCollationList = new ArrayList<>();
+            for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
+                final AlgFieldCollation newFieldCollation = apply( mapping, fieldCollation );
                 if ( newFieldCollation == null ) {
                     // This field is not mapped. Stop here. The leading edge of the collation is still valid (although it's useless if it's empty).
                     break;
@@ -1163,7 +1163,7 @@ public class RexUtil {
             }
             // Truncation to collations to their leading edge creates empty and duplicate collations. Ignore these.
             if ( !newFieldCollationList.isEmpty() ) {
-                final RelCollation newCollation = RelCollations.of( newFieldCollationList );
+                final AlgCollation newCollation = AlgCollations.of( newFieldCollationList );
                 if ( !newCollationList.contains( newCollation ) ) {
                     newCollationList.add( newCollation );
                 }
@@ -1184,11 +1184,11 @@ public class RexUtil {
      * @param collation Collation
      * @return collation with mapping applied
      */
-    public static RelCollation apply( TargetMapping mapping, RelCollation collation ) {
-        List<RelFieldCollation> fieldCollations = applyFields( mapping, collation.getFieldCollations() );
+    public static AlgCollation apply( TargetMapping mapping, AlgCollation collation ) {
+        List<AlgFieldCollation> fieldCollations = applyFields( mapping, collation.getFieldCollations() );
         return fieldCollations.equals( collation.getFieldCollations() )
                 ? collation
-                : RelCollations.of( fieldCollations );
+                : AlgCollations.of( fieldCollations );
     }
 
 
@@ -1201,7 +1201,7 @@ public class RexUtil {
      * @param fieldCollation Field collation
      * @return collation with mapping applied
      */
-    public static RelFieldCollation apply( TargetMapping mapping, RelFieldCollation fieldCollation ) {
+    public static AlgFieldCollation apply( TargetMapping mapping, AlgFieldCollation fieldCollation ) {
         final int target = mapping.getTargetOpt( fieldCollation.getFieldIndex() );
         if ( target < 0 ) {
             return null;
@@ -1217,9 +1217,9 @@ public class RexUtil {
      * @param fieldCollations Field collations
      * @return collations with mapping applied
      */
-    public static List<RelFieldCollation> applyFields( TargetMapping mapping, List<RelFieldCollation> fieldCollations ) {
-        final List<RelFieldCollation> newFieldCollations = new ArrayList<>();
-        for ( RelFieldCollation fieldCollation : fieldCollations ) {
+    public static List<AlgFieldCollation> applyFields( TargetMapping mapping, List<AlgFieldCollation> fieldCollations ) {
+        final List<AlgFieldCollation> newFieldCollations = new ArrayList<>();
+        for ( AlgFieldCollation fieldCollation : fieldCollations ) {
             newFieldCollations.add( apply( mapping, fieldCollation ) );
         }
         return newFieldCollations;
@@ -1372,9 +1372,9 @@ public class RexUtil {
         if ( !node.isA( Kind.CAST ) ) {
             return false;
         }
-        final RelDataType source = ((RexCall) node).getOperands().get( 0 ).getType();
+        final AlgDataType source = ((RexCall) node).getOperands().get( 0 ).getType();
         final PolyType sourcePolyType = source.getPolyType();
-        final RelDataType target = node.getType();
+        final AlgDataType target = node.getType();
         final PolyType targetPolyType = target.getPolyType();
         // 1) Both INT numeric types
         if ( PolyTypeFamily.INTEGER.getTypeNames().contains( sourcePolyType ) && PolyTypeFamily.INTEGER.getTypeNames().contains( targetPolyType ) ) {
@@ -1579,7 +1579,7 @@ public class RexUtil {
      *
      * Throws if there any greater inconsistencies of type.
      */
-    public static List<RexNode> fixUp( final RexBuilder rexBuilder, List<RexNode> nodes, final List<RelDataType> fieldTypes ) {
+    public static List<RexNode> fixUp( final RexBuilder rexBuilder, List<RexNode> nodes, final List<AlgDataType> fieldTypes ) {
         return new FixNullabilityShuttle( rexBuilder, fieldTypes ).apply( nodes );
     }
 
@@ -1587,13 +1587,13 @@ public class RexUtil {
     /**
      * Transforms a list of expressions into a list of their types.
      */
-    public static List<RelDataType> types( List<? extends RexNode> nodes ) {
+    public static List<AlgDataType> types( List<? extends RexNode> nodes ) {
         return Lists.transform( nodes, RexNode::getType );
     }
 
 
-    public static List<RelDataTypeFamily> families( List<RelDataType> types ) {
-        return Lists.transform( types, RelDataType::getFamily );
+    public static List<AlgDataTypeFamily> families( List<AlgDataType> types ) {
+        return Lists.transform( types, AlgDataType::getFamily );
     }
 
 
@@ -1813,7 +1813,7 @@ public class RexUtil {
     /**
      * Given an expression, it will swap the table references contained in its {@link RexTableInputRef} using the contents in the map.
      */
-    public static RexNode swapTableReferences( final RexBuilder rexBuilder, final RexNode node, final Map<RelTableRef, RelTableRef> tableMapping ) {
+    public static RexNode swapTableReferences( final RexBuilder rexBuilder, final RexNode node, final Map<AlgTableRef, AlgTableRef> tableMapping ) {
         return swapTableColumnReferences( rexBuilder, node, tableMapping, null );
     }
 
@@ -1830,7 +1830,7 @@ public class RexUtil {
      * Given an expression, it will swap the table references contained in its {@link RexTableInputRef} using the contents in the first map, and then it will swap the column references {@link RexTableInputRef}
      * using the contents in the second map (in particular, the first element of the set in the map value).
      */
-    public static RexNode swapTableColumnReferences( final RexBuilder rexBuilder, final RexNode node, final Map<RelTableRef, RelTableRef> tableMapping, final Map<RexTableInputRef, Set<RexTableInputRef>> ec ) {
+    public static RexNode swapTableColumnReferences( final RexBuilder rexBuilder, final RexNode node, final Map<AlgTableRef, AlgTableRef> tableMapping, final Map<RexTableInputRef, Set<RexTableInputRef>> ec ) {
         RexShuttle visitor =
                 new RexShuttle() {
                     @Override
@@ -1858,7 +1858,7 @@ public class RexUtil {
      * Given an expression, it will swap the column references {@link RexTableInputRef} using the contents in the first map (in particular, the first element of the set in the map value),
      * and then it will swap the table references contained in its {@link RexTableInputRef} using the contents in the second map.
      */
-    public static RexNode swapColumnTableReferences( final RexBuilder rexBuilder, final RexNode node, final Map<RexTableInputRef, Set<RexTableInputRef>> ec, final Map<RelTableRef, RelTableRef> tableMapping ) {
+    public static RexNode swapColumnTableReferences( final RexBuilder rexBuilder, final RexNode node, final Map<RexTableInputRef, Set<RexTableInputRef>> ec, final Map<AlgTableRef, AlgTableRef> tableMapping ) {
         RexShuttle visitor =
                 new RexShuttle() {
                     @Override
@@ -1888,8 +1888,8 @@ public class RexUtil {
      * @param nodes expressions
      * @return set of table references
      */
-    public static Set<RelTableRef> gatherTableReferences( final List<RexNode> nodes ) {
-        final Set<RelTableRef> occurrences = new HashSet<>();
+    public static Set<AlgTableRef> gatherTableReferences( final List<RexNode> nodes ) {
+        final Set<AlgTableRef> occurrences = new HashSet<>();
         RexVisitor<Void> visitor =
                 new RexVisitorImpl<Void>( true ) {
                     @Override
@@ -2016,10 +2016,10 @@ public class RexUtil {
     private static class ForwardRefFinder extends RexVisitorImpl<Void> {
 
         private int limit = -1;
-        private final RelDataType inputRowType;
+        private final AlgDataType inputRowType;
 
 
-        ForwardRefFinder( RelDataType inputRowType ) {
+        ForwardRefFinder( AlgDataType inputRowType ) {
             super( true );
             this.inputRowType = inputRowType;
         }
@@ -2150,10 +2150,10 @@ public class RexUtil {
                     operands = flattenOr( ((RexCall) rex).getOperands() );
                     final RexNode head = operands.get( 0 );
                     final RexNode headCnf = toCnf2( head );
-                    final List<RexNode> headCnfs = RelOptUtil.conjunctions( headCnf );
+                    final List<RexNode> headCnfs = AlgOptUtil.conjunctions( headCnf );
                     final RexNode tail = or( Util.skip( operands ) );
                     final RexNode tailCnf = toCnf2( tail );
-                    final List<RexNode> tailCnfs = RelOptUtil.conjunctions( tailCnf );
+                    final List<RexNode> tailCnfs = AlgOptUtil.conjunctions( tailCnf );
                     final List<RexNode> list = new ArrayList<>();
                     for ( RexNode h : headCnfs ) {
                         for ( RexNode t : tailCnfs ) {
@@ -2249,11 +2249,11 @@ public class RexUtil {
             int i = 0;
             for ( RexNode node : nodes ) {
                 if ( i++ == 0 ) {
-                    for ( RexNode conjunction : RelOptUtil.conjunctions( node ) ) {
+                    for ( RexNode conjunction : AlgOptUtil.conjunctions( node ) ) {
                         map.put( conjunction, conjunction );
                     }
                 } else {
-                    map.keySet().retainAll( RelOptUtil.conjunctions( node ) );
+                    map.keySet().retainAll( AlgOptUtil.conjunctions( node ) );
                 }
             }
             return map;
@@ -2262,7 +2262,7 @@ public class RexUtil {
 
         private RexNode removeFactor( Map<RexNode, RexNode> factors, RexNode node ) {
             List<RexNode> list = new ArrayList<>();
-            for ( RexNode operand : RelOptUtil.conjunctions( node ) ) {
+            for ( RexNode operand : AlgOptUtil.conjunctions( node ) ) {
                 if ( !factors.containsKey( operand ) ) {
                     list.add( operand );
                 }
@@ -2311,10 +2311,10 @@ public class RexUtil {
                     operands = flattenAnd( ((RexCall) rex).getOperands() );
                     final RexNode head = operands.get( 0 );
                     final RexNode headDnf = toDnf( head );
-                    final List<RexNode> headDnfs = RelOptUtil.disjunctions( headDnf );
+                    final List<RexNode> headDnfs = AlgOptUtil.disjunctions( headDnf );
                     final RexNode tail = and( Util.skip( operands ) );
                     final RexNode tailDnf = toDnf( tail );
-                    final List<RexNode> tailDnfs = RelOptUtil.disjunctions( tailDnf );
+                    final List<RexNode> tailDnfs = AlgOptUtil.disjunctions( tailDnf );
                     final List<RexNode> list = new ArrayList<>();
                     for ( RexNode h : headDnfs ) {
                         for ( RexNode t : tailDnfs ) {
@@ -2420,11 +2420,11 @@ public class RexUtil {
      */
     public static class FixNullabilityShuttle extends RexShuttle {
 
-        private final List<RelDataType> typeList;
+        private final List<AlgDataType> typeList;
         private final RexBuilder rexBuilder;
 
 
-        public FixNullabilityShuttle( RexBuilder rexBuilder, List<RelDataType> typeList ) {
+        public FixNullabilityShuttle( RexBuilder rexBuilder, List<AlgDataType> typeList ) {
             this.typeList = typeList;
             this.rexBuilder = rexBuilder;
         }
@@ -2432,12 +2432,12 @@ public class RexUtil {
 
         @Override
         public RexNode visitInputRef( RexInputRef ref ) {
-            final RelDataType rightType = typeList.get( ref.getIndex() );
-            final RelDataType refType = ref.getType();
+            final AlgDataType rightType = typeList.get( ref.getIndex() );
+            final AlgDataType refType = ref.getType();
             if ( refType == rightType ) {
                 return ref;
             }
-            final RelDataType refType2 = rexBuilder.getTypeFactory().createTypeWithNullability( refType, rightType.isNullable() );
+            final AlgDataType refType2 = rexBuilder.getTypeFactory().createTypeWithNullability( refType, rightType.isNullable() );
             if ( refType2 == rightType ) {
                 return new RexInputRef( ref.getIndex(), refType2 );
             }

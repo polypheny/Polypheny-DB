@@ -38,7 +38,7 @@ import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 
@@ -105,7 +105,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
         } else {
             final List<SqlNode> operandList = call.getSqlOperandList();
             if ( call.getOperator() instanceof SqlFunction ) {
-                final List<RelDataType> paramTypes = ((SqlFunction) call.getOperator()).getParamTypes();
+                final List<AlgDataType> paramTypes = ((SqlFunction) call.getOperator()).getParamTypes();
                 if ( paramTypes != null && operandList.size() < paramTypes.size() ) {
                     final List<Node> list = Lists.newArrayList( operandList );
                     while ( list.size() < paramTypes.size() ) {
@@ -214,9 +214,9 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
 
     @Override
-    public RelDataType getOperandType( int ordinal ) {
+    public AlgDataType getOperandType( int ordinal ) {
         final SqlNode operand = call.operand( ordinal );
-        final RelDataType type = validator.deriveType( scope, operand );
+        final AlgDataType type = validator.deriveType( scope, operand );
         final SqlValidatorNamespace namespace = validator.getSqlNamespace( operand );
         if ( namespace != null ) {
             return namespace.getType();
@@ -226,7 +226,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
 
     @Override
-    public RelDataType getCursorOperand( int ordinal ) {
+    public AlgDataType getCursorOperand( int ordinal ) {
         final SqlNode operand = call.operand( ordinal );
         if ( !SqlUtil.isCallTo( operand, OperatorRegistry.get( OperatorName.CURSOR ) ) ) {
             return null;

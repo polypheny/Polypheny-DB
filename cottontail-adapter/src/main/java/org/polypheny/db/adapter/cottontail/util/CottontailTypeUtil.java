@@ -39,7 +39,7 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -105,7 +105,7 @@ public class CottontailTypeUtil {
     }
 
 
-    public static CottontailGrpc.Type getPhysicalTypeRepresentation( RelDataType relDataType ) {
+    public static CottontailGrpc.Type getPhysicalTypeRepresentation( AlgDataType relDataType ) {
         PolyType type = relDataType.getPolyType();
         PolyType componentType = relDataType.getComponentType().getPolyType();
 

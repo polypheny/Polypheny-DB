@@ -33,9 +33,9 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -47,9 +47,9 @@ public abstract class Processor {
 
     public abstract Node parse( String query );
 
-    public abstract Pair<Node, RelDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
+    public abstract Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
-    public abstract RelRoot translate( Statement statement, Node query, QueryParameters parameters );
+    public abstract AlgRoot translate( Statement statement, Node query, QueryParameters parameters );
 
     public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         if ( parsed instanceof ExecutableStatement ) {
@@ -96,9 +96,9 @@ public abstract class Processor {
 
     abstract String getQuery( Node parsed, QueryParameters parameters );
 
-    public abstract RelDataType getParameterRowType( Node left );
+    public abstract AlgDataType getParameterRowType( Node left );
 
-    void attachAnalyzer( Statement statement, RelRoot logicalRoot ) {
+    void attachAnalyzer( Statement statement, AlgRoot logicalRoot ) {
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
         InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
         page.fullWidth();
@@ -107,7 +107,7 @@ public abstract class Processor {
         queryAnalyzer.addGroup( group );
         InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
                 group,
-                RelOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.rel, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
+                AlgOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
         queryAnalyzer.registerInformation( informationQueryPlan );
     }
 

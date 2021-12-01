@@ -40,7 +40,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.enumerable.AggResultContext;
 import org.polypheny.db.adapter.enumerable.PhysType;
-import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.algebra.core.AggregateCall;
 
 
 /**

@@ -35,9 +35,9 @@ package org.polypheny.db.schema;
 
 
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.Pair;
 
 
@@ -61,6 +61,6 @@ public interface CustomColumnResolvingTable extends Table {
      * @param names the name components to be resolved
      * @return a list of pairs containing the resolved field and the remaining name components.
      */
-    List<Pair<RelDataTypeField, List<String>>> resolveColumn( RelDataType rowType, RelDataTypeFactory typeFactory, List<String> names );
+    List<Pair<AlgDataTypeField, List<String>>> resolveColumn( AlgDataType rowType, AlgDataTypeFactory typeFactory, List<String> names );
 }
 

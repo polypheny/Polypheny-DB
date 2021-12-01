@@ -20,9 +20,9 @@ package org.polypheny.db.languages.sql.validate;
 import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlWithItem;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.Pair;
 
 
@@ -41,14 +41,14 @@ class WithItemNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         final SqlValidatorNamespace childNs = validator.getSqlNamespace( withItem.query );
-        final RelDataType rowType = childNs.getRowTypeSansSystemColumns();
+        final AlgDataType rowType = childNs.getRowTypeSansSystemColumns();
         if ( withItem.columnList == null ) {
             return rowType;
         }
         final Builder builder = validator.getTypeFactory().builder();
-        for ( Pair<SqlNode, RelDataTypeField> pair : Pair.zip( withItem.columnList.getSqlList(), rowType.getFieldList() ) ) {
+        for ( Pair<SqlNode, AlgDataTypeField> pair : Pair.zip( withItem.columnList.getSqlList(), rowType.getFieldList() ) ) {
             builder.add( ((SqlIdentifier) pair.left).getSimple(), null, pair.right.getType() );
         }
         return builder.build();
@@ -66,9 +66,9 @@ class WithItemNamespace extends AbstractNamespace {
         if ( withItem.columnList == null ) {
             return name;
         }
-        final RelDataType underlyingRowType = validator.getValidatedNodeType( withItem.query );
+        final AlgDataType underlyingRowType = validator.getValidatedNodeType( withItem.query );
         int i = 0;
-        for ( RelDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
             if ( field.getName().equals( name ) ) {
                 return underlyingRowType.getFieldList().get( i ).getName();
             }

@@ -1,0 +1,128 @@
+/*
+ * Copyright 2019-2020 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.plan.hep;
+
+
+import java.util.List;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+
+
+/**
+ * HepAlgVertex wraps a real {@link AlgNode} as a vertex in a DAG representing the entire query expression.
+ */
+public class HepAlgVertex extends AbstractAlgNode {
+
+    /**
+     * Wrapped alg currently chosen for implementation of expression.
+     */
+    private AlgNode currentRel;
+
+
+    HepAlgVertex( AlgNode alg ) {
+        super( alg.getCluster(), alg.getTraitSet() );
+        currentRel = alg;
+    }
+
+
+    @Override
+    public void explain( AlgWriter pw ) {
+        currentRel.explain( pw );
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        assert traitSet.equals( this.traitSet );
+        assert inputs.equals( this.getInputs() );
+        return this;
+    }
+
+
+    @Override
+    public String algCompareString() {
+        // Compare makes no sense here. Use hashCode() to avoid errors.
+        return this.getClass().getSimpleName() + "$" + hashCode() + "&";
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        // HepAlgMetadataProvider is supposed to intercept this and redirect to the real rels. But sometimes it doesn't.
+        return planner.getCostFactory().makeTinyCost();
+    }
+
+
+    @Override
+    public double estimateRowCount( AlgMetadataQuery mq ) {
+        return mq.getRowCount( currentRel );
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        return currentRel.getRowType();
+    }
+
+
+    @Override
+    protected String computeDigest() {
+        return "HepAlgVertex(" + currentRel + ")";
+    }
+
+
+    /**
+     * Replaces the implementation for this expression with a new one.
+     *
+     * @param newRel new expression
+     */
+    void replaceRel( AlgNode newRel ) {
+        currentRel = newRel;
+    }
+
+
+    /**
+     * @return current implementation chosen for this vertex
+     */
+    public AlgNode getCurrentAlg() {
+        return currentRel;
+    }
+}
+

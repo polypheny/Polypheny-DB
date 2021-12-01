@@ -37,7 +37,7 @@ package org.polypheny.db.rex;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -61,7 +61,7 @@ public class RexLocalRef extends RexSlot {
      * @param index Index of the field in the underlying row type
      * @param type Type of the column
      */
-    public RexLocalRef( int index, RelDataType type ) {
+    public RexLocalRef( int index, AlgDataType type ) {
         super( createName( index ), index, type );
         assert type != null;
         assert index >= 0;

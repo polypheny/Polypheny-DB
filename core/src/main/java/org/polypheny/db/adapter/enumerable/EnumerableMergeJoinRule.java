@@ -38,21 +38,21 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.JoinInfo;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.JoinInfo;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.logical.LogicalJoin;
 
 
 /**
- * Planner rule that converts a {@link org.polypheny.db.rel.logical.LogicalJoin} relational expression {@link EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalJoin} relational expression {@link EnumerableConvention enumerable calling convention}.
  *
  * @see org.polypheny.db.adapter.enumerable.EnumerableJoinRule
  */
@@ -64,10 +64,10 @@ class EnumerableMergeJoinRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        LogicalJoin join = (LogicalJoin) rel;
+    public AlgNode convert( AlgNode alg ) {
+        LogicalJoin join = (LogicalJoin) alg;
         final JoinInfo info = JoinInfo.of( join.getLeft(), join.getRight(), join.getCondition() );
-        if ( join.getJoinType() != JoinRelType.INNER ) {
+        if ( join.getJoinType() != JoinAlgType.INNER ) {
             // EnumerableMergeJoin only supports inner join. (It supports non-equi join, using a post-filter; see below.)
             return null;
         }
@@ -75,29 +75,29 @@ class EnumerableMergeJoinRule extends ConverterRule {
             // EnumerableMergeJoin CAN support cartesian join, but disable it for now.
             return null;
         }
-        final List<RelNode> newInputs = new ArrayList<>();
-        final List<RelCollation> collations = new ArrayList<>();
+        final List<AlgNode> newInputs = new ArrayList<>();
+        final List<AlgCollation> collations = new ArrayList<>();
         int offset = 0;
-        for ( Ord<RelNode> ord : Ord.zip( join.getInputs() ) ) {
-            RelTraitSet traits = ord.e.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        for ( Ord<AlgNode> ord : Ord.zip( join.getInputs() ) ) {
+            AlgTraitSet traits = ord.e.getTraitSet().replace( EnumerableConvention.INSTANCE );
             if ( !info.pairs().isEmpty() ) {
-                final List<RelFieldCollation> fieldCollations = new ArrayList<>();
+                final List<AlgFieldCollation> fieldCollations = new ArrayList<>();
                 for ( int key : info.keys().get( ord.i ) ) {
-                    fieldCollations.add( new RelFieldCollation( key, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.LAST ) );
+                    fieldCollations.add( new AlgFieldCollation( key, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.LAST ) );
                 }
-                final RelCollation collation = RelCollations.of( fieldCollations );
-                collations.add( RelCollations.shift( collation, offset ) );
+                final AlgCollation collation = AlgCollations.of( fieldCollations );
+                collations.add( AlgCollations.shift( collation, offset ) );
                 traits = traits.replace( collation );
             }
             newInputs.add( convert( ord.e, traits ) );
             offset += ord.e.getRowType().getFieldCount();
         }
-        final RelNode left = newInputs.get( 0 );
-        final RelNode right = newInputs.get( 1 );
-        final RelOptCluster cluster = join.getCluster();
-        RelNode newRel;
+        final AlgNode left = newInputs.get( 0 );
+        final AlgNode right = newInputs.get( 1 );
+        final AlgOptCluster cluster = join.getCluster();
+        AlgNode newRel;
         try {
-            RelTraitSet traits = join.getTraitSet().replace( EnumerableConvention.INSTANCE );
+            AlgTraitSet traits = join.getTraitSet().replace( EnumerableConvention.INSTANCE );
             if ( !collations.isEmpty() ) {
                 traits = traits.replace( collations );
             }
@@ -111,7 +111,7 @@ class EnumerableMergeJoinRule extends ConverterRule {
                     info.rightKeys,
                     join.getVariablesSet(),
                     join.getJoinType() );
-        } catch ( InvalidRelException e ) {
+        } catch ( InvalidAlgException e ) {
             EnumerableRules.LOGGER.debug( e.toString() );
             return null;
         }

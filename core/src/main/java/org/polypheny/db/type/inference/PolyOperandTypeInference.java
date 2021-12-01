@@ -18,7 +18,7 @@ package org.polypheny.db.type.inference;
 
 
 import org.polypheny.db.core.nodes.CallBinding;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -32,6 +32,6 @@ public interface PolyOperandTypeInference {
      * @param returnType   the type known or inferred for the result of the call
      * @param operandTypes receives the inferred types for all operands
      */
-    void inferOperandTypes( CallBinding callBinding, RelDataType returnType, RelDataType[] operandTypes );
+    void inferOperandTypes( CallBinding callBinding, AlgDataType returnType, AlgDataType[] operandTypes );
 }
 

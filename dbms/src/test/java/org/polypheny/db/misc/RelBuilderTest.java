@@ -49,14 +49,14 @@ import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.sql.SqlMatchRecognize;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelDistributions;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgDistributions;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexInputRef;
@@ -65,10 +65,10 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.test.Matchers;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Programs;
-import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -79,7 +79,7 @@ import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
- * Unit test for {@link RelBuilder}.
+ * Unit test for {@link AlgBuilder}.
  */
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
@@ -133,12 +133,12 @@ public class RelBuilderTest {
     }
 
 
-    private RelBuilder createRelBuilder() {
+    private AlgBuilder createRelBuilder() {
         final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( Parser.ParserConfig.DEFAULT )
                 .defaultSchema( rootSchema.getSubSchema( transaction.getDefaultSchema().name ) )
-                .traitDefs( (List<RelTraitDef>) null )
+                .traitDefs( (List<AlgTraitDef>) null )
                 .programs( Programs.heuristicJoinOrder( Programs.RULE_SET, true, 2 ) )
                 .prepareContext( new ContextImpl(
                         PolyphenyDbSchema.from( rootSchema ),
@@ -152,7 +152,7 @@ public class RelBuilderTest {
                         0,
                         0,
                         null ) ).build();
-        return RelBuilder.create( config );
+        return AlgBuilder.create( config );
     }
 
 
@@ -161,7 +161,7 @@ public class RelBuilderTest {
         // Equivalent SQL:
         //   SELECT *
         //   FROM employee
-        final RelNode root =
+        final AlgNode root =
                 createRelBuilder()
                         .scan( "employee" )
                         .build();
@@ -174,7 +174,7 @@ public class RelBuilderTest {
         // Equivalent SQL:
         //   SELECT *
         //   FROM "public"."employee"
-        final RelNode root =
+        final AlgNode root =
                 createRelBuilder()
                         .scan( "public", "employee" )
                         .build();
@@ -188,7 +188,7 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM zzz
         try {
-            final RelNode root =
+            final AlgNode root =
                     createRelBuilder()
                             .scan( "ZZZ" ) // this relation does not exist
                             .build();
@@ -205,7 +205,7 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM "zzz"."employee"
         try {
-            final RelNode root =
+            final AlgNode root =
                     createRelBuilder()
                             .scan( "ZZZ", "employee" ) // the table exists, but the schema does not
                             .build();
@@ -222,7 +222,7 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM "public"."zzz"
         try {
-            final RelNode root =
+            final AlgNode root =
                     createRelBuilder()
                             .scan( "public", "ZZZ" ) // the schema is valid, but the table does not exist
                             .build();
@@ -241,7 +241,7 @@ public class RelBuilderTest {
         final boolean oldCaseSensitiveValue = RuntimeConfig.CASE_SENSITIVE.getBoolean();
         try {
             RuntimeConfig.CASE_SENSITIVE.setBoolean( true );
-            final RelNode root =
+            final AlgNode root =
                     createRelBuilder()
                             .scan( "EMPLOYEE" ) // the table is named 'employee', not 'EMPLOYEE'
                             .build();
@@ -260,8 +260,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   WHERE TRUE
-        final RelBuilder builder = createRelBuilder();
-        RelNode root = builder.scan( "employee" )
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root = builder.scan( "employee" )
                 .filter( builder.literal( true ) )
                 .build();
         assertThat( root, Matchers.hasTree( "LogicalTableScan(table=[[public, employee]])\n" ) );
@@ -274,8 +274,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   WHERE 1 = 2
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .filter( builder.equals( builder.literal( 1 ), builder.literal( 2 ) ) )
                         .build();
@@ -289,8 +289,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   WHERE deptno = 20
-        final RelBuilder builder = createRelBuilder();
-        RelNode root = builder.scan( "employee" )
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root = builder.scan( "employee" )
                 .filter( builder.equals( builder.field( "deptno" ), builder.literal( 20 ) ) )
                 .build();
         final String expected = "LogicalFilter(condition=[=($7, 20)])\n"
@@ -305,8 +305,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   WHERE (deptno = 20 OR commission IS NULL) AND mgr IS NOT NULL
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .filter(
                                 builder.call(
@@ -330,8 +330,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   WHERE deptno = 20
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .filter(
                                 builder.call( OperatorRegistry.get( OperatorName.OR ),
@@ -356,8 +356,8 @@ public class RelBuilderTest {
         //   WHERE deptno = 20 AND FALSE
         // simplifies to
         //   VALUES
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .filter(
                                 builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
@@ -376,8 +376,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   WHERE deptno = 20 AND TRUE
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .filter(
                                 builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
@@ -392,7 +392,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for "RelBuilder incorrectly simplifies a filter with duplicate conjunction to empty".
+     * Test case for "AlgBuilder incorrectly simplifies a filter with duplicate conjunction to empty".
      */
     @Test
     public void testScanFilterDuplicateAnd() {
@@ -400,7 +400,7 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   WHERE deptno > 20 AND deptno > 20 AND deptno > 20
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         builder.scan( "employee" );
         final RexNode condition = builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
                 builder.field( "deptno" ),
@@ -408,7 +408,7 @@ public class RelBuilderTest {
         final RexNode condition2 = builder.call( OperatorRegistry.get( OperatorName.LESS_THAN ),
                 builder.field( "deptno" ),
                 builder.literal( 30 ) );
-        final RelNode root = builder.filter( condition, condition, condition )
+        final AlgNode root = builder.filter( condition, condition, condition )
                 .build();
         final String expected = "LogicalFilter(condition=[>($7, 20)])\n"
                 + "  LogicalTableScan(table=[[public, employee]])\n";
@@ -418,7 +418,7 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   WHERE deptno > 20 AND deptno < 30 AND deptno > 20
-        final RelNode root2 = builder.scan( "employee" )
+        final AlgNode root2 = builder.scan( "employee" )
                 .filter( condition, condition2, condition, condition )
                 .build();
         final String expected2 = ""
@@ -430,7 +430,7 @@ public class RelBuilderTest {
 
     @Test
     public void testBadFieldName() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         try {
             RexInputRef ref = builder.scan( "employee" ).field( "foo" );
             fail( "expected error, got " + ref );
@@ -442,7 +442,7 @@ public class RelBuilderTest {
 
     @Test
     public void testBadFieldOrdinal() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         try {
             RexInputRef ref = builder.scan( "department" ).field( 20 );
             fail( "expected error, got " + ref );
@@ -454,7 +454,7 @@ public class RelBuilderTest {
 
     @Test
     public void testBadType() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         try {
             builder.scan( "employee" );
             RexNode call = builder.call( OperatorRegistry.get( OperatorName.PLUS ), builder.field( 1 ), builder.field( 3 ) );
@@ -471,8 +471,8 @@ public class RelBuilderTest {
         //   SELECT deptno, CAST(commission AS SMALLINT) AS commission, 20 AS $f2,
         //     commission AS commission3, commission AS c
         //   FROM emp
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .project( builder.field( "deptno" ),
                                 builder.cast( builder.field( 6 ), PolyType.SMALLINT ),
@@ -495,8 +495,8 @@ public class RelBuilderTest {
     @Test
     @Ignore
     public void testProject2() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .project( builder.field( "deptno" ),
                                 builder.cast( builder.field( 6 ), PolyType.INTEGER ),
@@ -527,8 +527,8 @@ public class RelBuilderTest {
 
     @Test
     public void testProjectIdentity() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.fields( Mappings.bijection( Arrays.asList( 0, 1, 2 ) ) ) )
                         .build();
@@ -538,12 +538,12 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for "RelBuilder does not translate identity projects even if they rename fields".
+     * Test case for "AlgBuilder does not translate identity projects even if they rename fields".
      */
     @Test
     public void testProjectIdentityWithFieldsRename() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.alias( builder.field( 0 ), "a" ),
                                 builder.alias( builder.field( 1 ), "b" ),
@@ -562,8 +562,8 @@ public class RelBuilderTest {
      */
     @Test
     public void testProjectIdentityWithFieldsRenameFilter() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.alias( builder.field( 0 ), "a" ),
                                 builder.alias( builder.field( 1 ), "b" ),
@@ -586,8 +586,8 @@ public class RelBuilderTest {
 
     @Test
     public void testProjectLeadingEdge() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .project( builder.fields( Mappings.bijection( Arrays.asList( 0, 1, 2 ) ) ) )
                         .build();
@@ -598,9 +598,9 @@ public class RelBuilderTest {
 
 
     private void project1( int value, PolyType polyType, String message, String expected ) {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         RexBuilder rex = builder.getRexBuilder();
-        RelNode actual =
+        AlgNode actual =
                 builder.values( new String[]{ "x" }, 42 )
                         .empty()
                         .project( rex.makeLiteral( value, rex.getTypeFactory().createPolyType( polyType ), false ) )
@@ -628,10 +628,10 @@ public class RelBuilderTest {
 
     @Test
     public void testRename() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
 
         // No rename necessary (null name is ignored)
-        RelNode root =
+        AlgNode root =
                 builder.scan( "department" )
                         .rename( Arrays.asList( "deptno", null ) )
                         .build();
@@ -687,8 +687,8 @@ public class RelBuilderTest {
 
     @Test
     public void testRenameValues() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.values( new String[]{ "a", "b" }, true, 1, false, -50 )
                         .build();
         final String expected = "LogicalValues(tuples=[[{ true, 1 }, { false, -50 }]])\n";
@@ -706,8 +706,8 @@ public class RelBuilderTest {
 
     @Test
     public void testPermute() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .permute( Mappings.bijection( Arrays.asList( 1, 2, 0 ) ) )
                         .build();
@@ -719,14 +719,14 @@ public class RelBuilderTest {
 
     @Test
     public void testConvert() {
-        final RelBuilder builder = createRelBuilder();
-        RelDataType rowType =
+        final AlgBuilder builder = createRelBuilder();
+        AlgDataType rowType =
                 builder.getTypeFactory().builder()
                         .add( "a", null, PolyType.BIGINT )
                         .add( "b", null, PolyType.VARCHAR, 10 )
                         .add( "c", null, PolyType.VARCHAR, 10 )
                         .build();
-        RelNode root =
+        AlgNode root =
                 builder.scan( "department" )
                         .convert( rowType, false )
                         .build();
@@ -739,14 +739,14 @@ public class RelBuilderTest {
 
     @Test
     public void testConvertRename() {
-        final RelBuilder builder = createRelBuilder();
-        RelDataType rowType =
+        final AlgBuilder builder = createRelBuilder();
+        AlgDataType rowType =
                 builder.getTypeFactory().builder()
                         .add( "a", null, PolyType.BIGINT )
                         .add( "b", null, PolyType.VARCHAR, 10 )
                         .add( "c", null, PolyType.VARCHAR, 10 )
                         .build();
-        RelNode root =
+        AlgNode root =
                 builder.scan( "department" )
                         .convert( rowType, true )
                         .build();
@@ -763,8 +763,8 @@ public class RelBuilderTest {
         //   SELECT COUNT(DISTINCT deptno) AS c
         //   FROM emp
         //   GROUP BY ()
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .aggregate( builder.groupKey(), builder.count( true, "C", builder.field( "deptno" ) ) )
                         .build();
@@ -781,8 +781,8 @@ public class RelBuilderTest {
         //   SELECT COUNT(*) AS c, SUM(mgr + 1) AS s
         //   FROM emp
         //   GROUP BY ename, hiredate + mgr
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .aggregate(
                                 builder.groupKey( builder.field( 1 ),
@@ -804,7 +804,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for "RelBuilder wrongly skips creation of Aggregate that prunes columns if input is unique".
+     * Test case for "AlgBuilder wrongly skips creation of Aggregate that prunes columns if input is unique".
      */
     @Test
     public void testAggregate3() {
@@ -813,8 +813,8 @@ public class RelBuilderTest {
         //     SELECT deptno, COUNT(*)
         //     FROM emp
         //     GROUP BY deptno)
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .aggregate( builder.groupKey( builder.field( 1 ) ), builder.count().as( "C" ) )
                         .aggregate( builder.groupKey( builder.field( 0 ) ) )
@@ -838,8 +838,8 @@ public class RelBuilderTest {
         //     FROM emp
         //     GROUP BY deptno
         //     HAVING COUNT(*) > 3)
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .aggregate(
                                 builder.groupKey( builder.field( 1 ) ),
@@ -864,8 +864,8 @@ public class RelBuilderTest {
         //   SELECT deptno, COUNT(*) FILTER (WHERE empid > 100) AS c
         //   FROM emp
         //   GROUP BY ROLLUP(deptno)
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .aggregate(
                                 builder.groupKey( ImmutableBitSet.of( 7 ), ImmutableList.of( ImmutableBitSet.of( 7 ), ImmutableBitSet.of() ) ),
@@ -891,8 +891,8 @@ public class RelBuilderTest {
         //   FROM emp
         //   GROUP BY deptno
         try {
-            final RelBuilder builder = createRelBuilder();
-            RelNode root =
+            final AlgBuilder builder = createRelBuilder();
+            AlgNode root =
                     builder.scan( "employee" )
                             .aggregate(
                                     builder.groupKey( builder.field( "deptno" ) ),
@@ -914,8 +914,8 @@ public class RelBuilderTest {
         //   SELECT deptno, SUM(salary) FILTER (WHERE commission < 100) AS c
         //   FROM emp
         //   GROUP BY deptno
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .aggregate(
                                 builder.groupKey( builder.field( "deptno" ) ),
@@ -932,14 +932,14 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for "RelBuilder gives NPE if groupKey contains alias".
+     * Test case for "AlgBuilder gives NPE if groupKey contains alias".
      *
      * Now, the alias does not cause a new expression to be added to the input, but causes the referenced fields to be renamed.
      */
     @Test
     public void testAggregateProjectWithAliases() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .project( builder.field( "deptno" ) )
                         .aggregate( builder.groupKey( builder.alias( builder.field( "deptno" ), "departmentNo" ) ) )
@@ -954,8 +954,8 @@ public class RelBuilderTest {
 
     @Test
     public void testAggregateProjectWithExpression() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .project( builder.field( "deptno" ) )
                         .aggregate(
@@ -974,9 +974,9 @@ public class RelBuilderTest {
 
     @Test
     public void testAggregateGroupingKeyOutOfRangeFails() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         try {
-            RelNode root =
+            AlgNode root =
                     builder.scan( "employee" )
                             .aggregate( builder.groupKey( ImmutableBitSet.of( 17 ) ) )
                             .build();
@@ -989,9 +989,9 @@ public class RelBuilderTest {
 
     @Test
     public void testAggregateGroupingSetNotSubsetFails() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         try {
-            RelNode root =
+            AlgNode root =
                     builder.scan( "employee" )
                             .aggregate( builder.groupKey( ImmutableBitSet.of( 7 ), ImmutableList.of( ImmutableBitSet.of( 4 ), ImmutableBitSet.of() ) ) )
                             .build();
@@ -1004,8 +1004,8 @@ public class RelBuilderTest {
 
     @Test
     public void testAggregateGroupingSetDuplicateIgnored() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .aggregate(
                                 builder.groupKey(
@@ -1021,8 +1021,8 @@ public class RelBuilderTest {
 
     @Test
     public void testAggregateGrouping() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .aggregate(
                                 builder.groupKey( 6, 7 ),
@@ -1037,9 +1037,9 @@ public class RelBuilderTest {
 
     @Test
     public void testAggregateGroupingWithDistinctFails() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         try {
-            RelNode root =
+            AlgNode root =
                     builder.scan( "employee" )
                             .aggregate( builder.groupKey( 6, 7 ),
                                     builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.GROUPING ), builder.field( "deptno" ) )
@@ -1055,9 +1055,9 @@ public class RelBuilderTest {
 
     @Test
     public void testAggregateGroupingWithFilterFails() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         try {
-            RelNode root =
+            AlgNode root =
                     builder.scan( "employee" )
                             .aggregate( builder.groupKey( 6, 7 ),
                                     builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.GROUPING ),
@@ -1077,8 +1077,8 @@ public class RelBuilderTest {
         // Equivalent SQL:
         //   SELECT DISTINCT deptno
         //   FROM emp
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .project( builder.field( "deptno" ) )
                         .distinct()
@@ -1094,8 +1094,8 @@ public class RelBuilderTest {
     @Ignore
     public void testDistinctAlready() {
         // department is already distinct
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .distinct()
                         .build();
@@ -1108,8 +1108,8 @@ public class RelBuilderTest {
     public void testDistinctEmpty() {
         // Is a relation with zero columns distinct? What about if we know there are zero rows? It is a matter of definition: there are no duplicate rows, but applying "select ... group by ()" to it would change the result.
         // In theory, we could omit the distinct if we know there is precisely one row, but we don't currently.
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .filter( builder.call( OperatorRegistry.get( OperatorName.IS_NULL ), builder.field( "commission" ) ) )
                         .project()
@@ -1129,8 +1129,8 @@ public class RelBuilderTest {
         //   SELECT deptno FROM emp
         //   UNION ALL
         //   SELECT deptno FROM dept
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
@@ -1158,9 +1158,9 @@ public class RelBuilderTest {
         //   SELECT empid, SALARY FROM emp
         //   UNION ALL
         //   SELECT deptno FROM dept
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         try {
-            final RelNode root =
+            final AlgNode root =
                     builder.scan( "department" )
                             .project( builder.field( "deptno" ) )
                             .scan( "employee" )
@@ -1183,8 +1183,8 @@ public class RelBuilderTest {
         //   SELECT empid FROM emp
         //   UNION ALL
         //   SELECT deptno FROM emp
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
@@ -1213,8 +1213,8 @@ public class RelBuilderTest {
         //   SELECT empid FROM emp
         //   UNION ALL
         //   SELECT deptno FROM emp
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
@@ -1236,8 +1236,8 @@ public class RelBuilderTest {
         //   WHERE deptno = 20
         //   INTERSECT
         //   SELECT deptno FROM dept
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
@@ -1267,8 +1267,8 @@ public class RelBuilderTest {
         //   SELECT empid FROM emp
         //   INTERSECT ALL
         //   SELECT deptno FROM emp
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
@@ -1296,8 +1296,8 @@ public class RelBuilderTest {
         //   WHERE deptno = 20
         //   MINUS
         //   SELECT deptno FROM dept
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
@@ -1325,14 +1325,14 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM (SELECT * FROM employee WHERE commission IS NULL)
         //   JOIN dept ON emp.deptno = dept.deptno
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .filter(
                                 builder.call( OperatorRegistry.get( OperatorName.IS_NULL ),
                                         builder.field( "commission" ) ) )
                         .scan( "department" )
-                        .join( JoinRelType.INNER,
+                        .join( JoinAlgType.INNER,
                                 builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, 0, "deptno" ),
                                         builder.field( 2, 1, "deptno" ) ) )
@@ -1351,12 +1351,12 @@ public class RelBuilderTest {
      */
     @Test
     public void testJoinUsing() {
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root2 =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root2 =
                 builder.scan( "employee" )
                         .filter( builder.call( OperatorRegistry.get( OperatorName.IS_NULL ), builder.field( "commission" ) ) )
                         .scan( "department" )
-                        .join( JoinRelType.INNER, "deptno" )
+                        .join( JoinAlgType.INNER, "deptno" )
                         .build();
         final String expected = ""
                 + "LogicalJoin(condition=[=($7, $8)], joinType=[inner])\n"
@@ -1375,11 +1375,11 @@ public class RelBuilderTest {
         //   LEFT JOIN dept ON emp.deptno = dept.deptno
         //     AND emp.empid = 123
         //     AND dept.deptno IS NOT NULL
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .scan( "department" )
-                        .join( JoinRelType.LEFT,
+                        .join( JoinAlgType.LEFT,
                                 builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, 0, "deptno" ),
                                         builder.field( 2, 1, "deptno" ) ),
@@ -1402,11 +1402,11 @@ public class RelBuilderTest {
     public void testJoinCartesian() {
         // Equivalent SQL:
         //   SELECT * employee CROSS JOIN dept
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .scan( "department" )
-                        .join( JoinRelType.INNER )
+                        .join( JoinAlgType.INNER )
                         .build();
         final String expected =
                 "LogicalJoin(condition=[true], joinType=[inner])\n"
@@ -1418,14 +1418,14 @@ public class RelBuilderTest {
 
     @Test
     public void testCorrelationFails() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         final Holder<RexCorrelVariable> v = Holder.of( null );
         try {
             builder.scan( "employee" )
                     .variable( v )
                     .filter( builder.equals( builder.field( 0 ), v.get() ) )
                     .scan( "department" )
-                    .join( JoinRelType.INNER, builder.literal( true ),
+                    .join( JoinAlgType.INNER, builder.literal( true ),
                             ImmutableSet.of( v.get().id ) );
             fail( "expected error" );
         } catch ( IllegalArgumentException e ) {
@@ -1437,13 +1437,13 @@ public class RelBuilderTest {
 
     @Test
     public void testCorrelationWithCondition() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         final Holder<RexCorrelVariable> v = Holder.of( null );
-        RelNode root = builder.scan( "employee" )
+        AlgNode root = builder.scan( "employee" )
                 .variable( v )
                 .scan( "department" )
                 .filter( builder.equals( builder.field( 0 ), builder.field( v.get(), "deptno" ) ) )
-                .join( JoinRelType.LEFT,
+                .join( JoinAlgType.LEFT,
                         builder.equals( builder.field( 2, 0, "salary" ), builder.literal( 1000 ) ),
                         ImmutableSet.of( v.get().id ) )
                 .build();
@@ -1464,12 +1464,12 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM employee AS e, dept
         //   WHERE e.deptno = department.deptno
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "e" )
                         .scan( "department" )
-                        .join( JoinRelType.LEFT )
+                        .join( JoinAlgType.LEFT )
                         .filter( builder.equals( builder.field( "e", "deptno" ), builder.field( "department", "deptno" ) ) )
                         .project( builder.field( "e", "ename" ), builder.field( "department", "name" ) )
                         .build();
@@ -1479,7 +1479,7 @@ public class RelBuilderTest {
                 + "      LogicalTableScan(table=[[public, employee]])\n"
                 + "      LogicalTableScan(table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
-        final RelDataTypeField field = root.getRowType().getFieldList().get( 1 );
+        final AlgDataTypeField field = root.getRowType().getFieldList().get( 1 );
         assertThat( field.getName(), is( "name" ) );
         assertThat( field.getType().isNullable(), is( true ) );
     }
@@ -1492,15 +1492,15 @@ public class RelBuilderTest {
         //   FROM employee AS e, employee as m, dept
         //   WHERE e.deptno = dept.deptno
         //   AND m.empid = e.mgr
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "e" )
                         .scan( "employee" )
                         .as( "m" )
                         .scan( "department" )
-                        .join( JoinRelType.INNER )
-                        .join( JoinRelType.INNER )
+                        .join( JoinAlgType.INNER )
+                        .join( JoinAlgType.INNER )
                         .filter(
                                 builder.equals( builder.field( "e", "deptno" ), builder.field( "department", "deptno" ) ),
                                 builder.equals( builder.field( "m", "empid" ), builder.field( "e", "mgr" ) ) )
@@ -1518,8 +1518,8 @@ public class RelBuilderTest {
 
     @Test
     public void testAliasSort() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "e" )
                         .sort( 0 )
@@ -1535,8 +1535,8 @@ public class RelBuilderTest {
 
     @Test
     public void testAliasLimit() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "e" )
                         .sort( 1 )
@@ -1552,12 +1552,12 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for "RelBuilder's project() doesn't preserve alias".
+     * Test case for "AlgBuilder's project() doesn't preserve alias".
      */
     @Test
     public void testAliasProject() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "employee_alias" )
                         .project( builder.field( "deptno" ), builder.literal( 20 ) )
@@ -1575,8 +1575,8 @@ public class RelBuilderTest {
      */
     @Test
     public void testAliasProjectProject() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "employee_alias" )
                         .project(
@@ -1602,8 +1602,8 @@ public class RelBuilderTest {
      */
     @Test
     public void testAliasFilter() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "employee_alias" )
                         .project(
@@ -1629,8 +1629,8 @@ public class RelBuilderTest {
 
     @Test
     public void testAliasAggregate() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "employee_alias" )
                         .project(
@@ -1657,12 +1657,12 @@ public class RelBuilderTest {
      */
     @Test
     public void testProjectJoin() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "e" )
                         .scan( "department" )
-                        .join( JoinRelType.INNER )
+                        .join( JoinAlgType.INNER )
                         .project(
                                 builder.field( "department", "deptno" ),
                                 builder.field( 0 ),
@@ -1687,8 +1687,8 @@ public class RelBuilderTest {
      */
     @Test
     public void testProjectProject() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "e" )
                         .projectPlus(
@@ -1713,15 +1713,15 @@ public class RelBuilderTest {
 
     @Test
     public void testMultiLevelAlias() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "e" )
                         .scan( "employee" )
                         .as( "m" )
                         .scan( "department" )
-                        .join( JoinRelType.INNER )
-                        .join( JoinRelType.INNER )
+                        .join( JoinAlgType.INNER )
+                        .join( JoinAlgType.INNER )
                         .project(
                                 builder.field( "department", "deptno" ),
                                 builder.field( 16 ),
@@ -1752,8 +1752,8 @@ public class RelBuilderTest {
 
     @Test
     public void testUnionAlias() {
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .as( "e1" )
                         .project(
@@ -1785,7 +1785,7 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for "Add RelBuilder field() method to reference aliased relations not on top of stack", accessing tables aliased that are not accessible in the top RelNode.
+     * Test case for "Add{@link AlgBuilder}  field() method to reference aliased relations not on top of stack", accessing tables aliased that are not accessible in the top AlgNode.
      */
     @Test
     public void testAliasPastTop() {
@@ -1795,11 +1795,11 @@ public class RelBuilderTest {
         //   LEFT JOIN dept ON emp.deptno = dept.deptno
         //     AND emp.empid = 123
         //     AND dept.deptno IS NOT NULL
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" )
                         .scan( "department" )
-                        .join( JoinRelType.LEFT,
+                        .join( JoinAlgType.LEFT,
                                 builder.call(
                                         OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, "employee", "deptno" ),
@@ -1828,18 +1828,18 @@ public class RelBuilderTest {
         //   INNER JOIN employee t2 ON t1.empid = t2.empid
         //   INNER JOIN dept t3 ON t1.deptno = t3.deptno
         //     AND t2.job != t3.loc
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "employee" ).as( "t1" )
                         .scan( "employee" ).as( "t2" )
                         .join(
-                                JoinRelType.INNER,
+                                JoinAlgType.INNER,
                                 builder.equals(
                                         builder.field( 2, "t1", "empid" ),
                                         builder.field( 2, "t2", "empid" ) ) )
                         .scan( "department" ).as( "t3" )
                         .join(
-                                JoinRelType.INNER,
+                                JoinAlgType.INNER,
                                 builder.equals(
                                         builder.field( 2, "t1", "deptno" ),
                                         builder.field( 2, "t3", "deptno" ) ),
@@ -1868,8 +1868,8 @@ public class RelBuilderTest {
         //   SELECT deptno, true FROM dept LIMIT 0
         // optimized to
         //   VALUES
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.scan( "department" )
                         .project(
                                 builder.field( 0 ),
@@ -1887,8 +1887,8 @@ public class RelBuilderTest {
     public void testValues() {
         // Equivalent SQL:
         //   VALUES (true, 1), (false, -50) AS t(a, b)
-        final RelBuilder builder = createRelBuilder();
-        RelNode root = builder.values( new String[]{ "a", "b" }, true, 1, false, -50 ).build();
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root = builder.values( new String[]{ "a", "b" }, true, 1, false, -50 ).build();
         final String expected = "LogicalValues(tuples=[[{ true, 1 }, { false, -50 }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BOOLEAN NOT NULL a, INTEGER NOT NULL b) NOT NULL";
@@ -1903,8 +1903,8 @@ public class RelBuilderTest {
     public void testValuesNullable() {
         // Equivalent SQL:
         //   VALUES (null, 1, 'abc'), (false, null, 'longer string')
-        final RelBuilder builder = createRelBuilder();
-        RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        AlgNode root =
                 builder.values( new String[]{ "a", null, "c" }, null, 1, "abc", false, null, "longer string" ).build();
         final String expected = "LogicalValues(tuples=[[{ null, 1, 'abc' }, { false, null, 'longer string' }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
@@ -1916,8 +1916,8 @@ public class RelBuilderTest {
     @Test
     public void testValuesBadNullFieldNames() {
         try {
-            final RelBuilder builder = createRelBuilder();
-            RelBuilder root = builder.values( (String[]) null, "a", "b" );
+            final AlgBuilder builder = createRelBuilder();
+            AlgBuilder root = builder.values( (String[]) null, "a", "b" );
             fail( "expected error, got " + root );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), is( "Value count must be a positive multiple of field count" ) );
@@ -1928,8 +1928,8 @@ public class RelBuilderTest {
     @Test
     public void testValuesBadNoFields() {
         try {
-            final RelBuilder builder = createRelBuilder();
-            RelBuilder root = builder.values( new String[0], 1, 2, 3 );
+            final AlgBuilder builder = createRelBuilder();
+            AlgBuilder root = builder.values( new String[0], 1, 2, 3 );
             fail( "expected error, got " + root );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), is( "Value count must be a positive multiple of field count" ) );
@@ -1940,8 +1940,8 @@ public class RelBuilderTest {
     @Test
     public void testValuesBadNoValues() {
         try {
-            final RelBuilder builder = createRelBuilder();
-            RelBuilder root = builder.values( new String[]{ "a", "b" } );
+            final AlgBuilder builder = createRelBuilder();
+            AlgBuilder root = builder.values( new String[]{ "a", "b" } );
             fail( "expected error, got " + root );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), is( "Value count must be a positive multiple of field count" ) );
@@ -1952,8 +1952,8 @@ public class RelBuilderTest {
     @Test
     public void testValuesBadOddMultiple() {
         try {
-            final RelBuilder builder = createRelBuilder();
-            RelBuilder root = builder.values( new String[]{ "a", "b" }, 1, 2, 3, 4, 5 );
+            final AlgBuilder builder = createRelBuilder();
+            AlgBuilder root = builder.values( new String[]{ "a", "b" }, 1, 2, 3, 4, 5 );
             fail( "expected error, got " + root );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), is( "Value count must be a positive multiple of field count" ) );
@@ -1964,8 +1964,8 @@ public class RelBuilderTest {
     @Test
     public void testValuesBadAllNull() {
         try {
-            final RelBuilder builder = createRelBuilder();
-            RelBuilder root = builder.values( new String[]{ "a", "b" }, null, null, 1, null );
+            final AlgBuilder builder = createRelBuilder();
+            AlgBuilder root = builder.values( new String[]{ "a", "b" }, null, null, 1, null );
             fail( "expected error, got " + root );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), is( "All values of field 'b' are null; cannot deduce type" ) );
@@ -1975,13 +1975,13 @@ public class RelBuilderTest {
 
     @Test
     public void testValuesAllNull() {
-        final RelBuilder builder = createRelBuilder();
-        RelDataType rowType =
+        final AlgBuilder builder = createRelBuilder();
+        AlgDataType rowType =
                 builder.getTypeFactory().builder()
                         .add( "a", null, PolyType.BIGINT )
                         .add( "a", null, PolyType.VARCHAR, 10 )
                         .build();
-        RelNode root = builder.values( rowType, null, null, 1, null ).build();
+        AlgNode root = builder.values( rowType, null, null, 1, null ).build();
         final String expected = "LogicalValues(tuples=[[{ null, null }, { 1, null }]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
         final String expectedType = "RecordType(BIGINT NOT NULL a, VARCHAR(10) NOT NULL a) NOT NULL";
@@ -1995,8 +1995,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   ORDER BY 3. 1 DESC
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .sort( builder.field( 2 ), builder.desc( builder.field( 0 ) ) )
                         .build();
@@ -2005,7 +2005,7 @@ public class RelBuilderTest {
         assertThat( root, Matchers.hasTree( expected ) );
 
         // same result using ordinals
-        final RelNode root2 = builder.scan( "employee" ).sort( 2, -1 ).build();
+        final AlgNode root2 = builder.scan( "employee" ).sort( 2, -1 ).build();
         assertThat( root2, Matchers.hasTree( expected ) );
     }
 
@@ -2019,8 +2019,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   OFFSET 0
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .sortLimit( 0, -1, ImmutableList.of() )
                         .build();
@@ -2037,8 +2037,8 @@ public class RelBuilderTest {
         //   ORDER BY empid DESC, deptno, empid ASC, hiredate
         //
         // The sort key "empid ASC" is unnecessary and is ignored.
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .sort(
                                 builder.desc( builder.field( "empid" ) ),
@@ -2058,8 +2058,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   ORDER BY ename ASC NULLS LAST, hiredate + mgr DESC NULLS FIRST
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .sort( builder.nullsLast( builder.desc( builder.field( 1 ) ) ),
                                 builder.nullsFirst(
@@ -2083,8 +2083,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   OFFSET 2 FETCH 10
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .limit( 2, 10 )
                         .build();
@@ -2101,8 +2101,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   ORDER BY deptno DESC FETCH 10
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .sortLimit( -1, 10, builder.desc( builder.field( "deptno" ) ) )
                         .build();
@@ -2119,8 +2119,8 @@ public class RelBuilderTest {
         //   SELECT *
         //   FROM emp
         //   ORDER BY deptno DESC FETCH 0
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .sortLimit( -1, 0, builder.desc( builder.field( "deptno" ) ) )
                         .build();
@@ -2130,18 +2130,18 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for "RelBuilder sort-combining optimization treats aliases incorrectly".
+     * Test case for "AlgBuilder sort-combining optimization treats aliases incorrectly".
      */
     @Test
     public void testSortOverProjectSort() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         builder.scan( "employee" )
                 .sort( 0 )
                 .project( builder.field( 1 ) )
                 // was throwing exception here when attempting to apply to inner sort node
                 .limit( 0, 1 )
                 .build();
-        RelNode root = builder.scan( "employee" )
+        AlgNode root = builder.scan( "employee" )
                 .sort( 0 )
                 .project( Lists.newArrayList( builder.field( 1 ) ), Lists.newArrayList( "F1" ) )
                 .limit( 0, 1 )
@@ -2162,8 +2162,8 @@ public class RelBuilderTest {
      */
     @Test
     public void testSortThenLimit() {
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .sort( builder.desc( builder.field( "deptno" ) ) )
                         .limit( -1, 10 )
@@ -2173,7 +2173,7 @@ public class RelBuilderTest {
                 + "  LogicalTableScan(table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
 
-        final RelNode root2 =
+        final AlgNode root2 =
                 builder.scan( "employee" )
                         .sortLimit( -1, 10, builder.desc( builder.field( "deptno" ) ) )
                         .build();
@@ -2186,8 +2186,8 @@ public class RelBuilderTest {
      */
     @Test
     public void testSortExpThenLimit() {
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "department" )
                         .sort(
                                 builder.desc(
@@ -2204,7 +2204,7 @@ public class RelBuilderTest {
                 + "      LogicalTableScan(table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
 
-        final RelNode root2 =
+        final AlgNode root2 =
                 builder.scan( "department" )
                         .sortLimit( 3, 10,
                                 builder.desc(
@@ -2218,11 +2218,11 @@ public class RelBuilderTest {
 
 
     /**
-     * Test case for "RelBuilder.call throws NullPointerException if argument types are invalid".
+     * Test case for "AlgBuilder.call throws NullPointerException if argument types are invalid".
      */
     @Test
     public void testTypeInferenceValidation() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         // test for a) call(operator, Iterable<RexNode>)
         final RexNode arg0 = builder.literal( 0 );
         final RexNode arg1 = builder.literal( "xyz" );
@@ -2259,9 +2259,9 @@ public class RelBuilderTest {
         //       DOWN as DOWN.mgr < PREV(DOWN.mgr),
         //       UP as UP.mgr > PREV(UP.mgr)
         //   )
-        final RelBuilder builder = createRelBuilder().scan( "employee" );
-        final RelDataTypeFactory typeFactory = builder.getTypeFactory();
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgBuilder builder = createRelBuilder().scan( "employee" );
+        final AlgDataTypeFactory typeFactory = builder.getTypeFactory();
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
 
         RexNode pattern = builder.patternConcat(
                 builder.literal( "STRT" ),
@@ -2322,7 +2322,7 @@ public class RelBuilderTest {
         RexNode interval = builder.literal( "INTERVAL '5' SECOND" );
 
         final ImmutableMap<String, TreeSet<String>> subsets = ImmutableMap.of();
-        final RelNode root = builder
+        final AlgNode root = builder
                 .match( pattern, false, false, pdBuilder.build(), measuresBuilder.build(), after, subsets, false, partitionKeysBuilder.build(), orderKeysBuilder.build(), interval )
                 .build();
         final String expected = "LogicalMatch(partition=[[$7]], order=[[0]], "
@@ -2342,9 +2342,9 @@ public class RelBuilderTest {
 
     @Test
     public void testFilterCastAny() {
-        final RelBuilder builder = createRelBuilder();
-        final RelDataType anyType = builder.getTypeFactory().createPolyType( PolyType.ANY );
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgDataType anyType = builder.getTypeFactory().createPolyType( PolyType.ANY );
+        final AlgNode root =
                 builder.scan( "employee" )
                         .filter(
                                 builder.cast(
@@ -2360,9 +2360,9 @@ public class RelBuilderTest {
 
     @Test
     public void testFilterCastNull() {
-        final RelBuilder builder = createRelBuilder();
-        final RelDataTypeFactory typeFactory = builder.getTypeFactory();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgDataTypeFactory typeFactory = builder.getTypeFactory();
+        final AlgNode root =
                 builder.scan( "employee" )
                         .filter(
                                 builder.getRexBuilder().makeCast(
@@ -2382,7 +2382,7 @@ public class RelBuilderTest {
 
     @Test
     public void testRelBuilderToString() {
-        final RelBuilder builder = createRelBuilder();
+        final AlgBuilder builder = createRelBuilder();
         builder.scan( "employee" );
 
         // One entry on the stack, a single-node tree
@@ -2404,8 +2404,8 @@ public class RelBuilderTest {
     }
 
 
-    private void checkExpandTable( RelBuilder builder, Matcher<RelNode> matcher ) {
-        final RelNode root =
+    private void checkExpandTable( AlgBuilder builder, Matcher<AlgNode> matcher ) {
+        final AlgNode root =
                 builder.scan( "JDBC_public", "employee" )
                         .filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( 2 ), builder.literal( 10 ) ) )
                         .build();
@@ -2415,9 +2415,9 @@ public class RelBuilderTest {
 
     @Test
     public void testExchange() {
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root = builder.scan( "employee" )
-                .exchange( RelDistributions.hash( Lists.newArrayList( 0 ) ) )
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root = builder.scan( "employee" )
+                .exchange( AlgDistributions.hash( Lists.newArrayList( 0 ) ) )
                 .build();
         final String expected =
                 "LogicalExchange(distribution=[hash[0]])\n"
@@ -2428,12 +2428,12 @@ public class RelBuilderTest {
 
     @Test
     public void testSortExchange() {
-        final RelBuilder builder = createRelBuilder();
-        final RelNode root =
+        final AlgBuilder builder = createRelBuilder();
+        final AlgNode root =
                 builder.scan( "public", "employee" )
                         .sortExchange(
-                                RelDistributions.hash( Lists.newArrayList( 0 ) ),
-                                RelCollations.of( 0 ) )
+                                AlgDistributions.hash( Lists.newArrayList( 0 ) ),
+                                AlgCollations.of( 0 ) )
                         .build();
         final String expected =
                 "LogicalSortExchange(distribution=[hash[0]], collation=[[0]])\n"

@@ -36,7 +36,7 @@ package org.polypheny.db.interpreter;
 
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
 
@@ -53,15 +53,15 @@ public class Interpreters {
     /**
      * Creates a {@link Bindable} that interprets a given relational expression.
      */
-    public static ArrayBindable bindable( final RelNode rel ) {
-        if ( rel instanceof ArrayBindable ) {
-            // E.g. if rel instanceof BindableRel
-            return (ArrayBindable) rel;
+    public static ArrayBindable bindable( final AlgNode alg ) {
+        if ( alg instanceof ArrayBindable ) {
+            // E.g. if alg instanceof BindableRel
+            return (ArrayBindable) alg;
         }
         return new ArrayBindable() {
             @Override
             public Enumerable<Object[]> bind( DataContext dataContext ) {
-                return new Interpreter( dataContext, rel );
+                return new Interpreter( dataContext, alg );
             }
 
 

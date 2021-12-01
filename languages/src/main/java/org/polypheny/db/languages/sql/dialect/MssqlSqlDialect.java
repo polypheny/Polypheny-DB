@@ -31,7 +31,7 @@ import org.polypheny.db.languages.sql.SqlLiteral;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlUtil;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
@@ -163,7 +163,7 @@ public class MssqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public void unparseSqlIntervalQualifier( SqlWriter writer, SqlIntervalQualifier qualifier, RelDataTypeSystem typeSystem ) {
+    public void unparseSqlIntervalQualifier( SqlWriter writer, SqlIntervalQualifier qualifier, AlgDataTypeSystem typeSystem ) {
         switch ( qualifier.timeUnitRange ) {
             case YEAR:
             case QUARTER:
@@ -196,7 +196,7 @@ public class MssqlSqlDialect extends SqlDialect {
 
     private void unparseSqlIntervalLiteralMssql( SqlWriter writer, SqlIntervalLiteral literal, int sign ) {
         final SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue) literal.getValue();
-        unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), RelDataTypeSystem.DEFAULT );
+        unparseSqlIntervalQualifier( writer, interval.getIntervalQualifier(), AlgDataTypeSystem.DEFAULT );
         writer.sep( ",", true );
         if ( interval.getSign() * sign == -1 ) {
             writer.print( "-" );

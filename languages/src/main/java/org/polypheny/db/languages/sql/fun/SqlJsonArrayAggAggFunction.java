@@ -34,7 +34,7 @@ import org.polypheny.db.languages.sql.SqlWriter;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -76,10 +76,10 @@ public class SqlJsonArrayAggAggFunction extends SqlAggFunction implements JsonAg
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // To prevent operator rewriting by SqlFunction#deriveType.
         for ( Node operand : call.getOperandList() ) {
-            RelDataType nodeType = validator.deriveType( scope, operand );
+            AlgDataType nodeType = validator.deriveType( scope, operand );
             ((SqlValidatorImpl) validator).setValidatedNodeType( (SqlNode) operand, nodeType );
         }
         return validateOperands( (SqlValidator) validator, (SqlValidatorScope) scope, (SqlCall) call );

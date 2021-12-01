@@ -38,8 +38,8 @@ import java.io.File;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.languages.Parser;
-import org.polypheny.db.plan.RelImplementor;
-import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.plan.AlgImplementor;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.prepare.Prepare;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +79,7 @@ public abstract class PolyphenyDbTrace {
      * </ul>
      */
     public static Logger getPlannerTracer() {
-        return LoggerFactory.getLogger( RelOptPlanner.class.getName() );
+        return LoggerFactory.getLogger( AlgOptPlanner.class.getName() );
     }
 
 
@@ -92,10 +92,10 @@ public abstract class PolyphenyDbTrace {
 
 
     /**
-     * The "org.polypheny.db.rel.RelImplementorImpl" tracer reports when expressions are bound to variables (DEBUG, formerly FINE)
+     * The "org.polypheny.db.alg.RelImplementorImpl" tracer reports when expressions are bound to variables (DEBUG, formerly FINE)
      */
     public static Logger getRelImplementorTracer() {
-        return LoggerFactory.getLogger( RelImplementor.class );
+        return LoggerFactory.getLogger( AlgImplementor.class );
     }
 
 

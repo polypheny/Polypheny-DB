@@ -60,9 +60,9 @@ import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -453,10 +453,10 @@ public abstract class DdlManager {
      *
      * @param viewName the name of the new view
      * @param schemaId the id of the schema to which the view belongs
-     * @param relNode the relNode which was built form the Select part of the view
+     * @param algNode the algNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation relCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
 
 
     /**
@@ -467,7 +467,7 @@ public abstract class DdlManager {
      * @param relRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
+    public abstract void createMaterializedView( String viewName, long schemaId, AlgRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
 
 
     /**

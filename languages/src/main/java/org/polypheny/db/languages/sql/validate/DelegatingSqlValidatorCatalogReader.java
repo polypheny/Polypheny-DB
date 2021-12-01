@@ -22,7 +22,7 @@ import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorTable;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -50,7 +50,7 @@ public abstract class DelegatingSqlValidatorCatalogReader implements ValidatorCa
 
 
     @Override
-    public RelDataType getNamedType( Identifier typeName ) {
+    public AlgDataType getNamedType( Identifier typeName ) {
         return catalogReader.getNamedType( typeName );
     }
 

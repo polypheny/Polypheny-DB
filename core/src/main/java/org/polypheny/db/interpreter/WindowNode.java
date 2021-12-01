@@ -34,7 +34,7 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.rel.core.Window;
+import org.polypheny.db.algebra.core.Window;
 
 
 /**
@@ -42,8 +42,8 @@ import org.polypheny.db.rel.core.Window;
  */
 public class WindowNode extends AbstractSingleNode<Window> {
 
-    WindowNode( Compiler compiler, Window rel ) {
-        super( compiler, rel );
+    WindowNode( Compiler compiler, Window alg ) {
+        super( compiler, alg );
     }
 
 

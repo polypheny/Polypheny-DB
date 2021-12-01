@@ -20,12 +20,12 @@ package org.polypheny.db.languages.sql.validate;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -47,13 +47,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     /**
      * Type of the output row, which comprises the name and type of each output column. Set on validate.
      */
-    protected RelDataType rowType;
+    protected AlgDataType rowType;
 
 
     /**
      * As {@link #rowType}, but not necessarily a struct.
      */
-    protected RelDataType type;
+    protected AlgDataType type;
 
     protected final SqlNode enclosingNode;
 
@@ -77,13 +77,13 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public final void validate( RelDataType targetRowType ) {
+    public final void validate( AlgDataType targetRowType ) {
         switch ( status ) {
             case UNVALIDATED:
                 try {
                     status = SqlValidatorImpl.Status.IN_PROGRESS;
                     Preconditions.checkArgument( rowType == null, "Namespace.rowType must be null before validate has been called" );
-                    RelDataType type = validateImpl( targetRowType );
+                    AlgDataType type = validateImpl( targetRowType );
                     Preconditions.checkArgument( type != null, "validateImpl() returned null" );
                     setType( type );
                 } finally {
@@ -107,11 +107,11 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
      * @param targetRowType Desired row type, must not be null, may be the data type 'unknown'.
      * @return record data type, never null
      */
-    protected abstract RelDataType validateImpl( RelDataType targetRowType );
+    protected abstract AlgDataType validateImpl( AlgDataType targetRowType );
 
 
     @Override
-    public RelDataType getRowType() {
+    public AlgDataType getRowType() {
         if ( rowType == null ) {
             validator.validateNamespace( this, validator.unknownType );
             Preconditions.checkArgument( rowType != null, "validate must set rowType" );
@@ -121,20 +121,20 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public RelDataType getRowTypeSansSystemColumns() {
+    public AlgDataType getRowTypeSansSystemColumns() {
         return getRowType();
     }
 
 
     @Override
-    public RelDataType getType() {
+    public AlgDataType getType() {
         Util.discard( getRowType() );
         return type;
     }
 
 
     @Override
-    public void setType( RelDataType type ) {
+    public void setType( AlgDataType type ) {
         this.type = type;
         this.rowType = convertToStruct( type );
     }
@@ -160,7 +160,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
     @Override
     public boolean fieldExists( String name ) {
-        final RelDataType rowType = getRowType();
+        final AlgDataType rowType = getRowType();
         return validator.catalogReader.nameMatcher().field( rowType, name ) != null;
     }
 
@@ -206,16 +206,16 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     }
 
 
-    protected RelDataType convertToStruct( RelDataType type ) {
+    protected AlgDataType convertToStruct( AlgDataType type ) {
         // "MULTISET [<expr>, ...]" needs to be wrapped in a record if <expr> has a scalar type.
         // For example, "MULTISET [8, 9]" has type "RECORD(INTEGER EXPR$0 NOT NULL) NOT NULL MULTISET NOT NULL".
-        final RelDataType componentType = type.getComponentType();
+        final AlgDataType componentType = type.getComponentType();
         if ( componentType == null || componentType.isStruct() ) {
             return type;
         }
-        final RelDataTypeFactory typeFactory = validator.getTypeFactory();
-        final RelDataType structType = toStruct( componentType, getNode() );
-        final RelDataType collectionType;
+        final AlgDataTypeFactory typeFactory = validator.getTypeFactory();
+        final AlgDataType structType = toStruct( componentType, getNode() );
+        final AlgDataType collectionType;
         switch ( type.getPolyType() ) {
             case ARRAY:
                 collectionType = typeFactory.createArrayType( structType, -1 );
@@ -233,7 +233,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
     /**
      * Converts a type to a struct if it is not already.
      */
-    protected RelDataType toStruct( RelDataType type, SqlNode unnest ) {
+    protected AlgDataType toStruct( AlgDataType type, SqlNode unnest ) {
         if ( type.isStruct() ) {
             return type;
         }

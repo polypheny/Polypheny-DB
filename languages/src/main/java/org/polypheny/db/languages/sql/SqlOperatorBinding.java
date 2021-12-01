@@ -19,7 +19,7 @@ package org.polypheny.db.languages.sql;
 
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 
 /**
@@ -34,7 +34,7 @@ public abstract class SqlOperatorBinding extends OperatorBinding {
      * @param typeFactory Type factory
      * @param sqlOperator Operator which is subject of this call
      */
-    protected SqlOperatorBinding( RelDataTypeFactory typeFactory, Operator sqlOperator ) {
+    protected SqlOperatorBinding( AlgDataTypeFactory typeFactory, Operator sqlOperator ) {
         super( typeFactory, sqlOperator );
     }
 

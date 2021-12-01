@@ -44,7 +44,7 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.util.BuiltInMethod;
@@ -56,14 +56,14 @@ import org.polypheny.db.util.BuiltInMethod;
 public enum JavaRowFormat {
     CUSTOM {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
+        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             assert type.getFieldCount() > 1;
             return typeFactory.getJavaClass( type );
         }
 
 
         @Override
-        Type javaFieldClass( JavaTypeFactory typeFactory, RelDataType type, int index ) {
+        Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index ) {
             return typeFactory.getJavaClass( type.getFieldList().get( index ).getType() );
         }
 
@@ -95,14 +95,14 @@ public enum JavaRowFormat {
 
     SCALAR {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
+        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             assert type.getFieldCount() == 1;
             return typeFactory.getJavaClass( type.getFieldList().get( 0 ).getType() );
         }
 
 
         @Override
-        Type javaFieldClass( JavaTypeFactory typeFactory, RelDataType type, int index ) {
+        Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index ) {
             return javaRowClass( typeFactory, type );
         }
 
@@ -127,13 +127,13 @@ public enum JavaRowFormat {
      */
     LIST {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
+        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             return FlatLists.ComparableList.class;
         }
 
 
         @Override
-        Type javaFieldClass( JavaTypeFactory typeFactory, RelDataType type, int index ) {
+        Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index ) {
             return Object.class;
         }
 
@@ -213,13 +213,13 @@ public enum JavaRowFormat {
      */
     ROW {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
+        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             return Row.class;
         }
 
 
         @Override
-        Type javaFieldClass( JavaTypeFactory typeFactory, RelDataType type, int index ) {
+        Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index ) {
             return Object.class;
         }
 
@@ -242,13 +242,13 @@ public enum JavaRowFormat {
 
     ARRAY {
         @Override
-        Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type ) {
+        Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             return Object[].class;
         }
 
 
         @Override
-        Type javaFieldClass( JavaTypeFactory typeFactory, RelDataType type, int index ) {
+        Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index ) {
             return Object.class;
         }
 
@@ -276,7 +276,7 @@ public enum JavaRowFormat {
     };
 
 
-    public JavaRowFormat optimize( RelDataType rowType ) {
+    public JavaRowFormat optimize( AlgDataType rowType ) {
         switch ( rowType.getFieldCount() ) {
             case 0:
                 return LIST;
@@ -291,7 +291,7 @@ public enum JavaRowFormat {
     }
 
 
-    abstract Type javaRowClass( JavaTypeFactory typeFactory, RelDataType type );
+    abstract Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type );
 
     /**
      * Returns the java class that is used to physically store the given field. For instance, a non-null int field can still be stored in a field of type {@code Object.class} in {@link JavaRowFormat#ARRAY} case.
@@ -301,7 +301,7 @@ public enum JavaRowFormat {
      * @param index field index
      * @return java type used to store the field
      */
-    abstract Type javaFieldClass( JavaTypeFactory typeFactory, RelDataType type, int index );
+    abstract Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index );
 
     public abstract Expression record( Type javaRowClass, List<Expression> expressions );
 

@@ -27,7 +27,7 @@ import org.polypheny.db.core.fun.CountAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
 import org.polypheny.db.languages.sql.SqlSyntax;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -70,7 +70,7 @@ public class SqlCountAggFunction extends SqlAggFunction implements CountAggFunct
 
 
     @Override
-    public RelDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
+    public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
         // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
         if ( call.isCountStar() ) {
             return validator.getTypeFactory().createPolyType( PolyType.BIGINT );

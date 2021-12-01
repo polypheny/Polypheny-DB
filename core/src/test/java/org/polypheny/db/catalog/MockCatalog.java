@@ -51,9 +51,9 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -109,13 +109,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public Map<Long, RelNode> getNodeInfo() {
+    public Map<Long, AlgNode> getNodeInfo() {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public Map<Long, RelDataType> getRelTypeInfo() {
+    public Map<Long, AlgDataType> getRelTypeInfo() {
         throw new NotImplementedException();
     }
 
@@ -259,13 +259,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language ) {
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation relCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation relCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) {
         throw new NotImplementedException();
     }
 

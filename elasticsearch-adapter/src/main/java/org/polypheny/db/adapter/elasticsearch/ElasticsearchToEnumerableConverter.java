@@ -41,20 +41,20 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -62,32 +62,32 @@ import org.polypheny.db.util.Pair;
 /**
  * Relational expression representing a scan of a table in an Elasticsearch data source.
  */
-public class ElasticsearchToEnumerableConverter extends ConverterImpl implements EnumerableRel {
+public class ElasticsearchToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
-    ElasticsearchToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
+    ElasticsearchToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new ElasticsearchToEnumerableConverter( getCluster(), traitSet, sole( inputs ) );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor relImplementor, Prefer prefer ) {
+    public Result implement( EnumerableAlgImplementor relImplementor, Prefer prefer ) {
         final BlockBuilder block = new BlockBuilder();
         final ElasticsearchRel.Implementor implementor = new ElasticsearchRel.Implementor();
         implementor.visitChild( 0, getInput() );
 
-        final RelDataType rowType = getRowType();
+        final AlgDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( relImplementor.getTypeFactory(), rowType, prefer.prefer( JavaRowFormat.ARRAY ) );
         final Expression fields = block.append( "fields",
                 constantArrayList(

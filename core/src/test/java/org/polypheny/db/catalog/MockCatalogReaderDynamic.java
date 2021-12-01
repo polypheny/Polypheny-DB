@@ -17,8 +17,8 @@
 package org.polypheny.db.catalog;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 
 
@@ -37,7 +37,7 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
      * @param typeFactory Type factory
      * @param caseSensitive case sensitivity
      */
-    public MockCatalogReaderDynamic( RelDataTypeFactory typeFactory, boolean caseSensitive ) {
+    public MockCatalogReaderDynamic( AlgDataTypeFactory typeFactory, boolean caseSensitive ) {
         super( typeFactory, caseSensitive );
     }
 
@@ -55,8 +55,8 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
         registerTable( customerTable );
 
         // CREATE TABLE "REGION" - static table with known schema.
-        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
-        final RelDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
+        final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final AlgDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
 
         MockTable regionTable = MockTable.create( this, schema, "REGION", false, 100 );
         regionTable.addColumn( "R_REGIONKEY", intType );

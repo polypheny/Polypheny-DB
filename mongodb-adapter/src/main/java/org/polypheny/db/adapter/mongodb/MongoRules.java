@@ -51,7 +51,7 @@ import org.bson.BsonValue;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
+import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -64,32 +64,32 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.sql.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.languages.sql.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.Documents;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Documents;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -108,7 +108,7 @@ import org.slf4j.Logger;
 
 
 /**
- * Rules and relational operators for {@link MongoRel#CONVENTION MONGO} calling convention.
+ * Rules and relational operators for {@link MongoAlg#CONVENTION MONGO} calling convention.
  */
 public class MongoRules {
 
@@ -120,7 +120,7 @@ public class MongoRules {
     public static final MongoConvention convention = MongoConvention.INSTANCE;
 
     @Getter
-    public static final RelOptRule[] RULES = {
+    public static final AlgOptRule[] RULES = {
             MongoToEnumerableConverterRule.INSTANCE,
             MongoValuesRule.INSTANCE,
             MongoSortRule.INSTANCE,
@@ -157,7 +157,7 @@ public class MongoRules {
     }
 
 
-    static List<String> mongoFieldNames( final RelDataType rowType ) {
+    static List<String> mongoFieldNames( final AlgDataType rowType ) {
         return ValidatorUtil.uniquify(
                 new AbstractList<String>() {
                     @Override
@@ -209,7 +209,7 @@ public class MongoRules {
     }
 
 
-    public static Pair<String, RexNode> getAddFields( RexCall call, RelDataType rowType ) {
+    public static Pair<String, RexNode> getAddFields( RexCall call, AlgDataType rowType ) {
         assert call.operands.size() == 3;
         assert call.operands.get( 0 ) instanceof RexInputRef;
         assert call.operands.get( 1 ) instanceof RexLiteral;
@@ -474,7 +474,7 @@ public class MongoRules {
         }
 
 
-        public static String translateDocValue( RelDataType rowType, RexCall call ) {
+        public static String translateDocValue( AlgDataType rowType, RexCall call ) {
             RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
             RexCall names = (RexCall) call.operands.get( 1 );
             return "\"$" + rowType.getFieldNames().get( parent.getIndex() )
@@ -512,8 +512,8 @@ public class MongoRules {
         protected final Convention out;
 
 
-        <R extends RelNode> MongoConverterRule( Class<R> clazz, Predicate<? super R> supports, RelTrait in, Convention out, String description ) {
-            super( clazz, supports, in, out, RelFactories.LOGICAL_BUILDER, description );
+        <R extends AlgNode> MongoConverterRule( Class<R> clazz, Predicate<? super R> supports, AlgTrait in, Convention out, String description ) {
+            super( clazz, supports, in, out, AlgFactories.LOGICAL_BUILDER, description );
             this.out = out;
         }
 
@@ -529,18 +529,18 @@ public class MongoRules {
 
 
         private MongoSortRule() {
-            super( Sort.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoSortRule" );
+            super( Sort.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoSortRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final Sort sort = (Sort) rel;
-            final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
+        public AlgNode convert( AlgNode alg ) {
+            final Sort sort = (Sort) alg;
+            final AlgTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
             return new MongoSort(
-                    rel.getCluster(),
+                    alg.getCluster(),
                     traitSet,
-                    convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ),
+                    convert( sort.getInput(), traitSet.replace( AlgCollations.EMPTY ) ),
                     sort.getCollation(),
                     sort.offset,
                     sort.fetch );
@@ -550,7 +550,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalFilter} to a {@link MongoFilter}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link MongoFilter}.
      */
     private static class MongoFilterRule extends MongoConverterRule {
 
@@ -561,17 +561,17 @@ public class MongoRules {
             super( LogicalFilter.class,
                     project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
                     Convention.NONE,
-                    MongoRel.CONVENTION,
+                    MongoAlg.CONVENTION,
                     "MongoFilterRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalFilter filter = (LogicalFilter) rel;
-            final RelTraitSet traitSet = filter.getTraitSet().replace( out );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalFilter filter = (LogicalFilter) alg;
+            final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
             return new MongoFilter(
-                    rel.getCluster(),
+                    alg.getCluster(),
                     traitSet,
                     convert( filter.getInput(), out ),
                     filter.getCondition() );
@@ -581,7 +581,7 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalProject} to a {@link MongoProject}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link MongoProject}.
      */
     private static class MongoProjectRule extends MongoConverterRule {
 
@@ -593,15 +593,15 @@ public class MongoRules {
                     project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
                             && !containsIncompatible( project ),
                     Convention.NONE,
-                    MongoRel.CONVENTION,
+                    MongoAlg.CONVENTION,
                     "MongoProjectRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalProject project = (LogicalProject) rel;
-            final RelTraitSet traitSet = project.getTraitSet().replace( out );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalProject project = (LogicalProject) alg;
+            final AlgTraitSet traitSet = project.getTraitSet().replace( out );
             return new MongoProject(
                     project.getCluster(),
                     traitSet,
@@ -613,9 +613,9 @@ public class MongoRules {
     }
 
 
-    private static boolean containsIncompatible( SingleRel rel ) {
+    private static boolean containsIncompatible( SingleAlg alg ) {
         MongoExcludeVisitor visitor = new MongoExcludeVisitor();
-        for ( RexNode node : rel.getChildExps() ) {
+        for ( RexNode node : alg.getChildExps() ) {
             node.accept( visitor );
             if ( visitor.isContainsIncompatible() ) {
                 return true;
@@ -668,20 +668,20 @@ public class MongoRules {
 
 
         private MongoValuesRule() {
-            super( Values.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoValuesRule." + MongoRel.CONVENTION );
+            super( Values.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoValuesRule." + MongoAlg.CONVENTION );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            Values values = (Values) rel;
+        public AlgNode convert( AlgNode alg ) {
+            Values values = (Values) alg;
             if ( values.getModel() == SchemaType.DOCUMENT ) {
-                Documents documents = (Documents) rel;
+                Documents documents = (Documents) alg;
                 return new MongoDocuments(
-                        rel.getCluster(),
-                        rel.getRowType(),
+                        alg.getCluster(),
+                        alg.getRowType(),
                         documents.getDocumentTuples(),
-                        rel.getTraitSet().replace( out ),
+                        alg.getTraitSet().replace( out ),
                         values.getTuples()
                 );
             }
@@ -695,9 +695,9 @@ public class MongoRules {
     }
 
 
-    public static class MongoValues extends Values implements MongoRel {
+    public static class MongoValues extends Values implements MongoAlg {
 
-        MongoValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet ) {
+        MongoValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
             super( cluster, rowType, tuples, traitSet );
         }
 
@@ -710,13 +710,13 @@ public class MongoRules {
     }
 
 
-    public static class MongoDocuments extends Values implements MongoRel {
+    public static class MongoDocuments extends Values implements MongoAlg {
 
 
         private final ImmutableList<BsonValue> documentTuples;
 
 
-        public MongoDocuments( RelOptCluster cluster, RelDataType defaultRowType, ImmutableList<BsonValue> documentTuples, RelTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
+        public MongoDocuments( AlgOptCluster cluster, AlgDataType defaultRowType, ImmutableList<BsonValue> documentTuples, AlgTraitSet traitSet, ImmutableList<ImmutableList<RexLiteral>> normalizedTuples ) {
             super( cluster, defaultRowType, normalizedTuples, traitSet );
             //this.tuples = normalizedTuples;
             this.documentTuples = documentTuples;
@@ -737,13 +737,13 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, r -> true, Convention.NONE, MongoRel.CONVENTION, "MongoTableModificationRule." + MongoRel.CONVENTION );
+            super( TableModify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final TableModify modify = (TableModify) rel;
+        public AlgNode convert( AlgNode alg ) {
+            final TableModify modify = (TableModify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -752,13 +752,13 @@ public class MongoRules {
                 return null;
             }
 
-            final RelTraitSet traitSet = modify.getTraitSet().replace( out );
+            final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
             return new MongoTableModify(
                     modify.getCluster(),
                     traitSet,
                     modify.getTable(),
                     modify.getCatalogReader(),
-                    RelOptRule.convert( modify.getInput(), traitSet ),
+                    AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),
                     modify.getSourceExpressionList(),
@@ -768,18 +768,18 @@ public class MongoRules {
     }
 
 
-    private static class MongoTableModify extends TableModify implements MongoRel {
+    private static class MongoTableModify extends TableModify implements MongoAlg {
 
 
         private final GridFSBucket bucket;
 
 
         protected MongoTableModify(
-                RelOptCluster cluster,
-                RelTraitSet traitSet,
-                RelOptTable table,
+                AlgOptCluster cluster,
+                AlgTraitSet traitSet,
+                AlgOptTable table,
                 CatalogReader catalogReader,
-                RelNode input,
+                AlgNode input,
                 Operation operation,
                 List<String> updateColumnList,
                 List<RexNode> sourceExpressionList,
@@ -790,19 +790,19 @@ public class MongoRules {
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
         }
 
 
         @Override
-        public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new MongoTableModify(
                     getCluster(),
                     traitSet,
                     getTable(),
                     getCatalogReader(),
-                    AbstractRelNode.sole( inputs ),
+                    AbstractAlgNode.sole( inputs ),
                     getOperation(),
                     getUpdateColumnList(),
                     getSourceExpressionList(),
@@ -835,9 +835,9 @@ public class MongoRules {
                     }
                     break;
                 case UPDATE:
-                    MongoRel.Implementor condImplementor = new Implementor( true );
+                    MongoAlg.Implementor condImplementor = new Implementor( true );
                     condImplementor.setStaticRowType( implementor.getStaticRowType() );
-                    ((MongoRel) input).implement( condImplementor );
+                    ((MongoAlg) input).implement( condImplementor );
                     implementor.filter = condImplementor.filter;
                     assert condImplementor.getStaticRowType() instanceof MongoRowType;
                     MongoRowType rowType = (MongoRowType) condImplementor.getStaticRowType();
@@ -885,9 +885,9 @@ public class MongoRules {
                 case MERGE:
                     break;
                 case DELETE:
-                    MongoRel.Implementor filterCollector = new Implementor( true );
+                    MongoAlg.Implementor filterCollector = new Implementor( true );
                     filterCollector.setStaticRowType( implementor.getStaticRowType() );
-                    ((MongoRel) input).implement( filterCollector );
+                    ((MongoAlg) input).implement( filterCollector );
                     implementor.filter = filterCollector.filter;
                     if ( Pair.right( filterCollector.list ).contains( "{$limit: 1}" ) ) {
                         implementor.onlyOne = true;
@@ -1079,7 +1079,7 @@ public class MongoRules {
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
             Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
 
-            implementor.setStaticRowType( (RelRecordType) input.getRowType() );
+            implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
 
             int pos = 0;
             for ( RexNode rexNode : input.getChildExps() ) {
@@ -1114,7 +1114,7 @@ public class MongoRules {
         }
 
 
-        private Map<Integer, String> getPhysicalMap( List<RelDataTypeField> fieldList, CatalogTable catalogTable ) {
+        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, CatalogTable catalogTable ) {
             Map<Integer, String> map = new HashMap<>();
             List<String> names = catalogTable.getColumnNames();
             List<Long> ids = catalogTable.columnIds;
@@ -1156,7 +1156,7 @@ public class MongoRules {
             CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
 
-            RelDataType valRowType = rowType;
+            AlgDataType valRowType = rowType;
 
             if ( valRowType == null ) {
                 valRowType = values.getRowType();
@@ -1189,35 +1189,35 @@ public class MongoRules {
 
 
     /**
-     * Rule to convert an {@link org.polypheny.db.rel.logical.LogicalAggregate}
+     * Rule to convert an {@link org.polypheny.db.algebra.logical.LogicalAggregate}
      * to an {@link MongoAggregate}.
      */
     private static class MongoAggregateRule extends MongoConverterRule {
 
-        public static final RelOptRule INSTANCE = new MongoAggregateRule();
+        public static final AlgOptRule INSTANCE = new MongoAggregateRule();
 
 
         private MongoAggregateRule() {
-            super( LogicalAggregate.class, r -> true, Convention.NONE, MongoRel.CONVENTION,
+            super( LogicalAggregate.class, r -> true, Convention.NONE, MongoAlg.CONVENTION,
                     "MongoAggregateRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalAggregate agg = (LogicalAggregate) rel;
-            final RelTraitSet traitSet =
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalAggregate agg = (LogicalAggregate) alg;
+            final AlgTraitSet traitSet =
                     agg.getTraitSet().replace( out );
             try {
                 return new MongoAggregate(
-                        rel.getCluster(),
+                        alg.getCluster(),
                         traitSet,
                         convert( agg.getInput(), traitSet.simplify() ),
                         agg.indicator,
                         agg.getGroupSet(),
                         agg.getGroupSets(),
                         agg.getAggCallList() );
-            } catch ( InvalidRelException e ) {
+            } catch ( InvalidAlgException e ) {
                 LOGGER.warn( e.toString() );
                 return null;
             }

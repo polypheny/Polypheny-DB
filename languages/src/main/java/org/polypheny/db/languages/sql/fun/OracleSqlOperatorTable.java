@@ -23,8 +23,8 @@ import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.util.ReflectiveSqlOperatorTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyTypeTransforms;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -46,15 +46,15 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
      */
     protected static final PolyReturnTypeInference DECODE_RETURN_TYPE =
             opBinding -> {
-                final List<RelDataType> list = new ArrayList<>();
+                final List<AlgDataType> list = new ArrayList<>();
                 for ( int i = 1, n = opBinding.getOperandCount(); i < n; i++ ) {
                     if ( i < n - 1 ) {
                         ++i;
                     }
                     list.add( opBinding.getOperandType( i ) );
                 }
-                final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-                RelDataType type = typeFactory.leastRestrictive( list );
+                final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+                AlgDataType type = typeFactory.leastRestrictive( list );
                 if ( opBinding.getOperandCount() % 2 == 1 ) {
                     type = typeFactory.createTypeWithNullability( type, true );
                 }
@@ -112,7 +112,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      * Oracle's "SUBSTR(string, position [, substringLength ])" function.
      *
-     * It has similar semantics to standard SQL's {@see OperatorRegistry.get( OperatorName.SUBSTRING )} function but different syntax.
+     * It has similar semantics to standard SQL's {@code OperatorRegistry.get( OperatorName.SUBSTRING )} function but different syntax.
      */
     public static final SqlFunction SUBSTR =
             new SqlFunction(

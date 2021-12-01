@@ -22,7 +22,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.fun.SplittableAggFunction;
 import org.polypheny.db.core.fun.SumAggFunction;
 import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
@@ -35,7 +35,7 @@ import org.polypheny.db.util.Optionality;
 public class SqlSumAggFunction extends SqlAggFunction implements SumAggFunction {
 
 
-    public SqlSumAggFunction( RelDataType type ) {
+    public SqlSumAggFunction( AlgDataType type ) {
         super(
                 "SUM",
                 null,

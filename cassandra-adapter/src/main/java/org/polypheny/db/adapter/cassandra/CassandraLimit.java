@@ -35,14 +35,14 @@ package org.polypheny.db.adapter.cassandra;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelWriter;
-import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
@@ -50,13 +50,13 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Implementation of limits in Cassandra.
  */
-public class CassandraLimit extends SingleRel implements CassandraRel {
+public class CassandraLimit extends SingleAlg implements CassandraAlg {
 
     public final RexNode offset;
     public final RexNode fetch;
 
 
-    public CassandraLimit( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexNode offset, RexNode fetch ) {
+    public CassandraLimit( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input );
         this.offset = offset;
         this.fetch = fetch;
@@ -65,22 +65,22 @@ public class CassandraLimit extends SingleRel implements CassandraRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // We do this so we get the limit for free
         return planner.getCostFactory().makeZeroCost();
     }
 
 
     @Override
-    public CassandraLimit copy( RelTraitSet traitSet, List<RelNode> newInputs ) {
+    public CassandraLimit copy( AlgTraitSet traitSet, List<AlgNode> newInputs ) {
         return new CassandraLimit( getCluster(), traitSet, sole( newInputs ), offset, fetch );
     }
 
 
     @Override
-    public String relCompareString() {
+    public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
-                input.relCompareString() + "$" +
+                input.algCompareString() + "$" +
                 (getConvention() != null ? getConvention().getName() : "") + "$" +
                 (offset != null ? offset.hashCode() + "$" : "") +
                 (fetch != null ? fetch.hashCode() : "") + "&";
@@ -100,7 +100,7 @@ public class CassandraLimit extends SingleRel implements CassandraRel {
 
 
     @Override
-    public RelWriter explainTerms( RelWriter pw ) {
+    public AlgWriter explainTerms( AlgWriter pw ) {
         super.explainTerms( pw );
         pw.itemIf( "offset", offset, offset != null );
         pw.itemIf( "fetch", fetch, fetch != null );

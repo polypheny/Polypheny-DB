@@ -42,7 +42,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -76,7 +76,7 @@ public class ExtractOperatorConversion implements DruidSqlOperatorConverter {
 
 
     @Override
-    public String toDruidExpression( RexNode rexNode, RelDataType rowType, DruidQuery query ) {
+    public String toDruidExpression( RexNode rexNode, AlgDataType rowType, DruidQuery query ) {
 
         final RexCall call = (RexCall) rexNode;
         final RexLiteral flag = (RexLiteral) call.getOperands().get( 0 );

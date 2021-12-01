@@ -51,12 +51,12 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.Array;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.runtime.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.type.BasicPolyType;
@@ -79,23 +79,23 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
 
     public JavaTypeFactoryImpl() {
-        this( RelDataTypeSystem.DEFAULT );
+        this( AlgDataTypeSystem.DEFAULT );
     }
 
 
-    public JavaTypeFactoryImpl( RelDataTypeSystem typeSystem ) {
+    public JavaTypeFactoryImpl( AlgDataTypeSystem typeSystem ) {
         super( typeSystem );
     }
 
 
     @Override
-    public RelDataType createStructType( Class type ) {
-        final List<RelDataTypeField> list = new ArrayList<>();
+    public AlgDataType createStructType( Class type ) {
+        final List<AlgDataTypeField> list = new ArrayList<>();
         for ( Field field : type.getFields() ) {
             if ( !Modifier.isStatic( field.getModifiers() ) ) {
                 // FIXME: watch out for recursion
                 final Type fieldType = fieldType( field );
-                list.add( new RelDataTypeFieldImpl( field.getName(), list.size(), createType( fieldType ) ) );
+                list.add( new AlgDataTypeFieldImpl( field.getName(), list.size(), createType( fieldType ) ) );
             }
         }
         return canonize( new JavaRecordType( list, type ) );
@@ -122,9 +122,9 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
 
     @Override
-    public RelDataType createType( Type type ) {
-        if ( type instanceof RelDataType ) {
-            return (RelDataType) type;
+    public AlgDataType createType( Type type ) {
+        if ( type instanceof AlgDataType ) {
+            return (AlgDataType) type;
         }
         if ( type instanceof SyntheticRecordType ) {
             final SyntheticRecordType syntheticRecordType = (SyntheticRecordType) type;
@@ -132,13 +132,13 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
         if ( type instanceof Types.ArrayType ) {
             final Types.ArrayType arrayType = (Types.ArrayType) type;
-            final RelDataType componentRelType = createType( arrayType.getComponentType() );
+            final AlgDataType componentRelType = createType( arrayType.getComponentType() );
             return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
         }
         if ( type instanceof Types.MapType ) {
             final Types.MapType mapType = (Types.MapType) type;
-            final RelDataType keyRelType = createType( mapType.getKeyType() );
-            final RelDataType valueRelType = createType( mapType.getValueType() );
+            final AlgDataType keyRelType = createType( mapType.getKeyType() );
+            final AlgDataType valueRelType = createType( mapType.getValueType() );
             return createMapType(
                     createTypeWithNullability( keyRelType, mapType.keyIsNullable() ),
                     createTypeWithNullability( valueRelType, mapType.valueIsNullable() ) );
@@ -170,7 +170,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
 
     @Override
-    public Type getJavaClass( RelDataType type ) {
+    public Type getJavaClass( AlgDataType type ) {
         if ( type instanceof JavaType ) {
             JavaType javaType = (JavaType) type;
             return javaType.getJavaClass();
@@ -236,11 +236,11 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
         switch ( type.getPolyType() ) {
             case ROW:
-                assert type instanceof RelRecordType;
+                assert type instanceof AlgRecordType;
                 if ( type instanceof JavaRecordType ) {
                     return ((JavaRecordType) type).clazz;
                 } else {
-                    return createSyntheticType( (RelRecordType) type );
+                    return createSyntheticType( (AlgRecordType) type );
                 }
             case MAP:
                 return Map.class;
@@ -253,7 +253,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
 
 
     @Override
-    public RelDataType toSql( RelDataType type ) {
+    public AlgDataType toSql( AlgDataType type ) {
         return toSql( this, type );
     }
 
@@ -261,8 +261,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     /**
      * Converts a type in Java format to a SQL-oriented type.
      */
-    public static RelDataType toSql( final RelDataTypeFactory typeFactory, RelDataType type ) {
-        if ( type instanceof RelRecordType ) {
+    public static AlgDataType toSql( final AlgDataTypeFactory typeFactory, AlgDataType type ) {
+        if ( type instanceof AlgRecordType ) {
             return typeFactory.createStructType(
                     Lists.transform( type.getFieldList(), field -> toSql( typeFactory, field.getType() ) ),
                     type.getFieldNames() );
@@ -317,10 +317,10 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     /**
      * Creates a synthetic Java class whose fields have the same names and relational types.
      */
-    private Type createSyntheticType( RelRecordType type ) {
+    private Type createSyntheticType( AlgRecordType type ) {
         final String name = "Record" + type.getFieldCount() + "_" + syntheticTypes.size();
         final SyntheticRecordType syntheticType = new SyntheticRecordType( type, name );
-        for ( final RelDataTypeField recordField : type.getFieldList() ) {
+        for ( final AlgDataTypeField recordField : type.getFieldList() ) {
             final Type javaClass = getJavaClass( recordField.getType() );
             syntheticType.fields.add( new RecordFieldImpl( syntheticType, recordField.getName(), javaClass, recordField.getType().isNullable() && !Primitive.is( javaClass ), Modifier.PUBLIC ) );
         }
@@ -334,11 +334,11 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     public static class SyntheticRecordType implements Types.RecordType {
 
         final List<Types.RecordField> fields = new ArrayList<>();
-        final RelDataType relType;
+        final AlgDataType relType;
         private final String name;
 
 
-        private SyntheticRecordType( RelDataType relType, String name ) {
+        private SyntheticRecordType( AlgDataType relType, String name ) {
             this.relType = relType;
             this.name = name;
             assert relType == null

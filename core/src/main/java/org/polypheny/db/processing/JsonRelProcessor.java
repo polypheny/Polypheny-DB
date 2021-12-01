@@ -16,11 +16,11 @@
 
 package org.polypheny.db.processing;
 
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.transaction.Statement;
 
 public interface JsonRelProcessor {
 
-    RelNode parseJsonRel( Statement statement, String json );
+    AlgNode parseJsonRel( Statement statement, String json );
 
 }

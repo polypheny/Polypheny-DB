@@ -25,8 +25,8 @@ import org.polypheny.db.languages.sql.SqlCallBinding;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
@@ -61,8 +61,8 @@ public class SqlMultisetValueConstructor extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
-        RelDataType type =
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        AlgDataType type =
                 getComponentType(
                         opBinding.getTypeFactory(),
                         opBinding.collectOperandTypes() );
@@ -76,14 +76,14 @@ public class SqlMultisetValueConstructor extends SqlSpecialOperator {
     }
 
 
-    protected RelDataType getComponentType( RelDataTypeFactory typeFactory, List<RelDataType> argTypes ) {
+    protected AlgDataType getComponentType( AlgDataTypeFactory typeFactory, List<AlgDataType> argTypes ) {
         return typeFactory.leastRestrictive( argTypes );
     }
 
 
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        final List<RelDataType> argTypes =
+        final List<AlgDataType> argTypes =
                 PolyTypeUtil.deriveAndCollectTypes(
                         callBinding.getValidator(),
                         callBinding.getScope(),
@@ -91,7 +91,7 @@ public class SqlMultisetValueConstructor extends SqlSpecialOperator {
         if ( argTypes.size() == 0 ) {
             throw callBinding.newValidationError( Static.RESOURCE.requireAtLeastOneArg() );
         }
-        final RelDataType componentType = getComponentType( callBinding.getTypeFactory(), argTypes );
+        final AlgDataType componentType = getComponentType( callBinding.getTypeFactory(), argTypes );
         if ( null == componentType ) {
             if ( throwOnFailure ) {
                 throw callBinding.newValidationError( Static.RESOURCE.needSameTypeParameter() );

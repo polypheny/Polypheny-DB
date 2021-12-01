@@ -34,7 +34,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 
 public class ImplementationCache {
 
@@ -56,8 +56,8 @@ public class ImplementationCache {
     }
 
 
-    public PreparedResult getIfPresent( RelNode parameterizedNode ) {
-        PreparedResult preparedResult = implementationCache.getIfPresent( parameterizedNode.relCompareString() );
+    public PreparedResult getIfPresent( AlgNode parameterizedNode ) {
+        PreparedResult preparedResult = implementationCache.getIfPresent( parameterizedNode.algCompareString() );
         if ( preparedResult == null ) {
             missesCounter.incrementAndGet();
         } else {
@@ -67,8 +67,8 @@ public class ImplementationCache {
     }
 
 
-    public void put( RelNode parameterizedNode, PreparedResult preparedResult ) {
-        implementationCache.put( parameterizedNode.relCompareString(), preparedResult );
+    public void put( AlgNode parameterizedNode, PreparedResult preparedResult ) {
+        implementationCache.put( parameterizedNode.algCompareString(), preparedResult );
     }
 
 

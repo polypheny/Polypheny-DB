@@ -36,41 +36,41 @@ package org.polypheny.db.adapter.mongodb;
 
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Rule to convert a relational expression from {@link MongoRel#CONVENTION} to {@link EnumerableConvention}.
+ * Rule to convert a relational expression from {@link MongoAlg#CONVENTION} to {@link EnumerableConvention}.
  */
 public class MongoToEnumerableConverterRule extends ConverterRule {
 
-    public static final ConverterRule INSTANCE = new MongoToEnumerableConverterRule( RelFactories.LOGICAL_BUILDER );
+    public static final ConverterRule INSTANCE = new MongoToEnumerableConverterRule( AlgFactories.LOGICAL_BUILDER );
 
 
     /**
      * Creates a MongoToEnumerableConverterRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public MongoToEnumerableConverterRule( RelBuilderFactory relBuilderFactory ) {
+    public MongoToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                RelNode.class,
-                (Predicate<RelNode>) r -> true,
-                MongoRel.CONVENTION,
+                AlgNode.class,
+                (Predicate<AlgNode>) r -> true,
+                MongoAlg.CONVENTION,
                 EnumerableConvention.INSTANCE,
-                relBuilderFactory,
+                algBuilderFactory,
                 "MongoToEnumerableConverterRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
-        return new MongoToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
+    public AlgNode convert( AlgNode alg ) {
+        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutTrait() );
+        return new MongoToEnumerableConverter( alg.getCluster(), newTraitSet, alg );
     }
 
 }

@@ -17,7 +17,7 @@
 package org.polypheny.db.catalog;
 
 
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -27,10 +27,10 @@ final class CompoundNameColumn {
 
     final String first;
     final String second;
-    final RelDataType type;
+    final AlgDataType type;
 
 
-    CompoundNameColumn( String first, String second, RelDataType type ) {
+    CompoundNameColumn( String first, String second, AlgDataType type ) {
         this.first = first;
         this.second = second;
         this.type = type;

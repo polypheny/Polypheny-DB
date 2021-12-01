@@ -29,7 +29,7 @@ import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 
@@ -73,7 +73,7 @@ public class SqlOverOperator extends SqlBinaryOperator {
 
 
     @Override
-    public RelDataType deriveType( Validator rawValidator, ValidatorScope rawScope, Call rawCall ) {
+    public AlgDataType deriveType( Validator rawValidator, ValidatorScope rawScope, Call rawCall ) {
         SqlValidator validator = (SqlValidator) rawValidator;
         SqlValidatorScope scope = (SqlValidatorScope) rawScope;
         SqlCall call = (SqlCall) rawCall;
@@ -103,7 +103,7 @@ public class SqlOverOperator extends SqlBinaryOperator {
             }
         };
 
-        RelDataType ret = aggCall.getOperator().inferReturnType( opBinding );
+        AlgDataType ret = aggCall.getOperator().inferReturnType( opBinding );
 
         // Copied from validateOperands
         ((SqlValidatorImpl) validator).setValidatedNodeType( call, ret );

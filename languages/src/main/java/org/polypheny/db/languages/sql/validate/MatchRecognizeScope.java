@@ -24,8 +24,8 @@ import java.util.Set;
 import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.languages.sql.SqlMatchRecognize;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.StructKind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.StructKind;
 
 
 /**
@@ -78,7 +78,7 @@ public class MatchRecognizeScope extends ListScope {
     findQualifyingTableNames( String columnName, SqlNode ctx, NameMatcher nameMatcher ) {
         final Map<String, ScopeChild> map = new HashMap<>();
         for ( ScopeChild child : children ) {
-            final RelDataType rowType = child.namespace.getRowType();
+            final AlgDataType rowType = child.namespace.getRowType();
             if ( nameMatcher.field( rowType, columnName ) != null ) {
                 map.put( STAR, child );
             }

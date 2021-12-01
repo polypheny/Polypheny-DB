@@ -36,8 +36,8 @@ package org.polypheny.db.rex;
 
 import java.util.Objects;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -51,7 +51,7 @@ public class RexCorrelVariable extends RexVariable {
     public final CorrelationId id;
 
 
-    RexCorrelVariable( CorrelationId id, RelDataType type ) {
+    RexCorrelVariable( CorrelationId id, AlgDataType type ) {
         super( id.getName(), type );
         this.id = Objects.requireNonNull( id );
     }

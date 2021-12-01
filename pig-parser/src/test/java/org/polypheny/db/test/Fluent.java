@@ -49,8 +49,8 @@ import org.polypheny.db.piglet.Ast.Program;
 import org.polypheny.db.piglet.Handler;
 import org.polypheny.db.piglet.parser.ParseException;
 import org.polypheny.db.piglet.parser.PigletParser;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.tools.PigRelBuilder;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.util.Util;
 
 
@@ -74,9 +74,9 @@ class Fluent {
 
     public Fluent explainContains( String expected ) throws ParseException {
         final Program program = parseProgram( pig );
-        final PigRelBuilder builder = PigRelBuilder.create( PigRelBuilderTest.config().build() );
+        final PigAlgBuilder builder = PigAlgBuilder.create( PigRelBuilderTest.config().build() );
         new Handler( builder ).handle( program );
-        assertThat( Util.toLinux( RelOptUtil.toString( builder.peek() ) ), is( expected ) );
+        assertThat( Util.toLinux( AlgOptUtil.toString( builder.peek() ) ), is( expected ) );
         return this;
     }
 
@@ -113,7 +113,7 @@ class Fluent {
 
     public Fluent returns( Function<String, Void> checker ) throws ParseException {
         final Program program = parseProgram( pig );
-        final PigRelBuilder builder = PigRelBuilder.create( PigRelBuilderTest.config().build() );
+        final PigAlgBuilder builder = PigAlgBuilder.create( PigRelBuilderTest.config().build() );
         final StringWriter sw = new StringWriter();
         new PolyphenyDbHandler( builder, sw ).handle( program );
         checker.apply( Util.toLinux( sw.toString() ) );

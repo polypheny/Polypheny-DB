@@ -36,8 +36,8 @@ package org.polypheny.db.rex;
 
 import java.util.List;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.util.Pair;
 
 
@@ -76,7 +76,7 @@ public class RexInputRef extends RexSlot {
      * @param index Index of the field in the underlying row-type
      * @param type Type of the column
      */
-    public RexInputRef( int index, RelDataType type ) {
+    public RexInputRef( int index, AlgDataType type ) {
         super( createName( index ), index, type );
     }
 
@@ -98,7 +98,7 @@ public class RexInputRef extends RexSlot {
     /**
      * Creates a reference to a given field in a row type.
      */
-    public static RexInputRef of( int index, RelDataType rowType ) {
+    public static RexInputRef of( int index, AlgDataType rowType ) {
         return of( index, rowType.getFieldList() );
     }
 
@@ -106,7 +106,7 @@ public class RexInputRef extends RexSlot {
     /**
      * Creates a reference to a given field in a list of fields.
      */
-    public static RexInputRef of( int index, List<RelDataTypeField> fields ) {
+    public static RexInputRef of( int index, List<AlgDataTypeField> fields ) {
         return new RexInputRef( index, fields.get( index ).getType() );
     }
 
@@ -114,8 +114,8 @@ public class RexInputRef extends RexSlot {
     /**
      * Creates a reference to a given field in a list of fields.
      */
-    public static Pair<RexNode, String> of2( int index, List<RelDataTypeField> fields ) {
-        final RelDataTypeField field = fields.get( index );
+    public static Pair<RexNode, String> of2( int index, List<AlgDataTypeField> fields ) {
+        final AlgDataTypeField field = fields.get( index );
         return Pair.of( (RexNode) new RexInputRef( index, field.getType() ), field.getName() );
     }
 

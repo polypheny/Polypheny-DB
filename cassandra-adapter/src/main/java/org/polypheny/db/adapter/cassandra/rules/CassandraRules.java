@@ -31,31 +31,31 @@ import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableScan;
 import org.polypheny.db.adapter.cassandra.CassandraToEnumerableConverter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.util.ValidatorUtil;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -73,32 +73,32 @@ public class CassandraRules {
     protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
 
-    public static List<RelOptRule> rules( CassandraConvention out ) {
-        return rules( out, RelFactories.LOGICAL_BUILDER );
+    public static List<AlgOptRule> rules( CassandraConvention out ) {
+        return rules( out, AlgFactories.LOGICAL_BUILDER );
     }
 
 
-    public static List<RelOptRule> rules( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
+    public static List<AlgOptRule> rules( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
         return ImmutableList.of(
-                new CassandraToEnumerableConverterRule( out, relBuilderFactory ),
-                new CassandraFilterRule( out, relBuilderFactory ),
-                new CassandraProjectRule( out, relBuilderFactory ),
+                new CassandraToEnumerableConverterRule( out, algBuilderFactory ),
+                new CassandraFilterRule( out, algBuilderFactory ),
+                new CassandraProjectRule( out, algBuilderFactory ),
                 // TODO js: Disabling sort till I have time to figure out how to properly implement it.
-//                new CassandraSortRule( out, relBuilderFactory ),
-                new CassandraLimitRule( out, relBuilderFactory ),
-                new CassandraValuesRule( out, relBuilderFactory ),
-                new CassandraTableModificationRule( out, relBuilderFactory )
+//                new CassandraSortRule( out, algBuilderFactory ),
+                new CassandraLimitRule( out, algBuilderFactory ),
+                new CassandraValuesRule( out, algBuilderFactory ),
+                new CassandraTableModificationRule( out, algBuilderFactory )
         );
     }
 
 
-    public static List<String> cassandraLogicalFieldNames( final RelDataType rowType ) {
+    public static List<String> cassandraLogicalFieldNames( final AlgDataType rowType ) {
         return ValidatorUtil.uniquify( rowType.getFieldNames(), ValidatorUtil.EXPR_SUGGESTER, true );
     }
 
 
-    public static List<String> cassandraPhysicalFieldNames( final RelDataType rowType ) {
-        List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
+    public static List<String> cassandraPhysicalFieldNames( final AlgDataType rowType ) {
+        List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( AlgDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
         return pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
     }
 
@@ -128,42 +128,42 @@ public class CassandraRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalFilter} to a {@link CassandraFilter}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link CassandraFilter}.
      */
-    private static class CassandraFilterRuleOld extends RelOptRule {
+    private static class CassandraFilterRuleOld extends AlgOptRule {
 
         // TODO: Check for an equality predicate on the partition key. Right now this just checks if we have a single top-level AND
-        private static final Predicate<LogicalFilter> PREDICATE = filter -> RelOptUtil.disjunctions( filter.getCondition() ).size() == 1;
+        private static final Predicate<LogicalFilter> PREDICATE = filter -> AlgOptUtil.disjunctions( filter.getCondition() ).size() == 1;
 
         //        private static final CassandraFilterRule INSTANCE = new CassandraFilterRule();
         protected final Convention out;
 
 
-        private CassandraFilterRuleOld( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
+        private CassandraFilterRuleOld( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
             super( operand( LogicalFilter.class, operand( CassandraTableScan.class, none() ) ), "CassandraFilterRule" );
             this.out = out;
         }
 
 
         @Override
-        public boolean matches( RelOptRuleCall call ) {
+        public boolean matches( AlgOptRuleCall call ) {
             // Get the condition from the filter operation
-            LogicalFilter filter = call.rel( 0 );
+            LogicalFilter filter = call.alg( 0 );
             RexNode condition = filter.getCondition();
 
             // Get field names from the scan operation
-            CassandraTableScan scan = call.rel( 1 );
+            CassandraTableScan scan = call.alg( 1 );
             Pair<List<String>, List<String>> keyFields = ((CassandraTable) scan.getTable()).getKeyFields();
             Set<String> partitionKeys = new HashSet<>( keyFields.left );
             List<String> fieldNames = CassandraRules.cassandraLogicalFieldNames( filter.getInput().getRowType() );
 
-            List<RexNode> disjunctions = RelOptUtil.disjunctions( condition );
+            List<RexNode> disjunctions = AlgOptUtil.disjunctions( condition );
             if ( disjunctions.size() != 1 ) {
                 return false;
             } else {
                 // Check that all conjunctions are primary key equalities
                 condition = disjunctions.get( 0 );
-                for ( RexNode predicate : RelOptUtil.conjunctions( condition ) ) {
+                for ( RexNode predicate : AlgOptUtil.conjunctions( condition ) ) {
                     if ( !isEqualityOnKey( predicate, fieldNames, partitionKeys, keyFields.right ) ) {
                         return false;
                     }
@@ -231,11 +231,11 @@ public class CassandraRules {
          * @see ConverterRule
          */
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            LogicalFilter filter = call.rel( 0 );
-            CassandraTableScan scan = call.rel( 1 );
+        public void onMatch( AlgOptRuleCall call ) {
+            LogicalFilter filter = call.alg( 0 );
+            CassandraTableScan scan = call.alg( 1 );
             if ( filter.getTraitSet().contains( Convention.NONE ) ) {
-                final RelNode converted = convert( filter, scan );
+                final AlgNode converted = convert( filter, scan );
                 if ( converted != null ) {
                     call.transformTo( converted );
                 }
@@ -243,8 +243,8 @@ public class CassandraRules {
         }
 
 
-        public RelNode convert( LogicalFilter filter, CassandraTableScan scan ) {
-            final RelTraitSet traitSet = filter.getTraitSet().replace( out );
+        public AlgNode convert( LogicalFilter filter, CassandraTableScan scan ) {
+            final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
             final Pair<List<String>, List<String>> keyFields = ((CassandraTable) scan.getTable()).getKeyFields();
             return new CassandraFilter( filter.getCluster(), traitSet, convert( filter.getInput(), filter.getInput().getTraitSet().replace( out ) ), filter.getCondition(), keyFields.left, keyFields.right, ((CassandraTable) scan.getTable()).getClusteringOrder() );
         }
@@ -253,18 +253,18 @@ public class CassandraRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalProject} to a {@link CassandraProject}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link CassandraProject}.
      */
     private static class CassandraProjectRuleOld extends CassandraConverterRule {
 
-        private CassandraProjectRuleOld( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( LogicalProject.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraProjectRule" );
+        private CassandraProjectRuleOld( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
+            super( LogicalProject.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraProjectRule" );
         }
 
 
         @Override
-        public boolean matches( RelOptRuleCall call ) {
-            LogicalProject project = call.rel( 0 );
+        public boolean matches( AlgOptRuleCall call ) {
+            LogicalProject project = call.alg( 0 );
             for ( RexNode e : project.getProjects() ) {
                 if ( !(e instanceof RexInputRef) && !(e instanceof RexLiteral) ) {
                     LOGGER.debug( "Failed to match CassandraProject." );
@@ -278,9 +278,9 @@ public class CassandraRules {
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalProject project = (LogicalProject) rel;
-            final RelTraitSet traitSet = project.getTraitSet().replace( out );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalProject project = (LogicalProject) alg;
+            final AlgTraitSet traitSet = project.getTraitSet().replace( out );
             return new CassandraProject( project.getCluster(), traitSet, convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ), project.getProjects(), project.getRowType(), false );
         }
 
@@ -291,14 +291,14 @@ public class CassandraRules {
      * Rule to convert a {@link Sort} to a
      * {@link CassandraSort}.
      */
-    private static class CassandraSortRuleOld extends RelOptRule {
+    private static class CassandraSortRuleOld extends AlgOptRule {
 
-        private static final RelOptRuleOperand CASSANDRA_OP = operand( CassandraToEnumerableConverter.class, operandJ( CassandraFilter.class, null, CassandraFilter::isSinglePartition, any() ) ); // We can only use implicit sorting within a single partition
+        private static final AlgOptRuleOperand CASSANDRA_OP = operand( CassandraToEnumerableConverter.class, operandJ( CassandraFilter.class, null, CassandraFilter::isSinglePartition, any() ) ); // We can only use implicit sorting within a single partition
 
         protected final Convention out;
 
 
-        private CassandraSortRuleOld( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
+        private CassandraSortRuleOld( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
             super(
                     operandJ( Sort.class, null,
                             // Limits are handled by CassandraLimit
@@ -309,16 +309,16 @@ public class CassandraRules {
         }
 
 
-        public RelNode convert( Sort sort, CassandraFilter filter ) {
-            final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
-            return new CassandraSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
+        public AlgNode convert( Sort sort, CassandraFilter filter ) {
+            final AlgTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
+            return new CassandraSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( AlgCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
         }
 
 
         @Override
-        public boolean matches( RelOptRuleCall call ) {
-            final Sort sort = call.rel( 0 );
-            final CassandraFilter filter = call.rel( 2 );
+        public boolean matches( AlgOptRuleCall call ) {
+            final Sort sort = call.alg( 0 );
+            final CassandraFilter filter = call.alg( 2 );
             return collationsCompatible( sort.getCollation(), filter.getImplicitCollation() );
         }
 
@@ -328,9 +328,9 @@ public class CassandraRules {
          *
          * @return True if it is possible to achieve this sort in Cassandra
          */
-        private boolean collationsCompatible( RelCollation sortCollation, RelCollation implicitCollation ) {
-            List<RelFieldCollation> sortFieldCollations = sortCollation.getFieldCollations();
-            List<RelFieldCollation> implicitFieldCollations = implicitCollation.getFieldCollations();
+        private boolean collationsCompatible( AlgCollation sortCollation, AlgCollation implicitCollation ) {
+            List<AlgFieldCollation> sortFieldCollations = sortCollation.getFieldCollations();
+            List<AlgFieldCollation> implicitFieldCollations = implicitCollation.getFieldCollations();
 
             if ( sortFieldCollations.size() > implicitFieldCollations.size() ) {
                 return false;
@@ -343,8 +343,8 @@ public class CassandraRules {
             boolean reversed = reverseDirection( sortFieldCollations.get( 0 ).getDirection() ) == implicitFieldCollations.get( 0 ).getDirection();
 
             for ( int i = 0; i < sortFieldCollations.size(); i++ ) {
-                RelFieldCollation sorted = sortFieldCollations.get( i );
-                RelFieldCollation implied = implicitFieldCollations.get( i );
+                AlgFieldCollation sorted = sortFieldCollations.get( i );
+                AlgFieldCollation implied = implicitFieldCollations.get( i );
 
                 // Check that the fields being sorted match
                 if ( sorted.getFieldIndex() != implied.getFieldIndex() ) {
@@ -352,8 +352,8 @@ public class CassandraRules {
                 }
 
                 // Either all fields must be sorted in the same direction or the opposite direction based on whether we decided if the sort direction should be reversed above
-                RelFieldCollation.Direction sortDirection = sorted.getDirection();
-                RelFieldCollation.Direction implicitDirection = implied.getDirection();
+                AlgFieldCollation.Direction sortDirection = sorted.getDirection();
+                AlgFieldCollation.Direction implicitDirection = implied.getDirection();
                 if ( (!reversed && sortDirection != implicitDirection) || (reversed && reverseDirection( sortDirection ) != implicitDirection) ) {
                     return false;
                 }
@@ -368,14 +368,14 @@ public class CassandraRules {
          *
          * @return Reverse of the input direction
          */
-        private RelFieldCollation.Direction reverseDirection( RelFieldCollation.Direction direction ) {
+        private AlgFieldCollation.Direction reverseDirection( AlgFieldCollation.Direction direction ) {
             switch ( direction ) {
                 case ASCENDING:
                 case STRICTLY_ASCENDING:
-                    return RelFieldCollation.Direction.DESCENDING;
+                    return AlgFieldCollation.Direction.DESCENDING;
                 case DESCENDING:
                 case STRICTLY_DESCENDING:
-                    return RelFieldCollation.Direction.ASCENDING;
+                    return AlgFieldCollation.Direction.ASCENDING;
                 default:
                     return null;
             }
@@ -386,10 +386,10 @@ public class CassandraRules {
          * @see ConverterRule
          */
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            final Sort sort = call.rel( 0 );
-            CassandraFilter filter = call.rel( 2 );
-            final RelNode converted = convert( sort, filter );
+        public void onMatch( AlgOptRuleCall call ) {
+            final Sort sort = call.alg( 0 );
+            CassandraFilter filter = call.alg( 2 );
+            final AlgNode converted = convert( sort, filter );
             if ( converted != null ) {
                 call.transformTo( converted );
             }

@@ -27,9 +27,9 @@ import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -115,13 +115,13 @@ public class SqlItemOperator extends SqlSpecialOperator {
         if ( !ARRAY_OR_MAP.checkSingleOperandType( callBinding, left, 0, throwOnFailure ) ) {
             return false;
         }
-        final RelDataType operandType = callBinding.getOperandType( 0 );
+        final AlgDataType operandType = callBinding.getOperandType( 0 );
         final PolySingleOperandTypeChecker checker = getChecker( operandType );
         return checker.checkSingleOperandType( callBinding, right, 0, throwOnFailure );
     }
 
 
-    private PolySingleOperandTypeChecker getChecker( RelDataType operandType ) {
+    private PolySingleOperandTypeChecker getChecker( AlgDataType operandType ) {
         switch ( operandType.getPolyType() ) {
             case ARRAY:
                 return OperandTypes.family( PolyTypeFamily.INTEGER );
@@ -145,9 +145,9 @@ public class SqlItemOperator extends SqlSpecialOperator {
 
 
     @Override
-    public RelDataType inferReturnType( OperatorBinding opBinding ) {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType operandType = opBinding.getOperandType( 0 );
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataType operandType = opBinding.getOperandType( 0 );
         switch ( operandType.getPolyType() ) {
             case ARRAY:
                 if ( operandType instanceof ArrayType && ((ArrayType) operandType).getDimension() > 1 ) {
@@ -159,7 +159,7 @@ public class SqlItemOperator extends SqlSpecialOperator {
                     return typeFactory.createArrayType( operandType.getComponentType(), ((ArrayType) operandType).getCardinality(), dimension );
                 } else if ( operandType instanceof ArrayType && ((ArrayType) operandType).getDimension() < 0//if dimension was set to -1
                         && !(((SqlCallBinding) opBinding).operand( 0 ) instanceof SqlIdentifier)//e.g. a[1]
-                        && !(operandType.getComponentType() instanceof RelRecordType) ) {//e.g. a.b[1].c.d[1], for unit tests
+                        && !(operandType.getComponentType() instanceof AlgRecordType) ) {//e.g. a.b[1].c.d[1], for unit tests
                     long dimension = ((ArrayType) operandType).getDimension() - 1;
                     if ( opBinding.getOperandCount() > 2 ) {
                         dimension = -1;

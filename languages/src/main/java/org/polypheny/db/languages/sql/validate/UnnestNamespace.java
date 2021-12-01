@@ -23,7 +23,7 @@ import org.polypheny.db.languages.sql.SqlIdentifier;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.SqlUnnestOperator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -58,10 +58,10 @@ class UnnestNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         // Validate the call and its arguments, and infer the return type.
         validator.validateCall( unnest, scope );
-        RelDataType type = ((SqlOperator) unnest.getOperator()).validateOperands( validator, scope, unnest );
+        AlgDataType type = ((SqlOperator) unnest.getOperator()).validateOperands( validator, scope, unnest );
 
         return toStruct( type, unnest );
     }

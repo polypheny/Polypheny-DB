@@ -49,9 +49,9 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Test;
 import org.polypheny.db.core.util.Collation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.DateString;
@@ -72,7 +72,7 @@ public class RexBuilderTest {
      */
     @Test
     public void testEnsureTypeWithAny() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
         RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
@@ -87,7 +87,7 @@ public class RexBuilderTest {
      */
     @Test
     public void testEnsureTypeWithItself() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
         RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
@@ -109,11 +109,11 @@ public class RexBuilderTest {
      */
     @Test
     public void testTimestampLiteral() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
-        final RelDataType timestampType3 = typeFactory.createPolyType( PolyType.TIMESTAMP, 3 );
-        final RelDataType timestampType9 = typeFactory.createPolyType( PolyType.TIMESTAMP, 9 );
-        final RelDataType timestampType18 = typeFactory.createPolyType( PolyType.TIMESTAMP, 18 );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
+        final AlgDataType timestampType3 = typeFactory.createPolyType( PolyType.TIMESTAMP, 3 );
+        final AlgDataType timestampType9 = typeFactory.createPolyType( PolyType.TIMESTAMP, 9 );
+        final AlgDataType timestampType18 = typeFactory.createPolyType( PolyType.TIMESTAMP, 18 );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         // Old way: provide a Calendar
@@ -185,11 +185,11 @@ public class RexBuilderTest {
      */
     @Test
     public void testTimestampWithLocalTimeZoneLiteral() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
-        final RelDataType timestampType3 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 3 );
-        final RelDataType timestampType9 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 9 );
-        final RelDataType timestampType18 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 18 );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+        final AlgDataType timestampType3 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 3 );
+        final AlgDataType timestampType9 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 9 );
+        final AlgDataType timestampType18 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 18 );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         // The new way
@@ -246,11 +246,11 @@ public class RexBuilderTest {
      */
     @Test
     public void testTimeLiteral() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        RelDataType timeType = typeFactory.createPolyType( PolyType.TIME );
-        final RelDataType timeType3 = typeFactory.createPolyType( PolyType.TIME, 3 );
-        final RelDataType timeType9 = typeFactory.createPolyType( PolyType.TIME, 9 );
-        final RelDataType timeType18 = typeFactory.createPolyType( PolyType.TIME, 18 );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        AlgDataType timeType = typeFactory.createPolyType( PolyType.TIME );
+        final AlgDataType timeType3 = typeFactory.createPolyType( PolyType.TIME, 3 );
+        final AlgDataType timeType9 = typeFactory.createPolyType( PolyType.TIME, 9 );
+        final AlgDataType timeType18 = typeFactory.createPolyType( PolyType.TIME, 18 );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         // Old way: provide a Calendar
@@ -322,8 +322,8 @@ public class RexBuilderTest {
      */
     @Test
     public void testDateLiteral() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        RelDataType dateType = typeFactory.createPolyType( PolyType.DATE );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        AlgDataType dateType = typeFactory.createPolyType( PolyType.DATE );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         // Old way: provide a Calendar
@@ -358,8 +358,8 @@ public class RexBuilderTest {
      */
     @Test
     public void testDecimalLiteral() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataType type = typeFactory.createPolyType( PolyType.DECIMAL );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataType type = typeFactory.createPolyType( PolyType.DECIMAL );
         final RexBuilder builder = new RexBuilder( typeFactory );
         final RexLiteral literal = builder.makeExactLiteral( null, type );
         assertThat( literal.getValue3(), nullValue() );
@@ -507,8 +507,8 @@ public class RexBuilderTest {
      */
     @Test
     public void testStringLiteral() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataType varchar = typeFactory.createPolyType( PolyType.VARCHAR );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataType varchar = typeFactory.createPolyType( PolyType.VARCHAR );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         final NlsString latin1 = new NlsString( "foobar", "LATIN1", Collation.IMPLICIT );
@@ -551,7 +551,7 @@ public class RexBuilderTest {
      */
     @Test
     public void testBigDecimalLiteral() {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final RexBuilder builder = new RexBuilder( typeFactory );
         checkBigDecimalLiteral( builder, "25" );
         checkBigDecimalLiteral( builder, "9.9" );

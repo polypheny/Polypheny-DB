@@ -43,8 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.Linq4j;
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.rel.metadata.NullSentinel;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.algebra.metadata.NullSentinel;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -63,7 +63,7 @@ public class RexAnalyzer {
     /**
      * Creates a RexAnalyzer.
      */
-    public RexAnalyzer( RexNode e, RelOptPredicateList predicates ) {
+    public RexAnalyzer( RexNode e, AlgOptPredicateList predicates ) {
         this.e = e;
         final VariableCollector variableCollector = new VariableCollector();
         e.accept( variableCollector );

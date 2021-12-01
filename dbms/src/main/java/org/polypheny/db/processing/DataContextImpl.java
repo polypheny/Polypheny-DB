@@ -26,7 +26,7 @@ import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -47,7 +47,7 @@ public class DataContextImpl implements DataContext {
     @Getter
     private final Statement statement;
 
-    private final Map<Long, RelDataType> parameterTypes; // ParameterIndex -> Data Type
+    private final Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
     private final List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
 
@@ -111,7 +111,7 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+    public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
         if ( parameterTypes.containsKey( index ) ) {
             throw new RuntimeException( "There are already values assigned to this index" );
         }
@@ -132,7 +132,7 @@ public class DataContextImpl implements DataContext {
 
 
     @Override
-    public RelDataType getParameterType( long index ) {
+    public AlgDataType getParameterType( long index ) {
         return parameterTypes.get( index );
     }
 

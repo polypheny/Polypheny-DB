@@ -22,7 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import org.polypheny.db.core.enums.Modality;
 import org.polypheny.db.languages.sql.SqlCall;
 import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -50,10 +50,10 @@ public class TableConstructorNamespace extends AbstractNamespace {
 
 
     @Override
-    protected RelDataType validateImpl( RelDataType targetRowType ) {
+    protected AlgDataType validateImpl( AlgDataType targetRowType ) {
         // First, validate the VALUES. If VALUES is inside INSERT, infers the type of NULL values based on the types of target columns.
         validator.validateValues( values, targetRowType, scope );
-        final RelDataType tableConstructorRowType = validator.getTableConstructorRowType( values, scope );
+        final AlgDataType tableConstructorRowType = validator.getTableConstructorRowType( values, scope );
         if ( tableConstructorRowType == null ) {
             throw validator.newValidationError( values, RESOURCE.incompatibleTypes() );
         }

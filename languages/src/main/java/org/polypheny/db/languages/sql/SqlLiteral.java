@@ -37,8 +37,8 @@ import org.polypheny.db.languages.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.languages.sql.parser.SqlParserUtil;
 import org.polypheny.db.languages.sql.validate.SqlValidator;
 import org.polypheny.db.languages.sql.validate.SqlValidatorScope;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -676,12 +676,12 @@ public class SqlLiteral extends SqlNode implements Literal {
     }
 
 
-    public RelDataType createSqlType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType createSqlType( AlgDataTypeFactory typeFactory ) {
         BitString bitString;
         switch ( typeName ) {
             case NULL:
             case BOOLEAN:
-                RelDataType ret = typeFactory.createPolyType( typeName );
+                AlgDataType ret = typeFactory.createPolyType( typeName );
                 ret = typeFactory.createTypeWithNullability( ret, null == value );
                 return ret;
             case BINARY:
@@ -698,7 +698,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 if ( null == collation ) {
                     collation = Collation.COERCIBLE;
                 }
-                RelDataType type = typeFactory.createPolyType( PolyType.CHAR, string.getValue().length() );
+                AlgDataType type = typeFactory.createPolyType( PolyType.CHAR, string.getValue().length() );
                 type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
                 return type;
 

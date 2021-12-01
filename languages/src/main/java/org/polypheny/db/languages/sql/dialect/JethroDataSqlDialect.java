@@ -36,7 +36,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.languages.sql.SqlDialect;
 import org.polypheny.db.languages.sql.SqlNode;
 import org.polypheny.db.languages.sql.SqlOperator;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 
 
@@ -91,7 +91,7 @@ public class JethroDataSqlDialect extends SqlDialect {
 
 
     @Override
-    public boolean supportsFunction( SqlOperator operator, RelDataType type, List<RelDataType> paramTypes ) {
+    public boolean supportsFunction( SqlOperator operator, AlgDataType type, List<AlgDataType> paramTypes ) {
         switch ( operator.getKind() ) {
             case IS_NOT_NULL:
             case IS_NULL:
@@ -168,7 +168,7 @@ public class JethroDataSqlDialect extends SqlDialect {
         }
 
 
-        boolean argumentsMatch( List<RelDataType> paramTypes ) {
+        boolean argumentsMatch( List<AlgDataType> paramTypes ) {
             if ( paramTypes.size() != operandTypes.size() ) {
                 return false;
             }

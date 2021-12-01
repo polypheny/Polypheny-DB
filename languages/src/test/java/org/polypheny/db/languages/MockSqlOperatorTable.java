@@ -26,8 +26,8 @@ import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.languages.sql.SqlOperator;
 import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 
@@ -72,8 +72,8 @@ public class MockSqlOperatorTable extends ChainedOperatorTable {
 
 
         @Override
-        public RelDataType inferReturnType( OperatorBinding opBinding ) {
-            final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
             return typeFactory.builder()
                     .add( "I", null, PolyType.INTEGER )
                     .build();
@@ -93,8 +93,8 @@ public class MockSqlOperatorTable extends ChainedOperatorTable {
 
 
         @Override
-        public RelDataType inferReturnType( OperatorBinding opBinding ) {
-            final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+            final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
             return typeFactory.builder()
                     .add( "NAME", null, PolyType.VARCHAR, 1024 )
                     .build();

@@ -37,33 +37,33 @@ package org.polypheny.db.interpreter;
 import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.Set;
-import org.polypheny.db.rel.core.Union;
+import org.polypheny.db.algebra.core.Union;
 
 
 /**
- * Interpreter node that implements a {@link org.polypheny.db.rel.core.Union}.
+ * Interpreter node that implements a {@link org.polypheny.db.algebra.core.Union}.
  */
 public class UnionNode implements Node {
 
     private final ImmutableList<Source> sources;
     private final Sink sink;
-    private final Union rel;
+    private final Union alg;
 
 
-    public UnionNode( Compiler compiler, Union rel ) {
+    public UnionNode( Compiler compiler, Union alg ) {
         ImmutableList.Builder<Source> builder = ImmutableList.builder();
-        for ( int i = 0; i < rel.getInputs().size(); i++ ) {
-            builder.add( compiler.source( rel, i ) );
+        for ( int i = 0; i < alg.getInputs().size(); i++ ) {
+            builder.add( compiler.source( alg, i ) );
         }
         this.sources = builder.build();
-        this.sink = compiler.sink( rel );
-        this.rel = rel;
+        this.sink = compiler.sink( alg );
+        this.alg = alg;
     }
 
 
     @Override
     public void run() throws InterruptedException {
-        final Set<Row> rows = rel.all ? null : new HashSet<>();
+        final Set<Row> rows = alg.all ? null : new HashSet<>();
         for ( Source source : sources ) {
             Row row;
             while ( (row = source.receive()) != null ) {

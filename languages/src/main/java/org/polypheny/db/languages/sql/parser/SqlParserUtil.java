@@ -51,7 +51,7 @@ import org.polypheny.db.languages.sql.SqlSpecialOperator;
 import org.polypheny.db.languages.sql.SqlSpecialOperator.TokenSequence;
 import org.polypheny.db.languages.sql.SqlTimeLiteral;
 import org.polypheny.db.languages.sql.SqlTimestampLiteral;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.PrecedenceClimbingParser;
@@ -180,7 +180,7 @@ public final class SqlParserUtil {
         Preconditions.checkArgument( !intervalQualifier.isYearMonth(), "interval must be day time" );
         int[] ret;
         try {
-            ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), RelDataTypeSystem.DEFAULT );
+            ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), AlgDataTypeSystem.DEFAULT );
             assert ret != null;
         } catch ( PolyphenyDbContextException e ) {
             throw new RuntimeException( "while parsing day-to-second interval " + literal, e );
@@ -216,7 +216,7 @@ public final class SqlParserUtil {
         Preconditions.checkArgument( intervalQualifier.isYearMonth(), "interval must be year month" );
         int[] ret;
         try {
-            ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), RelDataTypeSystem.DEFAULT );
+            ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), AlgDataTypeSystem.DEFAULT );
             assert ret != null;
         } catch ( PolyphenyDbContextException e ) {
             throw new RuntimeException( "Error while parsing year-to-month interval " + literal, e );

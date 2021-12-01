@@ -37,14 +37,14 @@ package org.polypheny.db.plan;
 /**
  * A <code>CommonRelSubExprRule</code> is an abstract base class for rules that are fired only on relational expressions that appear more than once in a query tree.
  */
-public abstract class CommonRelSubExprRule extends RelOptRule {
+public abstract class CommonRelSubExprRule extends AlgOptRule {
 
     /**
      * Creates a <code>CommonRelSubExprRule</code>.
      *
      * @param operand root operand, must not be null
      */
-    public CommonRelSubExprRule( RelOptRuleOperand operand ) {
+    public CommonRelSubExprRule( AlgOptRuleOperand operand ) {
         super( operand );
     }
 }

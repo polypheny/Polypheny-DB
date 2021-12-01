@@ -36,7 +36,7 @@ package org.polypheny.db.rex;
 
 import java.util.Objects;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -53,7 +53,7 @@ public class RexDynamicParam extends RexVariable {
      * @param type inferred type of parameter
      * @param index 0-based index of dynamic parameter in statement
      */
-    public RexDynamicParam( RelDataType type, long index ) {
+    public RexDynamicParam( AlgDataType type, long index ) {
         super( "?" + index, type );
         this.index = index;
     }
