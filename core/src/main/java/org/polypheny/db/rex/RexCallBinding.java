@@ -37,8 +37,8 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.core.validate.ValidatorException;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.core.util.SqlValidatorException;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.enums.Monotonicity;
 import org.polypheny.db.core.nodes.Operator;
@@ -144,7 +144,7 @@ public class RexCallBinding extends OperatorBinding {
 
 
     @Override
-    public PolyphenyDbException newError( ExInst<SqlValidatorException> e ) {
+    public PolyphenyDbException newError( ExInst<ValidatorException> e ) {
         return CoreUtil.newContextException( ParserPos.ZERO, e );
     }
 

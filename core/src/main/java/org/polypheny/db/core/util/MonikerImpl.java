@@ -81,12 +81,6 @@ public class MonikerImpl implements Moniker {
     }
 
 
-    @Override
-    public Identifier toIdentifier() {
-        return LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, names, ParserPos.ZERO );
-    }
-
-
     public String toString() {
         return Util.sepList( names, "." );
     }

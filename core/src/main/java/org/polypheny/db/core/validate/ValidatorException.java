@@ -16,6 +16,40 @@
 
 package org.polypheny.db.core.validate;
 
-public interface ValidatorException {
+
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.util.PolyphenyDbValidatorException;
+
+// NOTE:  This class gets compiled independently of everything else so that resource generation can use reflection.  That means it must have no dependencies on other Polypheny-DB code.
+
+
+/**
+ * Exception thrown while validating a SQL statement.
+ *
+ * Unlike {@link PolyphenyDbException}, this is a checked exception, which reminds code authors to wrap it in another exception containing the line/column context.
+ */
+@Slf4j
+public class ValidatorException extends Exception implements PolyphenyDbValidatorException {
+
+    long serialVersionUID = -831683113957131387L;
+
+
+    /**
+     * Creates a new ValidatorException object.
+     *
+     * @param message error message
+     * @param cause underlying cause
+     */
+    public ValidatorException( String message, Throwable cause ) {
+        super( message, cause );
+
+        // TODO: see note in PolyphenyDbException constructor
+        log.trace( "ValidatorException", this );
+        if ( RuntimeConfig.DEBUG.getBoolean() ) {
+            log.error( toString() );
+        }
+    }
 
 }

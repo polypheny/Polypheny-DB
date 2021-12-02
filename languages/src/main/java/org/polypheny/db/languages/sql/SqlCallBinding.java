@@ -30,7 +30,7 @@ import org.polypheny.db.core.nodes.CallBinding;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.util.SqlValidatorException;
+import org.polypheny.db.core.validate.ValidatorException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.sql.validate.SelectScope;
@@ -251,7 +251,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
 
 
     @Override
-    public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
+    public PolyphenyDbException newError( Resources.ExInst<ValidatorException> e ) {
         return validator.newValidationError( call, e );
     }
 
@@ -279,7 +279,7 @@ public class SqlCallBinding extends SqlOperatorBinding implements CallBinding {
      * @return wrapped exception
      */
     @Override
-    public PolyphenyDbException newValidationError( Resources.ExInst<SqlValidatorException> ex ) {
+    public PolyphenyDbException newValidationError( Resources.ExInst<ValidatorException> ex ) {
         return validator.newValidationError( call, ex );
     }
 

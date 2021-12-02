@@ -59,7 +59,7 @@ import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.nodes.Function;
 import org.polypheny.db.core.nodes.OperatorBinding;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.util.SqlValidatorException;
+import org.polypheny.db.core.validate.ValidatorException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -537,7 +537,7 @@ public abstract class Aggregate extends SingleAlg {
 
 
         @Override
-        public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
+        public PolyphenyDbException newError( Resources.ExInst<ValidatorException> e ) {
             return CoreUtil.newContextException( ParserPos.ZERO, e );
         }
 

@@ -231,16 +231,6 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Identifier createIdentifier( QueryLanguage language, List<String> names, ParserPos zero ) {
-        if ( language == QueryLanguage.SQL ) {
-            return new SqlIdentifier( names, zero );
-        }
-
-        throw new UnsupportedLanguageOperation( language );
-    }
-
-
-    @Override
     public DataTypeSpec createDataTypeSpec(
             QueryLanguage language,
             Identifier typeIdentifier,

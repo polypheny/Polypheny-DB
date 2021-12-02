@@ -20,9 +20,9 @@ import java.util.AbstractList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.util.SqlValidatorException;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.core.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
 import org.polypheny.db.util.NlsString;
@@ -148,7 +148,7 @@ public abstract class OperatorBinding {
      * @param e Validation error, not null
      * @return Error wrapped, if possible, with positional information
      */
-    public abstract PolyphenyDbException newError( ExInst<SqlValidatorException> e );
+    public abstract PolyphenyDbException newError( ExInst<ValidatorException> e );
 
 
     /**

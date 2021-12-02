@@ -53,12 +53,6 @@ public class SqlIdentifierMoniker implements Moniker {
     }
 
 
-    @Override
-    public Identifier toIdentifier() {
-        return id;
-    }
-
-
     public String toString() {
         return id.toString();
     }

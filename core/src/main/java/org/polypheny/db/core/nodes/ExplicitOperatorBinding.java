@@ -19,7 +19,7 @@ package org.polypheny.db.core.nodes;
 
 import java.util.List;
 import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.util.SqlValidatorException;
+import org.polypheny.db.core.validate.ValidatorException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -72,7 +72,7 @@ public class ExplicitOperatorBinding extends OperatorBinding {
 
 
     @Override
-    public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
+    public PolyphenyDbException newError( Resources.ExInst<ValidatorException> e ) {
         if ( delegate != null ) {
             return delegate.newError( e );
         } else {

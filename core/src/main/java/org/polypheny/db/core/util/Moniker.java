@@ -54,13 +54,6 @@ public interface Moniker {
      */
     List<String> getFullyQualifiedNames();
 
-    /**
-     * Creates a {@link Identifier} containing the fully-qualified name.
-     *
-     * @return
-     */
-    Identifier toIdentifier();
-
     String id();
 
 }

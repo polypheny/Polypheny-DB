@@ -552,8 +552,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Initiates all needed maps for adapters
      *
-     * adapters: adapterId -> CatalogAdapter
-     * adapterName: adapterName -> CatalogAdapter
+     * adapters: adapterId {@code ->} CatalogAdapter
+     * adapterName: adapterName {@code ->}  CatalogAdapter
      */
     private void initAdapterInfo( DB db ) {
         adapters = db.hashMap( "adapters", Serializer.INTEGER, new GenericSerializer<CatalogAdapter>() ).createOrOpen();
@@ -564,8 +564,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Initiates all needed maps for query interfaces
      *
-     * queryInterfaces: ifaceId -> CatalogQueryInterface
-     * queryInterfaceNames: ifaceName -> CatalogQueryInterface
+     * queryInterfaces: ifaceId  CatalogQueryInterface
+     * queryInterfaceNames: ifaceName  CatalogQueryInterface
      */
     private void initQueryInterfaceInfo( DB db ) {
         queryInterfaces = db.hashMap( "queryInterfaces", Serializer.INTEGER, new GenericSerializer<CatalogQueryInterface>() ).createOrOpen();
@@ -576,12 +576,12 @@ public class CatalogImpl extends Catalog {
     /**
      * creates all needed maps for keys and constraints
      *
-     * keyColumns: [columnId1, columnId2,...] -> keyId
-     * keys: keyId -> CatalogKey
-     * primaryKeys: keyId -> CatalogPrimaryKey
-     * foreignKeys: keyId -> CatalogForeignKey
-     * constraints: constraintId -> CatalogConstraint
-     * indexes: indexId -> CatalogIndex
+     * keyColumns: [columnId1, columnId2,...]  keyId
+     * keys: keyId  CatalogKey
+     * primaryKeys: keyId  CatalogPrimaryKey
+     * foreignKeys: keyId  CatalogForeignKey
+     * constraints: constraintId  CatalogConstraint
+     * indexes: indexId {@code ->} CatalogIndex
      */
     private void initKeysAndConstraintsInfo( DB db ) {
         keyColumns = db.hashMap( "keyColumns", Serializer.LONG_ARRAY, Serializer.LONG ).createOrOpen();
@@ -596,8 +596,8 @@ public class CatalogImpl extends Catalog {
     /**
      * creates all needed maps for users
      *
-     * users: userId -> CatalogUser
-     * userNames: name -> CatalogUser
+     * users: userId {@code ->} CatalogUser
+     * userNames: name {@code ->} CatalogUser
      */
     private void initUserInfo( DB db ) {
         users = db.hashMap( "users", Serializer.INTEGER, new GenericSerializer<CatalogUser>() ).createOrOpen();
@@ -608,9 +608,9 @@ public class CatalogImpl extends Catalog {
     /**
      * initialize the column maps
      *
-     * columns: columnId -> CatalogColumn
-     * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} -> CatalogColumn
-     * columnPlacements: new Object[]{adapterId, columnId} -> CatalogPlacement
+     * columns: columnId {@code ->} CatalogColumn
+     * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} {@code ->} CatalogColumn
+     * columnPlacements: new Object[]{adapterId, columnId} {@code ->} CatalogPlacement
      */
     private void initColumnInfo( DB db ) {
         //noinspection unchecked
@@ -625,9 +625,9 @@ public class CatalogImpl extends Catalog {
     /**
      * creates all maps needed for tables
      *
-     * tables: tableId -> CatalogTable
-     * tableChildren: tableId -> [columnId, columnId,..]
-     * tableNames: new Object[]{databaseId, schemaId, tableName} -> CatalogTable
+     * tables: tableId {@code ->} CatalogTable
+     * tableChildren: tableId {@code ->} [columnId, columnId,..]
+     * tableNames: new Object[]{databaseId, schemaId, tableName} {@code ->} CatalogTable
      */
     private void initTableInfo( DB db ) {
         //noinspection unchecked
@@ -656,9 +656,9 @@ public class CatalogImpl extends Catalog {
     /**
      * creates all needed maps for schemas
      *
-     * schemas: schemaId -> CatalogSchema
-     * schemaChildren: schemaId -> [tableId, tableId, etc]
-     * schemaNames: new Object[]{databaseId, schemaName} -> CatalogSchema
+     * schemas: schemaId {@code ->} CatalogSchema
+     * schemaChildren: schemaId {@code ->} [tableId, tableId, etc]
+     * schemaNames: new Object[]{databaseId, schemaName} {@code ->} CatalogSchema
      */
     private void initSchemaInfo( DB db ) {
         //noinspection unchecked
@@ -672,9 +672,9 @@ public class CatalogImpl extends Catalog {
     /**
      * creates maps for databases
      *
-     * databases: databaseId -> CatalogDatabase
-     * databaseNames: databaseName -> CatalogDatabase
-     * databaseChildren: databaseId -> [tableId, tableId,...]
+     * databases: databaseId {@code ->} CatalogDatabase
+     * databaseNames: databaseName {@code ->} CatalogDatabase
+     * databaseChildren: databaseId {@code ->} [tableId, tableId,...]
      */
     private void initDatabaseInfo( DB db ) {
         //noinspection unchecked

@@ -67,6 +67,12 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.InitializerContext;
@@ -99,7 +105,6 @@ import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.util.Moniker;
 import org.polypheny.db.core.util.MonikerImpl;
 import org.polypheny.db.core.util.NameMatcher;
-import org.polypheny.db.core.util.SqlValidatorException;
 import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorException;
@@ -145,12 +150,6 @@ import org.polypheny.db.languages.sql.util.SqlShuttle;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.algebra.type.DynamicRecordType;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
@@ -2224,7 +2223,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             case EXTEND:
                 final SqlCall extend = (SqlCall) node;
-                return registerFrom( parentScope,
+                return registerFrom(
+                        parentScope,
                         usingScope,
                         true,
                         extend.getSqlOperandList().get( 0 ),
@@ -3482,7 +3482,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             final SqlCall call = (SqlCall) query;
             for ( Node operand : call.getOperandList() ) {
                 if ( deduceModality( (SqlNode) operand ) != modality ) {
-                    throw newValidationError( operand,
+                    throw newValidationError(
+                            operand,
                             Static.RESOURCE.streamSetOpInconsistentInputs() );
                 }
                 validateModality( (SqlNode) operand );
@@ -4157,7 +4158,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-
     private void checkFieldCount( SqlNode node, ValidatorTable table, SqlNode source, AlgDataType logicalSourceRowType, AlgDataType logicalTargetRowType ) {
         final int sourceFieldCount = logicalSourceRowType.getFieldCount();
         final int targetFieldCount = logicalTargetRowType.getFieldCount();
@@ -4571,10 +4571,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private class ValidationError implements Supplier<PolyphenyDbContextException> {
 
         private final Node sqlNode;
-        private final Resources.ExInst<SqlValidatorException> validatorException;
+        private final Resources.ExInst<ValidatorException> validatorException;
 
 
-        ValidationError( Node sqlNode, Resources.ExInst<SqlValidatorException> validatorException ) {
+        ValidationError( Node sqlNode, Resources.ExInst<ValidatorException> validatorException ) {
             this.sqlNode = sqlNode;
             this.validatorException = validatorException;
         }
@@ -4592,10 +4592,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * Throws a validator exception with access to the validator context.
      * The exception is determined when the function is applied.
      */
-    class ValidationErrorFunction implements Function2<SqlNode, Resources.ExInst<SqlValidatorException>, PolyphenyDbContextException> {
+    class ValidationErrorFunction implements Function2<SqlNode, Resources.ExInst<ValidatorException>, PolyphenyDbContextException> {
 
         @Override
-        public PolyphenyDbContextException apply( SqlNode v0, Resources.ExInst<SqlValidatorException> v1 ) {
+        public PolyphenyDbContextException apply( SqlNode v0, Resources.ExInst<ValidatorException> v1 ) {
             return newValidationError( v0, v1 );
         }
 
@@ -4608,7 +4608,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Override
-    public <T extends Exception & ValidatorException> PolyphenyDbContextException newValidationError( Node node, ExInst<T> e ) {
+    public PolyphenyDbContextException newValidationError( Node node, ExInst<ValidatorException> e ) {
         assert node != null;
         final ParserPos pos = node.getPos();
         return CoreUtil.newContextException( pos, e );

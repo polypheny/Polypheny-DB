@@ -17,11 +17,11 @@
 package org.polypheny.db.core.validate;
 
 import java.util.List;
-import org.polypheny.db.core.enums.NullCollation;
-import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.core.enums.NullCollation;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.Resources;
 
@@ -66,7 +66,7 @@ public interface Validator {
      * @param e The validation error
      * @return Exception containing positional information, never null
      */
-    <T extends Exception & ValidatorException> PolyphenyDbContextException newValidationError( Node node, Resources.ExInst<T> e );
+    PolyphenyDbContextException newValidationError( Node node, Resources.ExInst<ValidatorException> e );
 
     /**
      * Returns the type assigned to a node by validation.

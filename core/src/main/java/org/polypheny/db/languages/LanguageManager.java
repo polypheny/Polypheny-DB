@@ -104,8 +104,6 @@ public abstract class LanguageManager {
 
     public abstract Identifier createIdentifier( QueryLanguage language, String name, ParserPos zero );
 
-    public abstract Identifier createIdentifier( QueryLanguage language, List<String> names, ParserPos zero );
-
     public abstract DataTypeSpec createDataTypeSpec(
             QueryLanguage language,
             Identifier typeIdentifier,

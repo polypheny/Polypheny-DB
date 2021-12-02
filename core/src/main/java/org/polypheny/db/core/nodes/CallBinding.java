@@ -19,8 +19,8 @@ package org.polypheny.db.core.nodes;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.core.util.SqlValidatorException;
 import org.polypheny.db.core.validate.Validator;
+import org.polypheny.db.core.validate.ValidatorException;
 import org.polypheny.db.core.validate.ValidatorScope;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
@@ -48,10 +48,10 @@ public interface CallBinding {
      */
     AlgDataTypeFactory getTypeFactory();
 
-    PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e );
+    PolyphenyDbException newError( Resources.ExInst<ValidatorException> e );
 
     PolyphenyDbException newValidationSignatureError();
 
-    PolyphenyDbException newValidationError( Resources.ExInst<SqlValidatorException> ex );
+    PolyphenyDbException newValidationError( Resources.ExInst<ValidatorException> ex );
 
 }
