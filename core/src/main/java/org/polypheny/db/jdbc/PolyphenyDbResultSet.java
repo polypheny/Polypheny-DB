@@ -89,7 +89,8 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
                         -1,
                         null,
                         statement.getStatementType(),
-                        new ExecutionTimeMonitor() );
+                        new ExecutionTimeMonitor(),
+                        signature.getSchemaType() );
         ResultSetMetaData subResultSetMetaData = new AvaticaResultSetMetaData( statement, null, newSignature );
         final PolyphenyDbResultSet resultSet = new PolyphenyDbResultSet( statement, signature, subResultSetMetaData, localCalendar.getTimeZone(), new Meta.Frame( 0, true, iterable ) );
         final Cursor cursor = resultSet.createCursor( elementType, iterable );

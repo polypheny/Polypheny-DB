@@ -335,7 +335,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && statement.getTransaction().getUseCache() && (!routedRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
             if ( preparedResult != null ) {
-                PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
+                PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor, schemaType );
                 if ( isAnalyze ) {
                     statement.getProcessingDuration().stop( "Implementation Caching" );
                 }
@@ -418,8 +418,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             }
         }
 
-        PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
-        signature.setSchemaType( schemaType );
+        PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor, schemaType );
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Implementation" );
@@ -889,7 +888,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private PolyphenyDbSignature createSignature( PreparedResult preparedResult, AlgRoot optimalRoot, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
+    private PolyphenyDbSignature createSignature(
+            PreparedResult preparedResult,
+            AlgRoot optimalRoot,
+            Convention resultConvention,
+            ExecutionTimeMonitor executionTimeMonitor,
+            SchemaType schemaType ) {
         final AlgDataType jdbcType = makeStruct( optimalRoot.alg.getCluster().getTypeFactory(), optimalRoot.validatedRowType );
         final List<AvaticaParameter> parameters = new ArrayList<>();
         for ( AlgDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
@@ -944,7 +948,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 -1,
                 bindable,
                 getStatementType( preparedResult ),
-                executionTimeMonitor );
+                executionTimeMonitor,
+                schemaType );
     }
 
 

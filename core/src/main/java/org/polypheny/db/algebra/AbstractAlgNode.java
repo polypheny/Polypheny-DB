@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
@@ -98,15 +99,18 @@ public abstract class AbstractAlgNode implements AlgNode {
      *
      * @see #desc
      */
+    @Getter
     protected String digest;
 
     //Setter is used to set the cluster in Views
     @Setter
+    @Getter
     private transient AlgOptCluster cluster;
 
     /**
      * unique id of this object -- for debugging
      */
+    @Getter
     protected final int id;
 
     /**
@@ -114,6 +118,7 @@ public abstract class AbstractAlgNode implements AlgNode {
      * Setter is used to set the cluster in Views
      */
     @Setter
+    @Getter
     protected AlgTraitSet traitSet;
 
 
@@ -155,32 +160,14 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public final AlgOptCluster getCluster() {
-        return cluster;
-    }
-
-
-    @Override
     public final Convention getConvention() {
         return traitSet.getTrait( ConventionTraitDef.INSTANCE );
     }
 
 
     @Override
-    public AlgTraitSet getTraitSet() {
-        return traitSet;
-    }
-
-
-    @Override
     public String getCorrelVariable() {
         return null;
-    }
-
-
-    @Override
-    public int getId() {
-        return id;
     }
 
 
@@ -388,12 +375,6 @@ public abstract class AbstractAlgNode implements AlgNode {
     @Override
     public final String getDescription() {
         return desc;
-    }
-
-
-    @Override
-    public final String getDigest() {
-        return digest;
     }
 
 

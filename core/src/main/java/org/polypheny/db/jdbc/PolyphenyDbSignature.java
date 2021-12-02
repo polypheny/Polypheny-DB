@@ -21,16 +21,17 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.Meta.CursorFactory;
+import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -42,6 +43,7 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
  *
  * @param <T> element type
  */
+@Getter
 public class PolyphenyDbSignature<T> extends Meta.Signature {
 
     @JsonIgnore
@@ -52,12 +54,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     private final List<AlgCollation> collationList;
     private final long maxRowCount;
     private final Bindable<T> bindable;
-    @Getter
-    @Setter
-
-    private SchemaType schemaType;
-
-    @Getter
+    private final SchemaType schemaType;
     private final ExecutionTimeMonitor executionTimeMonitor;
 
 
@@ -67,13 +64,14 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
             Map<String, Object> internalParameters,
             AlgDataType rowType,
             List<ColumnMetaData> columns,
-            Meta.CursorFactory cursorFactory,
+            CursorFactory cursorFactory,
             PolyphenyDbSchema rootSchema,
             List<AlgCollation> collationList,
             long maxRowCount,
             Bindable<T> bindable,
-            Meta.StatementType statementType,
-            ExecutionTimeMonitor executionTimeMonitor ) {
+            StatementType statementType,
+            ExecutionTimeMonitor executionTimeMonitor,
+            SchemaType schemaType ) {
         super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
         this.rowType = rowType;
         this.rootSchema = rootSchema;
@@ -81,6 +79,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
         this.maxRowCount = maxRowCount;
         this.bindable = bindable;
         this.executionTimeMonitor = executionTimeMonitor;
+        this.schemaType = schemaType;
     }
 
 
@@ -91,10 +90,5 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
             enumerable = EnumerableDefaults.take( enumerable, maxRowCount );
         }
         return enumerable;
-    }
-
-
-    public List<AlgCollation> getCollationList() {
-        return collationList;
     }
 }

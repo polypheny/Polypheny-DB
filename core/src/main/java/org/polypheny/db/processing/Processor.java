@@ -20,22 +20,23 @@ package org.polypheny.db.processing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.avatica.Meta;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.nodes.ExecutableStatement;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
-import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -87,7 +88,8 @@ public abstract class Processor {
                 -1,
                 null,
                 Meta.StatementType.OTHER_DDL,
-                new ExecutionTimeMonitor() );
+                new ExecutionTimeMonitor(),
+                SchemaType.RELATIONAL );
     }
 
     abstract void unlock( Statement statement );

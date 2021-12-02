@@ -115,6 +115,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.enums.ExplainFormat;
@@ -139,7 +140,6 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.ConfigBuilder;
-import org.polypheny.db.languages.NodeToAlgConverter.ConfigImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserFactory;
@@ -725,7 +725,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 -1,
                 dataContext -> Linq4j.asEnumerable( list ),
                 StatementType.SELECT,
-                new ExecutionTimeMonitor() );
+                new ExecutionTimeMonitor(),
+                SchemaType.RELATIONAL );
     }
 
 
@@ -825,7 +826,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         -1,
                         null,
                         StatementType.OTHER_DDL,
-                        new ExecutionTimeMonitor() );
+                        new ExecutionTimeMonitor(),
+                        SchemaType.RELATIONAL );
             }
 
             final Validator validator = LanguageManager.getInstance().createValidator( QueryLanguage.SQL, context, catalogReader );
@@ -897,7 +899,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 maxRowCount,
                 bindable,
                 statementType,
-                new ExecutionTimeMonitor() );
+                new ExecutionTimeMonitor(),
+                SchemaType.RELATIONAL );
     }
 
 

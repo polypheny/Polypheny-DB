@@ -38,8 +38,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.UnmodifiableIterator;
 import java.util.Iterator;
-import java.util.List;
 import javax.annotation.Nonnull;
+import lombok.Getter;
 import org.polypheny.db.plan.AlgMultipleTrait;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
@@ -53,7 +53,7 @@ import org.polypheny.db.util.Util;
  */
 public class AlgCollationImpl implements AlgCollation {
 
-
+    @Getter
     private final ImmutableList<AlgFieldCollation> fieldCollations;
 
 
@@ -66,12 +66,6 @@ public class AlgCollationImpl implements AlgCollation {
     @Override
     public AlgTraitDef getTraitDef() {
         return AlgCollationTraitDef.INSTANCE;
-    }
-
-
-    @Override
-    public List<AlgFieldCollation> getFieldCollations() {
-        return fieldCollations;
     }
 
 

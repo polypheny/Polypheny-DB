@@ -60,9 +60,14 @@ import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.Catalog.TableType.PrimitiveTableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -98,10 +103,6 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -193,7 +194,8 @@ public class DbmsMeta implements ProtobufMeta {
                         -1,
                         null,
                         StatementType.SELECT,
-                        new ExecutionTimeMonitor() ) {
+                        new ExecutionTimeMonitor(),
+                        SchemaType.RELATIONAL ) {
                     @Override
                     public Enumerable<Object> enumerable( DataContext dataContext ) {
                         return Linq4j.asEnumerable( firstFrame.rows );
@@ -983,7 +985,8 @@ public class DbmsMeta implements ProtobufMeta {
                     -1,
                     null,
                     StatementType.SELECT,
-                    null );
+                    null,
+                    SchemaType.RELATIONAL );
             h.signature = signature;
             polyphenyDbStatement.setSignature( signature );
 

@@ -41,13 +41,16 @@ public class DataContextImpl implements DataContext {
 
     private final HashMap<String, Object> map;
     private final PolyphenyDbSchema rootSchema;
+    @Getter
     private final QueryProvider queryProvider;
+    @Getter
     private final JavaTypeFactory typeFactory;
     private final TimeZone timeZone = TimeZone.getDefault();
     @Getter
     private final Statement statement;
 
     private final Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
+    @Getter
     private final List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
 
@@ -136,13 +139,6 @@ public class DataContextImpl implements DataContext {
         return parameterTypes.get( index );
     }
 
-
-    @Override
-    public List<Map<Long, Object>> getParameterValues() {
-        return parameterValues;
-    }
-
-
     @Override
     public void resetParameterValues() {
         parameterTypes.clear();
@@ -155,16 +151,5 @@ public class DataContextImpl implements DataContext {
         return rootSchema == null ? null : rootSchema.plus();
     }
 
-
-    @Override
-    public JavaTypeFactory getTypeFactory() {
-        return typeFactory;
-    }
-
-
-    @Override
-    public QueryProvider getQueryProvider() {
-        return queryProvider;
-    }
 
 }
