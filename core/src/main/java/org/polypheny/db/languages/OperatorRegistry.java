@@ -36,7 +36,7 @@ import org.polypheny.db.core.operators.OperatorName;
  */
 public class OperatorRegistry {
 
-    private static final HashMap<QueryLanguage, HashMap<OperatorName, Operator>> registry = new HashMap<>();
+    private static final Map<QueryLanguage, Map<OperatorName, Operator>> registry = new HashMap<>();
 
 
     static {
@@ -100,7 +100,7 @@ public class OperatorRegistry {
 
 
     /**
-     *  Retrieves the general function for the given {@link OperatorName} and casts it to the specified {@link Class}.
+     * Retrieves the general function for the given {@link OperatorName} and casts it to the specified {@link Class}.
      *
      * @param name of the requested {@link Operator}
      * @param clazz the {@link Class} into which the operator is cast
@@ -112,8 +112,9 @@ public class OperatorRegistry {
 
 
     /**
-     *  Retrieves the language-specific function for the given {@link OperatorName} and {@link QueryLanguage}.
-     *  and casts it to the specified {@link Class}.
+     * Retrieves the language-specific function for the given {@link OperatorName} and {@link QueryLanguage}.
+     * and casts it to the specified {@link Class}.
+     *
      * @param language for which the {@link Operator} is retrieved
      * @param name of the requested {@link Operator}
      * @param clazz the {@link Class} into which the operator is cast
@@ -147,6 +148,7 @@ public class OperatorRegistry {
     /**
      * Retrieves all {@link Operator}s for a given {@link QueryLanguage},
      * <code>null</code> is used for general functions.
+     *
      * @param language for which all {@link Operator}s are retrieved
      * @return a map of all {@link Operator} with their respective {@link OperatorName}
      */

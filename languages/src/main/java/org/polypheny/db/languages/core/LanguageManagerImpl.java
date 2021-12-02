@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
@@ -76,9 +79,6 @@ import org.polypheny.db.mql.parser.impl.MqlParserImpl;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.TableFunction;
@@ -276,7 +276,8 @@ public class LanguageManagerImpl extends LanguageManager {
             boolean nullable,
             ParserPos zero ) {
         if ( language == QueryLanguage.SQL ) {
-            return new SqlDataTypeSpec( (SqlIdentifier) typeIdentifier,
+            return new SqlDataTypeSpec(
+                    (SqlIdentifier) typeIdentifier,
                     (SqlIdentifier) componentTypeIdentifier,
                     precision,
                     scale,
@@ -292,7 +293,8 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public IntervalQualifier createIntervalQualifier( QueryLanguage language,
+    public IntervalQualifier createIntervalQualifier(
+            QueryLanguage language,
             TimeUnit startUnit,
             int startPrecision,
             TimeUnit endUnit,
@@ -448,7 +450,8 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Operator createUserDefinedAggFunction( QueryLanguage language,
+    public Operator createUserDefinedAggFunction(
+            QueryLanguage language,
             Identifier name,
             PolyReturnTypeInference infer,
             PolyOperandTypeInference explicit,
@@ -476,7 +479,8 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Operator createUserDefinedTableMacro( QueryLanguage language,
+    public Operator createUserDefinedTableMacro(
+            QueryLanguage language,
             Identifier name,
             PolyReturnTypeInference typeInference,
             PolyOperandTypeInference explicit,
@@ -492,7 +496,8 @@ public class LanguageManagerImpl extends LanguageManager {
 
 
     @Override
-    public Operator createUserDefinedTableFunction( QueryLanguage language,
+    public Operator createUserDefinedTableFunction(
+            QueryLanguage language,
             Identifier name,
             PolyReturnTypeInference typeInference,
             PolyOperandTypeInference explicit,

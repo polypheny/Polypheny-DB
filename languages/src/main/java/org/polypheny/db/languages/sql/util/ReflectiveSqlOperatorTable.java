@@ -25,11 +25,11 @@ import java.util.List;
 import java.util.Locale;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Syntax;
+import org.polypheny.db.core.nodes.Function;
 import org.polypheny.db.core.nodes.Identifier;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.sql.SqlFunction;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -83,7 +83,7 @@ public abstract class ReflectiveSqlOperatorTable implements OperatorTable {
         for ( Operator op : list ) {
             if ( op.getSyntax() == syntax ) {
                 operatorList.add( op );
-            } else if ( syntax == Syntax.FUNCTION && op instanceof SqlFunction ) {
+            } else if ( syntax == Syntax.FUNCTION && op instanceof Function ) {
                 // this special case is needed for operators like CAST, which are treated as functions but have special syntax
                 operatorList.add( op );
             }

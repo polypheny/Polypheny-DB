@@ -114,13 +114,13 @@ import org.slf4j.Logger;
 
 
 /**
- * RelDecorrelator replaces all correlated expressions (corExp) in a relational expression (AlgNode) tree with non-correlated expressions that are produced from joining the {@link AlgNode} that produces the
+ * {@link AlgDecorrelator} replaces all correlated expressions (corExp) in a relational expression (AlgNode) tree with non-correlated expressions that are produced from joining the {@link AlgNode} that produces the
  * corExp with the {@link AlgNode} that references it.
  *
  * TODO:
  * <ul>
  * <li>replace {@code CorelMap} constructor parameter with a AlgNode</li>
- * <li>make {@link #currentRel} immutable (would require a fresh RelDecorrelator for each node being decorrelated)</li>
+ * <li>make {@link #currentAlg} immutable (would require a fresh {@link AlgDecorrelator} for each node being decorrelated)</li>
  * <li>make fields of {@code CorelMap} immutable</li>
  * <li>make sub-class rules static, and have them create their own de-correlator</li>
  * </ul>
@@ -138,7 +138,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
     private final ReflectUtil.MethodDispatcher<Frame> dispatcher = ReflectUtil.createMethodDispatcher( Frame.class, this, "decorrelateAlg", AlgNode.class );
 
     // The alg which is being visited
-    private AlgNode currentRel;
+    private AlgNode currentAlg;
 
     private final Context context;
 
@@ -147,7 +147,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      */
     private final Map<AlgNode, Frame> map = new HashMap<>();
 
-    private final HashSet<LogicalCorrelate> generatedCorRels = new HashSet<>();
+    private final Set<LogicalCorrelate> generatedCorAlgs = new HashSet<>();
 
 
     private AlgDecorrelator( CorelMap cm, Context context, AlgBuilder algBuilder ) {
@@ -162,20 +162,20 @@ public class AlgDecorrelator implements ReflectiveVisitor {
      *
      * This is the main entry point to {@link AlgDecorrelator}.
      *
-     * @param rootRel Root node of the query
+     * @param rootAlg Root node of the query
      * @param algBuilder Builder for relational expressions
      * @return Equivalent query with all {@link LogicalCorrelate} instances removed
      */
-    public static AlgNode decorrelateQuery( AlgNode rootRel, AlgBuilder algBuilder ) {
-        final CorelMap corelMap = new CorelMapBuilder().build( rootRel );
+    public static AlgNode decorrelateQuery( AlgNode rootAlg, AlgBuilder algBuilder ) {
+        final CorelMap corelMap = new CorelMapBuilder().build( rootAlg );
         if ( !corelMap.hasCorrelation() ) {
-            return rootRel;
+            return rootAlg;
         }
 
-        final AlgOptCluster cluster = rootRel.getCluster();
+        final AlgOptCluster cluster = rootAlg.getCluster();
         final AlgDecorrelator decorrelator = new AlgDecorrelator( corelMap, cluster.getPlanner().getContext(), algBuilder );
 
-        AlgNode newRootRel = decorrelator.removeCorrelationViaRule( rootRel );
+        AlgNode newRootRel = decorrelator.removeCorrelationViaRule( rootAlg );
 
         if ( SQL2REL_LOGGER.isDebugEnabled() ) {
             SQL2REL_LOGGER.debug(
@@ -195,7 +195,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
     private void setCurrent( AlgNode root, LogicalCorrelate corRel ) {
-        currentRel = corRel;
+        currentAlg = corRel;
         if ( corRel != null ) {
             cm = new CorelMapBuilder().build( Util.first( root, corRel ) );
         }
@@ -256,8 +256,8 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                     cm.mapCorToCorRel.put( c, newNode );
                 }
 
-                if ( generatedCorRels.contains( oldNode ) ) {
-                    generatedCorRels.add( (LogicalCorrelate) newNode );
+                if ( generatedCorAlgs.contains( oldNode ) ) {
+                    generatedCorAlgs.add( (LogicalCorrelate) newNode );
                 }
             }
             return null;
@@ -568,7 +568,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         if ( frame != null ) {
             map.put( r, frame );
         }
-        currentRel = parent;
+        currentAlg = parent;
         return frame;
     }
 
@@ -624,7 +624,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             projects.add(
                     newPos,
                     Pair.of(
-                            decorrelateExpr( currentRel, map, cm, oldProjects.get( newPos ) ),
+                            decorrelateExpr( currentAlg, map, cm, oldProjects.get( newPos ) ),
                             relOutput.get( newPos ).getName() ) );
             mapOldToNewOutputs.put( newPos, newPos );
         }
@@ -956,7 +956,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         final CorelMap cm2 = new CorelMapBuilder().build( alg );
 
         // Replace the filter expression to reference output of the join Map filter to the new filter over join
-        algBuilder.push( frame.r ).filter( decorrelateExpr( currentRel, map, cm2, alg.getCondition() ) );
+        algBuilder.push( frame.r ).filter( decorrelateExpr( currentAlg, map, cm2, alg.getCondition() ) );
 
         // Filter does not change the input ordering.
         // Filter alg does not permute the input.
@@ -1083,7 +1083,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                 LogicalJoin.create(
                         leftFrame.r,
                         rightFrame.r,
-                        decorrelateExpr( currentRel, map, cm, alg.getCondition() ),
+                        decorrelateExpr( currentAlg, map, cm, alg.getCondition() ),
                         ImmutableSet.of(),
                         alg.getJoinType() );
 
@@ -1508,10 +1508,10 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
         @Override
         public RexNode visitInputRef( RexInputRef inputRef ) {
-            if ( currentRel instanceof LogicalCorrelate ) {
+            if ( currentAlg instanceof LogicalCorrelate ) {
                 // If this alg references corVar and now it needs to be rewritten it must have been pulled above the Correlate replace the input ref to account for the LHS of the
                 // Correlate
-                final int leftInputFieldCount = ((LogicalCorrelate) currentRel).getLeft().getRowType().getFieldCount();
+                final int leftInputFieldCount = ((LogicalCorrelate) currentAlg).getLeft().getRowType().getFieldCount();
                 AlgDataType newType = inputRef.getType();
 
                 if ( projectPulledAboveLeftCorrelator ) {
@@ -2198,7 +2198,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
 
         private void onMatch2( AlgOptRuleCall call, LogicalCorrelate correlate, AlgNode leftInput, LogicalProject aggOutputProject, LogicalAggregate aggregate ) {
-            if ( generatedCorRels.contains( correlate ) ) {
+            if ( generatedCorAlgs.contains( correlate ) ) {
                 // This Correlate was generated by a previous invocation of this rule. No further work to do.
                 return;
             }
@@ -2260,7 +2260,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
             // remember this alg so we don't fire rule on it again
             // REVIEW jhyde 29-Oct-2007: rules should not save state; rule should recognize patterns where it does or does not need to do work
-            generatedCorRels.add( newCorrelate );
+            generatedCorAlgs.add( newCorrelate );
 
             // need to update the mapCorToCorRel Update the output position for the corVars: only pass on the corVars that are not used in the join key.
             if ( cm.mapCorToCorRel.get( correlate.getCorrelationId() ) == correlate ) {

@@ -24,6 +24,7 @@ import org.polypheny.db.interpreter.Node;
  * or when translating native language strings into language-specific {@link Node} implementations
  */
 public class QueryParameters {
+
     @Getter
     private final String query;
 
