@@ -31,7 +31,9 @@ import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
+import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -107,6 +109,59 @@ public class JdbcPreparedStatementsTest {
                     TestHelper.checkResultSet(
                             preparedSelect.executeQuery(),
                             ImmutableList.of( new Object[]{ 1, "Foo" } ) );
+
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE pstest" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    @Ignore
+    public void nullValueTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                try {
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tbigint,tvarchar) VALUES (?, ?, ?)" );
+
+                    preparedInsert.setInt( 1, 1 );
+                    preparedInsert.setNull( 2, SqlType.BIGINT.id );
+                    preparedInsert.setString( 3, "Alice" );
+                    preparedInsert.execute();
+
+                    preparedInsert.setInt( 1, 2 );
+                    preparedInsert.setNull( 2, SqlType.BIGINT.id );
+                    preparedInsert.setString( 3, "Bob" );
+                    preparedInsert.execute();
+
+                    PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tbigint,tvarchar FROM pstest WHERE tinteger = ?" );
+                    preparedSelect.setInt( 1, 1 );
+                    TestHelper.checkResultSet(
+                            preparedSelect.executeQuery(),
+                            ImmutableList.of( new Object[]{ 1, null, "Alice" } ) );
+
+                    boolean exceptionThrown = false;
+                    try {
+                        PreparedStatement preparedInsert2 = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?, ?)" );
+
+                        preparedInsert2.setInt( 1, 3 );
+                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
+                        preparedInsert2.execute();
+
+                        preparedInsert2.setInt( 1, 4 );
+                        preparedInsert2.setNull( 2, SqlType.VARCHAR.id );
+                        preparedInsert2.execute();
+                    } catch ( Exception e ) {
+                        exceptionThrown = true;
+                    }
+
+                    Assert.assertTrue( "Excepted null value for a non-nullable column", exceptionThrown );
 
                     connection.commit();
                 } finally {
