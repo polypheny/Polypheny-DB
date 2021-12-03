@@ -869,27 +869,31 @@ public class Crud implements InformationObserver {
 
         }
 
+        String commitStatus;
         try {
             transaction.commit();
+            commitStatus = "Committed";
         } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
             results.add( new Result( e ) );
             try {
                 transaction.rollback();
+                commitStatus = "Rolled back";
             } catch ( TransactionException ex ) {
                 log.error( "Caught exception while rollback", e );
+                commitStatus = "Error while rolling back";
             }
         }
 
         if ( queryAnalyzer != null ) {
-            attachQueryAnalyzer( queryAnalyzer, executionTime, results.size() );
+            attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
         }
 
         return results;
     }
 
 
-    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime, int numberOfQueries ) {
+    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime, String commitStatus, int numberOfQueries ) {
         InformationPage p1 = new InformationPage( "Transaction", "Analysis of the transaction." );
         queryAnalyzer.addPage( p1 );
         InformationGroup g1 = new InformationGroup( p1, "Execution time" );
@@ -906,10 +910,18 @@ public class Crud implements InformationObserver {
             text1 = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
         }
         queryAnalyzer.registerInformation( text1 );
+
+        // Number of queries
         InformationGroup g2 = new InformationGroup( p1, "Number of queries" );
         queryAnalyzer.addGroup( g2 );
         InformationText text2 = new InformationText( g2, String.format( "Number of queries in this transaction: %d", numberOfQueries ) );
         queryAnalyzer.registerInformation( text2 );
+
+        // Commit Status
+        InformationGroup g3 = new InformationGroup( p1, "Status" );
+        queryAnalyzer.addGroup( g3 );
+        InformationText text3 = new InformationText( g3, commitStatus );
+        queryAnalyzer.registerInformation( text3 );
     }
 
 
@@ -3671,18 +3683,12 @@ public class Crud implements InformationObserver {
         boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
-            if ( isAnalyze ) {
-                statement.getOverviewDuration().start( "Parsing" );
-            }
-
             signature = processQuery( statement, sqlSelect, isAnalyze );
 
             if ( isAnalyze ) {
                 statement.getOverviewDuration().start( "Execution" );
             }
-
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-
             if ( isAnalyze ) {
                 statement.getOverviewDuration().stop( "Execution" );
             }

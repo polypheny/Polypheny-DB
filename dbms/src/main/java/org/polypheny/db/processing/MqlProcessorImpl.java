@@ -26,10 +26,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.mql.MqlCollectionStatement;
 import org.polypheny.db.mql.MqlCreateCollection;
@@ -150,19 +146,6 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
         final MqlToRelConverter mqlToRelConverter = new MqlToRelConverter( this, statement.getTransaction().getCatalogReader(), cluster );
         RelRoot logicalRoot = mqlToRelConverter.convert( mql, defaultDatabase );
-
-        if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    RelOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
-        }
 
         // Decorrelate
         final RelBuilder relBuilder = RelBuilder.create( statement );
