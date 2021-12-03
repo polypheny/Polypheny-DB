@@ -18,8 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
@@ -41,13 +39,13 @@ public class CatalogView extends CatalogTable {
     private static final long serialVersionUID = -4453089531698670528L;
 
     @Getter
-    private final Map<Long, List<Long>> underlyingTables;
+    protected final ImmutableMap<Long, ImmutableList<Long>> underlyingTables;
     @Getter
     private final QueryLanguage language;
     @Getter
     private final RelCollation relCollation;
     @Getter
-    String query;
+    private final String query;
 
 
     public CatalogView(
@@ -64,7 +62,7 @@ public class CatalogView extends CatalogTable {
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
             RelCollation relCollation,
-            Map<Long, List<Long>> underlyingTables,
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language,
             PartitionProperty partitionProperty ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable, partitionProperty );
@@ -94,7 +92,7 @@ public class CatalogView extends CatalogTable {
             PartitionProperty partitionProperty,
             RelCollation relCollation,
             ImmutableList<Long> connectedViews,
-            Map<Long, List<Long>> underlyingTables,
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty, connectedViews );
         this.query = query;

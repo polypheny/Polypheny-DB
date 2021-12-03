@@ -1389,7 +1389,7 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
             if ( catalogTable.tableType == TableType.VIEW ) {
-                Map<Long, List<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
+                ImmutableMap<Long, ImmutableList<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
 
                 List<DbColumn> columns = new ArrayList<>();
                 for ( Long columnIds : catalogTable.columnIds ) {
@@ -2110,9 +2110,9 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
             if ( catalogTable.tableType == TableType.VIEW ) {
-                Map<Long, List<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
+                ImmutableMap<Long, ImmutableList<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
                 Map<String, List<String>> underlyingTable = new HashMap<>();
-                for ( Entry<Long, List<Long>> entry : underlyingTableOriginal.entrySet() ) {
+                for ( Entry<Long, ImmutableList<Long>> entry : underlyingTableOriginal.entrySet() ) {
                     List<String> columns = new ArrayList<>();
                     for ( Long ids : entry.getValue() ) {
                         columns.add( catalog.getColumn( ids ).name );
@@ -2121,7 +2121,7 @@ public class Crud implements InformationObserver {
                 }
                 return new UnderlyingTables( underlyingTable );
             } else {
-                throw new RuntimeException( "only possible with Views" );
+                throw new RuntimeException( "Only possible with Views" );
             }
 
         } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {

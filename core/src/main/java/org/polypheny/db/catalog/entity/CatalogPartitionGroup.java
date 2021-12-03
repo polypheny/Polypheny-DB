@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity;
 
+import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -30,12 +31,11 @@ public final class CatalogPartitionGroup implements CatalogEntity {
 
     public final long id;
     public final String partitionGroupName;
-
     public final long tableId;
     public final long schemaId;
     public final long databaseId;
-    public final List<String> partitionQualifiers;
-    public final List<Long> partitionIds;
+    public final ImmutableList<String> partitionQualifiers;
+    public final ImmutableList<Long> partitionIds;
     public final boolean isUnbound;
 
     public final long partitionKey;
@@ -49,7 +49,7 @@ public final class CatalogPartitionGroup implements CatalogEntity {
             final long databaseId,
             final long partitionKey,
             final List<String> partitionQualifiers,
-            List<Long> partitionIds,
+            final List<Long> partitionIds,
             final boolean isUnbound ) {
         this.id = id;
         this.partitionGroupName = partitionGroupName;
@@ -57,10 +57,14 @@ public final class CatalogPartitionGroup implements CatalogEntity {
         this.schemaId = schemaId;
         this.databaseId = databaseId;
         this.partitionKey = partitionKey;
-        // TODO @HENNLO Although the qualifiers are now part of CatalogPartitions, it might be a good improvement to accumulate all qualifiers of all
-        // internal partitions here to speed up query time.
-        this.partitionQualifiers = partitionQualifiers;
-        this.partitionIds = partitionIds;
+        // TODO @HENNLO Although the qualifiers are now part of CatalogPartitions, it might be a good improvement to
+        //  accumulate all qualifiers of all internal partitions here to speed up query time.
+        if ( partitionQualifiers != null ) {
+            this.partitionQualifiers = ImmutableList.copyOf( partitionQualifiers );
+        } else {
+            this.partitionQualifiers = null;
+        }
+        this.partitionIds = ImmutableList.copyOf( partitionIds );
         this.isUnbound = isUnbound;
     }
 

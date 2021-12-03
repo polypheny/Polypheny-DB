@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -32,7 +33,7 @@ public class CatalogAdapter implements CatalogEntity {
     public final String uniqueName;
     public final String adapterClazz;
     public final AdapterType type;
-    public final Map<String, String> settings;
+    public final ImmutableMap<String, String> settings;
 
 
     public enum AdapterType {STORE, SOURCE}
@@ -48,7 +49,7 @@ public class CatalogAdapter implements CatalogEntity {
         this.uniqueName = uniqueName;
         this.adapterClazz = adapterClazz;
         this.type = adapterType;
-        this.settings = settings;
+        this.settings = ImmutableMap.copyOf( settings );
     }
 
 

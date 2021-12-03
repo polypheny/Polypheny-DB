@@ -133,7 +133,6 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<String, CatalogDatabase> databaseNames;
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
 
-
     private static BTreeMap<Long, CatalogSchema> schemas;
     private static BTreeMap<Object[], CatalogSchema> schemaNames;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
@@ -160,6 +159,11 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, CatalogConstraint> constraints;
     private static HTreeMap<Long, CatalogIndex> indexes;
 
+    private static BTreeMap<Long, CatalogPartitionGroup> partitionGroups;
+    private static BTreeMap<Long, CatalogPartition> partitions;
+    private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionGroupPlacement; // (AdapterId, TableId) -> List of partitionGroupIds>
+    private static BTreeMap<Object[], CatalogPartitionPlacement> partitionPlacements; // (AdapterId, Partition)
+
     private static Long openTable;
 
     private static final AtomicInteger adapterIdBuilder = new AtomicInteger( 1 );
@@ -171,19 +175,8 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong tableIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong columnIdBuilder = new AtomicLong( 1 );
 
-    private static final AtomicLong partitionGroupIdBuilder = new AtomicLong();
+    private static final AtomicLong partitionGroupIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong partitionIdBuilder = new AtomicLong( 1000 );
-    private static BTreeMap<Long, CatalogPartitionGroup> partitionGroups;
-    private static BTreeMap<Long, CatalogPartition> partitions;
-    private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionGroupPlacement; // <AdapterId.TableId, List of partitionGroupIds>
-    private static Set<Long> frequencyDependentTables = new HashSet<>(); // All tables to consider for periodic processing
-
-    // adapterId + Partition
-    private static BTreeMap<Object[], CatalogPartitionPlacement> partitionPlacements;
-
-    // Keeps a list of all tableIDs which are going to be deleted. This is required to avoid constraints when recursively
-    // removing a table and all placements and partitions. Otherwise **validatePartitionDistribution()** inside the Catalog would throw an error.
-    private static final List<Long> tablesFlaggedForDeletion = new ArrayList<>();
 
     private static final AtomicLong keyIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong constraintIdBuilder = new AtomicLong( 1 );
@@ -191,6 +184,13 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong foreignKeyIdBuilder = new AtomicLong( 1 );
 
     private static final AtomicLong physicalPositionBuilder = new AtomicLong();
+
+    private static Set<Long> frequencyDependentTables = new HashSet<>(); // All tables to consider for periodic processing
+
+    // Keeps a list of all tableIDs which are going to be deleted. This is required to avoid constraints when recursively
+    // removing a table and all placements and partitions. Otherwise **validatePartitionDistribution()** inside the Catalog
+    // would throw an error.
+    private static final List<Long> tablesFlaggedForDeletion = new ArrayList<>();
 
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
 
@@ -242,7 +242,6 @@ public class CatalogImpl extends Catalog {
                 }
 
                 if ( !deleteAfter ) {
-
                     db = DBMaker
                             .fileDB( new File( folder, fileName ) )
                             .closeOnJvmShutdown()
@@ -624,7 +623,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * creates all maps needed for tables
+     * Creates all maps needed for tables
      *
      * tables: tableId -> CatalogTable
      * tableChildren: tableId -> [columnId, columnId,..]
@@ -1498,7 +1497,10 @@ public class CatalogImpl extends Catalog {
                     ImmutableMap.of(),
                     modifiable,
                     relCollation,
-                    ImmutableMap.copyOf( underlyingTables ),
+                    ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
+                            Entry::getKey,
+                            e -> ImmutableList.copyOf( e.getValue() )
+                    ) ) ),
                     language, //fieldList
                     partitionProperty
             );
@@ -1506,7 +1508,6 @@ public class CatalogImpl extends Catalog {
             updateTableLogistics( name, schemaId, id, schema, viewTable );
             relTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
-
         } else {
             // Should not happen, addViewTable is only called with TableType.View
             throw new RuntimeException( "addViewTable is only possible with TableType = VIEW" );
@@ -1568,7 +1569,10 @@ public class CatalogImpl extends Catalog {
                     ImmutableMap.of(),
                     modifiable,
                     relCollation,
-                    ImmutableMap.copyOf( underlyingTables ),
+                    ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
+                            Entry::getKey,
+                            e -> ImmutableList.copyOf( e.getValue() )
+                    ) ) ),
                     language,
                     materializedCriteria,
                     ordered,
