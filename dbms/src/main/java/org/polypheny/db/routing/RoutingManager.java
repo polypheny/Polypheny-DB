@@ -16,7 +16,6 @@
 
 package org.polypheny.db.routing;
 
-import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -76,8 +75,6 @@ public class RoutingManager {
     @Getter
     private CreatePlacementStrategy createPlacementStrategy = new CreateSinglePlacementStrategy();
     private List<RouterFactory> routerFactories;
-    @Getter
-    private List<Router> routers;
 
 
     public RoutingManager() {
@@ -90,11 +87,10 @@ public class RoutingManager {
     }
 
 
-    private void instantiateRouters() {
-        List<Router> list = routerFactories.stream()
+    public List<Router> getRouters() {
+        return routerFactories.stream()
                 .map( RouterFactory::createInstance )
                 .collect( Collectors.toList() );
-        routers = ImmutableList.copyOf( list );
     }
 
 
@@ -135,7 +131,6 @@ public class RoutingManager {
         routerClassesConfig.withUi( routingGroup.getId(), 0 );
         routerClassesConfig.addObserver( getRouterConfigListener() );
         routerFactories = getFactoryList( routerClassesConfig );
-        instantiateRouters();
 
         configManager.registerConfig( PRE_COST_POST_COST_RATIO );
         PRE_COST_POST_COST_RATIO.withUi( routingGroup.getId(), 1 );
@@ -164,7 +159,6 @@ public class RoutingManager {
             public void onConfigChange( Config c ) {
                 ConfigClazzList configClazzList = (ConfigClazzList) c;
                 routerFactories = getFactoryList( configClazzList );
-                instantiateRouters();
             }
 
 
