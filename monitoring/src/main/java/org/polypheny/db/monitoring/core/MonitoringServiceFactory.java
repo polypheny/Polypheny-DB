@@ -25,12 +25,12 @@ import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;
 @Slf4j
 public class MonitoringServiceFactory {
 
-    public static MonitoringServiceImpl createMonitoringService() {
+    public static MonitoringServiceImpl createMonitoringService( boolean resetRepository ) {
         // Create mapDB repository
         MapDbRepository repo = new MapDbRepository();
 
         // Initialize the mapDB repo and open connection
-        repo.initialize();
+        repo.initialize( resetRepository );
 
         // Create monitoring service with dependencies
         MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );

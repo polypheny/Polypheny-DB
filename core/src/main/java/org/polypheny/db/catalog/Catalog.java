@@ -492,8 +492,9 @@ public abstract class Catalog {
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
+     * @param columnOnly columnOnly If delete originates from a dropColumn
      */
-    public abstract void deleteColumnPlacement( int adapterId, long columnId );
+    public abstract void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly );
 
     /**
      * Gets a collective list of column placements per column on a adapter.

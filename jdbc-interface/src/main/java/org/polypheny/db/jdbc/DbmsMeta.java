@@ -1458,7 +1458,7 @@ public class DbmsMeta implements ProtobufMeta {
                 return;
             }
 
-            // Check if there is an running transaction
+            // Check if there is a running transaction
             Transaction transaction = connectionToClose.getCurrentTransaction();
             if ( transaction != null && transaction.isActive() ) {
                 log.warn( "There is a running transaction associated with this connection {}", connectionToClose );
