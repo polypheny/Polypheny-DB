@@ -61,7 +61,7 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.languages.sql2alg.SqlToAlgConverter;
+import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 

@@ -78,7 +78,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
-import org.polypheny.db.languages.sql.SqlDialect.IntervalParameterStrategy;
+import org.polypheny.db.sql.sql.SqlDialect.IntervalParameterStrategy;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;

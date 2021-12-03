@@ -54,7 +54,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;

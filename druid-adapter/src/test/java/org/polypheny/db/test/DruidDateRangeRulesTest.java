@@ -49,7 +49,7 @@ import org.polypheny.db.adapter.druid.DruidDateTimeUtils;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
-import org.polypheny.db.languages.core.TestFixture;
+import org.polypheny.db.sql.core.TestFixture;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.TimestampString;

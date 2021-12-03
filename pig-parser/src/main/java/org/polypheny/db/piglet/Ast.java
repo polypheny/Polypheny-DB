@@ -41,7 +41,7 @@ import java.util.Objects;
 import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.sql.parser.SqlParserUtil;
+import org.polypheny.db.sql.sql.parser.SqlParserUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 

@@ -23,6 +23,7 @@ dependencies {
     javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version  // BSD 2-clause
 
     implementation project(':core')
+    implementation project(':sql-language')
     implementation project(':languages')
 
 

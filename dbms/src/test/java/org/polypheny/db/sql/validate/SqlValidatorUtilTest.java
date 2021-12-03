@@ -36,13 +36,13 @@ import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.util.NameMatchers;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.core.util.ValidatorUtil;
-import org.polypheny.db.languages.sql.SqlIdentifier;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlTestFactory;
-import org.polypheny.db.languages.sql.utils.SqlTester;
-import org.polypheny.db.languages.sql.utils.SqlValidatorTester;
-import org.polypheny.db.languages.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.languages.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.sql.sql.SqlIdentifier;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.sql.sql.SqlTestFactory;
+import org.polypheny.db.sql.sql.utils.SqlTester;
+import org.polypheny.db.sql.sql.utils.SqlValidatorTester;
+import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 
 

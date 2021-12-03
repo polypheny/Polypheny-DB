@@ -25,7 +25,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.languages.sql.SqlDialect;
+import org.polypheny.db.sql.sql.SqlDialect;
 
 
 /**

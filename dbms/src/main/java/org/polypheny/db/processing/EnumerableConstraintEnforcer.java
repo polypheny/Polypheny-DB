@@ -49,7 +49,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.sql.fun.SqlCountAggFunction;
+import org.polypheny.db.sql.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;

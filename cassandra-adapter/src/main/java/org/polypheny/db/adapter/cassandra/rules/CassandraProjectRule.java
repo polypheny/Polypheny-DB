@@ -21,7 +21,7 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraProject;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;

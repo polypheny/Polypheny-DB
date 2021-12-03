@@ -28,9 +28,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.languages.sql.SqlWriter;
-import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.languages.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.sql.SqlWriter;
+import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.type.PolyType;
 
 

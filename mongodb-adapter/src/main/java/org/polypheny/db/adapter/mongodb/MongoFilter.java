@@ -59,7 +59,7 @@ import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.util.BsonUtil;
-import org.polypheny.db.languages.sql.fun.SqlItemOperator;
+import org.polypheny.db.sql.sql.fun.SqlItemOperator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;

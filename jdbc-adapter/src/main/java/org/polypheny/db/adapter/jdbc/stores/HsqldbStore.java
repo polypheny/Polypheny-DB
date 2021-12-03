@@ -23,7 +23,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.languages.sql.dialect.HsqldbSqlDialect;
+import org.polypheny.db.sql.sql.dialect.HsqldbSqlDialect;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PUID;

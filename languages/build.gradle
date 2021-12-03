@@ -1,5 +1,3 @@
-import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
-
 group "org.polypheny"
 
 version = versionMajor + "." + versionMinor + versionQualifier
@@ -13,19 +11,12 @@ configurations {
 }
 
 
-buildscript {
-    dependencies {
-        // JavaCC (https://github.com/johnmartel/javaccPlugin)
-        classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
-        // Fmpp
-        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
-    }
-    ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
-}
 
 dependencies {
     implementation project(":core")
     implementation project(":monitoring")
+    implementation project(":sql-language")
+    implementation project(":mql-language")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
@@ -41,50 +32,6 @@ dependencies {
     testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
 }
 
-
-/**
- * Additional MongoDB query language Compile Pipeline
- */
-task generateFmppSourcesDocument {
-    inputs.dir("src/main/codegen/templates/mql")
-    outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
-    doLast {
-        ant.fmpp(configuration: "src/main/codegen/config_doc.fmpp",
-                sourceRoot: "src/main/codegen/templates/mql",
-                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/mql")
-    }
-}
-task generateParserDocument (type: CompileJavaccTask) {
-    dependsOn("generateFmppSourcesDocument")
-    getConventionMapping().map("classpath", { configurations.javacc })
-    arguments = [static: "false", lookahead: "2"]
-    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/mql/javacc")
-    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/mql/parser/impl")
-}
-
-/**
- * Compile Pipeline
- */
-task generateFmppSources {
-    inputs.dir("src/main/codegen/templates/sql")
-    outputs.dir(project.buildDir.absolutePath + "/generated-sources/fmpp")
-    doLast {
-        ant.fmpp(configuration: "src/main/codegen/config.fmpp",
-                sourceRoot: "src/main/codegen/templates/sql",
-                outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/sql")
-    }
-}
-task generateParser (type: CompileJavaccTask) {
-    dependsOn("generateFmppSources")
-    getConventionMapping().map("classpath", { configurations.javacc })
-    arguments = [static: "false", lookahead: "2"]
-    inputDirectory = file(project.buildDir.absolutePath + "/generated-sources/fmpp/sql/javacc")
-    outputDirectory = file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/languages/sql/parser/impl")
-}
-
-compileJava {
-    dependsOn("generateParserDocument", "generateParser")
-}
 
 sourceSets {
     main {
@@ -124,9 +71,6 @@ javadoc {
     if(JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption("html5", true)
     }
-    // Exclude build dir
-    exclude "fmpp/sql/javacc/**"
-    exclude "fmpp/mql/javacc/**"
 }
 
 /**

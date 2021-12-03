@@ -48,7 +48,7 @@ import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
-import org.polypheny.db.languages.sql.SqlMatchRecognize;
+import org.polypheny.db.sql.sql.SqlMatchRecognize;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistributions;

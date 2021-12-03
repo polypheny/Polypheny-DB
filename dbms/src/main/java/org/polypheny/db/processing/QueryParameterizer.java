@@ -28,7 +28,7 @@ import lombok.Getter;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.languages.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableModify;

@@ -43,7 +43,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.languages.sql.dialect.MonetdbSqlDialect;
+import org.polypheny.db.sql.sql.dialect.MonetdbSqlDialect;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PUID;

@@ -45,7 +45,7 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.nodes.Call;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.languages.core.LanguageManagerDependant;
-import org.polypheny.db.languages.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgReferentialConstraint;

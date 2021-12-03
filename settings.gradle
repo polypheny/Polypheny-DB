@@ -1,6 +1,8 @@
 rootProject.name = 'Polypheny-DB'
 
 include 'core'
+include 'sql-language'
+include 'mql-language'
 include 'languages'
 include 'cassandra-adapter'
 include 'csv-adapter'

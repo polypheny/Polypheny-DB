@@ -42,9 +42,9 @@ import org.junit.Test;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
-import org.polypheny.db.languages.sql.SqlCall;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.SqlSetOption;
+import org.polypheny.db.sql.sql.SqlCall;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.sql.sql.SqlSetOption;
 
 
 /**

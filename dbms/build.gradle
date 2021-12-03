@@ -17,6 +17,8 @@ apply plugin: "com.github.johnrengelman.shadow"
 
 dependencies {
     implementation project(":core")
+    implementation project(":sql-language")
+    implementation project(":mql-language")
     implementation project(":languages")
     implementation project(":cassandra-adapter")
     implementation project(":cottontail-adapter")
@@ -52,6 +54,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":sql-language", configuration: "tests")
     testImplementation project(path: ":languages", configuration: "tests")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0

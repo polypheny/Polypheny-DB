@@ -95,12 +95,12 @@ import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.core.LanguageManagerDependant;
-import org.polypheny.db.languages.sql.SqlAggFunction;
-import org.polypheny.db.languages.sql.SqlDialect;
-import org.polypheny.db.languages.sql.SqlNode;
-import org.polypheny.db.languages.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.languages.sql.util.ListSqlOperatorTable;
+import org.polypheny.db.sql.core.SqLanguagelDependant;
+import org.polypheny.db.sql.sql.SqlAggFunction;
+import org.polypheny.db.sql.sql.SqlDialect;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.sql.util.ListSqlOperatorTable;
 import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -127,7 +127,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link Planner}.
  */
-public class PlannerTest extends LanguageManagerDependant {
+public class PlannerTest extends SqLanguagelDependant {
 
     private void checkParseAndConvert( String query, String queryFromParseTree, String expectedRelExpr ) throws Exception {
         Planner planner = getPlanner( null );
