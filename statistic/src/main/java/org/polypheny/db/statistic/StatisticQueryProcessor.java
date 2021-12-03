@@ -310,7 +310,7 @@ public class StatisticQueryProcessor {
             RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, false );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         return signature;
     }
