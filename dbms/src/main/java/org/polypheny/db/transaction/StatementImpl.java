@@ -116,7 +116,7 @@ public class StatementImpl implements Statement {
     @Override
     public InformationDuration getProcessingDuration() {
         if ( processingDuration == null ) {
-            processingDuration = initDuration( "Query Processing" );
+            processingDuration = initDuration( "Query Processing", 2 );
         }
         return processingDuration;
     }
@@ -125,7 +125,7 @@ public class StatementImpl implements Statement {
     @Override
     public InformationDuration getRoutingDuration() {
         if ( routingDuration == null ) {
-            routingDuration = initDuration( "Query Routing" );
+            routingDuration = initDuration( "Query Routing", 3 );
         }
         return routingDuration;
     }
@@ -134,19 +134,20 @@ public class StatementImpl implements Statement {
     @Override
     public InformationDuration getOverviewDuration() {
         if ( overviewDuration == null ) {
-            overviewDuration = initDuration( "Overview" );
+            overviewDuration = initDuration( "Overview", 1 );
         }
         return overviewDuration;
     }
 
 
-    private InformationDuration initDuration( String title ) {
+    private InformationDuration initDuration( String title, int order ) {
         InformationManager im = transaction.getQueryAnalyzer();
         if ( executionTimePage == null ) {
             executionTimePage = new InformationPage( "Execution Time", "Query processing & execution time" );
             im.addPage( executionTimePage );
         }
         InformationGroup group = new InformationGroup( executionTimePage, title );
+        group.setOrder( order );
         im.addGroup( group );
         InformationDuration duration = new InformationDuration( group );
         im.registerInformation( duration );
