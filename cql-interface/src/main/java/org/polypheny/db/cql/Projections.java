@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cql.utils.ExclusiveComparisons;
 import org.polypheny.db.rel.RelCollations;
@@ -191,13 +192,21 @@ public class Projections {
 
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> aliases = new ArrayList<>();
-        baseNode = relBuilder.peek();
+        RelNode _baseNode = relBuilder.peek();
 
-        for ( Projection projection : projections ) {
-            int ordinality = projectedColumnOrdinalities.get( projection.getColumnId() );
-            RexNode inputRef = projection.createRexNode( rexBuilder, baseNode, ordinality );
-            inputRefs.add( inputRef );
-            aliases.add( projection.getProjectionName() );
+        Consumer<Map<Long, Integer>> generateProjections = ( ordinalites ) -> {
+            for ( Projection projection : projections ) {
+                int ordinality = ordinalites.get( projection.getColumnId() );
+                RexNode inputRef = projection.createRexNode( rexBuilder, _baseNode, ordinality );
+                inputRefs.add( inputRef );
+                aliases.add( projection.getProjectionName() );
+            }
+        };
+
+        if ( aggregations.isEmpty() ) {
+            generateProjections.accept( tableScanOrdinalities );
+        } else {
+            generateProjections.accept( projectedColumnOrdinalities );
         }
 
         log.debug( "Generating final projection." );
