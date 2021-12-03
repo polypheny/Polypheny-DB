@@ -15,6 +15,9 @@
  */
 
 package org.polypheny.db.adapter.cottontail.enumberable;
+
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
@@ -27,21 +30,25 @@ import org.polypheny.db.type.ArrayType;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 
-import java.util.List;
-
-
+@Slf4j
 public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
 
-    /** The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}. */
+    /**
+     * The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}.
+     */
     private final TupleIterator tupleIterator;
 
-    /** The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}. */
+    /**
+     * The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}.
+     */
     private final Function1<Tuple, Object[]> parser;
 
-    public CottontailQueryEnumerable(TupleIterator iterator, Function1<Tuple, Object[]> rowParser ) {
+
+    public CottontailQueryEnumerable( TupleIterator iterator, Function1<Tuple, Object[]> rowParser ) {
         this.tupleIterator = iterator;
         this.parser = rowParser;
     }
+
 
     @Override
     public Enumerator<Object> enumerator() {
@@ -51,22 +58,26 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
 
     private class CottontailQueryResultEnumerator implements Enumerator<Object> {
 
-        /** The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to. */
+        /**
+         * The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to.
+         */
         private Tuple tuple = null;
+
 
         @Override
         public Object current() {
             final Object[] results = CottontailQueryEnumerable.this.parser.apply( this.tuple );
-            if (results.length == 1) {
+            if ( results.length == 1 ) {
                 return results[0];
             } else {
                 return results;
             }
         }
 
+
         @Override
         public boolean moveNext() {
-            if (CottontailQueryEnumerable.this.tupleIterator.hasNext()) {
+            if ( CottontailQueryEnumerable.this.tupleIterator.hasNext() ) {
                 this.tuple = CottontailQueryEnumerable.this.tupleIterator.next();
                 return true;
             } else {
@@ -85,11 +96,13 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
         public void close() {
             try {
                 CottontailQueryEnumerable.this.tupleIterator.close();
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch ( Exception e ) {
+                log.warn( "Caught exception", e );
             }
         }
+
     }
+
 
     public static class RowTypeParser implements Function1<Tuple, Object[]> {
 
@@ -115,6 +128,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
             return returnValue;
         }
 
+
         /**
          * Internal method used to parse a single value returned from accessing a {@link Tuple}.
          *
@@ -133,7 +147,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
                 case CHAR:
                 case VARCHAR:
                 case NULL:
-                    return data ; /* Pass through, no conversion needed. */
+                    return data; /* Pass through, no conversion needed. */
                 case TINYINT:
                     return Linq4JFixer.getTinyIntData( data );
                 case SMALLINT:
@@ -175,5 +189,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
             }
             throw new AssertionError( "Not yet supported type: " + type.getPolyType() );
         }
+
     }
+
 }

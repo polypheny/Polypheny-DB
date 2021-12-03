@@ -232,7 +232,8 @@ public class CottontailFilter extends Filter implements CottontailRel {
         }
 
 
-        private Expression translateBinary2( ComparisonOperator op,
+        private Expression translateBinary2(
+                ComparisonOperator op,
                 RexNode left,
                 RexNode right,
                 ParameterExpression dynamicParameterMap_,

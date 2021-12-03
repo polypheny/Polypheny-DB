@@ -70,7 +70,7 @@ public class CottontailProjectRule extends CottontailConverterRule {
                     return false;
                 }
                 for ( RexNode node : rexCall.getOperands() ) {
-                    if ( node instanceof RexCall) {
+                    if ( node instanceof RexCall ) {
                         return false; /* TODO: Nested function calls in NNS context are currently not supported. */
                     }
                 }
@@ -88,7 +88,8 @@ public class CottontailProjectRule extends CottontailConverterRule {
         final RelTraitSet traitSet = project.getTraitSet().replace( out );
         boolean arrayValueProject = true;
         for ( RexNode e : project.getProjects() ) {
-            if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) && !(e instanceof RexLiteral) && !(e instanceof RexDynamicParam) ) {
+            if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor))
+                    && !(e instanceof RexLiteral) && !(e instanceof RexDynamicParam) ) {
                 arrayValueProject = false;
                 break;
             }

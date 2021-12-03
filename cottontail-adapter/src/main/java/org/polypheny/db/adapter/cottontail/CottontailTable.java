@@ -191,12 +191,19 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
             final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
             final CottontailTable cottontailTable = (CottontailTable) this.table;
             final long txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
-            final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() ).build();
-            final QueryMessage queryMessage = QueryMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setQuery( query ).build();
+            final Query query = Query.newBuilder()
+                    .setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entity ) ).build() )
+                    .build();
+            final QueryMessage queryMessage = QueryMessage.newBuilder()
+                    .setMetadata( Metadata.newBuilder().setTransactionId( txId ) )
+                    .setQuery( query )
+                    .build();
             return new CottontailQueryEnumerable(
                     cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
                     new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType( typeFactory ), cottontailTable.physicalColumnNames )
             ).enumerator();
         }
+
     }
+
 }

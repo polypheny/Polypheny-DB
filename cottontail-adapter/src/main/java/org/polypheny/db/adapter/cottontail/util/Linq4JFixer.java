@@ -16,15 +16,27 @@
 
 package org.polypheny.db.adapter.cottontail.util;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimeString;
 import org.vitrivr.cottontail.client.language.basics.Distances;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.*;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ComparisonOperator;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ConnectionOperator;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Expression;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Expressions;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Function;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.FunctionName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Vector;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
 /**
@@ -39,9 +51,12 @@ public class Linq4JFixer {
      * @return {@link Byte}
      */
     public static Object getTinyIntData( Object data ) {
-        if (data == null) return null;
+        if ( data == null ) {
+            return null;
+        }
         return ((Integer) data).byteValue();
     }
+
 
     /**
      * Converts the given object and returns it as {@link Short}.
@@ -50,9 +65,12 @@ public class Linq4JFixer {
      * @return {@link Short}
      */
     public static Object getSmallIntData( Object data ) {
-        if (data == null) return null;
+        if ( data == null ) {
+            return null;
+        }
         return ((Integer) data).shortValue();
     }
+
 
     /**
      * Converts the given object and returns it as {@link String}.
@@ -60,10 +78,13 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link String}.
      * @return {@link String}
      */
-    public static String getStringData(Object data ) {
-        if (data == null) return null;
+    public static String getStringData( Object data ) {
+        if ( data == null ) {
+            return null;
+        }
         return (String) data;
     }
+
 
     /**
      * Converts the given object and returns it as {@link BigDecimal} object.
@@ -72,9 +93,12 @@ public class Linq4JFixer {
      * @return {@link BigDecimal}
      */
     public static Object getDecimalData( Object data ) {
-        if (data == null) return null;
+        if ( data == null ) {
+            return null;
+        }
         return new BigDecimal( (String) data );
     }
+
 
     /**
      * Converts the given object and returns it as {@link ByteString} object.
@@ -83,9 +107,12 @@ public class Linq4JFixer {
      * @return {@link ByteString}
      */
     public static Object getBinaryData( Object data ) {
-        if (data == null) return null;
+        if ( data == null ) {
+            return null;
+        }
         return ByteString.parseBase64( (String) data );
     }
+
 
     /**
      * Converts the given object and returns it as {@link Integer} object.
@@ -96,9 +123,12 @@ public class Linq4JFixer {
      * @return {@link Integer}
      */
     public static Object getTimeData( Object data ) {
-        if (data == null) return null;
-        return ((Integer)data);
+        if ( data == null ) {
+            return null;
+        }
+        return ((Integer) data);
     }
+
 
     /**
      * Converts the given object and returns it as {@link Integer} object.
@@ -109,9 +139,12 @@ public class Linq4JFixer {
      * @return {@link Integer}
      */
     public static Object getDateData( Object data ) {
-        if (data == null) return null;
-        return ((Integer)data);
+        if ( data == null ) {
+            return null;
+        }
+        return ((Integer) data);
     }
+
 
     /**
      * Converts a {@link java.util.Date} object to an {@link Integer}.
@@ -120,68 +153,96 @@ public class Linq4JFixer {
      * @return {@link Integer}
      */
     public static Object getTimestampData( Object data ) {
-        if (data == null) return null;
+        if ( data == null ) {
+            return null;
+        }
         return ((java.util.Date) data).getTime();
     }
 
 
     public static Object getBoolVector( Object data ) {
-        if (data == null) return null;
-        final List<Boolean> list = new ArrayList<>(((boolean[]) data).length);
-        for (boolean v : ((boolean[]) data))
-            list.add(v);
+        if ( data == null ) {
+            return null;
+        }
+        final List<Boolean> list = new ArrayList<>( ((boolean[]) data).length );
+        for ( boolean v : ((boolean[]) data) ) {
+            list.add( v );
+        }
         return list;
     }
 
+
     public static Object getTinyIntVector( Object data ) {
-        if (data == null) return null;
-        final List<Byte> list = new ArrayList<>(((int[]) data).length);
-        for (int v : ((int[]) data))
-            list.add((byte)v);
+        if ( data == null ) {
+            return null;
+        }
+        final List<Byte> list = new ArrayList<>( ((int[]) data).length );
+        for ( int v : ((int[]) data) ) {
+            list.add( (byte) v );
+        }
         return list;
     }
 
 
     public static Object getSmallIntVector( Object data ) {
-        if (data == null) return null;
-        final List<Short> list = new ArrayList<>(((int[]) data).length);
-        for (int v : ((int[]) data))
-            list.add((short)v);
+        if ( data == null ) {
+            return null;
+        }
+        final List<Short> list = new ArrayList<>( ((int[]) data).length );
+        for ( int v : ((int[]) data) ) {
+            list.add( (short) v );
+        }
         return list;
     }
 
 
     public static Object getIntVector( Object data ) {
-        if (data == null) return null;
-        final List<Integer> list = new ArrayList<>(((int[]) data).length);
-        for (int v : ((int[]) data))
-            list.add(v);
+        if ( data == null ) {
+            return null;
+        }
+        final List<Integer> list = new ArrayList<>( ((int[]) data).length );
+        for ( int v : ((int[]) data) ) {
+            list.add( v );
+        }
         return list;
     }
+
 
     public static Object getLongVector( Object data ) {
-        if (data == null) return null;
-        final List<Long> list = new ArrayList<>(((long[]) data).length);
-        for (long v : ((long[]) data))
-            list.add(v);
+        if ( data == null ) {
+            return null;
+        }
+        final List<Long> list = new ArrayList<>( ((long[]) data).length );
+        for ( long v : ((long[]) data) ) {
+            list.add( v );
+        }
         return list;
     }
+
 
     public static Object getFloatVector( Object data ) {
-        if (data == null) return null;
-        final List<Float> list = new ArrayList<>(((float[]) data).length);
-        for (float v : ((float[]) data))
-            list.add(v);
+        if ( data == null ) {
+            return null;
+        }
+        final List<Float> list = new ArrayList<>( ((float[]) data).length );
+        for ( float v : ((float[]) data) ) {
+            list.add( v );
+        }
         return list;
     }
 
+
     public static Object getDoubleVector( Object data ) {
-        if (data == null) return null;
-        final List<Double> list = new ArrayList<>(((double[]) data).length);
-        for (double v : ((double[]) data))
-            list.add(v);
+        if ( data == null ) {
+            return null;
+        }
+        final List<Double> list = new ArrayList<>( ((double[]) data).length );
+        for ( double v : ((double[]) data) ) {
+            list.add( v );
+        }
         return list;
     }
+
 
     public static CompoundBooleanPredicate generateCompoundPredicate(
             Object operator_,
@@ -220,7 +281,7 @@ public class Linq4JFixer {
         return AtomicBooleanPredicate.newBuilder().setNot( not )
                 .setLeft( ColumnName.newBuilder().setName( attribute ).build() )
                 .setOp( operator )
-                .setRight( AtomicBooleanOperand.newBuilder().setExpressions( Expressions.newBuilder().addExpression(Expression.newBuilder().setLiteral(data) ) ) )
+                .setRight( AtomicBooleanOperand.newBuilder().setExpressions( Expressions.newBuilder().addExpression( Expression.newBuilder().setLiteral( data ) ) ) )
                 .build();
     }
 
@@ -247,18 +308,19 @@ public class Linq4JFixer {
      * @param alias The alias to use for the resulting column.
      * @return The resulting {@link Function} expression.
      */
-    public static Projection.ProjectionElement generateKnn(String p, Vector q, Object distance, String alias) {
+    public static Projection.ProjectionElement generateKnn( String p, Vector q, Object distance, String alias ) {
         final Projection.ProjectionElement.Builder builder = Projection.ProjectionElement.newBuilder();
-        builder.setFunction(Function.newBuilder()
-                        .setName( getDistance ( (String) distance ) )
-                        .addArguments( Expression.newBuilder().setColumn( ColumnName.newBuilder().setName( p ) ) )
-                        .addArguments( Expression.newBuilder().setLiteral( Literal.newBuilder().setVectorData( q ) ) ) );
-        if (alias != null) {
-            builder.setAlias ( ColumnName.newBuilder().setName( alias ).build() );
+        builder.setFunction( Function.newBuilder()
+                .setName( getDistance( (String) distance ) )
+                .addArguments( Expression.newBuilder().setColumn( ColumnName.newBuilder().setName( p ) ) )
+                .addArguments( Expression.newBuilder().setLiteral( Literal.newBuilder().setVectorData( q ) ) ) );
+        if ( alias != null ) {
+            builder.setAlias( ColumnName.newBuilder().setName( alias ).build() );
         }
 
         return builder.build();
     }
+
 
     /**
      * Maps the given name to a {@link FunctionName} object.
@@ -266,23 +328,23 @@ public class Linq4JFixer {
      * @param norm The name of the distance to execute.
      * @return The corresponding {@link FunctionName}
      */
-    public static FunctionName getDistance(String norm ) {
+    public static FunctionName getDistance( String norm ) {
         final String value;
         switch ( norm.toUpperCase() ) {
             case "L1":
                 value = Distances.L1.getFunctionName();
                 break;
             case "L2":
-                value =  Distances.L2.getFunctionName();
+                value = Distances.L2.getFunctionName();
                 break;
             case "L2SQUARED":
-                value =  Distances.L2SQUARED.getFunctionName();
+                value = Distances.L2SQUARED.getFunctionName();
                 break;
             case "CHISQUARED":
-                value =  Distances.CHISQUARED.getFunctionName();
+                value = Distances.CHISQUARED.getFunctionName();
                 break;
             case "COSINE":
-                value =  Distances.COSINE.getFunctionName();
+                value = Distances.COSINE.getFunctionName();
                 break;
             default:
                 throw new IllegalArgumentException( "Unknown norm: " + norm );
