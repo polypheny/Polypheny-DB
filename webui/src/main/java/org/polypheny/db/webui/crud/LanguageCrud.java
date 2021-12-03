@@ -129,7 +129,7 @@ public class LanguageCrud {
                 statement.getOverviewDuration().start( "Translation" );
             }
 
-            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot, false );
+            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot, true );
 
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Execution" );
@@ -230,7 +230,7 @@ public class LanguageCrud {
                 }
 
                 // Prepare
-                signature = statement.getQueryProcessor().prepareQuery( logicalRoot, false );
+                signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().start( "Execution" );
