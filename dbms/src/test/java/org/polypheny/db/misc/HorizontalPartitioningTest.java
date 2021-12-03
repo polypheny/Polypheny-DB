@@ -206,6 +206,39 @@ public class HorizontalPartitioningTest {
     }
 
 
+    @Test
+    public void alterColumnsPartitioningTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE columnparttest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+                    // Partition table after creation
+                    statement.executeUpdate( "ALTER TABLE columnparttest "
+                            + "PARTITION BY HASH (tinteger) "
+                            + "PARTITIONS 4" );
+
+                    statement.executeUpdate( "ALTER TABLE columnparttest ADD COLUMN newColumn BIGINT" );
+
+                    statement.executeUpdate( "ALTER TABLE columnparttest RENAME COLUMN newColumn to veryNewColumn" );
+
+                    statement.executeUpdate( "ALTER TABLE columnparttest DROP COLUMN veryNewColumn " );
+
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE columnparttest" );
+                }
+            }
+        }
+    }
+
+
     // Check if partitions have enough partitions
     @Test
     public void partitionNumberTest() throws SQLException {
