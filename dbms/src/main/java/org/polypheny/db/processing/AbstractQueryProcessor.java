@@ -309,6 +309,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Expand Views" );
+            statement.getProcessingDuration().start( "Parameter Validation" );
+        }
+
+        //
+        // Validate parameter values
+        ParameterValueValidator valueValidator = new ParameterValueValidator( logicalRoot.validatedRowType, statement.getDataContext() );
+        valueValidator.visit( logicalRoot.rel );
+
+        if ( isAnalyze ) {
+            statement.getProcessingDuration().stop( "Parameter Validation" );
         }
 
         if ( isRouted ) {
@@ -396,20 +406,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getRoutingDuration().stop( "Flattener" );
                 statement.getProcessingDuration().stop( "Routing" );
             }
-        }
-
-        if ( isAnalyze ) {
-            statement.getProcessingDuration().start( "Parameter Validation" );
-        }
-
-        //
-        // Validate parameterValues
-        proposedRoutingPlans.forEach( proposedRoutingPlan ->
-                new ParameterValueValidator( proposedRoutingPlan.getRoutedRoot().validatedRowType, statement.getDataContext() )
-                        .visit( proposedRoutingPlan.getRoutedRoot().rel ) );
-
-        if ( isAnalyze ) {
-            statement.getProcessingDuration().stop( "Parameter Validation" );
         }
 
         //
