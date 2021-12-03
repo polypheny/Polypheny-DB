@@ -92,13 +92,15 @@ public class ParameterValueValidator extends RelShuttleImpl {
             boolean valid = true;
             for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
                 o = map.get( index );
-                /*if ( o == null ) {
-                    if ( dynamicParam.getType().isNullable() ) {
+                if ( o == null ) {
+                    break;
+                /*    if ( dynamicParam.getType().isNullable() ) {
                         break;
                     } else {
                         throw new InvalidParameterValueException( "Null in not nullable column" );
                     }
-                }*/
+                 */
+                }
                 switch ( polyType.getFamily() ) {
                     //case ANY:
                     //break;
