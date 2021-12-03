@@ -42,7 +42,7 @@ class MonitoringQueueImplIntegrationTest {
 
         // Initialize mock repository
         TestMapDbRepository repo = new TestMapDbRepository();
-        repo.initialize(); // will delete the file
+        repo.initialize( true ); // will delete the file
 
         // Mock ui service, not really needed for testing
         MonitoringServiceUi uiService = Mockito.mock( MonitoringServiceUi.class );

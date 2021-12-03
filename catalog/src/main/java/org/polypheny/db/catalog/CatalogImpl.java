@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
@@ -420,7 +421,7 @@ public class CatalogImpl extends Catalog {
                         // TODO DL change so column gets copied
                         for ( Entry<Integer, Boolean> p : persistent.entrySet() ) {
                             if ( !p.getValue() ) {
-                                deleteColumnPlacement( p.getKey(), c.id );
+                                deleteColumnPlacement( p.getKey(), c.id, false );
                             }
                         }
                     }
@@ -2142,9 +2143,10 @@ public class CatalogImpl extends Catalog {
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
+     * @param columnOnly If delete originates from a dropColumn
      */
     @Override
-    public void deleteColumnPlacement( int adapterId, long columnId ) {
+    public void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly ) {
         boolean lastPlacementOnStore = false;
         CatalogTable oldTable = getTable( getColumn( columnId ).tableId );
         Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( oldTable.placementsByAdapter );
@@ -2165,8 +2167,10 @@ public class CatalogImpl extends Catalog {
                     log.debug( "Is flagged for deletion {}", isTableFlaggedForDeletion( oldTable.id ) );
                 }
                 if ( !isTableFlaggedForDeletion( oldTable.id ) ) {
-                    if ( !validatePartitionGroupDistribution( adapterId, oldTable.id, columnId, 1 ) ) {
-                        throw new RuntimeException( "Partition Distribution failed" );
+                    if ( !columnOnly ) {
+                        if ( !validatePartitionGroupDistribution( adapterId, oldTable.id, columnId, 1 ) ) {
+                            throw new RuntimeException( "Partition Distribution failed" );
+                        }
                     }
                 }
 
@@ -2886,7 +2890,7 @@ public class CatalogImpl extends Catalog {
 
             deleteDefaultValue( columnId );
             for ( CatalogColumnPlacement p : getColumnPlacement( columnId ) ) {
-                deleteColumnPlacement( p.adapterId, p.columnId );
+                deleteColumnPlacement( p.adapterId, p.columnId, false );
             }
             tables.replace( column.tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );

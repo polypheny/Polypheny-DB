@@ -333,7 +333,7 @@ public class CatalogTest {
         assertEquals( 2, catalog.getColumnPlacement( columnId ).size() );
         assertTrue( catalog.getColumnPlacement( columnId ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).containsAll( Arrays.asList( store2.id, store1.id ) ) );
 
-        catalog.deleteColumnPlacement( store1.id, columnId );
+        catalog.deleteColumnPlacement( store1.id, columnId, false );
         assertEquals( 1, catalog.getColumnPlacement( columnId ).size() );
         assertEquals( store2.id, catalog.getColumnPlacement( columnId ).get( 0 ).adapterId );
     }

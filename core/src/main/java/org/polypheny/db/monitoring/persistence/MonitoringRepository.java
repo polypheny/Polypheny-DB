@@ -31,7 +31,7 @@ public interface MonitoringRepository {
     /**
      * Initialized the repository, might need some configuration beforehand.
      */
-    void initialize();
+    void initialize( boolean resetRepository );
 
     /**
      * Persist given monitoring metric.
@@ -95,5 +95,4 @@ public interface MonitoringRepository {
      * Removes all aggregates post costs from cache.
      */
     void resetQueryPostCosts();
-
 }

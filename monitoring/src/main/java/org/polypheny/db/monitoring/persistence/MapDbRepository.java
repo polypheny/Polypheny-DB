@@ -32,6 +32,7 @@ import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
@@ -49,8 +50,8 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public void initialize() {
-        this.initialize( FILE_PATH, FOLDER_NAME );
+    public void initialize( boolean resetRepository ) {
+        this.initialize( FILE_PATH, FOLDER_NAME, resetRepository );
     }
 
 
@@ -179,13 +180,20 @@ public class MapDbRepository implements MonitoringRepository {
     }
 
 
-    protected void initialize( String filePath, String folderName ) {
+    protected void initialize( String filePath, String folderName, boolean resetRepository ) {
         if ( simpleBackendDb != null ) {
             simpleBackendDb.close();
         }
 
         synchronized ( this ) {
             File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
+
+            if ( Catalog.resetCatalog ) {
+                log.info( "Resetting monitoring repository on startup." );
+                if ( new File( folder, filePath ).exists() ) {
+                    new File( folder, filePath ).delete();
+                }
+            }
 
             simpleBackendDb = DBMaker
                     .fileDB( new File( folder, filePath ) )

@@ -332,7 +332,7 @@ public class DdlManagerImpl extends DdlManager {
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
                     if ( catalog.checkIfExistsColumnPlacement( catalogAdapter.id, columnId ) ) {
-                        catalog.deleteColumnPlacement( catalogAdapter.id, columnId );
+                        catalog.deleteColumnPlacement( catalogAdapter.id, columnId, false );
                     }
                 }
 
@@ -880,7 +880,7 @@ public class DdlManagerImpl extends DdlManager {
             if ( catalogTable.tableType == TableType.TABLE ) {
                 AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( statement.getPrepareContext(), dp );
             }
-            catalog.deleteColumnPlacement( dp.adapterId, dp.columnId );
+            catalog.deleteColumnPlacement( dp.adapterId, dp.columnId, true );
         }
 
         // Delete from catalog
@@ -999,7 +999,7 @@ public class DdlManagerImpl extends DdlManager {
         // Delete placement in the catalog
         List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id );
         for ( CatalogColumnPlacement placement : placements ) {
-            catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
+            catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId, false );
         }
 
         // Remove All
@@ -1208,7 +1208,7 @@ public class DdlManagerImpl extends DdlManager {
                     // Drop Column on store
                     storeInstance.dropColumn( statement.getPrepareContext(), catalog.getColumnPlacement( storeInstance.getAdapterId(), placement.columnId ) );
                     // Drop column placement
-                    catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
+                    catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId, false );
                 }
             }
         }
@@ -1479,7 +1479,7 @@ public class DdlManagerImpl extends DdlManager {
         // Drop Column on store
         storeInstance.dropColumn( statement.getPrepareContext(), catalog.getColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) );
         // Drop column placement
-        catalog.deleteColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id );
+        catalog.deleteColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id, false );
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -2451,7 +2451,7 @@ public class DdlManagerImpl extends DdlManager {
             // Delete column placement in catalog
             for ( Long columnId : catalogTable.columnIds ) {
                 if ( catalog.checkIfExistsColumnPlacement( storeId, columnId ) ) {
-                    catalog.deleteColumnPlacement( storeId, columnId );
+                    catalog.deleteColumnPlacement( storeId, columnId, false );
                 }
             }
         }

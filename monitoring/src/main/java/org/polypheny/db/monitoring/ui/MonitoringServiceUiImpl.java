@@ -59,6 +59,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         im.addPage( informationPage );
 
         initializeWorkloadInformationTable();
+
         //initializeQueueInformationTable();
     }
 
@@ -84,6 +85,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
+        //updateWorkloadInformationTable(informationTable);
     }
 
 
@@ -120,7 +122,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
         table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
-        //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
+
         table.addRow( "# DQL", MonitoringServiceProvider.getInstance().getNumberOfDataPoints( QueryDataPointImpl.class ) );
         table.addRow( "# DML", MonitoringServiceProvider.getInstance().getNumberOfDataPoints( DmlDataPoint.class ) );
     }
