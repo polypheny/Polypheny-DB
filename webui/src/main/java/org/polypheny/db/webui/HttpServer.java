@@ -136,7 +136,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createTable", crud::createTable, gson::toJson );
 
-        webuiServer.post( "/createCollection", crud.documentCrud::createCollection, gson::toJson );
+        webuiServer.post( "/createCollection", crud.languageCrud::createCollection, gson::toJson );
 
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames, gson::toJson );
 
@@ -218,7 +218,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/usedDockerPorts", crud::getUsedDockerPorts, gsonExpose::toJson );
 
-        webuiServer.get( "/getDocumentDatabases", crud.documentCrud::getDocumentDatabases, gson::toJson );
+        webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases, gson::toJson );
 
     }
 

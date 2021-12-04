@@ -81,7 +81,7 @@ public interface Parser {
 
     Node parseQuery() throws NodeParseException;
 
-    Node parseQuery( String sql ) throws NodeParseException;
+    Node parseQuery( String query ) throws NodeParseException;
 
     Node parseStmt() throws NodeParseException;
 

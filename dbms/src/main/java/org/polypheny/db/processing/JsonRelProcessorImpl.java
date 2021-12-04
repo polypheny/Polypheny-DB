@@ -33,7 +33,7 @@ public class JsonRelProcessorImpl extends Processor {
 
     @Override
     public Node parse( String query ) {
-        throw new RuntimeException("JsonProcessor does not support Node representation!");
+        throw new RuntimeException("JsonProcessor does not support PigNode representation!");
     }
 
 
@@ -56,19 +56,19 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    void unlock( Statement statement ) {
+    public void unlock( Statement statement ) {
         throw new RuntimeException("The JsonRelProcessor does not support DML or DDLs and should therefore not lock.");
     }
 
 
     @Override
-    void lock( Statement statement ) throws DeadlockException {
+    public void lock( Statement statement ) throws DeadlockException {
         throw new RuntimeException("The JsonRelProcessor does not support DML or DDLs and should therefore not lock.");
     }
 
 
     @Override
-    String getQuery( Node parsed, QueryParameters parameters ) {
+    public String getQuery( Node parsed, QueryParameters parameters ) {
         return parameters.getQuery();
     }
 

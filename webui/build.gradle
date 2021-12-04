@@ -18,6 +18,7 @@ dependencies {
     implementation project(":core")
     implementation project(":sql-language")
     implementation project(":mql-language")
+    implementation project(":pig-language")
     implementation project(":languages")
     implementation project(":monitoring")
     implementation project(":statistic")

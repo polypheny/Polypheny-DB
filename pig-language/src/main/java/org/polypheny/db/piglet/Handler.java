@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -46,6 +47,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.piglet.Ast.PigNode;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -70,32 +72,32 @@ public class Handler {
 
 
     /**
-     * Creates relational expressions for a given AST node.
+     * Creates relational expressions for a given AST pigNode.
      */
-    public Handler handle( Ast.Node node ) {
+    public Handler handle( PigNode pigNode ) {
         final AlgNode input;
         final List<RexNode> rexNodes;
-        switch ( node.op ) {
+        switch ( pigNode.op ) {
             case LOAD:
-                final Ast.LoadStmt load = (Ast.LoadStmt) node;
+                final Ast.LoadStmt load = (Ast.LoadStmt) pigNode;
                 builder.scan( (String) load.name.value );
                 register( load.target.value );
                 return this;
 
             case VALUES:
-                final Ast.ValuesStmt values = (Ast.ValuesStmt) node;
+                final Ast.ValuesStmt values = (Ast.ValuesStmt) pigNode;
                 final AlgDataType rowType = toType( values.schema );
                 builder.values( tuples( values, rowType ), rowType );
                 register( values.target.value );
                 return this;
 
             case FOREACH:
-                final Ast.ForeachStmt foreach = (Ast.ForeachStmt) node;
+                final Ast.ForeachStmt foreach = (Ast.ForeachStmt) pigNode;
                 builder.clear();
                 input = map.get( foreach.source.value );
                 builder.push( input );
                 rexNodes = new ArrayList<>();
-                for ( Ast.Node exp : foreach.expList ) {
+                for ( PigNode exp : foreach.expList ) {
                     rexNodes.add( toRex( exp ) );
                 }
                 builder.project( rexNodes );
@@ -103,7 +105,7 @@ public class Handler {
                 return this;
 
             case FOREACH_NESTED:
-                final Ast.ForeachNestedStmt foreachNested = (Ast.ForeachNestedStmt) node;
+                final Ast.ForeachNestedStmt foreachNested = (Ast.ForeachNestedStmt) pigNode;
                 builder.clear();
                 input = map.get( foreachNested.source.value );
                 builder.push( input );
@@ -118,7 +120,7 @@ public class Handler {
                     handle( stmt );
                 }
                 rexNodes = new ArrayList<>();
-                for ( Ast.Node exp : foreachNested.expList ) {
+                for ( PigNode exp : foreachNested.expList ) {
                     rexNodes.add( toRex( exp ) );
                 }
                 builder.project( rexNodes );
@@ -126,7 +128,7 @@ public class Handler {
                 return this;
 
             case FILTER:
-                final Ast.FilterStmt filter = (Ast.FilterStmt) node;
+                final Ast.FilterStmt filter = (Ast.FilterStmt) pigNode;
                 builder.clear();
                 input = map.get( filter.source.value );
                 builder.push( input );
@@ -136,7 +138,7 @@ public class Handler {
                 return this;
 
             case DISTINCT:
-                final Ast.DistinctStmt distinct = (Ast.DistinctStmt) node;
+                final Ast.DistinctStmt distinct = (Ast.DistinctStmt) pigNode;
                 builder.clear();
                 input = map.get( distinct.source.value );
                 builder.push( input );
@@ -145,7 +147,7 @@ public class Handler {
                 return this;
 
             case ORDER:
-                final Ast.OrderStmt order = (Ast.OrderStmt) node;
+                final Ast.OrderStmt order = (Ast.OrderStmt) pigNode;
                 builder.clear();
                 input = map.get( order.source.value );
                 builder.push( input );
@@ -158,7 +160,7 @@ public class Handler {
                 return this;
 
             case LIMIT:
-                final Ast.LimitStmt limit = (Ast.LimitStmt) node;
+                final Ast.LimitStmt limit = (Ast.LimitStmt) pigNode;
                 builder.clear();
                 input = map.get( limit.source.value );
                 final int count = ((Number) limit.count.value).intValue();
@@ -168,14 +170,14 @@ public class Handler {
                 return this;
 
             case GROUP:
-                final Ast.GroupStmt group = (Ast.GroupStmt) node;
+                final Ast.GroupStmt group = (Ast.GroupStmt) pigNode;
                 builder.clear();
                 input = map.get( group.source.value );
                 builder.push( input ).as( group.source.value );
                 final List<AlgBuilder.GroupKey> groupKeys = new ArrayList<>();
                 final List<RexNode> keys = new ArrayList<>();
                 if ( group.keys != null ) {
-                    for ( Ast.Node key : group.keys ) {
+                    for ( PigNode key : group.keys ) {
                         keys.add( toRex( key ) );
                     }
                 }
@@ -185,20 +187,20 @@ public class Handler {
                 return this;
 
             case PROGRAM:
-                final Ast.Program program = (Ast.Program) node;
+                final Ast.Program program = (Ast.Program) pigNode;
                 for ( Ast.Stmt stmt : program.stmtList ) {
                     handle( stmt );
                 }
                 return this;
 
             case DUMP:
-                final Ast.DumpStmt dump = (Ast.DumpStmt) node;
+                final Ast.DumpStmt dump = (Ast.DumpStmt) pigNode;
                 final AlgNode algNode = map.get( dump.relation.value );
                 dump( algNode );
                 return this; // nothing to do; contains no algebra
 
             default:
-                throw new AssertionError( "unknown operation " + node.op );
+                throw new AssertionError( "unknown operation " + pigNode.op );
         }
     }
 
@@ -216,52 +218,52 @@ public class Handler {
 
     private ImmutableList<ImmutableList<RexLiteral>> tuples( Ast.ValuesStmt valuesStmt, AlgDataType rowType ) {
         final ImmutableList.Builder<ImmutableList<RexLiteral>> listBuilder = ImmutableList.builder();
-        for ( List<Ast.Node> nodeList : valuesStmt.tupleList ) {
-            listBuilder.add( tuple( nodeList, rowType ) );
+        for ( List<PigNode> pigNodeList : valuesStmt.tupleList ) {
+            listBuilder.add( tuple( pigNodeList, rowType ) );
         }
         return listBuilder.build();
     }
 
 
-    private ImmutableList<RexLiteral> tuple( List<Ast.Node> nodeList, AlgDataType rowType ) {
+    private ImmutableList<RexLiteral> tuple( List<PigNode> pigNodeList, AlgDataType rowType ) {
         final ImmutableList.Builder<RexLiteral> listBuilder = ImmutableList.builder();
-        for ( Pair<Ast.Node, AlgDataTypeField> pair : Pair.zip( nodeList, rowType.getFieldList() ) ) {
-            final Ast.Node node = pair.left;
+        for ( Pair<PigNode, AlgDataTypeField> pair : Pair.zip( pigNodeList, rowType.getFieldList() ) ) {
+            final PigNode pigNode = pair.left;
             final AlgDataType type = pair.right.getType();
-            listBuilder.add( item( node, type ) );
+            listBuilder.add( item( pigNode, type ) );
         }
         return listBuilder.build();
     }
 
 
-    private ImmutableList<RexLiteral> bag( List<Ast.Node> nodeList, AlgDataType type ) {
+    private ImmutableList<RexLiteral> bag( List<PigNode> pigNodeList, AlgDataType type ) {
         final ImmutableList.Builder<RexLiteral> listBuilder = ImmutableList.builder();
-        for ( Ast.Node node : nodeList ) {
-            listBuilder.add( item( node, type.getComponentType() ) );
+        for ( PigNode pigNode : pigNodeList ) {
+            listBuilder.add( item( pigNode, type.getComponentType() ) );
         }
         return listBuilder.build();
     }
 
 
-    private RexLiteral item( Ast.Node node, AlgDataType type ) {
+    private RexLiteral item( PigNode pigNode, AlgDataType type ) {
         final RexBuilder rexBuilder = builder.getRexBuilder();
-        switch ( node.op ) {
+        switch ( pigNode.op ) {
             case LITERAL:
-                final Ast.Literal literal = (Ast.Literal) node;
+                final Ast.Literal literal = (Ast.Literal) pigNode;
                 return (RexLiteral) rexBuilder.makeLiteral( literal.value, type, false );
 
             case TUPLE:
-                final Ast.Call tuple = (Ast.Call) node;
+                final Ast.Call tuple = (Ast.Call) pigNode;
                 final ImmutableList<RexLiteral> list = tuple( tuple.operands, type );
                 return (RexLiteral) rexBuilder.makeLiteral( list, type, false );
 
             case BAG:
-                final Ast.Call bag = (Ast.Call) node;
+                final Ast.Call bag = (Ast.Call) pigNode;
                 final ImmutableList<RexLiteral> list2 = bag( bag.operands, type );
                 return (RexLiteral) rexBuilder.makeLiteral( list2, type, false );
 
             default:
-                throw new IllegalArgumentException( "not a literal: " + node );
+                throw new IllegalArgumentException( "not a literal: " + pigNode );
         }
     }
 
@@ -352,7 +354,7 @@ public class Handler {
     }
 
 
-    private RexNode toRex( Ast.Node exp ) {
+    private RexNode toRex( PigNode exp ) {
         final Ast.Call call;
         switch ( exp.op ) {
             case LITERAL:
@@ -418,9 +420,9 @@ public class Handler {
     }
 
 
-    private ImmutableList<RexNode> toRex( Iterable<Ast.Node> operands ) {
+    private ImmutableList<RexNode> toRex( Iterable<PigNode> operands ) {
         final ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
-        for ( Ast.Node operand : operands ) {
+        for ( PigNode operand : operands ) {
             builder.add( toRex( operand ) );
         }
         return builder.build();

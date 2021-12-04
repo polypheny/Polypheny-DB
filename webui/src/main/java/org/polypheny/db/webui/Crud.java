@@ -246,7 +246,7 @@ public class Crud implements InformationObserver {
     private final String databaseName;
     private final String userName;
     private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-    public final LanguageCrud documentCrud;
+    public final LanguageCrud languageCrud;
     private boolean isActiveTracking = false;
     private final Catalog catalog = Catalog.getInstance();
 
@@ -260,7 +260,7 @@ public class Crud implements InformationObserver {
         this.transactionManager = transactionManager;
         this.databaseName = databaseName;
         this.userName = userName;
-        this.documentCrud = new LanguageCrud( this );
+        this.languageCrud = new LanguageCrud( this );
         registerStatisticObserver();
     }
 
@@ -732,7 +732,7 @@ public class Crud implements InformationObserver {
     /**
      * Run any query coming from the SQL console
      */
-    ArrayList<Result> anyQuery( final QueryRequest request, final Session session ) {
+    public ArrayList<Result> anySqlQuery( final QueryRequest request, final Session session ) {
         Transaction transaction = getTransaction( request.analyze, request.cache );
 
         if ( request.analyze ) {

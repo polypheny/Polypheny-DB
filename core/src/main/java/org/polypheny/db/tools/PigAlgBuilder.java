@@ -38,16 +38,19 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Util;
 
 
@@ -70,6 +73,18 @@ public class PigAlgBuilder extends AlgBuilder {
     public static PigAlgBuilder create( FrameworkConfig config ) {
         final AlgBuilder algBuilder = AlgBuilder.create( config );
         return new PigAlgBuilder( config.getContext(), algBuilder.cluster, algBuilder.relOptSchema );
+    }
+
+
+    public static PigAlgBuilder create( Statement statement, AlgOptCluster cluster ) {
+        return new PigAlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
+    }
+
+
+    public static PigAlgBuilder create( Statement statement ) {
+        final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        return create( statement, cluster );
     }
 
 

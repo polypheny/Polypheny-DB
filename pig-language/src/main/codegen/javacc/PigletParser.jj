@@ -107,7 +107,7 @@ JAVACODE ParserPos pos2(ParserPos p) {
   return p.plus(pos());
 }
 
-JAVACODE ParserPos pos3(Node n) {
+JAVACODE ParserPos pos3(PigNode n) {
   return n.pos.plus(pos());
 }
 
@@ -261,7 +261,7 @@ LoadStmt loadStmt(final Identifier target) :
 
 ValuesStmt valuesStmt(final Identifier target) :
 {
-  final List<List<Node>> tupleList;
+  final List<List<PigNode >> tupleList;
   final Schema schema;
 }
 {
@@ -274,10 +274,10 @@ ValuesStmt valuesStmt(final Identifier target) :
 /** Parses a tuple list.
  * The list may be empty.
  * Each tuple is a list of at least one expression. */
-List<List<Node>> tupleListMaybeEmpty() :
+List<List<PigNode >> tupleListMaybeEmpty() :
 {
-  final ImmutableList.Builder<List<Node>> tupleList = ImmutableList.builder();
-  List<Node> tuple;
+  final ImmutableList.Builder<List<PigNode>> tupleList = ImmutableList.builder();
+  List<PigNode> tuple;
 }
 {
   [
@@ -319,7 +319,7 @@ DumpStmt dumpStmt() :
 Assignment foreachStmt(final Identifier target) :
 {
   final Identifier id;
-  final List<Node> expList;
+  final List<PigNode > expList;
   final List<Stmt> nestedStmtList;
   final Schema schema = null; // TODO:
 }
@@ -359,7 +359,7 @@ List<Stmt> nestedStmtList() :
 FilterStmt filterStmt(final Identifier target) :
 {
   final Identifier id;
-  final Node condition;
+  final PigNode condition;
 }
 {
   <FILTER> id = simpleIdentifier()
@@ -453,8 +453,8 @@ Pair<Identifier, Direction> orderField() :
 GroupStmt groupStmt(final Identifier target) :
 {
   final Identifier id;
-  final List<Node> keys;
-  final Node exp;
+  final List<PigNode > keys;
+  final PigNode exp;
 }
 {
   <GROUP> id = simpleIdentifier()
@@ -557,9 +557,9 @@ Type type() :
 }
 
 /** Parses an expression. */
-Node exp() :
+PigNode exp() :
 {
-  final Node e;
+  final PigNode e;
 }
 {
   e = exp1() {
@@ -568,10 +568,10 @@ Node exp() :
 }
 
 /** Parses an expression of precedence 1: OR. */
-Node exp1() :
+PigNode exp1() :
 {
-  Node e;
-  Node f;
+  PigNode e;
+  PigNode f;
 }
 {
   e = exp2()
@@ -585,10 +585,10 @@ Node exp1() :
 }
 
 /** Parses an expression of precedence 2: AND. */
-Node exp2() :
+PigNode exp2() :
 {
-  Node e;
-  Node f;
+  PigNode e;
+  PigNode f;
 }
 {
   e = exp3()
@@ -602,9 +602,9 @@ Node exp2() :
 }
 
 /** Parses an expression of precedence 3: NOT. */
-Node exp3() :
+PigNode exp3() :
 {
-  final Node e;
+  final PigNode e;
   final ParserPos p;
 }
 {
@@ -624,10 +624,10 @@ Node exp3() :
 
 /** Parses an expression of precedence 4: relational operators (==, !=, <, <=,
  * >, >=). */
-Node exp4() :
+PigNode exp4() :
 {
-  Node e;
-  Node f;
+  PigNode e;
+  PigNode f;
 }
 {
   e = exp5()
@@ -657,10 +657,10 @@ Node exp4() :
 }
 
 /** Parses an expression of precedence 5: +, -. */
-Node exp5() :
+PigNode exp5() :
 {
-  Node e;
-  Node f;
+  PigNode e;
+  PigNode f;
 }
 {
   e = exp10()
@@ -678,10 +678,10 @@ Node exp5() :
 }
 
 /** Parses an expression of precedence 10: . */
-Node exp10() :
+PigNode exp10() :
 {
-  Node e;
-  Node f;
+  PigNode e;
+  PigNode f;
 }
 {
   e = atom()
@@ -697,12 +697,12 @@ Node exp10() :
 
 /** Parses an atomic expression, effectively an expression of infinite
   * precedence. */
-Node atom() :
+PigNode atom() :
 {
-  final Node e;
-  Node f;
-  final List<Node> list;
-  ImmutableList.Builder<Node> builder = null;
+  final PigNode e;
+  PigNode f;
+  final List<PigNode> list;
+  ImmutableList.Builder<PigNode> builder = null;
   final ParserPos p;
 }
 {
@@ -744,10 +744,10 @@ Node atom() :
 }
 
 /** A non-empty list of expressions. */
-List<Node> expCommaList() :
+List<PigNode > expCommaList() :
 {
-  final List<Node> list = new ArrayList<Node>();
-  Node e;
+  final List<PigNode> list = new ArrayList<PigNode>();
+  PigNode e;
 }
 {
   e = exp() {
@@ -763,10 +763,10 @@ List<Node> expCommaList() :
 }
 
 /** A list of expressions, maybe empty. */
-List<Node> expCommaListOrEmpty() :
+List<PigNode > expCommaListOrEmpty() :
 {
-  final List<Node> list;
-  Node e;
+  final List<PigNode> list;
+  PigNode e;
 }
 {
   (
@@ -775,16 +775,16 @@ List<Node> expCommaListOrEmpty() :
     }
   |
     {
-      return ImmutableList.<Node>of();
-    }
+  return ImmutableList.<PigNode>of();
+}
   )
 }
 
 /** Parses a tuple. A tuple is a list of one or more expressions surrounded by
  * parentheses. */
-List<Node> tuple() :
+List<PigNode > tuple() :
 {
-  final List<Node> expList;
+  final List<PigNode> expList;
 }
 {
   <LPAREN> expList = expCommaList() <RPAREN> {

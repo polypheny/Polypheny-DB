@@ -19,6 +19,8 @@ package org.polypheny.db.webui.crud;
 import com.google.gson.Gson;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.LanguageType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -43,6 +46,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.cql.Cql2RelConverter;
 import org.polypheny.db.cql.CqlQuery;
 import org.polypheny.db.cql.parser.CqlParser;
@@ -55,7 +59,7 @@ import org.polypheny.db.languages.mql.MqlNode;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.MqlUseDatabase;
 import org.polypheny.db.processing.MqlProcessor;
-import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -134,6 +138,86 @@ public class LanguageCrud {
             }
 
             return result;
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public List<Result> anyQuery( QueryLanguage language, Session session, QueryRequest request, Crud crud ) {
+        List<Result> results;
+        try {
+            switch ( language ) {
+                case CQL:
+                    results = Collections.singletonList( processCqlRequest( session, request ) );
+                    break;
+                case MONGO_QL:
+                    results = anyMongoQuery( session, request, crud );
+                    break;
+                case SQL:
+                    results = crud.anySqlQuery( request, session );
+                    break;
+                case PIG:
+                    results = anyPigQuery( session, request );
+                    break;
+                default:
+                    return Collections.singletonList( new Result( "The used language seems not to be supported!" ) );
+            }
+
+        } catch ( Throwable t ) {
+            return Collections.singletonList( new Result( t ) );
+        }
+
+        return results;
+    }
+
+
+    private List<Result> anyPigQuery( Session session, QueryRequest request ) {
+        try {
+            Transaction transaction = crud.getTransaction( request.analyze, request.cache );
+            String query = request.query;
+            if ( query.trim().equals( "" ) ) {
+                throw new RuntimeException( "PIG query is an empty string!" );
+            }
+
+            Processor parser = transaction.getProcessor( QueryLanguage.PIG );
+            Node parsed = parser.parse( request.query );
+
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
+            }
+
+            if ( request.analyze ) {
+                transaction.getQueryAnalyzer().setSession( session );
+            }
+
+            // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+            // and in case of auto commit of, the information is overwritten
+            InformationManager queryAnalyzer = null;
+            if ( request.analyze ) {
+                queryAnalyzer = transaction.getQueryAnalyzer().observe( crud );
+            }
+
+            Statement statement = transaction.createStatement();
+
+            long executionTime = System.nanoTime();
+
+            AlgRoot root = parser.translate( statement, parsed, new QueryParameters( query ) );
+
+            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( root );
+
+            Result result = getResult( LanguageType.CQL, statement, request, query, signature, request.noLimit );
+            try {
+                statement.getTransaction().commit();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( "Error while committing.", e );
+            }
+            executionTime = System.nanoTime() - executionTime;
+            if ( queryAnalyzer != null ) {
+                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
+            }
+
+            return Collections.singletonList( result );
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }

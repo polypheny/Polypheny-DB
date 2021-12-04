@@ -92,11 +92,11 @@ public abstract class Processor {
                 SchemaType.RELATIONAL );
     }
 
-    abstract void unlock( Statement statement );
+    public abstract void unlock( Statement statement );
 
-    abstract void lock( Statement statement ) throws DeadlockException;
+    protected abstract void lock( Statement statement ) throws DeadlockException;
 
-    abstract String getQuery( Node parsed, QueryParameters parameters );
+    public abstract String getQuery( Node parsed, QueryParameters parameters );
 
     public abstract AlgDataType getParameterRowType( Node left );
 

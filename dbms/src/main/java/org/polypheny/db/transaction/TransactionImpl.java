@@ -40,6 +40,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
@@ -232,7 +233,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public Processor getProcessor( QueryLanguage language ) {
         // note dl, while caching the processors works in most cases,
-        // it can lead to validator bleed when using multiple simulations insert for example
+        // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
         switch ( language ) {
             case SQL:
@@ -241,6 +242,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 return new JsonRelProcessorImpl();
             case MONGO_QL:
                 return new MqlProcessorImpl();
+            case PIG:
+                return new PigProcessorImpl();
             default:
                 throw new RuntimeException( "This language seems to not be supported!" );
         }

@@ -19,7 +19,6 @@ package org.polypheny.db.webui;
 
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -106,29 +106,10 @@ public class WebSocket {
         switch ( request.requestType ) {
             case "QueryRequest":
                 QueryRequest queryRequest = gson.fromJson( message, QueryRequest.class );
-                List<Result> results;
-                if ( queryRequest.language.equals( "mql" ) ) {
-                    try {
-                        results = crud.documentCrud.anyMongoQuery( session, queryRequest, crud );
-                    } catch ( Throwable t ) {
-                        sendMessage( session, new Result[]{ new Result( t ) } );
-                        return;
-                    }
-                } else if ( queryRequest.language.equals( "cql" ) ) {
-                    try {
-                        results = Collections.singletonList( crud.documentCrud.processCqlRequest( session, queryRequest ) );
-                    } catch ( Throwable t ) {
-                        sendMessage( session, new Result[]{ new Result( t ) } );
-                        return;
-                    }
-                } else {
-                    try {
-                        results = crud.anyQuery( queryRequest, session );
-                    } catch ( Throwable t ) {
-                        sendMessage( session, new Result[]{ new Result( t ) } );
-                        return;
-                    }
-                }
+                QueryLanguage language = QueryLanguage.from( queryRequest.language );
+
+                List<Result> results = crud.languageCrud.anyQuery( language, session, queryRequest, crud );
+
                 for ( Result result : results ) {
                     if ( result.getXid() != null ) {
                         xIds.add( result.getXid() );

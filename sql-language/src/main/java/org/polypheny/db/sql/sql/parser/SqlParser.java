@@ -101,13 +101,13 @@ public class SqlParser implements Parser {
     /**
      * Parses a <code>SELECT</code> statement and reuses parser.
      *
-     * @param sql sql to parse
+     * @param query sql to parse
      * @return A {@link SqlSelect} for a regular <code>SELECT</code> statement; a {@link SqlBinaryOperator} for a <code>UNION</code>, <code>INTERSECT</code>, or <code>EXCEPT</code>.
      * @throws NodeParseException if there is a parse error
      */
     @Override
-    public Node parseQuery( String sql ) throws NodeParseException {
-        parser.ReInit( new StringReader( sql ) );
+    public Node parseQuery( String query ) throws NodeParseException {
+        parser.ReInit( new StringReader( query ) );
         return parseQuery();
     }
 

@@ -38,10 +38,17 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import lombok.Getter;
 import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.core.nodes.NodeVisitor;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.parser.SqlParserUtil;
+import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -57,7 +64,7 @@ public class Ast {
     }
 
 
-    public static String toString( Node x ) {
+    public static String toString( PigNode x ) {
         return new UnParser().append( x ).buf.toString();
     }
 
@@ -65,7 +72,7 @@ public class Ast {
     /**
      * Formats a node and its children as a string.
      */
-    public static UnParser unParse( UnParser u, Node n ) {
+    public static UnParser unParse( UnParser u, PigNode n ) {
         switch ( n.op ) {
             case PROGRAM:
                 final Program program = (Program) n;
@@ -151,15 +158,52 @@ public class Ast {
     /**
      * Abstract base class for parse tree node.
      */
-    public abstract static class Node {
+    public abstract static class PigNode implements Node {
 
         public final Op op;
+        @Getter
         public final ParserPos pos;
 
 
-        protected Node( ParserPos pos, Op op ) {
+        protected PigNode( ParserPos pos, Op op ) {
             this.op = Objects.requireNonNull( op );
             this.pos = Objects.requireNonNull( pos );
+        }
+
+
+        @Override
+        public Node clone( ParserPos pos ) {
+            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+        }
+
+
+        @Override
+        public Kind getKind() {
+            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+        }
+
+
+        @Override
+        public QueryLanguage getLanguage() {
+            return QueryLanguage.PIG;
+        }
+
+
+        @Override
+        public boolean isA( Set<Kind> category ) {
+            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+        }
+
+
+        @Override
+        public boolean equalsDeep( Node node, Litmus litmus ) {
+            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+        }
+
+
+        @Override
+        public <R> R accept( NodeVisitor<R> visitor ) {
+            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
         }
 
     }
@@ -168,7 +212,7 @@ public class Ast {
     /**
      * Abstract base class for parse tree node representing a statement.
      */
-    public abstract static class Stmt extends Node {
+    public abstract static class Stmt extends PigNode {
 
         protected Stmt( ParserPos pos, Op op ) {
             super( pos, op );
@@ -216,11 +260,11 @@ public class Ast {
      */
     public static class ValuesStmt extends Assignment {
 
-        final List<List<Node>> tupleList;
+        final List<List<PigNode>> tupleList;
         final Schema schema;
 
 
-        public ValuesStmt( ParserPos pos, Identifier target, Schema schema, List<List<Node>> tupleList ) {
+        public ValuesStmt( ParserPos pos, Identifier target, Schema schema, List<List<PigNode>> tupleList ) {
             super( pos, Op.VALUES, target );
             this.schema = schema;
             this.tupleList = ImmutableList.copyOf( tupleList );
@@ -257,10 +301,10 @@ public class Ast {
      */
     public static class ForeachStmt extends Assignment1 {
 
-        final List<Node> expList;
+        final List<PigNode> expList;
 
 
-        public ForeachStmt( ParserPos pos, Identifier target, Identifier source, List<Node> expList, Schema schema ) {
+        public ForeachStmt( ParserPos pos, Identifier target, Identifier source, List<PigNode> expList, Schema schema ) {
             super( pos, Op.FOREACH, target, source );
             this.expList = expList;
             assert schema == null; // not supported yet
@@ -283,15 +327,15 @@ public class Ast {
      * nested_op ::= DISTINCT, FILTER, LIMIT, ORDER, SAMPLE
      * </code>
      *
-     * @see org.polypheny.db.piglet.Ast.ForeachStmt
+     * @see ForeachStmt
      */
     public static class ForeachNestedStmt extends Assignment1 {
 
         final List<Stmt> nestedStmtList;
-        final List<Node> expList;
+        final List<PigNode> expList;
 
 
-        public ForeachNestedStmt( ParserPos pos, Identifier target, Identifier source, List<Stmt> nestedStmtList, List<Node> expList, Schema schema ) {
+        public ForeachNestedStmt( ParserPos pos, Identifier target, Identifier source, List<Stmt> nestedStmtList, List<PigNode> expList, Schema schema ) {
             super( pos, Op.FOREACH_NESTED, target, source );
             this.nestedStmtList = nestedStmtList;
             this.expList = expList;
@@ -308,10 +352,10 @@ public class Ast {
      */
     public static class FilterStmt extends Assignment1 {
 
-        final Node condition;
+        final PigNode condition;
 
 
-        public FilterStmt( ParserPos pos, Identifier target, Identifier source, Node condition ) {
+        public FilterStmt( ParserPos pos, Identifier target, Identifier source, PigNode condition ) {
             super( pos, Op.FILTER, target, source );
             this.condition = condition;
         }
@@ -380,10 +424,10 @@ public class Ast {
         /**
          * Grouping keys. May be null (for ALL), or a list of one or more expressions.
          */
-        final List<Node> keys;
+        final List<PigNode> keys;
 
 
-        public GroupStmt( ParserPos pos, Identifier target, Identifier source, List<Node> keys ) {
+        public GroupStmt( ParserPos pos, Identifier target, Identifier source, List<PigNode> keys ) {
             super( pos, Op.GROUP, target, source );
             this.keys = keys;
             assert keys == null || keys.size() >= 1;
@@ -427,7 +471,7 @@ public class Ast {
     /**
      * Parse tree node for Literal.
      */
-    public static class Literal extends Node {
+    public static class Literal extends PigNode {
 
         final Object value;
 
@@ -493,7 +537,7 @@ public class Ast {
     /**
      * Parse tree node for Identifier.
      */
-    public static class Identifier extends Node {
+    public static class Identifier extends PigNode {
 
         final String value;
 
@@ -532,23 +576,23 @@ public class Ast {
     /**
      * Parse tree node for a call to a function or operator.
      */
-    public static class Call extends Node {
+    public static class Call extends PigNode {
 
-        final ImmutableList<Node> operands;
+        final ImmutableList<PigNode> operands;
 
 
-        private Call( ParserPos pos, Op op, ImmutableList<Node> operands ) {
+        private Call( ParserPos pos, Op op, ImmutableList<PigNode> operands ) {
             super( pos, op );
             this.operands = ImmutableList.copyOf( operands );
         }
 
 
-        public Call( ParserPos pos, Op op, Iterable<? extends Node> operands ) {
+        public Call( ParserPos pos, Op op, Iterable<? extends PigNode> operands ) {
             this( pos, op, ImmutableList.copyOf( operands ) );
         }
 
 
-        public Call( ParserPos pos, Op op, Node... operands ) {
+        public Call( ParserPos pos, Op op, PigNode... operands ) {
             this( pos, op, ImmutableList.copyOf( operands ) );
         }
 
@@ -558,7 +602,7 @@ public class Ast {
     /**
      * Parse tree node for a program.
      */
-    public static class Program extends Node {
+    public static class Program extends PigNode {
 
         public final List<Stmt> stmtList;
 
@@ -576,7 +620,7 @@ public class Ast {
      *
      * Syntax: <pre>identifier:type</pre>
      */
-    public static class FieldSchema extends Node {
+    public static class FieldSchema extends PigNode {
 
         final Identifier id;
         final Type type;
@@ -596,7 +640,7 @@ public class Ast {
      *
      * Syntax: <pre>AS ( identifier:type [, identifier:type]... )</pre>
      */
-    public static class Schema extends Node {
+    public static class Schema extends PigNode {
 
         final List<FieldSchema> fieldSchemaList;
 
@@ -612,7 +656,7 @@ public class Ast {
     /**
      * Parse tree for type.
      */
-    public abstract static class Type extends Node {
+    public abstract static class Type extends PigNode {
 
         protected Type( ParserPos pos, Op op ) {
             super( pos, op );
@@ -722,14 +766,14 @@ public class Ast {
         }
 
 
-        public UnParser append( Node n ) {
+        public UnParser append( PigNode n ) {
             return unParse( this, n );
         }
 
 
-        public UnParser appendList( List<? extends Node> list ) {
+        public UnParser appendList( List<? extends PigNode> list ) {
             append( "[" ).in();
-            for ( Ord<Node> n : Ord.<Node>zip( list ) ) {
+            for ( Ord<PigNode> n : Ord.<PigNode>zip( list ) ) {
                 newline().append( n.e );
                 if ( n.i < list.size() - 1 ) {
                     append( "," );

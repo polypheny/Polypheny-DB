@@ -22,10 +22,14 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -75,9 +79,6 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -1576,7 +1577,8 @@ public abstract class Catalog {
         SQL( SchemaType.RELATIONAL ),
         MONGO_QL( SchemaType.DOCUMENT ),
         CQL( SchemaType.RELATIONAL ),
-        REL_ALG( SchemaType.RELATIONAL );
+        REL_ALG( SchemaType.RELATIONAL ),
+        PIG( SchemaType.RELATIONAL );
 
         @Getter
         private final SchemaType schemaType;
@@ -1584,6 +1586,24 @@ public abstract class Catalog {
 
         QueryLanguage( SchemaType schemaType ) {
             this.schemaType = schemaType;
+        }
+
+
+        public static QueryLanguage from( String name ) {
+            String normalized = name.toLowerCase( Locale.ROOT );
+            switch ( normalized ) {
+                case "mql":
+                case "mongoql":
+                    return MONGO_QL;
+                case "sql":
+                    return SQL;
+                case "cql":
+                    return CQL;
+                case "pig":
+                    return PIG;
+            }
+
+            throw new RuntimeException( "The query language seems not to be supported!" );
         }
     }
 

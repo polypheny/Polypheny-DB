@@ -125,8 +125,8 @@ public class MqlParser implements Parser {
     /**
      * Parses a <code>SELECT</code> statement and reuses parser.
      */
-    public MqlNode parseQuery( String mql ) throws NodeParseException {
-        parser.ReInit( new StringReader( mql ) );
+    public MqlNode parseQuery( String query ) throws NodeParseException {
+        parser.ReInit( new StringReader( query ) );
         return parseQuery();
     }
 

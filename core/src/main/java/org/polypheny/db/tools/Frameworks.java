@@ -417,7 +417,7 @@ public class Frameworks {
                 ImmutableList<Program> programs,
                 ImmutableList<AlgTraitDef> traitDefs,
                 ParserConfig parserConfig,
-                NodeToAlgConverter.Config sqlToRelConverterConfig,
+                NodeToAlgConverter.Config nodeToRelConverterConfig,
                 SchemaPlus defaultSchema,
                 AlgOptCostFactory costFactory,
                 AlgDataTypeSystem typeSystem,
@@ -429,7 +429,7 @@ public class Frameworks {
             this.programs = programs;
             this.traitDefs = traitDefs;
             this.parserConfig = parserConfig;
-            this.sqlToRelConverterConfig = sqlToRelConverterConfig;
+            this.sqlToRelConverterConfig = nodeToRelConverterConfig;
             this.defaultSchema = defaultSchema;
             this.costFactory = costFactory;
             this.typeSystem = typeSystem;
