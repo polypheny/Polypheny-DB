@@ -2082,8 +2082,9 @@ public class CatalogImpl extends Catalog {
 
             synchronized ( this ) {
                 partitionPlacements.replace( new Object[]{ adapterId, partitionId }, placement );
+                listeners.firePropertyChange( "partitionPlacement", old, placement );
             }
-            listeners.firePropertyChange( "partitionPlacement", old, placement );
+
         } catch ( NullPointerException e ) {
             getAdapter( adapterId );
             getPartition( partitionId );
@@ -3849,9 +3850,9 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             partitionGroups.replace( partitionGroupId, updatedCatalogPartitionGroup );
-
+            listeners.firePropertyChange( "partitionGroup", partitionGroup, updatedCatalogPartitionGroup );
         }
-        listeners.firePropertyChange( "partitionGroup", partitionGroup, updatedCatalogPartitionGroup );
+
     }
 
 
@@ -4530,8 +4531,9 @@ public class CatalogImpl extends Catalog {
 
             synchronized ( this ) {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
+                listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
             }
-            listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
+
         }
     }
 
