@@ -702,7 +702,7 @@ public class CatalogImpl extends Catalog {
         if ( !userNames.containsKey( "pa" ) ) {
             addUser( "pa", "" );
         }
-        Catalog.defaultUser = systemId;
+        Catalog.defaultUserId = systemId;
 
         //////////////
         // init database
@@ -767,11 +767,11 @@ public class CatalogImpl extends Catalog {
             restSettings.put( "maxUploadSizeMb", "10000" );
             addQueryInterface( "rest", "org.polypheny.db.restapi.HttpRestServer", restSettings );
 
-            // Add REST interface
-            Map<String, String> mongoSettings = new HashMap<>();
-            mongoSettings.put( "port", "2717" );
-            mongoSettings.put( "maxUploadSizeMb", "10000" );
-            addQueryInterface( "mongo", "org.polypheny.db.mongoql.MongoQlServer", mongoSettings );
+            // Add HTTP interface
+            Map<String, String> httpSettings = new HashMap<>();
+            httpSettings.put( "port", "1337" );
+            httpSettings.put( "maxUploadSizeMb", "10000" );
+            addQueryInterface( "http", "org.polypheny.db.http.HttpInterface", httpSettings );
         }
 
         try {

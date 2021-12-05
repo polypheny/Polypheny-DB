@@ -87,7 +87,7 @@ public abstract class Catalog {
 
     public static Adapter defaultStore;
     public static Adapter defaultSource;
-    public static int defaultUser = 0;
+    public static int defaultUserId = 0;
     public static long defaultDatabaseId = 0;
     public static boolean resetDocker;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
@@ -1503,28 +1503,6 @@ public abstract class Catalog {
     }
 
 
-    public enum LanguageType {
-        @SerializedName("sql")
-        SQL( 1 ),
-        @SerializedName("mql")
-        MQL( 2 ),
-        @SerializedName("cql")
-        CQL( 3 );
-
-        private final int id;
-
-
-        LanguageType( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-    }
-
-
     public enum SchemaType {
         @SerializedName("relational")
         RELATIONAL( 1 ),
@@ -1574,10 +1552,15 @@ public abstract class Catalog {
 
 
     public enum QueryLanguage {
+        @SerializedName("sql")
         SQL( SchemaType.RELATIONAL ),
+        @SerializedName("mql")
         MONGO_QL( SchemaType.DOCUMENT ),
+        @SerializedName("cql")
         CQL( SchemaType.RELATIONAL ),
+        @SerializedName("rel")
         REL_ALG( SchemaType.RELATIONAL ),
+        @SerializedName("pig")
         PIG( SchemaType.RELATIONAL );
 
         @Getter

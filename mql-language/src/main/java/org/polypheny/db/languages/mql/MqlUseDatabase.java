@@ -44,7 +44,7 @@ public class MqlUseDatabase extends MqlNode implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         try {
-            DdlManager.getInstance().createSchema( this.database, Catalog.defaultDatabaseId, SchemaType.DOCUMENT, Catalog.defaultUser, true, false );
+            DdlManager.getInstance().createSchema( this.database, Catalog.defaultDatabaseId, SchemaType.DOCUMENT, Catalog.defaultUserId, true, false );
         } catch ( SchemaAlreadyExistsException e ) {
             throw new RuntimeException( "The schema creation failed" );
         }

@@ -32,6 +32,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
@@ -108,7 +109,14 @@ public class WebSocket {
                 QueryRequest queryRequest = gson.fromJson( message, QueryRequest.class );
                 QueryLanguage language = QueryLanguage.from( queryRequest.language );
 
-                List<Result> results = crud.languageCrud.anyQuery( language, session, queryRequest, crud );
+                List<Result> results = LanguageCrud.anyQuery(
+                        language,
+                        session,
+                        queryRequest,
+                        crud.getTransactionManager(),
+                        crud.getUserName(),
+                        crud.getDatabaseName(),
+                        crud );
 
                 for ( Result result : results ) {
                     if ( result.getXid() != null ) {

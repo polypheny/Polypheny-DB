@@ -49,10 +49,10 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.mongoql.model.Result;
 import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.webui.models.Result;
 
 
 @Slf4j
@@ -333,14 +333,14 @@ public class TestHelper {
             request.basicAuth( "pa", "" );
             request.routeParam( "protocol", "http" );
             request.routeParam( "host", "127.0.0.1" );
-            request.routeParam( "port", "2717" );
+            request.routeParam( "port", "1337" );
             return request.asString();
         }
 
 
         private static Result getBody( HttpResponse<String> res ) {
             try {
-                return gson.fromJson( res.getBody(), Result.class );
+                return gson.fromJson( res.getBody(), Result[].class )[0];
             } catch ( JsonSyntaxException e ) {
                 log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
                 fail();

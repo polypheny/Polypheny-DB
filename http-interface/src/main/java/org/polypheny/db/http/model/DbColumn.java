@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.mongoql.model;
+package org.polypheny.db.http.model;
 
 
 import lombok.Setter;

@@ -14,28 +14,43 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.mongoql.model;
+package org.polypheny.db.http.model;
 
-public class QueryRequest extends UIRequest {
 
-    /**
-     * A query from the SQL console
-     */
-    public String query;
-
-    /**
-     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
-     */
-    public boolean analyze;
+/**
+ * Defines how a column is sorted.
+ * Required for Gson.
+ */
+public class SortState {
 
     /**
-     * This flag defines which language was used for this query
+     * How the column is supposed to be sorted (ASC or DESC)
      */
-    public String language;
+    public SortDirection direction;
+
 
     /**
-     * This flag defines the default database to use
+     * If true, the column will be sorted
      */
-    public String database;
+    public boolean sorting;
+
+
+    /**
+     * Column to be sorted
+     * needed for the PlanBuilder
+     */
+    public String column;
+
+
+    public SortState() {
+        this.direction = SortDirection.DESC;
+        this.sorting = false;
+    }
+
+
+    public SortState( final SortDirection direction ) {
+        this.direction = direction;
+        this.sorting = true;
+    }
 
 }

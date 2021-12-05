@@ -60,7 +60,7 @@ public class CqlTestHelper {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER INTERFACES ADD \"cql\" USING 'org.polypheny.db.cql.server.HttpCqlInterface' WITH '{\"port\":\"8087\"}'" );
+                statement.executeUpdate( "ALTER INTERFACES ADD \"cql\" USING 'org.polypheny.db.http.HttpInterface' WITH '{\"port\":\"8087\"}'" );
                 connection.commit();
             }
         }

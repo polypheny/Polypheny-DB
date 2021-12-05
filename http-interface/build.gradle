@@ -8,6 +8,7 @@ dependencies {
     implementation project(":sql-language")
     implementation project(":mql-language")
     implementation project(":languages")
+    implementation project(":webui")
 
 
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version

@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.TransactionManager;
@@ -59,7 +60,7 @@ public class HttpServer implements Runnable {
     public void run() {
         final Service server = Service.ignite();
         server.port( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
-        Crud crud = new Crud( transactionManager, "pa", "APP" );
+        Crud crud = new Crud( transactionManager, Catalog.getInstance().getUser( Catalog.defaultUserId ).name, Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name );
 
         WebSocket webSocketHandler = new WebSocket( crud );
         webSockets( server, webSocketHandler );

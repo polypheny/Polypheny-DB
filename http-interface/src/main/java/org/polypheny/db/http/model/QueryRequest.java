@@ -14,15 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.mongoql.model;
+package org.polypheny.db.http.model;
 
+public class QueryRequest extends UIRequest {
 
-/**
- * Describes where the data in the Result is coming from.
- * If it is from a table, a view or from an arbitrary query
- */
-public enum ResultType {
-    TABLE,
-    VIEW,
-    QUERY
+    /**
+     * A query from the SQL console
+     */
+    public String query;
+
+    /**
+     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
+     */
+    public boolean analyze;
+
+    /**
+     * This flag defines which language was used for this query
+     */
+    public String language;
+
+    /**
+     * This flag defines the default database to use
+     */
+    public String database;
+
 }

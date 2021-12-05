@@ -83,6 +83,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Part;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
@@ -108,7 +109,6 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.LanguageType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -242,8 +242,11 @@ import spark.utils.IOUtils;
 public class Crud implements InformationObserver {
 
     private static final Gson gson = new Gson();
+    @Getter
     private final TransactionManager transactionManager;
+    @Getter
     private final String databaseName;
+    @Getter
     private final String userName;
     private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
     public final LanguageCrud languageCrud;
@@ -3045,7 +3048,8 @@ public class Crud implements InformationObserver {
         DbColumn[] header = new DbColumn[signature.columns.size()];
         int counter = 0;
         for ( ColumnMetaData col : signature.columns ) {
-            header[counter++] = new DbColumn( col.columnName,
+            header[counter++] = new DbColumn(
+                    col.columnName,
                     col.type.name,
                     col.nullable == ResultSetMetaData.columnNullable,
                     col.displaySize,
@@ -3782,10 +3786,10 @@ public class Crud implements InformationObserver {
             MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             if ( tableType != null ) {
-                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), LanguageType.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
             } else {
                 //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
-                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), LanguageType.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
             }
 
         } finally {
@@ -4132,7 +4136,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    public Transaction getTransaction( boolean analyze, boolean useCache ) {
+    public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, String userName, String databaseName ) {
         try {
             Transaction transaction = transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
             transaction.setUseCache( useCache );
@@ -4140,6 +4144,11 @@ public class Crud implements InformationObserver {
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
+    }
+
+
+    public Transaction getTransaction( boolean analyze, boolean useCache ) {
+        return getTransaction( analyze, useCache, transactionManager, userName, databaseName );
     }
 
 

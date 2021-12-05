@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cql.server;
+package org.polypheny.db.http.model;
 
 
-public class UnauthorizedAccessException extends RuntimeException {
-
-    public UnauthorizedAccessException( String s ) {
-        super( s );
-    }
-
+/**
+ * Ways how a column can be sorted
+ */
+public enum SortDirection {
+    /**
+     * ascending
+     */
+    ASC,
+    /**
+     * descending
+     */
+    DESC
 }

@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.mongoql.model;
+package org.polypheny.db.http.model;
 
 
 /**
- * Ways how a column can be sorted
+ * Describes where the data in the Result is coming from.
+ * If it is from a table, a view or from an arbitrary query
  */
-public enum SortDirection {
-    /**
-     * ascending
-     */
-    ASC,
-    /**
-     * descending
-     */
-    DESC
+public enum ResultType {
+    TABLE,
+    VIEW,
+    QUERY
 }
