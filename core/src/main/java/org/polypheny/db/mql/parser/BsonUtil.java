@@ -210,6 +210,8 @@ public class BsonUtil {
                 return handleDayInterval( obj );
             case INTERVAL_YEAR:
                 return handleYearInterval( obj );
+            case JSON:
+                return handleDocument( obj );
             case CHAR:
             case VARCHAR:
             default:
@@ -288,11 +290,18 @@ public class BsonUtil {
                 return BsonUtil::handleDayInterval;
             case INTERVAL_YEAR:
                 return BsonUtil::handleYearInterval;
+            case JSON:
+                return BsonUtil::handleDocument;
             case CHAR:
             case VARCHAR:
             default:
                 return ( o ) -> new BsonString( o.toString() );
         }
+    }
+
+
+    private static BsonValue handleDocument( Object obj ) {
+        return BsonDocument.parse( (String) obj );
     }
 
 

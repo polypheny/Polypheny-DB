@@ -729,7 +729,7 @@ public class MqlToRelConverter {
 
 
     /**
-     * Method transforms an insert into the appropriate {@link org.polypheny.db.rel.logical.LogicalValues}
+     * Method transforms an insert into the appropriate {@link LogicalValues}
      * when working with the relational model or the {@link LogicalDocuments} when handling a document model
      *
      * @param query the insert statement as Mql object
