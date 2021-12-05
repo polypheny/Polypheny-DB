@@ -18,11 +18,19 @@ package org.polypheny.db.monitoring.events;
 
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -45,7 +53,10 @@ public abstract class StatementEvent extends BaseEvent {
     protected boolean isAnalyze;
     protected boolean isSubQuery;
     protected String durations;
-    protected List<Long> accessedPartitions;
+    protected Map<Long, Set<Long>> accessedPartitions;
+    protected LogicalQueryInformation logicalQueryInformation;
+    protected String relCompareString;
+    protected String physicalQueryClass;
 
 
     @Override
@@ -60,5 +71,37 @@ public abstract class StatementEvent extends BaseEvent {
 
     @Override
     public abstract List<MonitoringDataPoint> analyze();
+
+
+    /**
+     * Is used to updated the partitions which have been used within a transaction.
+     * This method merges existing accesses with new ones
+     *
+     * @param updatedPartitionsList partitions per table that have been accessed and should be added to the overall statistics
+     */
+    public void updateAccessedPartitions( Map<Long, Set<Long>> updatedPartitionsList ) {
+        Long tableId;
+        Set<Long> partitionIds;
+
+        for ( Entry<Long, Set<Long>> entry : updatedPartitionsList.entrySet() ) {
+            tableId = entry.getKey();
+            partitionIds = entry.getValue();
+
+            // Initialize if this is the first time accessing
+            if ( accessedPartitions == null ) {
+                accessedPartitions = new HashMap<>();
+            }
+
+            if ( !accessedPartitions.containsKey( tableId ) ) {
+                accessedPartitions.put( tableId, new HashSet<>() );
+            }
+
+            Set<Long> mergedPartitionIds = Stream.of( accessedPartitions.get( tableId ), partitionIds )
+                    .flatMap( Set::stream )
+                    .collect( Collectors.toSet() );
+
+            accessedPartitions.replace( tableId, mergedPartitionIds );
+        }
+    }
 
 }

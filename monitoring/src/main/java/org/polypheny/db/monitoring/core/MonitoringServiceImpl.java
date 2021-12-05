@@ -22,6 +22,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
@@ -29,15 +30,9 @@ import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 @Slf4j
 public class MonitoringServiceImpl implements MonitoringService {
 
-    // region private fields
-
     private final MonitoringQueue monitoringQueue;
     private final MonitoringRepository repository;
     private final MonitoringServiceUi monitoringServiceUi;
-
-    // endregion
-
-    // region ctors
 
 
     public MonitoringServiceImpl(
@@ -49,10 +44,6 @@ public class MonitoringServiceImpl implements MonitoringService {
         this.repository = repository;
         this.monitoringServiceUi = monitoringServiceUi;
     }
-
-    // endregion
-
-    // region public methods
 
 
     @Override
@@ -68,6 +59,12 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
+    public <T extends MonitoringDataPoint> long getNumberOfDataPoints( @NonNull Class<T> dataPointClass ) {
+        return this.repository.getNumberOfDataPoints( dataPointClass );
+    }
+
+
+    @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
         return this.repository.getDataPointsBefore( dataPointClass, timestamp );
     }
@@ -78,5 +75,28 @@ public class MonitoringServiceImpl implements MonitoringService {
         return this.repository.getDataPointsAfter( dataPointClass, timestamp );
     }
 
-    // endregion
+
+    @Override
+    public QueryPostCost getQueryPostCosts( String physicalQueryClass ) {
+        return this.repository.getQueryPostCosts( physicalQueryClass );
+    }
+
+
+    @Override
+    public List<QueryPostCost> getAllQueryPostCosts() {
+        return this.repository.getAllQueryPostCosts();
+    }
+
+
+    @Override
+    public void updateQueryPostCosts( @NonNull String physicalQueryClass, long executionTime ) {
+        this.repository.updateQueryPostCosts( physicalQueryClass, executionTime );
+    }
+
+
+    @Override
+    public void resetQueryPostCosts() {
+        this.repository.resetQueryPostCosts();
+    }
+
 }

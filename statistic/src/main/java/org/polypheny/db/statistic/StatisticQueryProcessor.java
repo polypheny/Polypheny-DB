@@ -39,8 +39,6 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
@@ -237,8 +235,6 @@ public class StatisticQueryProcessor {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
 
-        statement.getTransaction().setMonitoringData( new QueryEvent() );
-
         try {
             signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
@@ -287,9 +283,6 @@ public class StatisticQueryProcessor {
 
             String[][] d = data.toArray( new String[0][] );
 
-            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
-            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
-
             return new StatisticResult( names, types, d );
         } finally {
             try {
@@ -317,7 +310,7 @@ public class StatisticQueryProcessor {
             RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         return signature;
     }

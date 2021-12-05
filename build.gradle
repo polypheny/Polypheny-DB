@@ -59,10 +59,6 @@ allprojects {
             url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
         }
         maven {
-            url "https://clojars.org/repo/"
-        }
-        mavenCentral()
-        maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
     }
@@ -128,6 +124,9 @@ allprojects {
         showFailedStandardStreams true
         logLevel 'lifecycle'
     }
+
+    lombok.config['lombok.val.flagUsage'] = 'error'
+    lombok.config['lombok.var.flagUsage'] = 'error'
 
     idea {
         module {

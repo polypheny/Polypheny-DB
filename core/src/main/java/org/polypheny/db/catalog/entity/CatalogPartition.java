@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity;
 
+import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -30,7 +31,7 @@ public class CatalogPartition implements CatalogEntity {
     public final long id;
 
     @Getter
-    public final List<String> partitionQualifiers;
+    public final ImmutableList<String> partitionQualifiers;
 
     // To be checked if even needed
     @Getter
@@ -53,7 +54,7 @@ public class CatalogPartition implements CatalogEntity {
         this.tableId = tableId;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
-        this.partitionQualifiers = partitionQualifiers;
+        this.partitionQualifiers = ImmutableList.copyOf( partitionQualifiers );
         this.isUnbound = isUnbound;
         this.partitionGroupId = partitionGroupId;
     }

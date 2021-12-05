@@ -47,7 +47,6 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.processing.AbstractQueryProcessor.RelDeepCopyShuttle;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
@@ -131,7 +130,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         //
         if ( root.isInsert() && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( statement );
-            final RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+            final RelNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
@@ -238,7 +237,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         //
         if ( root.isInsert() && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( statement );
-            final RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+            final RelNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final RelOptSchema relOptSchema = root.getCatalogReader();
@@ -291,7 +290,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 if ( !affected ) {
                     continue;
                 }
-                RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+                RelNode input = root.getInput().accept( new DeepCopyShuttle() );
                 Map<String, Integer> nameMap = new HashMap<>();
                 for ( int i = 0; i < root.getUpdateColumnList().size(); ++i ) {
                     nameMap.put( root.getUpdateColumnList().get( i ), i );
@@ -386,7 +385,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
-                RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+                RelNode input = root.getInput().accept( new DeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
                 final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
@@ -459,9 +458,9 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 }
                 RelNode pInput;
                 if ( root.getInput() instanceof Project ) {
-                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new RelDeepCopyShuttle() );
+                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new DeepCopyShuttle() );
                 } else {
-                    pInput = root.getInput().accept( new RelDeepCopyShuttle() );
+                    pInput = root.getInput().accept( new DeepCopyShuttle() );
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );

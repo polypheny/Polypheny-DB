@@ -157,10 +157,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.DmlEvent;
-import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -821,7 +817,9 @@ public class Crud implements InformationObserver {
                 }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit )
+                            .setGeneratedQuery( query )
+                            .setXid( transaction.getXid().toString() );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
@@ -831,7 +829,12 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                    if ( e.getCause() instanceof AvaticaRuntimeException ) {
+                        result = new Result( ((AvaticaRuntimeException) e.getCause()).getErrorMessage() );
+                    } else {
+                        result = new Result( e.getCause().getMessage() );
+                    }
+                    result.setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     try {
                         transaction.rollback();
@@ -844,7 +847,6 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
-                    transaction.getMonitoringData().setExecutionTime( executionTime );
 
                     result = new Result( numOfRows ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
                     results.add( result );
@@ -867,43 +869,59 @@ public class Crud implements InformationObserver {
 
         }
 
+        String commitStatus;
         try {
             transaction.commit();
+            commitStatus = "Committed";
         } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
             results.add( new Result( e ) );
             try {
                 transaction.rollback();
+                commitStatus = "Rolled back";
             } catch ( TransactionException ex ) {
                 log.error( "Caught exception while rollback", e );
+                commitStatus = "Error while rolling back";
             }
         }
 
         if ( queryAnalyzer != null ) {
-            attachQueryAnalyzer( queryAnalyzer, executionTime );
+            attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
         }
 
         return results;
     }
 
 
-    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime ) {
-        InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
+    public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime, String commitStatus, int numberOfQueries ) {
+        InformationPage p1 = new InformationPage( "Transaction", "Analysis of the transaction." );
+        queryAnalyzer.addPage( p1 );
         InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-        InformationText text;
+        queryAnalyzer.addGroup( g1 );
+        InformationText text1;
         if ( executionTime < 1e4 ) {
-            text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+            text1 = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
         } else {
             long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
             // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
             //noinspection SuspiciousDateFormat
             DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
             String durationText = df.format( new Date( millis ) );
-            text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
+            text1 = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
         }
-        queryAnalyzer.addPage( p1 );
-        queryAnalyzer.addGroup( g1 );
-        queryAnalyzer.registerInformation( text );
+        queryAnalyzer.registerInformation( text1 );
+
+        // Number of queries
+        InformationGroup g2 = new InformationGroup( p1, "Number of queries" );
+        queryAnalyzer.addGroup( g2 );
+        InformationText text2 = new InformationText( g2, String.format( "Number of queries in this transaction: %d", numberOfQueries ) );
+        queryAnalyzer.registerInformation( text2 );
+
+        // Commit Status
+        InformationGroup g3 = new InformationGroup( p1, "Status" );
+        queryAnalyzer.addGroup( g3 );
+        InformationText text3 = new InformationText( g3, commitStatus );
+        queryAnalyzer.registerInformation( text3 );
     }
 
 
@@ -1383,7 +1401,7 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
             if ( catalogTable.tableType == TableType.VIEW ) {
-                Map<Long, List<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
+                ImmutableMap<Long, ImmutableList<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
 
                 List<DbColumn> columns = new ArrayList<>();
                 for ( Long columnIds : catalogTable.columnIds ) {
@@ -2104,9 +2122,9 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
             if ( catalogTable.tableType == TableType.VIEW ) {
-                Map<Long, List<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
+                ImmutableMap<Long, ImmutableList<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
                 Map<String, List<String>> underlyingTable = new HashMap<>();
-                for ( Entry<Long, List<Long>> entry : underlyingTableOriginal.entrySet() ) {
+                for ( Entry<Long, ImmutableList<Long>> entry : underlyingTableOriginal.entrySet() ) {
                     List<String> columns = new ArrayList<>();
                     for ( Long ids : entry.getValue() ) {
                         columns.add( catalog.getColumn( ids ).name );
@@ -2115,7 +2133,7 @@ public class Crud implements InformationObserver {
                 }
                 return new UnderlyingTables( underlyingTable );
             } else {
-                throw new RuntimeException( "only possible with Views" );
+                throw new RuntimeException( "Only possible with Views" );
             }
 
         } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
@@ -2914,7 +2932,7 @@ public class Crud implements InformationObserver {
         RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
 
         // Prepare
-        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
+        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -3075,7 +3093,7 @@ public class Crud implements InformationObserver {
             InformationGroup g1 = new InformationGroup( p1, "Execution time" );
             InformationText text;
             if ( executionTime < 1e4 ) {
-                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", signature ) );
+                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
@@ -3663,24 +3681,16 @@ public class Crud implements InformationObserver {
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
-        statement.getTransaction().setMonitoringData( new QueryEvent() );
 
         try {
-            if ( isAnalyze ) {
-                statement.getExecutionDuration().start( "Plan Query" );
-            }
-
-            signature = processQuery( statement, sqlSelect );
+            signature = processQuery( statement, sqlSelect, isAnalyze );
 
             if ( isAnalyze ) {
-                statement.getExecutionDuration().stop( "Plan Query" );
-                statement.getExecutionDuration().start( "Execute Query" );
+                statement.getOverviewDuration().start( "Execution" );
             }
-
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-
             if ( isAnalyze ) {
-                statement.getExecutionDuration().stop( "Execute Query" );
+                statement.getOverviewDuration().stop( "Execution" );
             }
 
             //noinspection unchecked
@@ -3697,8 +3707,6 @@ public class Crud implements InformationObserver {
 
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
-
-            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
@@ -3776,9 +3784,6 @@ public class Crud implements InformationObserver {
             }
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
-
-            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
-            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             if ( tableType != null ) {
                 return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), LanguageType.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
@@ -3960,17 +3965,33 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
+    private PolyphenyDbSignature processQuery( Statement statement, String sql, boolean isAnalyze ) {
         PolyphenyDbSignature signature;
+        if ( isAnalyze ) {
+            statement.getOverviewDuration().start( "Parsing" );
+        }
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         SqlNode parsed = sqlProcessor.parse( sql );
+        if ( isAnalyze ) {
+            statement.getOverviewDuration().stop( "Parsing" );
+        }
         RelRoot logicalRoot = null;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
         } else {
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().start( "Validation" );
+            }
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().stop( "Validation" );
+                statement.getOverviewDuration().start( "Translation" );
+            }
             logicalRoot = sqlProcessor.translate( statement, validated.left );
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().stop( "Translation" );
+            }
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         return signature;
     }
@@ -3984,10 +4005,8 @@ public class Crud implements InformationObserver {
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
 
-        statement.getTransaction().setMonitoringData( new DmlEvent() );
-
         try {
-            signature = processQuery( statement, sqlUpdate );
+            signature = processQuery( statement, sqlUpdate, transaction.isAnalyze() );
         } catch ( Throwable t ) {
             if ( transaction.isAnalyze() ) {
                 InformationManager analyzer = transaction.getQueryAnalyzer();
@@ -4037,11 +4056,6 @@ public class Crud implements InformationObserver {
                     throw new QueryExecutionException( e.getMessage(), e );
                 }
             }
-
-            StatementEvent ev = statement.getTransaction().getMonitoringData();
-            ev.setRowCount( rowsChanged );
-
-            MonitoringServiceProvider.getInstance().monitorEvent( ev );
 
             return rowsChanged;
         } else {

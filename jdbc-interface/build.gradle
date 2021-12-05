@@ -11,7 +11,7 @@ dependencies {
     implementation group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version  // Apache 2.0
 
     ////// APACHE CALCITE AVATICA
-    implementation group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
+    implementation group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
     
 
     // --- Test Compile ---

@@ -69,7 +69,7 @@ import org.polypheny.db.rel.logical.LogicalSortExchange;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -513,7 +513,7 @@ public class RelFactories {
                 long idLogical = ((LogicalTable) ((RelOptTableImpl) table).getTable()).getTableId();
                 CatalogTable catalogTable = catalog.getTable( idLogical );
                 if ( catalogTable.tableType == TableType.VIEW ) {
-                    return LogicalViewTableScan.create( cluster, table );
+                    return LogicalViewScan.create( cluster, table );
                 } else {
                     return LogicalTableScan.create( cluster, table );
                 }

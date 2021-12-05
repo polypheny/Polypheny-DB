@@ -20,17 +20,17 @@ import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.util.background.BackgroundTask;
@@ -54,13 +54,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     private String backgroundTaskId;
 
-    // Processed events since restart
+    /**
+     * Processed events since restart.
+     */
     private long processedEvents;
     private long processedEventsTotal;
-
-    // endregion
-
-    // region ctors
 
 
     /**
@@ -116,7 +114,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     public List<HashMap<String, String>> getInformationOnElementsInQueue() {
         List<HashMap<String, String>> infoList = new ArrayList<>();
 
-        for ( MonitoringEvent event : monitoringJobQueue ) {
+        for ( MonitoringEvent event : monitoringJobQueue.stream().limit( 100 ).collect( Collectors.toList() ) ) {
             HashMap<String, String> infoRow = new HashMap<>();
             infoRow.put( "type", event.getClass().toString() );
             infoRow.put( "id", event.getId().toString() );
@@ -137,10 +135,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         return processedEvents;
     }
 
-    // endregion
-
-    // region private helper methods
-
 
     private void startBackgroundTask() {
         if ( backgroundTaskId == null ) {
@@ -158,29 +152,29 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         log.debug( "Start processing queue" );
         this.processingQueueLock.lock();
 
-        Optional<MonitoringEvent> event;
+        MonitoringEvent event;
 
         try {
             // while there are jobs to consume:
             int countEvents = 0;
-            while ( (event = this.getNextJob()).isPresent() && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
+            while ( (event = this.getNextJob()) != null && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "get new monitoring job {}", event.get().getId().toString() );
+                    log.debug( "get new monitoring job {}", event.getId().toString() );
                 }
 
                 // returns list of metrics which was produced by this particular event
-                val dataPoints = event.get().analyze();
+                final List<MonitoringDataPoint> dataPoints = event.analyze();
                 if ( dataPoints.isEmpty() ) {
                     continue;
                 }
 
                 // Sends all extracted metrics to subscribers
-                for ( val dataPoint : dataPoints ) {
+                for ( MonitoringDataPoint dataPoint : dataPoints ) {
                     this.repository.persistDataPoint( dataPoint );
                 }
 
                 countEvents++;
-                queueIds.remove( event.get().getId() );
+                queueIds.remove( event.getId() );
             }
             processedEvents += countEvents;
             processedEventsTotal += countEvents;
@@ -190,12 +184,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-    private Optional<MonitoringEvent> getNextJob() {
+    private MonitoringEvent getNextJob() {
         if ( monitoringJobQueue.peek() != null ) {
-            return Optional.of( monitoringJobQueue.poll() );
+            return monitoringJobQueue.poll();
         }
-        return Optional.empty();
+        return null;
     }
 
-    // endregion
 }

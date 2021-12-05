@@ -16,26 +16,21 @@
 
 package org.polypheny.db.monitoring.ui;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 
 
@@ -64,25 +59,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         im.addPage( informationPage );
 
         initializeWorkloadInformationTable();
+
         //initializeQueueInformationTable();
-    }
-
-
-    @Override
-    public <T extends MonitoringDataPoint> void registerDataPointForUi( @NonNull Class<T> metricClass ) {
-        String className = metricClass.getName();
-        val informationGroup = new InformationGroup( informationPage, className );
-
-        // TODO: see todo below in {#link updateMetricInformationTable}
-        val fieldAsString = Arrays.stream( metricClass.getDeclaredFields() )
-                .map( Field::getName )
-                .filter( str -> !str.equals( "serialVersionUID" ) )
-                .collect( Collectors.toList() );
-        val informationTable = new InformationTable( informationGroup, fieldAsString );
-
-        // informationGroup.setRefreshFunction( () -> this.updateMetricInformationTable( informationTable, metricClass ) );
-
-        addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
     }
 
 
@@ -99,45 +77,15 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
     }
 
 
-    private <T extends MonitoringDataPoint> void updateMetricInformationTable( InformationTable table, Class<T> metricClass ) {
-        List<T> elements = this.repo.getAllDataPoints( metricClass );
-        table.reset();
-
-        Field[] fields = metricClass.getDeclaredFields();
-        Method[] methods = metricClass.getMethods();
-        for ( T element : elements ) {
-            List<String> row = new LinkedList<>();
-
-            for ( Field field : fields ) {
-                // TODO: get declared fields and find corresponding Lombok getter to execute
-                //  Therefore, nothing needs to be done for serialVersionID
-                //  and neither do we need to hacky set the setAccessible flag for the fields
-                if ( field.getName().equals( "serialVersionUID" ) ) {
-                    continue;
-                }
-
-                try {
-                    field.setAccessible( true );
-                    val value = field.get( element );
-                    row.add( value.toString() );
-                } catch ( IllegalAccessException e ) {
-                    log.error( "Caught exception", e );
-                }
-            }
-
-            table.addRow( row );
-        }
-    }
-
-
     private void initializeWorkloadInformationTable() {
-        val informationGroup = new InformationGroup( informationPage, "Workload Overview" );
-        val informationTable = new InformationTable( informationGroup, Arrays.asList( "Attribute", "Value" ) );
+        final InformationGroup informationGroup = new InformationGroup( informationPage, "Workload Overview" );
+        final InformationTable informationTable = new InformationTable( informationGroup, Arrays.asList( "Attribute", "Value" ) );
         informationGroup.setOrder( 1 );
 
         informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
+        //updateWorkloadInformationTable(informationTable);
     }
 
 
@@ -146,8 +94,8 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         // Also build active subscription table Metric to subscribers
         // or which subscribers, exist and to which metrics they are subscribed
 
-        val informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
-        val informationTable = new InformationTable( informationGroup, Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
+        final InformationGroup informationGroup = new InformationGroup( informationPage, "Monitoring Queue" ).setOrder( 2 );
+        final InformationTable informationTable = new InformationTable( informationGroup, Arrays.asList( "Event Type", "UUID", "Timestamp" ) );
 
         informationGroup.setRefreshFunction( () -> this.updateQueueInformationTable( informationTable ) );
 
@@ -174,9 +122,9 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
         table.addRow( "Number of processed events since restart", queue.getNumberOfProcessedEvents( false ) );
         table.addRow( "Number of events in queue", queue.getNumberOfElementsInQueue() );
-        //table.addRow( "# Data Points", queue.getElementsInQueue().size() );
-        table.addRow( "# SELECT", MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class ).size() );
-        table.addRow( "# DML", MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size() );
+
+        table.addRow( "# DQL", MonitoringServiceProvider.getInstance().getNumberOfDataPoints( QueryDataPointImpl.class ) );
+        table.addRow( "# DML", MonitoringServiceProvider.getInstance().getNumberOfDataPoints( DmlDataPoint.class ) );
     }
 
 }

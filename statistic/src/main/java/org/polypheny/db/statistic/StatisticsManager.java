@@ -482,7 +482,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         InformationTable temporalInformation = new InformationTable( temporalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
 
-        InformationTable numericalInformation = new InformationTable( numericalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
+        InformationTable numericalInformation = new InformationTable( numericalGroup, Arrays.asList( "Column Name", "Min", "Max", "Count" ) );
 
         InformationTable alphabeticalInformation = new InformationTable( alphabeticalGroup, Arrays.asList( "Column Name", "Unique Values" ) );
 
@@ -508,7 +508,11 @@ public class StatisticsManager<T extends Comparable<T>> {
                 if ( v instanceof NumericalStatisticColumn ) {
 
                     if ( ((NumericalStatisticColumn<T>) v).getMin() != null && ((NumericalStatisticColumn<T>) v).getMax() != null ) {
-                        numericalInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn<T>) v).getMin().toString(), ((NumericalStatisticColumn<T>) v).getMax().toString() );
+                        numericalInformation.addRow(
+                                v.getQualifiedColumnName(),
+                                ((NumericalStatisticColumn<T>) v).getMin().toString(),
+                                ((NumericalStatisticColumn<T>) v).getMax().toString(),
+                                v.getCount() );
                     } else {
                         numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                     }

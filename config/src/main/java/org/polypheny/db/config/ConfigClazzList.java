@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.reflections.Reflections;
 public class ConfigClazzList extends Config {
 
     @JsonAdapter(ClassesAdapter.class)
-    @SerializedName( "values" )
+    @SerializedName("values")
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private final List<Class> value;
@@ -53,6 +53,14 @@ public class ConfigClazzList extends Config {
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
         this.value = new ArrayList<>();
         this.webUiFormType = WebUiFormType.CHECKBOXES;
+    }
+
+
+    public ConfigClazzList( final String key, final Class superClass, boolean activateAll ) {
+        this( key, superClass );
+        if ( activateAll ) {
+            setClazzList( new ArrayList<>( this.classes ) );
+        }
     }
 
 
@@ -139,9 +147,9 @@ public class ConfigClazzList extends Config {
         Gson gson = new Gson();
         ArrayList<String> val = gson.fromJson( value, ArrayList.class );
         List<Class> toAdd = new ArrayList<>();
-        for( Class c: classes ) {
-            if( val.contains( c.getName() )){
-                toAdd.add(c);
+        for ( Class c : classes ) {
+            if ( val.contains( c.getName() ) ) {
+                toAdd.add( c );
             }
         }
         return this.setClazzList( toAdd );
@@ -173,6 +181,7 @@ public class ConfigClazzList extends Config {
             out.endArray();
         }
 
+
         @Override
         public List<Class> read( final JsonReader in ) throws IOException {
             List<Class> list = new ArrayList<>();
@@ -189,6 +198,7 @@ public class ConfigClazzList extends Config {
             in.endArray();
             return ImmutableList.copyOf( list );
         }
+
     }
 
 

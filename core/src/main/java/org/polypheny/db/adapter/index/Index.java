@@ -99,7 +99,7 @@ public abstract class Index {
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyphenyDbSignature signature = processor.prepareQuery( RelRoot.of( scan, SqlKind.SELECT ) );
+        final PolyphenyDbSignature signature = processor.prepareQuery( RelRoot.of( scan, SqlKind.SELECT ), false );
         // Execute query
         final Iterable<Object> enumerable = signature.enumerable( statement.getDataContext() );
         final Iterator<Object> iterator = enumerable.iterator();
