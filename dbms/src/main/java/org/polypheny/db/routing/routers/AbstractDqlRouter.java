@@ -55,7 +55,12 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     /**
      * Boolean which cancel routing plan generation.
-     * This is useful if implementing router can not propose plans in every situation.
+     *
+     * In Universal Routing, not every router needs to propose a plan for every query. But, every router will be asked to try
+     * to prepare a plan for the query. If a router sees, that he is not able to route (maybe after tablePlacement 2 out of 4,
+     * the router is expected to return an empty list of proposed routing plans. To "abort" routing plan creation, the boolean
+     * cancelQuery is introduced and will be checked during creation. As we are in the middle of traversing a RelNode, this
+     * is the new to "abort" traversing the RelNode.
      */
     protected boolean cancelQuery = false;
 

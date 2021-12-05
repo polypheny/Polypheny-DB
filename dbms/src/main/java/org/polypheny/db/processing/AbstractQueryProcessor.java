@@ -162,7 +162,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     protected static final boolean ENABLE_STREAM = true;
     private final Statement statement;
 
-    private final Map<Integer, Long> scanPerTable = new HashMap<>(); // scanId  -> tableId //Needed for Lookup
+    // This map is required to allow plans with multiple physical placements of the same logical table.
+    // scanId -> tableId
+    private final Map<Integer, Long> scanPerTable = new HashMap<>();
 
 
     protected AbstractQueryProcessor( Statement statement ) {
