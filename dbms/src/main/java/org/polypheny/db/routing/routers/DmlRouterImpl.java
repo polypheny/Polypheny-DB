@@ -594,8 +594,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         accessedPartitionList.add( identPart );
                     }
 
-                    if ( statement.getTransaction().getMonitoringEvent() != null ) {
-                        statement.getTransaction().getMonitoringEvent()
+                    if ( statement.getMonitoringEvent() != null ) {
+                        statement.getMonitoringEvent()
                                 .updateAccessedPartitions(
                                         Collections.singletonMap( catalogTable.id, accessedPartitionList )
                                 );

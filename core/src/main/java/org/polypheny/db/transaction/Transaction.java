@@ -16,13 +16,13 @@
 
 package org.polypheny.db.transaction;
 
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.JsonRelProcessor;
@@ -78,10 +78,6 @@ public interface Transaction {
     long getNumberOfStatements();
 
     DataMigrator getDataMigrator();
-
-    StatementEvent getMonitoringEvent();
-
-    void setMonitoringEvent( StatementEvent event );
 
     void setUseCache( boolean useCache );
 
