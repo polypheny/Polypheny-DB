@@ -153,6 +153,9 @@ public class CottontailStore extends DataStore {
 
         }
 
+        addInformationPhysicalNames();
+        enableInformationPage();
+
         final ManagedChannel channel = NettyChannelBuilder.forAddress( this.dbHostname, this.dbPort ).usePlaintext().build();
         this.wrapper = new CottontailWrapper( channel, this );
         this.wrapper.checkedCreateSchemaBlocking(
@@ -227,7 +230,6 @@ public class CottontailStore extends DataStore {
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), combinedTable.id ) );
 
         for ( long partitionId : partitionIds ) {
-
             final String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id, partitionId );
             catalog.updatePartitionPlacementPhysicalNames(
                     getAdapterId(),
