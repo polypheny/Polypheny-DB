@@ -168,7 +168,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public void executionTime( String reference, long nanoTime ) {
-        StatementEvent event = statement.getTransaction().getMonitoringEvent();
+        StatementEvent event = statement.getMonitoringEvent();
         if ( reference.equals( event.getLogicalQueryInformation().getQueryClass() ) ) {
             event.setExecutionTime( nanoTime );
         }
@@ -1353,7 +1353,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private void prepareMonitoring( Statement statement, AlgRoot logicalRoot, boolean isAnalyze, boolean isSubquery, LogicalQueryInformation queryInformation ) {
         // Initialize Monitoring
-        if ( statement.getTransaction().getMonitoringEvent() == null ) {
+        if ( statement.getMonitoringEvent() == null ) {
             StatementEvent event;
             if ( logicalRoot.kind.belongsTo( Kind.DML ) ) {
                 event = new DmlEvent();
@@ -1367,14 +1367,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             event.setAnalyze( isAnalyze );
             event.setSubQuery( isSubquery );
             event.setLogicalQueryInformation( queryInformation );
-            statement.getTransaction().setMonitoringEvent( event );
+            statement.setMonitoringEvent( event );
         }
     }
 
 
     private void monitorResult( ProposedRoutingPlan selectedPlan ) {
-        if ( statement.getTransaction().getMonitoringEvent() != null ) {
-            StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
+        if ( statement.getMonitoringEvent() != null ) {
+            StatementEvent eventData = statement.getMonitoringEvent();
             eventData.setAlgCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
             if ( selectedPlan.getPhysicalQueryClass() != null ) {
                 eventData.setPhysicalQueryClass( selectedPlan.getPhysicalQueryClass() );

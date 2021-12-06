@@ -31,6 +31,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.prepare.ContextImpl;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
@@ -54,6 +55,8 @@ public class StatementImpl implements Statement {
     private InformationDuration routingDuration;
     private InformationDuration overviewDuration;
     private InformationPage executionTimePage;
+
+    private StatementEvent statementEvent;
 
 
     StatementImpl( TransactionImpl transaction ) {
@@ -137,6 +140,18 @@ public class StatementImpl implements Statement {
             overviewDuration = initDuration( "Overview", 1 );
         }
         return overviewDuration;
+    }
+
+
+    @Override
+    public StatementEvent getMonitoringEvent() {
+        return this.statementEvent;
+    }
+
+
+    @Override
+    public void setMonitoringEvent( StatementEvent event ) {
+        this.statementEvent = event;
     }
 
 
