@@ -36,6 +36,15 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.BiAlg;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -103,17 +112,8 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
-import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.BiAlg;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalViewTableScan;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.LogicalTable;
@@ -328,12 +328,10 @@ public class DdlManagerImpl extends DdlManager {
                     throw new RuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
                 }
 
-                // Inform routing
-                statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( catalogAdapter.id, table.id ) );
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
                     if ( catalog.checkIfExistsColumnPlacement( catalogAdapter.id, columnId ) ) {
-                        catalog.deleteColumnPlacement( catalogAdapter.id, columnId );
+                        catalog.deleteColumnPlacement( catalogAdapter.id, columnId, false );
                     }
                 }
 
@@ -353,7 +351,7 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.deleteTable( table.id );
             }
 
-            // Rest plan cache and implementation cache
+            // Reset plan cache implementation cache & routing cache
             statement.getQueryProcessor().resetCaches();
         }
         AdapterManager.getInstance().removeAdapter( catalogAdapter.id );
@@ -453,7 +451,7 @@ public class DdlManagerImpl extends DdlManager {
         // Set column position
         catalog.updateColumnPlacementPhysicalPosition( adapterId, columnId, exportedColumn.physicalPosition );
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -511,7 +509,7 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn addedColumn = catalog.getColumn( columnId );
 
         // Ask router on which stores this column shall be placed
-        List<DataStore> stores = statement.getRouter().addColumn( catalogTable, statement );
+        List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
 
         // Add column on underlying data stores and insert default value
         for ( DataStore store : stores ) {
@@ -526,7 +524,7 @@ public class DdlManagerImpl extends DdlManager {
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
         }
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -776,6 +774,9 @@ public class DdlManagerImpl extends DdlManager {
         // Copy data to the newly added placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( dataStore.getAdapterId() ), addedColumns, partitionIds );
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -878,7 +879,7 @@ public class DdlManagerImpl extends DdlManager {
             if ( catalogTable.tableType == TableType.TABLE ) {
                 AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( statement.getPrepareContext(), dp );
             }
-            catalog.deleteColumnPlacement( dp.adapterId, dp.columnId );
+            catalog.deleteColumnPlacement( dp.adapterId, dp.columnId, true );
         }
 
         // Delete from catalog
@@ -891,7 +892,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -994,16 +995,17 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Physically delete the data from the store
         storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
-        // Inform routing
-        statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) );
         // Delete placement in the catalog
         List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id );
         for ( CatalogColumnPlacement placement : placements ) {
-            catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
+            catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId, false );
         }
 
         // Remove All
         catalog.deletePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -1045,7 +1047,7 @@ public class DdlManagerImpl extends DdlManager {
                     catalogColumn.type );
         }
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -1062,7 +1064,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.setNullable( catalogColumn.id, nullable );
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -1113,7 +1115,7 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Do nothing
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -1130,7 +1132,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.setCollation( catalogColumn.id, collation );
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -1144,7 +1146,7 @@ public class DdlManagerImpl extends DdlManager {
 
         addDefaultValue( defaultValue, catalogColumn.id );
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -1158,7 +1160,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.deleteDefaultValue( catalogColumn.id );
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -1205,7 +1207,7 @@ public class DdlManagerImpl extends DdlManager {
                     // Drop Column on store
                     storeInstance.dropColumn( statement.getPrepareContext(), catalog.getColumnPlacement( storeInstance.getAdapterId(), placement.columnId ) );
                     // Drop column placement
-                    catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
+                    catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId, false );
                 }
             }
         }
@@ -1295,6 +1297,9 @@ public class DdlManagerImpl extends DdlManager {
         if ( addedColumns.size() > 0 ) {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, partitionIds );
         }
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -1385,6 +1390,9 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
         }
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -1429,6 +1437,9 @@ public class DdlManagerImpl extends DdlManager {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ),
                     ImmutableList.of( catalogColumn ), catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
         }
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -1467,7 +1478,10 @@ public class DdlManagerImpl extends DdlManager {
         // Drop Column on store
         storeInstance.dropColumn( statement.getPrepareContext(), catalog.getColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) );
         // Drop column placement
-        catalog.deleteColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id );
+        catalog.deleteColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id, false );
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -1488,7 +1502,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.renameTable( catalogTable.id, newTableName );
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -1505,7 +1519,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.renameColumn( catalogColumn.id, newColumnName );
 
-        // Rest plan cache and implementation cache (not sure if required in this case)
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -1567,7 +1581,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, AlgRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, ColumnNotExistsException, ColumnAlreadyExistsException {
+    public void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException {
         // Check if there is already a table with this name
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( ifNotExists ) {
@@ -1580,13 +1594,13 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( stores == null ) {
             // Ask router on which store(s) the table should be placed
-            stores = statement.getRouter().createTable( schemaId, statement );
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
         }
 
-        AlgDataType fieldList = relRoot.alg.getRowType();
+        AlgDataType fieldList = algRoot.alg.getRowType();
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
-        Map<Long, List<Long>> underlying = findUnderlyingTablesOfView( relRoot.alg, underlyingTables, fieldList );
+        Map<Long, List<Long>> underlying = findUnderlyingTablesOfView( algRoot.alg, underlyingTables, fieldList );
 
         // add check if underlying table is of model document -> mql, relational -> sql
         underlying.keySet().forEach( tableId -> checkModelLangCompatibility( language, tableId ) );
@@ -1605,8 +1619,8 @@ public class DdlManagerImpl extends DdlManager {
                 statement.getPrepareContext().getCurrentUserId(),
                 TableType.MATERIALIZED_VIEW,
                 false,
-                relRoot.alg,
-                relRoot.collation,
+                algRoot.alg,
+                algRoot.collation,
                 underlying,
                 fieldList,
                 materializedCriteria,
@@ -1682,7 +1696,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Selected data from tables is added into the newly crated materialized view
         MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
-        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterializedView );
+        materializedManager.addData( statement.getTransaction(), stores, addedColumns, algRoot, catalogMaterializedView );
     }
 
 
@@ -1765,10 +1779,10 @@ public class DdlManagerImpl extends DdlManager {
     private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
         if ( algNode instanceof LogicalTableScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( ((LogicalTable) ((AlgOptTableImpl) algNode.getTable()).getTable()).getTableId(), underlyingColumns );
-        } else if ( algNode instanceof LogicalViewTableScan ) {
+            underlyingTables.put( ((LogicalTable) algNode.getTable().getTable()).getTableId(), underlyingColumns );
+        } else if ( algNode instanceof LogicalViewScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
-            underlyingTables.put( ((LogicalView) ((AlgOptTableImpl) algNode.getTable()).getTable()).getTableId(), underlyingColumns );
+            underlyingTables.put( ((LogicalView) algNode.getTable().getTable()).getTableId(), underlyingColumns );
         }
         if ( algNode instanceof BiAlg ) {
             findUnderlyingTablesOfView( ((BiAlg) algNode).getLeft(), underlyingTables, fieldList );
@@ -1781,8 +1795,8 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private List<Long> getUnderlyingColumns( AlgNode algNode, AlgDataType fieldList ) {
-        List<Long> columnIds = ((LogicalTable) ((AlgOptTableImpl) algNode.getTable()).getTable()).getColumnIds();
-        List<String> logicalColumnNames = ((LogicalTable) ((AlgOptTableImpl) algNode.getTable()).getTable()).getLogicalColumnNames();
+        List<Long> columnIds = ((LogicalTable) algNode.getTable().getTable()).getColumnIds();
+        List<String> logicalColumnNames = ((LogicalTable) algNode.getTable().getTable()).getLogicalColumnNames();
         List<Long> underlyingColumns = new ArrayList<>();
         for ( int i = 0; i < columnIds.size(); i++ ) {
             for ( AlgDataTypeField relDataTypeField : fieldList.getFieldList() ) {
@@ -1797,7 +1811,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException {
+    public void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException {
         try {
             // Check if there is already a table with this name
             if ( catalog.checkIfExistsTable( schemaId, tableName ) ) {
@@ -1827,7 +1841,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( stores == null ) {
                 // Ask router on which store(s) the table should be placed
-                stores = statement.getRouter().createTable( schemaId, statement );
+                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
             }
 
             long tableId = catalog.addTable(
@@ -2160,6 +2174,9 @@ public class DdlManagerImpl extends DdlManager {
         // Remove old tables
         stores.forEach( store -> store.dropTable( statement.getPrepareContext(), unPartitionedTable, unPartitionedTable.partitionProperty.partitionIds ) );
         catalog.deletePartitionGroup( unPartitionedTable.id, unPartitionedTable.schemaId, unPartitionedTable.partitionProperty.partitionGroupIds.get( 0 ) );
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -2248,6 +2265,9 @@ public class DdlManagerImpl extends DdlManager {
         for ( long partitionGroupId : partitionedTable.partitionProperty.partitionGroupIds ) {
             catalog.deletePartitionGroup( tableId, partitionedTable.schemaId, partitionGroupId );
         }
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -2351,7 +2371,7 @@ public class DdlManagerImpl extends DdlManager {
         // Delete the view
         catalog.deleteTable( catalogView.id );
 
-        // Rest plan cache and implementation cache
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 
@@ -2370,6 +2390,9 @@ public class DdlManagerImpl extends DdlManager {
         catalog.deleteViewDependencies( (CatalogView) materializedView );
 
         dropTable( materializedView, statement );
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -2424,12 +2447,10 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getPartitionPlacementByTable( storeId, catalogTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
 
             AdapterManager.getInstance().getStore( storeId ).dropTable( statement.getPrepareContext(), catalogTable, partitionIdsOnStore );
-            // Inform routing
-            statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapterPerTable( storeId, catalogTable.id ) );
             // Delete column placement in catalog
             for ( Long columnId : catalogTable.columnIds ) {
                 if ( catalog.checkIfExistsColumnPlacement( storeId, columnId ) ) {
-                    catalog.deleteColumnPlacement( storeId, columnId );
+                    catalog.deleteColumnPlacement( storeId, columnId, false );
                 }
             }
         }
@@ -2477,7 +2498,7 @@ public class DdlManagerImpl extends DdlManager {
         // Delete the table
         catalog.deleteTable( catalogTable.id );
 
-        // Rest plan cache and implementation cache
+        // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
 

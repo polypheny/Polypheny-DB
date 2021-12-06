@@ -319,7 +319,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void deleteColumnPlacement( int adapterId, long columnId ) {
+    public void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly ) {
         throw new NotImplementedException();
     }
 

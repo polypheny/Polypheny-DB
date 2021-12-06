@@ -304,6 +304,7 @@ public class PolyphenyDb {
             new UiTestingMonitoringPage();
         }
 
+        MonitoringServiceProvider.resetRepository = resetCatalog;
         MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
 
         log.info( "****************************************************************************************************" );

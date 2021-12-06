@@ -116,6 +116,11 @@ public class AlgRoot {
     }
 
 
+    public AlgRoot tryExpandView() {
+        return new AlgRoot( alg.tryParentExpandView( alg ), validatedRowType, kind, fields, collation );
+    }
+
+
     /**
      * Creates a simple RelRoot.
      */

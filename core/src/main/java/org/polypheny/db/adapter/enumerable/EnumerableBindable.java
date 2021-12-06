@@ -41,6 +41,7 @@ import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.BindableAlg;
 import org.polypheny.db.interpreter.Node;
@@ -92,7 +93,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
     @Override
     public Enumerable<Object[]> bind( DataContext dataContext ) {
         final Map<String, Object> map = new HashMap<>();
-        final Bindable bindable = EnumerableInterpretable.toBindable( map, null, (EnumerableAlg) getInput(), EnumerableAlg.Prefer.ARRAY, dataContext.getStatement() );
+        final Bindable bindable = EnumerableInterpretable.toBindable( map, null, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
         final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
         dataContext.addAll( map );
         return arrayBindable.bind( dataContext );

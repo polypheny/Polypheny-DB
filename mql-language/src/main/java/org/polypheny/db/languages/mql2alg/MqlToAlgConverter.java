@@ -38,6 +38,29 @@ import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.enums.Kind;
@@ -59,32 +82,9 @@ import org.polypheny.db.languages.mql.MqlQueryStatement;
 import org.polypheny.db.languages.mql.MqlUpdate;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgFieldCollation;
-import org.polypheny.db.algebra.AlgFieldCollation.Direction;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalDocuments;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewTableScan;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
@@ -270,7 +270,7 @@ public class MqlToAlgConverter {
         AlgNode node;
 
         if ( table instanceof AlgOptTableImpl && table.getTable() instanceof LogicalView ) {
-            node = LogicalViewTableScan.create( cluster, table );
+            node = LogicalViewScan.create( cluster, table );
         } else {
             node = LogicalTableScan.create( cluster, table );
         }
@@ -1187,7 +1187,8 @@ public class MqlToAlgConverter {
                 names.add( entry.getKey() );
                 AlgDataType nullableDouble = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true );
                 // when using aggregations MongoQl automatically casts to doubles
-                nodes.add( cluster.getRexBuilder().makeAbstractCast( nullableDouble,
+                nodes.add( cluster.getRexBuilder().makeAbstractCast(
+                        nullableDouble,
                         convertExpression( doc.get( doc.getFirstKey() ), rowType ) ) );
             }
         }
@@ -1666,7 +1667,8 @@ public class MqlToAlgConverter {
 
             if ( bsonValue.isArray() ) {
                 List<RexNode> arr = convertArray( parentKey, bsonValue.asArray(), true, rowType, "" );
-                nodes.add( getArray( arr,
+                nodes.add( getArray(
+                        arr,
                         cluster.getTypeFactory().createArrayType( nullableAny, arr.size() ) ) );
             } else if ( bsonValue.isRegularExpression() ) {
                 return convertRegex( bsonValue, parentKey, rowType );

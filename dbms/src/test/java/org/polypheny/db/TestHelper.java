@@ -340,7 +340,15 @@ public class TestHelper {
 
         private static Result getBody( HttpResponse<String> res ) {
             try {
-                return gson.fromJson( res.getBody(), Result[].class )[0];
+                Result[] result = gson.fromJson( res.getBody(), Result[].class );
+                if( result.length == 1 ){
+                    return gson.fromJson( res.getBody(), Result[].class )[0];
+                }else if ( result.length == 0 ){
+                    return new Result();
+                }
+                fail("There was more than one result in the response!");
+                throw new RuntimeException( "This cannot happen" );
+
             } catch ( JsonSyntaxException e ) {
                 log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
                 fail();

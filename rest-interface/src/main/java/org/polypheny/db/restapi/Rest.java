@@ -38,9 +38,6 @@ import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.DmlEvent;
-import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -111,8 +108,6 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        statement.getTransaction().setMonitoringData( new QueryEvent() );
-
         // Table Scans
         algBuilder = this.tableScans( algBuilder, rexBuilder, resourceGetRequest.tables );
 
@@ -149,7 +144,7 @@ public class Rest {
         AlgRoot root = new AlgRoot( algNode, algNode.getRowType(), Kind.SELECT, fields, collation );
         log.debug( "AlgRoot was built." );
 
-        return executeAndTransformRelAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, res );
     }
 
 
@@ -159,8 +154,6 @@ public class Rest {
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
-
-        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getSchemaName(), resourcePatchRequest.tables.get( 0 ).name ) );
@@ -210,7 +203,7 @@ public class Rest {
         AlgRoot root = new AlgRoot( tableModify, rowType, Kind.UPDATE, fields, collation );
         log.debug( "AlgRoot was built." );
 
-        return executeAndTransformRelAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, res );
     }
 
 
@@ -220,8 +213,6 @@ public class Rest {
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
-
-        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getSchemaName(), resourceDeleteRequest.tables.get( 0 ).name ) );
@@ -265,7 +256,7 @@ public class Rest {
         AlgRoot root = new AlgRoot( tableModify, rowType, Kind.DELETE, fields, collation );
         log.debug( "AlgRoot was built." );
 
-        return executeAndTransformRelAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, res );
     }
 
 
@@ -275,8 +266,6 @@ public class Rest {
         AlgBuilder algBuilder = AlgBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
-
-        statement.getTransaction().setMonitoringData( new DmlEvent() );
 
         PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getSchemaName(), insertValueRequest.tables.get( 0 ).name ) );
@@ -319,7 +308,7 @@ public class Rest {
         AlgRoot root = new AlgRoot( tableModify, rowType, Kind.INSERT, fields, collation );
         log.debug( "AlgRoot was built." );
 
-        return executeAndTransformRelAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, res );
     }
 
 
@@ -567,23 +556,22 @@ public class Rest {
     }
 
 
-    String executeAndTransformRelAlg( AlgRoot relRoot, final Statement statement, final Response res ) {
+    String executeAndTransformPolyAlg( AlgRoot algRoot, final Statement statement, final Response res ) {
         RestResult restResult;
         try {
             // Prepare
-            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
+            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( algRoot, true );
             log.debug( "AlgRoot was prepared." );
 
             @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();
-            restResult = new RestResult( relRoot.kind, iterator, signature.rowType, signature.columns );
+            restResult = new RestResult( algRoot.kind, iterator, signature.rowType, signature.columns );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
-            if ( !relRoot.kind.belongsTo( Kind.DML ) ) {
+            if ( !algRoot.kind.belongsTo( Kind.DML ) ) {
                 signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 
-            statement.getTransaction().getMonitoringData().setExecutionTime( executionTime );
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
             log.error( "Error during execution of REST query", e );
@@ -595,8 +583,6 @@ public class Rest {
             return null;
         }
         Pair<String, Integer> result = restResult.getResult( res );
-        statement.getTransaction().getMonitoringData().setRowCount( result.right );
-        MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
 
         return result.left;
     }

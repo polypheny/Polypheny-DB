@@ -241,6 +241,14 @@ public class AlgBuilder {
 
 
     /**
+     * @return the stack size of the current builder.
+     */
+    public int stackSize() {
+        return this.stack.size();
+    }
+
+
+    /**
      * Creates a AlgBuilder.
      */
     public static AlgBuilder create( FrameworkConfig config ) {

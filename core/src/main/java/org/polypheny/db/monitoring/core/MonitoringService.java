@@ -18,8 +18,10 @@ package org.polypheny.db.monitoring.core;
 
 import java.sql.Timestamp;
 import java.util.List;
+import lombok.NonNull;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
+import org.polypheny.db.monitoring.events.QueryPostCost;
 
 
 /**
@@ -45,6 +47,14 @@ public interface MonitoringService {
     <T extends MonitoringDataPoint> List<T> getAllDataPoints( Class<T> dataPointClass );
 
     /**
+     * Get number of data points for given monitoring persistent type.
+     *
+     * @param dataPointClass DatapointClass of interest
+     * @return Returns number of data points
+     */
+    <T extends MonitoringDataPoint> long getNumberOfDataPoints( @NonNull Class<T> dataPointClass );
+
+    /**
      * Get data before specified timestamp for given monitoring persistent type.
      *
      * @param dataPointClass Data point class of interest to look for
@@ -61,5 +71,27 @@ public interface MonitoringService {
      * @return Returns List of all data points from teh specified dataPointClass
      */
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
+
+    /**
+     * @param physicalQueryClass the physical query class string to identify aggregated post costs.
+     * @return The aggregated query post costs.
+     */
+    QueryPostCost getQueryPostCosts( @NonNull String physicalQueryClass );
+
+    /**
+     * @return All query post costs for printing in ui.
+     */
+    List<QueryPostCost> getAllQueryPostCosts();
+
+    /**
+     * @param physicalQueryClass the physical query class string to identify aggregated post costs.
+     * @param executionTime the measured execution time.
+     */
+    void updateQueryPostCosts( @NonNull String physicalQueryClass, long executionTime );
+
+    /**
+     * Removes all aggregates post costs from cache.
+     */
+    void resetQueryPostCosts();
 
 }

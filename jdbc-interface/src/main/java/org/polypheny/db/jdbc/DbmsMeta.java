@@ -100,8 +100,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Transaction;
@@ -1232,9 +1231,9 @@ public class DbmsMeta implements ProtobufMeta {
 
         Node parsed = sqlProcessor.parse( sql );
 
-        PolyphenyDbSignature signature;
+        PolyphenyDbSignature<?> signature;
         if ( parsed.isA( Kind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, null );
+            signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql ) );
         } else {
             Pair<Node, AlgDataType> validated = sqlProcessor.validate(
                     statementHandle.getStatement().getTransaction(),
@@ -1244,7 +1243,7 @@ public class DbmsMeta implements ProtobufMeta {
             AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, false );
+            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
         }
 
         h.signature = signature;
@@ -1304,10 +1303,6 @@ public class DbmsMeta implements ProtobufMeta {
                 String message = e.getLocalizedMessage();
                 throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
-        }
-        if ( statementHandle.getStatement().getTransaction().getMonitoringData() != null ) {
-            StatementEvent ev = statementHandle.getStatement().getTransaction().getMonitoringData();
-            MonitoringServiceProvider.getInstance().monitorEvent( ev );
         }
         return resultSets;
     }
@@ -1468,7 +1463,7 @@ public class DbmsMeta implements ProtobufMeta {
                 return;
             }
 
-            // Check if there is an running transaction
+            // Check if there is a running transaction
             Transaction transaction = connectionToClose.getCurrentTransaction();
             if ( transaction != null && transaction.isActive() ) {
                 log.warn( "There is a running transaction associated with this connection {}", connectionToClose );

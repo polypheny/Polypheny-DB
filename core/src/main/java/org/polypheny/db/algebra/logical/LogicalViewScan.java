@@ -17,11 +17,14 @@
 package org.polypheny.db.algebra.logical;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
@@ -29,27 +32,29 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
-public class LogicalViewTableScan extends TableScan {
+
+public class LogicalViewScan extends TableScan {
 
     @Getter
     private final AlgNode algNode;
     @Getter
-    private final AlgCollation relCollation;
+    private final AlgCollation algCollation;
 
 
-    public LogicalViewTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, AlgNode algNode, AlgCollation algCollation ) {
+    public LogicalViewScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, AlgNode algNode, AlgCollation algCollation ) {
         super( cluster, traitSet, table );
         this.algNode = algNode;
-        this.relCollation = algCollation;
+        this.algCollation = algCollation;
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, final AlgOptTable relOptTable ) {
-        final Table table = relOptTable.unwrap( Table.class );
+    public static AlgNode create( AlgOptCluster cluster, final AlgOptTable algOptTable ) {
+        final Table table = algOptTable.unwrap( Table.class );
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
@@ -64,10 +69,30 @@ public class LogicalViewTableScan extends TableScan {
 
         Catalog catalog = Catalog.getInstance();
 
-        long idLogical = ((LogicalTable) ((AlgOptTableImpl) relOptTable).getTable()).getTableId();
+        long idLogical = ((LogicalTable) algOptTable.getTable()).getTableId();
         CatalogTable catalogTable = catalog.getTable( idLogical );
+        AlgCollation algCollation = ((CatalogView) catalogTable).getAlgCollation();
 
-        return new LogicalViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster ), ((CatalogView) catalogTable).getAlgCollation() );
+        return new LogicalViewScan( cluster, traitSet, algOptTable, ((CatalogView) catalogTable).prepareView( cluster ), algCollation );
+    }
+
+
+    @Override
+    public boolean hasView() {
+        return true;
+    }
+
+
+    public AlgNode expandViewNode() {
+        RexBuilder rexBuilder = this.getCluster().getRexBuilder();
+        final List<RexNode> exprs = new ArrayList<>();
+        final AlgDataType rowType = this.getRowType();
+        final int fieldCount = rowType.getFieldCount();
+        for ( int i = 0; i < fieldCount; i++ ) {
+            exprs.add( rexBuilder.makeInputRef( this, i ) );
+        }
+
+        return LogicalProject.create( algNode, exprs, this.getRowType().getFieldNames() );
     }
 
 }

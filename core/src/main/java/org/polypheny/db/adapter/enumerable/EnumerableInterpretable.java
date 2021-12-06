@@ -49,11 +49,10 @@ import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationCode;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Compiler;
 import org.polypheny.db.interpreter.InterpretableConvention;
@@ -62,17 +61,16 @@ import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
-import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -101,15 +99,15 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 implementor.internalParameters,
                 implementor.spark,
                 (EnumerableAlg) getInput(),
-                EnumerableAlg.Prefer.ARRAY,
-                implementor.dataContext.getStatement() );
+                Prefer.ARRAY,
+                implementor.dataContext.getStatement() ).left;
         final ArrayBindable arrayBindable = box( bindable );
         final Enumerable<Object[]> enumerable = arrayBindable.bind( implementor.dataContext );
         return new EnumerableNode( enumerable, implementor.compiler, this );
     }
 
 
-    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableAlg alg, EnumerableAlg.Prefer prefer, Statement statement ) {
+    public static Pair<Bindable<Object[]>, String> toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableAlg alg, EnumerableAlg.Prefer prefer, Statement statement ) {
         EnumerableAlgImplementor relImplementor = new EnumerableAlgImplementor( alg.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = relImplementor.implementRoot( alg, prefer );
@@ -119,24 +117,13 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             Util.debugCode( System.out, s );
         }
 
-        if ( statement != null && statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Generated Code" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Generated Code" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationCode informationCode = new InformationCode( group, s );
-            queryAnalyzer.registerInformation( informationCode );
-        }
-
         Hook.JAVA_PLAN.run( s );
 
         try {
             if ( spark != null && spark.enabled() ) {
-                return spark.compile( expr, s );
+                return new Pair<>( spark.compile( expr, s ), s );
             } else {
-                return getBindable( expr, s, alg.getRowType().getFieldCount() );
+                return new Pair<>( getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
             }
         } catch ( Exception e ) {
             throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );
@@ -250,6 +237,8 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 sink.send( Row.of( values ) );
             }
         }
+
     }
+
 }
 

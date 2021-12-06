@@ -20,7 +20,6 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.util.FileInputHandle;
 
 public interface Statement {
@@ -35,9 +34,9 @@ public interface Statement {
 
     InformationDuration getProcessingDuration();
 
-    InformationDuration getExecutionDuration();
+    InformationDuration getRoutingDuration();
 
-    Router getRouter();
+    InformationDuration getOverviewDuration();
 
     void close();
 

@@ -1206,8 +1206,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             AlgDataType resultType = root.alg.getRowType();
             boolean isDml = root.kind.belongsTo( Kind.DML );
             final Bindable bindable;
+            final String generatedCode;
             if ( resultConvention == BindableConvention.INSTANCE ) {
                 bindable = Interpreters.bindable( root.alg );
+                generatedCode = null;
             } else {
                 EnumerableAlg enumerable = (EnumerableAlg) root.alg;
                 if ( !root.isRefTrivial() ) {
@@ -1216,7 +1218,12 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     for ( int field : Pair.left( root.fields ) ) {
                         projects.add( rexBuilder.makeInputRef( enumerable, field ) );
                     }
-                    RexProgram program = RexProgram.create( enumerable.getRowType(), projects, null, root.validatedRowType, rexBuilder );
+                    RexProgram program = RexProgram.create(
+                            enumerable.getRowType(),
+                            projects,
+                            null,
+                            root.validatedRowType,
+                            rexBuilder );
                     enumerable = EnumerableCalc.create( enumerable, program );
                 }
 
@@ -1224,7 +1231,14 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     CatalogReader.THREAD_LOCAL.set( catalogReader );
                     final Conformance conformance = context.config().conformance();
                     internalParameters.put( "_conformance", conformance );
-                    bindable = EnumerableInterpretable.toBindable( internalParameters, context.spark(), enumerable, prefer, null );
+                    Pair<Bindable<Object[]>, String> implementationPair = EnumerableInterpretable.toBindable(
+                            internalParameters,
+                            context.spark(),
+                            enumerable,
+                            prefer,
+                            null );
+                    bindable = implementationPair.left;
+                    generatedCode = implementationPair.right;
                 } finally {
                     CatalogReader.THREAD_LOCAL.remove();
                 }
@@ -1250,7 +1264,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     isDml ) {
                 @Override
                 public String getCode() {
-                    throw new UnsupportedOperationException();
+                    return generatedCode;
                 }
 
 

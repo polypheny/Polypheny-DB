@@ -74,9 +74,9 @@ public interface Transaction {
 
     DataMigrator getDataMigrator();
 
-    StatementEvent getMonitoringData();
+    StatementEvent getMonitoringEvent();
 
-    void setMonitoringData( StatementEvent event );
+    void setMonitoringEvent( StatementEvent event );
 
     void setUseCache( boolean useCache );
 

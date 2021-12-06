@@ -196,10 +196,6 @@ public class SqlProcessorImpl extends Processor {
         final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
         AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( query, false, true );
 
-        if ( statement.getTransaction().isAnalyze() ) {
-            attachAnalyzer( statement, logicalRoot );
-        }
-
         // Decorrelate
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
         logicalRoot = logicalRoot.withAlg( AlgDecorrelator.decorrelateQuery( logicalRoot.alg, algBuilder ) );

@@ -18,18 +18,13 @@ package org.polypheny.db.view;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.TableFunctionScan;
@@ -48,8 +43,13 @@ import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewTableScan;
+import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.entity.CatalogMaterializedView;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
@@ -75,7 +75,7 @@ public class ViewManager {
             exprs.add( rexBuilder.makeInputRef( other, i ) );
         }
 
-        AlgNode algNode = ((LogicalViewTableScan) other).getAlgNode();
+        AlgNode algNode = ((LogicalViewScan) other).getAlgNode();
 
         if ( algNode instanceof Project && algNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
             return algNode;
@@ -242,7 +242,7 @@ public class ViewManager {
 
 
         public AlgNode checkNode( AlgNode other ) {
-            if ( other instanceof LogicalViewTableScan ) {
+            if ( other instanceof LogicalViewScan ) {
                 return expandViewNode( other );
             } else if ( doesSubstituteOrderBy && other instanceof LogicalTableScan ) {
                 if ( other.getTable() instanceof AlgOptTableImpl ) {
@@ -271,7 +271,7 @@ public class ViewManager {
          * @return the AlgRoot after replacing all <code>LogicalViewTableScan</code>s
          */
         public AlgRoot startSubstitution( AlgRoot logicalRoot ) {
-            if ( logicalRoot.alg instanceof LogicalViewTableScan ) {
+            if ( logicalRoot.alg instanceof LogicalViewScan ) {
                 AlgNode node = checkNode( logicalRoot.alg );
                 return AlgRoot.of( node, logicalRoot.kind );
             } else {

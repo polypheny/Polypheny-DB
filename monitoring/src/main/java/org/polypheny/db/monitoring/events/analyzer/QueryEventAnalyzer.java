@@ -16,10 +16,12 @@
 
 package org.polypheny.db.monitoring.events.analyzer;
 
-import com.google.gson.Gson;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.QueryEvent;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -28,61 +30,24 @@ import org.polypheny.db.algebra.AlgRoot;
 @Slf4j
 public class QueryEventAnalyzer {
 
-    public static QueryDataPoint analyze( QueryEvent queryEvent ) {
-        QueryDataPoint metric = QueryDataPoint
+    public static QueryDataPointImpl analyze( QueryEvent queryEvent ) {
+        QueryDataPointImpl metric = QueryDataPointImpl
                 .builder()
-                .description( queryEvent.getDescription() )
-                .monitoringType( queryEvent.getMonitoringType() )
                 .Id( queryEvent.getId() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
-                .accessedPartitions( queryEvent.getAccessedPartitions() )
+                .relCompareString( queryEvent.getRelCompareString() )
+                .accessedPartitions( queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
+                .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )
+                .monitoringType( "SELECT" )
+                .physicalQueryClass( queryEvent.getPhysicalQueryClass() )
                 .build();
-
-        AlgRoot relRoot = queryEvent.getRouted();
-        if ( relRoot != null ) {
-            AlgNode node = relRoot.alg;
-            processRelNode( node, queryEvent, metric );
-        }
-
-        //if ( queryEvent.isAnalyze() ) {
-        //    processDurationInfo( queryEvent, metric );
-        //}
+        metric.getTables().addAll( queryEvent.getLogicalQueryInformation().getTables() );
 
         return metric;
-    }
-
-
-    private static void processDurationInfo( QueryEvent queryEvent, QueryDataPoint metric ) {
-        InformationDuration duration = new Gson().fromJson( queryEvent.getDurations(), InformationDuration.class );
-        getDurationInfo( metric, "Index Lookup Rewrite", duration );
-        getDurationInfo( metric, "Constraint Enforcement", duration );
-        getDurationInfo( metric, "Implementation Caching", duration );
-        getDurationInfo( metric, "Index Update", duration );
-        getDurationInfo( metric, "Routing", duration );
-        getDurationInfo( metric, "Planning & Optimization", duration );
-        getDurationInfo( metric, "Implementation", duration );
-        getDurationInfo( metric, "Locking", duration );
-    }
-
-
-    private static void getDurationInfo( QueryDataPoint queryMetric, String durationName, InformationDuration duration ) {
-        long time = duration.getNanoDuration( durationName );
-        queryMetric.getDataElements().put( durationName, time );
-    }
-
-
-    private static void processRelNode( AlgNode node, QueryEvent event, QueryDataPoint metric ) {
-        for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            processRelNode( node.getInput( i ), event, metric );
-        }
-
-        if ( node.getTable() != null ) {
-            metric.getTables().addAll( node.getTable().getQualifiedName() );
-        }
     }
 
 }

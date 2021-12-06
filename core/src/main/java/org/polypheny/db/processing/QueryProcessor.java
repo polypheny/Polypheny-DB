@@ -25,16 +25,39 @@ import org.polypheny.db.algebra.type.AlgDataType;
 
 public interface QueryProcessor {
 
-    PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot );
+    /**
+     * @param logicalRoot Logical query plan.
+     * @param withMonitoring Activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyphenyDbSignature<?> prepareQuery( AlgRoot logicalRoot, boolean withMonitoring );
 
-    PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted );
+    /**
+     * @param logicalRoot Logical query plan.
+     * @param parameters Row type (required with prepared statements).
+     * @param withMonitoring Activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyphenyDbSignature<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean withMonitoring );
 
-    PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery );
+    /**
+     * @param logicalRoot Logical query plan.
+     * @param parameters Row type (required with prepared statements).
+     * @param isRouted Indicated whether query already routed.
+     * @param isSubquery Indicates whether the query is a subquery (used with constraint enforcement)
+     * @param withMonitoring Activates or deactivates the monitoring.
+     * @return prepared PolyphenyDbSignature
+     */
+    PolyphenyDbSignature<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
 
-    PolyphenyDbSignature prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean doesSubstituteOrderBy );
-
+    /**
+     * @return Gets the planner.
+     */
     AlgOptPlanner getPlanner();
 
+    /**
+     * Resets caches Implementation, QueryPlan, RoutingPlan and Router caches.
+     */
     void resetCaches();
 
 }

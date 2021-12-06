@@ -61,7 +61,7 @@ import org.polypheny.db.algebra.logical.LogicalSortExchange;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewTableScan;
+import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -513,7 +513,7 @@ public class AlgFactories {
                 long idLogical = ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId();
                 CatalogTable catalogTable = catalog.getTable( idLogical );
                 if ( catalogTable.tableType == TableType.VIEW ) {
-                    return LogicalViewTableScan.create( cluster, table );
+                    return LogicalViewScan.create( cluster, table );
                 } else {
                     return LogicalTableScan.create( cluster, table );
                 }
@@ -552,7 +552,8 @@ public class AlgFactories {
         /**
          * Creates a {@link Match}.
          */
-        AlgNode createMatch( AlgNode input, RexNode pattern, AlgDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
+        AlgNode createMatch(
+                AlgNode input, RexNode pattern, AlgDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
                 RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval );
 
     }
@@ -564,7 +565,8 @@ public class AlgFactories {
     private static class MatchFactoryImpl implements MatchFactory {
 
         @Override
-        public AlgNode createMatch( AlgNode input, RexNode pattern, AlgDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
+        public AlgNode createMatch(
+                AlgNode input, RexNode pattern, AlgDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
                 RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
             return LogicalMatch.create( input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
         }

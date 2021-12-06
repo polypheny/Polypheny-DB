@@ -89,68 +89,6 @@ public class LanguageCrud {
     }
 
 
-    public static List<Result> processCqlRequest(
-            Session session,
-            QueryRequest request,
-            TransactionManager transactionManager,
-            String userName,
-            String databaseName,
-            InformationObserver observer ) {
-        String query = request.query;
-        Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
-        try {
-            if ( query.trim().equals( "" ) ) {
-                throw new RuntimeException( "CQL query is an empty string!" );
-            }
-
-            CqlParser cqlParser = new CqlParser( query, "APP" );
-            CqlQuery cqlQuery = cqlParser.parse();
-
-            if ( log.isDebugEnabled() ) {
-                log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
-            }
-
-            if ( request.analyze ) {
-                transaction.getQueryAnalyzer().setSession( session );
-            }
-
-            // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
-            // and in case of auto commit of, the information is overwritten
-            InformationManager queryAnalyzer = null;
-            if ( request.analyze ) {
-                queryAnalyzer = transaction.getQueryAnalyzer().observe( observer );
-            }
-
-            Statement statement = transaction.createStatement();
-            AlgBuilder algBuilder = AlgBuilder.create( statement );
-            JavaTypeFactory typeFactory = transaction.getTypeFactory();
-            RexBuilder rexBuilder = new RexBuilder( typeFactory );
-
-            long executionTime = System.nanoTime();
-
-            Cql2RelConverter cql2RelConverter = new Cql2RelConverter( cqlQuery );
-
-            AlgRoot relRoot = cql2RelConverter.convert2Rel( algBuilder, rexBuilder );
-            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( relRoot );
-
-            Result result = getResult( QueryLanguage.CQL, statement, request, query, signature, request.noLimit );
-            try {
-                statement.getTransaction().commit();
-            } catch ( TransactionException e ) {
-                throw new RuntimeException( "Error while committing.", e );
-            }
-            executionTime = System.nanoTime() - executionTime;
-            if ( queryAnalyzer != null ) {
-                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
-            }
-
-            return Collections.singletonList( result );
-        } catch ( Throwable t ) {
-            return Collections.singletonList( new Result( t ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() ) );
-        }
-    }
-
-
     public static List<Result> anyQuery(
             QueryLanguage language,
             Session session,
@@ -182,22 +120,105 @@ public class LanguageCrud {
     }
 
 
-    private static List<Result> anyPigQuery(
+    public static List<Result> anyPigQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
             String userName,
-            String databaseName, InformationObserver observer ) {
-        Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
+            String databaseName,
+            InformationObserver observer ) {
         String query = request.query;
-
+        Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
         try {
             if ( query.trim().equals( "" ) ) {
                 throw new RuntimeException( "PIG query is an empty string!" );
             }
 
-            Processor parser = transaction.getProcessor( QueryLanguage.PIG );
-            Node parsed = parser.parse( request.query );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Starting to process PIG resource request. Session ID: {}.", session );
+            }
+
+            if ( request.analyze ) {
+                transaction.getQueryAnalyzer().setSession( session );
+            }
+
+            // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+            // and in case of auto commit of, the information is overwritten
+            InformationManager queryAnalyzer = null;
+            if ( request.analyze ) {
+                queryAnalyzer = transaction.getQueryAnalyzer().observe( observer );
+            }
+
+            Statement statement = transaction.createStatement();
+
+            long executionTime = System.nanoTime();
+            Processor processor = transaction.getProcessor( QueryLanguage.PIG );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Parsing" );
+            }
+            Node parsed = processor.parse( query );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().stop( "Parsing" );
+            }
+
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Translation" );
+            }
+            AlgRoot algRoot = processor.translate( statement, parsed, new QueryParameters( query ) );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().stop( "Translation" );
+            }
+
+            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( algRoot, true );
+
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Execution" );
+            }
+            Result result = getResult( QueryLanguage.PIG, statement, request, query, signature, request.noLimit );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().stop( "Execution" );
+            }
+
+            String commitStatus;
+            try {
+                transaction.commit();
+                commitStatus = "Committed";
+            } catch ( TransactionException e ) {
+                log.error( "Error while committing", e );
+                try {
+                    transaction.rollback();
+                    commitStatus = "Rolled back";
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", e );
+                    commitStatus = "Error while rolling back";
+                }
+            }
+
+            executionTime = System.nanoTime() - executionTime;
+            if ( queryAnalyzer != null ) {
+                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, 1 );
+            }
+
+            return Collections.singletonList( result );
+        } catch ( Throwable t ) {
+            return Collections.singletonList( new Result( t ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() ) );
+        }
+    }
+
+
+    public static List<Result> processCqlRequest(
+            Session session,
+            QueryRequest request,
+            TransactionManager transactionManager,
+            String userName,
+            String databaseName,
+            InformationObserver observer ) {
+        String query = request.query;
+        Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
+        try {
+            if ( query.trim().equals( "" ) ) {
+                throw new RuntimeException( "CQL query is an empty string!" );
+            }
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Starting to process CQL resource request. Session ID: {}.", session );
@@ -215,22 +236,58 @@ public class LanguageCrud {
             }
 
             Statement statement = transaction.createStatement();
+            AlgBuilder algBuilder = AlgBuilder.create( statement );
+            JavaTypeFactory typeFactory = transaction.getTypeFactory();
+            RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
             long executionTime = System.nanoTime();
 
-            AlgRoot root = parser.translate( statement, parsed, new QueryParameters( query ) );
-
-            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( root );
-
-            Result result = getResult( QueryLanguage.CQL, statement, request, query, signature, request.noLimit );
-            try {
-                statement.getTransaction().commit();
-            } catch ( TransactionException e ) {
-                throw new RuntimeException( "Error while committing.", e );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Parsing" );
             }
+            CqlParser cqlParser = new CqlParser( query, "APP" );
+            CqlQuery cqlQuery = cqlParser.parse();
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Parsing" );
+            }
+
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Translation" );
+            }
+            Cql2RelConverter cql2AlgConverter = new Cql2RelConverter( cqlQuery );
+            AlgRoot algRoot = cql2AlgConverter.convert2Rel( algBuilder, rexBuilder );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Translation" );
+            }
+
+            PolyphenyDbSignature<?> signature = statement.getQueryProcessor().prepareQuery( algRoot, true );
+
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Execution" );
+            }
+            Result result = getResult( QueryLanguage.CQL, statement, request, query, signature, request.noLimit );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().stop( "Execution" );
+            }
+
+            String commitStatus;
+            try {
+                transaction.commit();
+                commitStatus = "Committed";
+            } catch ( TransactionException e ) {
+                log.error( "Error while committing", e );
+                try {
+                    transaction.rollback();
+                    commitStatus = "Rolled back";
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", e );
+                    commitStatus = "Error while rolling back";
+                }
+            }
+
             executionTime = System.nanoTime() - executionTime;
             if ( queryAnalyzer != null ) {
-                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
+                Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, 1 );
             }
 
             return Collections.singletonList( result );
@@ -245,14 +302,13 @@ public class LanguageCrud {
             QueryRequest request,
             TransactionManager transactionManager,
             String userName,
-            String databaseName, InformationObserver observer ) {
+            String databaseName,
+            InformationObserver observer ) {
 
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
-
         PolyphenyDbSignature<?> signature;
         MqlProcessor mqlProcessor = (MqlProcessor) transaction.getProcessor( QueryLanguage.MONGO_QL );
         String mql = request.query;
-        Statement statement = transaction.createStatement();
 
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
@@ -274,49 +330,75 @@ public class LanguageCrud {
         boolean noLimit = false;
 
         for ( String query : mqls ) {
+            Statement statement = transaction.createStatement();
+            QueryParameters parameters = new MqlQueryParameters( query, database );
+
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().start( "Parsing" );
+            }
+            MqlNode parsed = (MqlNode) mqlProcessor.parse( query );
+            if ( transaction.isAnalyze() ) {
+                statement.getOverviewDuration().stop( "Parsing" );
+            }
+
+            if ( parsed instanceof MqlUseDatabase ) {
+                database = ((MqlUseDatabase) parsed).getDatabase();
+                //continue;
+            }
+
+            if ( parsed instanceof MqlCollectionStatement && ((MqlCollectionStatement) parsed).getLimit() != null ) {
+                noLimit = true;
+            }
+
+            if ( parsed.getFamily() == Family.DML && mqlProcessor.needsDdlGeneration( parsed, parameters ) ) {
+                mqlProcessor.autoGenerateDDL( Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName ).createStatement(), parsed, parameters);
+            }
+
+            if ( parsed.getFamily() == Family.DDL ) {
+                mqlProcessor.prepareDdl( statement, parsed, parameters );
+                Result result = new Result( 1 ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                results.add( result );
+            } else {
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().start( "Translation" );
+                }
+                AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().stop( "Translation" );
+                }
+
+                // Prepare
+                signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().start( "Execution" );
+                }
+                results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, signature, noLimit ) );
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().stop( "Execution" );
+                }
+            }
+        }
+
+        executionTime = System.nanoTime() - executionTime;
+        String commitStatus;
+        try {
+            transaction.commit();
+            commitStatus = "Committed";
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception", e );
+            results.add( new Result( e ) );
             try {
-                MqlNode parsed = (MqlNode) mqlProcessor.parse( query );
-                QueryParameters parameters = new MqlQueryParameters( query, database );
-                if ( parsed instanceof MqlCollectionStatement && ((MqlCollectionStatement) parsed).getLimit() != null ) {
-                    noLimit = true;
-                }
-
-                if ( parsed.getFamily() == Family.DML && mqlProcessor.needsDdlGeneration( parsed, parameters ) ) {
-                    mqlProcessor.autoGenerateDDL( Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName ).createStatement(), parsed, parameters );
-                }
-
-                if ( parsed.getFamily() == Family.DDL ) {
-                    mqlProcessor.prepareDdl( statement, parsed, parameters );
-                    Result result = new Result( 1 ).setGeneratedQuery( query ).setXid( statement.getTransaction().getXid().toString() );
-                    results.add( result );
-                } else {
-                    AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
-
-                    // Prepare
-                    signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
-
-                    results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, signature, noLimit ) );
-                }
-
-                if ( parsed instanceof MqlUseDatabase ) {
-                    database = ((MqlUseDatabase) parsed).getDatabase();
-                }
-
-                executionTime = System.nanoTime() - executionTime;
-                try {
-                    statement.getTransaction().commit();
-                    transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
-                    statement = transaction.createStatement();
-                } catch ( TransactionException e ) {
-                    throw new RuntimeException( "error while committing" );
-                }
-            } catch ( Throwable t ) {
-                results.add( new Result( t ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() ) );
+                transaction.rollback();
+                commitStatus = "Rolled back";
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+                commitStatus = "Error while rolling back";
             }
         }
 
         if ( queryAnalyzer != null ) {
-            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime );
+            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
         }
 
         return results;

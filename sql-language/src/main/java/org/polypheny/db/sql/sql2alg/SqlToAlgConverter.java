@@ -12,6 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * This file incorporates code covered by the following terms:
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to you under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.polypheny.db.sql.sql2alg;
@@ -45,11 +62,58 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.AlgFactories.FilterFactory;
+import org.polypheny.db.algebra.core.Collect;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.JoinInfo;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sample;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.Uncollect;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalIntersect;
+import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.LogicalMatch;
+import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.metadata.AlgColumnMapping;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
+import org.polypheny.db.algebra.stream.Delta;
+import org.polypheny.db.algebra.stream.LogicalDelta;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.core.InitializerContext;
 import org.polypheny.db.core.InitializerExpressionFactory;
 import org.polypheny.db.core.NullInitializerExpressionFactory;
 import org.polypheny.db.core.algebra.AlgDecorrelator;
+import org.polypheny.db.core.algebra.AlgFieldTrimmer;
+import org.polypheny.db.core.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.enums.JoinConditionType;
@@ -71,8 +135,6 @@ import org.polypheny.db.core.nodes.NodeVisitor;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.core.algebra.AlgFieldTrimmer;
-import org.polypheny.db.core.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.util.ValidatorUtil;
@@ -80,6 +142,38 @@ import org.polypheny.db.core.validate.ValidatorTable;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptSamplingParameters;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCallBinding;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexFieldCollation;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexPatternFieldRef;
+import org.polypheny.db.rex.RexRangeRef;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexWindowBound;
+import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.LogicalView;
+import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.ModifiableView;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.TranslatableTable;
+import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.sql.sql.SqlBasicCall;
 import org.polypheny.db.sql.sql.SqlCall;
@@ -131,83 +225,6 @@ import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSamplingParameters;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgFieldCollation;
-import org.polypheny.db.algebra.AlgFieldCollation.Direction;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.Collect;
-import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.Join;
-import org.polypheny.db.algebra.core.JoinInfo;
-import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.AlgFactories.FilterFactory;
-import org.polypheny.db.algebra.core.Sample;
-import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.Uncollect;
-import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalCorrelate;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalIntersect;
-import org.polypheny.db.algebra.logical.LogicalJoin;
-import org.polypheny.db.algebra.logical.LogicalMatch;
-import org.polypheny.db.algebra.logical.LogicalMinus;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.logical.LogicalViewTableScan;
-import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
-import org.polypheny.db.algebra.metadata.AlgColumnMapping;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.stream.Delta;
-import org.polypheny.db.algebra.stream.LogicalDelta;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexCallBinding;
-import org.polypheny.db.rex.RexCorrelVariable;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexFieldCollation;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexPatternFieldRef;
-import org.polypheny.db.rex.RexRangeRef;
-import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.rex.RexSubQuery;
-import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.rex.RexWindowBound;
-import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.LogicalView;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.ModifiableView;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -573,8 +590,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         if ( r instanceof Delta ) {
             return requiredCollation( ((Delta) r).getInput() );
         }
-        if ( r instanceof LogicalViewTableScan ) {
-            return ((LogicalViewTableScan) r).getRelCollation();
+        if ( r instanceof LogicalViewScan ) {
+            return ((LogicalViewScan) r).getAlgCollation();
         }
         throw new AssertionError();
     }
@@ -1327,7 +1344,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 final SqlBasicCall call = (SqlBasicCall) rightVals;
                 assert (call.getOperator() instanceof SqlRowOperator) && call.operandCount() == leftKeys.size();
                 rexComparison =
-                        RexUtil.composeConjunction( rexBuilder,
+                        RexUtil.composeConjunction(
+                                rexBuilder,
                                 Pair.zip(
                                         leftKeys,
                                         call.getOperandList() ).stream().map( pair -> rexBuilder.makeCall(
@@ -2094,7 +2112,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         if ( config.isConvertTableAccess() ) {
             tableRel = toRel( table );
         } else if ( table instanceof AlgOptTableImpl && (((AlgOptTableImpl) table).getTable()) instanceof LogicalView ) {
-            tableRel = LogicalViewTableScan.create( cluster, table );
+            tableRel = LogicalViewScan.create( cluster, table );
         } else {
             tableRel = LogicalTableScan.create( cluster, table );
         }
@@ -2555,7 +2573,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             int sysFieldCount = selectList.size() - names.size();
             for ( SqlNode expr : selectList.getSqlList() ) {
                 projects.add(
-                        Pair.of( bb.convertExpression( expr ),
+                        Pair.of(
+                                bb.convertExpression( expr ),
                                 k < sysFieldCount
                                         ? validator.deriveAlias( expr, k++ )
                                         : names.get( k++ - sysFieldCount ) ) );

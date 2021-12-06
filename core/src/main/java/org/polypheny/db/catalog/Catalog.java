@@ -493,8 +493,9 @@ public abstract class Catalog {
      *
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
+     * @param columnOnly columnOnly If delete originates from a dropColumn
      */
-    public abstract void deleteColumnPlacement( int adapterId, long columnId );
+    public abstract void deleteColumnPlacement( int adapterId, long columnId, boolean columnOnly );
 
     /**
      * Gets a collective list of column placements per column on a adapter.
@@ -524,7 +525,8 @@ public abstract class Catalog {
     public abstract List<CatalogColumnPlacement> getColumnPlacement( long columnId );
 
     /**
-     * Get column placements of a specific table on a specific adapter
+     * Get column placements of a specific table on a specific adapter on column detail level.
+     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
      *
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
@@ -534,7 +536,8 @@ public abstract class Catalog {
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId );
 
     /**
-     * Get column placements on a adapter
+     * Get column placements on a adapter. On column detail level
+     * Only returns one ColumnPlacement per column on adapter. Ignores multiplicity due to different partitionsIds
      *
      * @param adapterId The id of the adapter
      * @return List of column placements on the specified adapter

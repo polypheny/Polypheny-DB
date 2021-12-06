@@ -39,6 +39,7 @@ import java.util.Set;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
+import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -338,6 +339,35 @@ public interface AlgNode extends AlgOptNode, Cloneable {
             isCacheable &= child.isImplementationCacheable();
         }
         return isCacheable;
+    }
+
+    /**
+     * To check if a RelNode includes a ViewTableScan
+     */
+    default boolean hasView() {
+        return false;
+    }
+
+    /**
+     * Expands node
+     * If a part of RelNode is a LogicalViewTableScan it is replaced
+     * Else recursively hands call down if view in deeper level
+     */
+    default void tryExpandView( AlgNode input ) {
+        if ( input instanceof LogicalViewScan ) {
+            input = ((LogicalViewScan) input).expandViewNode();
+        } else {
+            input.tryExpandView( input );
+        }
+    }
+
+    default AlgNode tryParentExpandView( AlgNode input ) {
+        if ( input instanceof LogicalViewScan ) {
+            return ((LogicalViewScan) input).expandViewNode();
+        } else {
+            input.tryExpandView( input );
+            return input;
+        }
     }
 
     default SchemaType getModel() {

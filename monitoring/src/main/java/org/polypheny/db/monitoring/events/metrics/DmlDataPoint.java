@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.events.metrics;
 
+
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -51,6 +52,8 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private int rowCount;
     private List<String> fieldNames;
     private List<Long> accessedPartitions;
+    private String queryClass;
+    private String physicalQueryClass;
 
 
     @Override

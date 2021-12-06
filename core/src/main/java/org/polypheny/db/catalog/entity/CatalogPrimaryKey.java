@@ -23,6 +23,7 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.catalog.Catalog;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -44,17 +45,24 @@ public final class CatalogPrimaryKey extends CatalogKey {
         int i = 1;
         LinkedList<CatalogPrimaryKeyColumn> list = new LinkedList<>();
         for ( String columnName : getColumnNames() ) {
-            list.add( new CatalogPrimaryKeyColumn( i++, columnName ) );
+            list.add( new CatalogPrimaryKeyColumn( id, i++, columnName ) );
         }
         return list;
     }
 
 
+    public Serializable[] getParameterArray( String columnName, int keySeq ) {
+        return new Serializable[]{ getDatabaseName(), getSchemaName(), getTableName(), columnName, keySeq, null };
+    }
+
+
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public class CatalogPrimaryKeyColumn implements CatalogEntity {
+    public static class CatalogPrimaryKeyColumn implements CatalogEntity {
 
         private static final long serialVersionUID = 5426944084650275437L;
+
+        private final long pkId;
 
         private final int keySeq;
         private final String columnName;
@@ -62,12 +70,12 @@ public final class CatalogPrimaryKey extends CatalogKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ getDatabaseName(), getSchemaName(), getTableName(), columnName, keySeq, null };
+            return Catalog.getInstance().getPrimaryKey( pkId ).getParameterArray( columnName, keySeq );
         }
 
 
         @RequiredArgsConstructor
-        public class PrimitiveCatalogPrimaryKeyColumn {
+        public static class PrimitiveCatalogPrimaryKeyColumn {
 
             public final String tableCat;
             public final String tableSchem;

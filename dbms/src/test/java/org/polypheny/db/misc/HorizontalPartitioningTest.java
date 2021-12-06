@@ -16,6 +16,7 @@
 
 package org.polypheny.db.misc;
 
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -39,7 +40,6 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
-import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
@@ -200,6 +200,39 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "DROP TABLE horizontalparttest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store3\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store2\"" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void alterColumnsPartitioningTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE columnparttest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+                    // Partition table after creation
+                    statement.executeUpdate( "ALTER TABLE columnparttest "
+                            + "PARTITION BY HASH (tinteger) "
+                            + "PARTITIONS 4" );
+
+                    statement.executeUpdate( "ALTER TABLE columnparttest ADD COLUMN newColumn BIGINT" );
+
+                    statement.executeUpdate( "ALTER TABLE columnparttest RENAME COLUMN newColumn to veryNewColumn" );
+
+                    statement.executeUpdate( "ALTER TABLE columnparttest DROP COLUMN veryNewColumn " );
+
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE columnparttest" );
                 }
             }
         }
@@ -653,8 +686,8 @@ public class HorizontalPartitioningTest {
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
                 Config c2 = cm.getConfig( "runtime/queueProcessingInterval" );
-                ((ConfigEnum) c1).setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS_FIXED );
-                ((ConfigEnum) c2).setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS_FIXED );
+                c1.setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
+                c2.setEnum( TaskSchedulingType.EVERY_SECOND );
 
                 statement.executeUpdate( "CREATE TABLE temperaturetest( "
                         + "tprimary INTEGER NOT NULL, "
@@ -679,7 +712,7 @@ public class HorizontalPartitioningTest {
                     Assert.assertEquals( 2, table.partitionProperty.getPartitionGroupIds().size() );
                     Assert.assertEquals( 20, table.partitionProperty.getPartitionIds().size() );
 
-                    // Check if initially as many partitionPlacements are created as requested and stored in the partitionproperty
+                    // Check if initially as many partitionPlacements are created as requested and stored in the partition property
                     Assert.assertEquals( table.partitionProperty.getPartitionIds().size(), Catalog.getInstance().getAllPartitionPlacementsByTable( table.id ).size() );
 
                     // Retrieve partition distribution
@@ -740,6 +773,7 @@ public class HorizontalPartitioningTest {
                     List<CatalogPartition> hotPartitionsAfterChange = Catalog.getInstance().getPartitions( ((TemperaturePartitionProperty) updatedTable.partitionProperty).getHotPartitionGroupId() );
                     Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.getInstance().getPartition( targetId ) ) );
 
+                    //Todo @Hennlo check number of access
 
                 } finally {
                     // Drop tables and stores

@@ -18,41 +18,40 @@ package org.polypheny.db.monitoring.persistence;
 
 import java.io.File;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
+import org.polypheny.db.monitoring.events.QueryPostCost;
+import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
 import org.polypheny.db.util.FileSystemManager;
 
 
 @Slf4j
 public class MapDbRepository implements MonitoringRepository {
 
-    // region private fields
-
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
     protected final HashMap<Class, BTreeMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
     protected DB simpleBackendDb;
-
-    // endregion
-
-    // region public methods
+    protected BTreeMap<String, QueryPostCostImpl> queryPostCosts;
 
 
     @Override
-    public void initialize() {
-        this.initialize( FILE_PATH, FOLDER_NAME );
+    public void initialize( boolean resetRepository ) {
+        this.initialize( FILE_PATH, FOLDER_NAME, resetRepository );
     }
 
 
@@ -73,7 +72,7 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <TPersistent extends MonitoringDataPoint> List<TPersistent> getAllDataPoints( @NonNull Class<TPersistent> dataPointClass ) {
-        val table = this.data.get( dataPointClass );
+        final Map<UUID, MonitoringDataPoint> table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
@@ -87,8 +86,18 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
+    public <TPersistent extends MonitoringDataPoint> long getNumberOfDataPoints( @NonNull Class<TPersistent> dataPointClass ) {
+        final Map<UUID, MonitoringDataPoint> table = this.data.get( dataPointClass );
+        if ( table != null ) {
+            return table.values().size();
+        }
+        return 0;
+    }
+
+
+    @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsBefore( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        val table = this.data.get( dataPointClass );
+        final Map<UUID, MonitoringDataPoint> table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
@@ -104,7 +113,7 @@ public class MapDbRepository implements MonitoringRepository {
 
     @Override
     public <T extends MonitoringDataPoint> List<T> getDataPointsAfter( @NonNull Class<T> dataPointClass, @NonNull Timestamp timestamp ) {
-        val table = this.data.get( dataPointClass );
+        final Map<UUID, MonitoringDataPoint> table = this.data.get( dataPointClass );
         if ( table != null ) {
             return table.values()
                     .stream()
@@ -117,17 +126,74 @@ public class MapDbRepository implements MonitoringRepository {
         return Collections.emptyList();
     }
 
-    // endregion
+
+    @Override
+    public QueryPostCost getQueryPostCosts( @NonNull String physicalQueryClass ) {
+        if ( queryPostCosts == null ) {
+            this.initializePostCosts();
+        }
+
+        QueryPostCost result = queryPostCosts.get( physicalQueryClass );
+        return result != null ? result : new QueryPostCostImpl( physicalQueryClass, 0, 0 );
+    }
 
 
-    // region private helper methods
-    protected void initialize( String filePath, String folderName ) {
+    @Override
+    public List<QueryPostCost> getAllQueryPostCosts() {
+        if ( queryPostCosts == null ) {
+            this.initializePostCosts();
+        }
+
+        return new ArrayList<>( queryPostCosts.values() );
+    }
+
+
+    @Override
+    public void updateQueryPostCosts( @NonNull String physicalQueryClass, long executionTime ) {
+        if ( queryPostCosts == null ) {
+            this.initializePostCosts();
+            return;
+        }
+
+        final QueryPostCostImpl result = queryPostCosts.get( physicalQueryClass );
+        if ( result == null ) {
+            queryPostCosts.put( physicalQueryClass, new QueryPostCostImpl( physicalQueryClass, executionTime, 1 ) );
+
+        } else {
+            long newTotalTime = (result.getExecutionTime() * result.getNumberOfSamples()) + executionTime;
+            int samples = result.getNumberOfSamples() + 1;
+            long newTime = newTotalTime / samples;
+            queryPostCosts.replace( physicalQueryClass, new QueryPostCostImpl( physicalQueryClass, newTime, samples ) );
+        }
+
+        this.simpleBackendDb.commit();
+    }
+
+
+    @Override
+    public void resetQueryPostCosts() {
+        if ( queryPostCosts == null ) {
+            return;
+        }
+        queryPostCosts.clear();
+        this.simpleBackendDb.commit();
+    }
+
+
+    protected void initialize( String filePath, String folderName, boolean resetRepository ) {
         if ( simpleBackendDb != null ) {
             simpleBackendDb.close();
         }
 
         synchronized ( this ) {
             File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
+
+            if ( Catalog.resetCatalog ) {
+                log.info( "Resetting monitoring repository on startup." );
+                if ( new File( folder, filePath ).exists() ) {
+                    new File( folder, filePath ).delete();
+                }
+            }
 
             simpleBackendDb = DBMaker
                     .fileDB( new File( folder, filePath ) )
@@ -142,12 +208,16 @@ public class MapDbRepository implements MonitoringRepository {
     }
 
 
+    private void initializePostCosts() {
+        queryPostCosts = simpleBackendDb.treeMap( QueryPostCost.class.getName(), Serializer.STRING, Serializer.JAVA ).createOrOpen();
+    }
+
+
     private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
         if ( classPersistentData != null ) {
-            val treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
+            final BTreeMap<UUID, MonitoringDataPoint> treeMap = simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
             data.put( classPersistentData, treeMap );
         }
     }
 
-    // endregion
 }

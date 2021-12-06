@@ -29,6 +29,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.BiAlg;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -45,18 +53,10 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.BiAlg;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.LogicalViewTableScan;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -233,13 +233,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * Register the freshnessLoop as BackgroundTask to update interval Materialized Views after a given time
+     * Register the freshnessLoop as BackgroundTask to update Materialized Views
      */
     private void registerFreshnessLoop() {
         BackgroundTaskManager.INSTANCE.registerTask(
                 MaterializedViewManagerImpl.this::updatingIntervalMaterialized,
-                "Update Materialized View with freshness type interval if it is time.",
-                TaskPriority.HIGH,
+                "Update materialized views with freshness type interval if required",
+                TaskPriority.MEDIUM,
                 (TaskSchedulingType) RuntimeConfig.MATERIALIZED_VIEW_LOOP.getEnum() );
     }
 
@@ -449,7 +449,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             relCollationList.add( relCollation );
             AlgTraitSet traitSetTest =
                     relOptCluster.traitSetOf( Convention.NONE )
-                            .replaceIfs( AlgCollationTraitDef.INSTANCE,
+                            .replaceIfs(
+                                    AlgCollationTraitDef.INSTANCE,
                                     () -> {
                                         if ( relCollation != null ) {
                                             return relCollationList;
@@ -465,8 +466,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
             prepareNode( ((SingleAlg) viewLogicalRoot).getInput(), relOptCluster, relCollation );
         }
-        if ( viewLogicalRoot instanceof LogicalViewTableScan ) {
-            prepareNode( ((LogicalViewTableScan) viewLogicalRoot).getAlgNode(), relOptCluster, relCollation );
+        if ( viewLogicalRoot instanceof LogicalViewScan ) {
+            prepareNode( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), relOptCluster, relCollation );
         }
     }
 

@@ -200,7 +200,7 @@ public class ExploreQueryProcessor {
             AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         return signature;
     }

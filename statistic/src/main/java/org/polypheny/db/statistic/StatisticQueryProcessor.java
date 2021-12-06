@@ -25,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -42,11 +44,7 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -238,8 +236,6 @@ public class StatisticQueryProcessor {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
 
-        statement.getTransaction().setMonitoringData( new QueryEvent() );
-
         try {
             signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
@@ -288,9 +284,6 @@ public class StatisticQueryProcessor {
 
             String[][] d = data.toArray( new String[0][] );
 
-            statement.getTransaction().getMonitoringData().setRowCount( data.size() );
-            MonitoringServiceProvider.getInstance().monitorEvent( statement.getTransaction().getMonitoringData() );
-
             return new StatisticResult( names, types, d );
         } finally {
             try {
@@ -318,7 +311,7 @@ public class StatisticQueryProcessor {
             AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         return signature;
     }

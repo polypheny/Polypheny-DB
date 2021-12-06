@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.processing.shuttles;
 
 
 import com.j256.simplemagic.ContentInfo;
@@ -93,11 +93,13 @@ public class ParameterValueValidator extends AlgShuttleImpl {
             for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
                 o = map.get( index );
                 if ( o == null ) {
-                    if ( dynamicParam.getType().isNullable() ) {
+                    break;
+                /*    if ( dynamicParam.getType().isNullable() ) {
                         break;
                     } else {
                         throw new InvalidParameterValueException( "Null in not nullable column" );
                     }
+                 */
                 }
                 switch ( polyType.getFamily() ) {
                     //case ANY:

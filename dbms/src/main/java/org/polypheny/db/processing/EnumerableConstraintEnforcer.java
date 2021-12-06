@@ -29,6 +29,19 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -49,24 +62,9 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.sql.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.processing.AbstractQueryProcessor.AlgDeepCopyShuttle;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
-import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
-import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -75,6 +73,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
@@ -132,7 +131,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         //
         if ( root.isInsert() && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
             AlgBuilder builder = AlgBuilder.create( statement );
-            final AlgNode input = root.getInput().accept( new AlgDeepCopyShuttle() );
+            final AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
@@ -239,7 +238,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         //
         if ( root.isInsert() && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             AlgBuilder builder = AlgBuilder.create( statement );
-            final AlgNode input = root.getInput().accept( new AlgDeepCopyShuttle() );
+            final AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final AlgOptSchema relOptSchema = root.getCatalogReader();
@@ -292,7 +291,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 if ( !affected ) {
                     continue;
                 }
-                AlgNode input = root.getInput().accept( new AlgDeepCopyShuttle() );
+                AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 Map<String, Integer> nameMap = new HashMap<>();
                 for ( int i = 0; i < root.getUpdateColumnList().size(); ++i ) {
                     nameMap.put( root.getUpdateColumnList().get( i ), i );
@@ -321,22 +320,26 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 builder.join( JoinAlgType.INNER, builder.literal( true ) );
 
                 List<RexNode> conditionList1 = primaryKey.getColumnNames().stream().map( c ->
-                        builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
+                        builder.call(
+                                OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( c ) ),
                                 builder.field( names.size() + table.getColumnNames().indexOf( c ) )
                         )
                 ).collect( Collectors.toList() );
 
                 List<RexNode> conditionList2 = constraint.key.getColumnNames().stream().map( c ->
-                        builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
+                        builder.call(
+                                OperatorRegistry.get( OperatorName.EQUALS ),
                                 builder.field( names.indexOf( "$projected$." + c ) ),
                                 builder.field( names.size() + table.getColumnNames().indexOf( c ) )
                         )
                 ).collect( Collectors.toList() );
 
                 RexNode condition =
-                        rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ),
-                                rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT ),
+                        rexBuilder.makeCall(
+                                OperatorRegistry.get( OperatorName.AND ),
+                                rexBuilder.makeCall(
+                                        OperatorRegistry.get( OperatorName.NOT ),
                                         conditionList1.size() > 1 ?
                                                 rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), conditionList1 ) :
                                                 conditionList1.get( 0 )
@@ -387,7 +390,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
-                AlgNode input = root.getInput().accept( new AlgDeepCopyShuttle() );
+                AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
                 final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
@@ -460,9 +463,9 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 }
                 AlgNode pInput;
                 if ( root.getInput() instanceof Project ) {
-                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new AlgDeepCopyShuttle() );
+                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new DeepCopyShuttle() );
                 } else {
-                    pInput = root.getInput().accept( new AlgDeepCopyShuttle() );
+                    pInput = root.getInput().accept( new DeepCopyShuttle() );
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );

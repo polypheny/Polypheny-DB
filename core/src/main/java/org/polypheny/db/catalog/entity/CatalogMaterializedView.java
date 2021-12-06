@@ -18,17 +18,15 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgNode;
 
 
 public class CatalogMaterializedView extends CatalogView {
@@ -36,13 +34,10 @@ public class CatalogMaterializedView extends CatalogView {
     private static final long serialVersionUID = -303234050987260484L;
 
     @Getter
-    private final Map<Long, List<Long>> underlyingTables;
-
-    @Getter
     private final QueryLanguage language;
 
     @Getter
-    private final AlgCollation relCollation;
+    private final AlgCollation algCollation;
 
     @Getter
     private final String query;
@@ -67,18 +62,17 @@ public class CatalogMaterializedView extends CatalogView {
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
-            AlgCollation relCollation,
-            Map<Long, List<Long>> underlyingTables,
+            AlgCollation algCollation,
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language,
             MaterializedCriteria materializedCriteria,
             boolean ordered,
             PartitionProperty partitionProperty
     ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter,
-                modifiable, relCollation, underlyingTables, language, partitionProperty );
+                modifiable, algCollation, underlyingTables, language, partitionProperty );
         this.query = query;
-        this.relCollation = relCollation;
-        this.underlyingTables = underlyingTables;
+        this.algCollation = algCollation;
         this.language = language;
         this.materializedCriteria = materializedCriteria;
         this.ordered = ordered;
@@ -102,19 +96,36 @@ public class CatalogMaterializedView extends CatalogView {
             long partitionColumnId,
             boolean isPartitioned,
             PartitionProperty partitionProperty,
-            AlgCollation relCollation,
+            AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
-            Map<Long, List<Long>> underlyingTables,
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language,
             MaterializedCriteria materializedCriteria,
             boolean ordered
     ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, query, primaryKey,
-                placementsByAdapter, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty,
-                relCollation, connectedViews, underlyingTables, language );
+        super(
+                id,
+                name,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                query,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                partitionType,
+                partitionColumnId,
+                isPartitioned,
+                partitionProperty,
+                algCollation,
+                connectedViews,
+                underlyingTables,
+                language );
         this.query = query;
-        this.relCollation = relCollation;
-        this.underlyingTables = underlyingTables;
+        this.algCollation = algCollation;
         this.language = language;
         this.materializedCriteria = materializedCriteria;
         this.ordered = ordered;
@@ -136,7 +147,7 @@ public class CatalogMaterializedView extends CatalogView {
                 primaryKey,
                 placementsByAdapter,
                 modifiable,
-                relCollation,
+                algCollation,
                 underlyingTables,
                 language,
                 materializedCriteria,
@@ -164,7 +175,7 @@ public class CatalogMaterializedView extends CatalogView {
                 partitionColumnId,
                 isPartitioned,
                 partitionProperty,
-                relCollation,
+                algCollation,
                 newConnectedViews,
                 underlyingTables,
                 language,
@@ -192,7 +203,7 @@ public class CatalogMaterializedView extends CatalogView {
                 partitionColumnId,
                 isPartitioned,
                 partitionProperty,
-                relCollation,
+                algCollation,
                 connectedViews,
                 underlyingTables,
                 language,

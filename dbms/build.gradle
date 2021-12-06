@@ -124,7 +124,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 shadowJar {
     zip64 true
-    classifier = ""
+    classifier ""
     mergeServiceFiles {
         setPath("META-INF/services")
         include("io.grpc.*")

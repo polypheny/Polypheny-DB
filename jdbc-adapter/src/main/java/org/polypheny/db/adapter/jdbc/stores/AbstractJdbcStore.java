@@ -30,7 +30,6 @@ import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
@@ -176,8 +175,8 @@ public abstract class AbstractJdbcStore extends DataStore {
             }
             first = false;
             builder.append( dialect.quoteIdentifier( getPhysicalColumnName( placement.columnId ) ) ).append( " " );
-
             createColumnDefinition( catalogColumn, builder );
+            builder.append( " NULL" );
         }
         builder.append( " )" );
         return builder;
@@ -187,18 +186,7 @@ public abstract class AbstractJdbcStore extends DataStore {
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         String physicalColumnName = getPhysicalColumnName( catalogColumn.id );
-        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
-        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
-        // approach rather than using the default physical schema / table names is that this approach allows adding columns to linked tables.
-        CatalogColumnPlacement ccp = null;
-        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
-            // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
-            if ( p.columnId != catalogColumn.id ) {
-                ccp = p;
-                break;
-            }
-        }
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( ccp.adapterId, catalogTable.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( this.getAdapterId(), catalogTable.id ) ) {
             String physicalTableName = partitionPlacement.physicalTableName;
             String physicalSchemaName = partitionPlacement.physicalSchemaName;
             StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, catalogColumn );

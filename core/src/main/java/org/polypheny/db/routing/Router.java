@@ -17,27 +17,26 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
-import java.util.Map;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+
 
 public interface Router {
 
-    AlgRoot route( AlgRoot relRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor );
+    /**
+     * @param algRoot The algRoot which will be routed.
+     * @param statement The corresponding statement.
+     * @param queryInformation Different query information resulting from analyze step.
+     * @return Proposes multiple routed alg nodes as a List of  relBuilders.
+     */
+    List<RoutedAlgBuilder> route( AlgRoot algRoot, Statement statement, LogicalQueryInformation queryInformation );
 
-    List<DataStore> createTable( long schemaId, Statement statement );
-
-    List<DataStore> addColumn( CatalogTable catalogTable, Statement statement );
-
-    void dropPlacements( List<CatalogColumnPlacement> placements );
-
-    AlgNode buildJoinedTableScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements );
-
+    /**
+     * Resets the routing caches, if some are used.
+     */
     void resetCaches();
 
 }
+
+
