@@ -97,7 +97,7 @@ public class CottontailSort extends Sort implements CottontailRel {
             String physicalName;
             try {
                 physicalName = context.cottontailTable.getPhysicalColumnName( logicalName );
-            } catch (IndexOutOfBoundsException e) {
+            } catch ( IndexOutOfBoundsException e ) {
                 physicalName = logicalName; /* Case of column being calculated and there being no physical column. */
             }
             final Expression sortOrder;

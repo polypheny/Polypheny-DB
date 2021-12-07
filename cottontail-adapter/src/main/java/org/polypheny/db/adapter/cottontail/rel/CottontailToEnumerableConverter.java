@@ -108,16 +108,20 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 BlockBuilder builder = new BlockBuilder();
 
                 final ParameterExpression resultMap_ = Expressions.parameter(
-                    Tuple.class, builder.newName( "resultDataMap" )
-                );
+                        Tuple.class,
+                        builder.newName( "resultDataMap" ) );
 
-                final Expression values_ = builder.append("values", Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
+                final Expression values_ = builder.append(
+                        "values",
+                        Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
                 for ( int i = 0; i < fieldCount; i++ ) {
-                    this.generateGet(rowType, builder, resultMap_, i, Expressions.arrayIndex( values_, Expressions.constant( i ) ));
+                    this.generateGet( rowType, builder, resultMap_, i, Expressions.arrayIndex( values_, Expressions.constant( i ) ) );
                 }
                 builder.add( Expressions.return_( null, values_ ) );
 
-                final Expression rowBuilder_ = list.append("rowBuilder", Expressions.lambda(Expressions.block( builder.toBlock() ), resultMap_ ) );
+                final Expression rowBuilder_ = list.append(
+                        "rowBuilder",
+                        Expressions.lambda( Expressions.block( builder.toBlock() ), resultMap_ ) );
                 enumerable = list.append( "enumerable",
                         Expressions.call( CottontailEnumerableFactory.CREATE_QUERY_METHOD,
                                 Expressions.constant( cottontailContext.tableName ),
@@ -197,17 +201,18 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         return implementor.result( physType, list.toBlock() );
     }
 
+
     /**
      * Generates accessor methods used to access data contained in {@link Tuple}s returned by Cottontail DB.
      */
-    private void generateGet(RelDataType rowType, BlockBuilder blockBuilder, ParameterExpression result_, int i, Expression target) {
+    private void generateGet( RelDataType rowType, BlockBuilder blockBuilder, ParameterExpression result_, int i, Expression target ) {
         final RelDataType fieldType = rowType.getFieldList().get( i ).getType();
 
         // Fetch Data from DataMap
         // This should generate: `result_.get(<physical field name>)`
         final Expression getDataFromMap_;
         try {
-            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, Types.lookupMethod(Tuple.class, "get", Integer.TYPE), Expressions.constant( i ) ) );
+            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, Types.lookupMethod( Tuple.class, "get", Integer.TYPE ), Expressions.constant( i ) ) );
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
@@ -292,10 +297,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                     }
                 } else {
                     source = Expressions.call(
-                        BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                        Expressions.constant( fieldType.getComponentType().getPolyType() ),
-                        Expressions.constant( arrayType.getDimension() ),
-                        Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ )
+                            BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
+                            Expressions.constant( fieldType.getComponentType().getPolyType() ),
+                            Expressions.constant( arrayType.getDimension() ),
+                            Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ )
                     );
                 }
             }
@@ -308,6 +313,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         blockBuilder.add( Expressions.statement( Expressions.assign( target, source ) ) );
     }
 
+
     private static Expression expressionOrNullExpression( Expression expression ) {
         if ( expression == null ) {
             return Expressions.constant( null );
@@ -315,4 +321,5 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             return expression;
         }
     }
+
 }

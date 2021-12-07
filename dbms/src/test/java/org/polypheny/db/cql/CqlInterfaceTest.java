@@ -363,6 +363,21 @@ public class CqlInterfaceTest extends CqlTestHelper {
     }
 
 
+    @Test
+    public void testCqlFiltersWithJoinsAndProjection() {
+        JsonNode expectedJsonNode = new JsonNode( "{\"result\":[{\"test.employee.empname\":\"Imane\"}," +
+                "{\"test.employee.empname\":\"Rhody\"},{\"test.employee.empname\":\"Cryer\"}," +
+                "{\"test.employee.empname\":\"Lily\"},{\"test.employee.empname\":\"Holt\"}," +
+                "{\"test.employee.empname\":\"Peralta\"},{\"test.employee.empname\":\"Mando\"}," +
+                "{\"test.employee.empname\":\"Vader\"}],\"size\":8}" );
+
+        cqlInterfaceTestHelper(
+                "test.dept.deptname == \"IT\" or test.dept.deptname == \"Marketing\" " +
+                        "relation test.dept and test.employee project test.employee.empname",
+                expectedJsonNode );
+    }
+
+
     private void cqlInterfaceTestHelper( String cqlQuery, JsonNode expectedJsonNode ) {
         HttpResponse<JsonNode> response = executeCQL( cqlQuery );
         Assert.assertEquals( expectedJsonNode.getObject(), response.getBody().getObject() );
