@@ -196,7 +196,9 @@ public class CottontailStore extends DataStore {
             RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             logicalColumnNames.add( catalogColumn.name );
-            physicalColumnNames.add( placement.physicalColumnName != null ? placement.physicalColumnName : "col" + placement.columnId );
+            physicalColumnNames.add( placement.physicalColumnName != null
+                    ? placement.physicalColumnName
+                    : CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
         }
 
         CottontailTable table = new CottontailTable(
