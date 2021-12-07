@@ -18,8 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
@@ -34,9 +32,6 @@ import org.polypheny.db.rel.RelNode;
 public class CatalogMaterializedView extends CatalogView {
 
     private static final long serialVersionUID = -303234050987260484L;
-
-    @Getter
-    private final Map<Long, List<Long>> underlyingTables;
 
     @Getter
     private final QueryLanguage language;
@@ -68,7 +63,7 @@ public class CatalogMaterializedView extends CatalogView {
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
             RelCollation relCollation,
-            Map<Long, List<Long>> underlyingTables,
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language,
             MaterializedCriteria materializedCriteria,
             boolean ordered,
@@ -78,7 +73,6 @@ public class CatalogMaterializedView extends CatalogView {
                 modifiable, relCollation, underlyingTables, language, partitionProperty );
         this.query = query;
         this.relCollation = relCollation;
-        this.underlyingTables = underlyingTables;
         this.language = language;
         this.materializedCriteria = materializedCriteria;
         this.ordered = ordered;
@@ -104,7 +98,7 @@ public class CatalogMaterializedView extends CatalogView {
             PartitionProperty partitionProperty,
             RelCollation relCollation,
             ImmutableList<Long> connectedViews,
-            Map<Long, List<Long>> underlyingTables,
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language,
             MaterializedCriteria materializedCriteria,
             boolean ordered
@@ -114,7 +108,6 @@ public class CatalogMaterializedView extends CatalogView {
                 relCollation, connectedViews, underlyingTables, language );
         this.query = query;
         this.relCollation = relCollation;
-        this.underlyingTables = underlyingTables;
         this.language = language;
         this.materializedCriteria = materializedCriteria;
         this.ordered = ordered;

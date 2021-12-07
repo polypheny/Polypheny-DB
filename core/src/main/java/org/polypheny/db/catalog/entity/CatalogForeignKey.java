@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,7 +39,7 @@ public final class CatalogForeignKey extends CatalogKey {
     public final long referencedKeyTableId;
     public final ForeignKeyOption updateRule;
     public final ForeignKeyOption deleteRule;
-    public final List<Long> referencedKeyColumnIds;
+    public final ImmutableList<Long> referencedKeyColumnIds;
 
 
     public CatalogForeignKey(
@@ -61,7 +62,7 @@ public final class CatalogForeignKey extends CatalogKey {
         this.referencedKeyTableId = referencedKeyTableId;
         this.referencedKeySchemaId = referencedKeySchemaId;
         this.referencedKeyDatabaseId = referencedKeyDatabaseId;
-        this.referencedKeyColumnIds = referencedKeyColumnIds;
+        this.referencedKeyColumnIds = ImmutableList.copyOf( referencedKeyColumnIds );
         this.updateRule = updateRule;
         this.deleteRule = deleteRule;
     }
@@ -102,46 +103,57 @@ public final class CatalogForeignKey extends CatalogKey {
         LinkedList<CatalogForeignKeyColumn> list = new LinkedList<>();
         List<String> referencedKeyColumnNames = getReferencedKeyColumnNames();
         for ( String columnName : getColumnNames() ) {
-            list.add( new CatalogForeignKeyColumn( i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
+            list.add( new CatalogForeignKeyColumn( tableId, name, i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
             i++;
         }
         return list;
     }
 
 
+    public Serializable[] getParameterArray( String referencedKeyColumnName, String foreignKeyColumnName, int keySeq ) {
+        return new Serializable[]{
+                getReferencedKeyDatabaseName(),
+                getReferencedKeySchemaName(),
+                getReferencedKeyTableName(),
+                referencedKeyColumnName,
+                getDatabaseName(),
+                getSchemaName(),
+                getTableName(),
+                foreignKeyColumnName,
+                keySeq,
+                updateRule.getId(),
+                deleteRule.getId(),
+                name,
+                null,
+                null };
+    }
+
+
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public class CatalogForeignKeyColumn implements CatalogEntity {
+    public static class CatalogForeignKeyColumn implements CatalogEntity {
 
         private static final long serialVersionUID = -1496390493702171203L;
+
+        private final long tableId;
+        private final String foreignKeyName;
 
         private final int keySeq;
         private final String referencedKeyColumnName;
         private final String foreignKeyColumnName;
 
 
+        @SneakyThrows
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{
-                    getReferencedKeyDatabaseName(),
-                    getReferencedKeySchemaName(),
-                    getReferencedKeyTableName(),
-                    referencedKeyColumnName,
-                    getDatabaseName(),
-                    getSchemaName(),
-                    getTableName(),
-                    foreignKeyColumnName,
-                    keySeq,
-                    updateRule.getId(),
-                    deleteRule.getId(),
-                    name,
-                    null,
-                    null };
+            return Catalog.getInstance()
+                    .getForeignKey( tableId, foreignKeyName )
+                    .getParameterArray( referencedKeyColumnName, foreignKeyColumnName, keySeq );
         }
 
 
         @RequiredArgsConstructor
-        public class PrimitiveCatalogForeignKeyColumn {
+        public static class PrimitiveCatalogForeignKeyColumn {
 
             public final String pktableCat;
             public final String pktableSchem;

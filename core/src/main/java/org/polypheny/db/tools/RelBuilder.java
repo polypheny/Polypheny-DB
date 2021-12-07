@@ -240,6 +240,14 @@ public class RelBuilder {
 
 
     /**
+     * @return the stack size of the current builder.
+     */
+    public int stackSize() {
+        return this.stack.size();
+    }
+
+
+    /**
      * Creates a RelBuilder.
      */
     public static RelBuilder create( FrameworkConfig config ) {

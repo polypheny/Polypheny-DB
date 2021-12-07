@@ -92,8 +92,6 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
@@ -1228,7 +1226,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
-        PolyphenyDbSignature signature;
+        PolyphenyDbSignature<?> signature;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed );
         } else {
@@ -1240,7 +1238,7 @@ public class DbmsMeta implements ProtobufMeta {
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, false );
+            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
         }
 
         h.signature = signature;
@@ -1300,10 +1298,6 @@ public class DbmsMeta implements ProtobufMeta {
                 String message = e.getLocalizedMessage();
                 throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
-        }
-        if ( statementHandle.getStatement().getTransaction().getMonitoringData() != null ) {
-            StatementEvent ev = statementHandle.getStatement().getTransaction().getMonitoringData();
-            MonitoringServiceProvider.getInstance().monitorEvent( ev );
         }
         return resultSets;
     }
@@ -1464,7 +1458,7 @@ public class DbmsMeta implements ProtobufMeta {
                 return;
             }
 
-            // Check if there is an running transaction
+            // Check if there is a running transaction
             Transaction transaction = connectionToClose.getCurrentTransaction();
             if ( transaction != null && transaction.isActive() ) {
                 log.warn( "There is a running transaction associated with this connection {}", connectionToClose );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,12 @@ public class VolcanoCost implements RelOptCost {
                 || (this.rowCount == Double.POSITIVE_INFINITY)
                 || (this.cpu == Double.POSITIVE_INFINITY)
                 || (this.io == Double.POSITIVE_INFINITY);
+    }
+
+
+    @Override
+    public double getCosts() {
+        return getRows() + getCpu() + getIo();
     }
 
 
@@ -285,6 +291,8 @@ public class VolcanoCost implements RelOptCost {
         public RelOptCost makeZeroCost() {
             return VolcanoCost.ZERO;
         }
+
     }
+
 }
 

@@ -35,8 +35,6 @@ import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
-import org.polypheny.db.router.RouterManager;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {
@@ -45,19 +43,16 @@ public class StatementImpl implements Statement {
 
     @Getter
     private final long id;
-
     @Getter
     private final TransactionImpl transaction;
-
-    private QueryProcessor queryProcessor;
-
-    private DataContext dataContext = null;
-    private ContextImpl prepareContext = null;
     private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
-    private InformationDuration processingDuration = null;
-    private InformationDuration executionDuration = null;
-    private InformationGroup group = null;
+    private QueryProcessor queryProcessor;
+    private DataContext dataContext;
+    private ContextImpl prepareContext;
+    private InformationDuration processingDuration;
+    private InformationDuration routingDuration;
+    private InformationDuration overviewDuration;
     private InformationPage executionTimePage;
 
 
@@ -92,7 +87,12 @@ public class StatementImpl implements Statement {
             if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
                 return new SlimDataContext();
             }
-            dataContext = new DataContextImpl( new QueryProviderImpl(), map, transaction.getSchema(), transaction.getTypeFactory(), this );
+            dataContext = new DataContextImpl(
+                    new QueryProviderImpl(),
+                    map,
+                    transaction.getSchema(),
+                    transaction.getTypeFactory(),
+                    this );
         }
         return dataContext;
     }
@@ -116,38 +116,42 @@ public class StatementImpl implements Statement {
     @Override
     public InformationDuration getProcessingDuration() {
         if ( processingDuration == null ) {
-            processingDuration = initDuration( "Plan Query" );
+            processingDuration = initDuration( "Query Processing", 2 );
         }
         return processingDuration;
     }
 
 
     @Override
-    public InformationDuration getExecutionDuration() {
-        if ( executionDuration == null ) {
-            executionDuration = initDuration( "Plan & Execute Query" );
+    public InformationDuration getRoutingDuration() {
+        if ( routingDuration == null ) {
+            routingDuration = initDuration( "Query Routing", 3 );
         }
-        return executionDuration;
-    }
-
-
-    private InformationDuration initDuration( String title ) {
-        InformationManager im = transaction.getQueryAnalyzer();
-        if ( this.executionTimePage == null ) {
-            executionTimePage = new InformationPage( "Execution time", "Query execution time" );
-            im.addPage( executionTimePage );
-        }
-        InformationGroup group = new InformationGroup( executionTimePage, title );
-        im.addGroup( group );
-        InformationDuration duration = new InformationDuration( group );
-        im.registerInformation( duration );
-        return duration;
+        return routingDuration;
     }
 
 
     @Override
-    public Router getRouter() {
-        return RouterManager.getInstance().getRouter();
+    public InformationDuration getOverviewDuration() {
+        if ( overviewDuration == null ) {
+            overviewDuration = initDuration( "Overview", 1 );
+        }
+        return overviewDuration;
+    }
+
+
+    private InformationDuration initDuration( String title, int order ) {
+        InformationManager im = transaction.getQueryAnalyzer();
+        if ( executionTimePage == null ) {
+            executionTimePage = new InformationPage( "Execution Time", "Query processing & execution time" );
+            im.addPage( executionTimePage );
+        }
+        InformationGroup group = new InformationGroup( executionTimePage, title );
+        group.setOrder( order );
+        im.addGroup( group );
+        InformationDuration duration = new InformationDuration( group );
+        im.registerInformation( duration );
+        return duration;
     }
 
 

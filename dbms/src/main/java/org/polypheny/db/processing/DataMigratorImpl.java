@@ -18,7 +18,7 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -53,6 +53,7 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.sql.SqlKind;
@@ -94,9 +95,11 @@ public class DataMigratorImpl implements DataMigrator {
         if ( table.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
-            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, new ArrayList<>( Arrays.asList( store.id ) ) );
+            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, Collections.singletonList( store.id ) );
         } else {
-            placementDistribution.put( table.partitionProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
+            placementDistribution.put(
+                    table.partitionProperty.partitionIds.get( 0 ),
+                    selectSourcePlacements( table, selectColumnList, targetColumnPlacements.get( 0 ).adapterId ) );
         }
 
         for ( long partitionId : partitionIds ) {
@@ -134,11 +137,13 @@ public class DataMigratorImpl implements DataMigrator {
                 signature = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceRel,
                         sourceRel.rel.getCluster().getTypeFactory().builder().build(),
-                        true );
+                        true,
+                        false,
+                        false );
             }
-            final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            final Enumerable<?> enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
-            Iterator<Object> sourceIterator = enumerable.iterator();
+            Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
@@ -190,12 +195,15 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 int pos = 0;
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
-                    targetStatement.getDataContext().addParameterValues( v.getKey(), fields.get( resultColMapping.get( v.getKey() ) ).getType(), v.getValue() );
+                    targetStatement.getDataContext().addParameterValues(
+                            v.getKey(),
+                            fields.get( resultColMapping.get( v.getKey() ) ).getType(),
+                            v.getValue() );
                     pos++;
                 }
 
-                Iterator iterator = targetStatement.getQueryProcessor()
-                        .prepareQuery( targetRel, sourceRel.validatedRowType, true )
+                Iterator<?> iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( targetRel, sourceRel.validatedRowType, true, false, false )
                         .enumerable( targetStatement.getDataContext() )
                         .iterator();
                 //noinspection WhileLoopReplaceableByForEach
@@ -368,7 +376,7 @@ public class DataMigratorImpl implements DataMigrator {
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
 
-        RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, placementDistribution );
+        RelNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedTableScan( statement, cluster, placementDistribution );
         return RelRoot.of( node, SqlKind.SELECT );
     }
 
@@ -457,10 +465,10 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
-            final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            PolyphenyDbSignature<?> signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true, false, false );
+            final Enumerable<?> enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
-            Iterator<Object> sourceIterator = enumerable.iterator();
+            Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
@@ -491,8 +499,8 @@ public class DataMigratorImpl implements DataMigrator {
                 for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
                     targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
                 }
-                Iterator iterator = targetStatement.getQueryProcessor()
-                        .prepareQuery( targetRel, sourceRel.validatedRowType, true )
+                Iterator<?> iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( targetRel, sourceRel.validatedRowType, true, false, true )
                         .enumerable( targetStatement.getDataContext() )
                         .iterator();
 
@@ -509,7 +517,7 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     /**
-     * Currently used to to transfer data if unpartitioned is about to be partitioned.
+     * Currently used to transfer data if unpartitioned is about to be partitioned.
      * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, CatalogTable, CatalogTable, List, Map, List)}   } instead
      *
      * @param transaction Transactional scope
@@ -580,10 +588,10 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
-            final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true, false, false );
+            final Enumerable<?> enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
-            Iterator<Object> sourceIterator = enumerable.iterator();
+            Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
@@ -650,7 +658,7 @@ public class DataMigratorImpl implements DataMigrator {
                     }
 
                     Iterator iterator = currentTargetStatement.getQueryProcessor()
-                            .prepareQuery( targetRels.get( partitionId ), sourceRel.validatedRowType, true )
+                            .prepareQuery( targetRels.get( partitionId ), sourceRel.validatedRowType, true, false, false )
                             .enumerable( currentTargetStatement.getDataContext() )
                             .iterator();
                     //noinspection WhileLoopReplaceableByForEach

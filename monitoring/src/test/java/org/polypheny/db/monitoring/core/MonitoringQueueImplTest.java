@@ -16,7 +16,8 @@
 
 package org.polypheny.db.monitoring.core;
 
-import lombok.val;
+import java.util.HashMap;
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -30,10 +31,10 @@ class MonitoringQueueImplTest {
     @Test
     public void ctor_validParameters_instanceNotNull() {
         // arrange
-        val repo = Mockito.mock( MonitoringRepository.class );
+        MonitoringRepository repo = Mockito.mock( MonitoringRepository.class );
 
         // act
-        val sut = new MonitoringQueueImpl( false, repo );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, repo );
 
         // assert
         Assertions.assertNotNull( sut );
@@ -43,15 +44,15 @@ class MonitoringQueueImplTest {
     @Test
     public void queueEvent_validEvent_QueueConsistsElements() {
         // arrange
-        val repo = Mockito.mock( MonitoringRepository.class );
-        val sut = new MonitoringQueueImpl( false, repo );
-        val event = Mockito.mock( MonitoringEvent.class );
+        MonitoringRepository repo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, repo );
+        MonitoringEvent event = Mockito.mock( MonitoringEvent.class );
 
         // act
         sut.queueEvent( event );
 
         // assert
-        val elementsInQueue = sut.getNumberOfElementsInQueue();
+        long elementsInQueue = sut.getNumberOfElementsInQueue();
         Assertions.assertEquals( 1L, elementsInQueue );
     }
 
@@ -59,16 +60,16 @@ class MonitoringQueueImplTest {
     @Test
     public void queueEvent_validEvent2Times_QueueConsistsElementOnce() {
         // arrange
-        val repo = Mockito.mock( MonitoringRepository.class );
-        val sut = new MonitoringQueueImpl( false, repo );
-        val event = new QueryEvent();
+        MonitoringRepository repo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, repo );
+        QueryEvent event = new QueryEvent();
 
         // act
         sut.queueEvent( event );
         sut.queueEvent( event );
 
         // assert
-        val elementsInQueue = sut.getNumberOfElementsInQueue();
+        long elementsInQueue = sut.getNumberOfElementsInQueue();
         Assertions.assertEquals( 1L, elementsInQueue );
     }
 
@@ -76,24 +77,24 @@ class MonitoringQueueImplTest {
     @Test
     public void queueEvent_validEvents_QueueConsistsElements() {
         // arrange
-        val repo = Mockito.mock( MonitoringRepository.class );
-        val sut = new MonitoringQueueImpl( false, repo );
-        val numberOfEvents = 100L;
+        MonitoringRepository repo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, repo );
+        long numberOfEvents = 100L;
 
         // act
         for ( int i = 0; i < numberOfEvents; i++ ) {
-            val event = new QueryEvent();
+            QueryEvent event = new QueryEvent();
             sut.queueEvent( event );
         }
 
         // assert
-        val elementsInQueue = sut.getNumberOfElementsInQueue();
+        long elementsInQueue = sut.getNumberOfElementsInQueue();
         Assertions.assertEquals( numberOfEvents, elementsInQueue );
 
-        val infoStrings = sut.getInformationOnElementsInQueue();
+        List<HashMap<String, String>> infoStrings = sut.getInformationOnElementsInQueue();
         Assertions.assertEquals( (int) numberOfEvents, infoStrings.size() );
 
-        val infoString = infoStrings.get( 0 );
+        HashMap<String, String> infoString = infoStrings.get( 0 );
         Assertions.assertSame( 3, infoString.size() );
         Assertions.assertEquals( QueryEvent.class.toString(), infoString.get( "type" ) );
     }

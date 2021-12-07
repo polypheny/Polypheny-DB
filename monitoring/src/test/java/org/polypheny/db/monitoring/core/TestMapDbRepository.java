@@ -28,9 +28,9 @@ public class TestMapDbRepository extends MapDbRepository {
 
 
     @Override
-    public void initialize() {
+    public void initialize( boolean resetRepository ) {
         this.reset();
-        super.initialize( FILE_PATH, FOLDER_NAME );
+        super.initialize( FILE_PATH, FOLDER_NAME, resetRepository );
     }
 
 

@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,7 +33,7 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
     public final long tableId;
     public final long schemaId;
     public final long databaseId;
-    public final List<Long> columnIds;
+    public final ImmutableList<Long> columnIds;
 
 
     public CatalogKey(
@@ -45,7 +46,7 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
         this.tableId = tableId;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
-        this.columnIds = columnIds;
+        this.columnIds = ImmutableList.copyOf( columnIds );
     }
 
 

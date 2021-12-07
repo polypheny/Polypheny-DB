@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -32,14 +33,14 @@ public class CatalogQueryInterface implements CatalogEntity {
     public final int id;
     public final String name;
     public final String clazz;
-    public final Map<String, String> settings;
+    public final ImmutableMap<String, String> settings;
 
 
     public CatalogQueryInterface( final int id, @NonNull final String uniqueName, @NonNull final String clazz, @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.name = uniqueName;
         this.clazz = clazz;
-        this.settings = settings;
+        this.settings = ImmutableMap.copyOf( settings );
     }
 
 

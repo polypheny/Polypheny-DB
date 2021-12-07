@@ -24,6 +24,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.IndexType;
 
 
@@ -70,20 +71,41 @@ public final class CatalogIndex implements Serializable {
     // Used for creating ResultSets
     public List<CatalogIndexColumn> getCatalogIndexColumns() {
         int i = 1;
-        LinkedList<CatalogIndexColumn> list = new LinkedList<>();
+        List<CatalogIndexColumn> list = new LinkedList<>();
         for ( String columnName : key.getColumnNames() ) {
-            list.add( new CatalogIndexColumn( i++, columnName ) );
+            list.add( new CatalogIndexColumn( id, i++, columnName ) );
         }
         return list;
     }
 
 
+    public Serializable[] getParameterArray( int ordinalPosition, String columnName ) {
+        return new Serializable[]{
+                key.getDatabaseName(),
+                key.getSchemaName(),
+                key.getTableName(),
+                !unique,
+                null,
+                name,
+                0,
+                ordinalPosition,
+                columnName,
+                null,
+                -1,
+                null,
+                null,
+                location,
+                type.getId() };
+    }
+
+
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public class CatalogIndexColumn implements CatalogEntity {
+    public static class CatalogIndexColumn implements CatalogEntity {
 
         private static final long serialVersionUID = -5596459769680478780L;
 
+        private final long indexId;
         private final int ordinalPosition;
         @Getter
         private final String columnName;
@@ -91,27 +113,12 @@ public final class CatalogIndex implements Serializable {
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{
-                    key.getDatabaseName(),
-                    key.getSchemaName(),
-                    key.getTableName(),
-                    !unique,
-                    null,
-                    name,
-                    0,
-                    ordinalPosition,
-                    columnName,
-                    null,
-                    -1,
-                    null,
-                    null,
-                    location,
-                    type.getId() };
+            return Catalog.getInstance().getIndex( indexId ).getParameterArray( ordinalPosition, columnName );
         }
 
 
         @RequiredArgsConstructor
-        public class PrimitiveCatalogIndexColumn {
+        public static class PrimitiveCatalogIndexColumn {
 
             public final String tableCat;
             public final String tableSchem;

@@ -26,11 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 public class MonitoringServiceProvider {
 
     private static MonitoringService INSTANCE = null;
-
+    public static boolean resetRepository = false;
 
     public static MonitoringService getInstance() {
         if ( INSTANCE == null ) {
-            INSTANCE = MonitoringServiceFactory.createMonitoringService();
+            INSTANCE = MonitoringServiceFactory.createMonitoringService( resetRepository );
         }
         return INSTANCE;
     }

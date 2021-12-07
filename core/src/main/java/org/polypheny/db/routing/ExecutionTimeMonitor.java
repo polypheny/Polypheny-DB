@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class ExecutionTimeMonitor {
 
-    private Map<ExecutionTimeObserver, String> observers = new HashMap<>(); // Observer and their individual reference
+    private final Map<ExecutionTimeObserver, String> observers = new HashMap<>(); // Observer and their individual reference
 
 
     public void setExecutionTime( long nanoTime ) {
@@ -39,6 +39,7 @@ public class ExecutionTimeMonitor {
     public interface ExecutionTimeObserver {
 
         void executionTime( String reference, long nanoTime );
+
     }
 
 }

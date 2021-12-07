@@ -8,20 +8,16 @@ _Polypheny-DB_ is a self-adaptive Polystore that provides cost- and workload awa
 
 If you want to learn more about Polypheny-DB, we recommend having a look on our [vision paper](https://ieeexplore.ieee.org/document/8622353).
 
-
 ## Getting Started ##
-The easiest way to setup Polypheny-DB is to use [Polypheny Control](https://github.com/polypheny/Polypheny-Control). 
-
+The easiest way to setup Polypheny-DB is to use [Polypheny Control](https://github.com/polypheny/Polypheny-Control).
 
 ## Roadmap ##
 See the [open issues](https://github.com/polypheny/Polypheny-DB/issues) for a list of proposed features (and known issues).
 
-
 ## Contributing ##
 We highly welcome your contributions to Polypheny-DB. If you would like to contribute, please fork the repository and submit your changes as a pull request. Please consult our [Admin Repository](https://github.com/polypheny/Admin) for guidelines and additional information.
 
-Please note that we have a [code of conduct](https://github.com/polypheny/Admin/blob/master/CODE_OF_CONDUCT.md). Please follow it in all your interactions with the project. 
-
+Please note that we have a [code of conduct](https://github.com/polypheny/Admin/blob/master/CODE_OF_CONDUCT.md). Please follow it in all your interactions with the project.
 
 ## Credits ##
 _Polypheny-DB_ builds upon the great work of several other projects:
@@ -35,10 +31,8 @@ _Polypheny-DB_ builds upon the great work of several other projects:
 
 Except for the first two, those projects are used "as is" and integrated as a library. _Apache Avatica_ we [forked](https://github.com/polypheny/Avatica) and made some Polypheny-DB specific adjustments. From _Apache Calcite_ we use parts of the code as foundation for Polypheny-DB.
 
-
 ## Acknowledgements
 The Polypheny-DB project is supported by the Swiss National Science Foundation (SNSF) under the contract no. 200021_172763.
-
 
 ## License ##
 The Apache 2.0 License
