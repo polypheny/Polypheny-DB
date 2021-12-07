@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.cottontail.rel;
+package org.polypheny.db.adapter.cottontail.rules;
 
 
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;

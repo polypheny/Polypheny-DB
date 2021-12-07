@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.cottontail.rules;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverterRule;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.tools.RelBuilderFactory;

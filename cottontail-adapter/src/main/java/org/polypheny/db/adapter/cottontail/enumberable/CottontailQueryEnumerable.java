@@ -18,7 +18,7 @@ package org.polypheny.db.adapter.cottontail.enumberable;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
-import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
