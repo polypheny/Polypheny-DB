@@ -68,7 +68,7 @@ public class ElasticsearchSort extends Sort implements ElasticsearchRel {
 
 
     @Override
-    public Sort copy( AlgTraitSet traitSet, AlgNode algNode, AlgCollation relCollation, RexNode offset, RexNode fetch ) {
+    public Sort copy( AlgTraitSet traitSet, AlgNode algNode, AlgCollation algCollation, RexNode offset, RexNode fetch ) {
         return new ElasticsearchSort( getCluster(), traitSet, algNode, collation, offset, fetch );
     }
 

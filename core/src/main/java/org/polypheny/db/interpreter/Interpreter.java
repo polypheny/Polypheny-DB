@@ -442,7 +442,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         protected AlgNode alg;
         protected Node node;
         final Map<AlgNode, NodeInfo> nodes = new LinkedHashMap<>();
-        final Map<AlgNode, List<AlgNode>> relInputs = new HashMap<>();
+        final Map<AlgNode, List<AlgNode>> algInputs = new HashMap<>();
         final Multimap<AlgNode, Edge> outEdges = LinkedHashMultimap.create();
 
         private static final String REWRITE_METHOD_NAME = "rewrite";
@@ -481,10 +481,10 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                 }
                 p = alg;
                 if ( parent != null ) {
-                    List<AlgNode> inputs = relInputs.get( parent );
+                    List<AlgNode> inputs = algInputs.get( parent );
                     if ( inputs == null ) {
                         inputs = Lists.newArrayList( parent.getInputs() );
-                        relInputs.put( parent, inputs );
+                        algInputs.put( parent, inputs );
                     }
                     inputs.set( ordinal, p );
                 } else {
@@ -493,7 +493,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             }
 
             // rewrite children first (from left to right)
-            final List<AlgNode> inputs = relInputs.get( p );
+            final List<AlgNode> inputs = algInputs.get( p );
             for ( Ord<AlgNode> input : Ord.zip( Util.first( inputs, p.getInputs() ) ) ) {
                 outEdges.put( input.e, new Edge( p, input.i ) );
             }
@@ -579,7 +579,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
 
 
         private AlgNode getInput( AlgNode alg, int ordinal ) {
-            final List<AlgNode> inputs = relInputs.get( alg );
+            final List<AlgNode> inputs = algInputs.get( alg );
             if ( inputs != null ) {
                 return inputs.get( ordinal );
             }

@@ -69,24 +69,24 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
                 .getProcessor( QueryLanguage.MONGO_QL )
                 .parse( buildQuery() );
 
-        AlgRoot relRoot = statement.getTransaction()
+        AlgRoot algRoot = statement.getTransaction()
                 .getProcessor( QueryLanguage.MONGO_QL )
                 .translate( statement, mqlNode, parameters );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
-        AlgNode algNode = relRoot.alg;
-        AlgCollation relCollation = relRoot.collation;
+        AlgNode algNode = algRoot.alg;
+        AlgCollation algCollation = algRoot.collation;
 
         try {
             DdlManager.getInstance().createView(
                     name,
                     schemaId,
                     algNode,
-                    relCollation,
+                    algCollation,
                     true,
                     statement,
                     placementType,
-                    relRoot.alg.getRowType().getFieldNames(),
+                    algRoot.alg.getRowType().getFieldNames(),
                     buildQuery(),
                     Catalog.QueryLanguage.MONGO_QL );
         } catch ( TableAlreadyExistsException | GenericCatalogException | UnknownColumnException e ) {

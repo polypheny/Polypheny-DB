@@ -67,8 +67,8 @@ public class CachingAlgMetadataProvider implements AlgMetadataProvider {
 
 
     @Override
-    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> relClass, final Class<? extends M> metadataClass ) {
-        final UnboundMetadata<M> function = underlyingProvider.apply( relClass, metadataClass );
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass, final Class<? extends M> metadataClass ) {
+        final UnboundMetadata<M> function = underlyingProvider.apply( algClass, metadataClass );
         if ( function == null ) {
             return null;
         }
@@ -120,7 +120,7 @@ public class CachingAlgMetadataProvider implements AlgMetadataProvider {
             // Compute hash key.
             final ImmutableList.Builder<Object> builder = ImmutableList.builder();
             builder.add( method );
-            builder.add( metadata.rel() );
+            builder.add( metadata.alg() );
             if ( args != null ) {
                 for ( Object arg : args ) {
                     // Replace null values because ImmutableList does not allow them.
@@ -129,7 +129,7 @@ public class CachingAlgMetadataProvider implements AlgMetadataProvider {
             }
             List<Object> key = builder.build();
 
-            long timestamp = planner.getRelMetadataTimestamp( metadata.rel() );
+            long timestamp = planner.getRelMetadataTimestamp( metadata.alg() );
 
             // Perform cache lookup.
             CacheEntry entry = cache.get( key );

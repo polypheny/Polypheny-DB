@@ -131,17 +131,17 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     private int iRestructureInput;
     private AlgDataType flattenedRootType;
     boolean restructured;
-    private final ToAlgContext toRelContext;
+    private final ToAlgContext toAlgContext;
 
 
     public AlgStructuredTypeFlattener(
             AlgBuilder algBuilder,
             RexBuilder rexBuilder,
-            ToAlgContext toRelContext,
+            ToAlgContext toAlgContext,
             boolean restructure ) {
         this.algBuilder = algBuilder;
         this.rexBuilder = rexBuilder;
-        this.toRelContext = toRelContext;
+        this.toAlgContext = toAlgContext;
         this.restructure = restructure;
     }
 
@@ -661,7 +661,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteRel( TableScan alg ) {
-        AlgNode newRel = alg.getTable().toRel( toRelContext );
+        AlgNode newRel = alg.getTable().toAlg( toAlgContext );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(
@@ -842,7 +842,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         @Override
         public RexNode visitSubQuery( RexSubQuery subQuery ) {
             subQuery = (RexSubQuery) super.visitSubQuery( subQuery );
-            AlgStructuredTypeFlattener flattener = new AlgStructuredTypeFlattener( algBuilder, rexBuilder, toRelContext, restructure );
+            AlgStructuredTypeFlattener flattener = new AlgStructuredTypeFlattener( algBuilder, rexBuilder, toAlgContext, restructure );
             AlgNode alg = flattener.rewrite( subQuery.alg );
             return subQuery.clone( alg );
         }

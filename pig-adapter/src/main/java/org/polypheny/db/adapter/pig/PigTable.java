@@ -88,9 +88,9 @@ public class PigTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new PigTableScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), relOptTable );
+        return new PigTableScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), algOptTable );
     }
 }
 

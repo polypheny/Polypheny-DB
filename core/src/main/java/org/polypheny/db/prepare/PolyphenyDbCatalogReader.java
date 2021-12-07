@@ -131,9 +131,9 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         if ( entry != null ) {
             final Table table = entry.getTable();
             if ( table instanceof Wrapper ) {
-                final Prepare.PreparingTable relOptTable = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
-                if ( relOptTable != null ) {
-                    return relOptTable;
+                final Prepare.PreparingTable algOptTable = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
+                if ( algOptTable != null ) {
+                    return algOptTable;
                 }
             }
             return AlgOptTableImpl.create( this, table.getRowType( typeFactory ), entry, null );

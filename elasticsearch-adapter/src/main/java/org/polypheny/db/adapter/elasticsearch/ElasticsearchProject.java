@@ -63,8 +63,8 @@ public class ElasticsearchProject extends Project implements ElasticsearchRel {
 
 
     @Override
-    public Project copy( AlgTraitSet relTraitSet, AlgNode input, List<RexNode> projects, AlgDataType relDataType ) {
-        return new ElasticsearchProject( getCluster(), traitSet, input, projects, relDataType );
+    public Project copy( AlgTraitSet algTraitSet, AlgNode input, List<RexNode> projects, AlgDataType algDataType ) {
+        return new ElasticsearchProject( getCluster(), traitSet, input, projects, algDataType );
     }
 
 

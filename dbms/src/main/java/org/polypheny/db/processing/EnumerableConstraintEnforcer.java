@@ -241,9 +241,9 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             final AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
-                final AlgOptSchema relOptSchema = root.getCatalogReader();
-                final AlgOptTable relOptTable = relOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
-                final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), relOptTable );
+                final AlgOptSchema algOptSchema = root.getCatalogReader();
+                final AlgOptTable algOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
+                final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), algOptTable );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
                 builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );

@@ -383,8 +383,8 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
      * @return Whether set contains given trait
      */
     public boolean contains( AlgTrait trait ) {
-        for ( AlgTrait relTrait : traits ) {
-            if ( trait == relTrait ) {
+        for ( AlgTrait algTrait : traits ) {
+            if ( trait == algTrait ) {
                 return true;
             }
         }
@@ -409,11 +409,11 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
     /**
      * Returns whether this trait set comprises precisely the list of given traits.
      *
-     * @param relTraits Traits
+     * @param algTraits Traits
      * @return Whether this trait set's traits are the same as the argument
      */
-    public boolean comprises( AlgTrait... relTraits ) {
-        return Arrays.equals( traits, relTraits );
+    public boolean comprises( AlgTrait... algTraits ) {
+        return Arrays.equals( traits, algTraits );
     }
 
 

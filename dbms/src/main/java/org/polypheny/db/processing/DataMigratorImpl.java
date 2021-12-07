@@ -357,13 +357,13 @@ public class DataMigratorImpl implements DataMigrator {
                 values,
                 false
         );
-        AlgRoot relRoot = AlgRoot.of( node, Kind.UPDATE );
+        AlgRoot algRoot = AlgRoot.of( node, Kind.UPDATE );
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
-                AlgBuilder.create( statement, relRoot.alg.getCluster() ),
-                relRoot.alg.getCluster().getRexBuilder(),
-                relRoot.alg::getCluster,
+                AlgBuilder.create( statement, algRoot.alg.getCluster() ),
+                algRoot.alg.getCluster().getRexBuilder(),
+                algRoot.alg::getCluster,
                 true );
-        return relRoot.withAlg( typeFlattener.rewrite( relRoot.alg ) );
+        return algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
     }
 
 

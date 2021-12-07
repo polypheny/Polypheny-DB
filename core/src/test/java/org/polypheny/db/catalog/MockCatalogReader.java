@@ -157,11 +157,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
-    protected void registerType( final List<String> names, final AlgProtoDataType relProtoDataType ) {
+    protected void registerType( final List<String> names, final AlgProtoDataType algProtoDataType ) {
         assert names.get( 0 ).equals( DEFAULT_CATALOG );
         final List<String> schemaPath = Util.skipLast( names );
         final PolyphenyDbSchema schema = ValidatorUtil.getSchema( rootSchema, schemaPath, NameMatchers.withCaseSensitive( true ) );
-        schema.add( Util.last( names ), relProtoDataType );
+        schema.add( Util.last( names ), algProtoDataType );
     }
 
 
@@ -463,7 +463,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public AlgNode toRel( ToAlgContext context ) {
+        public AlgNode toAlg( ToAlgContext context ) {
             return LogicalTableScan.create( context.getCluster(), this );
         }
 
@@ -605,11 +605,11 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
          * Recreates an immutable rowType, if the table has Dynamic Record Type, when converts table to Rel.
          */
         @Override
-        public AlgNode toRel( ToAlgContext context ) {
+        public AlgNode toAlg( ToAlgContext context ) {
             if ( rowType.isDynamicStruct() ) {
                 rowType = new AlgRecordType( rowType.getFieldList() );
             }
-            return super.toRel( context );
+            return super.toAlg( context );
         }
 
     }

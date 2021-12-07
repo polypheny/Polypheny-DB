@@ -231,10 +231,10 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
          *
          * @param planner Planner
          * @param operand Operand
-         * @param rels List of matched relational expressions
+         * @param algs List of matched relational expressions
          */
-        MockRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] rels ) {
-            super( planner, operand, rels, Collections.emptyMap() );
+        MockRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs ) {
+            super( planner, operand, algs, Collections.emptyMap() );
         }
 
 

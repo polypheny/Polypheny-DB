@@ -1525,7 +1525,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation relCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
@@ -1556,7 +1556,7 @@ public class DdlManagerImpl extends DdlManager {
                 TableType.VIEW,
                 false,
                 algNode,
-                relCollation,
+                algCollation,
                 underlyingTables,
                 fieldList,
                 query,
@@ -1799,9 +1799,9 @@ public class DdlManagerImpl extends DdlManager {
         List<String> logicalColumnNames = ((LogicalTable) algNode.getTable().getTable()).getLogicalColumnNames();
         List<Long> underlyingColumns = new ArrayList<>();
         for ( int i = 0; i < columnIds.size(); i++ ) {
-            for ( AlgDataTypeField relDataTypeField : fieldList.getFieldList() ) {
+            for ( AlgDataTypeField algDataTypeField : fieldList.getFieldList() ) {
                 String name = logicalColumnNames.get( i );
-                if ( relDataTypeField.getName().equals( name ) ) {
+                if ( algDataTypeField.getName().equals( name ) ) {
                     underlyingColumns.add( columnIds.get( i ) );
                 }
             }

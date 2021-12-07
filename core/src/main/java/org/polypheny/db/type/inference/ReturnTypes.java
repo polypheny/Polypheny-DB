@@ -631,26 +631,26 @@ public abstract class ReturnTypes {
 
     public static final PolyReturnTypeInference AVG_AGG_FUNCTION = opBinding -> {
         final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final AlgDataType relDataType = typeFactory.getTypeSystem().deriveAvgAggType( typeFactory, opBinding.getOperandType( 0 ) );
+        final AlgDataType algDataType = typeFactory.getTypeSystem().deriveAvgAggType( typeFactory, opBinding.getOperandType( 0 ) );
         if ( opBinding.getGroupCount() == 0 || opBinding.hasFilter() ) {
-            return typeFactory.createTypeWithNullability( relDataType, true );
+            return typeFactory.createTypeWithNullability( algDataType, true );
         } else {
-            return relDataType;
+            return algDataType;
         }
     };
 
     public static final PolyReturnTypeInference COVAR_REGR_FUNCTION = opBinding -> {
         final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final AlgDataType relDataType = typeFactory
+        final AlgDataType algDataType = typeFactory
                 .getTypeSystem()
                 .deriveCovarType(
                         typeFactory,
                         opBinding.getOperandType( 0 ),
                         opBinding.getOperandType( 1 ) );
         if ( opBinding.getGroupCount() == 0 || opBinding.hasFilter() ) {
-            return typeFactory.createTypeWithNullability( relDataType, true );
+            return typeFactory.createTypeWithNullability( algDataType, true );
         } else {
-            return relDataType;
+            return algDataType;
         }
     };
 

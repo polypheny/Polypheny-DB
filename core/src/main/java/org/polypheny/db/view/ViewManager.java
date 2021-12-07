@@ -59,10 +59,10 @@ public class ViewManager {
 
     private static LogicalSort orderMaterialized( AlgNode other ) {
         int positionPrimary = other.getRowType().getFieldList().size() - 1;
-        AlgFieldCollation relFieldCollation = new AlgFieldCollation( positionPrimary, Direction.ASCENDING );
-        AlgCollations.of( relFieldCollation );
+        AlgFieldCollation algFieldCollation = new AlgFieldCollation( positionPrimary, Direction.ASCENDING );
+        AlgCollations.of( algFieldCollation );
 
-        return LogicalSort.create( other, AlgCollations.of( relFieldCollation ), null, null );
+        return LogicalSort.create( other, AlgCollations.of( algFieldCollation ), null, null );
     }
 
 

@@ -168,19 +168,19 @@ public class CottontailSortAndProjectRule extends AlgOptRule {
     /**
      * Finds the underlying {@link Project} of the subset.
      *
-     * @param relSubset the subset.
+     * @param algSubset the subset.
      * @return the {@link Project} or <code>null</code> if not found.
      */
-    public static Project getUnderlyingProject( AlgSubset relSubset, Convention targetConvention ) {
-        return getUnderlyingProject( relSubset.getAlgList(), targetConvention );
+    public static Project getUnderlyingProject( AlgSubset algSubset, Convention targetConvention ) {
+        return getUnderlyingProject( algSubset.getAlgList(), targetConvention );
     }
 
 
-    private static Project getUnderlyingProject( List<AlgNode> rels, Convention targetConvention ) {
+    private static Project getUnderlyingProject( List<AlgNode> algs, Convention targetConvention ) {
         Set<AlgNode> alreadyChecked = new HashSet<>();
         Deque<AlgNode> innerLevel = new LinkedList<>();
 
-        innerLevel.addAll( rels );
+        innerLevel.addAll( algs );
 
         while ( !innerLevel.isEmpty() ) {
             AlgNode algNode = innerLevel.pop();

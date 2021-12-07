@@ -243,7 +243,7 @@ public class LoptSemiJoinOptimizer {
 
         // Find the best index
         final List<Integer> bestKeyOrder = new ArrayList<>();
-        LcsTableScan tmpFactRel = (LcsTableScan) factTable.toRel( factRel::getCluster );
+        LcsTableScan tmpFactRel = (LcsTableScan) factTable.toAlg( factRel::getCluster );
 
         LcsIndexOptimizer indexOptimizer = new LcsIndexOptimizer( tmpFactRel );
         FemLocalIndex bestIndex =
@@ -646,9 +646,9 @@ public class LoptSemiJoinOptimizer {
     private class FactorCostComparator implements Comparator<Integer> {
 
         @Override
-        public int compare( Integer rel1Idx, Integer rel2Idx ) {
-            AlgOptCost c1 = mq.getCumulativeCost( chosenSemiJoins[rel1Idx] );
-            AlgOptCost c2 = mq.getCumulativeCost( chosenSemiJoins[rel2Idx] );
+        public int compare( Integer alg1Idx, Integer alg2Idx ) {
+            AlgOptCost c1 = mq.getCumulativeCost( chosenSemiJoins[alg1Idx] );
+            AlgOptCost c2 = mq.getCumulativeCost( chosenSemiJoins[alg2Idx] );
 
             // nulls are arbitrarily sorted
             if ( (c1 == null) || (c2 == null) ) {

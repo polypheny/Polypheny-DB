@@ -323,14 +323,14 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
 
     public Boolean areColumnsUnique( AlgSubset alg, AlgMetadataQuery mq, ImmutableBitSet columns, boolean ignoreNulls ) {
         int nullCount = 0;
-        for ( AlgNode rel2 : alg.getAlgs() ) {
-            if ( rel2 instanceof Aggregate
-                    || rel2 instanceof Filter
-                    || rel2 instanceof Values
-                    || rel2 instanceof TableScan
-                    || simplyProjects( rel2, columns ) ) {
+        for ( AlgNode alg2 : alg.getAlgs() ) {
+            if ( alg2 instanceof Aggregate
+                    || alg2 instanceof Filter
+                    || alg2 instanceof Values
+                    || alg2 instanceof TableScan
+                    || simplyProjects( alg2, columns ) ) {
                 try {
-                    final Boolean unique = mq.areColumnsUnique( rel2, columns, ignoreNulls );
+                    final Boolean unique = mq.areColumnsUnique( alg2, columns, ignoreNulls );
                     if ( unique != null ) {
                         if ( unique ) {
                             return true;

@@ -163,33 +163,33 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
         final DiffRepository diffRepos = getDiffRepos();
         String sql2 = diffRepos.expand( "sql", sql );
         final AlgRoot root = tester.convertSqlToRel( sql2 );
-        final AlgNode relInitial = root.alg;
+        final AlgNode algInitial = root.alg;
 
-        assertNotNull( relInitial );
+        assertNotNull( algInitial );
 
         List<AlgMetadataProvider> list = new ArrayList<>();
         list.add( DefaultAlgMetadataProvider.INSTANCE );
         planner.registerMetadataProviders( list );
         AlgMetadataProvider plannerChain = ChainedAlgMetadataProvider.of( list );
-        final AlgOptCluster cluster = relInitial.getCluster();
+        final AlgOptCluster cluster = algInitial.getCluster();
         cluster.setMetadataProvider( plannerChain );
 
-        AlgNode relBefore;
+        AlgNode algBefore;
         if ( preProgram == null ) {
-            relBefore = relInitial;
+            algBefore = algInitial;
         } else {
             HepPlanner prePlanner = new HepPlanner( preProgram );
-            prePlanner.setRoot( relInitial );
-            relBefore = prePlanner.findBestExp();
+            prePlanner.setRoot( algInitial );
+            algBefore = prePlanner.findBestExp();
         }
 
-        assertThat( relBefore, notNullValue() );
+        assertThat( algBefore, notNullValue() );
 
-        final String planBefore = NL + AlgOptUtil.toString( relBefore );
+        final String planBefore = NL + AlgOptUtil.toString( algBefore );
         diffRepos.assertEquals( "planBefore", "${planBefore}", planBefore );
-        SqlToAlgTestBase.assertValid( relBefore );
+        SqlToAlgTestBase.assertValid( algBefore );
 
-        planner.setRoot( relBefore );
+        planner.setRoot( algBefore );
         AlgNode r = planner.findBestExp();
         if ( tester.isLateDecorrelate() ) {
             final String planMid = NL + AlgOptUtil.toString( r );

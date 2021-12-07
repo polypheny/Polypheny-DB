@@ -104,7 +104,7 @@ class RuleQueue {
     /**
      * Compares relexps according to their cached 'importance'.
      */
-    private final Ordering<AlgSubset> relImportanceOrdering = Ordering.from( new RelImportanceComparator() );
+    private final Ordering<AlgSubset> algImportanceOrdering = Ordering.from( new RelImportanceComparator() );
 
     /**
      * Maps a {@link VolcanoPlannerPhase} to a set of rule names.  Named rules may be invoked in their corresponding phase.
@@ -267,9 +267,9 @@ class RuleQueue {
         subsetImportances.put( subset, importance );
 
         for ( PhaseMatchList matchList : matchListMap.values() ) {
-            Multimap<AlgSubset, VolcanoRuleMatch> relMatchMap = matchList.matchMap;
-            if ( relMatchMap.containsKey( subset ) ) {
-                for ( VolcanoRuleMatch match : relMatchMap.get( subset ) ) {
+            Multimap<AlgSubset, VolcanoRuleMatch> algMatchMap = matchList.matchMap;
+            if ( algMatchMap.containsKey( subset ) ) {
+                for ( VolcanoRuleMatch match : algMatchMap.get( subset ) ) {
                     match.clearCachedImportance();
                 }
             }
@@ -389,7 +389,7 @@ class RuleQueue {
     private void dump( PrintWriter pw ) {
         planner.dump( pw );
         pw.print( "Importances: {" );
-        for ( AlgSubset subset : relImportanceOrdering.sortedCopy( subsetImportances.keySet() ) ) {
+        for ( AlgSubset subset : algImportanceOrdering.sortedCopy( subsetImportances.keySet() ) ) {
             pw.print( " " + subset.toString() + "=" + subsetImportances.get( subset ) );
         }
         pw.println( "}" );
@@ -511,15 +511,15 @@ class RuleQueue {
      *
      * @throws org.polypheny.db.util.Util.FoundOne on match
      */
-    private void checkDuplicateSubsets( Deque<AlgSubset> subsets, AlgOptRuleOperand operand, AlgNode[] rels ) {
-        final AlgSubset subset = planner.getSubset( rels[operand.ordinalInRule] );
+    private void checkDuplicateSubsets( Deque<AlgSubset> subsets, AlgOptRuleOperand operand, AlgNode[] algs ) {
+        final AlgSubset subset = planner.getSubset( algs[operand.ordinalInRule] );
         if ( subsets.contains( subset ) ) {
             throw Util.FoundOne.NULL;
         }
         if ( !operand.getChildOperands().isEmpty() ) {
             subsets.push( subset );
             for ( AlgOptRuleOperand childOperand : operand.getChildOperands() ) {
-                checkDuplicateSubsets( subsets, childOperand, rels );
+                checkDuplicateSubsets( subsets, childOperand, algs );
             }
             final AlgSubset x = subsets.pop();
             assert x == subset;
@@ -575,12 +575,12 @@ class RuleQueue {
     private class RelImportanceComparator implements Comparator<AlgSubset> {
 
         @Override
-        public int compare( AlgSubset rel1, AlgSubset rel2 ) {
-            double imp1 = getImportance( rel1 );
-            double imp2 = getImportance( rel2 );
+        public int compare( AlgSubset alg1, AlgSubset alg2 ) {
+            double imp1 = getImportance( alg1 );
+            double imp2 = getImportance( alg2 );
             int c = Double.compare( imp2, imp1 );
             if ( c == 0 ) {
-                c = rel1.getId() - rel2.getId();
+                c = alg1.getId() - alg2.getId();
             }
             return c;
         }

@@ -22,9 +22,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
 
 
 @Slf4j
@@ -39,7 +36,7 @@ public class QueryEventAnalyzer {
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
-                .relCompareString( queryEvent.getRelCompareString() )
+                .algCompareString( queryEvent.getAlgCompareString() )
                 .accessedPartitions( queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
                 .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( "SELECT" )

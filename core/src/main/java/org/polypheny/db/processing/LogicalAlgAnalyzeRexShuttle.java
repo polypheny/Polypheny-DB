@@ -29,7 +29,7 @@ import org.polypheny.db.rex.RexShuttle;
 /**
  * Universal routing rex shuttle class to extract used columns in RelNode.
  */
-public class LogicalRelAnalyzeRexShuttle extends RexShuttle {
+public class LogicalAlgAnalyzeRexShuttle extends RexShuttle {
 
 
     @Getter

@@ -69,7 +69,7 @@ public class RexTransformerTest {
     /**
      * Converts a SQL string to a relational expression using mock schema.
      */
-    private static AlgNode toRel( String sql ) {
+    private static AlgNode toAlg( String sql ) {
         final SqlToAlgTestBase test = new SqlToAlgTestBase() {
         };
         return test.createTester().convertSqlToRel( sql ).alg;
@@ -353,7 +353,7 @@ public class RexTransformerTest {
                 + "INNER JOIN dept b \n"
                 + "ON CAST(a.empno AS int) <> b.deptno";
 
-        final AlgNode algNode = toRel( sql );
+        final AlgNode algNode = toAlg( sql );
         final LogicalProject project = (LogicalProject) algNode;
         final LogicalJoin join = (LogicalJoin) project.getInput( 0 );
         final List<RexNode> leftJoinKeys = new ArrayList<>();

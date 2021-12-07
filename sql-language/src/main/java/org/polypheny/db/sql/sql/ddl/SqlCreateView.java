@@ -124,12 +124,12 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-        AlgRoot relRoot = sqlProcessor.translate(
+        AlgRoot algRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
 
-        AlgNode algNode = relRoot.alg;
-        AlgCollation relCollation = relRoot.collation;
+        AlgNode algNode = algRoot.alg;
+        AlgCollation algCollation = algRoot.collation;
 
         List<String> columns = null;
 
@@ -142,7 +142,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
                     viewName,
                     schemaId,
                     algNode,
-                    relCollation,
+                    algCollation,
                     replace,
                     statement,
                     placementType,

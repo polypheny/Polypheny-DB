@@ -52,16 +52,16 @@ import org.polypheny.db.schema.impl.AbstractTable;
  */
 public class GeodeSimpleScannableTable extends AbstractTable implements ScannableTable {
 
-    private final AlgDataType relDataType;
+    private final AlgDataType algDataType;
     private String regionName;
     private ClientCache clientCache;
 
 
-    public GeodeSimpleScannableTable( String regionName, AlgDataType relDataType, ClientCache clientCache ) {
+    public GeodeSimpleScannableTable( String regionName, AlgDataType algDataType, ClientCache clientCache ) {
         super();
         this.regionName = regionName;
         this.clientCache = clientCache;
-        this.relDataType = relDataType;
+        this.algDataType = algDataType;
     }
 
 
@@ -73,7 +73,7 @@ public class GeodeSimpleScannableTable extends AbstractTable implements Scannabl
 
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return relDataType;
+        return algDataType;
     }
 
 
@@ -85,7 +85,7 @@ public class GeodeSimpleScannableTable extends AbstractTable implements Scannabl
                 return new GeodeSimpleEnumerator<Object[]>( clientCache, regionName ) {
                     @Override
                     public Object[] convert( Object obj ) {
-                        Object values = convertToRowValues( relDataType.getFieldList(), obj );
+                        Object values = convertToRowValues( algDataType.getFieldList(), obj );
                         if ( values instanceof Object[] ) {
                             return (Object[]) values;
                         }

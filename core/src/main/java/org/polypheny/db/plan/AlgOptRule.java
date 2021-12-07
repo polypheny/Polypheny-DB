@@ -535,12 +535,12 @@ public abstract class AlgOptRule {
     /**
      * Converts a list of relational expressions.
      *
-     * @param rels Relational expressions
+     * @param algs Relational expressions
      * @param trait Trait to add to each relational expression
      * @return List of converted relational expressions, never null
      */
-    protected static List<AlgNode> convertList( List<AlgNode> rels, final AlgTrait trait ) {
-        return Lists.transform( rels, alg -> convert( alg, alg.getTraitSet().replace( trait ) ) );
+    protected static List<AlgNode> convertList( List<AlgNode> algs, final AlgTrait trait ) {
+        return Lists.transform( algs, alg -> convert( alg, alg.getTraitSet().replace( trait ) ) );
     }
 
 

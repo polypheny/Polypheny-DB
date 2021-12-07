@@ -103,7 +103,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
     @Override
     public Node implement( final InterpreterImplementor implementor ) {
         return () -> {
-            final Sink sink = implementor.relSinks.get( EnumerableBindable.this ).get( 0 );
+            final Sink sink = implementor.algSinks.get( EnumerableBindable.this ).get( 0 );
             final Enumerable<Object[]> enumerable = bind( implementor.dataContext );
             final Enumerator<Object[]> enumerator = enumerable.enumerator();
             while ( enumerator.moveNext() ) {

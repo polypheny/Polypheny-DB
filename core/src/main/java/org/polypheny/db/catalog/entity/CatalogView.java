@@ -187,18 +187,18 @@ public class CatalogView extends CatalogTable {
     }
 
 
-    public void prepareView( AlgNode viewLogicalRoot, AlgOptCluster relOptCluster ) {
+    public void prepareView( AlgNode viewLogicalRoot, AlgOptCluster algOptCluster ) {
         if ( viewLogicalRoot instanceof AbstractAlgNode ) {
-            ((AbstractAlgNode) viewLogicalRoot).setCluster( relOptCluster );
+            ((AbstractAlgNode) viewLogicalRoot).setCluster( algOptCluster );
         }
         if ( viewLogicalRoot instanceof BiAlg ) {
-            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), relOptCluster );
-            prepareView( ((BiAlg) viewLogicalRoot).getRight(), relOptCluster );
+            prepareView( ((BiAlg) viewLogicalRoot).getLeft(), algOptCluster );
+            prepareView( ((BiAlg) viewLogicalRoot).getRight(), algOptCluster );
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
-            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), relOptCluster );
+            prepareView( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster );
         }
         if ( viewLogicalRoot instanceof LogicalViewScan ) {
-            prepareView( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), relOptCluster );
+            prepareView( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), algOptCluster );
         }
     }
 

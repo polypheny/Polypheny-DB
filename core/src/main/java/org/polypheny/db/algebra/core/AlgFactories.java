@@ -536,8 +536,8 @@ public class AlgFactories {
         return ( cluster, table ) -> {
             final TranslatableTable translatableTable = table.unwrap( TranslatableTable.class );
             if ( translatableTable != null ) {
-                final ToAlgContext toRelContext = () -> cluster;
-                return translatableTable.toRel( toRelContext, table );
+                final ToAlgContext toAlgContext = () -> cluster;
+                return translatableTable.toAlg( toAlgContext, table );
             }
             return tableScanFactory.createScan( cluster, table );
         };

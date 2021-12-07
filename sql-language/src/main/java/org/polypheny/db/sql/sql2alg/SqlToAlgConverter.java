@@ -2110,7 +2110,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
         final AlgNode tableRel;
         if ( config.isConvertTableAccess() ) {
-            tableRel = toRel( table );
+            tableRel = toAlg( table );
         } else if ( table instanceof AlgOptTableImpl && (((AlgOptTableImpl) table).getTable()) instanceof LogicalView ) {
             tableRel = LogicalViewScan.create( cluster, table );
         } else {
@@ -2144,8 +2144,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
             final TranslatableTable table = udf.getTable( typeFactory, callBinding.sqlOperands() );
             final AlgDataType rowType = table.getRowType( typeFactory );
-            AlgOptTable relOptTable = AlgOptTableImpl.create( null, rowType, table, udf.getNameAsId().names );
-            AlgNode converted = toRel( relOptTable );
+            AlgOptTable algOptTable = AlgOptTableImpl.create( null, rowType, table, udf.getNameAsId().names );
+            AlgNode converted = toAlg( algOptTable );
             bb.setRoot( converted, true );
             return;
         }
@@ -2942,8 +2942,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
-    public AlgNode toRel( final AlgOptTable table ) {
-        final AlgNode scan = table.toRel( createToRelContext() );
+    public AlgNode toAlg( final AlgOptTable table ) {
+        final AlgNode scan = table.toAlg( createToRelContext() );
 
         final InitializerExpressionFactory ief =
                 Util.first(
@@ -3907,8 +3907,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             final SqlValidatorScope ancestorScope = resolve.scope;
             boolean isParent = ancestorScope != scope;
             if ( (inputs != null) && !isParent ) {
-                final LookupContext rels = new LookupContext( this, inputs, systemFieldList.size() );
-                final RexNode node = lookup( resolve.path.steps().get( 0 ).i, rels );
+                final LookupContext algs = new LookupContext( this, inputs, systemFieldList.size() );
+                final RexNode node = lookup( resolve.path.steps().get( 0 ).i, algs );
                 if ( node == null ) {
                     return null;
                 } else {
@@ -3985,16 +3985,16 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
 
 
-        public void flatten( List<AlgNode> rels, int systemFieldCount, int[] start, List<Pair<AlgNode, Integer>> relOffsetList ) {
-            for ( AlgNode alg : rels ) {
+        public void flatten( List<AlgNode> algs, int systemFieldCount, int[] start, List<Pair<AlgNode, Integer>> algOffsetList ) {
+            for ( AlgNode alg : algs ) {
                 if ( leaves.contains( alg ) || alg instanceof LogicalMatch ) {
-                    relOffsetList.add( Pair.of( alg, start[0] ) );
+                    algOffsetList.add( Pair.of( alg, start[0] ) );
                     start[0] += alg.getRowType().getFieldCount();
                 } else {
                     if ( alg instanceof LogicalJoin || alg instanceof LogicalAggregate ) {
                         start[0] += systemFieldCount;
                     }
-                    flatten( alg.getInputs(), systemFieldCount, start, relOffsetList );
+                    flatten( alg.getInputs(), systemFieldCount, start, algOffsetList );
                 }
             }
         }
@@ -4821,18 +4821,18 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     private static class LookupContext {
 
-        private final List<Pair<AlgNode, Integer>> relOffsetList = new ArrayList<>();
+        private final List<Pair<AlgNode, Integer>> algOffsetList = new ArrayList<>();
 
 
         /**
          * Creates a LookupContext with multiple input relational expressions.
          *
          * @param bb Context for translating this sub-query
-         * @param rels Relational expressions
+         * @param algs Relational expressions
          * @param systemFieldCount Number of system fields
          */
-        LookupContext( Blackboard bb, List<AlgNode> rels, int systemFieldCount ) {
-            bb.flatten( rels, systemFieldCount, new int[]{ 0 }, relOffsetList );
+        LookupContext( Blackboard bb, List<AlgNode> algs, int systemFieldCount ) {
+            bb.flatten( algs, systemFieldCount, new int[]{ 0 }, algOffsetList );
         }
 
 
@@ -4845,7 +4845,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
          * @return Relational expression and the ordinal of its first field
          */
         Pair<AlgNode, Integer> findRel( int offset ) {
-            return relOffsetList.get( offset );
+            return algOffsetList.get( offset );
         }
 
     }

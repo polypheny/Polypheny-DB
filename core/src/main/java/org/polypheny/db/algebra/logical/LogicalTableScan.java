@@ -101,10 +101,10 @@ public final class LogicalTableScan extends TableScan {
      * Creates a LogicalTableScan.
      *
      * @param cluster Cluster
-     * @param relOptTable Table
+     * @param algOptTable Table
      */
-    public static LogicalTableScan create( AlgOptCluster cluster, final AlgOptTable relOptTable ) {
-        final Table table = relOptTable.unwrap( Table.class );
+    public static LogicalTableScan create( AlgOptCluster cluster, final AlgOptTable algOptTable ) {
+        final Table table = algOptTable.unwrap( Table.class );
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
@@ -117,7 +117,7 @@ public final class LogicalTableScan extends TableScan {
                                     return ImmutableList.of();
                                 } );
 
-        return new LogicalTableScan( cluster, traitSet, relOptTable );
+        return new LogicalTableScan( cluster, traitSet, algOptTable );
     }
 
 }

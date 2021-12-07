@@ -40,7 +40,7 @@ import org.polypheny.db.transaction.Statement;
 
 /**
  * Abstract router for DQL routing.
- * It will create rel builders and select column placements per table.
+ * It will create alg builders and select column placements per table.
  * There are three abstract methods:
  * handleHorizontalPartitioning
  * handleVerticalPartitioning

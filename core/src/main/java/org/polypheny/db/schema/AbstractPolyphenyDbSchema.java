@@ -195,8 +195,8 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     /**
      * Creates a TableEntryImpl with no SQLs.
      */
-    protected TypeEntryImpl typeEntry( String name, AlgProtoDataType relProtoDataType ) {
-        return new TypeEntryImpl( this, name, relProtoDataType );
+    protected TypeEntryImpl typeEntry( String name, AlgProtoDataType algProtoDataType ) {
+        return new TypeEntryImpl( this, name, algProtoDataType );
     }
 
 

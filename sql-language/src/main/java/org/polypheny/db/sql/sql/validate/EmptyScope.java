@@ -151,9 +151,9 @@ class EmptyScope implements SqlValidatorScope {
                     table2 = ((Wrapper) table).unwrap( Prepare.PreparingTable.class );
                 }
                 if ( table2 == null ) {
-                    final AlgOptSchema relOptSchema = validator.catalogReader.unwrap( AlgOptSchema.class );
+                    final AlgOptSchema algOptSchema = validator.catalogReader.unwrap( AlgOptSchema.class );
                     final AlgDataType rowType = table.getRowType( validator.typeFactory );
-                    table2 = AlgOptTableImpl.create( relOptSchema, rowType, entry, null );
+                    table2 = AlgOptTableImpl.create( algOptSchema, rowType, entry, null );
                 }
                 namespace = new TableNamespace( validator, table2 );
                 resolved.found( namespace, false, null, path, remainingNames );

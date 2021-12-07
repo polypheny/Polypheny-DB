@@ -26,18 +26,18 @@ import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.Combiner.CombinerType;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.helper.RelBuildTestHelper;
+import org.polypheny.db.cql.helper.AlgBuildTestHelper;
 import org.polypheny.db.algebra.AlgNode;
 
 
-public class CombinerTest extends RelBuildTestHelper {
+public class CombinerTest extends AlgBuildTestHelper {
 
     private final TableIndex employee;
     private final TableIndex dept;
 
 
     public CombinerTest() throws UnknownIndexException {
-        super( RelBuildLevel.TABLE_SCAN );
+        super( AlgBuildLevel.TABLE_SCAN );
         employee = TableIndex.createIndex( "APP", "test", "employee" );
         dept = TableIndex.createIndex( "APP", "test", "dept" );
     }

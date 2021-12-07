@@ -1111,7 +1111,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         public PreparedResult prepareQueryable( final Queryable queryable, AlgDataType resultType ) {
             return prepare_( () -> {
                 final AlgOptCluster cluster = prepare.createCluster( planner, rexBuilder );
-                return new LixToRelTranslator( cluster ).translate( queryable );
+                return new LixToAlgTranslator( cluster ).translate( queryable );
             }, resultType );
         }
 

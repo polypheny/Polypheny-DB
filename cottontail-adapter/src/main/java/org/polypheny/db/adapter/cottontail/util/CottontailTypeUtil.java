@@ -105,9 +105,9 @@ public class CottontailTypeUtil {
     }
 
 
-    public static CottontailGrpc.Type getPhysicalTypeRepresentation( AlgDataType relDataType ) {
-        PolyType type = relDataType.getPolyType();
-        PolyType componentType = relDataType.getComponentType().getPolyType();
+    public static CottontailGrpc.Type getPhysicalTypeRepresentation( AlgDataType algDataType ) {
+        PolyType type = algDataType.getPolyType();
+        PolyType componentType = algDataType.getComponentType().getPolyType();
 
         if ( componentType == null ) {
             return getPhysicalTypeRepresentation( type, componentType, 0 );

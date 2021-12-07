@@ -81,10 +81,10 @@ public class ChainedAlgMetadataProvider implements AlgMetadataProvider {
 
 
     @Override
-    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> relClass, final Class<? extends M> metadataClass ) {
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass, final Class<? extends M> metadataClass ) {
         final List<UnboundMetadata<M>> functions = new ArrayList<>();
         for ( AlgMetadataProvider provider : providers ) {
-            final UnboundMetadata<M> function = provider.apply( relClass, metadataClass );
+            final UnboundMetadata<M> function = provider.apply( algClass, metadataClass );
             if ( function == null ) {
                 continue;
             }

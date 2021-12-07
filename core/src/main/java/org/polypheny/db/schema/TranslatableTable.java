@@ -50,5 +50,5 @@ public interface TranslatableTable extends Table {
     /**
      * Converts this table into a {@link AlgNode relational expression}.
      */
-    AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable );
+    AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable );
 }

@@ -138,7 +138,7 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
                                 //   Selectivity.selectivity(rex)
                                 // by calling method
                                 //   new SelectivityImpl().selectivity(filter, rex)
-                                if ( method.equals( BuiltInMethod.METADATA_REL.method ) ) {
+                                if ( method.equals( BuiltInMethod.METADATA_ALG.method ) ) {
                                     return alg;
                                 }
                                 if ( method.equals( BuiltInMethod.OBJECT_TO_STRING.method ) ) {
@@ -223,9 +223,9 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
 
 
     @Override
-    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> relClass, Class<? extends M> metadataClass ) {
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass, Class<? extends M> metadataClass ) {
         if ( metadataClass == metadataClass0 ) {
-            return apply( relClass );
+            return apply( algClass );
         } else {
             return null;
         }
@@ -233,19 +233,19 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
 
 
     @SuppressWarnings({ "unchecked" })
-    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> relClass ) {
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass ) {
         List<Class<? extends AlgNode>> newSources = new ArrayList<>();
         for ( ; ; ) {
-            UnboundMetadata<M> function = map.get( relClass );
+            UnboundMetadata<M> function = map.get( algClass );
             if ( function != null ) {
                 for ( @SuppressWarnings("rawtypes") Class clazz : newSources ) {
                     map.put( clazz, function );
                 }
                 return function;
             } else {
-                newSources.add( relClass );
+                newSources.add( algClass );
             }
-            for ( Class<?> interfaceClass : relClass.getInterfaces() ) {
+            for ( Class<?> interfaceClass : algClass.getInterfaces() ) {
                 if ( AlgNode.class.isAssignableFrom( interfaceClass ) ) {
                     final UnboundMetadata<M> function2 = map.get( interfaceClass );
                     if ( function2 != null ) {
@@ -256,8 +256,8 @@ public class ReflectiveAlgMetadataProvider implements AlgMetadataProvider, Refle
                     }
                 }
             }
-            if ( AlgNode.class.isAssignableFrom( relClass.getSuperclass() ) ) {
-                relClass = (Class<AlgNode>) relClass.getSuperclass();
+            if ( AlgNode.class.isAssignableFrom( algClass.getSuperclass() ) ) {
+                algClass = (Class<AlgNode>) algClass.getSuperclass();
             } else {
                 return null;
             }

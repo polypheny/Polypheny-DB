@@ -1485,9 +1485,9 @@ public abstract class AlgOptUtil {
     /**
      * Returns whether two relational expressions have the same row-type.
      */
-    public static boolean equalType( String desc0, AlgNode rel0, String desc1, AlgNode rel1, Litmus litmus ) {
+    public static boolean equalType( String desc0, AlgNode alg0, String desc1, AlgNode alg1, Litmus litmus ) {
         // TODO: change 'equal' to 'eq', which is stronger.
-        return equal( desc0, rel0.getRowType(), desc1, rel1.getRowType(), litmus );
+        return equal( desc0, alg0.getRowType(), desc1, alg1.getRowType(), litmus );
     }
 
 
@@ -2816,11 +2816,11 @@ public abstract class AlgOptUtil {
 
         public final Set<CorrelationId> variables = new LinkedHashSet<>();
         public final Multimap<CorrelationId, Integer> variableFields = LinkedHashMultimap.create();
-        private final AlgShuttle relShuttle;
+        private final AlgShuttle algShuttle;
 
 
-        public VariableUsedVisitor( AlgShuttle relShuttle ) {
-            this.relShuttle = relShuttle;
+        public VariableUsedVisitor( AlgShuttle algShuttle ) {
+            this.algShuttle = algShuttle;
         }
 
 
@@ -2844,8 +2844,8 @@ public abstract class AlgOptUtil {
 
         @Override
         public RexNode visitSubQuery( RexSubQuery subQuery ) {
-            if ( relShuttle != null ) {
-                subQuery.alg.accept( relShuttle ); // look inside sub-queries
+            if ( algShuttle != null ) {
+                subQuery.alg.accept( algShuttle ); // look inside sub-queries
             }
             return super.visitSubQuery( subQuery );
         }

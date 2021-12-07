@@ -82,12 +82,12 @@ public interface Convention extends AlgTrait, Serializable {
     class Impl implements Convention {
 
         private final String name;
-        private final transient Class<? extends AlgNode> relClass;
+        private final transient Class<? extends AlgNode> algClass;
 
 
-        public Impl( String name, Class<? extends AlgNode> relClass ) {
+        public Impl( String name, Class<? extends AlgNode> algClass ) {
             this.name = name;
-            this.relClass = relClass;
+            this.algClass = algClass;
         }
 
 
@@ -110,7 +110,7 @@ public interface Convention extends AlgTrait, Serializable {
 
         @Override
         public Class getInterface() {
-            return relClass;
+            return algClass;
         }
 
 

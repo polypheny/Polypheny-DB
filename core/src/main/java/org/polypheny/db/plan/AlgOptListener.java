@@ -50,7 +50,7 @@ public interface AlgOptListener extends EventListener {
      *
      * @param event details about the event
      */
-    void relEquivalenceFound( RelEquivalenceEvent event );
+    void algEquivalenceFound( AlgEquivalenceEvent event );
 
     /**
      * Notifies this listener that an optimizer rule is being applied to a particular relational expression. This rule is called twice; once before
@@ -75,25 +75,25 @@ public interface AlgOptListener extends EventListener {
      *
      * @param event details about the event
      */
-    void relDiscarded( RelDiscardedEvent event );
+    void algDiscarded( AlgDiscardedEvent event );
 
     /**
      * Notifies this listener that a relational expression has been chosen as part of the final implementation of the query plan. After the plan is copmlete, this is called one more time with null for the alg.
      *
      * @param event details about the event
      */
-    void relChosen( RelChosenEvent event );
+    void algChosen( AlgChosenEvent event );
 
 
     /**
      * Event class for abstract event dealing with a relational expression. The source of an event is typically the RelOptPlanner which initiated it.
      */
-    abstract class RelEvent extends EventObject {
+    abstract class AlgEvent extends EventObject {
 
         private final AlgNode alg;
 
 
-        protected RelEvent( Object eventSource, AlgNode alg ) {
+        protected AlgEvent( Object eventSource, AlgNode alg ) {
             super( eventSource );
             this.alg = alg;
         }
@@ -108,9 +108,9 @@ public interface AlgOptListener extends EventListener {
     /**
      * Event indicating that a relational expression has been chosen.
      */
-    class RelChosenEvent extends RelEvent {
+    class AlgChosenEvent extends AlgEvent {
 
-        public RelChosenEvent( Object eventSource, AlgNode alg ) {
+        public AlgChosenEvent( Object eventSource, AlgNode alg ) {
             super( eventSource, alg );
         }
     }
@@ -119,13 +119,13 @@ public interface AlgOptListener extends EventListener {
     /**
      * Event indicating that a relational expression has been found to be equivalent to an equivalence class.
      */
-    class RelEquivalenceEvent extends RelEvent {
+    class AlgEquivalenceEvent extends AlgEvent {
 
         private final Object equivalenceClass;
         private final boolean isPhysical;
 
 
-        public RelEquivalenceEvent( Object eventSource, AlgNode alg, Object equivalenceClass, boolean isPhysical ) {
+        public AlgEquivalenceEvent( Object eventSource, AlgNode alg, Object equivalenceClass, boolean isPhysical ) {
             super( eventSource, alg );
             this.equivalenceClass = equivalenceClass;
             this.isPhysical = isPhysical;
@@ -146,9 +146,9 @@ public interface AlgOptListener extends EventListener {
     /**
      * Event indicating that a relational expression has been discarded.
      */
-    class RelDiscardedEvent extends RelEvent {
+    class AlgDiscardedEvent extends AlgEvent {
 
-        public RelDiscardedEvent( Object eventSource, AlgNode alg ) {
+        public AlgDiscardedEvent( Object eventSource, AlgNode alg ) {
             super( eventSource, alg );
         }
     }
@@ -157,7 +157,7 @@ public interface AlgOptListener extends EventListener {
     /**
      * Event indicating that a planner rule has fired.
      */
-    abstract class RuleEvent extends RelEvent {
+    abstract class RuleEvent extends AlgEvent {
 
         private final AlgOptRuleCall ruleCall;
 

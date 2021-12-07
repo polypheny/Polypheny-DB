@@ -62,7 +62,7 @@ public interface InterpretableRel extends AlgNode {
         public final Map<String, Object> internalParameters = new LinkedHashMap<>();
         public final SparkHandler spark;
         public final DataContext dataContext;
-        public final Map<AlgNode, List<Sink>> relSinks = new HashMap<>();
+        public final Map<AlgNode, List<Sink>> algSinks = new HashMap<>();
 
 
         public InterpreterImplementor( Compiler compiler, SparkHandler spark, DataContext dataContext ) {

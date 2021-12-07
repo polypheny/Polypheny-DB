@@ -114,9 +114,9 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
     private void onMatchRight( AlgOptRuleCall call ) {
         final Join topJoin = call.alg( 0 );
         final Join bottomJoin = call.alg( 1 );
-        final AlgNode relC = call.alg( 2 );
-        final AlgNode relA = bottomJoin.getLeft();
-        final AlgNode relB = bottomJoin.getRight();
+        final AlgNode algC = call.alg( 2 );
+        final AlgNode algA = bottomJoin.getLeft();
+        final AlgNode algB = bottomJoin.getRight();
         final AlgOptCluster cluster = topJoin.getCluster();
 
         //        topJoin
@@ -125,9 +125,9 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         //    /    \
         //   A      B
 
-        final int aCount = relA.getRowType().getFieldCount();
-        final int bCount = relB.getRowType().getFieldCount();
-        final int cCount = relC.getRowType().getFieldCount();
+        final int aCount = algA.getRowType().getFieldCount();
+        final int bCount = algB.getRowType().getFieldCount();
+        final int cCount = algC.getRowType().getFieldCount();
         final ImmutableBitSet bBitSet = ImmutableBitSet.range( aCount, aCount + bCount );
 
         // becomes
@@ -163,11 +163,11 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         // source: | A       | B | C      |
         final Mappings.TargetMapping bottomMapping = Mappings.createShiftMapping( aCount + bCount + cCount, 0, 0, aCount, aCount, aCount + bCount, cCount );
         final List<RexNode> newBottomList = new ArrayList<>();
-        new RexPermuteInputsShuttle( bottomMapping, relA, relC ).visitList( nonIntersecting, newBottomList );
-        new RexPermuteInputsShuttle( bottomMapping, relA, relC ).visitList( bottomNonIntersecting, newBottomList );
+        new RexPermuteInputsShuttle( bottomMapping, algA, algC ).visitList( nonIntersecting, newBottomList );
+        new RexPermuteInputsShuttle( bottomMapping, algA, algC ).visitList( bottomNonIntersecting, newBottomList );
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         RexNode newBottomCondition = RexUtil.composeConjunction( rexBuilder, newBottomList );
-        final Join newBottomJoin = bottomJoin.copy( bottomJoin.getTraitSet(), newBottomCondition, relA, relC, bottomJoin.getJoinType(), bottomJoin.isSemiJoinDone() );
+        final Join newBottomJoin = bottomJoin.copy( bottomJoin.getTraitSet(), newBottomCondition, algA, algC, bottomJoin.getJoinType(), bottomJoin.isSemiJoinDone() );
 
         // target: | A       | C      | B |
         // source: | A       | B | C      |
@@ -184,10 +184,10 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
                         aCount + bCount,
                         cCount );
         final List<RexNode> newTopList = new ArrayList<>();
-        new RexPermuteInputsShuttle( topMapping, newBottomJoin, relB ).visitList( intersecting, newTopList );
-        new RexPermuteInputsShuttle( topMapping, newBottomJoin, relB ).visitList( bottomIntersecting, newTopList );
+        new RexPermuteInputsShuttle( topMapping, newBottomJoin, algB ).visitList( intersecting, newTopList );
+        new RexPermuteInputsShuttle( topMapping, newBottomJoin, algB ).visitList( bottomIntersecting, newTopList );
         RexNode newTopCondition = RexUtil.composeConjunction( rexBuilder, newTopList );
-        @SuppressWarnings("SuspiciousNameCombination") final Join newTopJoin = topJoin.copy( topJoin.getTraitSet(), newTopCondition, newBottomJoin, relB, topJoin.getJoinType(), topJoin.isSemiJoinDone() );
+        @SuppressWarnings("SuspiciousNameCombination") final Join newTopJoin = topJoin.copy( topJoin.getTraitSet(), newTopCondition, newBottomJoin, algB, topJoin.getJoinType(), topJoin.isSemiJoinDone() );
 
         assert !Mappings.isIdentity( topMapping );
         final AlgBuilder algBuilder = call.builder();
@@ -203,9 +203,9 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
     private void onMatchLeft( AlgOptRuleCall call ) {
         final Join topJoin = call.alg( 0 );
         final Join bottomJoin = call.alg( 1 );
-        final AlgNode relC = call.alg( 2 );
-        final AlgNode relA = bottomJoin.getLeft();
-        final AlgNode relB = bottomJoin.getRight();
+        final AlgNode algC = call.alg( 2 );
+        final AlgNode algA = bottomJoin.getLeft();
+        final AlgNode algB = bottomJoin.getRight();
         final AlgOptCluster cluster = topJoin.getCluster();
 
         //        topJoin
@@ -214,9 +214,9 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
         //    /    \
         //   A      B
 
-        final int aCount = relA.getRowType().getFieldCount();
-        final int bCount = relB.getRowType().getFieldCount();
-        final int cCount = relC.getRowType().getFieldCount();
+        final int aCount = algA.getRowType().getFieldCount();
+        final int bCount = algB.getRowType().getFieldCount();
+        final int cCount = algC.getRowType().getFieldCount();
         final ImmutableBitSet aBitSet = ImmutableBitSet.range( aCount );
 
         // becomes
@@ -259,11 +259,11 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
                         aCount + bCount,
                         cCount );
         final List<RexNode> newBottomList = new ArrayList<>();
-        new RexPermuteInputsShuttle( bottomMapping, relC, relB ).visitList( nonIntersecting, newBottomList );
-        new RexPermuteInputsShuttle( bottomMapping, relC, relB ).visitList( bottomNonIntersecting, newBottomList );
+        new RexPermuteInputsShuttle( bottomMapping, algC, algB ).visitList( nonIntersecting, newBottomList );
+        new RexPermuteInputsShuttle( bottomMapping, algC, algB ).visitList( bottomNonIntersecting, newBottomList );
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         RexNode newBottomCondition = RexUtil.composeConjunction( rexBuilder, newBottomList );
-        final Join newBottomJoin = bottomJoin.copy( bottomJoin.getTraitSet(), newBottomCondition, relC, relB, bottomJoin.getJoinType(), bottomJoin.isSemiJoinDone() );
+        final Join newBottomJoin = bottomJoin.copy( bottomJoin.getTraitSet(), newBottomCondition, algC, algB, bottomJoin.getJoinType(), bottomJoin.isSemiJoinDone() );
 
         // target: | C      | B | A       |
         // source: | A       | B | C      |
@@ -280,10 +280,10 @@ public class JoinPushThroughJoinRule extends AlgOptRule {
                         aCount + bCount,
                         cCount );
         final List<RexNode> newTopList = new ArrayList<>();
-        new RexPermuteInputsShuttle( topMapping, newBottomJoin, relA ).visitList( intersecting, newTopList );
-        new RexPermuteInputsShuttle( topMapping, newBottomJoin, relA ).visitList( bottomIntersecting, newTopList );
+        new RexPermuteInputsShuttle( topMapping, newBottomJoin, algA ).visitList( intersecting, newTopList );
+        new RexPermuteInputsShuttle( topMapping, newBottomJoin, algA ).visitList( bottomIntersecting, newTopList );
         RexNode newTopCondition = RexUtil.composeConjunction( rexBuilder, newTopList );
-        @SuppressWarnings("SuspiciousNameCombination") final Join newTopJoin = topJoin.copy( topJoin.getTraitSet(), newTopCondition, newBottomJoin, relA, topJoin.getJoinType(), topJoin.isSemiJoinDone() );
+        @SuppressWarnings("SuspiciousNameCombination") final Join newTopJoin = topJoin.copy( topJoin.getTraitSet(), newTopCondition, newBottomJoin, algA, topJoin.getJoinType(), topJoin.isSemiJoinDone() );
 
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newTopJoin );

@@ -272,9 +272,9 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new CassandraTableScan( cluster, cluster.traitSetOf( cassandraSchema.getConvention() ), relOptTable, this, null );
+        return new CassandraTableScan( cluster, cluster.traitSetOf( cassandraSchema.getConvention() ), algOptTable, this, null );
     }
 
 

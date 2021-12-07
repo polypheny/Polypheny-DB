@@ -35,7 +35,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
 
-public class RelBuildTestHelper extends CqlTestHelper {
+public class AlgBuildTestHelper extends CqlTestHelper {
 
     protected final TestHelper instance;
     protected final Transaction transaction;
@@ -46,7 +46,7 @@ public class RelBuildTestHelper extends CqlTestHelper {
     protected AlgBuilder algBuilder;
 
 
-    public RelBuildTestHelper( RelBuildLevel relBuildLevel ) throws UnknownIndexException {
+    public AlgBuildTestHelper( AlgBuildLevel algBuildLevel ) throws UnknownIndexException {
         instance = TestHelper.getInstance();
         transaction = instance.getTransaction();
         statement = transaction.createStatement();
@@ -55,18 +55,18 @@ public class RelBuildTestHelper extends CqlTestHelper {
         rexBuilder = new RexBuilder( typeFactory );
         tableScanOrdinalities = new HashMap<>();
 
-        if ( relBuildLevel == RelBuildLevel.NONE ) {
+        if ( algBuildLevel == AlgBuildLevel.NONE ) {
 //            If NONE, then don't build any relational algebra.
 //            Else, keep executing more statements.
         } else {
             algBuilder = algBuilder.scan( "test", "employee" );
             algBuilder = algBuilder.scan( "test", "dept" );
-            if ( relBuildLevel == RelBuildLevel.TABLE_SCAN ) {
+            if ( algBuildLevel == AlgBuildLevel.TABLE_SCAN ) {
 //                If TABLE_SCAN, then scan has already been done.
 //                Else, keep executing more statements.
             } else {
                 algBuilder = algBuilder.join( JoinAlgType.INNER );
-                if ( relBuildLevel == RelBuildLevel.TABLE_JOIN ) {
+                if ( algBuildLevel == AlgBuildLevel.TABLE_JOIN ) {
 //                    If TABLE_JOIN, then join has already been done.
 //                    Else, keep executing more statements.
                 } else {
@@ -87,7 +87,7 @@ public class RelBuildTestHelper extends CqlTestHelper {
                         }
                     }
                     algBuilder = algBuilder.project( inputRefs, columnNames, true );
-                    if ( relBuildLevel == RelBuildLevel.INITIAL_PROJECTION ) {
+                    if ( algBuildLevel == AlgBuildLevel.INITIAL_PROJECTION ) {
 //                        If INITIAL_PROJECTION, then initial projection has already been done.
                     }
                 }
@@ -96,7 +96,7 @@ public class RelBuildTestHelper extends CqlTestHelper {
     }
 
 
-    public enum RelBuildLevel {
+    public enum AlgBuildLevel {
         NONE,
         TABLE_SCAN,
         TABLE_JOIN,

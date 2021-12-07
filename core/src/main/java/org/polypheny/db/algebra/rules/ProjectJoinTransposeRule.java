@@ -67,8 +67,8 @@ public class ProjectJoinTransposeRule extends AlgOptRule {
      *
      * @param preserveExprCondition Condition for expressions that should be preserved in the projection
      */
-    public ProjectJoinTransposeRule( PushProjector.ExprCondition preserveExprCondition, AlgBuilderFactory relFactory ) {
-        super( operand( Project.class, operand( Join.class, any() ) ), relFactory, null );
+    public ProjectJoinTransposeRule( PushProjector.ExprCondition preserveExprCondition, AlgBuilderFactory algFactory ) {
+        super( operand( Project.class, operand( Join.class, any() ) ), algFactory, null );
         this.preserveExprCondition = preserveExprCondition;
     }
 

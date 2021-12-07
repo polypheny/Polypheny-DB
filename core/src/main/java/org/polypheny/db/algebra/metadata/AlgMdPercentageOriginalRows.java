@@ -132,18 +132,18 @@ public class AlgMdPercentageOriginalRows implements MetadataHandler<BuiltInMetad
         }
 
         // Compute product of percentage filtering from this alg (assuming any filtering is the effect of single-table filters) with the percentage filtering performed by the child.
-        Double relPercentage =
+        Double algPercentage =
                 quotientForPercentage( mq.getRowCount( alg ), mq.getRowCount( child ) );
-        if ( relPercentage == null ) {
+        if ( algPercentage == null ) {
             return null;
         }
-        double percent = relPercentage * childPercentage;
+        double percent = algPercentage * childPercentage;
 
         // this check is needed in cases where this method is called on a physical rel
         if ( (percent < 0.0) || (percent > 1.0) ) {
             return null;
         }
-        return relPercentage * childPercentage;
+        return algPercentage * childPercentage;
     }
 
 

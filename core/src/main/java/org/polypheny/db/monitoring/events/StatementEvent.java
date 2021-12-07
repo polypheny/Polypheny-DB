@@ -55,7 +55,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected String durations;
     protected Map<Long, Set<Long>> accessedPartitions;
     protected LogicalQueryInformation logicalQueryInformation;
-    protected String relCompareString;
+    protected String algCompareString;
     protected String physicalQueryClass;
 
 

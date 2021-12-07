@@ -72,7 +72,7 @@ import org.polypheny.db.schema.impl.AbstractTableQueryable;
 
 
 /**
- * Implementation of {@link QueryableFactory} that builds a tree of {@link AlgNode} planner nodes. Used by {@link LixToRelTranslator}.
+ * Implementation of {@link QueryableFactory} that builds a tree of {@link AlgNode} planner nodes. Used by {@link LixToAlgTranslator}.
  * <p>
  * Each of the methods that implements a {@code Replayer} method creates a tree of {@code AlgNode}s equivalent to the
  * arguments, and calls {@link #setAlg} to assign the root of that tree to the {@link #alg} member variable.
@@ -87,17 +87,17 @@ import org.polypheny.db.schema.impl.AbstractTableQueryable;
  */
 class QueryableAlgBuilder<T> implements QueryableFactory<T> {
 
-    private final LixToRelTranslator translator;
+    private final LixToAlgTranslator translator;
     @Setter
     private AlgNode alg;
 
 
-    QueryableAlgBuilder( LixToRelTranslator translator ) {
+    QueryableAlgBuilder( LixToAlgTranslator translator ) {
         this.translator = translator;
     }
 
 
-    AlgNode toRel( Queryable<T> queryable ) {
+    AlgNode toAlg( Queryable<T> queryable ) {
         if ( queryable instanceof QueryableDefaults.Replayable ) {
             //noinspection unchecked
             ((QueryableDefaults.Replayable) queryable).replay( this );
@@ -110,15 +110,15 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
                     PolyphenyDbSchema
                             .from( tableQueryable.schema )
                             .add( tableQueryable.tableName, tableQueryable.table );
-            final AlgOptTableImpl relOptTable = AlgOptTableImpl.create(
+            final AlgOptTableImpl algOptTable = AlgOptTableImpl.create(
                     null,
                     table.getRowType( translator.typeFactory ),
                     tableEntry,
                     null );
             if ( table instanceof TranslatableTable ) {
-                return ((TranslatableTable) table).toRel( translator.toRelContext(), relOptTable );
+                return ((TranslatableTable) table).toAlg( translator.toAlgContext(), algOptTable );
             } else {
-                return LogicalTableScan.create( translator.cluster, relOptTable );
+                return LogicalTableScan.create( translator.cluster, algOptTable );
             }
         }
         return translator.translate( queryable.getExpression() );
@@ -576,7 +576,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
 
     @Override
     public <TResult> Queryable<TResult> select( Queryable<T> source, FunctionExpression<Function1<T, TResult>> selector ) {
-        AlgNode child = toRel( source );
+        AlgNode child = toAlg( source );
         List<RexNode> nodes = translator.toRexList( selector, child );
         setAlg( LogicalProject.create( child, nodes, (List<String>) null ) );
         return null;
@@ -805,7 +805,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
 
     @Override
     public Queryable<T> where( Queryable<T> source, FunctionExpression<? extends Predicate1<T>> predicate ) {
-        AlgNode child = toRel( source );
+        AlgNode child = toAlg( source );
         RexNode node = translator.toRex( predicate, child );
         setAlg( LogicalFilter.create( child, node ) );
         return source;

@@ -44,7 +44,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalTableScan} to the result of calling {@link AlgOptTable#toRel}.
+ * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalTableScan} to the result of calling {@link AlgOptTable#toAlg}.
  */
 public class TableScanRule extends AlgOptRule {
 
@@ -64,7 +64,7 @@ public class TableScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalTableScan oldRel = call.alg( 0 );
-        AlgNode newRel = oldRel.getTable().toRel( oldRel::getCluster );
+        AlgNode newRel = oldRel.getTable().toAlg( oldRel::getCluster );
         call.transformTo( newRel );
     }
 }

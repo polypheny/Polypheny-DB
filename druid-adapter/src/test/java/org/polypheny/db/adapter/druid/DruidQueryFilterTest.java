@@ -99,8 +99,8 @@ public class DruidQueryFilterTest {
     public void testBetweenFilterStringCase() throws IOException {
         final Fixture f = new Fixture();
         final List<RexNode> listRexNodes = ImmutableList.of( f.rexBuilder.makeLiteral( false ), f.rexBuilder.makeInputRef( f.varcharRowType, 0 ), f.rexBuilder.makeLiteral( "lower-bound" ), f.rexBuilder.makeLiteral( "upper-bound" ) );
-        AlgDataType relDataType = f.typeFactory.createPolyType( PolyType.BOOLEAN );
-        RexNode betweenRexNode = f.rexBuilder.makeCall( relDataType, OperatorRegistry.get( OperatorName.BETWEEN ), listRexNodes );
+        AlgDataType algDataType = f.typeFactory.createPolyType( PolyType.BOOLEAN );
+        RexNode betweenRexNode = f.rexBuilder.makeCall( algDataType, OperatorRegistry.get( OperatorName.BETWEEN ), listRexNodes );
 
         DruidJsonFilter returnValue = DruidJsonFilter.toDruidFilters( betweenRexNode, f.varcharRowType, druidQuery );
         Assert.assertNotNull( "Filter is null", returnValue );

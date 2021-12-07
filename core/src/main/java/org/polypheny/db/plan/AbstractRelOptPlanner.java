@@ -46,6 +46,9 @@ import java.util.regex.Pattern;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgDiscardedEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.util.CancelFlag;
@@ -273,7 +276,7 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public boolean addAlgTraitDef( AlgTraitDef relTraitDef ) {
+    public boolean addAlgTraitDef( AlgTraitDef algTraitDef ) {
         return false;
     }
 
@@ -368,8 +371,8 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
         LOGGER.debug( "For final plan, using {}", alg );
 
         if ( listener != null ) {
-            AlgOptListener.RelChosenEvent event = new AlgOptListener.RelChosenEvent( this, alg );
-            listener.relChosen( event );
+            AlgChosenEvent event = new AlgChosenEvent( this, alg );
+            listener.algChosen( event );
         }
     }
 
@@ -381,8 +384,8 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
      */
     protected void notifyEquivalence( AlgNode alg, Object equivalenceClass, boolean physical ) {
         if ( listener != null ) {
-            AlgOptListener.RelEquivalenceEvent event = new AlgOptListener.RelEquivalenceEvent( this, alg, equivalenceClass, physical );
-            listener.relEquivalenceFound( event );
+            AlgEquivalenceEvent event = new AlgEquivalenceEvent( this, alg, equivalenceClass, physical );
+            listener.algEquivalenceFound( event );
         }
     }
 
@@ -394,8 +397,8 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
      */
     protected void notifyDiscard( AlgNode alg ) {
         if ( listener != null ) {
-            AlgOptListener.RelDiscardedEvent event = new AlgOptListener.RelDiscardedEvent( this, alg );
-            listener.relDiscarded( event );
+            AlgDiscardedEvent event = new AlgDiscardedEvent( this, alg );
+            listener.algDiscarded( event );
         }
     }
 

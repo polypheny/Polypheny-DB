@@ -308,12 +308,12 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
 
 
     @Override
-    public AlgDataType getRowType( AlgDataTypeFactory relDataTypeFactory ) {
-        final AlgDataType mapType = relDataTypeFactory.createMapType(
-                relDataTypeFactory.createPolyType( PolyType.VARCHAR ),
-                relDataTypeFactory.createTypeWithNullability( relDataTypeFactory.createPolyType( PolyType.ANY ), true ) );
+    public AlgDataType getRowType( AlgDataTypeFactory algDataTypeFactory ) {
+        final AlgDataType mapType = algDataTypeFactory.createMapType(
+                algDataTypeFactory.createPolyType( PolyType.VARCHAR ),
+                algDataTypeFactory.createTypeWithNullability( algDataTypeFactory.createPolyType( PolyType.ANY ), true ) );
         // TODO (PCP)
-        return relDataTypeFactory.builder().add( "_MAP", null, mapType ).build();
+        return algDataTypeFactory.builder().add( "_MAP", null, mapType ).build();
     }
 
 
@@ -330,9 +330,9 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new ElasticsearchTableScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ), relOptTable, this, null );
+        return new ElasticsearchTableScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ), algOptTable, this, null );
     }
 
 

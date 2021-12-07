@@ -68,11 +68,11 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
      *
      * @param planner Planner
      * @param operand First operand of the rule
-     * @param rels Array which will hold the matched relational expressions
+     * @param algs Array which will hold the matched relational expressions
      * @param nodeInputs For each node which matched with {@code matchAnyChildren} = true, a list of the node's inputs
      */
-    protected VolcanoRuleCall( VolcanoPlanner planner, AlgOptRuleOperand operand, AlgNode[] rels, Map<AlgNode, List<AlgNode>> nodeInputs ) {
-        super( planner, operand, rels, nodeInputs );
+    protected VolcanoRuleCall( VolcanoPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeInputs ) {
+        super( planner, operand, algs, nodeInputs );
         this.volcanoPlanner = planner;
     }
 
@@ -102,13 +102,13 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
             // expressions are actually equivalent.
 
             // Make sure traits that the new alg doesn't know about are propagated.
-            AlgTraitSet rels0Traits = algs[0].getTraitSet();
-            new AlgTraitPropagationVisitor( getPlanner(), rels0Traits ).go( alg );
+            AlgTraitSet algs0Traits = algs[0].getTraitSet();
+            new AlgTraitPropagationVisitor( getPlanner(), algs0Traits ).go( alg );
 
             if ( LOGGER.isTraceEnabled() ) {
                 // Cannot call AlgNode.toString() yet, because alg has not been registered. For now, let's make up something similar.
-                String relDesc = "rel#" + alg.getId() + ":" + alg.getAlgTypeName();
-                LOGGER.trace( "call#{}: Rule {} arguments {} created {}", id, getRule(), Arrays.toString( algs ), relDesc );
+                String algDesc = "rel#" + alg.getId() + ":" + alg.getAlgTypeName();
+                LOGGER.trace( "call#{}: Rule {} arguments {} created {}", id, getRule(), Arrays.toString( algs ), algDesc );
             }
 
             if ( volcanoPlanner.listener != null ) {

@@ -264,13 +264,13 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context ) {
+    public AlgNode toAlg( ToAlgContext context ) {
         // Make sure rowType's list is immutable. If rowType is DynamicRecordType, creates a new RelOptTable by replacing with
         // immutable RelRecordType using the same field list.
         if ( this.getRowType().isDynamicStruct() ) {
             final AlgDataType staticRowType = new AlgRecordType( getRowType().getFieldList() );
-            final AlgOptTable relOptTable = this.copy( staticRowType );
-            return relOptTable.toRel( context );
+            final AlgOptTable algOptTable = this.copy( staticRowType );
+            return algOptTable.toAlg( context );
         }
 
         // If there are any virtual columns, create a copy of this table without those virtual columns.
@@ -282,7 +282,7 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
                     b.add( field.getName(), null, field.getType() );
                 }
             }
-            final AlgOptTable relOptTable =
+            final AlgOptTable algOptTable =
                     new AlgOptTableImpl( this.schema, b.build(), this.names, this.table, this.expressionFunction, this.rowCount ) {
                         @Override
                         public <T> T unwrap( Class<T> clazz ) {
@@ -292,11 +292,11 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
                             return super.unwrap( clazz );
                         }
                     };
-            return relOptTable.toRel( context );
+            return algOptTable.toAlg( context );
         }
 
         if ( table instanceof TranslatableTable ) {
-            return ((TranslatableTable) table).toRel( context, this );
+            return ((TranslatableTable) table).toAlg( context, this );
         }
         final AlgOptCluster cluster = context.getCluster();
         if ( Hook.ENABLE_BINDABLE.get( false ) ) {

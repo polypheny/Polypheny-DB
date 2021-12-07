@@ -102,7 +102,7 @@ public class RexExecutorTest {
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
                         final RexBuilder rexBuilder = cluster.getRexBuilder();
                         DataContext dataContext = Schemas.createDataContext( rootSchema );
                         final RexExecutorImpl executor = new RexExecutorImpl( dataContext );

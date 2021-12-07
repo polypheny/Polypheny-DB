@@ -74,7 +74,7 @@ public interface AlgOptPlanner {
      *
      * @return whether the RelTraitDef was added, as per {@link java.util.Collection#add}
      */
-    boolean addAlgTraitDef( AlgTraitDef relTraitDef );
+    boolean addAlgTraitDef( AlgTraitDef algTraitDef );
 
     /**
      * Clear all the registered RelTraitDef.
@@ -223,7 +223,7 @@ public interface AlgOptPlanner {
     /**
      * Gets a timestamp for a given rel's metadata. This timestamp is used by {@link CachingAlgMetadataProvider} to decide whether cached metadata has gone stale.
      *
-     * @param alg rel of interest
+     * @param alg alg of interest
      * @return timestamp of last change which might affect metadata derivation
      */
     long getRelMetadataTimestamp( AlgNode alg );

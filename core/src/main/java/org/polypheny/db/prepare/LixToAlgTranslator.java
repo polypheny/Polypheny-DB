@@ -63,26 +63,26 @@ import org.polypheny.db.util.BuiltInMethod;
  *
  * @see QueryableAlgBuilder
  */
-class LixToRelTranslator {
+class LixToAlgTranslator {
 
     final AlgOptCluster cluster;
     final JavaTypeFactory typeFactory;
 
 
-    LixToRelTranslator( AlgOptCluster cluster ) {
+    LixToAlgTranslator( AlgOptCluster cluster ) {
         this.cluster = cluster;
         this.typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
     }
 
 
-    ToAlgContext toRelContext() {
+    ToAlgContext toAlgContext() {
         return () -> cluster;
     }
 
 
     public <T> AlgNode translate( Queryable<T> queryable ) {
         QueryableAlgBuilder<T> translatorQueryable = new QueryableAlgBuilder<>( this );
-        return translatorQueryable.toRel( queryable );
+        return translatorQueryable.toAlg( queryable );
     }
 
 

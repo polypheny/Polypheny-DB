@@ -147,8 +147,8 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
-        return new EnumerableTableScan( context.getCluster(), context.getCluster().traitSetOf( EnumerableConvention.INSTANCE ), relOptTable, (Class) getElementType() );
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+        return new EnumerableTableScan( context.getCluster(), context.getCluster().traitSetOf( EnumerableConvention.INSTANCE ), algOptTable, (Class) getElementType() );
     }
 }
 

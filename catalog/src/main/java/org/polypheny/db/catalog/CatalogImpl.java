@@ -199,7 +199,7 @@ public class CatalogImpl extends Catalog {
     private final Map<Long, AlgNode> nodeInfo = new HashMap<>();
     // AlgDataTypes used to create view and materialized view
     @Getter
-    private final Map<Long, AlgDataType> relTypeInfo = new HashMap<>();
+    private final Map<Long, AlgDataType> algTypeInfo = new HashMap<>();
 
 
     public CatalogImpl() {
@@ -454,12 +454,12 @@ public class CatalogImpl extends Catalog {
                     case SQL:
                         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
                         Node sqlNode = sqlProcessor.parse( query );
-                        AlgRoot relRoot = sqlProcessor.translate(
+                        AlgRoot algRoot = sqlProcessor.translate(
                                 statement,
                                 sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
                                 new QueryParameters( query ) );
-                        nodeInfo.put( c.id, relRoot.alg );
-                        relTypeInfo.put( c.id, relRoot.validatedRowType );
+                        nodeInfo.put( c.id, algRoot.alg );
+                        algTypeInfo.put( c.id, algRoot.validatedRowType );
                         break;
 
                     case REL_ALG:
@@ -475,7 +475,7 @@ public class CatalogImpl extends Catalog {
                         AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
                         nodeInfo.put( c.id, root.alg );
-                        relTypeInfo.put( c.id, root.validatedRowType );
+                        algTypeInfo.put( c.id, root.validatedRowType );
                         break;
 
                     case MONGO_QL:
@@ -487,7 +487,7 @@ public class CatalogImpl extends Catalog {
                                 mqlNode,
                                 new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name ) );
                         nodeInfo.put( c.id, mqlRel.alg );
-                        relTypeInfo.put( c.id, mqlRel.validatedRowType );
+                        algTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;
                 }
                 if ( c.tableType == TableType.MATERIALIZED_VIEW ) {
@@ -1471,7 +1471,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation relCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1497,7 +1497,7 @@ public class CatalogImpl extends Catalog {
                     null,
                     ImmutableMap.of(),
                     modifiable,
-                    relCollation,
+                    algCollation,
                     ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
                             Entry::getKey,
                             e -> ImmutableList.copyOf( e.getValue() )
@@ -1507,7 +1507,7 @@ public class CatalogImpl extends Catalog {
             );
             addConnectedViews( underlyingTables, viewTable.id );
             updateTableLogistics( name, schemaId, id, schema, viewTable );
-            relTypeInfo.put( id, fieldList );
+            algTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
             // Should not happen, addViewTable is only called with TableType.View
@@ -1526,7 +1526,7 @@ public class CatalogImpl extends Catalog {
      * @param tableType type of table
      * @param modifiable Whether the content of the table can be modified
      * @param definition {@link AlgNode} used to create Views
-     * @param relCollation relCollation used for materialized view
+     * @param algCollation relCollation used for materialized view
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @param materializedCriteria Information like freshness and last updated
@@ -1536,7 +1536,7 @@ public class CatalogImpl extends Catalog {
      * @return id of the inserted materialized view
      */
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation relCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1569,7 +1569,7 @@ public class CatalogImpl extends Catalog {
                     null,
                     ImmutableMap.of(),
                     modifiable,
-                    relCollation,
+                    algCollation,
                     ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
                             Entry::getKey,
                             e -> ImmutableList.copyOf( e.getValue() )
@@ -1582,7 +1582,7 @@ public class CatalogImpl extends Catalog {
             addConnectedViews( underlyingTables, materializedViewTable.id );
             updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
 
-            relTypeInfo.put( id, fieldList );
+            algTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
             // Should not happen, addViewTable is only called with TableType.View

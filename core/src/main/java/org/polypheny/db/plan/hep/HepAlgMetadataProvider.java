@@ -63,15 +63,15 @@ class HepAlgMetadataProvider implements AlgMetadataProvider {
 
 
     @Override
-    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> relClass, final Class<? extends M> metadataClass ) {
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass, final Class<? extends M> metadataClass ) {
         return ( alg, mq ) -> {
             if ( !(alg instanceof HepAlgVertex) ) {
                 return null;
             }
             HepAlgVertex vertex = (HepAlgVertex) alg;
-            final AlgNode rel2 = vertex.getCurrentAlg();
-            UnboundMetadata<M> function = alg.getCluster().getMetadataProvider().apply( rel2.getClass(), metadataClass );
-            return function.bind( rel2, mq );
+            final AlgNode alg2 = vertex.getCurrentAlg();
+            UnboundMetadata<M> function = alg.getCluster().getMetadataProvider().apply( alg2.getClass(), metadataClass );
+            return function.bind( alg2, mq );
         };
     }
 

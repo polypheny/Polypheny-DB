@@ -1403,37 +1403,37 @@ public class SubstitutionVisitor {
     /**
      * Returns if one alg is weaker than another.
      */
-    protected boolean isWeaker( MutableAlg rel0, MutableAlg alg ) {
-        if ( rel0 == alg || equivalents.get( rel0 ).contains( alg ) ) {
+    protected boolean isWeaker( MutableAlg alg0, MutableAlg alg ) {
+        if ( alg0 == alg || equivalents.get( alg0 ).contains( alg ) ) {
             return false;
         }
 
-        if ( !(rel0 instanceof MutableFilter) || !(alg instanceof MutableFilter) ) {
+        if ( !(alg0 instanceof MutableFilter) || !(alg instanceof MutableFilter) ) {
             return false;
         }
 
-        if ( !alg.rowType.equals( rel0.rowType ) ) {
+        if ( !alg.rowType.equals( alg0.rowType ) ) {
             return false;
         }
 
-        final MutableAlg rel0input = ((MutableFilter) rel0).getInput();
-        final MutableAlg relinput = ((MutableFilter) alg).getInput();
-        if ( rel0input != relinput && !equivalents.get( rel0input ).contains( relinput ) ) {
+        final MutableAlg alg0input = ((MutableFilter) alg0).getInput();
+        final MutableAlg alginput = ((MutableFilter) alg).getInput();
+        if ( alg0input != alginput && !equivalents.get( alg0input ).contains( alginput ) ) {
             return false;
         }
 
         RexExecutorImpl rexImpl = (RexExecutorImpl) (alg.cluster.getPlanner().getExecutor());
         RexImplicationChecker rexImplicationChecker = new RexImplicationChecker( alg.cluster.getRexBuilder(), rexImpl, alg.rowType );
 
-        return rexImplicationChecker.implies( ((MutableFilter) rel0).condition, ((MutableFilter) alg).condition );
+        return rexImplicationChecker.implies( ((MutableFilter) alg0).condition, ((MutableFilter) alg).condition );
     }
 
 
     /**
      * Returns whether two relational expressions have the same row-type.
      */
-    public static boolean equalType( String desc0, MutableAlg rel0, String desc1, MutableAlg rel1, Litmus litmus ) {
-        return AlgOptUtil.equal( desc0, rel0.rowType, desc1, rel1.rowType, litmus );
+    public static boolean equalType( String desc0, MutableAlg alg0, String desc1, MutableAlg alg1, Litmus litmus ) {
+        return AlgOptUtil.equal( desc0, alg0.rowType, desc1, alg1.rowType, litmus );
     }
 
 
@@ -1486,11 +1486,11 @@ public class SubstitutionVisitor {
         }
 
 
-        private static boolean allMatch( SubstitutionVisitor visitor, List<Operand> operands, List<MutableAlg> rels ) {
-            if ( operands.size() != rels.size() ) {
+        private static boolean allMatch( SubstitutionVisitor visitor, List<Operand> operands, List<MutableAlg> algs ) {
+            if ( operands.size() != algs.size() ) {
                 return false;
             }
-            for ( Pair<Operand, MutableAlg> pair : Pair.zip( operands, rels ) ) {
+            for ( Pair<Operand, MutableAlg> pair : Pair.zip( operands, algs ) ) {
                 if ( !pair.left.matches( visitor, pair.right ) ) {
                     return false;
                 }
@@ -1499,11 +1499,11 @@ public class SubstitutionVisitor {
         }
 
 
-        private static boolean allWeaker( SubstitutionVisitor visitor, List<Operand> operands, List<MutableAlg> rels ) {
-            if ( operands.size() != rels.size() ) {
+        private static boolean allWeaker( SubstitutionVisitor visitor, List<Operand> operands, List<MutableAlg> algs ) {
+            if ( operands.size() != algs.size() ) {
                 return false;
             }
-            for ( Pair<Operand, MutableAlg> pair : Pair.zip( operands, rels ) ) {
+            for ( Pair<Operand, MutableAlg> pair : Pair.zip( operands, algs ) ) {
                 if ( !pair.left.isWeaker( visitor, pair.right ) ) {
                     return false;
                 }
@@ -1574,17 +1574,17 @@ public class SubstitutionVisitor {
 
         @Override
         public boolean matches( SubstitutionVisitor visitor, MutableAlg alg ) {
-            final MutableAlg rel0 = visitor.slots[ordinal];
-            assert rel0 != null : "QueryOperand should have been called first";
-            return rel0 == alg || visitor.equivalents.get( rel0 ).contains( alg );
+            final MutableAlg alg0 = visitor.slots[ordinal];
+            assert alg0 != null : "QueryOperand should have been called first";
+            return alg0 == alg || visitor.equivalents.get( alg0 ).contains( alg );
         }
 
 
         @Override
         public boolean isWeaker( SubstitutionVisitor visitor, MutableAlg alg ) {
-            final MutableAlg rel0 = visitor.slots[ordinal];
-            assert rel0 != null : "QueryOperand should have been called first";
-            return visitor.isWeaker( rel0, alg );
+            final MutableAlg alg0 = visitor.slots[ordinal];
+            assert alg0 != null : "QueryOperand should have been called first";
+            return visitor.isWeaker( alg0, alg );
         }
 
     }

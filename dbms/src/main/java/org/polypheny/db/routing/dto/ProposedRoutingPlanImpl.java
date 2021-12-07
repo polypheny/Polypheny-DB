@@ -51,8 +51,8 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
         this.queryClass = queryClass;
         this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
         this.router = routerClass;
-        AlgNode rel = routedAlgBuilder.build();
-        this.routedRoot = new AlgRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        AlgNode alg = routedAlgBuilder.build();
+        this.routedRoot = new AlgRoot( alg, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
@@ -61,8 +61,8 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
         this.queryClass = queryClass;
         this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
         this.router = cachedPlan.getRouter();
-        AlgNode rel = routedAlgBuilder.build();
-        this.routedRoot = new AlgRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        AlgNode alg = routedAlgBuilder.build();
+        this.routedRoot = new AlgRoot( alg, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 

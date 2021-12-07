@@ -62,8 +62,8 @@ public class PigAlgBuilder extends AlgBuilder {
     private String lastAlias;
 
 
-    private PigAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema relOptSchema ) {
-        super( context, cluster, relOptSchema );
+    private PigAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
+        super( context, cluster, algOptSchema );
     }
 
 
@@ -72,7 +72,7 @@ public class PigAlgBuilder extends AlgBuilder {
      */
     public static PigAlgBuilder create( FrameworkConfig config ) {
         final AlgBuilder algBuilder = AlgBuilder.create( config );
-        return new PigAlgBuilder( config.getContext(), algBuilder.cluster, algBuilder.relOptSchema );
+        return new PigAlgBuilder( config.getContext(), algBuilder.cluster, algBuilder.algOptSchema );
     }
 
 

@@ -105,9 +105,9 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
-        return new FileTableScan( context.getCluster(), relOptTable, this );
+        return new FileTableScan( context.getCluster(), algOptTable, this );
     }
 
 

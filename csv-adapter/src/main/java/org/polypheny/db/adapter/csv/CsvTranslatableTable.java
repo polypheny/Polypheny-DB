@@ -108,8 +108,8 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         // Request all fields.
-        return new CsvTableScan( context.getCluster(), relOptTable, this, fields );
+        return new CsvTableScan( context.getCluster(), algOptTable, this, fields );
     }
 }

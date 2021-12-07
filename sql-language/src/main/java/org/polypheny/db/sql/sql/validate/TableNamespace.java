@@ -108,8 +108,8 @@ class TableNamespace extends AbstractNamespace {
         final Table schemaTable = table.unwrap( Table.class );
         if ( schemaTable != null && table instanceof AlgOptTable && schemaTable instanceof ExtensibleTable ) {
             checkExtendedColumnTypes( extendList );
-            final AlgOptTable relOptTable = ((AlgOptTable) table).extend( extendedFields );
-            final ValidatorTable validatorTable = relOptTable.unwrap( ValidatorTable.class );
+            final AlgOptTable algOptTable = ((AlgOptTable) table).extend( extendedFields );
+            final ValidatorTable validatorTable = algOptTable.unwrap( ValidatorTable.class );
             return new TableNamespace( validator, validatorTable, ImmutableList.of() );
         }
         return new TableNamespace( validator, table, extendedFields );

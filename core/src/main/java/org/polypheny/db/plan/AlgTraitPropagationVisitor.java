@@ -66,9 +66,9 @@ public class AlgTraitPropagationVisitor extends AlgVisitor {
             return;
         }
 
-        AlgTraitSet relTraits = alg.getTraitSet();
+        AlgTraitSet algTraits = alg.getTraitSet();
         for ( int i = 0; i < baseTraits.size(); i++ ) {
-            if ( i >= relTraits.size() ) {
+            if ( i >= algTraits.size() ) {
                 // Copy traits that the new alg doesn't know about.
                 Util.discard( AlgOptUtil.addTrait( alg, baseTraits.getTrait( i ) ) );
 
@@ -76,7 +76,7 @@ public class AlgTraitPropagationVisitor extends AlgVisitor {
                 throw new AssertionError();
             } else {
                 // Verify that the traits are from the same RelTraitDef
-                assert relTraits.getTrait( i ).getTraitDef() == baseTraits.getTrait( i ).getTraitDef();
+                assert algTraits.getTrait( i ).getTraitDef() == baseTraits.getTrait( i ).getTraitDef();
             }
         }
         alg.childrenAccept( this );

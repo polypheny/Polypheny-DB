@@ -108,7 +108,7 @@ public class FrameworksTest extends SqLanguagelDependant {
     @Test
     public void testOptimize() {
         AlgNode x =
-                Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
+                Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
                     final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
                     final Table table = new AbstractTable() {
                         @Override
@@ -123,9 +123,9 @@ public class FrameworksTest extends SqLanguagelDependant {
                     };
 
                     // "SELECT * FROM myTable"
-                    final AlgOptAbstractTable relOptTable = new AlgOptAbstractTable( relOptSchema, "myTable", table.getRowType( typeFactory ) ) {
+                    final AlgOptAbstractTable algOptTable = new AlgOptAbstractTable( algOptSchema, "myTable", table.getRowType( typeFactory ) ) {
                     };
-                    final EnumerableTableScan tableRel = EnumerableTableScan.create( cluster, relOptTable );
+                    final EnumerableTableScan tableRel = EnumerableTableScan.create( cluster, algOptTable );
 
                     // "WHERE i > 1"
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -221,7 +221,7 @@ public class FrameworksTest extends SqLanguagelDependant {
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
                         final AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.DECIMAL, 30, 2 );
                         final RexLiteral literal = cluster.getRexBuilder().makeExactLiteral( BigDecimal.ONE, type );
                         final RexNode call = cluster.getRexBuilder().makeCall( OperatorRegistry.get( OperatorName.PLUS ), literal, literal );

@@ -33,9 +33,9 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     /**
      * Sets the routed relRoot
      *
-     * @param relRoot The routed rel root.
+     * @param algRoot The routed alg root.
      */
-    void setRoutedRoot( AlgRoot relRoot );
+    void setRoutedRoot( AlgRoot algRoot );
 
     /**
      * @return The query class.
@@ -73,7 +73,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     /**
      * Sets the pre costs.
      *
-     * @param preCosts the approximated rel costs.
+     * @param preCosts the approximated alg costs.
      */
     void setPreCosts( AlgOptCost preCosts );
 

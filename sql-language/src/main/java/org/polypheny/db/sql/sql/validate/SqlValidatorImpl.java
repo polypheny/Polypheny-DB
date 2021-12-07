@@ -4055,7 +4055,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
         }
         final Set<Integer> assignedFields = new HashSet<>();
-        final AlgOptTable relOptTable = table instanceof AlgOptTable ? ((AlgOptTable) table) : null;
+        final AlgOptTable algOptTable = table instanceof AlgOptTable ? ((AlgOptTable) table) : null;
         for ( Node node : targetColumnList ) {
             SqlIdentifier id = (SqlIdentifier) node;
             AlgDataTypeField targetField =
@@ -4064,7 +4064,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             typeFactory,
                             id,
                             catalogReader,
-                            relOptTable,
+                            algOptTable,
                             allowDynamic );
 
             if ( targetField == null ) {
@@ -4086,16 +4086,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateInsert( SqlInsert insert ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
         validateNamespace( targetNamespace, unknownType );
-        final AlgOptTable relOptTable =
+        final AlgOptTable algOptTable =
                 SqlValidatorUtil.getAlgOptTable(
                         targetNamespace,
                         catalogReader.unwrap( Prepare.CatalogReader.class ),
                         null,
                         null );
         final ValidatorTable table =
-                relOptTable == null
+                algOptTable == null
                         ? targetNamespace.getTable()
-                        : relOptTable.unwrap( ValidatorTable.class );
+                        : algOptTable.unwrap( ValidatorTable.class );
 
         boolean allowDynamic = false;
         if ( insert.getSchemaType() == SchemaType.DOCUMENT ) {
@@ -4370,16 +4370,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateUpdate( SqlUpdate call ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final AlgOptTable relOptTable =
+        final AlgOptTable algOptTable =
                 SqlValidatorUtil.getAlgOptTable(
                         targetNamespace,
                         catalogReader.unwrap( Prepare.CatalogReader.class ),
                         null,
                         null );
         final ValidatorTable table =
-                relOptTable == null
+                algOptTable == null
                         ? targetNamespace.getTable()
-                        : relOptTable.unwrap( ValidatorTable.class );
+                        : algOptTable.unwrap( ValidatorTable.class );
 
         final AlgDataType targetRowType =
                 createTargetRowType(

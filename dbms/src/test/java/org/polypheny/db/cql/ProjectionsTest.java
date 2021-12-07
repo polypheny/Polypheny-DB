@@ -25,11 +25,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.cql.Projections.AggregationFunctions;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.helper.RelBuildTestHelper;
+import org.polypheny.db.cql.helper.AlgBuildTestHelper;
 import org.polypheny.db.algebra.AlgNode;
 
 
-public class ProjectionsTest extends RelBuildTestHelper {
+public class ProjectionsTest extends AlgBuildTestHelper {
 
     private final Projections projections;
     private final ColumnIndex empname;
@@ -39,7 +39,7 @@ public class ProjectionsTest extends RelBuildTestHelper {
 
 
     public ProjectionsTest() throws UnknownIndexException {
-        super( RelBuildLevel.INITIAL_PROJECTION );
+        super( AlgBuildLevel.INITIAL_PROJECTION );
         projections = new Projections();
         empname = ColumnIndex.createIndex( "APP", "test", "employee", "empname" );
         deptname = ColumnIndex.createIndex( "APP", "test", "dept", "deptname" );

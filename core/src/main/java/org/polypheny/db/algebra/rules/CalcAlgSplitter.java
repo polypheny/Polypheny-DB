@@ -185,13 +185,13 @@ public abstract class CalcAlgSplitter {
                 projectExprOrdinals = Ints.toArray( projectExprOrdinalList );
             }
 
-            final AlgType relType = algTypes[levelTypeOrdinals[level]];
+            final AlgType algType = algTypes[levelTypeOrdinals[level]];
 
             // Can we do the condition this level?
             int conditionExprOrdinal = -1;
             if ( (conditionRef != null) && !doneCondition ) {
                 conditionExprOrdinal = conditionRef.getIndex();
-                if ( (exprLevels[conditionExprOrdinal] > level) || !relType.supportsCondition() ) {
+                if ( (exprLevels[conditionExprOrdinal] > level) || !algType.supportsCondition() ) {
                     // stand down -- we're not ready to do the condition yet
                     conditionExprOrdinal = -1;
                 } else {
@@ -210,7 +210,7 @@ public abstract class CalcAlgSplitter {
                             projectExprOrdinals,
                             conditionExprOrdinal,
                             outputRowType );
-            alg = relType.makeRel( cluster, traits, algBuilder, alg, program1 );
+            alg = algType.makeRel( cluster, traits, algBuilder, alg, program1 );
 
             // Sometimes a level's program merely projects its inputs. We don't want these. They cause an explosion in the search space.
             if ( alg instanceof LogicalCalc && ((LogicalCalc) alg).getProgram().isTrivial() ) {
@@ -250,8 +250,8 @@ public abstract class CalcAlgSplitter {
 
         int levelCount = 0;
         final MaxInputFinder maxInputFinder = new MaxInputFinder( exprLevels );
-        boolean[] relTypesPossibleForTopLevel = new boolean[algTypes.length];
-        Arrays.fill( relTypesPossibleForTopLevel, true );
+        boolean[] algTypesPossibleForTopLevel = new boolean[algTypes.length];
+        Arrays.fill( algTypesPossibleForTopLevel, true );
 
         // Compute the order in which to visit expressions.
         final List<Set<Integer>> cohorts = getCohorts();
@@ -292,45 +292,45 @@ public abstract class CalcAlgSplitter {
             for ( ; ; ++level ) {
                 if ( level >= levelCount ) {
                     // This is a new level. We can use any type we like.
-                    for ( int relTypeOrdinal = 0; relTypeOrdinal < algTypes.length; relTypeOrdinal++ ) {
-                        if ( !relTypesPossibleForTopLevel[relTypeOrdinal] ) {
+                    for ( int algTypeOrdinal = 0; algTypeOrdinal < algTypes.length; algTypeOrdinal++ ) {
+                        if ( !algTypesPossibleForTopLevel[algTypeOrdinal] ) {
                             continue;
                         }
-                        if ( algTypes[relTypeOrdinal].canImplement( expr, condition ) ) {
+                        if ( algTypes[algTypeOrdinal].canImplement( expr, condition ) ) {
                             // Success. We have found a type where we can implement this expression.
                             exprLevels[i] = level;
-                            levelTypeOrdinals[level] = relTypeOrdinal;
+                            levelTypeOrdinals[level] = algTypeOrdinal;
                             assert (level == 0) || (levelTypeOrdinals[level - 1] != levelTypeOrdinals[level]) : "successive levels of same type";
 
                             // Figure out which of the other reltypes are still possible for this level.
                             // Previous reltypes are not possible.
-                            for ( int j = 0; j < relTypeOrdinal; ++j ) {
-                                relTypesPossibleForTopLevel[j] = false;
+                            for ( int j = 0; j < algTypeOrdinal; ++j ) {
+                                algTypesPossibleForTopLevel[j] = false;
                             }
 
                             // Successive reltypes may be possible.
-                            for ( int j = relTypeOrdinal + 1; j < algTypes.length; ++j ) {
-                                if ( relTypesPossibleForTopLevel[j] ) {
-                                    relTypesPossibleForTopLevel[j] = algTypes[j].canImplement( expr, condition );
+                            for ( int j = algTypeOrdinal + 1; j < algTypes.length; ++j ) {
+                                if ( algTypesPossibleForTopLevel[j] ) {
+                                    algTypesPossibleForTopLevel[j] = algTypes[j].canImplement( expr, condition );
                                 }
                             }
 
                             // Move to next level.
-                            levelTypeOrdinals[levelCount] = firstSet( relTypesPossibleForTopLevel );
+                            levelTypeOrdinals[levelCount] = firstSet( algTypesPossibleForTopLevel );
                             ++levelCount;
-                            Arrays.fill( relTypesPossibleForTopLevel, true );
+                            Arrays.fill( algTypesPossibleForTopLevel, true );
                             break levelLoop;
                         }
                     }
 
                     // None of the reltypes still active for this level could implement expr. But maybe we could succeed with a new level, with all options open?
-                    if ( count( relTypesPossibleForTopLevel ) >= algTypes.length ) {
+                    if ( count( algTypesPossibleForTopLevel ) >= algTypes.length ) {
                         // Cannot implement for any type.
                         throw new AssertionError( "cannot implement " + expr );
                     }
-                    levelTypeOrdinals[levelCount] = firstSet( relTypesPossibleForTopLevel );
+                    levelTypeOrdinals[levelCount] = firstSet( algTypesPossibleForTopLevel );
                     ++levelCount;
-                    Arrays.fill( relTypesPossibleForTopLevel, true );
+                    Arrays.fill( algTypesPossibleForTopLevel, true );
                 } else {
                     final int levelTypeOrdinal = levelTypeOrdinals[level];
                     if ( !algTypes[levelTypeOrdinal].canImplement( expr, condition ) ) {
@@ -595,16 +595,16 @@ public abstract class CalcAlgSplitter {
      * Returns whether a relational expression can be implemented solely in a given {@link AlgType}.
      *
      * @param alg Calculation relational expression
-     * @param relTypeName Name of a {@link AlgType}
+     * @param algTypeName Name of a {@link AlgType}
      * @return Whether relational expression can be implemented
      */
-    protected boolean canImplement( LogicalCalc alg, String relTypeName ) {
-        for ( AlgType relType : algTypes ) {
-            if ( relType.name.equals( relTypeName ) ) {
-                return relType.canImplement( alg.getProgram() );
+    protected boolean canImplement( LogicalCalc alg, String algTypeName ) {
+        for ( AlgType algType : algTypes ) {
+            if ( algType.name.equals( algTypeName ) ) {
+                return algType.canImplement( alg.getProgram() );
             }
         }
-        throw new AssertionError( "unknown type " + relTypeName );
+        throw new AssertionError( "unknown type " + algTypeName );
     }
 
 
@@ -709,18 +709,18 @@ public abstract class CalcAlgSplitter {
      */
     private static class ImplementTester extends RexVisitorImpl<Void> {
 
-        private final AlgType relType;
+        private final AlgType algType;
 
 
-        ImplementTester( AlgType relType ) {
+        ImplementTester( AlgType algType ) {
             super( false );
-            this.relType = relType;
+            this.algType = algType;
         }
 
 
         @Override
         public Void visitCall( RexCall call ) {
-            if ( !relType.canImplement( call ) ) {
+            if ( !algType.canImplement( call ) ) {
                 throw CannotImplement.INSTANCE;
             }
             return null;
@@ -729,7 +729,7 @@ public abstract class CalcAlgSplitter {
 
         @Override
         public Void visitDynamicParam( RexDynamicParam dynamicParam ) {
-            if ( !relType.canImplement( dynamicParam ) ) {
+            if ( !algType.canImplement( dynamicParam ) ) {
                 throw CannotImplement.INSTANCE;
             }
             return null;
@@ -738,7 +738,7 @@ public abstract class CalcAlgSplitter {
 
         @Override
         public Void visitFieldAccess( RexFieldAccess fieldAccess ) {
-            if ( !relType.canImplement( fieldAccess ) ) {
+            if ( !algType.canImplement( fieldAccess ) ) {
                 throw CannotImplement.INSTANCE;
             }
             return null;
@@ -747,7 +747,7 @@ public abstract class CalcAlgSplitter {
 
         @Override
         public Void visitLiteral( RexLiteral literal ) {
-            if ( !relType.canImplement( literal ) ) {
+            if ( !algType.canImplement( literal ) ) {
                 throw CannotImplement.INSTANCE;
             }
             return null;

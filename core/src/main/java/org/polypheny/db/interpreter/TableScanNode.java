@@ -92,29 +92,29 @@ public class TableScanNode implements Node {
      * Tries various table SPIs, and negotiates with the table which filters and projects it can implement. Adds to the Enumerable implementations of any filters and projects that cannot be implemented by the table.
      */
     static TableScanNode create( Compiler compiler, TableScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
-        final AlgOptTable relOptTable = alg.getTable();
-        final ProjectableFilterableTable pfTable = relOptTable.unwrap( ProjectableFilterableTable.class );
+        final AlgOptTable algOptTable = alg.getTable();
+        final ProjectableFilterableTable pfTable = algOptTable.unwrap( ProjectableFilterableTable.class );
         if ( pfTable != null ) {
             return createProjectableFilterable( compiler, alg, filters, projects, pfTable );
         }
-        final FilterableTable filterableTable = relOptTable.unwrap( FilterableTable.class );
+        final FilterableTable filterableTable = algOptTable.unwrap( FilterableTable.class );
         if ( filterableTable != null ) {
             return createFilterable( compiler, alg, filters, projects, filterableTable );
         }
-        final ScannableTable scannableTable = relOptTable.unwrap( ScannableTable.class );
+        final ScannableTable scannableTable = algOptTable.unwrap( ScannableTable.class );
         if ( scannableTable != null ) {
             return createScannable( compiler, alg, filters, projects, scannableTable );
         }
         //noinspection unchecked
-        final Enumerable<Row> enumerable = relOptTable.unwrap( Enumerable.class );
+        final Enumerable<Row> enumerable = algOptTable.unwrap( Enumerable.class );
         if ( enumerable != null ) {
             return createEnumerable( compiler, alg, enumerable, null, filters, projects );
         }
-        final QueryableTable queryableTable = relOptTable.unwrap( QueryableTable.class );
+        final QueryableTable queryableTable = algOptTable.unwrap( QueryableTable.class );
         if ( queryableTable != null ) {
             return createQueryable( compiler, alg, filters, projects, queryableTable );
         }
-        throw new AssertionError( "cannot convert table " + relOptTable + " to enumerable" );
+        throw new AssertionError( "cannot convert table " + algOptTable + " to enumerable" );
     }
 
 
@@ -126,16 +126,16 @@ public class TableScanNode implements Node {
 
     private static TableScanNode createQueryable( Compiler compiler, TableScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableTable queryableTable ) {
         final DataContext root = compiler.getDataContext();
-        final AlgOptTable relOptTable = alg.getTable();
+        final AlgOptTable algOptTable = alg.getTable();
         final Type elementType = queryableTable.getElementType();
         SchemaPlus schema = root.getRootSchema();
-        for ( String name : Util.skipLast( relOptTable.getQualifiedName() ) ) {
+        for ( String name : Util.skipLast( algOptTable.getQualifiedName() ) ) {
             schema = schema.getSubSchema( name );
         }
         final Enumerable<Row> rowEnumerable;
         if ( elementType instanceof Class ) {
             //noinspection unchecked
-            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, relOptTable.getQualifiedName() );
+            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, algOptTable.getQualifiedName() );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
             Class type = (Class) elementType;
             for ( Field field : type.getFields() ) {
@@ -157,7 +157,7 @@ public class TableScanNode implements Node {
                 return new Row( values );
             } );
         } else {
-            rowEnumerable = Schemas.queryable( root, Row.class, relOptTable.getQualifiedName() );
+            rowEnumerable = Schemas.queryable( root, Row.class, algOptTable.getQualifiedName() );
         }
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }

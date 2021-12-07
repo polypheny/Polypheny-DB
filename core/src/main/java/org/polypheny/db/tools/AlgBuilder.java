@@ -146,7 +146,7 @@ import org.polypheny.db.util.mapping.Mappings;
 public class AlgBuilder {
 
     protected final AlgOptCluster cluster;
-    protected final AlgOptSchema relOptSchema;
+    protected final AlgOptSchema algOptSchema;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
     private final AlgFactories.AggregateFactory aggregateFactory;
@@ -166,9 +166,9 @@ public class AlgBuilder {
     private final RexSimplify simplifier;
 
 
-    protected AlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema relOptSchema ) {
+    protected AlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
         this.cluster = cluster;
-        this.relOptSchema = relOptSchema;
+        this.algOptSchema = algOptSchema;
         if ( context == null ) {
             context = Contexts.EMPTY_CONTEXT;
         }
@@ -253,17 +253,17 @@ public class AlgBuilder {
      */
     public static AlgBuilder create( FrameworkConfig config ) {
         final AlgOptCluster[] clusters = { null };
-        final AlgOptSchema[] relOptSchemas = { null };
+        final AlgOptSchema[] algOptSchemas = { null };
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
                         clusters[0] = cluster;
-                        relOptSchemas[0] = relOptSchema;
+                        algOptSchemas[0] = algOptSchema;
                         return null;
                     }
                 } );
-        return new AlgBuilder( config.getContext(), clusters[0], relOptSchemas[0] );
+        return new AlgBuilder( config.getContext(), clusters[0], algOptSchemas[0] );
     }
 
 
@@ -1286,13 +1286,13 @@ public class AlgBuilder {
      */
     public AlgBuilder scan( Iterable<String> tableNames ) {
         final List<String> names = ImmutableList.copyOf( tableNames );
-        final AlgOptTable relOptTable = relOptSchema.getTableForMember( names );
-        if ( relOptTable == null ) {
+        final AlgOptTable algOptTable = algOptSchema.getTableForMember( names );
+        if ( algOptTable == null ) {
             throw RESOURCE.tableNotFound( String.join( ".", names ) ).ex();
         }
-        final AlgNode scan = scanFactory.createScan( cluster, relOptTable );
+        final AlgNode scan = scanFactory.createScan( cluster, algOptTable );
         push( scan );
-        rename( relOptTable.getRowType().getFieldNames() );
+        rename( algOptTable.getRowType().getFieldNames() );
         return this;
     }
 

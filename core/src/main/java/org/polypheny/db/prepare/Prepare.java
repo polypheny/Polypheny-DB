@@ -153,7 +153,7 @@ public abstract class Prepare {
                 if ( node instanceof TableScan ) {
                     final AlgOptCluster cluster = node.getCluster();
                     final ToAlgContext context = () -> cluster;
-                    final AlgNode r = node.getTable().toRel( context );
+                    final AlgNode r = node.getTable().toAlg( context );
                     planner.registerClass( r );
                 }
                 super.visit( node, ordinal, parent );

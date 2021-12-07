@@ -175,10 +175,10 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
     }
 
 
-    private List<String> fieldNames( AlgDataType relDataType ) {
+    private List<String> fieldNames( AlgDataType algDataType ) {
         List<String> names = new ArrayList<>();
 
-        for ( AlgDataTypeField rdtf : relDataType.getFieldList() ) {
+        for ( AlgDataTypeField rdtf : algDataType.getFieldList() ) {
             names.add( rdtf.getName() );
         }
         return names;

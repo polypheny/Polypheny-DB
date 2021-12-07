@@ -117,7 +117,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     @SuppressWarnings("unchecked")
     private static final LoadingCache<Key, MetadataHandler> HANDLERS =
             maxSize( CacheBuilder.newBuilder(), SaffronProperties.INSTANCE.metadataHandlerCacheMaximumSize().get() )
-                    .build( CacheLoader.from( key -> load3( key.def, key.provider.handlers( key.def ), key.relClasses ) ) );
+                    .build( CacheLoader.from( key -> load3( key.def, key.provider.handlers( key.def ), key.algClasses ) ) );
 
 
     // Pre-register the most common relational operators, to reduce the number of times we re-generate.
@@ -202,7 +202,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
 
     @Override
-    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> relClass, Class<? extends M> metadataClass ) {
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass, Class<? extends M> metadataClass ) {
         throw new UnsupportedOperationException();
     }
 
@@ -214,7 +214,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     }
 
 
-    private static <M extends Metadata> MetadataHandler<M> load3( MetadataDef<M> def, Multimap<Method, MetadataHandler<M>> map, ImmutableList<Class<? extends AlgNode>> relClasses ) {
+    private static <M extends Metadata> MetadataHandler<M> load3( MetadataDef<M> def, Multimap<Method, MetadataHandler<M>> map, ImmutableList<Class<? extends AlgNode>> algClasses ) {
         final StringBuilder buff = new StringBuilder();
         final String name = "GeneratedMetadataHandler_" + def.metadataClass.getSimpleName();
         final Set<MetadataHandler> providerSet = new HashSet<>();
@@ -345,17 +345,17 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
             // Build a list of clauses, grouping clauses that have the same action.
             final Multimap<String, Integer> clauses = LinkedHashMultimap.create();
             final StringBuilder buf2 = new StringBuilder();
-            for ( Ord<Class<? extends AlgNode>> relClass : Ord.zip( relClasses ) ) {
-                if ( relClass.e == HepAlgVertex.class ) {
+            for ( Ord<Class<? extends AlgNode>> algClass : Ord.zip( algClasses ) ) {
+                if ( algClass.e == HepAlgVertex.class ) {
                     buf2.append( "      return " )
                             .append( method.e.getName() )
                             .append( "(((" )
-                            .append( relClass.e.getName() )
+                            .append( algClass.e.getName() )
                             .append( ") r).getCurrentAlg(), mq" );
                     argList( buf2, method.e )
                             .append( ");\n" );
                 } else {
-                    final Method handler = space.find( relClass.e, method.e );
+                    final Method handler = space.find( algClass.e, method.e );
                     final String v = findProvider( providerList, handler.getDeclaringClass() );
                     buf2.append( "      return " )
                             .append( v )
@@ -367,7 +367,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                     argList( buf2, method.e )
                             .append( ");\n" );
                 }
-                clauses.put( buf2.toString(), relClass.i );
+                clauses.put( buf2.toString(), algClass.i );
                 buf2.setLength( 0 );
             }
             buf2.append( "      throw new " )
@@ -377,7 +377,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                     .append( "  }\n" );
             clauses.put( buf2.toString(), -1 );
             for ( Map.Entry<String, Collection<Integer>> pair : clauses.asMap().entrySet() ) {
-                if ( pair.getValue().contains( relClasses.indexOf( AlgNode.class ) ) ) {
+                if ( pair.getValue().contains( algClasses.indexOf( AlgNode.class ) ) ) {
                     buff.append( "    default:\n" );
                 } else {
                     for ( Integer integer : pair.getValue() ) {
@@ -388,7 +388,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
             }
         }
         final List<Object> argList = new ArrayList<>( Pair.right( providerList ) );
-        argList.add( 0, ImmutableList.copyOf( relClasses ) );
+        argList.add( 0, ImmutableList.copyOf( algClasses ) );
         try {
             return compile( name, buff.toString(), def, argList );
         } catch ( CompileException | IOException e ) {
@@ -540,11 +540,11 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
      */
     public static class NoHandler extends ControlFlowException {
 
-        public final Class<? extends AlgNode> relClass;
+        public final Class<? extends AlgNode> algClass;
 
 
-        public NoHandler( Class<? extends AlgNode> relClass ) {
-            this.relClass = relClass;
+        public NoHandler( Class<? extends AlgNode> algClass ) {
+            this.algClass = algClass;
         }
     }
 
@@ -556,19 +556,19 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
         public final MetadataDef def;
         public final AlgMetadataProvider provider;
-        public final ImmutableList<Class<? extends AlgNode>> relClasses;
+        public final ImmutableList<Class<? extends AlgNode>> algClasses;
 
 
-        private Key( MetadataDef def, AlgMetadataProvider provider, ImmutableList<Class<? extends AlgNode>> relClassList ) {
+        private Key( MetadataDef def, AlgMetadataProvider provider, ImmutableList<Class<? extends AlgNode>> algClassList ) {
             this.def = def;
             this.provider = provider;
-            this.relClasses = relClassList;
+            this.algClasses = algClassList;
         }
 
 
         @Override
         public int hashCode() {
-            return (def.hashCode() * 37 + provider.hashCode()) * 37 + relClasses.hashCode();
+            return (def.hashCode() * 37 + provider.hashCode()) * 37 + algClasses.hashCode();
         }
 
 
@@ -578,7 +578,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                     || obj instanceof Key
                     && ((Key) obj).def.equals( def )
                     && ((Key) obj).provider.equals( provider )
-                    && ((Key) obj).relClasses.equals( relClasses );
+                    && ((Key) obj).algClasses.equals( algClasses );
         }
     }
 }

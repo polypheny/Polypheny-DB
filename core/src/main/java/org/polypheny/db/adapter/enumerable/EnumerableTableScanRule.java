@@ -64,16 +64,16 @@ public class EnumerableTableScanRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         LogicalTableScan scan = (LogicalTableScan) alg;
-        final AlgOptTable relOptTable = scan.getTable();
-        final Table table = relOptTable.unwrap( Table.class );
+        final AlgOptTable algOptTable = scan.getTable();
+        final Table table = algOptTable.unwrap( Table.class );
         if ( !EnumerableTableScan.canHandle( table ) ) {
             return null;
         }
-        final Expression expression = relOptTable.getExpression( Object.class );
+        final Expression expression = algOptTable.getExpression( Object.class );
         if ( expression == null ) {
             return null;
         }
-        return EnumerableTableScan.create( scan.getCluster(), relOptTable );
+        return EnumerableTableScan.create( scan.getCluster(), algOptTable );
     }
 }
 

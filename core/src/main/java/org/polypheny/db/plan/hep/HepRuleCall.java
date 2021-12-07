@@ -52,8 +52,8 @@ public class HepRuleCall extends AlgOptRuleCall {
     private List<AlgNode> results;
 
 
-    HepRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] rels, Map<AlgNode, List<AlgNode>> nodeChildren, List<AlgNode> parents ) {
-        super( planner, operand, rels, nodeChildren, parents );
+    HepRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeChildren, List<AlgNode> parents ) {
+        super( planner, operand, algs, nodeChildren, parents );
         results = new ArrayList<>();
     }
 
@@ -61,8 +61,8 @@ public class HepRuleCall extends AlgOptRuleCall {
     // implement RelOptRuleCall
     @Override
     public void transformTo( AlgNode alg, Map<AlgNode, AlgNode> equiv ) {
-        final AlgNode rel0 = algs[0];
-        AlgOptUtil.verifyTypeEquivalence( rel0, alg, rel0 );
+        final AlgNode alg0 = algs[0];
+        AlgOptUtil.verifyTypeEquivalence( alg0, alg, alg0 );
         results.add( alg );
         alg( 0 ).getCluster().invalidateMetadataQuery();
     }

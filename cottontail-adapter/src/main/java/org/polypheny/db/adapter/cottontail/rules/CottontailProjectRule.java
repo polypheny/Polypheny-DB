@@ -53,9 +53,9 @@ public class CottontailProjectRule extends CottontailConverterRule {
 
 
     private static boolean containsInnerProject( Project project ) {
-        List<AlgNode> rels = ((AlgSubset) project.getInput()).getAlgList();
+        List<AlgNode> algs = ((AlgSubset) project.getInput()).getAlgList();
         Set<AlgNode> alreadyChecked = new HashSet<>();
-        Deque<AlgNode> innerLevel = new LinkedList<>( rels );
+        Deque<AlgNode> innerLevel = new LinkedList<>( algs );
 
         while ( !innerLevel.isEmpty() ) {
             AlgNode algNode = innerLevel.pop();

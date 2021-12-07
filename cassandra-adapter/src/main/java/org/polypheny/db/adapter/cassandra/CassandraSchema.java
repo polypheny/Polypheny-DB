@@ -196,15 +196,15 @@ public class CassandraSchema extends AbstractSchema {
             CatalogColumn logicalColumn = this.logicalColumnFromPhysicalColumn( physicalColumnName );
             String logicalColumnName = this.logicalColumnFromPhysical( physicalColumnName );
 
-            AlgDataType relDataType;
+            AlgDataType algDataType;
             if ( logicalColumn.collectionsType == PolyType.ARRAY ) {
                 AlgDataType innerType = typeFactory.createPolyType( logicalColumn.type );
-                relDataType = typeFactory.createArrayType( innerType, logicalColumn.cardinality, logicalColumn.dimension );
+                algDataType = typeFactory.createArrayType( innerType, logicalColumn.cardinality, logicalColumn.dimension );
             } else {
-                relDataType = typeFactory.createPolyType( logicalColumn.type );
+                algDataType = typeFactory.createPolyType( logicalColumn.type );
             }
 
-            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, relDataType ) ) );
+            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, algDataType ) ) );
 //            fieldInfo.add( logicalColumnName, physicalColumnName, typeFactory.createPolyType( typeName ) ).nullable( true );
         }
 

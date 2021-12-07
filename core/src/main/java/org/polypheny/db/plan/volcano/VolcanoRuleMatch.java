@@ -58,16 +58,16 @@ class VolcanoRuleMatch extends VolcanoRuleCall {
      * Creates a <code>VolcanoRuleMatch</code>.
      *
      * @param operand0 Primary operand
-     * @param rels List of targets; copied by the constructor, so the client can modify it later
+     * @param algs List of targets; copied by the constructor, so the client can modify it later
      * @param nodeInputs Map from relational expressions to their inputs
      */
-    VolcanoRuleMatch( VolcanoPlanner volcanoPlanner, AlgOptRuleOperand operand0, AlgNode[] rels, Map<AlgNode, List<AlgNode>> nodeInputs ) {
-        super( volcanoPlanner, operand0, rels.clone(), nodeInputs );
-        assert allNotNull( rels, Litmus.THROW );
+    VolcanoRuleMatch( VolcanoPlanner volcanoPlanner, AlgOptRuleOperand operand0, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeInputs ) {
+        super( volcanoPlanner, operand0, algs.clone(), nodeInputs );
+        assert allNotNull( algs, Litmus.THROW );
 
         // Try to deduce which subset the result will belong to. Assume -- for now -- that the set is the same as the root relexp.
-        targetSet = volcanoPlanner.getSet( rels[0] );
-        assert targetSet != null : rels[0].toString() + " isn't in a set";
+        targetSet = volcanoPlanner.getSet( algs[0] );
+        assert targetSet != null : algs[0].toString() + " isn't in a set";
         digest = computeDigest();
     }
 

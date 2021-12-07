@@ -262,17 +262,17 @@ public class StreamRules {
             final Delta delta = call.alg( 0 );
             final TableScan scan = call.alg( 1 );
             final AlgOptCluster cluster = delta.getCluster();
-            final AlgOptTable relOptTable = scan.getTable();
-            final StreamableTable streamableTable = relOptTable.unwrap( StreamableTable.class );
+            final AlgOptTable algOptTable = scan.getTable();
+            final StreamableTable streamableTable = algOptTable.unwrap( StreamableTable.class );
             if ( streamableTable != null ) {
                 final Table table1 = streamableTable.stream();
-                final AlgOptTable relOptTable2 =
-                        AlgOptTableImpl.create( relOptTable.getRelOptSchema(),
-                                relOptTable.getRowType(), table1,
+                final AlgOptTable algOptTable2 =
+                        AlgOptTableImpl.create( algOptTable.getRelOptSchema(),
+                                algOptTable.getRowType(), table1,
                                 ImmutableList.<String>builder()
-                                        .addAll( relOptTable.getQualifiedName() )
+                                        .addAll( algOptTable.getQualifiedName() )
                                         .add( "(STREAM)" ).build() );
-                final LogicalTableScan newScan = LogicalTableScan.create( cluster, relOptTable2 );
+                final LogicalTableScan newScan = LogicalTableScan.create( cluster, algOptTable2 );
                 call.transformTo( newScan );
             }
         }
@@ -300,8 +300,8 @@ public class StreamRules {
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
             final TableScan scan = call.alg( 1 );
-            final AlgOptTable relOptTable = scan.getTable();
-            final StreamableTable streamableTable = relOptTable.unwrap( StreamableTable.class );
+            final AlgOptTable algOptTable = scan.getTable();
+            final StreamableTable streamableTable = algOptTable.unwrap( StreamableTable.class );
             final AlgBuilder builder = call.builder();
             if ( streamableTable == null ) {
                 call.transformTo( builder.values( delta.getRowType() ).build() );

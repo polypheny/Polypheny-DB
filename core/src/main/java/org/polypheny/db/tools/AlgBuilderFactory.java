@@ -45,7 +45,7 @@ import org.polypheny.db.plan.AlgOptSchema;
  * <p>
  * Add a cluster, and optionally a schema, when you want to create a builder.
  * <p>
- * A {@code ProtoRelBuilder} can be shared among queries, and thus can be inside a {@link AlgOptRule}. It is a nice way to
+ * A {@code ProtoAlgBuilder} can be shared among queries, and thus can be inside a {@link AlgOptRule}. It is a nice way to
  * encapsulate the policy that this particular rule instance should create {@code DrillFilter} and {@code DrillProject}
  * versus {@code HiveFilter} and {@code HiveProject}.
  *

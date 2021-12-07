@@ -58,9 +58,9 @@ import org.polypheny.db.util.Pair;
 public class AlgJsonWriter implements AlgWriter {
 
     private final JsonBuilder jsonBuilder;
-    private final AlgJson relJson;
-    private final Map<AlgNode, String> relIdMap = new IdentityHashMap<>();
-    private final List<Object> relList;
+    private final AlgJson algJson;
+    private final Map<AlgNode, String> algIdMap = new IdentityHashMap<>();
+    private final List<Object> algList;
     private final List<Pair<String, Object>> values = new ArrayList<>();
     private String previousId;
 
@@ -69,8 +69,8 @@ public class AlgJsonWriter implements AlgWriter {
 
     public AlgJsonWriter() {
         jsonBuilder = new JsonBuilder();
-        relList = jsonBuilder.list();
-        relJson = new AlgJson( jsonBuilder );
+        algList = jsonBuilder.list();
+        algJson = new AlgJson( jsonBuilder );
         parts = new HashMap<>();
     }
 
@@ -80,7 +80,7 @@ public class AlgJsonWriter implements AlgWriter {
         final AlgMetadataQuery mq = alg.getCluster().getMetadataQuery();
 
         map.put( "id", null ); // ensure that id is the first attribute
-        map.put( "relOp", relJson.classToTypeName( alg.getClass() ) );
+        map.put( "relOp", algJson.classToTypeName( alg.getClass() ) );
         for ( Pair<String, Object> value : values ) {
             if ( value.right instanceof AlgNode ) {
                 continue;
@@ -100,11 +100,11 @@ public class AlgJsonWriter implements AlgWriter {
         }
         map.put( "inputs", l );
 
-        final String id = Integer.toString( relIdMap.size() );
-        relIdMap.put( alg, id );
+        final String id = Integer.toString( algIdMap.size() );
+        algIdMap.put( alg, id );
         map.put( "id", id );
 
-        relList.add( map );
+        algList.add( map );
         parts.put( id, map );
         previousId = id;
     }
@@ -130,14 +130,14 @@ public class AlgJsonWriter implements AlgWriter {
 
 
     private void put( Map<String, Object> map, String name, Object value ) {
-        map.put( name, relJson.toJson( value ) );
+        map.put( name, algJson.toJson( value ) );
     }
 
 
     private List<Object> explainInputs( List<AlgNode> inputs ) {
         final List<Object> list = jsonBuilder.list();
         for ( AlgNode input : inputs ) {
-            String id = relIdMap.get( input );
+            String id = algIdMap.get( input );
             if ( id == null ) {
                 input.explain( this );
                 id = previousId;
@@ -215,7 +215,7 @@ public class AlgJsonWriter implements AlgWriter {
      */
     public String asString() {
         final Map<String, Object> map = jsonBuilder.map();
-        map.put( "Plan", relList.get( relList.size() - 1 ) );
+        map.put( "Plan", algList.get( algList.size() - 1 ) );
         return jsonBuilder.toJsonString( map );
     }
 

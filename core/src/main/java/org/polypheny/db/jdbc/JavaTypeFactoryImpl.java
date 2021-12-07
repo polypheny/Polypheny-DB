@@ -128,7 +128,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
         if ( type instanceof SyntheticRecordType ) {
             final SyntheticRecordType syntheticRecordType = (SyntheticRecordType) type;
-            return syntheticRecordType.relType;
+            return syntheticRecordType.algType;
         }
         if ( type instanceof Types.ArrayType ) {
             final Types.ArrayType arrayType = (Types.ArrayType) type;
@@ -334,16 +334,16 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     public static class SyntheticRecordType implements Types.RecordType {
 
         final List<Types.RecordField> fields = new ArrayList<>();
-        final AlgDataType relType;
+        final AlgDataType algType;
         private final String name;
 
 
-        private SyntheticRecordType( AlgDataType relType, String name ) {
-            this.relType = relType;
+        private SyntheticRecordType( AlgDataType algType, String name ) {
+            this.algType = algType;
             this.name = name;
-            assert relType == null
-                    || Util.isDistinct( relType.getFieldNames() )
-                    : "field names not distinct: " + relType;
+            assert algType == null
+                    || Util.isDistinct( algType.getFieldNames() )
+                    : "field names not distinct: " + algType;
         }
 
 

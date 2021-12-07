@@ -239,11 +239,11 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
         // ViewTableScan needed for Views
-        final LogicalTableScan scan = LogicalTableScan.create( cluster, relOptTable );
-        return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), relOptTable, this, ImmutableList.of( scan ) );
+        final LogicalTableScan scan = LogicalTableScan.create( cluster, algOptTable );
+        return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), algOptTable, this, ImmutableList.of( scan ) );
     }
 
 

@@ -163,7 +163,7 @@ public class TestFixture {
         Frameworks.withPrepare(
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
-                    public Void apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                    public Void apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
                         DataContext dataContext = Schemas.createDataContext( rootSchema );
                         holder.set( new RexExecutorImpl( dataContext ) );
                         return null;

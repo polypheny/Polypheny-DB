@@ -69,8 +69,8 @@ public class ElasticsearchFilter extends Filter implements ElasticsearchRel {
 
 
     @Override
-    public Filter copy( AlgTraitSet relTraitSet, AlgNode input, RexNode condition ) {
-        return new ElasticsearchFilter( getCluster(), relTraitSet, input, condition );
+    public Filter copy( AlgTraitSet algTraitSet, AlgNode input, RexNode condition ) {
+        return new ElasticsearchFilter( getCluster(), algTraitSet, input, condition );
     }
 
 

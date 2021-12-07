@@ -62,13 +62,13 @@ public class AlgNodes {
     /**
      * Compares arrays of {@link AlgNode}.
      */
-    public static int compareAlgs( AlgNode[] rels0, AlgNode[] rels1 ) {
-        int c = Utilities.compare( rels0.length, rels1.length );
+    public static int compareAlgs( AlgNode[] algs0, AlgNode[] algs1 ) {
+        int c = Utilities.compare( algs0.length, algs1.length );
         if ( c != 0 ) {
             return c;
         }
-        for ( int i = 0; i < rels0.length; i++ ) {
-            c = COMPARATOR.compare( rels0[i], rels1[i] );
+        for ( int i = 0; i < algs0.length; i++ ) {
+            c = COMPARATOR.compare( algs0[i], algs1[i] );
             if ( c != 0 ) {
                 return c;
             }

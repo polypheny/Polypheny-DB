@@ -81,15 +81,15 @@ public class AlgJsonReader {
     };
 
     private final AlgOptCluster cluster;
-    private final AlgOptSchema relOptSchema;
-    private final AlgJson relJson = new AlgJson( null );
-    private final Map<String, AlgNode> relMap = new LinkedHashMap<>();
+    private final AlgOptSchema algOptSchema;
+    private final AlgJson algJson = new AlgJson( null );
+    private final Map<String, AlgNode> algMap = new LinkedHashMap<>();
     private AlgNode lastAlg;
 
 
-    public AlgJsonReader( AlgOptCluster cluster, AlgOptSchema relOptSchema, Schema schema ) {
+    public AlgJsonReader( AlgOptCluster cluster, AlgOptSchema algOptSchema, Schema schema ) {
         this.cluster = cluster;
-        this.relOptSchema = relOptSchema;
+        this.algOptSchema = algOptSchema;
         Util.discard( schema );
     }
 
@@ -98,8 +98,8 @@ public class AlgJsonReader {
         lastAlg = null;
         final ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> o = mapper.readValue( s, TYPE_REF );
-        @SuppressWarnings("unchecked") final Map<String, Object> rels = (Map) o.get( "Plan" );
-        readRels( rels );
+        @SuppressWarnings("unchecked") final Map<String, Object> algs = (Map) o.get( "Plan" );
+        readRels( algs );
         System.out.println( lastAlg );
         return lastAlg;
     }
@@ -110,14 +110,14 @@ public class AlgJsonReader {
         for ( Map<String, Object> input : inputsList ) {
             readRels( input );
         }
-        readRel( jsonRels );
+        readAlg( jsonRels );
     }
 
 
-    private void readRel( final Map<String, Object> jsonRel ) {
-        String id = (String) jsonRel.get( "id" );
-        String type = (String) jsonRel.get( "relOp" );
-        Constructor constructor = relJson.getConstructor( type );
+    private void readAlg( final Map<String, Object> jsonAlg ) {
+        String id = (String) jsonAlg.get( "id" );
+        String type = (String) jsonAlg.get( "algOp" );
+        Constructor constructor = algJson.getConstructor( type );
         AlgInput input = new AlgInput() {
             @Override
             public AlgOptCluster getCluster() {
@@ -134,8 +134,8 @@ public class AlgJsonReader {
             @Override
             public AlgOptTable getTable( String table ) {
                 final List<String> list;
-                if ( jsonRel.get( table ) instanceof String ) {
-                    String str = (String) jsonRel.get( table );
+                if ( jsonAlg.get( table ) instanceof String ) {
+                    String str = (String) jsonAlg.get( table );
                     // MV: This is not a nice solution...
                     if ( str.startsWith( "[" ) && str.endsWith( "]" ) ) {
                         str = str.substring( 1, str.length() - 1 );
@@ -147,7 +147,7 @@ public class AlgJsonReader {
                 } else {
                     list = getStringList( table );
                 }
-                return relOptSchema.getTableForMember( list );
+                return algOptSchema.getTableForMember( list );
             }
 
 
@@ -175,7 +175,7 @@ public class AlgJsonReader {
 
             @Override
             public RexNode getExpression( String tag ) {
-                return relJson.toRex( this, jsonRel.get( tag ) );
+                return algJson.toRex( this, jsonAlg.get( tag ) );
             }
 
 
@@ -202,27 +202,27 @@ public class AlgJsonReader {
             @Override
             public List<String> getStringList( String tag ) {
                 //noinspection unchecked
-                return (List<String>) jsonRel.get( tag );
+                return (List<String>) jsonAlg.get( tag );
             }
 
 
             @Override
             public List<Integer> getIntegerList( String tag ) {
                 //noinspection unchecked
-                return (List<Integer>) jsonRel.get( tag );
+                return (List<Integer>) jsonAlg.get( tag );
             }
 
 
             @Override
             public List<List<Integer>> getIntegerListList( String tag ) {
                 //noinspection unchecked
-                return (List<List<Integer>>) jsonRel.get( tag );
+                return (List<List<Integer>>) jsonAlg.get( tag );
             }
 
 
             @Override
             public List<AggregateCall> getAggregateCalls( String tag ) {
-                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonAggs = (List) jsonRel.get( tag );
+                @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonAggs = (List) jsonAlg.get( tag );
                 final List<AggregateCall> inputs = new ArrayList<>();
                 for ( Map<String, Object> jsonAggCall : jsonAggs ) {
                     inputs.add( toAggCall( jsonAggCall ) );
@@ -233,25 +233,25 @@ public class AlgJsonReader {
 
             @Override
             public Object get( String tag ) {
-                return jsonRel.get( tag );
+                return jsonAlg.get( tag );
             }
 
 
             @Override
             public String getString( String tag ) {
-                return (String) jsonRel.get( tag );
+                return (String) jsonAlg.get( tag );
             }
 
 
             @Override
             public float getFloat( String tag ) {
-                return ((Number) jsonRel.get( tag )).floatValue();
+                return ((Number) jsonAlg.get( tag )).floatValue();
             }
 
 
             @Override
             public boolean getBoolean( String tag, boolean default_ ) {
-                final Boolean b = (Boolean) jsonRel.get( tag );
+                final Boolean b = (Boolean) jsonAlg.get( tag );
                 return b != null ? b : default_;
             }
 
@@ -264,10 +264,10 @@ public class AlgJsonReader {
 
             @Override
             public List<RexNode> getExpressionList( String tag ) {
-                @SuppressWarnings("unchecked") final List<Object> jsonNodes = (List) jsonRel.get( tag );
+                @SuppressWarnings("unchecked") final List<Object> jsonNodes = (List) jsonAlg.get( tag );
                 final List<RexNode> nodes = new ArrayList<>();
                 for ( Object jsonNode : jsonNodes ) {
-                    nodes.add( relJson.toRex( this, jsonNode ) );
+                    nodes.add( algJson.toRex( this, jsonNode ) );
                 }
                 return nodes;
             }
@@ -275,8 +275,8 @@ public class AlgJsonReader {
 
             @Override
             public AlgDataType getRowType( String tag ) {
-                final Object o = jsonRel.get( tag );
-                return relJson.toType( cluster.getTypeFactory(), o );
+                final Object o = jsonAlg.get( tag );
+                return algJson.toType( cluster.getTypeFactory(), o );
             }
 
 
@@ -303,13 +303,13 @@ public class AlgJsonReader {
             @Override
             public AlgCollation getCollation() {
                 //noinspection unchecked
-                return relJson.toCollation( (List) get( "collation" ) );
+                return algJson.toCollation( (List) get( "collation" ) );
             }
 
 
             @Override
             public AlgDistribution getDistribution() {
-                return relJson.toDistribution( get( "distribution" ) );
+                return algJson.toDistribution( get( "distribution" ) );
             }
 
 
@@ -328,14 +328,14 @@ public class AlgJsonReader {
             public ImmutableList<RexLiteral> getTuple( List jsonTuple ) {
                 final ImmutableList.Builder<RexLiteral> builder = ImmutableList.builder();
                 for ( Object jsonValue : jsonTuple ) {
-                    builder.add( (RexLiteral) relJson.toRex( this, jsonValue ) );
+                    builder.add( (RexLiteral) algJson.toRex( this, jsonValue ) );
                 }
                 return builder.build();
             }
         };
         try {
             final AlgNode alg = (AlgNode) constructor.newInstance( input );
-            relMap.put( id, alg );
+            algMap.put( id, alg );
             lastAlg = alg;
         } catch ( InstantiationException | IllegalAccessException e ) {
             throw new RuntimeException( e );
@@ -351,18 +351,18 @@ public class AlgJsonReader {
 
     private AggregateCall toAggCall( Map<String, Object> jsonAggCall ) {
         final String aggName = (String) jsonAggCall.get( "agg" );
-        final AggFunction aggregation = relJson.toAggregation( aggName, jsonAggCall );
+        final AggFunction aggregation = algJson.toAggregation( aggName, jsonAggCall );
         final Boolean distinct = (Boolean) jsonAggCall.get( "distinct" );
         @SuppressWarnings("unchecked") final List<Integer> operands = (List<Integer>) jsonAggCall.get( "operands" );
         final Integer filterOperand = (Integer) jsonAggCall.get( "filter" );
-        final AlgDataType type = relJson.toType( cluster.getTypeFactory(), jsonAggCall.get( "type" ) );
+        final AlgDataType type = algJson.toType( cluster.getTypeFactory(), jsonAggCall.get( "type" ) );
         return AggregateCall.create( aggregation, distinct, false, operands, filterOperand == null ? -1 : filterOperand, AlgCollations.EMPTY, type, null );
     }
 
 
     private AlgNode lookupInput( Map<String, Object> jsonInput ) {
         String id = (String) jsonInput.get( "id" );
-        AlgNode node = relMap.get( id );
+        AlgNode node = algMap.get( id );
         if ( node == null ) {
             throw new RuntimeException( "unknown id " + id + " for relational expression" );
         }

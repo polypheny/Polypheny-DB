@@ -47,8 +47,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
 
 
-    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema relOptSchema ) {
-        super( context, cluster, relOptSchema );
+    public RoutedAlgBuilder( Context context, AlgOptCluster cluster, AlgOptSchema algOptSchema ) {
+        super( context, cluster, algOptSchema );
     }
 
 

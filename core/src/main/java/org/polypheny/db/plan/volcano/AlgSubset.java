@@ -50,7 +50,8 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptListener;
+import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTrait;
@@ -284,8 +285,8 @@ public class AlgSubset extends AbstractAlgNode {
 
         VolcanoPlanner planner = (VolcanoPlanner) alg.getCluster().getPlanner();
         if ( planner.listener != null ) {
-            AlgOptListener.RelEquivalenceEvent event = new AlgOptListener.RelEquivalenceEvent( planner, alg, this, true );
-            planner.listener.relEquivalenceFound( event );
+            AlgEquivalenceEvent event = new AlgEquivalenceEvent( planner, alg, this, true );
+            planner.listener.algEquivalenceFound( event );
         }
 
         // If this isn't the first alg in the set, it must have compatible row type.
@@ -312,8 +313,8 @@ public class AlgSubset extends AbstractAlgNode {
         final AlgNode cheapest = replacer.visit( this, -1, null );
 
         if ( planner.listener != null ) {
-            AlgOptListener.RelChosenEvent event = new AlgOptListener.RelChosenEvent( planner, null );
-            planner.listener.relChosen( event );
+            AlgChosenEvent event = new AlgChosenEvent( planner, null );
+            planner.listener.algChosen( event );
         }
 
         return cheapest;
@@ -454,8 +455,8 @@ public class AlgSubset extends AbstractAlgNode {
 
             if ( ordinal != -1 ) {
                 if ( planner.listener != null ) {
-                    AlgOptListener.RelChosenEvent event = new AlgOptListener.RelChosenEvent( planner, p );
-                    planner.listener.relChosen( event );
+                    AlgChosenEvent event = new AlgChosenEvent( planner, p );
+                    planner.listener.algChosen( event );
                 }
             }
 

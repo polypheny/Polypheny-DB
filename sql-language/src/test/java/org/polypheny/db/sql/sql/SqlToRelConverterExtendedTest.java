@@ -71,7 +71,7 @@ public class SqlToRelConverterExtendedTest extends SqlToAlgConverterTest {
         } );
 
         // Convert JSON back to alg tree.
-        Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
+        Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
             final AlgJsonReader reader = new AlgJsonReader( cluster, schemas[0], rootSchema );
             try {
                 AlgNode x = reader.read( json );

@@ -86,8 +86,8 @@ public class SortJoinTransposeRule extends AlgOptRule {
         // 3) If sort has an offset, and if the non-preserved side of the join is not count-preserving against the join condition, we bail out
         if ( join.getJoinType() == JoinAlgType.LEFT ) {
             if ( sort.getCollation() != AlgCollations.EMPTY ) {
-                for ( AlgFieldCollation relFieldCollation : sort.getCollation().getFieldCollations() ) {
-                    if ( relFieldCollation.getFieldIndex() >= join.getLeft().getRowType().getFieldCount() ) {
+                for ( AlgFieldCollation algFieldCollation : sort.getCollation().getFieldCollations() ) {
+                    if ( algFieldCollation.getFieldIndex() >= join.getLeft().getRowType().getFieldCount() ) {
                         return false;
                     }
                 }
@@ -97,8 +97,8 @@ public class SortJoinTransposeRule extends AlgOptRule {
             }
         } else if ( join.getJoinType() == JoinAlgType.RIGHT ) {
             if ( sort.getCollation() != AlgCollations.EMPTY ) {
-                for ( AlgFieldCollation relFieldCollation : sort.getCollation().getFieldCollations() ) {
-                    if ( relFieldCollation.getFieldIndex() < join.getLeft().getRowType().getFieldCount() ) {
+                for ( AlgFieldCollation algFieldCollation : sort.getCollation().getFieldCollations() ) {
+                    if ( algFieldCollation.getFieldIndex() < join.getLeft().getRowType().getFieldCount() ) {
                         return false;
                     }
                 }

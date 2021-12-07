@@ -193,7 +193,7 @@ public class DruidRules {
             }
 
             if ( !triple.getMiddle().isEmpty() ) {
-                final AlgNode newFilter = filter.copy( filter.getTraitSet(), Util.last( query.rels ), RexUtil.composeConjunction( rexBuilder, triple.getMiddle() ) );
+                final AlgNode newFilter = filter.copy( filter.getTraitSet(), Util.last( query.algs ), RexUtil.composeConjunction( rexBuilder, triple.getMiddle() ) );
                 newDruidQuery = DruidQuery.extendQuery( query, newFilter );
             }
             if ( intervals != null && !intervals.isEmpty() ) {
@@ -256,7 +256,7 @@ public class DruidRules {
             final RexNode cond = filter.getCondition();
             final DruidJsonFilter druidJsonFilter = DruidJsonFilter.toDruidFilters( cond, query.getTopNode().getRowType(), query );
             if ( druidJsonFilter != null ) {
-                final AlgNode newFilter = filter.copy( filter.getTraitSet(), Util.last( query.rels ), filter.getCondition() );
+                final AlgNode newFilter = filter.copy( filter.getTraitSet(), Util.last( query.algs ), filter.getCondition() );
                 final DruidQuery newDruidQuery = DruidQuery.extendQuery( query, newFilter );
                 call.transformTo( newDruidQuery );
             }
@@ -291,7 +291,7 @@ public class DruidRules {
 
             if ( DruidQuery.computeProjectAsScan( project, query.getTable().getRowType(), query ) != null ) {
                 // All expressions can be pushed to Druid in their entirety.
-                final AlgNode newProject = project.copy( project.getTraitSet(), ImmutableList.of( Util.last( query.rels ) ) );
+                final AlgNode newProject = project.copy( project.getTraitSet(), ImmutableList.of( Util.last( query.algs ) ) );
                 AlgNode newNode = DruidQuery.extendQuery( query, newProject );
                 call.transformTo( newNode );
                 return;
@@ -305,7 +305,7 @@ public class DruidRules {
             final List<RexNode> above = pair.left;
             final List<RexNode> below = pair.right;
             final AlgDataTypeFactory.Builder builder = cluster.getTypeFactory().builder();
-            final AlgNode input = Util.last( query.rels );
+            final AlgNode input = Util.last( query.algs );
             for ( RexNode e : below ) {
                 final String name;
                 if ( e instanceof RexInputRef ) {
@@ -403,7 +403,7 @@ public class DruidRules {
                         return;
                     }
                 }
-                final AlgNode newProject = project.copy( project.getTraitSet(), ImmutableList.of( Util.last( query.rels ) ) );
+                final AlgNode newProject = project.copy( project.getTraitSet(), ImmutableList.of( Util.last( query.algs ) ) );
                 final DruidQuery newQuery = DruidQuery.extendQuery( query, newProject );
                 call.transformTo( newQuery );
             }
@@ -485,7 +485,7 @@ public class DruidRules {
             if ( DruidQuery.computeDruidJsonAgg( aggregate.getAggCallList(), aggNames, project, query ) == null ) {
                 return;
             }
-            final AlgNode newProject = project.copy( project.getTraitSet(), ImmutableList.of( Util.last( query.rels ) ) );
+            final AlgNode newProject = project.copy( project.getTraitSet(), ImmutableList.of( Util.last( query.algs ) ) );
             final AlgNode newAggregate = aggregate.copy( aggregate.getTraitSet(), ImmutableList.of( newProject ) );
             List<Integer> filterRefs = getFilterRefs( aggregate.getAggCallList() );
             final DruidQuery query2;
@@ -529,13 +529,13 @@ public class DruidRules {
             Filter filter = null;
             final RexBuilder builder = query.getCluster().getRexBuilder();
             final RexExecutor executor = Util.first( query.getCluster().getPlanner().getExecutor(), RexUtil.EXECUTOR );
-            final AlgNode scan = query.rels.get( 0 ); // first alg is the table scan
+            final AlgNode scan = query.algs.get( 0 ); // first alg is the table scan
             final AlgOptPredicateList predicates = call.getMetadataQuery().getPulledUpPredicates( scan );
             final RexSimplify simplify = new RexSimplify( builder, predicates, executor );
 
             // if the druid query originally contained a filter
             boolean containsFilter = false;
-            for ( AlgNode node : query.rels ) {
+            for ( AlgNode node : query.algs ) {
                 if ( node instanceof Filter ) {
                     filter = (Filter) node;
                     containsFilter = true;
@@ -595,7 +595,7 @@ public class DruidRules {
             // Assumes that Filter nodes are always right after TableScan nodes (which are always present)
             int startIndex = containsFilter && addNewFilter ? 2 : 1;
 
-            List<AlgNode> newNodes = constructNewNodes( query.rels, addNewFilter, startIndex, filter, project, aggregate );
+            List<AlgNode> newNodes = constructNewNodes( query.algs, addNewFilter, startIndex, filter, project, aggregate );
 
             return DruidQuery.create( query.getCluster(), aggregate.getTraitSet().replace( query.getConvention() ), query.getTable(), query.druidTable, newNodes );
         }
@@ -732,7 +732,7 @@ public class DruidRules {
                 return;
             }
 
-            final AlgNode newSort = sort.copy( sort.getTraitSet(), ImmutableList.of( Util.last( query.rels ) ) );
+            final AlgNode newSort = sort.copy( sort.getTraitSet(), ImmutableList.of( Util.last( query.algs ) ) );
             call.transformTo( DruidQuery.extendQuery( query, newSort ) );
         }
     }

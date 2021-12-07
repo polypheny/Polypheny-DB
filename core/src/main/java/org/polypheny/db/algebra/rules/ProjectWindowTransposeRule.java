@@ -103,9 +103,9 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
 
         // Keep only the fields which are referred
         for ( int index : BitSets.toIter( beReferred ) ) {
-            final AlgDataTypeField relDataTypeField = rowTypeWindowInput.get( index );
-            exps.add( new RexInputRef( index, relDataTypeField.getType() ) );
-            builder.add( relDataTypeField );
+            final AlgDataTypeField algDataTypeField = rowTypeWindowInput.get( index );
+            exps.add( new RexInputRef( index, algDataTypeField.getType() ) );
+            builder.add( algDataTypeField );
         }
 
         final LogicalProject projectBelowWindow = new LogicalProject( cluster, window.getTraitSet(), window.getInput(), exps, builder.build() );
@@ -157,17 +157,17 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
             }
 
             // Adjust orderKeys
-            for ( AlgFieldCollation relFieldCollation : group.orderKeys.getFieldCollations() ) {
-                final int index = relFieldCollation.getFieldIndex();
-                orderKeys.add( relFieldCollation.copy( getAdjustedIndex( index, beReferred, windowInputColumn ) ) );
+            for ( AlgFieldCollation algFieldCollation : group.orderKeys.getFieldCollations() ) {
+                final int index = algFieldCollation.getFieldIndex();
+                orderKeys.add( algFieldCollation.copy( getAdjustedIndex( index, beReferred, windowInputColumn ) ) );
             }
 
             // Adjust Window Functions
             for ( RexWinAggCall rexWinAggCall : group.aggCalls ) {
                 aggCalls.add( (RexWinAggCall) rexWinAggCall.accept( indexAdjustment ) );
 
-                final AlgDataTypeField relDataTypeField = window.getRowType().getFieldList().get( aggCallIndex );
-                outputBuilder.add( relDataTypeField );
+                final AlgDataTypeField algDataTypeField = window.getRowType().getFieldList().get( aggCallIndex );
+                outputBuilder.add( algDataTypeField );
                 ++aggCallIndex;
             }
 
@@ -226,9 +226,9 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
             }
 
             // Reference in Order-By
-            for ( AlgFieldCollation relFieldCollation : group.orderKeys.getFieldCollations() ) {
-                if ( relFieldCollation.getFieldIndex() < windowInputColumn ) {
-                    beReferred.set( relFieldCollation.getFieldIndex() );
+            for ( AlgFieldCollation algFieldCollation : group.orderKeys.getFieldCollations() ) {
+                if ( algFieldCollation.getFieldIndex() < windowInputColumn ) {
+                    beReferred.set( algFieldCollation.getFieldIndex() );
                 }
             }
 

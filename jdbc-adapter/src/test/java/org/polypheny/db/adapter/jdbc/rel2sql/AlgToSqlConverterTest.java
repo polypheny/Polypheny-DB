@@ -3406,11 +3406,11 @@ public class AlgToSqlConverterTest extends LanguageManagerDependant {
         }
 
 
-        Sql optimize( final RuleSet ruleSet, final AlgOptPlanner relOptPlanner ) {
+        Sql optimize( final RuleSet ruleSet, final AlgOptPlanner algOptPlanner ) {
             return new Sql( schema, sql, dialect, config,
                     FlatLists.append( transforms, r -> {
                         Program program = Programs.of( ruleSet );
-                        return program.run( relOptPlanner, r, r.getTraitSet() );
+                        return program.run( algOptPlanner, r, r.getTraitSet() );
                     } ) );
         }
 

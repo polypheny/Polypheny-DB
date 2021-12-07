@@ -82,13 +82,13 @@ public class ElasticsearchToEnumerableConverter extends ConverterImpl implements
 
 
     @Override
-    public Result implement( EnumerableAlgImplementor relImplementor, Prefer prefer ) {
+    public Result implement( EnumerableAlgImplementor algImplementor, Prefer prefer ) {
         final BlockBuilder block = new BlockBuilder();
         final ElasticsearchRel.Implementor implementor = new ElasticsearchRel.Implementor();
         implementor.visitChild( 0, getInput() );
 
         final AlgDataType rowType = getRowType();
-        final PhysType physType = PhysTypeImpl.of( relImplementor.getTypeFactory(), rowType, prefer.prefer( JavaRowFormat.ARRAY ) );
+        final PhysType physType = PhysTypeImpl.of( algImplementor.getTypeFactory(), rowType, prefer.prefer( JavaRowFormat.ARRAY ) );
         final Expression fields = block.append( "fields",
                 constantArrayList(
                         Pair.zip( ElasticsearchRules.elasticsearchFieldNames( rowType ),
@@ -118,7 +118,7 @@ public class ElasticsearchToEnumerableConverter extends ConverterImpl implements
 
         Expression enumerable = block.append( "enumerable", Expressions.call( table, ElasticsearchMethod.ELASTICSEARCH_QUERYABLE_FIND.method, ops, fields, sort, groupBy, aggregations, mappings, offset, fetch ) );
         block.add( Expressions.return_( null, enumerable ) );
-        return relImplementor.result( physType, block.toBlock() );
+        return algImplementor.result( physType, block.toBlock() );
     }
 
 

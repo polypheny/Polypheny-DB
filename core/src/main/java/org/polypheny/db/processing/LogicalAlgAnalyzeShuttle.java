@@ -50,11 +50,11 @@ import org.polypheny.db.transaction.Statement;
 
 
 /**
- * Universal routing rel shuttle class to extract partition and column information from AlgNode.
+ * Universal routing alg shuttle class to extract partition and column information from AlgNode.
  */
-public class LogicalRelAnalyzeShuttle extends AlgShuttleImpl {
+public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
-    protected final LogicalRelAnalyzeRexShuttle rexShuttle;
+    protected final LogicalAlgAnalyzeRexShuttle rexShuttle;
     @Getter
     //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (TableScanId) -> List partitionsValue
     protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (TableScanId) -> (logical tableId -> List partitionsValue)
@@ -68,9 +68,9 @@ public class LogicalRelAnalyzeShuttle extends AlgShuttleImpl {
     private final Statement statement;
 
 
-    public LogicalRelAnalyzeShuttle( Statement statement ) {
+    public LogicalAlgAnalyzeShuttle( Statement statement ) {
         this.statement = statement;
-        this.rexShuttle = new LogicalRelAnalyzeRexShuttle();
+        this.rexShuttle = new LogicalAlgAnalyzeRexShuttle();
     }
 
 

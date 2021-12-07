@@ -132,9 +132,9 @@ public class AlgWriterTest extends SqLanguagelDependant {
     @Ignore // TODO MV: The test if working if you put " around the table names in the JSON ( instead of \"table\": \"[hr, emps]\",\n" --> \"table\": \"[\"hr\", \"emps\"]\",\n" )
     public void testReader() {
         String s =
-                Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
+                Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
                     rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
-                    final AlgJsonReader reader = new AlgJsonReader( cluster, relOptSchema, rootSchema );
+                    final AlgJsonReader reader = new AlgJsonReader( cluster, algOptSchema, rootSchema );
                     AlgNode node;
                     try {
                         node = reader.read( XX );

@@ -133,7 +133,7 @@ public abstract class AlgOptAbstractTable implements AlgOptTable {
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context ) {
+    public AlgNode toAlg( ToAlgContext context ) {
         return LogicalTableScan.create( context.getCluster(), this );
     }
 

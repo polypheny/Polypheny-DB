@@ -309,7 +309,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * Is used if a materialized view is created in order to add the data from the underlying tables to the materialized view
      */
     @Override
-    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, AlgRoot sourceRel, CatalogMaterializedView materializedView ) {
+    public void addData( Transaction transaction, List<DataStore> stores, Map<Integer, List<CatalogColumn>> columns, AlgRoot algRoot, CatalogMaterializedView materializedView ) {
         addMaterializedInfo( materializedView.id, materializedView.getMaterializedCriteria() );
 
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
@@ -317,7 +317,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         for ( int id : materializedView.placementsByAdapter.keySet() ) {
             Statement sourceStatement = transaction.createStatement();
-            prepareSourceRel( sourceStatement, materializedView.getAlgCollation(), sourceRel.alg );
+            prepareSourceRel( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
             columnPlacements.clear();
 
@@ -325,7 +325,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered
             AlgRoot targetRel = dataMigrator.buildInsertStatement( targetStatement, columnPlacements, Catalog.getInstance().getPartitionsOnDataPlacement( id, materializedView.id ).get( 0 ) );
 
-            dataMigrator.executeQuery( columns.get( id ), sourceRel, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
+            dataMigrator.executeQuery( columns.get( id ), algRoot, sourceStatement, targetStatement, targetRel, true, materializedView.isOrdered() );
         }
     }
 
@@ -432,28 +432,28 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     }
 
 
-    private void prepareSourceRel( Statement sourceStatement, AlgCollation relCollation, AlgNode sourceRel ) {
+    private void prepareSourceRel( Statement sourceStatement, AlgCollation algCollation, AlgNode sourceRel ) {
         AlgOptCluster cluster = AlgOptCluster.create(
                 sourceStatement.getQueryProcessor().getPlanner(),
                 new RexBuilder( sourceStatement.getTransaction().getTypeFactory() ) );
 
-        prepareNode( sourceRel, cluster, relCollation );
+        prepareNode( sourceRel, cluster, algCollation );
     }
 
 
-    public void prepareNode( AlgNode viewLogicalRoot, AlgOptCluster relOptCluster, AlgCollation relCollation ) {
+    public void prepareNode( AlgNode viewLogicalRoot, AlgOptCluster algOptCluster, AlgCollation algCollation ) {
         if ( viewLogicalRoot instanceof AbstractAlgNode ) {
-            ((AbstractAlgNode) viewLogicalRoot).setCluster( relOptCluster );
+            ((AbstractAlgNode) viewLogicalRoot).setCluster( algOptCluster );
 
-            List<AlgCollation> relCollationList = new ArrayList<>();
-            relCollationList.add( relCollation );
+            List<AlgCollation> algCollations = new ArrayList<>();
+            algCollations.add( algCollation );
             AlgTraitSet traitSetTest =
-                    relOptCluster.traitSetOf( Convention.NONE )
+                    algOptCluster.traitSetOf( Convention.NONE )
                             .replaceIfs(
                                     AlgCollationTraitDef.INSTANCE,
                                     () -> {
-                                        if ( relCollation != null ) {
-                                            return relCollationList;
+                                        if ( algCollation != null ) {
+                                            return algCollations;
                                         }
                                         return ImmutableList.of();
                                     } );
@@ -461,13 +461,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             ((AbstractAlgNode) viewLogicalRoot).setTraitSet( traitSetTest );
         }
         if ( viewLogicalRoot instanceof BiAlg ) {
-            prepareNode( ((BiAlg) viewLogicalRoot).getLeft(), relOptCluster, relCollation );
-            prepareNode( ((BiAlg) viewLogicalRoot).getRight(), relOptCluster, relCollation );
+            prepareNode( ((BiAlg) viewLogicalRoot).getLeft(), algOptCluster, algCollation );
+            prepareNode( ((BiAlg) viewLogicalRoot).getRight(), algOptCluster, algCollation );
         } else if ( viewLogicalRoot instanceof SingleAlg ) {
-            prepareNode( ((SingleAlg) viewLogicalRoot).getInput(), relOptCluster, relCollation );
+            prepareNode( ((SingleAlg) viewLogicalRoot).getInput(), algOptCluster, algCollation );
         }
         if ( viewLogicalRoot instanceof LogicalViewScan ) {
-            prepareNode( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), relOptCluster, relCollation );
+            prepareNode( ((LogicalViewScan) viewLogicalRoot).getAlgNode(), algOptCluster, algCollation );
         }
     }
 

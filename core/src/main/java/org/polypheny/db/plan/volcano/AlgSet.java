@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptListener;
+import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
@@ -238,8 +238,8 @@ class AlgSet {
 
 
     private void postEquivalenceEvent( VolcanoPlanner planner, AlgNode alg ) {
-        AlgOptListener.RelEquivalenceEvent event = new AlgOptListener.RelEquivalenceEvent( planner, alg, "equivalence class " + id, false );
-        planner.listener.relEquivalenceFound( event );
+        AlgEquivalenceEvent event = new AlgEquivalenceEvent( planner, alg, "equivalence class " + id, false );
+        planner.listener.algEquivalenceFound( event );
     }
 
 

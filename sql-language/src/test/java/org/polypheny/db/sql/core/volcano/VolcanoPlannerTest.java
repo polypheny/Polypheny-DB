@@ -32,6 +32,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
+import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgEvent;
 import org.polypheny.db.sql.core.volcano.PlannerTests.NoneLeafAlg;
 import org.polypheny.db.sql.core.volcano.PlannerTests.NoneSingleAlg;
 import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafAlg;
@@ -337,13 +340,13 @@ public class VolcanoPlannerTest {
         AlgNode result = planner.chooseDelegate().findBestExp();
         assertTrue( result instanceof PhysLeafAlg );
 
-        List<AlgOptListener.RelEvent> eventList = listener.getEventList();
+        List<AlgEvent> eventList = listener.getEventList();
 
         // add node
-        checkEvent( eventList, 0, AlgOptListener.RelEquivalenceEvent.class, leafRel, null );
+        checkEvent( eventList, 0, AlgEquivalenceEvent.class, leafRel, null );
 
         // internal subset
-        checkEvent( eventList, 1, AlgOptListener.RelEquivalenceEvent.class, null, null );
+        checkEvent( eventList, 1, AlgEquivalenceEvent.class, null, null );
 
         // before rule
         checkEvent( eventList, 2, AlgOptListener.RuleAttemptedEvent.class, leafRel, PhysLeafRule.class );
@@ -352,7 +355,7 @@ public class VolcanoPlannerTest {
         checkEvent( eventList, 3, AlgOptListener.RuleProductionEvent.class, result, PhysLeafRule.class );
 
         // result of rule
-        checkEvent( eventList, 4, AlgOptListener.RelEquivalenceEvent.class, result, null );
+        checkEvent( eventList, 4, AlgEquivalenceEvent.class, result, null );
 
         // after rule
         checkEvent( eventList, 5, AlgOptListener.RuleProductionEvent.class, result, PhysLeafRule.class );
@@ -361,16 +364,16 @@ public class VolcanoPlannerTest {
         checkEvent( eventList, 6, AlgOptListener.RuleAttemptedEvent.class, leafRel, PhysLeafRule.class );
 
         // choose plan
-        checkEvent( eventList, 7, AlgOptListener.RelChosenEvent.class, result, null );
+        checkEvent( eventList, 7, AlgChosenEvent.class, result, null );
 
         // finish choosing plan
-        checkEvent( eventList, 8, AlgOptListener.RelChosenEvent.class, null, null );
+        checkEvent( eventList, 8, AlgChosenEvent.class, null, null );
     }
 
 
-    private void checkEvent( List<AlgOptListener.RelEvent> eventList, int iEvent, Class expectedEventClass, AlgNode expectedRel, Class<? extends AlgOptRule> expectedRuleClass ) {
+    private void checkEvent( List<AlgEvent> eventList, int iEvent, Class expectedEventClass, AlgNode expectedRel, Class<? extends AlgOptRule> expectedRuleClass ) {
         assertTrue( iEvent < eventList.size() );
-        AlgOptListener.RelEvent event = eventList.get( iEvent );
+        AlgEvent event = eventList.get( iEvent );
         assertSame( expectedEventClass, event.getClass() );
         if ( expectedRel != null ) {
             assertSame( expectedRel, event.getRel() );
@@ -543,7 +546,7 @@ public class VolcanoPlannerTest {
      */
     private static class TestListener implements AlgOptListener {
 
-        private List<RelEvent> eventList;
+        private List<AlgEvent> eventList;
 
 
         TestListener() {
@@ -551,31 +554,31 @@ public class VolcanoPlannerTest {
         }
 
 
-        List<RelEvent> getEventList() {
+        List<AlgEvent> getEventList() {
             return eventList;
         }
 
 
-        private void recordEvent( RelEvent event ) {
+        private void recordEvent( AlgEvent event ) {
             eventList.add( event );
         }
 
 
         @Override
-        public void relChosen( RelChosenEvent event ) {
+        public void algChosen( AlgChosenEvent event ) {
             recordEvent( event );
         }
 
 
         @Override
-        public void relDiscarded( RelDiscardedEvent event ) {
+        public void algDiscarded( AlgDiscardedEvent event ) {
             // Volcano is quite a pack rat--it never discards anything!
             throw new AssertionError( event );
         }
 
 
         @Override
-        public void relEquivalenceFound( RelEquivalenceEvent event ) {
+        public void algEquivalenceFound( AlgEquivalenceEvent event ) {
             if ( !event.isPhysical() ) {
                 return;
             }

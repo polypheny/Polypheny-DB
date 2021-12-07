@@ -58,6 +58,6 @@ public interface Metadata {
     /**
      * Returns the relational expression that this metadata is about.
      */
-    AlgNode rel();
+    AlgNode alg();
 }
 

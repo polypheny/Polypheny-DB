@@ -63,8 +63,8 @@ public class VolcanoRelMetadataProvider implements AlgMetadataProvider {
 
 
     @Override
-    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> relClass, final Class<? extends M> metadataClass ) {
-        if ( relClass != AlgSubset.class ) {
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass, final Class<? extends M> metadataClass ) {
+        if ( algClass != AlgSubset.class ) {
             // let someone else further down the chain sort it out
             return null;
         }
@@ -99,10 +99,10 @@ public class VolcanoRelMetadataProvider implements AlgMetadataProvider {
 
             subset.set.inMetadataQuery = true;
             try {
-                for ( AlgNode relCandidate : subset.set.algs ) {
-                    final UnboundMetadata<M> function = provider.apply( relCandidate.getClass(), metadataClass );
+                for ( AlgNode algCandidate : subset.set.algs ) {
+                    final UnboundMetadata<M> function = provider.apply( algCandidate.getClass(), metadataClass );
                     if ( function != null ) {
-                        final M result = function.bind( relCandidate, mq );
+                        final M result = function.bind( algCandidate, mq );
                         if ( result != null ) {
                             return result;
                         }

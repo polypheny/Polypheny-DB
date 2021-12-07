@@ -169,7 +169,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     final AlgOptTable table;
     final DruidTable druidTable;
     final ImmutableList<Interval> intervals;
-    final ImmutableList<AlgNode> rels;
+    final ImmutableList<AlgNode> algs;
     /**
      * This operator map provides DruidSqlOperatorConverter instance to convert a Polypheny-DB RexNode to Druid Expression when possible.
      */
@@ -190,15 +190,15 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      * @param table Table
      * @param druidTable Druid table
      * @param intervals Intervals for the query
-     * @param rels Internal relational expressions
+     * @param algs Internal relational expressions
      * @param converterOperatorMap mapping of Polypheny-DB Sql Operator to Druid Expression API.
      */
-    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> rels, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         super( cluster, traitSet );
         this.table = table;
         this.druidTable = druidTable;
         this.intervals = ImmutableList.copyOf( intervals );
-        this.rels = ImmutableList.copyOf( rels );
+        this.algs = ImmutableList.copyOf( algs );
         this.converterOperatorMap = Objects.requireNonNull( converterOperatorMap, "Operator map can not be null" );
         assert isValid( Litmus.THROW, null );
     }
@@ -215,28 +215,28 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<AlgNode> rels ) {
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<AlgNode> algs ) {
         final ImmutableMap.Builder<Operator, DruidSqlOperatorConverter> mapBuilder = ImmutableMap.builder();
         for ( DruidSqlOperatorConverter converter : DEFAULT_OPERATORS_LIST ) {
             mapBuilder.put( converter.polyphenyDbOperator(), converter );
         }
-        return create( cluster, traitSet, table, druidTable, druidTable.intervals, rels, mapBuilder.build() );
+        return create( cluster, traitSet, table, druidTable, druidTable.intervals, algs, mapBuilder.build() );
     }
 
 
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<AlgNode> rels, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
-        return create( cluster, traitSet, table, druidTable, druidTable.intervals, rels, converterOperatorMap );
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+        return create( cluster, traitSet, table, druidTable, druidTable.intervals, algs, converterOperatorMap );
     }
 
 
     /**
      * Creates a DruidQuery.
      */
-    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> rels, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
-        return new DruidQuery( cluster, traitSet, table, druidTable, intervals, rels, converterOperatorMap );
+    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+        return new DruidQuery( cluster, traitSet, table, druidTable, intervals, algs, converterOperatorMap );
     }
 
 
@@ -245,7 +245,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      */
     public static DruidQuery extendQuery( DruidQuery query, AlgNode r ) {
         final ImmutableList.Builder<AlgNode> builder = ImmutableList.builder();
-        return DruidQuery.create( query.getCluster(), r.getTraitSet().replace( query.getConvention() ), query.getTable(), query.druidTable, query.intervals, builder.addAll( query.rels ).add( r ).build(), query.getOperatorConversionMap() );
+        return DruidQuery.create( query.getCluster(), r.getTraitSet().replace( query.getConvention() ), query.getTable(), query.druidTable, query.intervals, builder.addAll( query.algs ).add( r ).build(), query.getOperatorConversionMap() );
     }
 
 
@@ -253,7 +253,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
      * Extends a DruidQuery.
      */
     public static DruidQuery extendQuery( DruidQuery query, List<Interval> intervals ) {
-        return DruidQuery.create( query.getCluster(), query.getTraitSet(), query.getTable(), query.druidTable, intervals, query.rels, query.getOperatorConversionMap() );
+        return DruidQuery.create( query.getCluster(), query.getTraitSet(), query.getTable(), query.druidTable, intervals, query.algs, query.getOperatorConversionMap() );
     }
 
 
@@ -428,7 +428,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     String signature() {
         final StringBuilder b = new StringBuilder();
         boolean flag = false;
-        for ( AlgNode alg : rels ) {
+        for ( AlgNode alg : algs ) {
             b.append( alg instanceof TableScan ? 's'
                     : (alg instanceof Project && flag) ? 'o'
                             : (alg instanceof Filter && flag) ? 'h'
@@ -452,11 +452,11 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         if ( !isValidSignature( signature ) ) {
             return litmus.fail( "invalid signature [{}]", signature );
         }
-        if ( rels.isEmpty() ) {
+        if ( algs.isEmpty() ) {
             return litmus.fail( "must have at least one rel" );
         }
-        for ( int i = 0; i < rels.size(); i++ ) {
-            final AlgNode r = rels.get( i );
+        for ( int i = 0; i < algs.size(); i++ ) {
+            final AlgNode r = algs.get( i );
             if ( i == 0 ) {
                 if ( !(r instanceof TableScan) ) {
                     return litmus.fail( "first alg must be TableScan, was ", r );
@@ -466,7 +466,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
                 }
             } else {
                 final List<AlgNode> inputs = r.getInputs();
-                if ( inputs.size() != 1 || inputs.get( 0 ) != rels.get( i - 1 ) ) {
+                if ( inputs.size() != 1 || inputs.get( 0 ) != algs.get( i - 1 ) ) {
                     return litmus.fail( "each alg must have a single input" );
                 }
                 if ( r instanceof Aggregate ) {
@@ -509,18 +509,18 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     @Override
     public AlgDataType deriveRowType() {
         return getCluster().getTypeFactory().createStructType(
-                Pair.right( Util.last( rels ).getRowType().getFieldList() ),
+                Pair.right( Util.last( algs ).getRowType().getFieldList() ),
                 getQuerySpec().fieldNames );
     }
 
 
     public TableScan getTableScan() {
-        return (TableScan) rels.get( 0 );
+        return (TableScan) algs.get( 0 );
     }
 
 
     public AlgNode getTopNode() {
-        return Util.last( rels );
+        return Util.last( algs );
     }
 
 
@@ -537,7 +537,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
 
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
-        for ( AlgNode alg : rels ) {
+        for ( AlgNode alg : algs ) {
             if ( alg instanceof TableScan ) {
                 TableScan tableScan = (TableScan) alg;
                 pw.item( "table", tableScan.getTable().getQualifiedName() );
@@ -572,14 +572,14 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return Util.last( rels ).computeSelfCost( planner, mq )
+        return Util.last( algs ).computeSelfCost( planner, mq )
                 // Cost increases with the number of fields queried. A plan returning 100 or more columns will have 2x the cost of a plan returning 2 columns. A plan where all extra columns are pruned will be preferred.
                 .multiplyBy( AlgMdUtil.linear( querySpec.fieldNames.size(), 2, 100, 1d, 2d ) )
                 .multiplyBy( getQueryTypeCostMultiplier() )
                 // A Scan leaf filter is better than having filter spec if possible.
-                .multiplyBy( rels.size() > 1 && rels.get( 1 ) instanceof Filter ? 0.5 : 1.0 )
+                .multiplyBy( algs.size() > 1 && algs.get( 1 ) instanceof Filter ? 0.5 : 1.0 )
                 // a plan with sort pushed to druid is better than doing sort outside of druid
-                .multiplyBy( Util.last( rels ) instanceof Sort ? 0.1 : 1.0 )
+                .multiplyBy( Util.last( algs ) instanceof Sort ? 0.1 : 1.0 )
                 .multiplyBy( getIntervalCostMultiplier() );
     }
 
@@ -626,7 +626,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 String.join( ".", table.getQualifiedName() ) + "$" +
-                (rels != null ? rels.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) : "") + "&";
+                (algs != null ? algs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
 
@@ -662,41 +662,41 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         int i = 1;
 
         Filter filterRel = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Filter ) {
-            filterRel = (Filter) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Filter ) {
+            filterRel = (Filter) algs.get( i++ );
         }
 
         Project project = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Project ) {
-            project = (Project) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Project ) {
+            project = (Project) algs.get( i++ );
         }
 
         ImmutableBitSet groupSet = null;
         List<AggregateCall> aggCalls = null;
         List<String> aggNames = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Aggregate ) {
-            final Aggregate aggregate = (Aggregate) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Aggregate ) {
+            final Aggregate aggregate = (Aggregate) algs.get( i++ );
             groupSet = aggregate.getGroupSet();
             aggCalls = aggregate.getAggCallList();
             aggNames = Util.skip( aggregate.getRowType().getFieldNames(), groupSet.cardinality() );
         }
 
         Filter havingFilter = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Filter ) {
-            havingFilter = (Filter) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Filter ) {
+            havingFilter = (Filter) algs.get( i++ );
         }
 
         Project postProject = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Project ) {
-            postProject = (Project) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Project ) {
+            postProject = (Project) algs.get( i++ );
         }
 
         List<Integer> collationIndexes = null;
         List<Direction> collationDirections = null;
         ImmutableBitSet.Builder numericCollationBitSetBuilder = ImmutableBitSet.builder();
         Integer fetch = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Sort ) {
-            final Sort sort = (Sort) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Sort ) {
+            final Sort sort = (Sort) algs.get( i++ );
             collationIndexes = new ArrayList<>();
             collationDirections = new ArrayList<>();
             for ( AlgFieldCollation fCol : sort.collation.getFieldCollations() ) {
@@ -709,7 +709,7 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
             fetch = sort.fetch != null ? RexLiteral.intValue( sort.fetch ) : null;
         }
 
-        if ( i != rels.size() ) {
+        if ( i != algs.size() ) {
             throw new AssertionError( "could not implement all rels" );
         }
 

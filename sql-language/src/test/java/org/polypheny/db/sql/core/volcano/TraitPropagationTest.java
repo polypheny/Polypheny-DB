@@ -114,7 +114,7 @@ public class TraitPropagationTest {
      */
     private static class PropAction {
 
-        public AlgNode apply( AlgOptCluster cluster, AlgOptSchema relOptSchema, SchemaPlus rootSchema ) {
+        public AlgNode apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
             final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
             final RexBuilder rexBuilder = cluster.getRexBuilder();
             final AlgOptPlanner planner = cluster.getPlanner();
@@ -139,7 +139,7 @@ public class TraitPropagationTest {
                 }
             };
 
-            final AlgOptAbstractTable t1 = new AlgOptAbstractTable( relOptSchema, "t1", table.getRowType( typeFactory ) ) {
+            final AlgOptAbstractTable t1 = new AlgOptAbstractTable( algOptSchema, "t1", table.getRowType( typeFactory ) ) {
                 @Override
                 public <T> T unwrap( Class<T> clazz ) {
                     return clazz.isInstance( table )

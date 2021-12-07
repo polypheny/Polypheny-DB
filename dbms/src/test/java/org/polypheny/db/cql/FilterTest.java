@@ -23,21 +23,21 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.helper.RelBuildTestHelper;
+import org.polypheny.db.cql.helper.AlgBuildTestHelper;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexNode;
 
 
-public class FilterTest extends RelBuildTestHelper {
+public class FilterTest extends AlgBuildTestHelper {
 
     private final AlgNode baseNode;
     private final Map<String, AlgDataTypeField> filterMap = new HashMap<>();
 
 
     public FilterTest() throws UnknownIndexException {
-        super( RelBuildLevel.INITIAL_PROJECTION );
+        super( AlgBuildLevel.INITIAL_PROJECTION );
         baseNode = algBuilder.peek();
         AlgDataType filtersRowType = baseNode.getRowType();
         List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();

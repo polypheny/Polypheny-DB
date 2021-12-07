@@ -535,7 +535,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             final AlgDataType rowType = parameterizedRoot.alg.getRowType();
             final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-            AlgRoot optimalRoot = new AlgRoot( optimalNode, rowType, parameterizedRoot.kind, fields, relCollation( parameterizedRoot.alg ) );
+            AlgRoot optimalRoot = new AlgRoot( optimalNode, rowType, parameterizedRoot.kind, fields, algCollation( parameterizedRoot.alg ) );
 
             PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
 
@@ -1064,7 +1064,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private Pair<AlgRoot, AlgDataType> parameterize( AlgRoot routedRoot, AlgDataType parameterRowType ) {
         AlgNode routed = routedRoot.alg;
         List<AlgDataType> parameterRowTypeList = new ArrayList<>();
-        parameterRowType.getFieldList().forEach( relDataTypeField -> parameterRowTypeList.add( relDataTypeField.getType() ) );
+        parameterRowType.getFieldList().forEach( algDataTypeField -> parameterRowTypeList.add( algDataTypeField.getType() ) );
 
         // Parameterize
         QueryParameterizer queryParameterizer = new QueryParameterizer( parameterRowType.getFieldCount(), parameterRowTypeList );
@@ -1108,7 +1108,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         final AlgTraitSet desiredTraits = logicalPlan.getTraitSet()
                 .replace( resultConvention )
-                .replace( relCollation( logicalPlan ) )
+                .replace( algCollation( logicalPlan ) )
                 .simplify();
 
         final Program program = Programs.standard();
@@ -1207,7 +1207,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private AlgCollation relCollation( AlgNode node ) {
+    private AlgCollation algCollation( AlgNode node ) {
         return node instanceof Sort
                 ? ((Sort) node).collation
                 : AlgCollations.EMPTY;
@@ -1274,23 +1274,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private boolean isQueryPlanCachingActive( Statement statement, AlgRoot relRoot ) {
+    private boolean isQueryPlanCachingActive( Statement statement, AlgRoot algRoot ) {
         return RuntimeConfig.QUERY_PLAN_CACHING.getBoolean()
                 && statement.getTransaction().getUseCache()
-                && (!relRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0);
+                && (!algRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0);
     }
 
 
-    private boolean isImplementationCachingActive( Statement statement, AlgRoot relRoot ) {
+    private boolean isImplementationCachingActive( Statement statement, AlgRoot algRoot ) {
         return RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean()
                 && statement.getTransaction().getUseCache()
-                && (!relRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0);
+                && (!algRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0);
     }
 
 
     private LogicalQueryInformation analyzeQueryAndPrepareMonitoring( Statement statement, AlgRoot logicalRoot, boolean isAnalyze, boolean isSubquery ) {
         // Analyze logical query
-        LogicalRelAnalyzeShuttle analyzeRelShuttle = new LogicalRelAnalyzeShuttle( statement );
+        LogicalAlgAnalyzeShuttle analyzeRelShuttle = new LogicalAlgAnalyzeShuttle( statement );
         logicalRoot.alg.accept( analyzeRelShuttle );
 
         // Get partitions of logical information
@@ -1321,15 +1321,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      * It is necessary to associate the partitionIds again with the TableScanId and not with the table itself. Because a table could be present
      * multiple times within one query. The aggregation per table would lead to data loss
      *
-     * @param rel RelNode to be processed
+     * @param alg AlgNode to be processed
      * @param aggregatedPartitionValues Mapping of TableScan Ids to identified partition Values
      * @return Mapping of TableScan Ids to identified partition Ids
      */
-    private Map<Integer, List<Long>> getAccessedPartitionsPerTableScan( AlgNode rel, Map<Integer, Set<String>> aggregatedPartitionValues ) {
+    private Map<Integer, List<Long>> getAccessedPartitionsPerTableScan( AlgNode alg, Map<Integer, Set<String>> aggregatedPartitionValues ) {
         Map<Integer, List<Long>> accessedPartitionList = new HashMap<>(); // tableId  -> partitionIds
-        if ( !(rel instanceof LogicalTableScan) ) {
-            for ( int i = 0; i < rel.getInputs().size(); i++ ) {
-                Map<Integer, List<Long>> result = getAccessedPartitionsPerTableScan( rel.getInput( i ), aggregatedPartitionValues );
+        if ( !(alg instanceof LogicalTableScan) ) {
+            for ( int i = 0; i < alg.getInputs().size(); i++ ) {
+                Map<Integer, List<Long>> result = getAccessedPartitionsPerTableScan( alg.getInput( i ), aggregatedPartitionValues );
                 if ( !result.isEmpty() ) {
                     for ( Map.Entry<Integer, List<Long>> elem : result.entrySet() ) {
                         accessedPartitionList.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
@@ -1338,11 +1338,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         } else {
             boolean fallback = false;
-            if ( rel.getTable() != null ) {
-                AlgOptTableImpl table = (AlgOptTableImpl) rel.getTable();
+            if ( alg.getTable() != null ) {
+                AlgOptTableImpl table = (AlgOptTableImpl) alg.getTable();
                 if ( table.getTable() instanceof LogicalTable ) {
                     LogicalTable logicalTable = ((LogicalTable) table.getTable());
-                    int scanId = rel.getId();
+                    int scanId = alg.getId();
 
                     // Get placements of this table
                     CatalogTable catalogTable = Catalog.getInstance().getTable( logicalTable.getTableId() );
@@ -1428,7 +1428,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void monitorResult( ProposedRoutingPlan selectedPlan ) {
         if ( statement.getTransaction().getMonitoringEvent() != null ) {
             StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
-            eventData.setRelCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
+            eventData.setAlgCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
             if ( selectedPlan.getPhysicalQueryClass() != null ) {
                 eventData.setPhysicalQueryClass( selectedPlan.getPhysicalQueryClass() );
                 eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateRowCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
@@ -1526,7 +1526,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             // Calculate costs and get selected plan from plan selector
             approximatedCosts = optimalAlgs.stream()
-                    .map( rel -> rel.computeSelfCost( getPlanner(), rel.getCluster().getMetadataQuery() ) )
+                    .map( alg -> alg.computeSelfCost( getPlanner(), alg.getCluster().getMetadataQuery() ) )
                     .collect( Collectors.toList() );
             RoutingPlan routingPlan = RoutingManager.getInstance().getRoutingPlanSelector().selectPlanBasedOnCosts(
                     proposedRoutingPlans,

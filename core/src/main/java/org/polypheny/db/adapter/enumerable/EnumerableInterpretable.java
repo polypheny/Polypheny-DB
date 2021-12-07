@@ -108,9 +108,9 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
 
     public static Pair<Bindable<Object[]>, String> toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableAlg alg, EnumerableAlg.Prefer prefer, Statement statement ) {
-        EnumerableAlgImplementor relImplementor = new EnumerableAlgImplementor( alg.getCluster().getRexBuilder(), parameters );
+        EnumerableAlgImplementor algImplementor = new EnumerableAlgImplementor( alg.getCluster().getRexBuilder(), parameters );
 
-        final ClassDeclaration expr = relImplementor.implementRoot( alg, prefer );
+        final ClassDeclaration expr = algImplementor.implementRoot( alg, prefer );
         String s = Expressions.toString( expr.memberDeclarations, "\n", false );
 
         if ( RuntimeConfig.DEBUG.getBoolean() ) {

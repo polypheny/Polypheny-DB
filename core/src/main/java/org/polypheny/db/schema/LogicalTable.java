@@ -130,8 +130,8 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
 
 
     @Override
-    public AlgNode toRel( ToAlgContext context, AlgOptTable relOptTable ) {
-        throw new RuntimeException( "toRel() is not implemented for Logical Tables!" );
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+        throw new RuntimeException( "toAlg() is not implemented for Logical Tables!" );
     }
 
 }

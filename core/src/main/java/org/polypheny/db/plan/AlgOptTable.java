@@ -84,7 +84,7 @@ public interface AlgOptTable extends Wrapper {
      * relational expression, generally something abstract, such as a {@link LogicalTableScan}, then optimizes this
      * expression by applying {@link AlgOptRule rules} to transform it into more efficient access methods for this table.
      */
-    AlgNode toRel( ToAlgContext context );
+    AlgNode toAlg( ToAlgContext context );
 
     /**
      * Returns a description of the physical ordering (or orderings) of the rows returned from this table.

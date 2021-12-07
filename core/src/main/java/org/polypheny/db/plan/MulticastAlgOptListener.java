@@ -66,9 +66,9 @@ public class MulticastAlgOptListener implements AlgOptListener {
 
     // implement RelOptListener
     @Override
-    public void relEquivalenceFound( RelEquivalenceEvent event ) {
+    public void algEquivalenceFound( AlgEquivalenceEvent event ) {
         for ( AlgOptListener listener : listeners ) {
-            listener.relEquivalenceFound( event );
+            listener.algEquivalenceFound( event );
         }
     }
 
@@ -93,18 +93,18 @@ public class MulticastAlgOptListener implements AlgOptListener {
 
     // implement RelOptListener
     @Override
-    public void relChosen( RelChosenEvent event ) {
+    public void algChosen( AlgChosenEvent event ) {
         for ( AlgOptListener listener : listeners ) {
-            listener.relChosen( event );
+            listener.algChosen( event );
         }
     }
 
 
     // implement RelOptListener
     @Override
-    public void relDiscarded( RelDiscardedEvent event ) {
+    public void algDiscarded( AlgDiscardedEvent event ) {
         for ( AlgOptListener listener : listeners ) {
-            listener.relDiscarded( event );
+            listener.algDiscarded( event );
         }
     }
 }

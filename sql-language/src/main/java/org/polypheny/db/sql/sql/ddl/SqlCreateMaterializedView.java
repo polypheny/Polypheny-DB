@@ -150,7 +150,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         PlacementType placementType = store.size() > 0 ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-        AlgRoot relRoot = sqlProcessor.translate(
+        AlgRoot algRoot = sqlProcessor.translate(
                 statement,
                 sqlProcessor.validate(
                         statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
@@ -189,7 +189,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
             DdlManager.getInstance().createMaterializedView(
                     viewName.replaceAll( "[^A-Za-z0-9]", "_" ),
                     schemaId,
-                    relRoot,
+                    algRoot,
                     replace,
                     statement,
                     stores,

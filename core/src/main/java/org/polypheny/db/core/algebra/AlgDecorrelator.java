@@ -607,7 +607,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
             return null;
         }
         final List<RexNode> oldProjects = alg.getProjects();
-        final List<AlgDataTypeField> relOutput = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> algOutput = alg.getRowType().getFieldList();
 
         // Project projects the original expressions, plus any correlated variables the input wants to pass along.
         final List<Pair<RexNode, String>> projects = new ArrayList<>();
@@ -625,7 +625,7 @@ public class AlgDecorrelator implements ReflectiveVisitor {
                     newPos,
                     Pair.of(
                             decorrelateExpr( currentAlg, map, cm, oldProjects.get( newPos ) ),
-                            relOutput.get( newPos ).getName() ) );
+                            algOutput.get( newPos ).getName() ) );
             mapOldToNewOutputs.put( newPos, newPos );
         }
 
@@ -2475,8 +2475,8 @@ public class AlgDecorrelator implements ReflectiveVisitor {
         /**
          * Creates a CorelMap by iterating over a {@link AlgNode} tree.
          */
-        CorelMap build( AlgNode... rels ) {
-            for ( AlgNode alg : rels ) {
+        CorelMap build( AlgNode... algs ) {
+            for ( AlgNode alg : algs ) {
                 stripHep( alg ).accept( this );
             }
             return new CorelMap( mapRefRelToCorRef, mapCorToCorRel, mapFieldAccessToCorVar );

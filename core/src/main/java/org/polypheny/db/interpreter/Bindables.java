@@ -202,16 +202,16 @@ public class Bindables {
         /**
          * Creates a BindableTableScan.
          */
-        public static BindableTableScan create( AlgOptCluster cluster, AlgOptTable relOptTable ) {
-            return create( cluster, relOptTable, ImmutableList.of(), identity( relOptTable ) );
+        public static BindableTableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
+            return create( cluster, algOptTable, ImmutableList.of(), identity( algOptTable ) );
         }
 
 
         /**
          * Creates a BindableTableScan.
          */
-        public static BindableTableScan create( AlgOptCluster cluster, AlgOptTable relOptTable, List<RexNode> filters, List<Integer> projects ) {
-            final Table table = relOptTable.unwrap( Table.class );
+        public static BindableTableScan create( AlgOptCluster cluster, AlgOptTable algOptTable, List<RexNode> filters, List<Integer> projects ) {
+            final Table table = algOptTable.unwrap( Table.class );
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
                             .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
@@ -220,7 +220,7 @@ public class Bindables {
                                 }
                                 return ImmutableList.of();
                             } );
-            return new BindableTableScan( cluster, traitSet, relOptTable, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
+            return new BindableTableScan( cluster, traitSet, algOptTable, ImmutableList.copyOf( filters ), ImmutableIntList.copyOf( projects ) );
         }
 
 

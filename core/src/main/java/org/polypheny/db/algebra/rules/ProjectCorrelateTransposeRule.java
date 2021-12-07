@@ -72,10 +72,10 @@ public class ProjectCorrelateTransposeRule extends AlgOptRule {
     private final PushProjector.ExprCondition preserveExprCondition;
 
 
-    public ProjectCorrelateTransposeRule( PushProjector.ExprCondition preserveExprCondition, AlgBuilderFactory relFactory ) {
+    public ProjectCorrelateTransposeRule( PushProjector.ExprCondition preserveExprCondition, AlgBuilderFactory algFactory ) {
         super(
                 operand( Project.class, operand( Correlate.class, any() ) ),
-                relFactory, null );
+                algFactory, null );
         this.preserveExprCondition = preserveExprCondition;
     }
 

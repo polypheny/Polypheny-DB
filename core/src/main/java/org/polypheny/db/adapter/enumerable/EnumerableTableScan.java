@@ -90,8 +90,8 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
     /**
      * Creates an EnumerableTableScan.
      */
-    public static EnumerableTableScan create( AlgOptCluster cluster, AlgOptTable relOptTable ) {
-        final Table table = relOptTable.unwrap( Table.class );
+    public static EnumerableTableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
+        final Table table = algOptTable.unwrap( Table.class );
         Class elementType = EnumerableTableScan.deduceElementType( table );
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
@@ -101,7 +101,7 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
                             }
                             return ImmutableList.of();
                         } );
-        return new EnumerableTableScan( cluster, traitSet, relOptTable, elementType );
+        return new EnumerableTableScan( cluster, traitSet, algOptTable, elementType );
     }
 
 
@@ -209,14 +209,14 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
 
     private Expression fieldExpression( ParameterExpression row_, int i, PhysType physType, JavaRowFormat format ) {
         final Expression e = format.field( row_, i, null, physType.getJavaFieldType( i ) );
-        final AlgDataType relFieldType = physType.getRowType().getFieldList().get( i ).getType();
-        switch ( relFieldType.getPolyType() ) {
+        final AlgDataType algFieldType = physType.getRowType().getFieldList().get( i ).getType();
+        switch ( algFieldType.getPolyType() ) {
             case ARRAY:
             case MULTISET:
                 // We can't represent a multiset or array as a List<Employee>, because the consumer does not know the element type.
                 // The standard element type is List. We need to convert to a List<List>.
                 final JavaTypeFactory typeFactory = (JavaTypeFactory) getCluster().getTypeFactory();
-                final PhysType elementPhysType = PhysTypeImpl.of( typeFactory, relFieldType.getComponentType(), JavaRowFormat.CUSTOM );
+                final PhysType elementPhysType = PhysTypeImpl.of( typeFactory, algFieldType.getComponentType(), JavaRowFormat.CUSTOM );
                 final MethodCallExpression e2 = Expressions.call( BuiltInMethod.AS_ENUMERABLE2.method, e );
                 final AlgDataType dummyType = this.rowType;
                 final Expression e3 = elementPhysType.convertTo( e2, PhysTypeImpl.of( typeFactory, dummyType, JavaRowFormat.LIST ) );

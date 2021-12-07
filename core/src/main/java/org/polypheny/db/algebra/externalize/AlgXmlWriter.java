@@ -99,9 +99,9 @@ public class AlgXmlWriter extends AlgWriterImpl {
      * @param values List of term-value pairs
      */
     private void explainGeneric( AlgNode alg, List<Pair<String, Object>> values ) {
-        String relType = alg.getAlgTypeName();
+        String algType = alg.getAlgTypeName();
         xmlOutput.beginBeginTag( "AlgNode" );
-        xmlOutput.attribute( "type", relType );
+        xmlOutput.attribute( "type", algType );
 
         xmlOutput.endBeginTag( "AlgNode" );
 

@@ -66,7 +66,7 @@ public abstract class MaterializedViewManager {
             Transaction transaction,
             List<DataStore> stores,
             Map<Integer, List<CatalogColumn>> addedColumns,
-            AlgRoot relRoot,
+            AlgRoot algRoot,
             CatalogMaterializedView materializedView );
 
     public abstract void addTables( Transaction transaction, List<String> names );

@@ -368,8 +368,8 @@ public class AlgJson {
     }
 
 
-    RexNode toRex( AlgInput relInput, Object o ) {
-        final AlgOptCluster cluster = relInput.getCluster();
+    RexNode toRex( AlgInput algInput, Object o ) {
+        final AlgOptCluster cluster = algInput.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
         if ( o == null ) {
             return null;
@@ -381,7 +381,7 @@ public class AlgJson {
                 final List operands = (List) map.get( "operands" );
                 final Object jsonType = map.get( "type" );
                 final Operator operator = toOp( op, map );
-                final List<RexNode> rexOperands = toRexList( relInput, operands );
+                final List<RexNode> rexOperands = toRexList( algInput, operands );
                 AlgDataType type;
                 if ( jsonType != null ) {
                     type = toType( typeFactory, jsonType );
@@ -392,7 +392,7 @@ public class AlgJson {
             }
             final Integer input = (Integer) map.get( "input" );
             if ( input != null ) {
-                List<AlgNode> inputNodes = relInput.getInputs();
+                List<AlgNode> inputNodes = algInput.getInputs();
                 int i = input;
                 for ( AlgNode inputNode : inputNodes ) {
                     final AlgDataType rowType = inputNode.getRowType();
@@ -407,7 +407,7 @@ public class AlgJson {
             final String field = (String) map.get( "field" );
             if ( field != null ) {
                 final Object jsonExpr = map.get( "expr" );
-                final RexNode expr = toRex( relInput, jsonExpr );
+                final RexNode expr = toRex( algInput, jsonExpr );
                 return rexBuilder.makeFieldAccess( expr, field, true );
             }
             final String correl = (String) map.get( "correl" );
@@ -422,7 +422,7 @@ public class AlgJson {
                 if ( literal == null ) {
                     return rexBuilder.makeNullLiteral( typeFactory.createPolyType( polyType ) );
                 }
-                return toRex( relInput, literal );
+                return toRex( algInput, literal );
             }
             throw new UnsupportedOperationException( "cannot convert to rex " + o );
         } else if ( o instanceof Boolean ) {
@@ -442,10 +442,10 @@ public class AlgJson {
     }
 
 
-    private List<RexNode> toRexList( AlgInput relInput, List operands ) {
+    private List<RexNode> toRexList( AlgInput algInput, List operands ) {
         final List<RexNode> list = new ArrayList<>();
         for ( Object operand : operands ) {
-            list.add( toRex( relInput, operand ) );
+            list.add( toRex( algInput, operand ) );
         }
         return list;
     }

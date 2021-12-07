@@ -410,7 +410,7 @@ public abstract class SqlToAlgTestBase extends SqLanguagelDependant {
 
 
             @Override
-            public AlgNode toRel( ToAlgContext context ) {
+            public AlgNode toAlg( ToAlgContext context ) {
                 return LogicalTableScan.create( context.getCluster(), this );
             }
 
@@ -524,7 +524,7 @@ public abstract class SqlToAlgTestBase extends SqLanguagelDependant {
 
 
         @Override
-        public AlgNode toRel( ToAlgContext context ) {
+        public AlgNode toAlg( ToAlgContext context ) {
             return LogicalTableScan.create( context.getCluster(), this );
         }
 

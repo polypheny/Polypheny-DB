@@ -117,7 +117,7 @@ public class HepPlannerTest extends RelOptTestBase {
      * Ensures {@link AbstractAlgNode} digest does not include full digest tree.
      */
     @Test
-    public void relDigestLength() {
+    public void algDigestLength() {
         HepProgramBuilder programBuilder = HepProgram.builder();
         HepPlanner planner = new HepPlanner( programBuilder.build() );
         StringBuilder sb = new StringBuilder();
@@ -318,7 +318,7 @@ public class HepPlannerTest extends RelOptTestBase {
 
 
         @Override
-        public void relEquivalenceFound( RelEquivalenceEvent event ) {
+        public void algEquivalenceFound( AlgEquivalenceEvent event ) {
         }
 
 
@@ -336,12 +336,12 @@ public class HepPlannerTest extends RelOptTestBase {
 
 
         @Override
-        public void relDiscarded( RelDiscardedEvent event ) {
+        public void algDiscarded( AlgDiscardedEvent event ) {
         }
 
 
         @Override
-        public void relChosen( RelChosenEvent event ) {
+        public void algChosen( AlgChosenEvent event ) {
         }
     }
 }

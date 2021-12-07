@@ -84,13 +84,13 @@ public class JoinAssociateRule extends AlgOptRule {
     public void onMatch( final AlgOptRuleCall call ) {
         final Join topJoin = call.alg( 0 );
         final Join bottomJoin = call.alg( 1 );
-        final AlgNode relA = bottomJoin.getLeft();
-        final AlgNode relB = bottomJoin.getRight();
-        final AlgSubset relC = call.alg( 2 );
+        final AlgNode algA = bottomJoin.getLeft();
+        final AlgNode algB = bottomJoin.getRight();
+        final AlgSubset algC = call.alg( 2 );
         final AlgOptCluster cluster = topJoin.getCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
 
-        if ( relC.getConvention() != relA.getConvention() ) {
+        if ( algC.getConvention() != algA.getConvention() ) {
             // relC could have any trait-set. But if we're matching say EnumerableConvention, we're only interested in enumerable subsets.
             return;
         }
@@ -101,9 +101,9 @@ public class JoinAssociateRule extends AlgOptRule {
         //    /    \
         //   A      B
 
-        final int aCount = relA.getRowType().getFieldCount();
-        final int bCount = relB.getRowType().getFieldCount();
-        final int cCount = relC.getRowType().getFieldCount();
+        final int aCount = algA.getRowType().getFieldCount();
+        final int bCount = algB.getRowType().getFieldCount();
+        final int cCount = algC.getRowType().getFieldCount();
         final ImmutableBitSet aBitSet = ImmutableBitSet.range( 0, aCount );
         final ImmutableBitSet bBitSet = ImmutableBitSet.range( aCount, aCount + bCount );
 
@@ -144,21 +144,21 @@ public class JoinAssociateRule extends AlgOptRule {
                         aCount + bCount,
                         cCount );
         final List<RexNode> newBottomList = new ArrayList<>();
-        new RexPermuteInputsShuttle( bottomMapping, relB, relC ).visitList( bottom, newBottomList );
+        new RexPermuteInputsShuttle( bottomMapping, algB, algC ).visitList( bottom, newBottomList );
         RexNode newBottomCondition = RexUtil.composeConjunction( rexBuilder, newBottomList );
 
         final Join newBottomJoin =
                 bottomJoin.copy(
                         bottomJoin.getTraitSet(),
                         newBottomCondition,
-                        relB,
-                        relC,
+                        algB,
+                        algC,
                         JoinAlgType.INNER,
                         false );
 
         // Condition for newTopJoin consists of pieces from bottomJoin and topJoin. Field ordinals do not need to be changed.
         RexNode newTopCondition = RexUtil.composeConjunction( rexBuilder, top );
-        @SuppressWarnings("SuspiciousNameCombination") final Join newTopJoin = topJoin.copy( topJoin.getTraitSet(), newTopCondition, relA, newBottomJoin, JoinAlgType.INNER, false );
+        @SuppressWarnings("SuspiciousNameCombination") final Join newTopJoin = topJoin.copy( topJoin.getTraitSet(), newTopCondition, algA, newBottomJoin, JoinAlgType.INNER, false );
 
         call.transformTo( newTopJoin );
     }

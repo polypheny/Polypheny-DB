@@ -36,19 +36,19 @@ public class CassandraUtils {
     /**
      * Finds the underlying {@link CassandraTable} of the subset.
      *
-     * @param relSubset the subset.
+     * @param algSubset the subset.
      * @return the {@link CassandraTable} or <code>null</code> if not found.
      */
-    public static CassandraTable getUnderlyingTable( AlgSubset relSubset, Convention targetConvention ) {
-        return getUnderlyingTable( relSubset.getAlgList(), targetConvention );
+    public static CassandraTable getUnderlyingTable( AlgSubset algSubset, Convention targetConvention ) {
+        return getUnderlyingTable( algSubset.getAlgList(), targetConvention );
     }
 
 
-    private static CassandraTable getUnderlyingTable( List<AlgNode> rels, Convention targetConvention ) {
+    private static CassandraTable getUnderlyingTable( List<AlgNode> algs, Convention targetConvention ) {
         Set<AlgNode> alreadyChecked = new HashSet<>();
         Deque<AlgNode> innerLevel = new LinkedList<>();
 
-        innerLevel.addAll( rels );
+        innerLevel.addAll( algs );
 
         while ( !innerLevel.isEmpty() ) {
             AlgNode algNode = innerLevel.pop();
@@ -81,12 +81,12 @@ public class CassandraUtils {
     /**
      * Finds the underlying {@link CassandraFilter} of the subset.
      *
-     * @param relSubset the subset.
+     * @param algSubset the subset.
      * @return the {@link CassandraFilter} or <code>null</code> if not found.
      */
-    public static CassandraFilter getUnderlyingFilter( AlgSubset relSubset ) {
-        List<AlgNode> rels = relSubset.getAlgList();
-        for ( AlgNode algNode : rels ) {
+    public static CassandraFilter getUnderlyingFilter( AlgSubset algSubset ) {
+        List<AlgNode> algs = algSubset.getAlgList();
+        for ( AlgNode algNode : algs ) {
             if ( algNode instanceof CassandraFilter ) {
                 return (CassandraFilter) algNode;
             }

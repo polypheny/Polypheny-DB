@@ -110,8 +110,8 @@ public class GeodeSort extends Sort implements GeodeAlg {
     }
 
 
-    private String direction( AlgFieldCollation.Direction relDirection ) {
-        if ( relDirection == AlgFieldCollation.Direction.DESCENDING ) {
+    private String direction( AlgFieldCollation.Direction algDirection ) {
+        if ( algDirection == AlgFieldCollation.Direction.DESCENDING ) {
             return DESC;
         }
         return ASC;

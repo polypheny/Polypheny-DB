@@ -396,7 +396,7 @@ public enum BuiltInMethod {
     CONTEXT_VALUES( Context.class, "values", true ),
     CONTEXT_ROOT( Context.class, "root", true ),
     DATA_CONTEXT_GET_QUERY_PROVIDER( DataContext.class, "getQueryProvider" ),
-    METADATA_REL( Metadata.class, "rel" ),
+    METADATA_ALG( Metadata.class, "alg" ),
     STRUCT_ACCESS( Functions.class, "structAccess", Object.class, int.class, String.class ),
     SOURCE_SORTER( SourceSorter.class, Function2.class, Function1.class, Comparator.class ),
     ORDERED_AGGREGATE_LAMBDA_FACTORY( OrderedAggregateLambdaFactory.class, Function0.class, List.class ),

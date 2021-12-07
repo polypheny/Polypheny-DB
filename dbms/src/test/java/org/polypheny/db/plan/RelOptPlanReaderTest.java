@@ -54,36 +54,36 @@ public class RelOptPlanReaderTest {
 
     @Test
     public void testTypeToClass() {
-        AlgJson relJson = new AlgJson( null );
+        AlgJson algJson = new AlgJson( null );
 
         // in org.polypheny.db.alg package
-        assertThat( relJson.classToTypeName( LogicalProject.class ), is( "LogicalProject" ) );
-        assertThat( relJson.typeNameToClass( "LogicalProject" ), sameInstance( LogicalProject.class ) );
+        assertThat( algJson.classToTypeName( LogicalProject.class ), is( "LogicalProject" ) );
+        assertThat( algJson.typeNameToClass( "LogicalProject" ), sameInstance( LogicalProject.class ) );
 
         // in org.polypheny.db.adapter.jdbc.JdbcRules outer class
-        assertThat( relJson.classToTypeName( JdbcRules.JdbcProject.class ), is( "JdbcProject" ) );
-        assertThat( relJson.typeNameToClass( "JdbcProject" ), equalTo( JdbcRules.JdbcProject.class ) );
+        assertThat( algJson.classToTypeName( JdbcRules.JdbcProject.class ), is( "JdbcProject" ) );
+        assertThat( algJson.typeNameToClass( "JdbcProject" ), equalTo( JdbcRules.JdbcProject.class ) );
 
         try {
-            Class clazz = relJson.typeNameToClass( "NonExistentRel" );
+            Class clazz = algJson.typeNameToClass( "NonExistentRel" );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
             assertThat( e.getMessage(), is( "unknown type NonExistentRel" ) );
         }
         try {
-            Class clazz = relJson.typeNameToClass( "org.polypheny.db.alg.NonExistentRel" );
+            Class clazz = algJson.typeNameToClass( "org.polypheny.db.alg.NonExistentRel" );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
             assertThat( e.getMessage(), is( "unknown type org.polypheny.db.alg.NonExistentRel" ) );
         }
 
         // In this class; no special treatment. Note: '$MyRel' not '.MyRel'.
-        assertThat( relJson.classToTypeName( MyRel.class ), is( "org.polypheny.db.plan.RelOptPlanReaderTest$MyRel" ) );
-        assertThat( relJson.typeNameToClass( MyRel.class.getName() ), equalTo( MyRel.class ) );
+        assertThat( algJson.classToTypeName( MyRel.class ), is( "org.polypheny.db.plan.RelOptPlanReaderTest$MyRel" ) );
+        assertThat( algJson.typeNameToClass( MyRel.class.getName() ), equalTo( MyRel.class ) );
 
         // Using canonical name (with '$'), not found
         try {
-            Class clazz = relJson.typeNameToClass( MyRel.class.getCanonicalName() );
+            Class clazz = algJson.typeNameToClass( MyRel.class.getCanonicalName() );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
             assertThat( e.getMessage(), is( "unknown type org.polypheny.db.plan.RelOptPlanReaderTest.MyRel" ) );

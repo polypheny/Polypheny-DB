@@ -845,27 +845,27 @@ public class RexBuilder {
      * Creates a numeric literal.
      */
     public RexLiteral makeExactLiteral( BigDecimal bd ) {
-        AlgDataType relType;
+        AlgDataType algType;
         int scale = bd.scale();
         assert scale >= 0;
         assert scale <= typeFactory.getTypeSystem().getMaxNumericScale() : scale;
         if ( scale == 0 ) {
             if ( bd.compareTo( INT_MIN ) >= 0 && bd.compareTo( INT_MAX ) <= 0 ) {
-                relType = typeFactory.createPolyType( PolyType.INTEGER );
+                algType = typeFactory.createPolyType( PolyType.INTEGER );
             } else {
-                relType = typeFactory.createPolyType( PolyType.BIGINT );
+                algType = typeFactory.createPolyType( PolyType.BIGINT );
             }
         } else {
             int precision = bd.unscaledValue().abs().toString().length();
             if ( precision > scale ) {
                 // bd is greater than or equal to 1
-                relType = typeFactory.createPolyType( PolyType.DECIMAL, precision, scale );
+                algType = typeFactory.createPolyType( PolyType.DECIMAL, precision, scale );
             } else {
                 // bd is less than 1
-                relType = typeFactory.createPolyType( PolyType.DECIMAL, scale + 1, scale );
+                algType = typeFactory.createPolyType( PolyType.DECIMAL, scale + 1, scale );
             }
         }
-        return makeExactLiteral( bd, relType );
+        return makeExactLiteral( bd, algType );
     }
 
 

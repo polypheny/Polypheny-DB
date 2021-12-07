@@ -155,37 +155,37 @@ public class GeodeUtils {
     /**
      * Converts a Geode object into a Row tuple.
      *
-     * @param relDataTypeFields Table relation types
+     * @param algDataTypeFields Table relation types
      * @param geodeResultObject Object value returned by Geode query
      * @return List of objects values corresponding to the relDataTypeFields
      */
-    public static Object convertToRowValues( List<AlgDataTypeField> relDataTypeFields, Object geodeResultObject ) {
+    public static Object convertToRowValues( List<AlgDataTypeField> algDataTypeFields, Object geodeResultObject ) {
         Object values;
         if ( geodeResultObject instanceof Struct ) {
-            values = handleStructEntry( relDataTypeFields, geodeResultObject );
+            values = handleStructEntry( algDataTypeFields, geodeResultObject );
         } else if ( geodeResultObject instanceof PdxInstance ) {
-            values = handlePdxInstanceEntry( relDataTypeFields, geodeResultObject );
+            values = handlePdxInstanceEntry( algDataTypeFields, geodeResultObject );
         } else {
-            values = handleJavaObjectEntry( relDataTypeFields, geodeResultObject );
+            values = handleJavaObjectEntry( algDataTypeFields, geodeResultObject );
         }
 
         return values;
     }
 
 
-    private static Object handleStructEntry( List<AlgDataTypeField> relDataTypeFields, Object obj ) {
+    private static Object handleStructEntry( List<AlgDataTypeField> algDataTypeFields, Object obj ) {
         Struct struct = (Struct) obj;
-        Object[] values = new Object[relDataTypeFields.size()];
+        Object[] values = new Object[algDataTypeFields.size()];
 
         int index = 0;
-        for ( AlgDataTypeField relDataTypeField : relDataTypeFields ) {
-            Type javaType = JAVA_TYPE_FACTORY.getJavaClass( relDataTypeField.getType() );
+        for ( AlgDataTypeField algDataTypeField : algDataTypeFields ) {
+            Type javaType = JAVA_TYPE_FACTORY.getJavaClass( algDataTypeField.getType() );
             Object rawValue;
             try {
-                rawValue = struct.get( relDataTypeField.getName() );
+                rawValue = struct.get( algDataTypeField.getName() );
             } catch ( IllegalArgumentException e ) {
                 rawValue = "<error>";
-                System.err.println( "Could find field : " + relDataTypeField.getName() );
+                System.err.println( "Could find field : " + algDataTypeField.getName() );
                 log.error( "Caught exception", e );
             }
             values[index++] = convert( rawValue, (Class) javaType );
@@ -199,15 +199,15 @@ public class GeodeUtils {
     }
 
 
-    private static Object handlePdxInstanceEntry( List<AlgDataTypeField> relDataTypeFields, Object obj ) {
+    private static Object handlePdxInstanceEntry( List<AlgDataTypeField> algDataTypeFields, Object obj ) {
         PdxInstance pdxEntry = (PdxInstance) obj;
 
-        Object[] values = new Object[relDataTypeFields.size()];
+        Object[] values = new Object[algDataTypeFields.size()];
 
         int index = 0;
-        for ( AlgDataTypeField relDataTypeField : relDataTypeFields ) {
-            Type javaType = JAVA_TYPE_FACTORY.getJavaClass( relDataTypeField.getType() );
-            Object rawValue = pdxEntry.getField( relDataTypeField.getName() );
+        for ( AlgDataTypeField algDataTypeField : algDataTypeFields ) {
+            Type javaType = JAVA_TYPE_FACTORY.getJavaClass( algDataTypeField.getType() );
+            Object rawValue = pdxEntry.getField( algDataTypeField.getName() );
             values[index++] = convert( rawValue, (Class) javaType );
         }
 
@@ -219,12 +219,12 @@ public class GeodeUtils {
     }
 
 
-    private static Object handleJavaObjectEntry( List<AlgDataTypeField> relDataTypeFields, Object obj ) {
+    private static Object handleJavaObjectEntry( List<AlgDataTypeField> algDataTypeFields, Object obj ) {
 
         Class<?> clazz = obj.getClass();
-        if ( relDataTypeFields.size() == 1 ) {
+        if ( algDataTypeFields.size() == 1 ) {
             try {
-                Field javaField = clazz.getDeclaredField( relDataTypeFields.get( 0 ).getName() );
+                Field javaField = clazz.getDeclaredField( algDataTypeFields.get( 0 ).getName() );
                 javaField.setAccessible( true );
                 return javaField.get( obj );
             } catch ( Exception e ) {
@@ -233,12 +233,12 @@ public class GeodeUtils {
             return null;
         }
 
-        Object[] values = new Object[relDataTypeFields.size()];
+        Object[] values = new Object[algDataTypeFields.size()];
 
         int index = 0;
-        for ( AlgDataTypeField relDataTypeField : relDataTypeFields ) {
+        for ( AlgDataTypeField algDataTypeField : algDataTypeFields ) {
             try {
-                Field javaField = clazz.getDeclaredField( relDataTypeField.getName() );
+                Field javaField = clazz.getDeclaredField( algDataTypeField.getName() );
                 javaField.setAccessible( true );
                 values[index++] = javaField.get( obj );
             } catch ( Exception e ) {

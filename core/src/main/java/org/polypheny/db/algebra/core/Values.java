@@ -174,7 +174,7 @@ public abstract class Values extends AbstractAlgNode {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         // A little adapter just to get the tuples to come out with curly brackets instead of square brackets.  Plus more whitespace for readability.
-        AlgWriter relWriter = super.explainTerms( pw )
+        AlgWriter algWriter = super.explainTerms( pw )
                 // For alg digest, include the row type since a rendered literal may leave the type ambiguous (e.g. "null").
                 .itemIf( "type", rowType, pw.getDetailLevel() == ExplainLevel.DIGEST_ATTRIBUTES )
                 .itemIf( "type", rowType.getFieldList(), pw.nest() );
@@ -188,7 +188,7 @@ public abstract class Values extends AbstractAlgNode {
                                     .collect( Collectors.joining( ", ", "{ ", " }" ) ) )
                             .collect( Collectors.joining( ", ", "[", "]" ) ) );
         }
-        return relWriter;
+        return algWriter;
     }
 
 
