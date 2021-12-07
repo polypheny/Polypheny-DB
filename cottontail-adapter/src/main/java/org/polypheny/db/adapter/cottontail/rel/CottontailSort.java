@@ -90,8 +90,8 @@ public class CottontailSort extends Sort implements CottontailRel {
     private static ParameterExpression sortMapBuilder( RelCollation node, CottontailImplementContext context, List<String> columnNames ) {
         final BlockBuilder builder = context.blockBuilder;
         final ParameterExpression orderMap_ = Expressions.variable( Map.class, builder.newName( "orderMap" ) );
-        final NewExpression projectionMapCreator = Expressions.new_( LinkedHashMap.class );
-        builder.add( Expressions.declare( Modifier.FINAL, orderMap_, projectionMapCreator ) );
+        final NewExpression orderMapCreator = Expressions.new_( LinkedHashMap.class );
+        builder.add( Expressions.declare( Modifier.FINAL, orderMap_, orderMapCreator ) );
         for ( RelFieldCollation c : node.getFieldCollations() ) {
             final String logicalName = columnNames.get( c.getFieldIndex() );
             String physicalName;
