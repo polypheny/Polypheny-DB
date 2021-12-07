@@ -121,7 +121,7 @@ public class CottontailProject extends Project implements CottontailRel {
      * @return {@link ParameterExpression}
      */
     public static ParameterExpression makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
-        final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" ) );
+        final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap_" + System.nanoTime() ) );
         final NewExpression projectionMapCreator = Expressions.new_( LinkedHashMap.class );
         builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
         for ( Pair<RexNode, String> pair : namedProjects ) {
