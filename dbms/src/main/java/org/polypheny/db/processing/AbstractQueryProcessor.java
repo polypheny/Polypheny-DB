@@ -17,7 +17,6 @@
 package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.AbstractList;
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,11 +36,9 @@ import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.AvaticaParameter;
-import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.CursorFactory;
-import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg;
@@ -91,7 +87,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
@@ -190,19 +185,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareQuery( AlgRoot logicalRoot, boolean withMonitoring ) {
+    public PolyResult prepareQuery( AlgRoot logicalRoot, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, logicalRoot.alg.getCluster().getTypeFactory().builder().build(), false, false, withMonitoring );
     }
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean withMonitoring ) {
+    public PolyResult prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean withMonitoring ) {
         return prepareQuery( logicalRoot, parameterRowType, false, false, withMonitoring );
     }
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
+    public PolyResult prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
 
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -227,7 +222,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getOverviewDuration().start( "Plan Selection" );
         }
 
-        final Pair<PolyphenyDbSignature<?>, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
+        final Pair<PolyResult, ProposedRoutingPlan> selectedPlan = selectPlan( proposedImplementations );
 
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getOverviewDuration().stop( "Plan Selection" );
@@ -254,7 +249,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<ProposedRoutingPlan> proposedRoutingPlans = null;
         List<AlgNode> optimalNodeList = new ArrayList<>();
         List<AlgRoot> parameterizedRootList = new ArrayList<>();
-        List<PolyphenyDbSignature<?>> signatures = new ArrayList<>();
+        List<PolyResult> signatures = new ArrayList<>();
         List<String> generatedCodes = new ArrayList<>();
 
         //
@@ -443,7 +438,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
                 AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
                 if ( preparedResult != null ) {
-                    PolyphenyDbSignature<?> signature = createSignature(
+                    PolyResult signature = createSignature(
                             preparedResult,
                             parameterizedRoot.kind,
                             optimalNode,
@@ -548,7 +543,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
 
-            PolyphenyDbSignature<?> signature = createSignature(
+            PolyResult signature = createSignature(
                     preparedResult,
                     optimalRoot.kind,
                     optimalRoot.alg,
@@ -582,7 +577,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         private final List<ProposedRoutingPlan> proposedRoutingPlans;
         private final List<AlgNode> optimizedPlans;
-        private final List<PolyphenyDbSignature<?>> signatures;
+        private final List<PolyResult> signatures;
         private final List<String> generatedCodes;
         private final LogicalQueryInformation logicalQueryInformation;
 
@@ -762,10 +757,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                                originalProject = LogicalProject.create( originalProject, expr, type );
 //                            }
                             AlgRoot scanRoot = AlgRoot.of( originalProject, Kind.SELECT );
-                            final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
-                            final Iterable<Object> enumerable = scanSig.enumerable( statement.getDataContext() );
-                            final Iterator<Object> iterator = enumerable.iterator();
-                            final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );
+                            final PolyResult scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
+                            final List<List<Object>> rows = scanSig.getRows( statement, -1 );
                             // Build new query tree
                             final List<ImmutableList<RexLiteral>> records = new ArrayList<>();
                             for ( final List<Object> row : rows ) {
@@ -1214,63 +1207,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PolyphenyDbSignature<?> createSignature( PreparedResult preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, SchemaType schemaType ) {
+    private PolyResult createSignature( PreparedResult preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, SchemaType schemaType ) {
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
-        final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( AlgDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
-            AlgDataType type = field.getType();
-            parameters.add(
-                    new AvaticaParameter(
-                            false,
-                            QueryProcessorHelpers.getPrecision( type ),
-                            0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
-                            QueryProcessorHelpers.getTypeOrdinal( type ),
-                            type.getPolyType().getTypeName(),
-                            type.getClass().getName(),
-                            field.getName() ) );
-        }
-
-        final AlgDataType x;
-        switch ( kind ) {
-            case INSERT:
-            case DELETE:
-            case UPDATE:
-            case EXPLAIN:
-                // FIXME: getValidatedNodeType is wrong for DML
-                x = AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
-                break;
-            default:
-                x = validatedRowType;
-        }
-        final List<ColumnMetaData> columns = QueryProcessorHelpers.getColumnMetaDataList(
-                statement.getTransaction().getTypeFactory(),
-                x,
-                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ),
-                preparedResult.getFieldOrigins() );
-        Class<?> resultClazz = null;
-        if ( preparedResult instanceof Typed ) {
-            resultClazz = (Class<?>) ((Typed) preparedResult).getElementType();
-        }
-        final CursorFactory cursorFactory =
-                resultConvention == BindableConvention.INSTANCE
-                        ? CursorFactory.ARRAY
-                        : CursorFactory.deduce( columns, resultClazz );
-        final Bindable<Object[]> bindable = preparedResult.getBindable( cursorFactory );
-
-        return new PolyphenyDbSignature<>(
-                "",
-                parameters,
-                ImmutableMap.of(),
+        return new PolyResult(
                 jdbcType,
-                columns,
-                cursorFactory,
-                statement.getTransaction().getSchema(),
-                ImmutableList.of(),
-                -1,
-                bindable,
-                QueryProcessorHelpers.getStatementType( preparedResult ),
+                schemaType,
                 executionTimeMonitor,
-                schemaType );
+                preparedResult,
+                kind,
+                statement,
+                resultConvention
+        );
     }
 
 
@@ -1492,11 +1439,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private Pair<PolyphenyDbSignature<?>, ProposedRoutingPlan> selectPlan( ProposedImplementations proposedImplementations ) {
+    private Pair<PolyResult, ProposedRoutingPlan> selectPlan( ProposedImplementations proposedImplementations ) {
         // Lists should all be same size
         List<ProposedRoutingPlan> proposedRoutingPlans = proposedImplementations.getProposedRoutingPlans();
         List<AlgNode> optimalAlgs = proposedImplementations.getOptimizedPlans();
-        List<PolyphenyDbSignature<?>> signatures = proposedImplementations.getSignatures();
+        List<PolyResult> signatures = proposedImplementations.getSignatures();
         List<String> generatedCodes = proposedImplementations.getGeneratedCodes();
         LogicalQueryInformation queryInformation = proposedImplementations.getLogicalQueryInformation();
 

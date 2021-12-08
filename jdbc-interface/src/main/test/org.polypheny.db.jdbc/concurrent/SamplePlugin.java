@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.concurrent;
+package org.polypheny.db.jdbc.concurrent;
 
 
 import java.io.IOException;
@@ -40,6 +40,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestPlugin;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestPluginCommand;
 
 
 /**

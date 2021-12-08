@@ -39,7 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.algebra.AlgNode;
 
 

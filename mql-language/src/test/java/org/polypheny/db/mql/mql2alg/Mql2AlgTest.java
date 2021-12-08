@@ -19,6 +19,7 @@ package org.polypheny.db.mql.mql2alg;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDocument;
 import org.polypheny.db.languages.mql.MqlQueryParameters;
@@ -50,7 +51,7 @@ public abstract class Mql2AlgTest extends MqlTest {
 
 
     public AlgRoot translate( String mql ) {
-        return MQL_TO_ALG_CONVERTER.convert( parse( mql ), new MqlQueryParameters( mql, "private" ) );
+        return MQL_TO_ALG_CONVERTER.convert( parse( mql ), new MqlQueryParameters( mql, "private", SchemaType.DOCUMENT ) );
     }
 
 }

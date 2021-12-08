@@ -24,15 +24,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.avatica.MetaImpl;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.AlgBuilder;
@@ -99,11 +99,11 @@ public abstract class Index {
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyphenyDbSignature signature = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+        final PolyResult signature = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
-        final Iterable<Object> enumerable = signature.enumerable( statement.getDataContext() );
+        final Iterable<Object> enumerable = signature.enumerable( statement.getDataContext(), Object.class );
         final Iterator<Object> iterator = enumerable.iterator();
-        final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
+        final List<List<Object>> rows = MetaImpl.collect( signature.getCursorFactory(), iterator, new ArrayList<>() );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
         for ( final List<Object> row : rows ) {
             if ( row.size() > columns.size() ) {

@@ -38,7 +38,7 @@ import org.polypheny.db.core.operators.ChainedOperatorTable;
 import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;

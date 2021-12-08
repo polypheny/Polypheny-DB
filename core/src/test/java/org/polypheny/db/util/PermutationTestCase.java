@@ -45,7 +45,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;

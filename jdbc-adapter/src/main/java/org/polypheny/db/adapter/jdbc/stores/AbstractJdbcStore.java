@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerInstance;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlLiteral;

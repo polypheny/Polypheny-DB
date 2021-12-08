@@ -289,6 +289,6 @@
  * </ul>
  */
 
-package org.polypheny.db.test.concurrent;
+package org.polypheny.db.jdbc.concurrent;
 
 

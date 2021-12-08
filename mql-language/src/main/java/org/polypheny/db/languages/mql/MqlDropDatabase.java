@@ -22,7 +22,7 @@ import org.polypheny.db.core.nodes.ExecutableStatement;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;

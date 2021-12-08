@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jdbc;
+package org.polypheny.db.prepare;
 
 
 import java.util.List;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
@@ -50,7 +51,7 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+    public PolyResult prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         throw new RuntimeException("JsonProcessor does not support DDLs!");
     }
 

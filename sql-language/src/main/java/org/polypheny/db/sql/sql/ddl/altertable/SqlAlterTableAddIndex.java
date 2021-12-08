@@ -41,7 +41,7 @@ import org.polypheny.db.ddl.exception.AlterSourceException;
 import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;

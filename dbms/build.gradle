@@ -57,6 +57,7 @@ dependencies {
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":sql-language", configuration: "tests")
     testImplementation project(path: ":languages", configuration: "tests")
+    testImplementation project(path: ":jdbc-interface", configuration: "tests")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 

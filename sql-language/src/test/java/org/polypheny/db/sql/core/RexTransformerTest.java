@@ -30,7 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.sql.sql.SqlToAlgTestBase;
 import org.polypheny.db.plan.AlgOptUtil;

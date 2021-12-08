@@ -34,7 +34,7 @@ import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;

@@ -46,9 +46,9 @@ import org.polypheny.db.transaction.Statement;
  * handleVerticalPartitioning
  * handleNonePartitioning
  * Every table will be check by the following order:
- * first if partitioned horizontally -> handleHorizontalPartitioning called.
- * second if partitioned vertically or replicated -> handleVerticalPartitioningOrReplication
- * third, all other cases -> handleNonePartitioning
+ * first if partitioned horizontally {@code ->} handleHorizontalPartitioning called.
+ * second if partitioned vertically or replicated {@code ->} handleVerticalPartitioningOrReplication
+ * third, all other cases {@code ->} handleNonePartitioning
  */
 @Slf4j
 public abstract class AbstractDqlRouter extends BaseRouter implements Router {

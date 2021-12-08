@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.polypheny.db.interpreter.BindableConvention;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.Query;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.Query;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Holder;

@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.concurrent;
+package org.polypheny.db.jdbc.concurrent;
 
 
 import com.google.common.collect.ImmutableList;

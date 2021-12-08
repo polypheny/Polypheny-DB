@@ -59,7 +59,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 
 /**
  * Periodically retrieves information from the MonitoringService to get current statistics about
- * the frequency map to determine which chunk of data should reside in HOT & which in COLD partition
+ * the frequency map to determine which chunk of data should reside in HOT {@literal &}  which in COLD partition
  *
  * Only one instance of the MAP exists.
  * Which gets created once the first TEMPERATURE partitioned table gets created. (Including creation of BackgroundTask)
@@ -271,7 +271,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             log.debug( "Get adapters to create physical tables" );
             // Validate that partition does not already exist on store
             for ( CatalogAdapter catalogAdapter : adaptersWithHot ) {
-                // Skip creation/deletion because this adapter contains both groups HOT & COLD
+                // Skip creation/deletion because this adapter contains both groups HOT {@literal &} COLD
                 if ( adaptersWithCold.contains( catalogAdapter ) ) {
                     if ( log.isDebugEnabled() ) {
                         log.debug( " Skip adapter {}, hold both partitionGroups HOT & COLD", catalogAdapter.uniqueName );
@@ -287,7 +287,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                     List<Long> hotPartitionsToCreate = filterList( catalogAdapter.id, table.id, partitionsFromColdToHot );
                     //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
 
-                    // If this store contains both Groups HOT & COLD do nothing
+                    // If this store contains both Groups HOT {@literal &}  COLD do nothing
                     if ( hotPartitionsToCreate.size() != 0 ) {
                         Catalog.getInstance().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
@@ -327,7 +327,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             }
 
             for ( CatalogAdapter catalogAdapter : adaptersWithCold ) {
-                // Skip creation/deletion because this adapter contains both groups HOT & COLD
+                // Skip creation/deletion because this adapter contains both groups HOT {@literal &}  COLD
                 if ( adaptersWithHot.contains( catalogAdapter ) ) {
                     continue;
                 }

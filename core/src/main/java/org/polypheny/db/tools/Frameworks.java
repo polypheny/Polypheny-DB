@@ -43,8 +43,8 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.jdbc.ContextImpl;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.ContextImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
@@ -239,7 +239,7 @@ public class Frameworks {
         private RexExecutor executor;
         private AlgOptCostFactory costFactory;
         private AlgDataTypeSystem typeSystem;
-        private org.polypheny.db.jdbc.Context prepareContext;
+        private org.polypheny.db.prepare.Context prepareContext;
 
 
         /**
@@ -383,7 +383,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder prepareContext( org.polypheny.db.jdbc.Context prepareContext ) {
+        public ConfigBuilder prepareContext( org.polypheny.db.prepare.Context prepareContext ) {
             this.prepareContext = prepareContext;
             return this;
         }
@@ -407,7 +407,7 @@ public class Frameworks {
         private final AlgOptCostFactory costFactory;
         private final AlgDataTypeSystem typeSystem;
         private final RexExecutor executor;
-        private final org.polypheny.db.jdbc.Context prepareContext;
+        private final org.polypheny.db.prepare.Context prepareContext;
 
 
         public StdFrameworkConfig(
@@ -422,7 +422,7 @@ public class Frameworks {
                 AlgOptCostFactory costFactory,
                 AlgDataTypeSystem typeSystem,
                 RexExecutor executor,
-                org.polypheny.db.jdbc.Context prepareContext ) {
+                org.polypheny.db.prepare.Context prepareContext ) {
             this.context = context;
             this.convertletTable = convertletTable;
             this.operatorTable = operatorTable;
@@ -505,7 +505,7 @@ public class Frameworks {
 
 
         @Override
-        public org.polypheny.db.jdbc.Context getPrepareContext() {
+        public org.polypheny.db.prepare.Context getPrepareContext() {
             return prepareContext;
         }
 

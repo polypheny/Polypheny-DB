@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@ package org.polypheny.db.jdbc;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -28,9 +31,11 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.EnumerableDefaults;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
@@ -83,6 +88,40 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     }
 
 
+    public static <T> PolyphenyDbSignature<T> from( PolyResult prepareQuery ) {
+        final List<AvaticaParameter> parameters = new ArrayList<>();
+        if ( prepareQuery.rowType != null ) {
+            for ( AlgDataTypeField field : prepareQuery.rowType.getFieldList() ) {
+                AlgDataType type = field.getType();
+                parameters.add(
+                        new AvaticaParameter(
+                                false,
+                                type.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED ? 0 : type.getPrecision(),
+                                0, // This is a workaround for a bug in Avatica with Decimals. There is no need to change the scale //getScale( type ),
+                                type.getPolyType().getJdbcOrdinal(),
+                                type.getPolyType().getTypeName(),
+                                type.getClass().getName(),
+                                field.getName() ) );
+            }
+        }
+        return new PolyphenyDbSignature<T>(
+                "",
+                parameters,
+                new HashMap<>(),
+                prepareQuery.getRowType(),
+                prepareQuery.getColumns(),
+                prepareQuery.getCursorFactory(),
+                null,
+                ImmutableList.of(),
+                prepareQuery.getMaxRowCount(),
+                (Bindable<T>) prepareQuery.getBindable(),
+                prepareQuery.getStatementType(),
+                prepareQuery.getExecutionTimeMonitor(),
+                prepareQuery.getSchemaType()
+        );
+    }
+
+
     public Enumerable<T> enumerable( DataContext dataContext ) {
         Enumerable<T> enumerable = bindable.bind( dataContext );
         if ( maxRowCount >= 0 ) {
@@ -91,4 +130,5 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
         }
         return enumerable;
     }
+
 }

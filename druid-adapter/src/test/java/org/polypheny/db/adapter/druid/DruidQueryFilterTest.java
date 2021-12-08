@@ -50,7 +50,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;

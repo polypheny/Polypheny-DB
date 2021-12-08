@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jdbc;
+package org.polypheny.db.prepare;
 
 
 import com.google.common.collect.ImmutableList;
@@ -26,6 +26,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 
@@ -80,7 +81,7 @@ public class ContextImpl implements Context {
 
 
     @Override
-    public PolyphenyDbPrepare.SparkHandler spark() {
+    public SparkHandler spark() {
         final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
         return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );
     }

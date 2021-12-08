@@ -17,19 +17,22 @@
 package org.polypheny.db.languages;
 
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.interpreter.Node;
 
 /**
  * Container class which should be used to hand different parameters to either {@link NodeToAlgConverter}
  * or when translating native language strings into language-specific {@link Node} implementations
  */
+@Getter
 public class QueryParameters {
 
-    @Getter
+    private final SchemaType schemaType;
     private final String query;
 
 
-    public QueryParameters( String query ) {
+    public QueryParameters( String query, SchemaType schemaType ) {
+        this.schemaType = schemaType;
         this.query = query;
     }
 

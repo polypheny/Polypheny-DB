@@ -17,24 +17,21 @@
 package org.polypheny.db.processing;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.apache.calcite.avatica.Meta;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.core.DeadlockException;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
+import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.ExecutableStatement;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -52,7 +49,8 @@ public abstract class Processor {
 
     public abstract AlgRoot translate( Statement statement, Node query, QueryParameters parameters );
 
-    public PolyphenyDbSignature<?> prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+
+    public PolyResult prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
         if ( parsed instanceof ExecutableStatement ) {
             try {
                 // Acquire global schema lock
@@ -72,25 +70,21 @@ public abstract class Processor {
         }
     }
 
-    PolyphenyDbSignature<Object> getDbSignature( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
+
+    PolyResult getDbSignature( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
         ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();
-        return new PolyphenyDbSignature<>(
-                getQuery( parsed, parameters ),
-                ImmutableList.of(),
-                ImmutableMap.of(),
+        return new PolyResult(
                 null,
-                ImmutableList.of(),
-                Meta.CursorFactory.OBJECT,
-                statement.getTransaction().getSchema(),
-                ImmutableList.of(),
-                -1,
-                null,
-                Meta.StatementType.OTHER_DDL,
+                parameters.getSchemaType(),
                 new ExecutionTimeMonitor(),
-                SchemaType.RELATIONAL );
+                null,
+                Kind.CREATE_SCHEMA, // technically correct, maybe change
+                statement,
+                null );
     }
+
 
     public abstract void unlock( Statement statement );
 
@@ -99,6 +93,7 @@ public abstract class Processor {
     public abstract String getQuery( Node parsed, QueryParameters parameters );
 
     public abstract AlgDataType getParameterRowType( Node left );
+
 
     void attachAnalyzer( Statement statement, AlgRoot logicalRoot ) {
         InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();

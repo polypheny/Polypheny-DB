@@ -37,7 +37,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.dialect.MysqlSqlDialect;
 import org.polypheny.db.schema.SchemaPlus;

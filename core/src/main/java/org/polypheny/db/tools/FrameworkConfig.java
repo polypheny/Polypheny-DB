@@ -129,7 +129,7 @@ public interface FrameworkConfig {
     /**
      * Returns a prepare context.
      */
-    org.polypheny.db.jdbc.Context getPrepareContext();
+    org.polypheny.db.prepare.Context getPrepareContext();
 
 }
 

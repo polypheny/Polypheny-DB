@@ -31,64 +31,51 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.concurrent;
+package org.polypheny.db.jdbc.concurrent;
 
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.Statement;
 
 
 /**
  * Used to extend functionality of mtsql.
  */
-public abstract class ConcurrentTestPlugin {
+public interface ConcurrentTestPluginCommand {
 
     /**
-     * Should containing test be disabled?
-     *
-     * @return true if containing test should be disabled
+     * Test context.
      */
-    public boolean isTestDisabled() {
-        return false;
+    interface TestContext {
+
+        /**
+         * Store a message as output for mtsql script.
+         *
+         * @param message Message to be output
+         */
+        void storeMessage( String message );
+
+        /**
+         * Get connection for thread.
+         *
+         * @return connection for thread
+         */
+        Connection getConnection();
+
+        /**
+         * Get current statement for thread, or null if none.
+         *
+         * @return current statement for thread
+         */
+        Statement getCurrentStatement();
     }
 
-
     /**
-     * What commands are supported by this plugin within a thread or repeat section. Commands should start with '@'.
+     * Implement this method to extend functionality of mtsql.
      *
-     * @return List of supported commands
+     * @param testContext Exposed context for plugin to run in.
      */
-    public Iterable<String> getSupportedThreadCommands() {
-        return new ArrayList<>();
-    }
-
-
-    /**
-     * What commands are supported by this plugin before the setup section. Commands should start with '@'.
-     *
-     * @return List of supported commands
-     */
-    public Iterable<String> getSupportedPreSetupCommands() {
-        return new ArrayList<>();
-    }
-
-
-    /**
-     * Create and return plugin command for given name.
-     *
-     * @param name Name of command plugin
-     * @param params parameters for command.
-     * @return Initialized plugin command.
-     */
-    public abstract ConcurrentTestPluginCommand getCommandFor( String name, String params );
-
-
-    /**
-     * Do pre-setup action for given command and parameters.
-     *
-     * @param name Name of command plugin
-     * @param params parameters for command.
-     */
-    public void preSetupFor( String name, String params ) {
-    }
+    void execute( TestContext testContext ) throws IOException;
 }
 

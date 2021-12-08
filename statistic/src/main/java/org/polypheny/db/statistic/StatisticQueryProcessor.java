@@ -23,8 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
@@ -43,7 +42,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -51,7 +49,6 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
 
@@ -232,75 +229,49 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeSqlSelect( final Statement statement, final String sqlSelect ) throws QueryExecutionException {
-        PolyphenyDbSignature signature;
+        PolyResult signature;
         List<List<Object>> rows;
-        Iterator<Object> iterator = null;
 
         try {
             signature = processQuery( statement, sqlSelect );
-            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-            //noinspection unchecked
-
-            iterator = enumerable.iterator();
-
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
-
+            rows = signature.getRows( statement, getPageSize() );
         } catch ( Throwable t ) {
-            if ( iterator != null ) {
-                try {
-                    if ( iterator instanceof AutoCloseable ) {
-                        ((AutoCloseable) iterator).close();
-                    }
-                } catch ( Exception e ) {
-                    log.error( "Exception while closing result iterator", e );
-                }
-            }
             throw new QueryExecutionException( t );
         }
 
-        try {
-            List<PolyType> types = new ArrayList<>();
-            List<String> names = new ArrayList<>();
-            for ( ColumnMetaData metaData : signature.columns ) {
-
-                types.add( PolyType.get( metaData.type.name ) );
-                names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
-            }
-
-            List<String[]> data = new ArrayList<>();
-            for ( List<Object> row : rows ) {
-                String[] temp = new String[row.size()];
-                int counter = 0;
-                for ( Object o : row ) {
-                    if ( o == null ) {
-                        temp[counter] = null;
-                    } else {
-                        temp[counter] = o.toString();
-                    }
-                    counter++;
-                }
-                data.add( temp );
-            }
-
-            String[][] d = data.toArray( new String[0][] );
-
-            return new StatisticResult( names, types, d );
-        } finally {
-            try {
-                if ( iterator instanceof AutoCloseable ) {
-                    ((AutoCloseable) iterator).close();
-                }
-            } catch ( Exception e ) {
-                log.error( "Exception while closing result iterator2", e );
-            }
+        List<PolyType> types = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+        int i = 0;
+        for ( ColumnMetaData metaData : signature.getColumns() ) {
+            types.add( signature.getRowType().getFieldList().get( i ).getType().getPolyType() );
+            names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
+            i++;
         }
+
+        List<String[]> data = new ArrayList<>();
+        for ( List<Object> row : rows ) {
+            String[] temp = new String[row.size()];
+            int counter = 0;
+            for ( Object o : row ) {
+                if ( o == null ) {
+                    temp[counter] = null;
+                } else {
+                    temp[counter] = o.toString();
+                }
+                counter++;
+            }
+            data.add( temp );
+        }
+
+        String[][] d = data.toArray( new String[0][] );
+
+        return new StatisticResult( names, types, d );
+
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
-        PolyphenyDbSignature signature;
+    private PolyResult processQuery( Statement statement, String sql ) {
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-
         Node parsed = sqlProcessor.parse( sql );
 
         if ( parsed.isA( Kind.DDL ) ) {
@@ -311,9 +282,8 @@ public class StatisticQueryProcessor {
             AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            return statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
-        return signature;
     }
 
 
@@ -338,16 +308,6 @@ public class StatisticQueryProcessor {
 
 
     static class QueryExecutionException extends Exception {
-
-        QueryExecutionException( String message ) {
-            super( message );
-        }
-
-
-        QueryExecutionException( String message, Exception e ) {
-            super( message, e );
-        }
-
 
         QueryExecutionException( Throwable t ) {
             super( t );

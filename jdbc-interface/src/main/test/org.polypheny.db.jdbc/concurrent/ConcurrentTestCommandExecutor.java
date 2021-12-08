@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.concurrent;
+package org.polypheny.db.jdbc.concurrent;
 
 
 import java.io.PrintStream;
@@ -39,6 +39,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Properties;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestCommand;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestCommandGenerator;
 import org.polypheny.db.util.Unsafe;
 
 

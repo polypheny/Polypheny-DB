@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.languages.QueryParameters;
 
 public class MqlQueryParameters extends QueryParameters {
@@ -25,8 +26,8 @@ public class MqlQueryParameters extends QueryParameters {
     final String database;
 
 
-    public MqlQueryParameters( String query, String database ) {
-        super( query );
+    public MqlQueryParameters( String query, String database, SchemaType schemaType ) {
+        super( query, schemaType );
         this.database = database;
     }
 

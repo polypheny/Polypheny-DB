@@ -17,7 +17,7 @@
 package org.polypheny.db.core.nodes;
 
 
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.transaction.Statement;
 

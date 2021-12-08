@@ -33,7 +33,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.jdbc.PolyphenyDbServerStatement;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.Convention;

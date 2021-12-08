@@ -25,7 +25,7 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.polypheny.db.core.enums.FunctionCategory;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.fun.UserDefined;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.algebra.type.AlgDataType;

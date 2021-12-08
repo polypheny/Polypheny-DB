@@ -85,16 +85,12 @@ import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.Meta.StatementType;
-import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
@@ -112,6 +108,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
@@ -166,7 +163,6 @@ import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -185,7 +181,6 @@ import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
-import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
@@ -2937,7 +2932,7 @@ public class Crud implements InformationObserver {
         AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
-        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root, true );
+        PolyResult signature = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -3052,26 +3047,20 @@ public class Crud implements InformationObserver {
 
         List<List<Object>> rows;
         try {
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
-            Iterator<Object> iterator = iterable.iterator();
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
-            stopWatch.stop();
-            signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
+            rows = signature.getRows( statement, getPageSize(), true, false );
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
             return new Result( e );
         }
 
-        DbColumn[] header = new DbColumn[signature.columns.size()];
+        DbColumn[] header = new DbColumn[signature.getRowType().getFieldCount()];
         int counter = 0;
-        for ( ColumnMetaData col : signature.columns ) {
+        for ( AlgDataTypeField col : signature.getRowType().getFieldList() ) {
             header[counter++] = new DbColumn(
-                    col.columnName,
-                    col.type.name,
-                    col.nullable == ResultSetMetaData.columnNullable,
-                    col.displaySize,
+                    col.getName(),
+                    col.getType().getFullTypeString(),
+                    col.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
+                    col.getType().getPrecision(),
                     null,
                     null );
         }
@@ -3682,37 +3671,15 @@ public class Crud implements InformationObserver {
 
 
     private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
-        PolyphenyDbSignature signature;
+        PolyResult signature;
         List<List<Object>> rows;
-        Iterator<Object> iterator = null;
-        boolean hasMoreRows = false;
+        boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
             signature = processQuery( statement, sqlSelect, isAnalyze );
-
-            if ( isAnalyze ) {
-                statement.getOverviewDuration().start( "Execution" );
-            }
-            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-            if ( isAnalyze ) {
-                statement.getOverviewDuration().stop( "Execution" );
-            }
-
-            //noinspection unchecked
-            iterator = enumerable.iterator();
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            if ( noLimit ) {
-                rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
-            } else {
-                rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
-            }
-            hasMoreRows = iterator.hasNext();
-            stopWatch.stop();
-
-            long executionTime = stopWatch.getNanoTime();
-            signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
+            rows = signature.getRows( statement, noLimit ? -1 : getPageSize(), true, isAnalyze );
+            hasMoreRows = signature.hasMoreRows();
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
@@ -3724,88 +3691,68 @@ public class Crud implements InformationObserver {
                 analyzer.addGroup( exceptionGroup );
                 analyzer.registerInformation( exceptionElement );
             }
-            if ( iterator != null ) {
-                try {
-                    if ( iterator instanceof AutoCloseable ) {
-                        ((AutoCloseable) iterator).close();
-                    }
-                } catch ( Exception e ) {
-                    log.error( "Exception while closing result iterator", e );
-                }
-            }
             throw new QueryExecutionException( t );
         }
 
-        try {
-            TableType tableType = null;
-            CatalogTable catalogTable = null;
-            if ( request.tableId != null ) {
-                String[] t = request.tableId.split( "\\." );
+        TableType tableType = null;
+        CatalogTable catalogTable = null;
+        if ( request.tableId != null ) {
+            String[] t = request.tableId.split( "\\." );
+            try {
+                catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
+                tableType = catalogTable.tableType;
+            } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                log.error( "Caught exception", e );
+            }
+        }
+
+        ArrayList<DbColumn> header = new ArrayList<>();
+        for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+            String columnName = metaData.getName();
+
+            String filter = "";
+            if ( request.filter != null && request.filter.containsKey( columnName ) ) {
+                filter = request.filter.get( columnName );
+            }
+
+            SortState sort;
+            if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
+                sort = request.sortState.get( columnName );
+            } else {
+                sort = new SortState();
+            }
+
+            DbColumn dbCol = new DbColumn(
+                    metaData.getName(),
+                    metaData.getType().getFullTypeString(),
+                    metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
+                    metaData.getType().getPrecision(),
+                    sort,
+                    filter );
+
+            // Get column default values
+            if ( catalogTable != null ) {
                 try {
-                    catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
-                    tableType = catalogTable.tableType;
-                } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                    if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
+                        CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                        if ( catalogColumn.defaultValue != null ) {
+                            dbCol.defaultValue = catalogColumn.defaultValue.value;
+                        }
+                    }
+                } catch ( UnknownColumnException e ) {
                     log.error( "Caught exception", e );
                 }
             }
+            header.add( dbCol );
+        }
 
-            ArrayList<DbColumn> header = new ArrayList<>();
-            for ( ColumnMetaData metaData : signature.columns ) {
-                String columnName = metaData.columnName;
+        ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-                String filter = "";
-                if ( request.filter != null && request.filter.containsKey( columnName ) ) {
-                    filter = request.filter.get( columnName );
-                }
-
-                SortState sort;
-                if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
-                    sort = request.sortState.get( columnName );
-                } else {
-                    sort = new SortState();
-                }
-
-                DbColumn dbCol = new DbColumn(
-                        metaData.columnName,
-                        metaData.type.name,
-                        metaData.nullable == ResultSetMetaData.columnNullable,
-                        metaData.displaySize,
-                        sort,
-                        filter );
-
-                // Get column default values
-                if ( catalogTable != null ) {
-                    try {
-                        if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
-                            CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
-                            if ( catalogColumn.defaultValue != null ) {
-                                dbCol.defaultValue = catalogColumn.defaultValue.value;
-                            }
-                        }
-                    } catch ( UnknownColumnException e ) {
-                        log.error( "Caught exception", e );
-                    }
-                }
-                header.add( dbCol );
-            }
-
-            ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
-
-            if ( tableType != null ) {
-                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
-            } else {
-                //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
-                return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
-            }
-
-        } finally {
-            try {
-                if ( iterator instanceof AutoCloseable ) {
-                    ((AutoCloseable) iterator).close();
-                }
-            } catch ( Exception e ) {
-                log.error( "Exception while closing result iterator", e );
-            }
+        if ( tableType != null ) {
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+        } else {
+            //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         }
     }
 
@@ -3971,8 +3918,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql, boolean isAnalyze ) {
-        PolyphenyDbSignature signature;
+    private PolyResult processQuery( Statement statement, String sql, boolean isAnalyze ) {
+        PolyResult signature;
         if ( isAnalyze ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
@@ -3982,7 +3929,7 @@ public class Crud implements InformationObserver {
             statement.getOverviewDuration().stop( "Parsing" );
         }
         AlgRoot logicalRoot = null;
-        QueryParameters parameters = new QueryParameters( sql );
+        QueryParameters parameters = new QueryParameters( sql, SchemaType.RELATIONAL );
         if ( parsed.isA( Kind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed, parameters );
         } else {
@@ -4010,7 +3957,7 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        PolyphenyDbSignature<?> signature;
+        PolyResult signature;
 
         try {
             signature = processQuery( statement, sqlUpdate, transaction.isAnalyze() );
@@ -4032,9 +3979,9 @@ public class Crud implements InformationObserver {
 
         }
 
-        if ( signature.statementType == StatementType.OTHER_DDL ) {
+        if ( Kind.DDL.contains( signature.getKind() ) ) {
             return 1;
-        } else if ( signature.statementType == StatementType.IS_DML ) {
+        } else if ( Kind.DML.contains( signature.getKind() ) ) {
             int rowsChanged = -1;
             try {
                 Iterator<?> iterator = signature.enumerable( statement.getDataContext() ).iterator();
@@ -4066,7 +4013,7 @@ public class Crud implements InformationObserver {
 
             return rowsChanged;
         } else {
-            throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );
+            throw new QueryExecutionException( "Unknown result type: " + signature.getKind() );
         }
     }
 

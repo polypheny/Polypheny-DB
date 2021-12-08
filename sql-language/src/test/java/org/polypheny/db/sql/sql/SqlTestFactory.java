@@ -31,7 +31,7 @@ import org.polypheny.db.core.util.Conformance;
 import org.polypheny.db.core.enums.ConformanceEnum;
 import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.sql.MockSqlOperatorTable;
 import org.polypheny.db.languages.Parser;

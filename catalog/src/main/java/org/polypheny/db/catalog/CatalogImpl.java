@@ -49,6 +49,12 @@ import org.mapdb.serializer.SerializerArrayTuple;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -104,12 +110,6 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -457,14 +457,14 @@ public class CatalogImpl extends Catalog {
                         AlgRoot algRoot = sqlProcessor.translate(
                                 statement,
                                 sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
-                                new QueryParameters( query ) );
+                                new QueryParameters( query, c.getSchemaType() ) );
                         nodeInfo.put( c.id, algRoot.alg );
                         algTypeInfo.put( c.id, algRoot.validatedRowType );
                         break;
 
                     case REL_ALG:
                         Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
-                        AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query ) ).alg;
+                        AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query, c.getSchemaType() ) ).alg;
 
                         final AlgDataType rowType = result.getRowType();
                         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
@@ -485,7 +485,7 @@ public class CatalogImpl extends Catalog {
                         AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,
-                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name ) );
+                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name, SchemaType.DOCUMENT ) );
                         nodeInfo.put( c.id, mqlRel.alg );
                         algTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;
@@ -1751,7 +1751,8 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table;
         if ( old.isPartitioned ) {
-            table = new CatalogTable( old.id,
+            table = new CatalogTable(
+                    old.id,
                     old.name,
                     old.columnIds,
                     old.schemaId,
@@ -1826,7 +1827,8 @@ public class CatalogImpl extends Catalog {
                         ((CatalogMaterializedView) old).getMaterializedCriteria(),
                         ((CatalogMaterializedView) old).isOrdered() );
             } else {
-                table = new CatalogTable( old.id,
+                table = new CatalogTable(
+                        old.id,
                         old.name,
                         old.columnIds,
                         old.schemaId,
@@ -2045,7 +2047,8 @@ public class CatalogImpl extends Catalog {
                 updatePartitionGroupsOnDataPlacement( adapterId, column.tableId, partitionGroupIds );
             } else {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "Table '{}.{}' already exists in DataPartitionPlacement, keeping assigned partitions {}",
+                    log.debug(
+                            "Table '{}.{}' already exists in DataPartitionPlacement, keeping assigned partitions {}",
                             store.uniqueName,
                             old.name,
                             getPartitionGroupsOnDataPlacement( adapterId, old.id ) );
@@ -2199,7 +2202,8 @@ public class CatalogImpl extends Catalog {
                 if ( lastPlacementOnStore ) {
                     dataPartitionGroupPlacement.remove( new Object[]{ adapterId, oldTable.id } );
                     if ( log.isDebugEnabled() ) {
-                        log.debug( "Column '{}' was the last placement on store: '{}.{}' ",
+                        log.debug(
+                                "Column '{}' was the last placement on store: '{}.{}' ",
                                 getColumn( columnId ).name,
                                 getAdapter( adapterId ).uniqueName,
                                 table.name );

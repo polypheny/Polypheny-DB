@@ -55,18 +55,17 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.ParseResult;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.prepare.Context;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
+import org.polypheny.db.prepare.PolyphenyDbPrepare;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.ParseResult;
 import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -334,11 +333,10 @@ public final class Schemas {
         }
     }
 
-
     /**
      * Prepares a SQL query for execution. For use within Polypheny-DB only.
      */
-    public static PolyphenyDbSignature<Object> prepare( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql, final ImmutableMap<PolyphenyDbConnectionProperty, String> map ) {
+   /* public static PolyphenyDbSignature<Object> prepare( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql, final ImmutableMap<PolyphenyDbConnectionProperty, String> map ) {
         final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
         final Context context = makeContext( schema, schemaPath, null, map );
         PolyphenyDbPrepare.Dummy.push( context );
@@ -347,7 +345,7 @@ public final class Schemas {
         } finally {
             PolyphenyDbPrepare.Dummy.pop( context );
         }
-    }
+    }*/
 
 
     /**

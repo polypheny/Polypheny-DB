@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.concurrent;
+package org.polypheny.db.jdbc.concurrent;
 
 
 import com.google.common.collect.ImmutableList;
@@ -40,6 +40,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestCommand;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestCommandGenerator;
 
 
 /**

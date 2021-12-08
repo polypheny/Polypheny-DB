@@ -59,7 +59,6 @@ import org.polypheny.db.core.util.MonikerImpl;
 import org.polypheny.db.core.util.NameMatcher;
 import org.polypheny.db.core.util.NameMatchers;
 import org.polypheny.db.core.util.ValidatorUtil;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.algebra.type.AlgDataType;

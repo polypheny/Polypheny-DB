@@ -58,7 +58,6 @@ import org.polypheny.db.core.operators.OperatorTable;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.core.validate.ValidatorCatalogReader;
 import org.polypheny.db.core.validate.ValidatorTable;
-import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;

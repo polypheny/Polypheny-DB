@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.test.concurrent;
+package org.polypheny.db.jdbc.concurrent;
 
 
 import java.io.BufferedInputStream;
@@ -71,6 +71,9 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.polypheny.db.jdbc.SqlTimeoutException;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestCommand;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestCommandExecutor;
+import org.polypheny.db.jdbc.concurrent.ConcurrentTestCommandGenerator;
 import org.polypheny.db.util.Unsafe;
 import org.polypheny.db.util.Util;
 import org.slf4j.Logger;

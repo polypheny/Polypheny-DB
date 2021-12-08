@@ -35,7 +35,6 @@ package org.polypheny.db.prepare;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -49,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.AvaticaType;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
@@ -115,8 +113,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.enums.ExplainFormat;
 import org.polypheny.db.core.enums.ExplainLevel;
@@ -127,27 +123,21 @@ import org.polypheny.db.core.nodes.Node;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
 import org.polypheny.db.core.util.Conformance;
-import org.polypheny.db.core.util.CoreUtil;
 import org.polypheny.db.core.validate.Validator;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Interpreters;
-import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.ConfigBuilder;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
-import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptPlanner.CannotPlanException;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -159,12 +149,10 @@ import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedExplain;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
-import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
@@ -177,7 +165,6 @@ import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
-import org.polypheny.db.util.Util.FoundOne;
 
 
 /**
@@ -656,15 +643,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         return planner;
     }
 
-
-    @Override
-    public <T> PolyphenyDbSignature<T> prepareQueryable( Context context, Queryable<T> queryable ) {
+    //@Override
+    /*public <T> PolyphenyDbSignature<T> prepareQueryable( Context context, Queryable<T> queryable ) {
         return prepare_( context, Query.of( queryable ), queryable.getElementType(), -1 );
-    }
+    }*/
 
-
-    @Override
-    public <T> PolyphenyDbSignature<T> prepareSql( Context context, Query<T> query, Type elementType, long maxRowCount ) {
+    //@Override
+    /*public <T> PolyphenyDbSignature<T> prepareSql( Context context, Query<T> query, Type elementType, long maxRowCount ) {
         return prepare_( context, query, elementType, maxRowCount );
     }
 
@@ -697,12 +682,12 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
         throw exception;
     }
-
+*/
 
     /**
      * Quickly prepares a simple SQL statement, circumventing the usual preparation process.
      */
-    private <T> PolyphenyDbSignature<T> simplePrepare( Context context, String sql ) {
+    /*private <T> PolyphenyDbSignature<T> simplePrepare( Context context, String sql ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final AlgDataType x =
                 typeFactory.builder()
@@ -727,7 +712,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 StatementType.SELECT,
                 new ExecutionTimeMonitor(),
                 SchemaType.RELATIONAL );
-    }
+    }*/
 
 
     /**
@@ -762,7 +747,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    <T> PolyphenyDbSignature<T> prepare2_( Context context, Query<T> query, Type elementType, long maxRowCount, PolyphenyDbCatalogReader catalogReader, AlgOptPlanner planner ) {
+    /*<T> PolyphenyDbSignature<T> prepare2_( Context context, Query<T> query, Type elementType, long maxRowCount, PolyphenyDbCatalogReader catalogReader, AlgOptPlanner planner ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final Prefer prefer;
         if ( elementType == Object[].class ) {
@@ -901,7 +886,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 statementType,
                 new ExecutionTimeMonitor(),
                 SchemaType.RELATIONAL );
-    }
+    }*/
 
 
     private List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, AlgDataType x, AlgDataType jdbcType, List<List<String>> originList ) {

@@ -1233,7 +1233,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         PolyphenyDbSignature<?> signature;
         if ( parsed.isA( Kind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql ) );
+            signature = PolyphenyDbSignature.from( sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql, SchemaType.RELATIONAL ) ) );
         } else {
             Pair<Node, AlgDataType> validated = sqlProcessor.validate(
                     statementHandle.getStatement().getTransaction(),
@@ -1243,7 +1243,7 @@ public class DbmsMeta implements ProtobufMeta {
             AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
+            signature = PolyphenyDbSignature.from( statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true ) );
         }
 
         h.signature = signature;

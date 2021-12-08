@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
 
@@ -43,7 +43,7 @@ public abstract class StatementEvent extends BaseEvent {
 
     protected String monitoringType;
     protected AlgRoot routed;
-    protected PolyphenyDbSignature signature;
+    protected PolyResult signature;
     protected Statement statement;
     protected List<List<Object>> rows;
     protected String description;

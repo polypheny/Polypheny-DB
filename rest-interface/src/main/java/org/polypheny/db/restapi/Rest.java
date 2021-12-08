@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -36,7 +37,6 @@ import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.fun.AggFunction;
 import org.polypheny.db.core.nodes.Operator;
 import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -560,12 +560,12 @@ public class Rest {
         RestResult restResult;
         try {
             // Prepare
-            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyResult signature = statement.getQueryProcessor().prepareQuery( algRoot, true );
             log.debug( "AlgRoot was prepared." );
 
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
+            final Iterable<Object> iterable = signature.enumerable( statement.getDataContext(), Object.class );
             Iterator<Object> iterator = iterable.iterator();
-            restResult = new RestResult( algRoot.kind, iterator, signature.rowType, signature.columns );
+            restResult = new RestResult( algRoot.kind, iterator, signature.rowType, signature.getColumns() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
             if ( !algRoot.kind.belongsTo( Kind.DML ) ) {

@@ -3,6 +3,13 @@ group "org.polypheny"
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
+configurations {
+    javacc
+    tests {
+        extendsFrom testRuntime
+    }
+}
+
 dependencies {
     implementation project(":core")
     implementation project(":monitoring")
@@ -44,6 +51,13 @@ sourceSets {
     }
 }
 
+
+/**
+ * Tests
+ */
+test {
+    maxHeapSize = "2g" // Increase heap size (default is 512MB)
+}
 
 /**
  * JARs

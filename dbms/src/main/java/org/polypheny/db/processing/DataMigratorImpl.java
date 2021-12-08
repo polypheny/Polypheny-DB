@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -39,7 +39,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.core.enums.Kind;
 import org.polypheny.db.core.algebra.AlgStructuredTypeFlattener;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -124,7 +123,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void executeQuery( List<CatalogColumn> selectColumnList, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
-            PolyphenyDbSignature signature;
+            PolyResult signature;
             if ( isMaterializedView ) {
                 signature = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
@@ -140,15 +139,15 @@ public class DataMigratorImpl implements DataMigrator {
                         false,
                         false );
             }
-            final Enumerable<?> enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            final Enumerable<Object> enumerable = signature.enumerable( sourceStatement.getDataContext(), Object.class );
             //noinspection unchecked
-            Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();
+            Iterator<Object> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
                 int i = 0;
-                for ( ColumnMetaData metaData : signature.columns ) {
-                    if ( metaData.columnName.equalsIgnoreCase( catalogColumn.name ) ) {
+                for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+                    if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
                         resultColMapping.put( catalogColumn.id, i );
                     }
                     i++;
@@ -166,7 +165,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                List<List<Object>> rows = MetaImpl.collect( signature.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
                 Map<Long, List<Object>> values = new HashMap<>();
 
                 for ( List<Object> list : rows ) {
@@ -464,16 +463,16 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyphenyDbSignature<?> signature = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
-            final Enumerable<?> enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            PolyResult signature = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            final Enumerable<Object> enumerable = signature.enumerable( sourceStatement.getDataContext(), Object.class );
             //noinspection unchecked
-            Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();
+            Iterator<Object> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
                 int i = 0;
-                for ( ColumnMetaData metaData : signature.columns ) {
-                    if ( metaData.columnName.equalsIgnoreCase( catalogColumn.name ) ) {
+                for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+                    if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
                         resultColMapping.put( catalogColumn.id, i );
                     }
                     i++;
@@ -483,7 +482,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
                 List<List<Object>> rows = MetaImpl.collect(
-                        signature.cursorFactory,
+                        signature.getCursorFactory(),
                         LimitIterator.of( sourceIterator, batchSize ),
                         new ArrayList<>() );
                 Map<Long, List<Object>> values = new HashMap<>();
@@ -587,7 +586,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            PolyResult signature = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
             final Enumerable<?> enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();
@@ -595,8 +594,8 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
                 int i = 0;
-                for ( ColumnMetaData metaData : signature.columns ) {
-                    if ( metaData.columnName.equalsIgnoreCase( catalogColumn.name ) ) {
+                for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+                    if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
                         resultColMapping.put( catalogColumn.id, i );
                     }
                     i++;
@@ -616,7 +615,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                List<List<Object>> rows = MetaImpl.collect( signature.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
 
                 Map<Long, Map<Long, List<Object>>> partitionValues = new HashMap<>();
 
