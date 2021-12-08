@@ -8,7 +8,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 configurations {
     javacc
     tests {
-        extendsFrom testRuntime
+        extendsFrom testRuntimeOnly
     }
 }
 
@@ -153,7 +153,6 @@ task generateJdbcVersionProperties(type: Copy) {
 compileJava {
     dependsOn("generateParserDocument", "generateParser", "generateJdbcVersionProperties")
 }
-
 
 
 /**
