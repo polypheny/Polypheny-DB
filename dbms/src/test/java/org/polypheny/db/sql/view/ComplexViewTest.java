@@ -22,11 +22,8 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.TimeUnit;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -408,13 +405,6 @@ public class ComplexViewTest {
     private final static Object[] q19_TEST_DATA = new Object[]{
             new BigDecimal( "-960.3725" )
     };
-
-
-    @SneakyThrows
-    @Before
-    public void init() {
-        TimeUnit.SECONDS.sleep( 2 );
-    }
 
 
     @BeforeClass
