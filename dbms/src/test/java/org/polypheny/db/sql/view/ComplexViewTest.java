@@ -32,7 +32,6 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
 
@@ -746,7 +745,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CottontailExcluded.class })
+    @Category({ FileExcluded.class })
     public void testQ1() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

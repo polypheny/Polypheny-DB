@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.rel;
 
-
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
@@ -42,12 +41,12 @@ public interface CottontailRel extends RelNode {
 
         public ParameterExpression projectionMap;
 
-
-        public Expression knnBuilder;
+        public ParameterExpression sortMap;
 
         public QueryType queryType;
 
         public String schemaName;
+
         public String tableName;
 
         public RelOptTable table;

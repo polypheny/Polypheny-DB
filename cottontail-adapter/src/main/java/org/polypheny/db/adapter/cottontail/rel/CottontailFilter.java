@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.rel;
 
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -45,6 +44,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
@@ -52,7 +52,6 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.ComparisonOperator;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ConnectionOperator;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Literals;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
@@ -125,9 +124,16 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
         public Translator( RelDataType rowType ) {
             this.rowType = rowType;
-            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
-            this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
-            this.columnTypes = rowType.getFieldList().stream().map( RelDataTypeField::getType ).map( RelDataType::getPolyType ).collect( Collectors.toList() );
+            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream()
+                    .map( RelDataTypeField::getPhysicalName )
+                    .collect( Collectors.toList() ), rowType.getFieldNames() );
+            this.fieldNames = pairs.stream()
+                    .map( it -> it.left != null ? it.left : it.right )
+                    .collect( Collectors.toList() );
+            this.columnTypes = rowType.getFieldList().stream()
+                    .map( RelDataTypeField::getType )
+                    .map( RelDataType::getPolyType )
+                    .collect( Collectors.toList() );
         }
 
 
@@ -226,7 +232,8 @@ public class CottontailFilter extends Filter implements CottontailRel {
         }
 
 
-        private Expression translateBinary2( ComparisonOperator op,
+        private Expression translateBinary2(
+                ComparisonOperator op,
                 RexNode left,
                 RexNode right,
                 ParameterExpression dynamicParameterMap_,
@@ -310,7 +317,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
                     .setNot( not )
                     .setLeft( ColumnName.newBuilder().setName( attribute ) )
                     .setOp( operator )
-                    .setRight( AtomicBooleanOperand.newBuilder().setLiterals( Literals.newBuilder().addLiteral( data ) ).build() )
+                    .setRight( AtomicBooleanOperand.newBuilder().setExpressions( CottontailGrpc.Expressions.newBuilder().addExpression( CottontailGrpc.Expression.newBuilder().setLiteral( data ) ) ).build() )
                     .build();
         }
 

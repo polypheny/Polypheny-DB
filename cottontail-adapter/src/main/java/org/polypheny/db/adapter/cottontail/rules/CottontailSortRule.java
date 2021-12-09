@@ -16,9 +16,8 @@
 
 package org.polypheny.db.adapter.cottontail.rules;
 
-
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailLimit;
+import org.polypheny.db.adapter.cottontail.rel.CottontailSort;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
@@ -27,31 +26,20 @@ import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
-public class CottontailLimitRule extends CottontailConverterRule {
+/**
+ * Matches
+ */
+public class CottontailSortRule extends CottontailConverterRule {
 
-    CottontailLimitRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Sort.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailLimitRule" + out.getName() );
+    CottontailSortRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
+        super( Sort.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailSortRule" + out.getName() );
     }
 
 
     @Override
     public boolean matches( RelOptRuleCall call ) {
         final Sort sort = call.rel( 0 );
-
-        // Check if this contains sort statements. The CottontailLimit only implements limits
-        if ( sort.getCollation().getFieldCollations().size() > 0 ) {
-            return false;
-        }
-
-        if ( sort.fetch != null ) {
-            return true;
-        }
-
-        if ( sort.offset != null ) {
-            return true;
-        }
-
-        return false;
+        return sort.getCollation().getFieldCollations().size() > 0 || sort.fetch != null || sort.offset != null;
     }
 
 
@@ -63,7 +51,7 @@ public class CottontailLimitRule extends CottontailConverterRule {
         final RelTraitSet inputTraitSet = sort.getInput().getTraitSet().replace( out );
         input = convert( sort.getInput(), inputTraitSet );
 
-        return new CottontailLimit( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );
+        return new CottontailSort( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );
     }
 
 }

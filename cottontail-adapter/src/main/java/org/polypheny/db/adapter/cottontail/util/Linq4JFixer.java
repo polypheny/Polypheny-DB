@@ -16,194 +16,231 @@
 
 package org.polypheny.db.adapter.cottontail.util;
 
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
-import org.vitrivr.cottontail.grpc.CottontailGrpc;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimeString;
+import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ComparisonOperator;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ConnectionOperator;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn.Distance;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.KnnHint;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.KnnHint.NoIndexKnnHint;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Expression;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Expressions;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Function;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.FunctionName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Literals;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Vector;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
+/**
+ * A collections of conversion methods used for data access (sometimes used reflectively).
+ */
 public class Linq4JFixer {
 
-
-    public static Object getBooleanData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
-        return ((CottontailGrpc.Literal) data).getBooleanData();
-    }
-
-
-    public static Object getIntData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
-        return ((CottontailGrpc.Literal) data).getIntData();
-    }
-
-
-    public static Object getLongData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
-        return ((CottontailGrpc.Literal) data).getLongData();
-    }
-
-
+    /**
+     * Converts the given object and returns it as {@link Byte}.
+     *
+     * @param data The data, expected to be {@link Byte}.
+     * @return {@link Byte}
+     */
     public static Object getTinyIntData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return Integer.valueOf( ((CottontailGrpc.Literal) data).getIntData() ).byteValue();
+        return ((Integer) data).byteValue();
     }
 
 
+    /**
+     * Converts the given object and returns it as {@link Short}.
+     *
+     * @param data The data, expected to be {@link Short}.
+     * @return {@link Short}
+     */
     public static Object getSmallIntData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return Integer.valueOf( ((CottontailGrpc.Literal) data).getIntData() ).shortValue();
+        return ((Integer) data).shortValue();
     }
 
 
-    public static Object getFloatData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
-        return ((CottontailGrpc.Literal) data).getFloatData();
-    }
-
-
-    public static Object getDoubleData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
-        return ((CottontailGrpc.Literal) data).getDoubleData();
-    }
-
-
+    /**
+     * Converts the given object and returns it as {@link String}.
+     *
+     * @param data The data, expected to be {@link String}.
+     * @return {@link String}
+     */
     public static String getStringData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getStringData();
+        return (String) data;
     }
 
 
+    /**
+     * Converts the given object and returns it as {@link BigDecimal} object.
+     *
+     * @param data The data, expected to be {@link String}.
+     * @return {@link BigDecimal}
+     */
     public static Object getDecimalData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return new BigDecimal( ((CottontailGrpc.Literal) data).getStringData() );
+        return new BigDecimal( (String) data );
     }
 
 
+    /**
+     * Converts the given object and returns it as {@link ByteString} object.
+     *
+     * @param data The data, expected to be {@link String}.
+     * @return {@link ByteString}
+     */
     public static Object getBinaryData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ByteString.parseBase64( ((CottontailGrpc.Literal) data).getStringData() );
+        return ByteString.parseBase64( (String) data );
     }
 
 
+    /**
+     * Converts the given object and returns it as {@link Integer} object.
+     *
+     * TODO: Internally, Polypheny DB uses {@link TimeString}. Conversion could take place here.
+     *
+     * @param data The data, expected to be {@link Integer}.
+     * @return {@link Integer}
+     */
     public static Object getTimeData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getIntData();
+        return ((Integer) data);
     }
 
 
+    /**
+     * Converts the given object and returns it as {@link Integer} object.
+     *
+     * TODO: Internally, Polypheny DB uses {@link DateString}. Conversion could take place here.
+     *
+     * @param data The data, expected to be {@link Integer}.
+     * @return {@link Integer}
+     */
     public static Object getDateData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getIntData();
+        return ((Integer) data);
     }
 
 
+    /**
+     * Converts a {@link java.util.Date} object to an {@link Integer}.
+     *
+     * @param data The data, expected to be {@link java.util.Date}.
+     * @return {@link Integer}
+     */
     public static Object getTimestampData( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getDateData().getUtcTimestamp();
-    }
-
-
-    public static Object getNullData( Object data ) {
-        return ((CottontailGrpc.Literal) data).getNullData();
+        return ((java.util.Date) data).getTime();
     }
 
 
     public static Object getBoolVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getVectorData().getBoolVector().getVectorList();
+        final List<Boolean> list = new ArrayList<>( ((boolean[]) data).length );
+        for ( boolean v : ((boolean[]) data) ) {
+            list.add( v );
+        }
+        return list;
     }
 
 
     public static Object getTinyIntVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::byteValue ).collect( Collectors.toList() );
+        final List<Byte> list = new ArrayList<>( ((int[]) data).length );
+        for ( int v : ((int[]) data) ) {
+            list.add( (byte) v );
+        }
+        return list;
     }
 
 
     public static Object getSmallIntVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map( Integer::shortValue ).collect( Collectors.toList() );
+        final List<Short> list = new ArrayList<>( ((int[]) data).length );
+        for ( int v : ((int[]) data) ) {
+            list.add( (short) v );
+        }
+        return list;
     }
 
 
     public static Object getIntVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList();
-    }
-
-
-    public static Object getFloatVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
+        final List<Integer> list = new ArrayList<>( ((int[]) data).length );
+        for ( int v : ((int[]) data) ) {
+            list.add( v );
         }
-        return ((CottontailGrpc.Literal) data).getVectorData().getFloatVector().getVectorList();
-    }
-
-
-    public static Object getDoubleVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
-            return null;
-        }
-        return ((CottontailGrpc.Literal) data).getVectorData().getDoubleVector().getVectorList();
+        return list;
     }
 
 
     public static Object getLongVector( Object data ) {
-        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+        if ( data == null ) {
             return null;
         }
-        return ((CottontailGrpc.Literal) data).getVectorData().getLongVector().getVectorList();
+        final List<Long> list = new ArrayList<>( ((long[]) data).length );
+        for ( long v : ((long[]) data) ) {
+            list.add( v );
+        }
+        return list;
+    }
+
+
+    public static Object getFloatVector( Object data ) {
+        if ( data == null ) {
+            return null;
+        }
+        final List<Float> list = new ArrayList<>( ((float[]) data).length );
+        for ( float v : ((float[]) data) ) {
+            list.add( v );
+        }
+        return list;
+    }
+
+
+    public static Object getDoubleVector( Object data ) {
+        if ( data == null ) {
+            return null;
+        }
+        final List<Double> list = new ArrayList<>( ((double[]) data).length );
+        for ( double v : ((double[]) data) ) {
+            list.add( v );
+        }
+        return list;
     }
 
 
@@ -244,7 +281,7 @@ public class Linq4JFixer {
         return AtomicBooleanPredicate.newBuilder().setNot( not )
                 .setLeft( ColumnName.newBuilder().setName( attribute ).build() )
                 .setOp( operator )
-                .setRight( AtomicBooleanOperand.newBuilder().setLiterals( Literals.newBuilder().addLiteral( data ).build() ).build() )
+                .setRight( AtomicBooleanOperand.newBuilder().setExpressions( Expressions.newBuilder().addExpression( Expression.newBuilder().setLiteral( data ) ) ) )
                 .build();
     }
 
@@ -262,57 +299,57 @@ public class Linq4JFixer {
     }
 
 
-    public static Knn generateKnn(
-            Object column,
-            Object k,
-            Object distance,
-            Object target,
-            Object weights ) {
-        Knn.Builder knnBuilder = Knn.newBuilder();
-
-        knnBuilder.setAttribute( ColumnName.newBuilder().setName( (String) column ) );
-
-        if ( k != null ) {
-            knnBuilder.setK( (Integer) k );
-        } else {
-            // Cottontail requires a k to be set for these queries.
-            // Setting Integer.MAX_VALUE will cause an out of memory with cottontail
-            // 2050000000 still works, 2100000000 doesn't work
-            // I will just decide that 1000000 is a reasonable default value!
-            knnBuilder.setK( 1000000 );
+    /**
+     * Generates and returns the kNN query function for the give arguments.
+     *
+     * @param p The column name of the probing argument
+     * @param q The query vector.
+     * @param distance The name of the distance to execute.
+     * @param alias The alias to use for the resulting column.
+     * @return The resulting {@link Function} expression.
+     */
+    public static Projection.ProjectionElement generateKnn( String p, Vector q, Object distance, String alias ) {
+        final Projection.ProjectionElement.Builder builder = Projection.ProjectionElement.newBuilder();
+        builder.setFunction( Function.newBuilder()
+                .setName( getDistance( (String) distance ) )
+                .addArguments( Expression.newBuilder().setColumn( ColumnName.newBuilder().setName( p ) ) )
+                .addArguments( Expression.newBuilder().setLiteral( Literal.newBuilder().setVectorData( q ) ) ) );
+        if ( alias != null ) {
+            builder.setAlias( ColumnName.newBuilder().setName( alias ).build() );
         }
 
-        if ( target != null ) {
-            knnBuilder.setQuery( (Vector) target );
-        }
-
-        if ( weights != null ) {
-            knnBuilder.setWeight( (Vector) weights );
-        }
-
-        knnBuilder.setDistance( getDistance( (String) distance ) );
-
-        knnBuilder.setHint( KnnHint.newBuilder().setNoIndexHint( NoIndexKnnHint.newBuilder() ) );
-
-        return knnBuilder.build();
+        return builder.build();
     }
 
 
-    public static Knn.Distance getDistance( String norm ) {
-        switch ( norm ) {
+    /**
+     * Maps the given name to a {@link FunctionName} object.
+     *
+     * @param norm The name of the distance to execute.
+     * @return The corresponding {@link FunctionName}
+     */
+    public static FunctionName getDistance( String norm ) {
+        final String value;
+        switch ( norm.toUpperCase() ) {
             case "L1":
-                return Distance.L1;
+                value = Distances.L1.getFunctionName();
+                break;
             case "L2":
-                return Distance.L2;
+                value = Distances.L2.getFunctionName();
+                break;
             case "L2SQUARED":
-                return Distance.L2SQUARED;
+                value = Distances.L2SQUARED.getFunctionName();
+                break;
             case "CHISQUARED":
-                return Distance.CHISQUARED;
+                value = Distances.CHISQUARED.getFunctionName();
+                break;
             case "COSINE":
-                return Distance.COSINE;
+                value = Distances.COSINE.getFunctionName();
+                break;
             default:
                 throw new IllegalArgumentException( "Unknown norm: " + norm );
         }
+        return FunctionName.newBuilder().setName( value ).build();
     }
 
 

@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.polypheny.db.adapter.cottontail.enumberable;
 
 import java.util.List;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchInsertMessage;
 
 
-public class CottontailInsertEnumerable extends AbstractEnumerable<Long> {
+public class CottontailBatchInsertEnumerable extends AbstractEnumerable<Long> {
 
-    private final List<InsertMessage> inserts;
+    private final List<BatchInsertMessage> inserts;
     private final CottontailWrapper wrapper;
 
 
-    public CottontailInsertEnumerable( List<InsertMessage> inserts, CottontailWrapper wrapper ) {
+    public CottontailBatchInsertEnumerable( List<BatchInsertMessage> inserts, CottontailWrapper wrapper ) {
         this.inserts = inserts;
         this.wrapper = wrapper;
     }
@@ -43,12 +44,12 @@ public class CottontailInsertEnumerable extends AbstractEnumerable<Long> {
     private class CottontailInsertResultEnumerator implements Enumerator<Long> {
 
         /**
-         * Result of the last INSERT that was performed.
+         * Result of the last BATCH INSERT that was performed.
          */
         private long currentResult;
 
         /**
-         * The pointer to the last {@link InsertMessage} that was executed.
+         * The pointer to the last {@link BatchInsertMessage} that was executed.
          */
         private int pointer = 0;
 
@@ -61,10 +62,10 @@ public class CottontailInsertEnumerable extends AbstractEnumerable<Long> {
 
         @Override
         public boolean moveNext() {
-            if ( this.pointer < CottontailInsertEnumerable.this.inserts.size() ) {
-                final InsertMessage insertMessage = CottontailInsertEnumerable.this.inserts.get( this.pointer++ );
-                if ( CottontailInsertEnumerable.this.wrapper.insert( insertMessage ) ) {
-                    this.currentResult = 1;
+            if ( this.pointer < CottontailBatchInsertEnumerable.this.inserts.size() ) {
+                final BatchInsertMessage insertMessage = CottontailBatchInsertEnumerable.this.inserts.get( this.pointer++ );
+                if ( CottontailBatchInsertEnumerable.this.wrapper.insert( insertMessage ) ) {
+                    this.currentResult = insertMessage.getInsertsCount();
                 } else {
                     this.currentResult = -1;
                 }

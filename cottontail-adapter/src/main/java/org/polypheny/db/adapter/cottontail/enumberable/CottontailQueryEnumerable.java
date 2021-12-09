@@ -16,212 +16,69 @@
 
 package org.polypheny.db.adapter.cottontail.enumberable;
 
-
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import org.apache.calcite.avatica.util.ByteString;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
-import org.polypheny.db.adapter.cottontail.CottontailWrapper;
-import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.ArrayType;
-import org.vitrivr.cottontail.grpc.CottontailGrpc;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection.ProjectionElement;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage.Tuple;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
+import org.vitrivr.cottontail.client.iterators.Tuple;
+import org.vitrivr.cottontail.client.iterators.TupleIterator;
+
+@Slf4j
+public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
+
+    /**
+     * The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}.
+     */
+    private final TupleIterator tupleIterator;
+
+    /**
+     * The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}.
+     */
+    private final Function1<Tuple, Object[]> parser;
 
 
-public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
-
-    public static final Method CREATE_QUERY_METHOD = Types.lookupMethod(
-            CottontailQueryEnumerable.class,
-            "query",
-            String.class, String.class, Map.class, Function1.class, Function1.class, Function1.class, Function1.class, DataContext.class, Function1.class, CottontailWrapper.class );
-
-    private final Iterator<QueryResponseMessage> queryIterator;
-    private final Function1<Map<String, Literal>, T> rowParser;
-
-
-    public CottontailQueryEnumerable( Iterator<QueryResponseMessage> queryIterator, Function1<Map<String, Literal>, T> rowParser ) {
-        this.queryIterator = queryIterator;
-        this.rowParser = rowParser;
-    }
-
-
-    public static CottontailQueryEnumerable<Object> query(
-            String from,
-            String schema,
-            Map<String, String> projection,
-            Function1<Map<Long, Object>, Where> whereBuilder,
-            Function1<Map<Long, Object>, Knn> knnBuilder, // TODO js(ct) FIGURE OUT
-            Function1<Map<Long, Object>, Integer> limitBuilder,
-            Function1<Map<Long, Object>, Integer> offsetBuilder,
-            DataContext dataContext,
-            Function1 rowParser,
-            CottontailWrapper wrapper
-    ) {
-
-        /* Begin or continue Cottontail DB transaction. */
-        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
-
-        /* Build SELECT messages and create enumerable. */
-        Iterator<QueryResponseMessage> queryResponseIterator;
-        if ( dataContext.getParameterValues().size() < 2 ) {
-            final Map<Long, Object> parameterValues;
-            if ( dataContext.getParameterValues().size() == 0 ) {
-                parameterValues = new HashMap<>();
-            } else {
-                parameterValues = dataContext.getParameterValues().get( 0 );
-            }
-
-            Integer limit = null;
-            if ( limitBuilder != null ) {
-                limit = limitBuilder.apply( parameterValues );
-            }
-
-            Integer offset = null;
-            if ( offsetBuilder != null ) {
-                offset = offsetBuilder.apply( parameterValues );
-            }
-
-            final Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnBuilder, limit, offset, parameterValues );
-            queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build() );
-        } else {
-            BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder().setTxId( txId );
-            for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
-
-                Integer limit = null;
-                if ( limitBuilder != null ) {
-                    limit = limitBuilder.apply( parameterValues );
-                }
-
-                Integer offset = null;
-                if ( offsetBuilder != null ) {
-                    offset = offsetBuilder.apply( parameterValues );
-                }
-
-                final Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnBuilder, limit, offset, parameterValues );
-                batchedQueryMessageBuilder.addQuery( query );
-            }
-
-            queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );
-        }
-
-        return new CottontailQueryEnumerable<Object>( queryResponseIterator, rowParser );
-    }
-
-
-    private static Query buildSingleQuery(
-            String from,
-            String schema,
-            Map<String, String> projection,
-            Function1<Map<Long, Object>, Where> whereBuilder,
-            Function1<Map<Long, Object>, Knn> knnBuilder, // TODO js(ct) FIGURE OUT
-            Integer limit, Integer offset,
-            Map<Long, Object> parameterValues
-    ) {
-        Query.Builder queryBuilder = Query.newBuilder();
-
-        queryBuilder.setFrom( CottontailTypeUtil.fromFromTableAndSchema( from, schema ) );
-
-        if ( limit != null ) {
-            queryBuilder.setLimit( limit );
-        }
-
-        if ( offset != null ) {
-            queryBuilder.setSkip( offset );
-        }
-
-        if ( projection != null ) {
-            final Projection.Builder builder = Projection.newBuilder();
-            for ( Entry<String, String> p : projection.entrySet() ) {
-                builder.addColumns( ProjectionElement.newBuilder()
-                        .setColumn( ColumnName.newBuilder().setName( p.getKey() ) )
-                        .setAlias( ColumnName.newBuilder().setName( p.getValue() ) )
-                );
-            }
-            queryBuilder.setProjection( builder );
-        }
-
-        if ( whereBuilder != null ) {
-            queryBuilder.setWhere( whereBuilder.apply( parameterValues ) );
-        }
-
-        if ( knnBuilder != null ) {
-            queryBuilder.setKnn( knnBuilder.apply( parameterValues ) );
-        }
-
-        return queryBuilder.build();
+    public CottontailQueryEnumerable( TupleIterator iterator, Function1<Tuple, Object[]> rowParser ) {
+        this.tupleIterator = iterator;
+        this.parser = rowParser;
     }
 
 
     @Override
-    public Enumerator<T> enumerator() {
-        return new CottontailQueryResultEnumerator( this.queryIterator, this.rowParser );
+    public Enumerator<Object> enumerator() {
+        return new CottontailQueryResultEnumerator();
     }
 
 
-    private static class CottontailQueryResultEnumerator<T> implements Enumerator<T> {
+    private class CottontailQueryResultEnumerator implements Enumerator<Object> {
 
-        private final Function1<Map<String, Literal>, T> rowParser;
-        private Iterator<QueryResponseMessage> queryIterator;
-
-        private QueryResponseMessage currentQueryResponsePage;
-        private Iterator<Tuple> currentResultIterator;
-        private Map<String, CottontailGrpc.Literal> current = new HashMap<>();
-
-
-        CottontailQueryResultEnumerator( Iterator<QueryResponseMessage> queryIterator, Function1<Map<String, Literal>, T> rowParser ) {
-            this.queryIterator = queryIterator;
-            this.rowParser = rowParser;
-        }
+        /**
+         * The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to.
+         */
+        private Tuple tuple = null;
 
 
         @Override
-        public T current() {
-            return this.rowParser.apply( this.current );
+        public Object current() {
+            final Object[] results = CottontailQueryEnumerable.this.parser.apply( this.tuple );
+            if ( results.length == 1 ) {
+                return results[0];
+            } else {
+                return results;
+            }
         }
 
 
         @Override
         public boolean moveNext() {
-            /* Check if another QueryResponseMessage is waiting for processing and move the internal cursor forward, if so. */
-            if ( this.currentResultIterator == null || !this.currentResultIterator.hasNext() ) {
-                if ( this.queryIterator.hasNext() ) {
-                    this.currentQueryResponsePage = this.queryIterator.next();
-                    this.currentResultIterator = this.currentQueryResponsePage.getTuplesList().iterator();
-                } else {
-                    return false;
-                }
-            }
-
-            if ( this.currentResultIterator.hasNext() ) {
-                int i = 0;
-                this.current.clear();
-                for ( Literal l : this.currentResultIterator.next().getDataList() ) {
-                    this.current.put( this.currentQueryResponsePage.getColumns( i++ ).getName(), l );
-                }
+            if ( CottontailQueryEnumerable.this.tupleIterator.hasNext() ) {
+                this.tuple = CottontailQueryEnumerable.this.tupleIterator.next();
                 return true;
             } else {
                 return false;
@@ -237,13 +94,17 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public void close() {
-            // TODO js(ct): do we need to do something here?
+            try {
+                CottontailQueryEnumerable.this.tupleIterator.close();
+            } catch ( Exception e ) {
+                log.warn( "Caught exception", e );
+            }
         }
 
     }
 
 
-    public static class RowTypeParser implements Function1<Map<String, Literal>, Object[]> {
+    public static class RowTypeParser implements Function1<Tuple, Object[]> {
 
         private final RelDataType rowType;
         private final List<String> physicalColumnNames;
@@ -256,64 +117,74 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
 
         @Override
-        public Object[] apply( Map<String, Literal> a0 ) {
-            Object[] returnValue = new Object[this.physicalColumnNames.size()];
-
-            List<RelDataTypeField> fieldList = this.rowType.getFieldList();
+        public Object[] apply( Tuple a0 ) {
+            final Object[] returnValue = new Object[this.physicalColumnNames.size()];
+            final List<RelDataTypeField> fieldList = this.rowType.getFieldList();
             for ( int i = 0; i < fieldList.size(); i++ ) {
-                RelDataType type = fieldList.get( i ).getType();
-                String columnName = this.physicalColumnNames.get( i );
-                returnValue[i] = this.parseSingleField( a0.get( columnName ), type );
+                final RelDataType type = fieldList.get( i ).getType();
+                returnValue[i] = this.parseSingleField( a0.get( i ), type );
             }
 
             return returnValue;
         }
 
 
-        private Object parseSingleField( Literal data, RelDataType type ) {
+        /**
+         * Internal method used to parse a single value returned from accessing a {@link Tuple}.
+         *
+         * @param data The data to convert.
+         * @param type The {@link RelDataType} expected by Polypheny-DB
+         * @return Converted value as {@link Object}
+         */
+        private Object parseSingleField( Object data, RelDataType type ) {
             switch ( type.getPolyType() ) {
                 case BOOLEAN:
-                    return data.getBooleanData();
                 case INTEGER:
-                    return data.getIntData();
                 case BIGINT:
-                    return data.getLongData();
                 case FLOAT:
                 case REAL:
-                    return data.getFloatData();
                 case DOUBLE:
-                    return data.getDoubleData();
                 case CHAR:
                 case VARCHAR:
-                case JSON:
-                    return data.getStringData();
                 case NULL:
-                    return null;
+                    return data; /* Pass through, no conversion needed. */
+                case TINYINT:
+                    return Linq4JFixer.getTinyIntData( data );
+                case SMALLINT:
+                    return Linq4JFixer.getSmallIntData( data );
+                case JSON:
+                    return Linq4JFixer.getStringData( data );
                 case DECIMAL:
-                    return new BigDecimal( data.getStringData() );
+                    return Linq4JFixer.getDecimalData( data );
+                case DATE:
+                    return Linq4JFixer.getDateData( data );
+                case TIMESTAMP:
+                    return Linq4JFixer.getTimestampData( data );
+                case TIME:
+                    return Linq4JFixer.getTimeData( data );
                 case BINARY:
                 case VARBINARY:
-                    return ByteString.parseBase64( data.getStringData() );
+                    return Linq4JFixer.getBinaryData( data );
                 case ARRAY:
                     ArrayType arrayType = (ArrayType) type;
                     if ( arrayType.getDimension() == 1 && CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {
                         switch ( arrayType.getComponentType().getPolyType() ) {
                             case INTEGER:
-                                return data.getVectorData().getIntVector().getVectorList();
+                                return Linq4JFixer.getIntVector( data );
                             case BIGINT:
-                                return data.getVectorData().getLongVector().getVectorList();
+                                return Linq4JFixer.getLongVector( data );
                             case DOUBLE:
-                                return data.getVectorData().getDoubleVector().getVectorList();
+                                return Linq4JFixer.getDoubleVector( data );
                             case BOOLEAN:
-                                return data.getVectorData().getBoolVector().getVectorList();
+                                return Linq4JFixer.getBoolVector( data );
                             case FLOAT:
                             case REAL:
-                                return data.getVectorData().getFloatVector().getVectorList();
+                                return Linq4JFixer.getFloatVector( data );
                             default:
                                 throw new RuntimeException( "Impossible to reach statement." );
                         }
                     } else {
-                        SqlArrayValueConstructor.reparse( arrayType.getComponentType().getPolyType(), arrayType.getDimension(), data.getStringData() );
+                        SqlArrayValueConstructor.reparse( arrayType.getComponentType().getPolyType(), arrayType.getDimension(), (String) data );
                     }
             }
             throw new AssertionError( "Not yet supported type: " + type.getPolyType() );
