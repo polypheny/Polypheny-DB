@@ -77,7 +77,12 @@ task unzipUiFiles(type: Copy) {
                 toDir: "$buildDir/webapp/index/"
     }
 }
-
+task deleteUiFiles(type: Delete) {
+    project.delete(
+            fileTree( "$buildDir/webapp" )
+    )
+}
+unzipUiFiles.dependsOn(deleteUiFiles)
 classes.dependsOn(unzipUiFiles)
 
 

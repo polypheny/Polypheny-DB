@@ -21,6 +21,8 @@ dependencies {
 
 }
 
+compileJava.dependsOn(processResources)
+
 
 sourceSets {
     main {

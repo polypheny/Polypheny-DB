@@ -700,7 +700,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    statement.executeUpdate( "DROP VIEW dateOrderby_VIEW" );
+                    statement.executeUpdate( "DROP VIEW IF EXISTS dateOrderby_VIEW" );
                     dropTables( statement );
                 }
             }
@@ -810,7 +810,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    statement.executeUpdate( "DROP MATERIALIZED VIEW q1_Materialized" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW IF EXISTS q1_Materialized" );
                     statement.executeUpdate( "DROP VIEW IF EXISTS q1_VIEW" );
                     dropTables( statement );
                 }
