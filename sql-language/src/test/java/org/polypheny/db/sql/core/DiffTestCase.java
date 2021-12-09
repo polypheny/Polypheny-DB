@@ -477,5 +477,6 @@ public abstract class DiffTestCase {
         // mask out different-length sqlline continuation prompts
         addDiffMask( "^(\\.\\s?)+>" );
     }
+
 }
 

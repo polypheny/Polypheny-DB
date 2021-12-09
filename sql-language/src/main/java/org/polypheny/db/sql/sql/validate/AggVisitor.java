@@ -21,10 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.nodes.BasicNodeVisitor;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.sql.sql.fun.SqlAbstractGroupFunction;
 
@@ -121,5 +121,6 @@ abstract class AggVisitor extends BasicNodeVisitor<Void> {
 
 
     protected abstract Void found( Call call );
+
 }
 

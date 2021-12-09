@@ -17,6 +17,7 @@
 package org.polypheny.db.webui.models;
 
 
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 
 

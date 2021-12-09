@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,13 +40,13 @@ import java.util.Properties;
 import org.apache.calcite.avatica.ConnectionConfigImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.algebra.operators.ChainedOperatorTable;
-import org.polypheny.db.util.Conformance;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.operators.ChainedOperatorTable;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.util.Conformance;
 
 
 /**
@@ -165,4 +165,5 @@ public class PolyphenyDbConnectionConfigImpl extends ConnectionConfigImpl implem
     public String timeZone() {
         return PolyphenyDbConnectionProperty.TIME_ZONE.wrap( properties ).getString();
     }
+
 }

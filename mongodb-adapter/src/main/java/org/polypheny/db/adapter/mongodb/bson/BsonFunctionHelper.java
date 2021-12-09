@@ -24,12 +24,12 @@ import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.BsonUtil;
 
 public class BsonFunctionHelper extends BsonDocument {
 
@@ -80,7 +80,8 @@ public class BsonFunctionHelper extends BsonDocument {
             Object funcName = ((RexLiteral) call.operands.get( 2 )).getValue3();
             function = getUsedFunction( funcName );
 
-            return new BsonDocument().append( "$function",
+            return new BsonDocument().append(
+                    "$function",
                     new BsonDocument()
                             .append( "body", new BsonString( function ) )
                             .append( "args", getArgsArray( call.operands, rowType, implementor ) )

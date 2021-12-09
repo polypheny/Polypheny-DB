@@ -36,10 +36,10 @@ package org.polypheny.db.type;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.util.Util;
 
 

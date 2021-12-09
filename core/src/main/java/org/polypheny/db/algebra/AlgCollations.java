@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,4 +214,5 @@ public class AlgCollations {
     public static AlgCollation permute( AlgCollation collation, TargetMapping mapping ) {
         return of( Util.transform( collation.getFieldCollations(), fc -> fc.copy( mapping.getTarget( fc.getFieldIndex() ) ) ) );
     }
+
 }

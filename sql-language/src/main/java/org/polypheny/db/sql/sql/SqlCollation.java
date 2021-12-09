@@ -19,9 +19,9 @@ package org.polypheny.db.sql.sql;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import org.polypheny.db.util.Collation;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.PolyphenyDbResource;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Util;
 

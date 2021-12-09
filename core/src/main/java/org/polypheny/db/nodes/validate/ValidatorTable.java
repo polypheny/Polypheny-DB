@@ -18,11 +18,11 @@ package org.polypheny.db.nodes.validate;
 
 
 import java.util.List;
-import org.polypheny.db.util.AccessType;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.AccessType;
 
 
 /**

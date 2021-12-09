@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,8 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
         // Take the difference between the predicate passed in and the predicate in the filter's condition, so we don't apply the selectivity of the filter twice.
         // If no predicate is passed in, use the filter's condition.
         if ( predicate != null ) {
-            return mq.getSelectivity( alg.getInput(),
+            return mq.getSelectivity(
+                    alg.getInput(),
                     AlgMdUtil.minusPreds(
                             alg.getCluster().getRexBuilder(),
                             predicate,

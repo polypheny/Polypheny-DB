@@ -23,21 +23,21 @@ import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.OperatorBinding;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.fun.SqlTrimFunction;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Static;
@@ -686,7 +686,8 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             map.put( "LCASE", simple( OperatorRegistry.get( OperatorName.LOWER ) ) );
             map.put( "LENGTH", simple( OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ) ) );
             map.put( "LOCATE", simple( OperatorRegistry.get( OperatorName.POSITION ) ) );
-            map.put( "LTRIM",
+            map.put(
+                    "LTRIM",
                     new SimpleMakeCall( OperatorRegistry.get( OperatorName.TRIM ) ) {
                         @Override
                         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
@@ -709,7 +710,8 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             map.put( "MINUTE", simple( OperatorRegistry.get( OperatorName.MINUTE ) ) );
             map.put( "SECOND", simple( OperatorRegistry.get( OperatorName.SECOND ) ) );
 
-            map.put( "RTRIM",
+            map.put(
+                    "RTRIM",
                     new SimpleMakeCall( OperatorRegistry.get( OperatorName.TRIM ) ) {
                         @Override
                         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
@@ -731,7 +733,8 @@ public class SqlJdbcFunctionCall extends SqlFunction {
             map.put( "TIMESTAMPDIFF", simple( OperatorRegistry.get( OperatorName.TIMESTAMP_DIFF ) ) );
 
             map.put( "DATABASE", simple( OperatorRegistry.get( OperatorName.CURRENT_CATALOG ) ) );
-            map.put( "IFNULL",
+            map.put(
+                    "IFNULL",
                     new SimpleMakeCall( OperatorRegistry.get( OperatorName.COALESCE ) ) {
                         @Override
                         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {
@@ -740,7 +743,8 @@ public class SqlJdbcFunctionCall extends SqlFunction {
                         }
                     } );
             map.put( "USER", simple( OperatorRegistry.get( OperatorName.CURRENT_USER ) ) );
-            map.put( "CONVERT",
+            map.put(
+                    "CONVERT",
                     new SimpleMakeCall( OperatorRegistry.get( OperatorName.CAST ) ) {
                         @Override
                         public SqlCall createCall( ParserPos pos, SqlNode... operands ) {

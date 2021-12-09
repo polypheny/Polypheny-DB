@@ -41,13 +41,13 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.util.Collation;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 

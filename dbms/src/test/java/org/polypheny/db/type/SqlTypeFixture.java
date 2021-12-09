@@ -62,5 +62,6 @@ class SqlTypeFixture {
     final AlgDataType arrayBigIntNullable = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlBigIntNullable, -1 ), true );
     final AlgDataType arrayOfArrayBigInt = typeFactory.createTypeWithNullability( typeFactory.createArrayType( arrayBigInt, -1 ), false );
     final AlgDataType arrayOfArrayFloat = typeFactory.createTypeWithNullability( typeFactory.createArrayType( arrayFloat, -1 ), false );
+
 }
 

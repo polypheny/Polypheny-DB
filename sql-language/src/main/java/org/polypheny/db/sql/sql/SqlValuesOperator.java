@@ -40,5 +40,6 @@ public class SqlValuesOperator extends SqlSpecialOperator implements ValuesOpera
         }
         writer.endList( frame );
     }
+
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ package org.polypheny.db.adapter.pig;
 
 
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
@@ -58,5 +58,6 @@ public class PigToEnumerableConverterRule extends ConverterRule {
         AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutConvention() );
         return new PigToEnumerableConverter( alg.getCluster(), newTraitSet, alg );
     }
+
 }
 

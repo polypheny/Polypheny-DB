@@ -18,6 +18,9 @@ package org.polypheny.db.languages.mql;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
@@ -25,16 +28,13 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.nodes.ExecutableStatement;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
 

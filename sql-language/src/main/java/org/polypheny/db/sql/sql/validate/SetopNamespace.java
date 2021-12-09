@@ -21,9 +21,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -106,5 +106,6 @@ public class SetopNamespace extends AbstractNamespace {
                 throw new AssertionError( "Not a query: " + call.getKind() );
         }
     }
+
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,12 +42,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.geode.pdx.PdxInstance;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.prepare.JavaRecordType;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.prepare.JavaRecordType;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 
 
 /**

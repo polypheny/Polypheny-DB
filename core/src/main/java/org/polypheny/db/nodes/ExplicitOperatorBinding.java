@@ -18,13 +18,13 @@ package org.polypheny.db.nodes;
 
 
 import java.util.List;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.nodes.validate.ValidatorException;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.util.CoreUtil;
 
 
 /**

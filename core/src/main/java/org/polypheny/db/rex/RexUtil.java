@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,25 +52,23 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Predicate1;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.OperatorImpl;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.ValidatorUtil;
-import org.polypheny.db.util.ValidatorUtil.Suggester;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.OperatorImpl;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.type.PolyType;
@@ -81,6 +79,8 @@ import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.Util.FoundOne;
+import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.ValidatorUtil.Suggester;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 
@@ -421,7 +421,8 @@ public class RexUtil {
         } else {
             if ( existedValue instanceof RexLiteral
                     && constant instanceof RexLiteral
-                    && !Objects.equals( ((RexLiteral) existedValue).getValue(),
+                    && !Objects.equals(
+                    ((RexLiteral) existedValue).getValue(),
                     ((RexLiteral) constant).getValue() ) ) {
                 // we found conflicting values, e.g. left = 10 and left = 20
                 map.remove( left );
@@ -1731,7 +1732,8 @@ public class RexUtil {
             case EQUALS:
                 final RexCall call = (RexCall) e;
                 if ( call.getOperands().get( 1 ) instanceof RexLiteral ) {
-                    notTerms = Util.filter( notTerms,
+                    notTerms = Util.filter(
+                            notTerms,
                             e2 -> {
                                 switch ( e2.getKind() ) {
                                     case EQUALS:

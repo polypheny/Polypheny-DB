@@ -20,12 +20,12 @@ package org.polypheny.db.sql.sql;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.externalize.AlgJsonReader;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
+import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.tools.Frameworks;
@@ -81,5 +81,6 @@ public class SqlToRelConverterExtendedTest extends SqlToAlgConverterTest {
             return null;
         } );
     }
+
 }
 

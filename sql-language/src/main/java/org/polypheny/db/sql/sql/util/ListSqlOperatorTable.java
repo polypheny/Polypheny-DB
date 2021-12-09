@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.sql.sql.SqlOperator;
 

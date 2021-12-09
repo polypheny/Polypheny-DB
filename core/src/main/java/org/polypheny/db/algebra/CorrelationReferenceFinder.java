@@ -81,6 +81,8 @@ public abstract class CorrelationReferenceFinder extends AlgHomogeneousShuttle {
             }
             return super.visitSubQuery( subQuery );
         }
+
     }
+
 }
 

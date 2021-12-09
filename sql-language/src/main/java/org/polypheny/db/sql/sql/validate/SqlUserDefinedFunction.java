@@ -23,11 +23,11 @@ import lombok.Getter;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.UserDefined;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
+import org.polypheny.db.sql.sql.SqlFunction;
+import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -77,11 +77,10 @@ public class SqlUserDefinedFunction extends SqlFunction implements UserDefined {
     }
 
 
-
-
     @Override
     public List<String> getParamNames() {
         return Lists.transform( function.getParameters(), FunctionParameter::getName );
     }
+
 }
 

@@ -19,9 +19,9 @@ package org.polypheny.db.sql.sql.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlDrop;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;

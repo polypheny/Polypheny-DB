@@ -19,11 +19,10 @@ package org.polypheny.db.mql.mql;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -31,6 +30,7 @@ import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2alg.MqlMockCatalog;
 import org.polypheny.db.mql.MqlLanguageDependent;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.util.SourceStringReader;
 
 

@@ -22,13 +22,12 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.sql.SqlAlter;
 import org.polypheny.db.sql.sql.SqlNode;
@@ -36,6 +35,7 @@ import org.polypheny.db.sql.sql.SqlOperator;
 import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
 

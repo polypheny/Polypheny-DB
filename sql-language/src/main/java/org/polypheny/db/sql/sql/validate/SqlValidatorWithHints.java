@@ -19,9 +19,9 @@ package org.polypheny.db.sql.sql.validate;
 
 import java.util.List;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.util.Moniker;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.util.Moniker;
 
 
 /**
@@ -49,5 +49,6 @@ public interface SqlValidatorWithHints extends SqlValidator {
      * @return a string of the fully qualified name of the {@link SqlIdentifier} if the Parser position represents a valid {@link SqlIdentifier}. Else return an empty string
      */
     Moniker lookupQualifiedName( SqlNode topNode, ParserPos pos );
+
 }
 

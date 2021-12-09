@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,5 +62,6 @@ public interface AlgDataTypePrecedenceList {
      * @return positive if type1 has higher precedence; negative if type2 has higher precedence; 0 if types have equal precedence
      */
     int compareTypePrecedence( AlgDataType type1, AlgDataType type2 );
+
 }
 

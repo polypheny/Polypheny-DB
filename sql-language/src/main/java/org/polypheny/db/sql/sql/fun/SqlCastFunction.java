@@ -21,10 +21,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.sql.sql.SqlBasicCall;
 import org.polypheny.db.sql.sql.SqlCall;
@@ -37,13 +38,12 @@ import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlSyntax;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.util.CoreUtil;
 
 
 /**

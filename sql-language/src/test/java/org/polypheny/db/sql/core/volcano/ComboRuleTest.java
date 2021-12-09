@@ -27,11 +27,8 @@ import static org.polypheny.db.sql.core.volcano.PlannerTests.newCluster;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
-import org.polypheny.db.sql.core.volcano.PlannerTests.NoneLeafAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.NoneSingleAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafAlg;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -39,9 +36,12 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.sql.core.volcano.PlannerTests.NoneLeafAlg;
+import org.polypheny.db.sql.core.volcano.PlannerTests.NoneSingleAlg;
+import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafAlg;
 
 
 /**
@@ -94,6 +94,7 @@ public class ComboRuleTest {
             assert traitSet.comprises( PHYS_CALLING_CONVENTION );
             return new IntermediateNode( getCluster(), sole( inputs ), nodesBelowCount );
         }
+
     }
 
 
@@ -122,6 +123,7 @@ public class ComboRuleTest {
 
             call.transformTo( intermediateNode );
         }
+
     }
 
 
@@ -172,6 +174,8 @@ public class ComboRuleTest {
             AlgNode converted = new IntermediateNode( physRel.getCluster(), physRel, oldInter.nodesBelowCount + 1 );
             call.transformTo( converted );
         }
+
     }
+
 }
 

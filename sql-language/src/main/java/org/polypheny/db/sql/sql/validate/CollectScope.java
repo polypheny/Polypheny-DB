@@ -43,4 +43,5 @@ class CollectScope extends ListScope {
     public SqlNode getNode() {
         return child;
     }
+
 }

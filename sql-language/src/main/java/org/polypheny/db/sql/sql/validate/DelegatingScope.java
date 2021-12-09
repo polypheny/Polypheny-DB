@@ -26,25 +26,25 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.util.Moniker;
-import org.polypheny.db.util.MonikerImpl;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
-import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DynamicRecordType;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.schema.CustomColumnResolvingTable;
+import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.sql.sql.SqlWindow;
-import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.algebra.type.DynamicRecordType;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.schema.CustomColumnResolvingTable;
-import org.polypheny.db.schema.Table;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.util.MonikerImpl;
+import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -542,4 +542,5 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     public SqlValidatorScope getParent() {
         return parent;
     }
+
 }

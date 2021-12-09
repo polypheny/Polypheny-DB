@@ -42,5 +42,6 @@ public class SqlMonotonicUnaryFunction extends SqlFunction {
     public Monotonicity getMonotonicity( OperatorBinding call ) {
         return call.getOperandMonotonicity( 0 ).unstrict();
     }
+
 }
 

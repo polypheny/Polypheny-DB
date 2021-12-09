@@ -31,7 +31,8 @@ public interface OperatorTable {
 
     /**
      * Retrieves a list of operators with a given name and syntax. For example, by passing SqlSyntax.Function, the returned list is narrowed to only matching SqlFunction objects.
-     *  @param opName name of operator
+     *
+     * @param opName name of operator
      * @param category function category to look up, or null for any matching operator
      * @param syntax syntax type of operator
      * @param operatorList mutable list to which to append matches
@@ -44,5 +45,6 @@ public interface OperatorTable {
      * @return list of SqlOperator objects
      */
     List<Operator> getOperatorList();
+
 }
 

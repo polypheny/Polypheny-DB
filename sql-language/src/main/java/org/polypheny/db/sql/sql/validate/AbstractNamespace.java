@@ -20,10 +20,10 @@ package org.polypheny.db.sql.sql.validate;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.util.Pair;
@@ -241,5 +241,6 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
                 .add( validator.deriveAlias( unnest, 0 ), null, type )
                 .build();
     }
+
 }
 

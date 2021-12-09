@@ -18,10 +18,10 @@ package org.polypheny.db.type.checker;
 
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;

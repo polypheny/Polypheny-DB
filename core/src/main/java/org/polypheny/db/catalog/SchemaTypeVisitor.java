@@ -18,13 +18,13 @@ package org.polypheny.db.catalog;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 

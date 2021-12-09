@@ -30,25 +30,6 @@ import java.util.Set;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.util.InitializerExpressionFactory;
-import org.polypheny.db.util.NullInitializerExpressionFactory;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.constant.Modality;
-import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.nodes.Call;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.util.AccessType;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
-import org.polypheny.db.util.ValidatorUtil;
-import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -56,8 +37,10 @@ import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Modality;
+import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -66,7 +49,17 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.CustomColumnResolvingTable;
 import org.polypheny.db.schema.ExtensibleTable;
@@ -80,9 +73,16 @@ import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.test.JdbcTest;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.AccessType;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.InitializerExpressionFactory;
+import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
+import org.polypheny.db.util.NullInitializerExpressionFactory;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
@@ -169,7 +169,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         table.onRegister( typeFactory );
         final WrapperTable wrapperTable = new WrapperTable( table );
         if ( table.stream ) {
-            registerTable( table.names,
+            registerTable(
+                    table.names,
                     new StreamableWrapperTable( table ) {
                         @Override
                         public Table stream() {
@@ -284,7 +285,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         protected final Set<String> rolledUpColumns = new HashSet<>();
 
 
-        public MockTable( MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount,
+        public MockTable(
+                MockCatalogReader catalogReader, String catalogName, String schemaName, String name, boolean stream, double rowCount,
                 ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
             this( catalogReader, ImmutableList.of( catalogName, schemaName, name ), stream, rowCount, resolver, initializerFactory );
         }
@@ -308,7 +310,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         /**
          * Copy constructor.
          */
-        protected MockTable( MockCatalogReader catalogReader, boolean stream, double rowCount, List<Map.Entry<String, AlgDataType>> columnList, List<Integer> keyList, AlgDataType rowType, List<AlgCollation> collationList,
+        protected MockTable(
+                MockCatalogReader catalogReader, boolean stream, double rowCount, List<Map.Entry<String, AlgDataType>> columnList, List<Integer> keyList, AlgDataType rowType, List<AlgCollation> collationList,
                 List<String> names, Set<String> monotonicColumnSet, StructKind kind, ColumnResolver resolver, InitializerExpressionFactory initializerFactory ) {
             this.catalogReader = catalogReader;
             this.stream = stream;
@@ -417,7 +420,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         }
 
 
-        public static MockTable create( MockCatalogReader catalogReader,
+        public static MockTable create(
+                MockCatalogReader catalogReader,
                 MockSchema schema, String name, boolean stream, double rowCount,
                 ColumnResolver resolver ) {
             return create( catalogReader, schema, name, stream, rowCount, resolver,

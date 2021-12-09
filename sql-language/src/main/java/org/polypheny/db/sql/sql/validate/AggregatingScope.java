@@ -39,5 +39,6 @@ public interface AggregatingScope extends SqlValidatorScope {
      * </ul>
      */
     boolean checkAggregateExpr( SqlNode expr, boolean deep );
+
 }
 

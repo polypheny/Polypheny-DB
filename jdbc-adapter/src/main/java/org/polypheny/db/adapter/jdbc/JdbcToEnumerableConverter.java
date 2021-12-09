@@ -61,23 +61,23 @@ import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.SqlDialect.CalendarPolicy;
-import org.polypheny.db.sql.sql.util.SqlString;
-import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.sql.sql.SqlDialect;
+import org.polypheny.db.sql.sql.SqlDialect.CalendarPolicy;
+import org.polypheny.db.sql.sql.util.SqlString;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -355,7 +355,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expression getFlavor = Expressions.call( getTransaction, Types.lookupMethod( Transaction.class, "getFlavor" ) );
                     Expression getBinaryStream = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
                     Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
-                    builder.add( Expressions.ifThenElse( Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
+                    builder.add( Expressions.ifThenElse(
+                            Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
                             Expressions.statement( Expressions.assign( target, getBytes ) ),
                             //assign a PushbackInputStream for the SQL META function
                             Expressions.statement( Expressions.assign( target, Expressions.new_( PushbackInputStream.class, getBinaryStream, Expressions.constant( 10240 ) ) ) ) ) );

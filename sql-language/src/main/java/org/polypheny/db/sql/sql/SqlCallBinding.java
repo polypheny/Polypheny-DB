@@ -25,22 +25,22 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.nodes.validate.ValidatorException;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.sql.sql.validate.SelectScope;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.runtime.Resources;
+import org.polypheny.db.util.CoreUtil;
 
 
 /**

@@ -549,7 +549,8 @@ public final class AlgTraitSet extends AbstractList<AlgTrait> {
         for ( int i = 0; i < traits.length; i++ ) {
             final AlgTrait trait = traits[i];
             if ( trait instanceof AlgCompositeTrait ) {
-                x = x.replace( i,
+                x = x.replace(
+                        i,
                         ((AlgCompositeTrait) trait).size() == 1
                                 ? ((AlgCompositeTrait) trait).trait( 0 )
                                 : trait.getTraitDef().getDefault() );

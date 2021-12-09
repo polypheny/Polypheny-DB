@@ -19,9 +19,9 @@ package org.polypheny.db.sql.sql.validate;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.util.Moniker;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.sql.sql.SqlIdentifier;
+import org.polypheny.db.util.Moniker;
 
 
 /**
@@ -61,5 +61,6 @@ public class SqlIdentifierMoniker implements Moniker {
     public String id() {
         return id.toString();
     }
+
 }
 

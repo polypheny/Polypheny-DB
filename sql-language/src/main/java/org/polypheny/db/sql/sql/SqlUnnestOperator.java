@@ -17,18 +17,18 @@
 package org.polypheny.db.sql.sql;
 
 
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.fun.UnnestOperator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Util;
 
 

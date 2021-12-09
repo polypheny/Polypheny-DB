@@ -29,6 +29,8 @@ import org.junit.Test;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.externalize.AlgJson;
 import org.polypheny.db.algebra.externalize.AlgJsonReader;
@@ -36,11 +38,9 @@ import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
@@ -102,11 +102,13 @@ public class AlgWriterTest extends SqlLanguagelDependant {
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
                     rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
                     LogicalTableScan scan =
-                            LogicalTableScan.create( cluster,
+                            LogicalTableScan.create(
+                                    cluster,
                                     algOptSchema.getTableForMember( Arrays.asList( "hr", "emps" ) ) );
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
                     LogicalFilter filter =
-                            LogicalFilter.create( scan,
+                            LogicalFilter.create(
+                                    scan,
                                     rexBuilder.makeCall(
                                             OperatorRegistry.get( OperatorName.EQUALS ),
                                             rexBuilder.makeFieldAccess( rexBuilder.makeRangeReference( scan ), "deptno", true ),
@@ -144,7 +146,8 @@ public class AlgWriterTest extends SqlLanguagelDependant {
                     return AlgOptUtil.dumpPlan( "", node, ExplainFormat.TEXT, ExplainLevel.EXPPLAN_ATTRIBUTES );
                 } );
 
-        assertThat( s,
+        assertThat(
+                s,
                 Matchers.isLinux( "LogicalAggregate(group=[{0}], agg#0=[COUNT(DISTINCT $1)], agg#1=[COUNT()])\n"
                         + "  LogicalFilter(condition=[=($1, 10)])\n"
                         + "    LogicalTableScan(table=[[hr, emps]])\n" ) );

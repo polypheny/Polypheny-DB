@@ -22,9 +22,10 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.ArrayValueConstructor;
 import org.polypheny.db.nodes.Call;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
@@ -33,7 +34,6 @@ import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlWriter;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -58,11 +58,12 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor implem
 
     /**
      * Constructor
+     *
      * @param dimension The dimension of this array. The most nested array has dimension 1, its parent has dimension 2 etc.
      * @param cardinality The cardinality of the array
      * @param maxCardinality If an array consists of nested arrays that have a larger cardinality, this value will be larger than the array's <i>cardinality</i>.
      */
-    public SqlArrayValueConstructor ( final int dimension, final int cardinality, final int maxCardinality ) {
+    public SqlArrayValueConstructor( final int dimension, final int cardinality, final int maxCardinality ) {
         super( "ARRAY", Kind.ARRAY_VALUE_CONSTRUCTOR );
         this.dimension = dimension;
         this.maxCardinality = Math.max( maxCardinality, cardinality );
@@ -145,4 +146,5 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor implem
         }
         return gson.fromJson( stringValue.trim(), conversionType );
     }
+
 }

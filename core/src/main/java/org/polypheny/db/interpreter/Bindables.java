@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,6 +174,7 @@ public class Bindables {
                 call.transformTo( BindableTableScan.create( scan.getCluster(), table ) );
             }
         }
+
     }
 
 
@@ -299,6 +300,7 @@ public class Bindables {
         public boolean isImplementationCacheable() {
             return false;
         }
+
     }
 
 
@@ -322,6 +324,7 @@ public class Bindables {
             final LogicalFilter filter = (LogicalFilter) alg;
             return BindableFilter.create( convert( filter.getInput(), filter.getInput().getTraitSet().replace( BindableConvention.INSTANCE ) ), filter.getCondition() );
         }
+
     }
 
 
@@ -369,6 +372,7 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             return new FilterNode( implementor.compiler, this );
         }
+
     }
 
 
@@ -397,6 +401,7 @@ public class Bindables {
                     project.getProjects(),
                     project.getRowType() );
         }
+
     }
 
 
@@ -433,6 +438,7 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             return new ProjectNode( implementor.compiler, this );
         }
+
     }
 
 
@@ -458,6 +464,7 @@ public class Bindables {
             final AlgNode input = sort.getInput();
             return new BindableSort( alg.getCluster(), traitSet, convert( input, input.getTraitSet().replace( BindableConvention.INSTANCE ) ), sort.getCollation(), sort.offset, sort.fetch );
         }
+
     }
 
 
@@ -494,6 +501,7 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             return new SortNode( implementor.compiler, this );
         }
+
     }
 
 
@@ -526,6 +534,7 @@ public class Bindables {
                     join.getVariablesSet(),
                     join.getJoinType() );
         }
+
     }
 
 
@@ -564,6 +573,7 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             return new JoinNode( implementor.compiler, this );
         }
+
     }
 
 
@@ -589,6 +599,7 @@ public class Bindables {
             final AlgTraitSet traitSet = union.getTraitSet().replace( out );
             return new BindableUnion( alg.getCluster(), traitSet, convertList( union.getInputs(), out ), union.all );
         }
+
     }
 
 
@@ -624,6 +635,7 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             return new UnionNode( implementor.compiler, this );
         }
+
     }
 
 
@@ -660,6 +672,7 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             return new ValuesNode( implementor.compiler, this );
         }
+
     }
 
 
@@ -683,6 +696,7 @@ public class Bindables {
             LogicalValues values = (LogicalValues) alg;
             return new BindableValues( values.getCluster(), values.getRowType(), values.getTuples(), values.getTraitSet().replace( BindableConvention.INSTANCE ) );
         }
+
     }
 
 
@@ -734,6 +748,7 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             return new AggregateNode( implementor.compiler, this );
         }
+
     }
 
 
@@ -763,6 +778,7 @@ public class Bindables {
                 return null;
             }
         }
+
     }
 
 
@@ -807,6 +823,7 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             return new WindowNode( implementor.compiler, this );
         }
+
     }
 
 
@@ -833,6 +850,8 @@ public class Bindables {
             final AlgNode convertedInput = convert( input, input.getTraitSet().replace( BindableConvention.INSTANCE ) );
             return new BindableWindow( alg.getCluster(), traitSet, convertedInput, winAgg.getConstants(), winAgg.getRowType(), winAgg.groups );
         }
+
     }
+
 }
 

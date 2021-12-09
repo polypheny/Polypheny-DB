@@ -38,5 +38,6 @@ public interface PolyphenyDbServerStatement {
     Iterator<Object> getResultSet();
 
     void setResultSet( Iterator<Object> resultSet );
+
 }
 

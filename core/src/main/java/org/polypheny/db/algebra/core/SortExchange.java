@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,6 @@ package org.polypheny.db.algebra.core;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -47,6 +45,8 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
@@ -82,7 +82,8 @@ public abstract class SortExchange extends Exchange {
      * Creates a SortExchange by parsing serialized output.
      */
     public SortExchange( AlgInput input ) {
-        this( input.getCluster(),
+        this(
+                input.getCluster(),
                 input.getTraitSet().plus( input.getCollation() ).plus( input.getDistribution() ),
                 input.getInput(),
                 AlgDistributionTraitDef.INSTANCE.canonize( input.getDistribution() ),
@@ -126,5 +127,6 @@ public abstract class SortExchange extends Exchange {
                 (distribution != null ? distribution.getKeys().stream().map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 (collation != null ? collation.getFieldCollations().stream().map( AlgFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
+
 }
 

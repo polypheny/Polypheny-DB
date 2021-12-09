@@ -29,5 +29,6 @@ public class SqlStringContextVariable extends SqlBaseContextVariable {
     public SqlStringContextVariable( String name ) {
         super( name, ReturnTypes.VARCHAR_2000, FunctionCategory.SYSTEM );
     }
+
 }
 

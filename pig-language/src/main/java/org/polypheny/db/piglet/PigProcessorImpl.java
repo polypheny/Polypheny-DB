@@ -20,11 +20,10 @@ import java.io.StringReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.piglet.Ast.PigNode;
 import org.polypheny.db.piglet.Ast.Program;
 import org.polypheny.db.piglet.parser.ParseException;
@@ -33,6 +32,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
 @Slf4j

@@ -19,11 +19,11 @@ package org.polypheny.db.sql.sql2alg;
 
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.sql.SqlFunction;
+import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
 
 
 /**
@@ -72,6 +72,8 @@ public interface AuxiliaryConverter {
                     throw new AssertionError( "unknown: " + f );
             }
         }
+
     }
+
 }
 

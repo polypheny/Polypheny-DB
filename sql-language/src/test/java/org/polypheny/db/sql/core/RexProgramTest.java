@@ -41,16 +41,14 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.metadata.NullSentinel;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
-import org.polypheny.db.algebra.metadata.NullSentinel;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -63,6 +61,8 @@ import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUnknownAs;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.sql.sql.SqlOperator;
+import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.test.RexProgramBuilderBase;
 import org.polypheny.db.type.PolyType;
@@ -2085,14 +2085,16 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexNode ref0 = rexBuilder.makeInputRef( rowType, 0 );
         final ImmutableMap<RexNode, RexNode> map2 =
                 RexUtil.predicateConstants( RexNode.class, rexBuilder,
-                        ImmutableList.of( eq( ref0, literal1 ),
+                        ImmutableList.of(
+                                eq( ref0, literal1 ),
                                 eq( ref0, literal2 ) ) );
         assertThat( getString( map2 ), is( "{}" ) );
 
         // Contradictory constraints on field accesses SHOULD yield no constants but currently there's a bug
         final ImmutableMap<RexNode, RexNode> map3 =
                 RexUtil.predicateConstants( RexNode.class, rexBuilder,
-                        ImmutableList.of( eq( aRef, literal1 ),
+                        ImmutableList.of(
+                                eq( aRef, literal1 ),
                                 eq( aRef, literal2 ) ) );
         assertThat( getString( map3 ), is( "{1=?0.a, 2=?0.a}" ) );
     }

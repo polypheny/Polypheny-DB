@@ -1093,6 +1093,7 @@ public class SqlPrettyWriter implements SqlWriter {
             }
             ++itemCount;
         }
+
     }
 
 
@@ -1166,5 +1167,7 @@ public class SqlPrettyWriter implements SqlWriter {
             names.addAll( setterMethods.keySet() );
             return names.toArray( new String[0] );
         }
+
     }
+
 }

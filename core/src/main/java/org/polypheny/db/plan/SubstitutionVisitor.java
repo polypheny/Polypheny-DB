@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.mutable.Holder;
 import org.polypheny.db.algebra.mutable.MutableAggregate;
@@ -69,11 +73,10 @@ import org.polypheny.db.algebra.mutable.MutableAlgs;
 import org.polypheny.db.algebra.mutable.MutableFilter;
 import org.polypheny.db.algebra.mutable.MutableProject;
 import org.polypheny.db.algebra.mutable.MutableScan;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -118,12 +121,12 @@ import org.slf4j.Logger;
  * Uses a bottom-up matching algorithm. Nodes do not need to be identical. At each level, returns the residue.
  *
  * The inputs must only include the core relational operators:
- * {@link org.polypheny.db.algebra.logical.LogicalTableScan},
- * {@link org.polypheny.db.algebra.logical.LogicalFilter},
- * {@link org.polypheny.db.algebra.logical.LogicalProject},
- * {@link org.polypheny.db.algebra.logical.LogicalJoin},
+ * {@link LogicalTableScan},
+ * {@link LogicalFilter},
+ * {@link LogicalProject},
+ * {@link LogicalJoin},
  * {@link LogicalUnion},
- * {@link org.polypheny.db.algebra.logical.LogicalAggregate}.
+ * {@link LogicalAggregate}.
  */
 public class SubstitutionVisitor {
 
@@ -1656,7 +1659,8 @@ public class SubstitutionVisitor {
                             .add( "condition", null, Util.last( newProjects ).getType() )
                             .build();
             final AlgNode newProject =
-                    project.copy( project.getTraitSet(),
+                    project.copy(
+                            project.getTraitSet(),
                             project.getInput(),
                             newProjects,
                             newRowType );

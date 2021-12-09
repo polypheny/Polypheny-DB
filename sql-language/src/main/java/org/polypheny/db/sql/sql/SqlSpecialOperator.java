@@ -97,6 +97,7 @@ public class SqlSpecialOperator extends SqlOperator {
          * Creates a parser whose token sequence is a copy of a subset of this token sequence.
          */
         PrecedenceClimbingParser parser( int start, Predicate<PrecedenceClimbingParser.Token> predicate );
+
     }
 
 
@@ -116,6 +117,8 @@ public class SqlSpecialOperator extends SqlOperator {
             this.endOrdinal = endOrdinal;
             this.node = node;
         }
+
     }
+
 }
 

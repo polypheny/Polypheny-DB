@@ -18,12 +18,12 @@ package org.polypheny.db.catalog;
 
 
 import java.util.Arrays;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
 
@@ -80,7 +80,8 @@ final class Fixture {
         rectilinearPeekNoExpandCoordType =
                 typeFactory.builder()
                         .add( "M", null, intType )
-                        .add( "SUB",
+                        .add(
+                                "SUB",
                                 null,
                                 typeFactory.builder()
                                         .add( "A", null, intType )
@@ -104,7 +105,8 @@ final class Fixture {
                 typeFactory.builder()
                         .add( "EMPNO", null, intType )
                         .add( "ENAME", null, varchar10Type )
-                        .add( "DETAIL",
+                        .add(
+                                "DETAIL",
                                 null,
                                 typeFactory.builder()
                                         .add( "SKILLS", null, typeFactory.createArrayType( skillRecordType, -1 ) )
@@ -112,7 +114,8 @@ final class Fixture {
                         .build();
         empListType = typeFactory.createArrayType( empRecordType, -1 );
         addressType =
-                new ObjectPolyType( PolyType.STRUCTURED,
+                new ObjectPolyType(
+                        PolyType.STRUCTURED,
                         new MockIdentifier( "ADDRESS", ParserPos.ZERO ),
                         false,
                         Arrays.asList(

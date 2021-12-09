@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,8 @@ public class TimeExtractionFunction implements ExtractionFunction {
     private final String local;
 
 
-    public TimeExtractionFunction( String format, Granularity granularity, String timeZone,
+    public TimeExtractionFunction(
+            String format, Granularity granularity, String timeZone,
             String local ) {
         this.format = format;
         this.granularity = granularity;

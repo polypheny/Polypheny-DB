@@ -36,8 +36,8 @@ package org.polypheny.db.rex;
 
 import java.util.Collection;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Node;
 
 
 /**

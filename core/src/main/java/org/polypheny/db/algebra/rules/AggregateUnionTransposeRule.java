@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,11 +45,6 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Union;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.metadata.AlgMdUtil;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.AnyValueAggFunction;
 import org.polypheny.db.algebra.fun.BitOpAggFunction;
@@ -57,9 +52,14 @@ import org.polypheny.db.algebra.fun.CountAggFunction;
 import org.polypheny.db.algebra.fun.MinMaxAggFunction;
 import org.polypheny.db.algebra.fun.SumAggFunction;
 import org.polypheny.db.algebra.fun.SumEmptyIsZeroAggFunction;
-import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.metadata.AlgMdUtil;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilder;

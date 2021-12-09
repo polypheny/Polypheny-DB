@@ -23,11 +23,6 @@ import static org.junit.Assert.assertThat;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.plan.AlgOptListener;
-import org.polypheny.db.plan.hep.HepMatchOrder;
-import org.polypheny.db.plan.hep.HepPlanner;
-import org.polypheny.db.plan.hep.HepProgram;
-import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -41,6 +36,11 @@ import org.polypheny.db.algebra.rules.ProjectRemoveRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
+import org.polypheny.db.plan.AlgOptListener;
+import org.polypheny.db.plan.hep.HepMatchOrder;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgram;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
 
 
 /**
@@ -343,6 +343,8 @@ public class HepPlannerTest extends RelOptTestBase {
         @Override
         public void algChosen( AlgChosenEvent event ) {
         }
+
     }
+
 }
 

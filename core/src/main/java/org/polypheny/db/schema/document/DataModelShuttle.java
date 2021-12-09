@@ -16,12 +16,12 @@
 
 package org.polypheny.db.schema.document;
 
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 
 
 /**

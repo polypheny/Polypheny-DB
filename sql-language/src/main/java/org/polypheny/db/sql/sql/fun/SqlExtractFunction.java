@@ -40,7 +40,8 @@ public class SqlExtractFunction extends SqlFunction {
     // SQL2003, Part 2, Section 4.4.3 - extract returns a exact numeric
     // TODO: Return type should be decimal for seconds
     public SqlExtractFunction() {
-        super( "EXTRACT",
+        super(
+                "EXTRACT",
                 Kind.EXTRACT,
                 ReturnTypes.BIGINT_NULLABLE,
                 null,

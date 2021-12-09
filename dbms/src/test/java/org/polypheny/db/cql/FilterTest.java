@@ -21,12 +21,12 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.helper.AlgBuildTestHelper;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.cql.exception.UnknownIndexException;
+import org.polypheny.db.cql.helper.AlgBuildTestHelper;
 import org.polypheny.db.rex.RexNode;
 
 

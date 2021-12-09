@@ -21,11 +21,11 @@ import java.util.List;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailTable;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext.QueryType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
 
 
 public class CottontailTableScan extends TableScan implements CottontailAlg {

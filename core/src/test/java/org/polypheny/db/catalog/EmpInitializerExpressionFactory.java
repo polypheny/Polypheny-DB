@@ -18,14 +18,14 @@ package org.polypheny.db.catalog;
 
 
 import java.math.BigDecimal;
-import org.polypheny.db.util.InitializerContext;
-import org.polypheny.db.util.NullInitializerExpressionFactory;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.InitializerContext;
+import org.polypheny.db.util.NullInitializerExpressionFactory;
 
 
 /**

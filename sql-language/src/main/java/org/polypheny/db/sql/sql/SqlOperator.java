@@ -22,25 +22,24 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.ExplicitOperatorBinding;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.OperatorImpl;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.sql.fun.SqlBetweenOperator;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
@@ -48,6 +47,7 @@ import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**

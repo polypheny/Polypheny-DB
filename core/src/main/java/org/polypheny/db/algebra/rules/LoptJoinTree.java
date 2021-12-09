@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,6 +172,7 @@ public class LoptJoinTree {
 
 
         public abstract void getTreeOrder( List<Integer> treeOrder );
+
     }
 
 
@@ -201,6 +202,7 @@ public class LoptJoinTree {
         public void getTreeOrder( List<Integer> treeOrder ) {
             treeOrder.add( id );
         }
+
     }
 
 
@@ -235,5 +237,7 @@ public class LoptJoinTree {
             left.getTreeOrder( treeOrder );
             right.getTreeOrder( treeOrder );
         }
+
     }
+
 }

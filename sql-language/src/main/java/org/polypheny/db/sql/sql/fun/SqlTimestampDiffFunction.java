@@ -20,8 +20,8 @@ package org.polypheny.db.sql.sql.fun;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -80,5 +80,6 @@ public class SqlTimestampDiffFunction extends SqlFunction {
                 OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME ),
                 FunctionCategory.TIMEDATE );
     }
+
 }
 

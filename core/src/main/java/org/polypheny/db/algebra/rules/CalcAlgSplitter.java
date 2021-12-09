@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -701,6 +701,7 @@ public abstract class CalcAlgSplitter {
             }
             return true;
         }
+
     }
 
 
@@ -752,6 +753,7 @@ public abstract class CalcAlgSplitter {
             }
             return null;
         }
+
     }
 
 
@@ -761,6 +763,7 @@ public abstract class CalcAlgSplitter {
     private static class CannotImplement extends RuntimeException {
 
         static final CannotImplement INSTANCE = new CannotImplement();
+
     }
 
 
@@ -812,6 +815,7 @@ public abstract class CalcAlgSplitter {
                 return new RexLocalRef( exprIndex, local.getType() );
             }
         }
+
     }
 
 
@@ -846,6 +850,7 @@ public abstract class CalcAlgSplitter {
             expr.accept( this );
             return level;
         }
+
     }
 
 
@@ -885,6 +890,8 @@ public abstract class CalcAlgSplitter {
             maxUsingLevelOrdinals[index] = Math.max( maxUsingLevelOrdinals[index], currentLevel );
             return null;
         }
+
     }
+
 }
 

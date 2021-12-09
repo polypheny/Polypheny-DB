@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -61,6 +60,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -262,7 +262,8 @@ public class PhysTypeImpl implements PhysType {
                             Function1.class,
                             fieldReference( parameter, collation.getFieldIndex() ),
                             parameter );
-            return Pair.of( selector,
+            return Pair.of(
+                    selector,
                     Expressions.call(
                             BuiltInMethod.NULLS_COMPARATOR.method,
                             Expressions.constant( collation.nullDirection == AlgFieldCollation.NullDirection.FIRST ),

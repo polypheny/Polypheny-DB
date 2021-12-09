@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1003,6 +1003,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
             }
             return o;
         }
+
     }
 
 
@@ -1209,6 +1210,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
             }
             trim( x );
         }
+
     }
 
 
@@ -1244,6 +1246,8 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
             }
             return super.build( bitSet );
         }
+
     }
+
 }
 

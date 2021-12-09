@@ -53,33 +53,15 @@ import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.BsonUtil;
-import org.polypheny.db.util.ValidatorUtil;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.sql.sql.fun.SqlDatetimePlusOperator;
-import org.polypheny.db.sql.sql.fun.SqlDatetimeSubtractionOperator;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
-import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.Documents;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.Documents;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Values;
@@ -87,9 +69,23 @@ import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -100,9 +96,13 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.document.DocumentRules;
+import org.polypheny.db.sql.sql.fun.SqlDatetimePlusOperator;
+import org.polypheny.db.sql.sql.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -558,7 +558,8 @@ public class MongoRules {
 
 
         private MongoFilterRule() {
-            super( LogicalFilter.class,
+            super(
+                    LogicalFilter.class,
                     project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
@@ -589,7 +590,8 @@ public class MongoRules {
 
 
         private MongoProjectRule() {
-            super( LogicalProject.class,
+            super(
+                    LogicalProject.class,
                     project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
                             && !containsIncompatible( project ),
                     Convention.NONE,

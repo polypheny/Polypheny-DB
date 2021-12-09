@@ -19,13 +19,15 @@ package org.polypheny.db.sql.sql.advise;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.polypheny.db.util.Conformance;
 import org.polypheny.db.algebra.constant.Modality;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
@@ -34,10 +36,8 @@ import org.polypheny.db.sql.sql.validate.OverScope;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Util;
 
 
@@ -107,6 +107,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
     /**
      * Calls the parent class method and mask Farrago exception thrown.
+     *
      * @param scope
      * @param operand
      */
@@ -198,5 +199,6 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
     protected boolean shouldAllowOverRelation() {
         return true; // no reason not to be lenient
     }
+
 }
 

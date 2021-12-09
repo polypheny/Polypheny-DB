@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,14 +53,14 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.geode.util.GeodeUtils;
 import org.polypheny.db.adapter.geode.util.JavaTypeFactoryExtImpl;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
@@ -275,6 +275,8 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
                 Long limit ) {
             return getTable().query( getClientCache(), fields, selectFields, aggregateFunctions, groupByFields, predicates, order, limit );
         }
+
     }
+
 }
 

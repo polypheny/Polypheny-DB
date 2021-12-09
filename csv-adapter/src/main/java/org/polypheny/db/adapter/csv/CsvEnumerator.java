@@ -349,6 +349,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                     return string;
             }
         }
+
     }
 
 
@@ -406,6 +407,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
             }
             return objects;
         }
+
     }
 
 
@@ -428,6 +430,8 @@ class CsvEnumerator<E> implements Enumerator<E> {
         public Object convertRow( String[] strings ) {
             return convert( fieldType, strings[fieldIndex] );
         }
+
     }
+
 }
 

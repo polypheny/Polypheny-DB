@@ -17,12 +17,12 @@
 package org.polypheny.db.sql.sql2alg;
 
 
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
 
 
 /**
@@ -46,5 +46,6 @@ public interface SqlNodeToRexConverter {
      * Converts a {@link SqlIntervalQualifier SQL Interval Qualifier} to a {@link RexLiteral REX literal}.
      */
     RexLiteral convertInterval( SqlRexContext cx, SqlIntervalQualifier intervalQualifier );
+
 }
 

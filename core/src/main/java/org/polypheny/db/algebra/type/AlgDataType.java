@@ -38,8 +38,8 @@ import java.nio.charset.Charset;
 import java.util.List;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.util.Collation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Collation;
 
 
 /**

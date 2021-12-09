@@ -50,5 +50,6 @@ public class SqlDefaultOperator extends SqlSpecialOperator {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         writer.keyword( getName() );
     }
+
 }
 

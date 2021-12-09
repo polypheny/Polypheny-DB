@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,39 +37,39 @@ package org.polypheny.db.prepare;
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgDecorrelator;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.algebra.AlgDecorrelator;
-import org.polypheny.db.util.Conformance;
-import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;
-import org.polypheny.db.plan.Context;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.Context;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
-import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.ValidationException;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 

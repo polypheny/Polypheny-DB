@@ -17,10 +17,10 @@
 package org.polypheny.db.algebra.logical;
 
 
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.PrimaryKeyCheck;
+import org.polypheny.db.plan.AlgOptTable;
 
 
 public abstract class LogicalPrimaryKeyCheck extends PrimaryKeyCheck {

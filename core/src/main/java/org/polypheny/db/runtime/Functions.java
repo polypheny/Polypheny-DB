@@ -1278,14 +1278,16 @@ public class Functions {
     }
 
 
-    private static RuntimeException notArithmetic( String op, Object b0,
+    private static RuntimeException notArithmetic(
+            String op, Object b0,
             Object b1 ) {
         return Static.RESOURCE.invalidTypesForArithmetic( b0.getClass().toString(),
                 op, b1.getClass().toString() ).ex();
     }
 
 
-    private static RuntimeException notComparable( String op, Object b0,
+    private static RuntimeException notComparable(
+            String op, Object b0,
             Object b1 ) {
         return Static.RESOURCE.invalidTypesForComparison( b0.getClass().toString(),
                 op, b1.getClass().toString() ).ex();
@@ -3405,7 +3407,8 @@ public class Functions {
                     if ( input instanceof Exception ) {
                         return PathContext.withStrictException( (Exception) input );
                     }
-                    ctx = JsonPath.parse( input,
+                    ctx = JsonPath.parse(
+                            input,
                             Configuration
                                     .builder()
                                     .jsonProvider( JSON_PATH_JSON_PROVIDER )
@@ -3416,7 +3419,8 @@ public class Functions {
                     if ( input instanceof Exception ) {
                         return PathContext.withReturned( PathMode.LAX, null );
                     }
-                    ctx = JsonPath.parse( input,
+                    ctx = JsonPath.parse(
+                            input,
                             Configuration
                                     .builder()
                                     .options( Option.SUPPRESS_EXCEPTIONS )

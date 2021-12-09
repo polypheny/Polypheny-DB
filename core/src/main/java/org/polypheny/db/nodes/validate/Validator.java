@@ -17,10 +17,10 @@
 package org.polypheny.db.nodes.validate;
 
 import java.util.List;
+import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.Resources;

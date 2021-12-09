@@ -50,13 +50,13 @@ import java.util.Objects;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Litmus;
@@ -713,6 +713,7 @@ public class RexLiteral extends RexNode {
                 throw Util.needToImplement( typeName );
         }
     }
+
 
     private static String getCalendarFormat( PolyType typeName ) {
         switch ( typeName ) {

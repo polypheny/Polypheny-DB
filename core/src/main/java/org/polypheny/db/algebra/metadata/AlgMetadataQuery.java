@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -538,7 +538,8 @@ public class AlgMetadataQuery {
      * @param groupKey column mask representing the subset of columns for which the row count will be determined
      * @return distinct row count for the given groupKey, or null if no algiable estimate can be determined
      */
-    public Double getPopulationSize( AlgNode alg,
+    public Double getPopulationSize(
+            AlgNode alg,
             ImmutableBitSet groupKey ) {
         for ( ; ; ) {
             try {

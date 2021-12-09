@@ -20,11 +20,11 @@ package org.polypheny.db.sql.sql.validate;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.util.Moniker;
-import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.Util;
 
 
@@ -66,4 +66,5 @@ class SchemaNamespace extends AbstractNamespace {
     public SqlNode getNode() {
         return null;
     }
+
 }

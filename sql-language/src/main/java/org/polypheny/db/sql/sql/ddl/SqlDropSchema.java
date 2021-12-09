@@ -21,15 +21,14 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.sql.SqlDrop;
 import org.polypheny.db.sql.sql.SqlIdentifier;
@@ -38,6 +37,7 @@ import org.polypheny.db.sql.sql.SqlOperator;
 import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.CoreUtil;
 
 
 /**

@@ -52,4 +52,5 @@ public class JavaRecordType extends AlgRecordType {
     public int hashCode() {
         return Objects.hash( fieldList, clazz );
     }
+
 }

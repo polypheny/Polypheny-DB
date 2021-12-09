@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,27 +56,27 @@ import org.polypheny.db.adapter.enumerable.impl.WinAggAddContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.WinAggResetContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.WinAggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.util.Conformance;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.runtime.SortedMultiMap;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -320,7 +320,8 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
                 hasRows = builder4.append( "hasRows", Expressions.lessThanOrEqual( startTmp, endTmp ) );
                 builder4.add(
-                        Expressions.ifThenElse( hasRows,
+                        Expressions.ifThenElse(
+                                hasRows,
                                 Expressions.block(
                                         Expressions.statement( Expressions.assign( startPe, startTmp ) ),
                                         Expressions.statement( Expressions.assign( endPe, endTmp ) ) ),
@@ -511,7 +512,8 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                 }
 
                 //noinspection UnnecessaryLocalVariable
-                Expression res = block.append( "rowInFrame",
+                Expression res = block.append(
+                        "rowInFrame",
                         Expressions.foldAnd(
                                 ImmutableList.of(
                                         hasRows,
@@ -607,11 +609,13 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
             //       SortedMultiMap.singletonArrayIterator(comparator, tempList);
             //   final List<Xxx> list = new ArrayList<Xxx>(tempList.size());
 
-            final Expression tempList_ = builder.append( "tempList",
+            final Expression tempList_ = builder.append(
+                    "tempList",
                     Expressions.convert_(
                             Expressions.call( source_, BuiltInMethod.INTO.method, Expressions.new_( ArrayList.class ) ),
                             List.class ) );
-            return Pair.of( tempList_,
+            return Pair.of(
+                    tempList_,
                     builder.append(
                             "iterator",
                             Expressions.call( null, BuiltInMethod.SORTED_MULTI_MAP_SINGLETON.method, comparator_, tempList_ ) ) );
@@ -650,7 +654,8 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                                 BuiltInMethod.ENUMERABLE_FOREACH.method,
                                 Expressions.lambda( builder2.toBlock(), v_ ) ) ) );
 
-        return Pair.of( multiMap_,
+        return Pair.of(
+                multiMap_,
                 builder.append(
                         "iterator",
                         Expressions.call(
@@ -697,7 +702,8 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
                         @Override
                         public List<? extends Type> parameterTypes() {
-                            return EnumUtils.fieldTypes( typeFactory,
+                            return EnumUtils.fieldTypes(
+                                    typeFactory,
                                     parameterAlgTypes() );
                         }
 
@@ -754,7 +760,8 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
             builder.add(
                     Expressions.declare( 0, aggRes,
-                            Expressions.constant( Primitive.is( aggRes.getType() )
+                            Expressions.constant(
+                                    Primitive.is( aggRes.getType() )
                                             ? Primitive.of( aggRes.getType() ).defaultValue
                                             : null,
                                     aggRes.getType() ) ) );
@@ -804,7 +811,8 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                 continue;
             }
             nonEmpty = true;
-            Expression res = agg.implementor.implementResult( agg.context,
+            Expression res = agg.implementor.implementResult(
+                    agg.context,
                     new WinAggResultContextImpl( builder, agg.state, frame ) {
                         @Override
                         public List<RexNode> rexArguments() {
@@ -819,7 +827,8 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
     }
 
 
-    private Expression translateBound( RexToLixTranslator translator, ParameterExpression i_, Expression row_, Expression min_, Expression max_, Expression rows_, Group group, boolean lower,
+    private Expression translateBound(
+            RexToLixTranslator translator, ParameterExpression i_, Expression row_, Expression min_, Expression max_, Expression rows_, Group group, boolean lower,
             PhysType physType, Expression rowComparator, Expression keySelector, Expression keyComparator ) {
         RexWindowBound bound = lower ? group.lowerBound : group.upperBound;
         if ( bound.isUnbounded() ) {

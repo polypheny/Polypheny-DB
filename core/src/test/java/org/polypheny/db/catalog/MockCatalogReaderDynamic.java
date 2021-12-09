@@ -66,5 +66,6 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
 
         return this;
     }
+
 }
 

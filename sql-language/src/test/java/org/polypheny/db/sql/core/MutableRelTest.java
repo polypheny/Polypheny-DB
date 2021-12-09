@@ -22,12 +22,6 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.algebra.AlgDecorrelator;
-import org.polypheny.db.sql.sql.SqlToAlgTestBase;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.hep.HepPlanner;
-import org.polypheny.db.plan.hep.HepProgram;
-import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.mutable.MutableAlg;
@@ -39,6 +33,12 @@ import org.polypheny.db.algebra.rules.ProjectMergeRule;
 import org.polypheny.db.algebra.rules.ProjectToWindowRule;
 import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgram;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
+import org.polypheny.db.sql.sql.SqlToAlgTestBase;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Litmus;
 
@@ -254,5 +254,6 @@ public class MutableRelTest {
                 + "Original rel: " + origRelStr + ";\nNew rel: " + newRelStr;
         Assert.assertEquals( msg3, origRelStr, newRelStr );
     }
+
 }
 

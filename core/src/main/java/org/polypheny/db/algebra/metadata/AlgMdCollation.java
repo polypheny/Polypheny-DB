@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,8 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.Filter;
@@ -71,8 +73,6 @@ import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;

@@ -37,5 +37,6 @@ public class NetezzaSqlDialect extends SqlDialect {
     public NetezzaSqlDialect( Context context ) {
         super( context );
     }
+
 }
 

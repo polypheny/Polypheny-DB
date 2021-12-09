@@ -17,9 +17,9 @@
 package org.polypheny.db.type.inference;
 
 
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.OperatorImpl;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Glossary;
 
 

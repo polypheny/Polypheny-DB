@@ -34,5 +34,6 @@ public class SybaseSqlDialect extends SqlDialect {
     public SybaseSqlDialect( Context context ) {
         super( context );
     }
+
 }
 

@@ -23,15 +23,15 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.util.CoreUtil;
 
 
 /**

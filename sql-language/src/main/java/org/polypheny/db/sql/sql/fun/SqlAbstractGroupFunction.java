@@ -44,12 +44,12 @@ public class SqlAbstractGroupFunction extends SqlAggFunction {
     /**
      * Creates a SqlAbstractGroupFunction.
      *
-     * @param name                 Name of builtin function
-     * @param kind                 kind of operator implemented by function
-     * @param returnTypeInference  strategy to use for return type inference
+     * @param name Name of builtin function
+     * @param kind kind of operator implemented by function
+     * @param returnTypeInference strategy to use for return type inference
      * @param operandTypeInference strategy to use for parameter type inference
-     * @param operandTypeChecker   strategy to use for parameter type checking
-     * @param category             categorization for function
+     * @param operandTypeChecker strategy to use for parameter type checking
+     * @param category categorization for function
      */
     public SqlAbstractGroupFunction( String name, Kind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, FunctionCategory category ) {
         super( name, null, kind, returnTypeInference, operandTypeInference, operandTypeChecker, category, false, false, Optionality.FORBIDDEN );
@@ -93,5 +93,6 @@ public class SqlAbstractGroupFunction extends SqlAggFunction {
     public boolean allowsFilter() {
         return false;
     }
+
 }
 

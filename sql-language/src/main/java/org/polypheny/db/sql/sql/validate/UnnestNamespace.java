@@ -17,13 +17,13 @@
 package org.polypheny.db.sql.sql.validate;
 
 
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlOperator;
 import org.polypheny.db.sql.sql.SqlUnnestOperator;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**

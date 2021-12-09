@@ -21,8 +21,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 import org.junit.Test;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -31,11 +32,10 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.AbstractConverter.ExpandConversionRule;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.algebra.AlgDistributionTraitDef;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.sql.core.volcano.PlannerTests.TestLeafAlg;
 import org.polypheny.db.sql.core.volcano.PlannerTests.TestSingleAlg;
 
@@ -104,12 +104,14 @@ public class TraitConversionTest {
         public void onMatch( AlgOptRuleCall call ) {
             NoneSingleRel single = call.alg( 0 );
             AlgNode input = single.getInput();
-            AlgNode physInput = convert( input,
+            AlgNode physInput = convert(
+                    input,
                     single.getTraitSet()
                             .replace( PlannerTests.PHYS_CALLING_CONVENTION )
                             .plus( SIMPLE_DISTRIBUTION_RANDOM ) );
             call.transformTo( new RandomSingleRel( single.getCluster(), physInput ) );
         }
+
     }
 
 
@@ -133,6 +135,7 @@ public class TraitConversionTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new RandomSingleRel( getCluster(), sole( inputs ) );
         }
+
     }
 
 
@@ -157,6 +160,7 @@ public class TraitConversionTest {
             NoneLeafRel leafRel = call.alg( 0 );
             call.transformTo( new SingletonLeafRel( leafRel.getCluster(), leafRel.label ) );
         }
+
     }
 
 
@@ -180,6 +184,7 @@ public class TraitConversionTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new SingletonLeafRel( getCluster(), label );
         }
+
     }
 
 
@@ -203,6 +208,7 @@ public class TraitConversionTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new BridgeRel( getCluster(), sole( inputs ) );
         }
+
     }
 
 
@@ -240,6 +246,7 @@ public class TraitConversionTest {
         @Override
         public void register( AlgOptPlanner planner ) {
         }
+
     }
 
 
@@ -290,6 +297,7 @@ public class TraitConversionTest {
         public SimpleDistribution getDefault() {
             return SIMPLE_DISTRIBUTION_ANY;
         }
+
     }
 
 
@@ -309,6 +317,7 @@ public class TraitConversionTest {
             assert inputs.isEmpty();
             return this;
         }
+
     }
 
 
@@ -327,6 +336,8 @@ public class TraitConversionTest {
             assert traitSet.comprises( Convention.NONE, SIMPLE_DISTRIBUTION_ANY );
             return new NoneSingleRel( getCluster(), sole( inputs ) );
         }
+
     }
+
 }
 

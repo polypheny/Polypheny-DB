@@ -38,12 +38,12 @@ import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.util.InitializerExpressionFactory;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.type.ObjectPolyType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.Litmus;
 
 
@@ -240,8 +240,6 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         suppliersTable.addColumn( "NAME", fixture.varchar20Type );
         suppliersTable.addColumn( "CITY", fixture.intType );
         registerTable( suppliersTable );
-
-
 
         MockSchema structTypeSchema = new MockSchema( "STRUCT" );
         registerSchema( structTypeSchema );

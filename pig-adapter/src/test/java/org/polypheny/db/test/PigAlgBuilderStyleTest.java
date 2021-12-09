@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,20 +49,20 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.pig.PigAggregate;
-import org.polypheny.db.adapter.pig.PigFilter;
 import org.polypheny.db.adapter.pig.PigAlg;
 import org.polypheny.db.adapter.pig.PigAlgFactories;
+import org.polypheny.db.adapter.pig.PigFilter;
 import org.polypheny.db.adapter.pig.PigRules;
 import org.polypheny.db.adapter.pig.PigTable;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule.FilterIntoJoinRule;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.tools.AlgBuilder;
@@ -302,5 +302,6 @@ public class PigAlgBuilderStyleTest extends AbstractPigTest {
         cluster.update( new Path( getFullPathForTestDataFile( "data.txt" ) ), new Path( "target/data.txt" ) );
         cluster.update( new Path( getFullPathForTestDataFile( "data2.txt" ) ), new Path( "target/data2.txt" ) );
     }
+
 }
 

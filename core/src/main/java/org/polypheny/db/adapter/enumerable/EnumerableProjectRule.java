@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,13 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.function.Predicate;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.Convention;
 
 
 /**
@@ -51,7 +51,8 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 class EnumerableProjectRule extends ConverterRule {
 
     EnumerableProjectRule() {
-        super( LogicalProject.class,
+        super(
+                LogicalProject.class,
                 (Predicate<LogicalProject>) AlgOptUtil::containsMultisetOrWindowedAgg,
                 Convention.NONE,
                 EnumerableConvention.INSTANCE,
@@ -68,5 +69,6 @@ class EnumerableProjectRule extends ConverterRule {
                 project.getProjects(),
                 project.getRowType() );
     }
+
 }
 

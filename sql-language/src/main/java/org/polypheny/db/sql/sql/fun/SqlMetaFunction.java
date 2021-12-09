@@ -18,9 +18,9 @@ package org.polypheny.db.sql.sql.fun;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.type.OperandCountRange;
@@ -34,7 +34,8 @@ import org.polypheny.db.type.inference.ReturnTypes;
 public class SqlMetaFunction extends SqlFunction {
 
     public SqlMetaFunction() {
-        super( "META",
+        super(
+                "META",
                 Kind.OTHER_FUNCTION,
                 ReturnTypes.VARCHAR_2000,
                 null,

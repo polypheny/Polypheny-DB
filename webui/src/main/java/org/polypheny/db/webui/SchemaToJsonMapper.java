@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,6 +156,7 @@ public class SchemaToJsonMapper {
         public final String tableName;
         public final List<JsonColumn> columns;
         public final List<String> primaryKeyColumnNames;
+
     }
 
 
@@ -169,6 +170,7 @@ public class SchemaToJsonMapper {
         public final boolean nullable;
         public final String defaultValue;
         public final String defaultFunctionName;
+
     }
 
 }

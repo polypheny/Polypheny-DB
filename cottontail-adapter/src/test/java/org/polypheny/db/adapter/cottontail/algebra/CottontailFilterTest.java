@@ -31,12 +31,14 @@ public class CottontailFilterTest {
     public void simpleCnfTest() {
         BooleanPredicate testPredicate = new CompoundPredicate( Op.ROOT,
                 new CompoundPredicate( Op.NOT,
-                        new CompoundPredicate( Op.OR,
+                        new CompoundPredicate(
+                                Op.OR,
                                 new AtomicPredicate( null, false ),
                                 new AtomicPredicate( null, false )
                         ), null ), null );
 
-        while ( testPredicate.simplify() );
+        while ( testPredicate.simplify() )
+            ;
 
         CompoundPredicate result = (CompoundPredicate) ((CompoundPredicate) testPredicate).left;
 
@@ -44,4 +46,5 @@ public class CottontailFilterTest {
         Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.left).op );
         Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.right).op );
     }
+
 }

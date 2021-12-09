@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,18 +39,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgInput;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgInput;
-import org.polypheny.db.algebra.AlgWriter;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexDigestIncludeType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -181,7 +181,8 @@ public abstract class Values extends AbstractAlgNode {
         if ( pw.nest() ) {
             pw.item( "tuples", tuples );
         } else {
-            pw.item( "tuples",
+            pw.item(
+                    "tuples",
                     tuples.stream()
                             .map( row -> row.stream()
                                     .map( lit -> lit.computeDigest( RexDigestIncludeType.NO_TYPE ) )
@@ -198,5 +199,6 @@ public abstract class Values extends AbstractAlgNode {
                 rowType.toString() + "$" +
                 (tuples != null ? tuples.stream().map( t -> t.stream().map( RexLiteral::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
+
 }
 

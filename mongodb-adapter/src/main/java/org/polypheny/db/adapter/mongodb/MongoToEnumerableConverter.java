@@ -49,12 +49,6 @@ import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
@@ -62,6 +56,12 @@ import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -104,9 +104,11 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         }
 
         final Expression fields =
-                list.append( "fields",
+                list.append(
+                        "fields",
                         constantArrayList(
-                                Pair.zip( MongoRules.mongoFieldNames( rowType ),
+                                Pair.zip(
+                                        MongoRules.mongoFieldNames( rowType ),
                                         new AbstractList<Class>() {
 
                                             @Override
@@ -125,9 +127,11 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         List<AlgDataTypeField> fieldList = rowType.getFieldList();
 
         final Expression arrayClassFields =
-                list.append( "arrayClassFields",
+                list.append(
+                        "arrayClassFields",
                         constantArrayList(
-                                Pair.zip( MongoRules.mongoFieldNames( rowType ),
+                                Pair.zip(
+                                        MongoRules.mongoFieldNames( rowType ),
                                         new AbstractList<Class>() {
 
                                             @Override

@@ -20,11 +20,11 @@ package org.polypheny.db.sql.sql.validate;
 import java.util.List;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.validate.ValidatorNamespace;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Pair;
 
 
@@ -162,5 +162,6 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
      * @param modality Modality
      */
     boolean supportsModality( Modality modality );
+
 }
 

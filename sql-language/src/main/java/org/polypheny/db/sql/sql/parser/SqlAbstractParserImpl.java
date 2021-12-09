@@ -31,19 +31,19 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.calcite.avatica.util.Casing;
-import org.polypheny.db.util.Conformance;
 import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlUnresolvedFunction;
 import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Glossary;
 
 

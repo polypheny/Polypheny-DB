@@ -41,5 +41,6 @@ public class SqlAdvisorHint2 extends SqlAdvisorHint {
         super( id );
         this.replacement = replacement;
     }
+
 }
 

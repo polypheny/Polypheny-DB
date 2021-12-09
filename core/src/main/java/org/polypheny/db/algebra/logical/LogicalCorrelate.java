@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,17 +34,17 @@
 package org.polypheny.db.algebra.logical;
 
 
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.algebra.constant.SemiJoinType;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
+import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 
@@ -80,7 +80,8 @@ public final class LogicalCorrelate extends Correlate {
      * Creates a LogicalCorrelate by parsing serialized output.
      */
     public LogicalCorrelate( AlgInput input ) {
-        this( input.getCluster(),
+        this(
+                input.getCluster(),
                 input.getTraitSet(),
                 input.getInputs().get( 0 ),
                 input.getInputs().get( 1 ),

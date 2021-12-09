@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,5 +136,6 @@ public interface AlgDataTypeSystem {
      * Whether the least restrictive type of a number of CHAR types of different lengths should be a VARCHAR type. And similarly BINARY to VARBINARY.
      */
     boolean shouldConvertRaggedUnionTypesToVarying();
+
 }
 

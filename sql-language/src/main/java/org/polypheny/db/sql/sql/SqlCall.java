@@ -20,19 +20,19 @@ package org.polypheny.db.sql.sql;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.polypheny.db.nodes.Call;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.util.Moniker;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.Moniker;
 
 
 /**

@@ -17,13 +17,13 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.Convention;
 
 
 public class EnumerableConditionalExecuteTrueRule extends ConverterRule {

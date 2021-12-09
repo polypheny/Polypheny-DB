@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,6 +107,7 @@ public class ConcurrentTestCommandGenerator {
             this.location = location;
             this.failure = failure;
         }
+
     }
 
 
@@ -626,6 +627,7 @@ public class ConcurrentTestCommandGenerator {
                 }
             }
         }
+
     }
 
 
@@ -643,6 +645,7 @@ public class ConcurrentTestCommandGenerator {
                 throws Exception {
             executor.getSynchronizer().waitForOthers();
         }
+
     }
 
 
@@ -655,6 +658,7 @@ public class ConcurrentTestCommandGenerator {
         private AutoSynchronizationCommand() {
             super();
         }
+
     }
 
 
@@ -675,6 +679,7 @@ public class ConcurrentTestCommandGenerator {
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws Exception {
             Thread.sleep( millis );
         }
+
     }
 
 
@@ -713,6 +718,7 @@ public class ConcurrentTestCommandGenerator {
                 stmt.close();
             }
         }
+
     }
 
 
@@ -735,6 +741,7 @@ public class ConcurrentTestCommandGenerator {
 
             executor.setStatement( stmt );
         }
+
     }
 
 
@@ -753,6 +760,7 @@ public class ConcurrentTestCommandGenerator {
 
             executor.clearStatement();
         }
+
     }
 
 
@@ -779,6 +787,7 @@ public class ConcurrentTestCommandGenerator {
 
             return false;
         }
+
     }
 
 
@@ -1147,6 +1156,7 @@ public class ConcurrentTestCommandGenerator {
 
             throw new RuntimeException( fullMessage.toString() );
         }
+
     }
 
 
@@ -1173,6 +1183,7 @@ public class ConcurrentTestCommandGenerator {
 
             stmt.executeUpdate( sql );
         }
+
     }
 
 
@@ -1185,6 +1196,7 @@ public class ConcurrentTestCommandGenerator {
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             executor.getConnection().commit();
         }
+
     }
 
 
@@ -1197,6 +1209,7 @@ public class ConcurrentTestCommandGenerator {
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             executor.getConnection().rollback();
         }
+
     }
 
 
@@ -1223,5 +1236,7 @@ public class ConcurrentTestCommandGenerator {
                 stmt.close();
             }
         }
+
     }
+
 }

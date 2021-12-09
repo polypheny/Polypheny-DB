@@ -168,7 +168,8 @@ public class TestHelper {
                         if ( expectedRow[j] == null ) {
                             Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", row[j] );
                         } else {
-                            Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                            Assert.assertEquals(
+                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
                                     new String( (byte[]) expectedRow[j] ),
                                     new String( (byte[]) row[j] ) );
                         }
@@ -341,12 +342,12 @@ public class TestHelper {
         private static Result getBody( HttpResponse<String> res ) {
             try {
                 Result[] result = gson.fromJson( res.getBody(), Result[].class );
-                if( result.length == 1 ){
+                if ( result.length == 1 ) {
                     return gson.fromJson( res.getBody(), Result[].class )[0];
-                }else if ( result.length == 0 ){
+                } else if ( result.length == 0 ) {
                     return new Result();
                 }
-                fail("There was more than one result in the response!");
+                fail( "There was more than one result in the response!" );
                 throw new RuntimeException( "This cannot happen" );
 
             } catch ( JsonSyntaxException e ) {

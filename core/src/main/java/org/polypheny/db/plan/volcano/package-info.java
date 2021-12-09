@@ -162,5 +162,5 @@
 
 package org.polypheny.db.plan.volcano;
 
-import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgTraitDef;

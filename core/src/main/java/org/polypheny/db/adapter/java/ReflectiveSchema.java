@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -288,6 +288,7 @@ public class ReflectiveSchema extends AbstractSchema {
                 }
             };
         }
+
     }
 
 
@@ -320,6 +321,7 @@ public class ReflectiveSchema extends AbstractSchema {
                 throw new RuntimeException( e );
             }
         }
+
     }
 
 
@@ -361,6 +363,7 @@ public class ReflectiveSchema extends AbstractSchema {
         public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
             return Expressions.field( schema.unwrap( ReflectiveSchema.class ).getTargetExpression( schema.getParentSchema(), schema.getName() ), field );
         }
+
     }
 
 
@@ -389,6 +392,8 @@ public class ReflectiveSchema extends AbstractSchema {
                 throw new RuntimeException( e );
             }
         }
+
     }
+
 }
 

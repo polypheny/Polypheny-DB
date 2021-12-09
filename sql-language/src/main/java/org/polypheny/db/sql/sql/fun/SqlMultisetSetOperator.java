@@ -47,5 +47,6 @@ public class SqlMultisetSetOperator extends SqlBinaryOperator {
                 OperandTypes.MULTISET_MULTISET );
         this.all = all;
     }
+
 }
 

@@ -63,6 +63,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.FilterFactory;
@@ -83,6 +86,7 @@ import org.polypheny.db.algebra.logical.LogicalCalc;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
@@ -97,12 +101,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.LogicVisitor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
@@ -963,13 +963,15 @@ public abstract class AlgOptUtil {
     RexNode createEquiJoinCondition( final AlgNode left, final List<Integer> leftKeys, final AlgNode right, final List<Integer> rightKeys, final RexBuilder rexBuilder ) {
         final List<AlgDataType> leftTypes = AlgOptUtil.getFieldTypeList( left.getRowType() );
         final List<AlgDataType> rightTypes = AlgOptUtil.getFieldTypeList( right.getRowType() );
-        return RexUtil.composeConjunction( rexBuilder,
+        return RexUtil.composeConjunction(
+                rexBuilder,
                 new AbstractList<RexNode>() {
                     @Override
                     public RexNode get( int index ) {
                         final int leftKey = leftKeys.get( index );
                         final int rightKey = rightKeys.get( index );
-                        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ),
+                        return rexBuilder.makeCall(
+                                OperatorRegistry.get( OperatorName.EQUALS ),
                                 rexBuilder.makeInputRef( leftTypes.get( leftKey ), leftKey ),
                                 rexBuilder.makeInputRef( rightTypes.get( rightKey ), leftTypes.size() + rightKey ) );
                     }
@@ -1532,20 +1534,26 @@ public abstract class AlgOptUtil {
         if ( neg ) {
             // x is not distinct from y
             // x=y IS TRUE or ((x is null) and (y is null)),
-            return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.OR ),
-                    rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ),
+            return rexBuilder.makeCall(
+                    OperatorRegistry.get( OperatorName.OR ),
+                    rexBuilder.makeCall(
+                            OperatorRegistry.get( OperatorName.AND ),
                             rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), x ),
                             rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), y ) ),
-                    rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ),
+                    rexBuilder.makeCall(
+                            OperatorRegistry.get( OperatorName.IS_TRUE ),
                             rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), x, y ) ) );
         } else {
             // x is distinct from y
             // x=y IS NOT TRUE and ((x is not null) or (y is not null)),
-            return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ),
-                    rexBuilder.makeCall( OperatorRegistry.get( OperatorName.OR ),
+            return rexBuilder.makeCall(
+                    OperatorRegistry.get( OperatorName.AND ),
+                    rexBuilder.makeCall(
+                            OperatorRegistry.get( OperatorName.OR ),
                             rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), x ),
                             rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), y ) ),
-                    rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_TRUE ),
+                    rexBuilder.makeCall(
+                            OperatorRegistry.get( OperatorName.IS_NOT_TRUE ),
                             rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), x, y ) ) );
         }
     }

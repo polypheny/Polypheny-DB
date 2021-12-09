@@ -98,6 +98,8 @@ public class DeduplicateCorrelateVariables extends AlgHomogeneousShuttle {
             }
             return super.visitSubQuery( subQuery );
         }
+
     }
+
 }
 

@@ -43,4 +43,5 @@ public class PhoenixSqlDialect extends SqlDialect {
     public boolean supportsCharSet() {
         return false;
     }
+
 }

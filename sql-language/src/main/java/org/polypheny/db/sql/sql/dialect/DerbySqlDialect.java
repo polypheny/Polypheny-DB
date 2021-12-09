@@ -34,5 +34,6 @@ public class DerbySqlDialect extends SqlDialect {
     public DerbySqlDialect( Context context ) {
         super( context );
     }
+
 }
 

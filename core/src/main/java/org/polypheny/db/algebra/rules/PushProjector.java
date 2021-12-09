@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,17 +43,17 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.algebra.constant.SemiJoinType;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.Strong;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.Strong;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;

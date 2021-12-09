@@ -17,11 +17,11 @@
 package org.polypheny.db.sql.sql.dialect;
 
 
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlIntervalLiteral;
 import org.polypheny.db.sql.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.sql.SqlWriter;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 
 
 /**

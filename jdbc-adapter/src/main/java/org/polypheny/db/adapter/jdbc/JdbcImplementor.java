@@ -38,10 +38,10 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.util.Util;
 
 

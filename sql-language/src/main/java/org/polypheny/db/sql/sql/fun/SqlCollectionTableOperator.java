@@ -45,5 +45,6 @@ public class SqlCollectionTableOperator extends SqlFunctionalOperator {
     public Modality getModality() {
         return modality;
     }
+
 }
 

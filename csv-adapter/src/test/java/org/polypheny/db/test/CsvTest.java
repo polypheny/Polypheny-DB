@@ -213,7 +213,8 @@ public class CsvTest {
     @Test
     public void testBadDirectory() throws SQLException {
         Properties info = new Properties();
-        info.put( "model",
+        info.put(
+                "model",
                 "inline:"
                         + "{\n"
                         + "  version: '1.0',\n"
@@ -472,7 +473,8 @@ public class CsvTest {
                 + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT) } as t\n"
                 + "from EMPS group by {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT ) } ";
         sql( "model", sql )
-                .returnsUnordered( "C=1; T=1996-08-04",
+                .returnsUnordered(
+                        "C=1; T=1996-08-04",
                         "C=1; T=2002-05-04",
                         "C=1; T=2005-09-08",
                         "C=1; T=2007-01-02",
@@ -483,7 +485,8 @@ public class CsvTest {
                 + "  {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT) } as t\n"
                 + "from EMPS group by {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT ) } ";
         sql( "model", sql2 )
-                .returnsUnordered( "C=1; T=2002-06-03",
+                .returnsUnordered(
+                        "C=1; T=2002-06-03",
                         "C=1; T=2005-10-07",
                         "C=1; T=2007-02-01",
                         "C=1; T=2001-02-01",

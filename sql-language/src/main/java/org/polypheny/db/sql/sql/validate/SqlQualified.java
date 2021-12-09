@@ -64,5 +64,6 @@ public class SqlQualified {
     public final List<String> suffix() {
         return Util.skip( identifier.names, prefixLength );
     }
+
 }
 

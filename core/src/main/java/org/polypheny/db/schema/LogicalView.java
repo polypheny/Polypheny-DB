@@ -17,8 +17,8 @@
 package org.polypheny.db.schema;
 
 import java.util.List;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 
 
 public class LogicalView extends LogicalTable {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,11 +52,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgNodes;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.util.ChunkList;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -584,6 +584,7 @@ class RuleQueue {
             }
             return c;
         }
+
     }
 
 
@@ -607,6 +608,7 @@ class RuleQueue {
             }
             return -AlgNodes.compareAlgs( match1.algs, match2.algs );
         }
+
     }
 
 
@@ -650,6 +652,8 @@ class RuleQueue {
             names.clear();
             matchMap.clear();
         }
+
     }
+
 }
 

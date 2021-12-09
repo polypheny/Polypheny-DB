@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,46 +21,52 @@ import java.util.List;
 import org.polypheny.db.adapter.file.FileAlg;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 public class FileTableScan extends TableScan implements FileAlg {
 
     private final FileTranslatableTable fileTable;
 
-    public FileTableScan ( AlgOptCluster cluster, AlgOptTable table, FileTranslatableTable fileTable ) {
+
+    public FileTableScan( AlgOptCluster cluster, AlgOptTable table, FileTranslatableTable fileTable ) {
         //convention was: EnumerableConvention.INSTANCE
         super( cluster, cluster.traitSetOf( fileTable.getFileSchema().getConvention() ), table );
         this.fileTable = fileTable;
     }
+
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new FileTableScan( getCluster(), table, fileTable );
     }
 
+
     @Override
     public AlgDataType deriveRowType() {
         return fileTable.getRowType( getCluster().getTypeFactory() );
     }
+
 
     @Override
     public void register( AlgOptPlanner planner ) {
         getConvention().register( planner );
     }
 
+
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
+
 
     @Override
     public void implement( FileImplementor implementor ) {
@@ -70,4 +76,5 @@ public class FileTableScan extends TableScan implements FileAlg {
             implementor.setOperation( Operation.SELECT );
         }
     }
+
 }

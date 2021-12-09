@@ -20,6 +20,11 @@ package org.polypheny.db.sql.sql2alg;
 import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
 import org.apache.calcite.avatica.util.ByteString;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIntervalLiteral;
 import org.polypheny.db.sql.sql.SqlIntervalQualifier;
@@ -27,11 +32,6 @@ import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlTimeLiteral;
 import org.polypheny.db.sql.sql.SqlTimestampLiteral;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.DateString;
@@ -152,5 +152,6 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
                 throw Util.unexpected( literal.getTypeName() );
         }
     }
+
 }
 

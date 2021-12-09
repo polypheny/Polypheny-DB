@@ -42,21 +42,20 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.Parser;
-import org.polypheny.db.sql.sql.SqlMatchRecognize;
-import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.prepare.ContextImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexInputRef;
@@ -64,6 +63,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.sql.sql.SqlMatchRecognize;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -334,11 +334,14 @@ public class RelBuilderTest {
         AlgNode root =
                 builder.scan( "employee" )
                         .filter(
-                                builder.call( OperatorRegistry.get( OperatorName.OR ),
-                                        builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.OR ),
+                                        builder.call(
+                                                OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                                 builder.field( "deptno" ),
                                                 builder.literal( 20 ) ),
-                                        builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
+                                        builder.call(
+                                                OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                                 builder.field( "deptno" ),
                                                 builder.literal( 20 ) ) ) )
                         .build();
@@ -360,7 +363,8 @@ public class RelBuilderTest {
         AlgNode root =
                 builder.scan( "employee" )
                         .filter(
-                                builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                         builder.field( "deptno" ),
                                         builder.literal( 20 ) ),
                                 builder.literal( false ) )
@@ -380,7 +384,8 @@ public class RelBuilderTest {
         AlgNode root =
                 builder.scan( "employee" )
                         .filter(
-                                builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                         builder.field( "deptno" ),
                                         builder.literal( 20 ) ),
                                 builder.literal( true ) )
@@ -402,10 +407,12 @@ public class RelBuilderTest {
         //   WHERE deptno > 20 AND deptno > 20 AND deptno > 20
         final AlgBuilder builder = createRelBuilder();
         builder.scan( "employee" );
-        final RexNode condition = builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
+        final RexNode condition = builder.call(
+                OperatorRegistry.get( OperatorName.GREATER_THAN ),
                 builder.field( "deptno" ),
                 builder.literal( 20 ) );
-        final RexNode condition2 = builder.call( OperatorRegistry.get( OperatorName.LESS_THAN ),
+        final RexNode condition2 = builder.call(
+                OperatorRegistry.get( OperatorName.LESS_THAN ),
                 builder.field( "deptno" ),
                 builder.literal( 30 ) );
         final AlgNode root = builder.filter( condition, condition, condition )
@@ -474,7 +481,8 @@ public class RelBuilderTest {
         final AlgBuilder builder = createRelBuilder();
         AlgNode root =
                 builder.scan( "employee" )
-                        .project( builder.field( "deptno" ),
+                        .project(
+                                builder.field( "deptno" ),
                                 builder.cast( builder.field( 6 ), PolyType.SMALLINT ),
                                 builder.literal( 20 ),
                                 builder.field( 6 ),
@@ -498,16 +506,20 @@ public class RelBuilderTest {
         final AlgBuilder builder = createRelBuilder();
         AlgNode root =
                 builder.scan( "employee" )
-                        .project( builder.field( "deptno" ),
+                        .project(
+                                builder.field( "deptno" ),
                                 builder.cast( builder.field( 6 ), PolyType.INTEGER ),
                                 builder.or(
                                         builder.equals( builder.field( "deptno" ), builder.literal( 20 ) ),
-                                        builder.and( builder.literal( null ),
+                                        builder.and(
+                                                builder.literal( null ),
                                                 builder.equals( builder.field( "deptno" ), builder.literal( 10 ) ),
                                                 builder.and( builder.isNull( builder.field( 6 ) ), builder.not( builder.isNotNull( builder.field( 7 ) ) ) ) ),
-                                        builder.equals( builder.field( "deptno" ),
+                                        builder.equals(
+                                                builder.field( "deptno" ),
                                                 builder.literal( 20 ) ),
-                                        builder.equals( builder.field( "deptno" ),
+                                        builder.equals(
+                                                builder.field( "deptno" ),
                                                 builder.literal( 30 ) ) ),
                                 builder.alias( builder.isNull( builder.field( 2 ) ), "n2" ),
                                 builder.alias( builder.isNotNull( builder.field( 3 ) ), "nn2" ),
@@ -545,7 +557,8 @@ public class RelBuilderTest {
         final AlgBuilder builder = createRelBuilder();
         AlgNode root =
                 builder.scan( "department" )
-                        .project( builder.alias( builder.field( 0 ), "a" ),
+                        .project(
+                                builder.alias( builder.field( 0 ), "a" ),
                                 builder.alias( builder.field( 1 ), "b" ),
                                 builder.alias( builder.field( 2 ), "c" ) )
                         .as( "t1" )
@@ -565,14 +578,17 @@ public class RelBuilderTest {
         final AlgBuilder builder = createRelBuilder();
         AlgNode root =
                 builder.scan( "department" )
-                        .project( builder.alias( builder.field( 0 ), "a" ),
+                        .project(
+                                builder.alias( builder.field( 0 ), "a" ),
                                 builder.alias( builder.field( 1 ), "b" ),
                                 builder.alias( builder.field( 2 ), "c" ) )
                         .filter(
                                 builder.call( OperatorRegistry.get( OperatorName.EQUALS ), builder.field( "a" ), builder.literal( 20 ) ) )
-                        .aggregate( builder.groupKey( 0, 1, 2 ),
+                        .aggregate(
+                                builder.groupKey( 0, 1, 2 ),
                                 builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.SUM ), builder.field( 0 ) ) )
-                        .project( builder.field( "c" ),
+                        .project(
+                                builder.field( "c" ),
                                 builder.field( "a" ) )
                         .build();
         final String expected = ""
@@ -785,8 +801,10 @@ public class RelBuilderTest {
         AlgNode root =
                 builder.scan( "employee" )
                         .aggregate(
-                                builder.groupKey( builder.field( 1 ),
-                                        builder.call( OperatorRegistry.get( OperatorName.PLUS ),
+                                builder.groupKey(
+                                        builder.field( 1 ),
+                                        builder.call(
+                                                OperatorRegistry.get( OperatorName.PLUS ),
                                                 builder.field( 4 ),
                                                 builder.field( 3 ) ),
                                         builder.field( 1 ) ),
@@ -871,7 +889,8 @@ public class RelBuilderTest {
                                 builder.groupKey( ImmutableBitSet.of( 7 ), ImmutableList.of( ImmutableBitSet.of( 7 ), ImmutableBitSet.of() ) ),
                                 builder.count()
                                         .filter(
-                                                builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ),
+                                                builder.call(
+                                                        OperatorRegistry.get( OperatorName.GREATER_THAN ),
                                                         builder.field( "empid" ),
                                                         builder.literal( 100 ) ) )
                                         .as( "C" ) )
@@ -902,7 +921,8 @@ public class RelBuilderTest {
                             .build();
             fail( "expected error, got " + root );
         } catch ( PolyphenyDbException e ) {
-            assertThat( e.getMessage(),
+            assertThat(
+                    e.getMessage(),
                     is( "FILTER expression must be of type BOOLEAN" ) );
         }
     }
@@ -1041,7 +1061,8 @@ public class RelBuilderTest {
         try {
             AlgNode root =
                     builder.scan( "employee" )
-                            .aggregate( builder.groupKey( 6, 7 ),
+                            .aggregate(
+                                    builder.groupKey( 6, 7 ),
                                     builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.GROUPING ), builder.field( "deptno" ) )
                                             .distinct( true )
                                             .as( "g" ) )
@@ -1059,8 +1080,10 @@ public class RelBuilderTest {
         try {
             AlgNode root =
                     builder.scan( "employee" )
-                            .aggregate( builder.groupKey( 6, 7 ),
-                                    builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.GROUPING ),
+                            .aggregate(
+                                    builder.groupKey( 6, 7 ),
+                                    builder.aggregateCall(
+                                                    OperatorRegistry.getAgg( OperatorName.GROUPING ),
                                                     builder.field( "deptno" ) )
                                             .filter( builder.literal( true ) )
                                             .as( "g" ) )
@@ -1242,7 +1265,8 @@ public class RelBuilderTest {
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
                         .filter(
-                                builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( "deptno" ),
                                         builder.literal( 20 ) ) )
                         .project( builder.field( "empid" ) )
@@ -1302,7 +1326,8 @@ public class RelBuilderTest {
                         .project( builder.field( "deptno" ) )
                         .scan( "employee" )
                         .filter(
-                                builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( "deptno" ),
                                         builder.literal( 20 ) ) )
                         .project( builder.field( "empid" ) )
@@ -1329,11 +1354,14 @@ public class RelBuilderTest {
         AlgNode root =
                 builder.scan( "employee" )
                         .filter(
-                                builder.call( OperatorRegistry.get( OperatorName.IS_NULL ),
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.IS_NULL ),
                                         builder.field( "commission" ) ) )
                         .scan( "department" )
-                        .join( JoinAlgType.INNER,
-                                builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
+                        .join(
+                                JoinAlgType.INNER,
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, 0, "deptno" ),
                                         builder.field( 2, 1, "deptno" ) ) )
                         .build();
@@ -1379,14 +1407,18 @@ public class RelBuilderTest {
         AlgNode root =
                 builder.scan( "employee" )
                         .scan( "department" )
-                        .join( JoinAlgType.LEFT,
-                                builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
+                        .join(
+                                JoinAlgType.LEFT,
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, 0, "deptno" ),
                                         builder.field( 2, 1, "deptno" ) ),
-                                builder.call( OperatorRegistry.get( OperatorName.EQUALS ),
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, 0, "empid" ),
                                         builder.literal( 123 ) ),
-                                builder.call( OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
+                                builder.call(
+                                        OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                         builder.field( 2, 1, "deptno" ) ) )
                         .build();
         // Note that "dept.deptno IS NOT NULL" has been simplified away.
@@ -1429,7 +1461,8 @@ public class RelBuilderTest {
                             ImmutableSet.of( v.get().id ) );
             fail( "expected error" );
         } catch ( IllegalArgumentException e ) {
-            assertThat( e.getMessage(),
+            assertThat(
+                    e.getMessage(),
                     containsString( "variable $cor0 must not be used by left input to correlation" ) );
         }
     }
@@ -1443,7 +1476,8 @@ public class RelBuilderTest {
                 .variable( v )
                 .scan( "department" )
                 .filter( builder.equals( builder.field( 0 ), builder.field( v.get(), "deptno" ) ) )
-                .join( JoinAlgType.LEFT,
+                .join(
+                        JoinAlgType.LEFT,
                         builder.equals( builder.field( 2, 0, "salary" ), builder.literal( 1000 ) ),
                         ImmutableSet.of( v.get().id ) )
                 .build();
@@ -1586,8 +1620,9 @@ public class RelBuilderTest {
                                 builder.field( 1 ),
                                 builder.literal( 10 ),
                                 builder.field( 0 ) )
-                        .project( builder.alias(
-                                builder.field( 1 ), "sum" ),
+                        .project(
+                                builder.alias(
+                                        builder.field( 1 ), "sum" ),
                                 builder.field( "employee_alias", "deptno" ) )
                         .build();
         final String expected = ""
@@ -1799,7 +1834,8 @@ public class RelBuilderTest {
         AlgNode root =
                 builder.scan( "employee" )
                         .scan( "department" )
-                        .join( JoinAlgType.LEFT,
+                        .join(
+                                JoinAlgType.LEFT,
                                 builder.call(
                                         OperatorRegistry.get( OperatorName.EQUALS ),
                                         builder.field( 2, "employee", "deptno" ),
@@ -2061,7 +2097,8 @@ public class RelBuilderTest {
         final AlgBuilder builder = createRelBuilder();
         final AlgNode root =
                 builder.scan( "employee" )
-                        .sort( builder.nullsLast( builder.desc( builder.field( 1 ) ) ),
+                        .sort(
+                                builder.nullsLast( builder.desc( builder.field( 1 ) ) ),
                                 builder.nullsFirst(
                                         builder.call(
                                                 OperatorRegistry.get( OperatorName.PLUS ),
@@ -2277,7 +2314,8 @@ public class RelBuilderTest {
                         builder.literal( false ) ) );
 
         ImmutableMap.Builder<String, RexNode> pdBuilder = new ImmutableMap.Builder<>();
-        RexNode downDefinition = builder.call( OperatorRegistry.get( OperatorName.LESS_THAN ),
+        RexNode downDefinition = builder.call(
+                OperatorRegistry.get( OperatorName.LESS_THAN ),
                 builder.call(
                         OperatorRegistry.get( OperatorName.PREV ),
                         builder.patternField( "DOWN", intType, 3 ),

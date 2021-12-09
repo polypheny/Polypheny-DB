@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.sql.validate;
 
 
-import org.polypheny.db.util.Conformance;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.util.Conformance;
 
 /**
  * Abstract base class for implementing {@link Conformance}.
@@ -145,4 +145,5 @@ public abstract class SqlAbstractConformance implements Conformance {
     public boolean allowExtendedTrim() {
         return ConformanceEnum.DEFAULT.allowExtendedTrim();
     }
+
 }

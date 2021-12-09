@@ -64,12 +64,19 @@ import org.polypheny.db.adapter.jdbc.JdbcRules;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.ChainedOperatorTable;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
 import org.polypheny.db.algebra.rules.LoptOptimizeJoinRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
@@ -79,33 +86,26 @@ import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.FunctionCategory;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.constant.Lex;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.algebra.operators.ChainedOperatorTable;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.languages.Parser;
-import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.schema.FoodmartSchema;
+import org.polypheny.db.schema.HrSchema;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.TpchSchema;
 import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.sql.util.ListSqlOperatorTable;
-import org.polypheny.db.schema.FoodmartSchema;
-import org.polypheny.db.schema.HrSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.TpchSchema;
 import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgConversionException;
@@ -209,7 +209,8 @@ public class PlannerTest extends SqlLanguagelDependant {
     public void testValidateFails() throws NodeParseException {
         Planner planner = getPlanner( null );
         Node parse = planner.parse( "select * from \"emps\" where \"Xname\" like '%e%'" );
-        assertThat( Util.toLinux( parse.toString() ),
+        assertThat(
+                Util.toLinux( parse.toString() ),
                 equalTo( "SELECT *\n"
                         + "FROM `emps`\n"
                         + "WHERE `Xname` LIKE '%e%'" ) );
@@ -252,7 +253,8 @@ public class PlannerTest extends SqlLanguagelDependant {
         Node parse =
                 planner.parse( "select \"deptno\", my_count(\"empid\") from \"emps\"\n"
                         + "group by \"deptno\"" );
-        assertThat( Util.toLinux( parse.toString() ),
+        assertThat(
+                Util.toLinux( parse.toString() ),
                 equalTo( "SELECT `deptno`, `MY_COUNT`(`empid`)\n"
                         + "FROM `emps`\n"
                         + "GROUP BY `deptno`" ) );
@@ -439,7 +441,8 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode convert = planner.alg( validate ).project();
         AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode transform = planner.transform( 0, traitSet, convert );
-        assertThat( toString( transform ),
+        assertThat(
+                toString( transform ),
                 equalTo( "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
                         + "    EnumerableTableScan(table=[[hr, emps]])\n" ) );
@@ -468,7 +471,8 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode convert = planner.alg( validate ).alg;
         AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE ).simplify();
         AlgNode transform = planner.transform( 0, traitSet, convert );
-        assertThat( toString( transform ),
+        assertThat(
+                toString( transform ),
                 equalTo( "EnumerableProject(deptno=[$1])\n"
                         + "  EnumerableLimit(fetch=[10])\n"
                         + "    EnumerableJoin(condition=[=($1, $5)], joinType=[left])\n"
@@ -523,7 +527,8 @@ public class PlannerTest extends SqlLanguagelDependant {
      */
     @Test
     public void testDuplicateSortPlanWithOver() throws Exception {
-        runDuplicateSortCheck( "select emp_cnt, empid+deptno from ( "
+        runDuplicateSortCheck(
+                "select emp_cnt, empid+deptno from ( "
                         + "select empid, deptno, count(*) over (partition by deptno) emp_cnt from ( "
                         + "  select empid, deptno "
                         + "    from emps "
@@ -539,7 +544,8 @@ public class PlannerTest extends SqlLanguagelDependant {
 
     @Test
     public void testDuplicateSortPlanWithRemovedOver() throws Exception {
-        runDuplicateSortCheck( "select empid+deptno from ( "
+        runDuplicateSortCheck(
+                "select empid+deptno from ( "
                         + "select empid, deptno, count(*) over (partition by deptno) emp_cnt from ( "
                         + "  select empid, deptno "
                         + "    from emps "
@@ -588,7 +594,8 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode convert = planner.alg( validate ).alg;
         AlgTraitSet traitSet = convert.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode transform = planner.transform( 0, traitSet, convert );
-        assertThat( toString( transform ),
+        assertThat(
+                toString( transform ),
                 equalTo( "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(empid=[$0], deptno=[$1])\n"
                         + "    EnumerableTableScan(table=[[hr, emps]])\n" ) );

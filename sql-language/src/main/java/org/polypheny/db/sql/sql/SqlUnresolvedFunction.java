@@ -19,9 +19,9 @@ package org.polypheny.db.sql.sql;
 
 import java.util.List;
 import org.polypheny.db.algebra.constant.FunctionCategory;
-import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
@@ -38,12 +38,12 @@ public class SqlUnresolvedFunction extends SqlFunction {
     /**
      * Creates a placeholder SqlUnresolvedFunction for an invocation of a function with a possibly qualified name. This name must be resolved into either a builtin function or a user-defined function.
      *
-     * @param sqlIdentifier        possibly qualified identifier for function
-     * @param returnTypeInference  strategy to use for return type inference
+     * @param sqlIdentifier possibly qualified identifier for function
+     * @param returnTypeInference strategy to use for return type inference
      * @param operandTypeInference strategy to use for parameter type inference
-     * @param operandTypeChecker   strategy to use for parameter type checking
-     * @param paramTypes           array of parameter types
-     * @param funcType             function category
+     * @param operandTypeChecker strategy to use for parameter type checking
+     * @param paramTypes array of parameter types
+     * @param funcType function category
      */
     public SqlUnresolvedFunction( SqlIdentifier sqlIdentifier, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<AlgDataType> paramTypes, FunctionCategory funcType ) {
         super( sqlIdentifier, returnTypeInference, operandTypeInference, operandTypeChecker, paramTypes, funcType );
@@ -60,5 +60,6 @@ public class SqlUnresolvedFunction extends SqlFunction {
         final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
     }
+
 }
 

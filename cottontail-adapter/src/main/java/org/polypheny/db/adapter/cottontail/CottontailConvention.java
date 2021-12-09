@@ -22,9 +22,9 @@ import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg;
 import org.polypheny.db.adapter.cottontail.rules.CottontailRules;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.Convention;
 
 
 public class CottontailConvention extends Convention.Impl {

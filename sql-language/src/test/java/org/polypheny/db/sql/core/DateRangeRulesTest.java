@@ -29,8 +29,8 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.algebra.rules.DateRangeRules;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
@@ -77,7 +77,8 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
     @Test
     public void testExtractYearAndMonthFromDateColumn() {
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYearD, f.literal( 2014 ) ), f.eq( f.exMonthD, f.literal( 6 ) ) ),
                 "UTC",
                 is( "AND(AND(>=($8, 2014-01-01), <($8, 2015-01-01)), AND(>=($8, 2014-06-01), <($8, 2014-07-01)))" ),
@@ -112,7 +113,8 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
     @Test
     public void testExtractYearAndDayFromDateColumn() {
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYearD, f.literal( 2010 ) ), f.eq( f.exDayD, f.literal( 31 ) ) ),
                 is( "AND(AND(>=($8, 2010-01-01), <($8, 2011-01-01)),"
                         + " OR(AND(>=($8, 2010-01-31), <($8, 2010-02-01)),"
@@ -132,7 +134,8 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
         // The following condition finds the 2 leap days between 2010 and 2020, namely 29th February 2012 and 2016.
         //
         // Currently there are redundant conditions, e.g. "AND(>=($8, 2011-01-01), <($8, 2020-01-01))". We should remove them by folding intervals.
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.gt( f.exYearD, f.literal( 2010 ) ), f.lt( f.exYearD, f.literal( 2020 ) ), f.eq( f.exMonthD, f.literal( 2 ) ), f.eq( f.exDayD, f.literal( 29 ) ) ),
                 is( "AND(>=($8, 2011-01-01),"
                         + " AND(>=($8, 2011-01-01), <($8, 2020-01-01)),"
@@ -153,7 +156,8 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
     @Test
     public void testExtractYearMonthDayFromTimestampColumn() {
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.gt( f.exYearD, f.literal( 2010 ) ), f.lt( f.exYearD, f.literal( 2020 ) ), f.eq( f.exMonthD, f.literal( 2 ) ), f.eq( f.exDayD, f.literal( 29 ) ) ),
                 is( "AND(>=($8, 2011-01-01),"
                         + " AND(>=($8, 2011-01-01), <($8, 2020-01-01)),"
@@ -181,7 +185,8 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
         // OR (EXTRACT(YEAR FROM __time) = 2001
         //    AND EXTRACT(MONTH FROM __time) = 1)
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.or(
                         f.and( f.eq( f.exYearD, f.literal( 2000 ) ), f.or( f.eq( f.exMonthD, f.literal( 2 ) ), f.eq( f.exMonthD, f.literal( 3 ) ), f.eq( f.exMonthD, f.literal( 5 ) ) ) ),
                         f.and( f.eq( f.exYearD, f.literal( 2001 ) ), f.eq( f.exMonthD, f.literal( 1 ) ) )
@@ -206,16 +211,21 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
         //     OR (EXTRACT(YEAR FROM __time) = 2001
         //       AND EXTRACT(MONTH FROM __time) = 1))
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and(
-                        f.or( f.eq( f.exYearD, f.literal( 2000 ) ),
+                        f.or(
+                                f.eq( f.exYearD, f.literal( 2000 ) ),
                                 f.eq( f.exYearD, f.literal( 2001 ) ) ),
                         f.or(
-                                f.and( f.eq( f.exYearD, f.literal( 2000 ) ),
-                                        f.or( f.eq( f.exMonthD, f.literal( 2 ) ),
+                                f.and(
+                                        f.eq( f.exYearD, f.literal( 2000 ) ),
+                                        f.or(
+                                                f.eq( f.exMonthD, f.literal( 2 ) ),
                                                 f.eq( f.exMonthD, f.literal( 3 ) ),
                                                 f.eq( f.exMonthD, f.literal( 5 ) ) ) ),
-                                f.and( f.eq( f.exYearD, f.literal( 2001 ) ),
+                                f.and(
+                                        f.eq( f.exYearD, f.literal( 2001 ) ),
                                         f.eq( f.exMonthD, f.literal( 1 ) ) ) ) ),
                 is( "AND(OR(AND(>=($8, 2000-01-01), <($8, 2001-01-01)),"
                         + " AND(>=($8, 2001-01-01), <($8, 2002-01-01))),"
@@ -239,15 +249,19 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
         //   OR (EXTRACT(YEAR FROM __time) = 2001
         //     AND EXTRACT(MONTH FROM __time) = 1))
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and(
                         f.ne( f.exYearD, f.literal( 2000 ) ),
                         f.or(
-                                f.and( f.eq( f.exYearD, f.literal( 2000 ) ),
-                                        f.or( f.eq( f.exMonthD, f.literal( 2 ) ),
+                                f.and(
+                                        f.eq( f.exYearD, f.literal( 2000 ) ),
+                                        f.or(
+                                                f.eq( f.exMonthD, f.literal( 2 ) ),
                                                 f.eq( f.exMonthD, f.literal( 3 ) ),
                                                 f.eq( f.exMonthD, f.literal( 5 ) ) ) ),
-                                f.and( f.eq( f.exYearD, f.literal( 2001 ) ),
+                                f.and(
+                                        f.eq( f.exYearD, f.literal( 2001 ) ),
                                         f.eq( f.exMonthD, f.literal( 1 ) ) ) ) ),
                 is( "AND(<>(EXTRACT(FLAG(YEAR), $8), 2000),"
                         + " OR(AND(AND(>=($8, 2000-01-01), <($8, 2001-01-01)),"
@@ -270,19 +284,24 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
         //   OR (EXTRACT(YEAR FROM __time) = 2001
         //     AND EXTRACT(MONTH FROM __time) = 1))
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and(
-                        f.or( f.eq( f.exMonthD, f.literal( 1 ) ),
+                        f.or(
+                                f.eq( f.exMonthD, f.literal( 1 ) ),
                                 f.eq( f.exMonthD, f.literal( 2 ) ),
                                 f.eq( f.exMonthD, f.literal( 3 ) ),
                                 f.eq( f.exMonthD, f.literal( 4 ) ),
                                 f.eq( f.exMonthD, f.literal( 5 ) ) ),
                         f.or(
-                                f.and( f.eq( f.exYearD, f.literal( 2000 ) ),
-                                        f.or( f.eq( f.exMonthD, f.literal( 2 ) ),
+                                f.and(
+                                        f.eq( f.exYearD, f.literal( 2000 ) ),
+                                        f.or(
+                                                f.eq( f.exMonthD, f.literal( 2 ) ),
                                                 f.eq( f.exMonthD, f.literal( 3 ) ),
                                                 f.eq( f.exMonthD, f.literal( 5 ) ) ) ),
-                                f.and( f.eq( f.exYearD, f.literal( 2001 ) ),
+                                f.and(
+                                        f.eq( f.exYearD, f.literal( 2001 ) ),
                                         f.eq( f.exMonthD, f.literal( 1 ) ) ) ) ),
                 is( "AND(OR(=(EXTRACT(FLAG(MONTH), $8), 1),"
                         + " =(EXTRACT(FLAG(MONTH), $8), 2),"
@@ -302,29 +321,34 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
     public void testExtractRewriteForInvalidMonthComparison() {
         // "EXTRACT(MONTH FROM ts) = 14" will never be TRUE
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYearTs, f.literal( 2010 ) ), f.eq( f.exMonthTs, f.literal( 14 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)), false)" ) );
 
         // "EXTRACT(MONTH FROM ts) = 0" will never be TRUE
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYearTs, f.literal( 2010 ) ), f.eq( f.exMonthTs, f.literal( 0 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)), false)" ) );
 
         // "EXTRACT(MONTH FROM ts) = 13" will never be TRUE
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYearTs, f.literal( 2010 ) ), f.eq( f.exMonthTs, f.literal( 13 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)), false)" ) );
 
         // "EXTRACT(MONTH FROM ts) = 12" might be TRUE
         // Careful with boundaries, because Calendar.DECEMBER = 11
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYearTs, f.literal( 2010 ) ), f.eq( f.exMonthTs, f.literal( 12 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)), AND(>=($9, 2010-12-01 00:00:00), <($9, 2011-01-01 00:00:00)))" ) );
 
         // "EXTRACT(MONTH FROM ts) = 1" can happen
         // Careful with boundaries, because Calendar.JANUARY = 0
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYearTs, f.literal( 2010 ) ), f.eq( f.exMonthTs, f.literal( 1 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)), AND(>=($9, 2010-01-01 00:00:00), <($9, 2010-02-01 00:00:00)))" ) );
     }
@@ -333,15 +357,19 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
     @Test
     public void testExtractRewriteForInvalidDayComparison() {
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
-                f.and( f.eq( f.exYearTs, f.literal( 2010 ) ),
+        checkDateRange(
+                f,
+                f.and(
+                        f.eq( f.exYearTs, f.literal( 2010 ) ),
                         f.eq( f.exMonthTs, f.literal( 11 ) ),
                         f.eq( f.exDayTs, f.literal( 32 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)),"
                         + " AND(>=($9, 2010-11-01 00:00:00), <($9, 2010-12-01 00:00:00)), false)" ) );
         // Feb 31 is an invalid date
-        checkDateRange( f,
-                f.and( f.eq( f.exYearTs, f.literal( 2010 ) ),
+        checkDateRange(
+                f,
+                f.and(
+                        f.eq( f.exYearTs, f.literal( 2010 ) ),
                         f.eq( f.exMonthTs, f.literal( 2 ) ),
                         f.eq( f.exDayTs, f.literal( 31 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)),"
@@ -353,23 +381,29 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
     public void testUnboundYearExtractRewrite() {
         final Fixture2 f = new Fixture2();
         // No lower bound on YEAR
-        checkDateRange( f,
-                f.and( f.le( f.exYearTs, f.literal( 2010 ) ),
+        checkDateRange(
+                f,
+                f.and(
+                        f.le( f.exYearTs, f.literal( 2010 ) ),
                         f.eq( f.exMonthTs, f.literal( 11 ) ),
                         f.eq( f.exDayTs, f.literal( 2 ) ) ),
                 is( "AND(<($9, 2011-01-01 00:00:00), =(EXTRACT(FLAG(MONTH), $9), 11), =(EXTRACT(FLAG(DAY), $9), 2))" ) );
 
         // No upper bound on YEAR
-        checkDateRange( f,
-                f.and( f.ge( f.exYearTs, f.literal( 2010 ) ),
+        checkDateRange(
+                f,
+                f.and(
+                        f.ge( f.exYearTs, f.literal( 2010 ) ),
                         f.eq( f.exMonthTs, f.literal( 11 ) ),
                         f.eq( f.exDayTs, f.literal( 2 ) ) ),
                 // Since the year does not have a upper bound, MONTH and DAY cannot be replaced
                 is( "AND(>=($9, 2010-01-01 00:00:00), =(EXTRACT(FLAG(MONTH), $9), 11), =(EXTRACT(FLAG(DAY), $9), 2))" ) );
 
         // No lower/upper bound on YEAR for individual rexNodes.
-        checkDateRange( f,
-                f.and( f.le( f.exYearTs, f.literal( 2010 ) ),
+        checkDateRange(
+                f,
+                f.and(
+                        f.le( f.exYearTs, f.literal( 2010 ) ),
                         f.ge( f.exYearTs, f.literal( 2010 ) ),
                         f.eq( f.exMonthTs, f.literal( 5 ) ) ),
                 is( "AND(<($9, 2011-01-01 00:00:00), AND(>=($9, 2010-01-01 00:00:00),"
@@ -382,16 +416,20 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
     @Test
     public void testExtractRewriteMultipleOperands() {
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
-                f.and( f.eq( f.exYearTs, f.literal( 2010 ) ),
+        checkDateRange(
+                f,
+                f.and(
+                        f.eq( f.exYearTs, f.literal( 2010 ) ),
                         f.eq( f.exMonthTs, f.literal( 10 ) ),
                         f.eq( f.exMonthD, f.literal( 5 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)),"
                         + " AND(>=($9, 2010-10-01 00:00:00), <($9, 2010-11-01 00:00:00)),"
                         + " =(EXTRACT(FLAG(MONTH), $8), 5))" ) );
 
-        checkDateRange( f,
-                f.and( f.eq( f.exYearTs, f.literal( 2010 ) ),
+        checkDateRange(
+                f,
+                f.and(
+                        f.eq( f.exYearTs, f.literal( 2010 ) ),
                         f.eq( f.exMonthTs, f.literal( 10 ) ),
                         f.eq( f.exYearD, f.literal( 2011 ) ),
                         f.eq( f.exMonthD, f.literal( 5 ) ) ),
@@ -506,22 +544,26 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
         Fixture2 f = new Fixture2();
         c.clear();
         c.set( 2010, Calendar.JANUARY, 1, 0, 0, 0 );
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), f.eq( f.exMonthTs, f.literal( 5 ) ) ),
                 is( "AND(AND(>=($9, 2010-01-01 00:00:00), <($9, 2011-01-01 00:00:00)), AND(>=($9, 2010-05-01 00:00:00), <($9, 2010-06-01 00:00:00)))" ) );
 
         // No lower range for floor
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.le( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), f.eq( f.exMonthTs, f.literal( 5 ) ) ),
                 is( "AND(<($9, 2011-01-01 00:00:00), =(EXTRACT(FLAG(MONTH), $9), 5))" ) );
 
         // No lower range for floor
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.gt( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), f.eq( f.exMonthTs, f.literal( 5 ) ) ),
                 is( "AND(>=($9, 2011-01-01 00:00:00), =(EXTRACT(FLAG(MONTH), $9), 5))" ) );
 
         // No upper range for individual floor rexNodes, but combined results in bounded interval
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.le( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ), f.eq( f.exMonthTs, f.literal( 5 ) ), f.ge( f.floorYear, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ) ),
                 is( "AND(<($9, 2011-01-01 00:00:00), AND(>=($9, 2010-05-01 00:00:00), <($9, 2010-06-01 00:00:00)), >=($9, 2010-01-01 00:00:00))" ) );
 
@@ -631,7 +673,8 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
         c.clear();
         c.set( 2010, Calendar.FEBRUARY, 1, 11, 30, 0 );
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.eq( f.floorHour, f.timestampLocalTzLiteral( TimestampString.fromCalendarFields( c ) ) ),
                 "IST",
                 is( "AND(>=($9, 2010-02-01 17:00:00), <($9, 2010-02-01 18:00:00))" ),
@@ -639,7 +682,8 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
 
         c.clear();
         c.set( 2010, Calendar.FEBRUARY, 1, 11, 00, 0 );
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.eq( f.floorHour, f.timestampLiteral( TimestampString.fromCalendarFields( c ) ) ),
                 "IST",
                 is( "AND(>=($9, 2010-02-01 11:00:00), <($9, 2010-02-01 12:00:00))" ),
@@ -647,7 +691,8 @@ public class DateRangeRulesTest extends SqlLanguagelDependant {
 
         c.clear();
         c.set( 2010, Calendar.FEBRUARY, 1, 00, 00, 0 );
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.eq( f.floorHour, f.dateLiteral( DateString.fromCalendarFields( c ) ) ),
                 "IST",
                 is( "AND(>=($9, 2010-02-01 00:00:00), <($9, 2010-02-01 01:00:00))" ),

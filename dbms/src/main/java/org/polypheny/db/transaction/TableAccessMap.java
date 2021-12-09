@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.LogicalTable;
 
 
@@ -93,7 +93,7 @@ public class TableAccessMap {
      * Constructs a TableAccessMap for a single table
      *
      * @param tableIdentifier fully qualified name of the table, represented as a list
-     * @param mode            access mode for the table
+     * @param mode access mode for the table
      */
     public TableAccessMap( TableIdentifier tableIdentifier, Mode mode ) {
         accessMap = new HashMap<>();
@@ -205,6 +205,7 @@ public class TableAccessMap {
             }
             accessMap.put( key, newAccess );
         }
+
     }
 
 
@@ -214,5 +215,7 @@ public class TableAccessMap {
     public static class TableIdentifier {
 
         long tableId;
+
     }
+
 }

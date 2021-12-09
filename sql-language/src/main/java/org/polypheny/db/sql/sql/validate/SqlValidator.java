@@ -19,14 +19,15 @@ package org.polypheny.db.sql.sql.validate;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.util.Conformance;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Modality;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.sql.SqlDelete;
@@ -45,8 +46,7 @@ import org.polypheny.db.sql.sql.SqlUpdate;
 import org.polypheny.db.sql.sql.SqlWindow;
 import org.polypheny.db.sql.sql.SqlWith;
 import org.polypheny.db.sql.sql.SqlWithItem;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Util;
 
@@ -258,7 +258,8 @@ public interface SqlValidator extends Validator {
 
     /**
      * Validates a COLUMN_LIST parameter
-     *  @param function function containing COLUMN_LIST parameter
+     *
+     * @param function function containing COLUMN_LIST parameter
      * @param argTypes function arguments
      * @param operands operands passed into the function call
      */
@@ -560,4 +561,5 @@ public interface SqlValidator extends Validator {
     void validateSequenceValue( SqlValidatorScope scope, SqlIdentifier id );
 
     SqlValidatorScope getWithScope( SqlNode withItem );
+
 }

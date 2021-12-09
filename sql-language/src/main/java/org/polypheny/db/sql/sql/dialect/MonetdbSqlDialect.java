@@ -18,6 +18,7 @@ package org.polypheny.db.sql.sql.dialect;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlDataTypeSpec;
@@ -25,7 +26,6 @@ import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlWriter;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**

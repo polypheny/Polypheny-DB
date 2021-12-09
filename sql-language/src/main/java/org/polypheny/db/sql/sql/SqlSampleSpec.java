@@ -93,6 +93,7 @@ public abstract class SqlSampleSpec {
         public String toString() {
             return "SUBSTITUTE(" + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( name ) + ")";
         }
+
     }
 
 
@@ -169,5 +170,7 @@ public abstract class SqlSampleSpec {
             }
             return b.toString();
         }
+
     }
+
 }

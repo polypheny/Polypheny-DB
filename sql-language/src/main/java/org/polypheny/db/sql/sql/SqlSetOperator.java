@@ -75,5 +75,6 @@ public class SqlSetOperator extends SqlBinaryOperator {
     public void validateCall( SqlCall call, SqlValidator validator, SqlValidatorScope scope, SqlValidatorScope operandScope ) {
         validator.validateQuery( call, operandScope, validator.getUnknownType() );
     }
+
 }
 

@@ -17,14 +17,14 @@
 package org.polypheny.db.sql.sql;
 
 
-import org.polypheny.db.util.Collation;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -86,5 +86,6 @@ public class SqlPostfixOperator extends SqlOperator {
         }
         return litmus.succeed();
     }
+
 }
 

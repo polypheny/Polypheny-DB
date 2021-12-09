@@ -17,8 +17,8 @@
 package org.polypheny.db.nodes;
 
 
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 
 

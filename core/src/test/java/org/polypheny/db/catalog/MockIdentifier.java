@@ -20,12 +20,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.util.Litmus;
 
 public class MockIdentifier implements Identifier, Node {

@@ -20,8 +20,8 @@ package org.polypheny.db.sql.sql.fun;
 import java.util.List;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.sql.sql.SqlLiteral;
@@ -66,5 +66,6 @@ public class SqlNullifFunction extends SqlFunction {
         thenList.add( SqlLiteral.createNull( ParserPos.ZERO ) );
         return SqlCase.createSwitched( pos, (SqlNode) operands.get( 0 ), whenList, thenList, (SqlNode) Node.clone( operands.get( 0 ) ) );
     }
+
 }
 

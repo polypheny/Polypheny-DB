@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ package org.polypheny.db.algebra.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.FlatLists;
@@ -154,6 +154,7 @@ public abstract class JoinInfo {
         public RexNode getRemaining( RexBuilder rexBuilder ) {
             return rexBuilder.makeLiteral( true );
         }
+
     }
 
 
@@ -182,6 +183,8 @@ public abstract class JoinInfo {
         public RexNode getRemaining( RexBuilder rexBuilder ) {
             return remaining;
         }
+
     }
+
 }
 

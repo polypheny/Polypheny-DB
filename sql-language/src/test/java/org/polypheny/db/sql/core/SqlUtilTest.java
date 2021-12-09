@@ -96,7 +96,8 @@ public class SqlUtilTest {
                 "Yes you could say she was attractively built."
         };
         String diff = DiffTestCase.diffLines( Arrays.asList( before ), Arrays.asList( after ) );
-        assertThat( Util.toLinux( diff ),
+        assertThat(
+                Util.toLinux( diff ),
                 equalTo( "1a2\n"
                         + "> (they call her \"Polythene Pam\")\n"
                         + "3c4,5\n"

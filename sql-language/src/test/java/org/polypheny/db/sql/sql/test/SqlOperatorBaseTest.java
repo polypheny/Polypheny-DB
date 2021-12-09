@@ -43,10 +43,16 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.Strong;
+import org.polypheny.db.plan.Strong.Policy;
+import org.polypheny.db.runtime.Hook;
+import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.sql.sql.SqlCall;
@@ -69,12 +75,6 @@ import org.polypheny.db.sql.sql.utils.SqlTester.VmName;
 import org.polypheny.db.sql.sql.utils.SqlTests;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.plan.Strong;
-import org.polypheny.db.plan.Strong.Policy;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.OperandCountRange;
@@ -4250,15 +4250,18 @@ public abstract class SqlOperatorBaseTest extends SqlLanguagelDependant {
                 "cast(null as varchar(2000))",
                 "'foo3'"
         };
-        tester.checkAgg( "json_arrayagg(x)",
+        tester.checkAgg(
+                "json_arrayagg(x)",
                 values,
                 "[\"foo\",\"foo3\"]",
                 0.0D );
-        tester.checkAgg( "json_arrayagg(x null on null)",
+        tester.checkAgg(
+                "json_arrayagg(x null on null)",
                 values,
                 "[\"foo\",null,\"foo3\"]",
                 0.0D );
-        tester.checkAgg( "json_arrayagg(x absent on null)",
+        tester.checkAgg(
+                "json_arrayagg(x absent on null)",
                 values,
                 "[\"foo\",\"foo3\"]",
                 0.0D );
@@ -4812,10 +4815,12 @@ public abstract class SqlOperatorBaseTest extends SqlLanguagelDependant {
                 "round(cast(42.346 as decimal(2, 3)))",
                 BigDecimal.valueOf( 42, 0 ),
                 "DECIMAL(2, 3) NOT NULL" );
-        tester.checkScalar( "round(42.324)",
+        tester.checkScalar(
+                "round(42.324)",
                 BigDecimal.valueOf( 42, 0 ),
                 "DECIMAL(5, 3) NOT NULL" );
-        tester.checkScalar( "round(42.724)",
+        tester.checkScalar(
+                "round(42.724)",
                 BigDecimal.valueOf( 43, 0 ),
                 "DECIMAL(5, 3) NOT NULL" );
     }
@@ -4925,7 +4930,8 @@ public abstract class SqlOperatorBaseTest extends SqlLanguagelDependant {
         tester.checkNull( "truncate(43.21, cast(null as integer))" );
 
         tester.checkScalar( "truncate(42)", 42, "INTEGER NOT NULL" );
-        tester.checkScalar( "truncate(42.324)",
+        tester.checkScalar(
+                "truncate(42.324)",
                 BigDecimal.valueOf( 42, 0 ),
                 "DECIMAL(5, 3) NOT NULL" );
         tester.checkScalar( "truncate(cast(42.324 as float))", 42F, "FLOAT NOT NULL" );
@@ -5827,7 +5833,8 @@ public abstract class SqlOperatorBaseTest extends SqlLanguagelDependant {
                     "dayofweek(date '2008-1-23')",
                     "cannot translate call EXTRACT.*",
                     true );
-            tester.checkFails( "dayofweek(cast(null as date))",
+            tester.checkFails(
+                    "dayofweek(cast(null as date))",
                     "cannot translate call EXTRACT.*",
                     true );
         }
@@ -7171,7 +7178,8 @@ public abstract class SqlOperatorBaseTest extends SqlLanguagelDependant {
                 "^regr_syy(cast(null as varchar(2)), cast(null as varchar(2)))^",
                 "(?s)Cannot apply 'REGR_SYY' to arguments of type 'REGR_SYY\\(<VARCHAR\\(2\\)>, <VARCHAR\\(2\\)>\\)'\\. Supported form\\(s\\): 'REGR_SYY\\(<NUMERIC>, <NUMERIC>\\)'.*",
                 false );
-        tester.checkType( "regr_syy(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
+        tester.checkType(
+                "regr_syy(CAST(NULL AS INTEGER), CAST(NULL AS INTEGER))",
                 "INTEGER" );
         checkAggType( tester, "regr_syy(1.5, 2.5)", "DECIMAL(2, 1) NOT NULL" );
         if ( !enable ) {

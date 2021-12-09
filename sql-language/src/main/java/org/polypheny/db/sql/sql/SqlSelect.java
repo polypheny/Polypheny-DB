@@ -21,10 +21,10 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeList;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Select;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
@@ -296,5 +296,6 @@ public class SqlSelect extends SqlCall implements Select {
     public boolean isKeywordPresent( SqlSelectKeyword targetKeyWord ) {
         return getModifierNode( targetKeyWord ) != null;
     }
+
 }
 

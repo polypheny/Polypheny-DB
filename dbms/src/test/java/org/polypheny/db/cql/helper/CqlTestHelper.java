@@ -199,7 +199,8 @@ public class CqlTestHelper {
     }
 
 
-    private static void insertIntoTestTable( long tbigint, boolean tboolean, Date tdate, double tdecimal,
+    private static void insertIntoTestTable(
+            long tbigint, boolean tboolean, Date tdate, double tdecimal,
             double tdouble, int tinteger, double treal, int tsmallint, int ttinyint, String tvarchar ) {
 
         String query = String.format( Locale.ROOT, "INSERT INTO test.testtable (tbigint, tboolean, tdate,"

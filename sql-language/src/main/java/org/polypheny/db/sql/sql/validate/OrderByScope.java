@@ -20,14 +20,14 @@ package org.polypheny.db.sql.sql.validate;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
-import org.polypheny.db.util.Moniker;
-import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.util.NameMatcher;
 
 
 /**

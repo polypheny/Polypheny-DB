@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,13 +46,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
@@ -334,6 +334,7 @@ public final class LogicalWindow extends Window {
                     && Objects.equals( upperBound, ((WindowKey) obj).upperBound )
                     && isRows == ((WindowKey) obj).isRows;
         }
+
     }
 
 
@@ -359,5 +360,6 @@ public final class LogicalWindow extends Window {
         WindowKey windowKey = new WindowKey( groupSet, orderKeys, aggWindow.isRows(), aggWindow.getLowerBound(), aggWindow.getUpperBound() );
         windowMap.put( windowKey, over );
     }
+
 }
 

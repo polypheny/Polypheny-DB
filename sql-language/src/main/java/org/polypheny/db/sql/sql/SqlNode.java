@@ -20,17 +20,17 @@ package org.polypheny.db.sql.sql;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.nodes.Node;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.util.Moniker;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.sql.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.sql.util.SqlString;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
+import org.polypheny.db.util.Moniker;
 import org.polypheny.db.util.Util;
 
 

@@ -60,5 +60,6 @@ public class SqlCurrentDateFunction extends SqlFunction {
     public boolean isDynamicFunction() {
         return true;
     }
+
 }
 

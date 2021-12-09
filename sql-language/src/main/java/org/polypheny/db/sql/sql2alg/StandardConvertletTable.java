@@ -26,15 +26,24 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
-import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.BinaryOperator;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.CoreUtil;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.BinaryOperator;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCallBinding;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexRangeRef;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlDataTypeSpec;
@@ -66,21 +75,12 @@ import org.polypheny.db.sql.sql.fun.SqlTrimFunction;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter.Blackboard;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeFamily;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexCallBinding;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexRangeRef;
-import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.util.CoreUtil;
+import org.polypheny.db.util.InitializerContext;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -112,7 +112,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
         registerOp( OperatorRegistry.get( OperatorName.PLUS ), this::convertPlus );
 
-        registerOp( OperatorRegistry.get( OperatorName.MINUS ),
+        registerOp(
+                OperatorRegistry.get( OperatorName.MINUS ),
                 ( cx, call ) -> {
                     final RexCall e = (RexCall) StandardConvertletTable.this.convertCall( cx, call, (SqlOperator) call.getOperator() );
                     switch ( e.getOperands().get( 0 ).getType().getPolyType() ) {
@@ -131,7 +132,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         registerOp( OracleSqlOperatorTable.GREATEST, new GreatestConvertlet() );
         registerOp( OracleSqlOperatorTable.LEAST, new GreatestConvertlet() );
 
-        registerOp( OracleSqlOperatorTable.NVL,
+        registerOp(
+                OracleSqlOperatorTable.NVL,
                 ( cx, call ) -> {
                     final RexBuilder rexBuilder = cx.getRexBuilder();
                     final RexNode operand0 = cx.convertExpression( call.getSqlOperandList().get( 0 ) );
@@ -146,7 +148,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                                     rexBuilder.makeCast( type, operand1 ) ) );
                 } );
 
-        registerOp( OracleSqlOperatorTable.DECODE,
+        registerOp(
+                OracleSqlOperatorTable.DECODE,
                 ( cx, call ) -> {
                     final RexBuilder rexBuilder = cx.getRexBuilder();
                     final List<RexNode> operands = convertExpressionList( cx, call.getSqlOperandList(), PolyOperandTypeChecker.Consistency.NONE );
@@ -165,32 +168,37 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 } );
 
         // Expand "x NOT LIKE y" into "NOT (x LIKE y)"
-        registerOp( OperatorRegistry.get( OperatorName.NOT_LIKE ),
+        registerOp(
+                OperatorRegistry.get( OperatorName.NOT_LIKE ),
                 ( cx, call ) -> cx.convertExpression(
                         (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall(
                                 ParserPos.ZERO,
                                 OperatorRegistry.get( OperatorName.LIKE ).createCall( ParserPos.ZERO, call.getOperandList() ) ) ) );
 
         // Expand "x NOT SIMILAR y" into "NOT (x SIMILAR y)"
-        registerOp( OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ),
+        registerOp(
+                OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ),
                 ( cx, call ) -> cx.convertExpression(
                         (SqlNode) OperatorRegistry.get( OperatorName.NOT ).createCall(
                                 ParserPos.ZERO,
                                 OperatorRegistry.get( OperatorName.SIMILAR_TO ).createCall( ParserPos.ZERO, call.getOperandList() ) ) ) );
 
         // Unary "+" has no effect, so expand "+ x" into "x".
-        registerOp( OperatorRegistry.get( OperatorName.UNARY_PLUS ),
+        registerOp(
+                OperatorRegistry.get( OperatorName.UNARY_PLUS ),
                 ( cx, call ) -> cx.convertExpression( call.operand( 0 ) ) );
 
         // "DOT"
-        registerOp( OperatorRegistry.get( OperatorName.DOT ),
+        registerOp(
+                OperatorRegistry.get( OperatorName.DOT ),
                 ( cx, call ) -> cx.getRexBuilder().makeFieldAccess(
                         cx.convertExpression( call.operand( 0 ) ),
                         call.operand( 1 ).toString(), false ) );
         // "AS" has no effect, so expand "x AS id" into "x".
         registerOp( OperatorRegistry.get( OperatorName.AS ), ( cx, call ) -> cx.convertExpression( call.operand( 0 ) ) );
         // "SQRT(x)" is equivalent to "POWER(x, .5)"
-        registerOp( OperatorRegistry.get( OperatorName.SQRT ),
+        registerOp(
+                OperatorRegistry.get( OperatorName.SQRT ),
                 ( cx, call ) -> cx.convertExpression(
                         (SqlNode) OperatorRegistry.get( OperatorName.POWER ).createCall(
                                 ParserPos.ZERO,
@@ -245,7 +253,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
         // Convert "element(<expr>)" to "$element_slice(<expr>)", if the expression is a multiset of scalars.
         if ( false ) {
-            registerOp( OperatorRegistry.get( OperatorName.ELEMENT ),
+            registerOp(
+                    OperatorRegistry.get( OperatorName.ELEMENT ),
                     ( cx, call ) -> {
                         assert call.operandCount() == 1;
                         final SqlNode operand = call.operand( 0 );
@@ -261,7 +270,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
         // Convert "$element_slice(<expr>)" to "element(<expr>).field#0"
         if ( false ) {
-            registerOp( OperatorRegistry.get( OperatorName.ELEMENT_SLICE ),
+            registerOp(
+                    OperatorRegistry.get( OperatorName.ELEMENT_SLICE ),
                     ( cx, call ) -> {
                         assert call.operandCount() == 1;
                         final SqlNode operand = call.operand( 0 );
@@ -894,15 +904,18 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         // (e0 >= s1) AND (e1 >= s0)
         switch ( op.kind ) {
             case OVERLAPS:
-                return and( rexBuilder,
+                return and(
+                        rexBuilder,
                         ge( rexBuilder, e0, s1 ),
                         ge( rexBuilder, e1, s0 ) );
             case CONTAINS:
-                return and( rexBuilder,
+                return and(
+                        rexBuilder,
                         le( rexBuilder, s0, s1 ),
                         ge( rexBuilder, e0, e1 ) );
             case PERIOD_EQUALS:
-                return and( rexBuilder,
+                return and(
+                        rexBuilder,
                         eq( rexBuilder, s0, s1 ),
                         eq( rexBuilder, e0, e1 ) );
             case PRECEDES:

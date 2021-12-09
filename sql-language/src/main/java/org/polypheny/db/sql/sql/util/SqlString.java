@@ -112,5 +112,6 @@ public class SqlString {
     public SqlDialect getDialect() {
         return dialect;
     }
+
 }
 

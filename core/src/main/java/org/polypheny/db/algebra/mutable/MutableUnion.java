@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ package org.polypheny.db.algebra.mutable;
 
 
 import java.util.List;
-import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptCluster;
 
 
 /**
@@ -73,5 +73,6 @@ public class MutableUnion extends MutableSetOp {
     public MutableAlg clone() {
         return MutableUnion.of( rowType, cloneChildren(), all );
     }
+
 }
 

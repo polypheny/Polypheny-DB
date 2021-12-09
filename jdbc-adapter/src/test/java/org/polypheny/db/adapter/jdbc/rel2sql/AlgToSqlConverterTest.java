@@ -30,19 +30,30 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter.PlainAlgToSqlConverter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.UnionMergeRule;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.algebra.constant.NullCollation;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgram;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
+import org.polypheny.db.prepare.ContextImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.schema.FoodmartSchema;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.SchemaPlus;
+import org.polypheny.db.schema.ScottSchema;
 import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlDialect;
@@ -56,17 +67,6 @@ import org.polypheny.db.sql.sql.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.sql.dialect.MysqlSqlDialect;
 import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.sql.dialect.PostgresqlSqlDialect;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgTraitDef;
-import org.polypheny.db.plan.hep.HepPlanner;
-import org.polypheny.db.plan.hep.HepProgram;
-import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatLists;
-import org.polypheny.db.schema.FoodmartSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.ScottSchema;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -117,7 +117,8 @@ public class AlgToSqlConverterTest extends SqlLanguagelDependant {
                 .traitDefs( traitDefs )
                 .sqlToRelConverterConfig( sqlToRelConf )
                 .programs( programs )
-                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( rootSchema ),
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( rootSchema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {
@@ -657,7 +658,8 @@ public class AlgToSqlConverterTest extends SqlLanguagelDependant {
     @Test
     public void testUnparseInStruct1() {
         final AlgBuilder builder = algBuilder().scan( "emp" );
-        final RexNode condition = builder.call( OperatorRegistry.get( OperatorName.IN ),
+        final RexNode condition = builder.call(
+                OperatorRegistry.get( OperatorName.IN ),
                 builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.field( "deptno" ), builder.field( "job" ) ),
                 builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.literal( 1 ), builder.literal( "president" ) ) );
         final AlgNode root = algBuilder().scan( "emp" ).filter( condition ).build();
@@ -673,7 +675,8 @@ public class AlgToSqlConverterTest extends SqlLanguagelDependant {
     public void testUnparseInStruct2() {
         final AlgBuilder builder = algBuilder().scan( "emp" );
         final RexNode condition =
-                builder.call( OperatorRegistry.get( OperatorName.IN ),
+                builder.call(
+                        OperatorRegistry.get( OperatorName.IN ),
                         builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.field( "deptno" ), builder.field( "job" ) ),
                         builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.literal( 1 ), builder.literal( "president" ) ),
                         builder.call( OperatorRegistry.get( OperatorName.ROW ), builder.literal( 2 ), builder.literal( "president" ) ) );

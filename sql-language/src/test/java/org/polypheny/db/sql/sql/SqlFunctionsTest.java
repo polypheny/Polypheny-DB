@@ -816,5 +816,6 @@ public class SqlFunctionsTest {
         assertThat( Functions.multisetUnionDistinct( z, z ), is( z ) );
         assertThat( Functions.multisetUnionDistinct( z, addc ), is( Arrays.asList( "a", "c", "d" ) ) );
     }
+
 }
 

@@ -58,5 +58,6 @@ public class SqlBaseContextVariable extends SqlFunction {
     public boolean isDynamicFunction() {
         return true;
     }
+
 }
 

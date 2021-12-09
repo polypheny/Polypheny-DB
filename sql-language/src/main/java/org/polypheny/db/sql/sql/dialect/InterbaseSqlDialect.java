@@ -34,5 +34,6 @@ public class InterbaseSqlDialect extends SqlDialect {
     public InterbaseSqlDialect( Context context ) {
         super( context );
     }
+
 }
 

@@ -106,6 +106,8 @@ public class RelOptPlanReaderTest {
             // Compare makes no sense here. Use hashCode() to avoid errors.
             return this.getClass().getSimpleName() + "$" + hashCode() + "&";
         }
+
     }
+
 }
 

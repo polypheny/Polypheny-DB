@@ -24,17 +24,17 @@ import java.nio.charset.Charset;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.polypheny.db.catalog.MockCatalogReaderExtended;
-import org.polypheny.db.util.Collation.Coercibility;
-import org.polypheny.db.util.Conformance;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.MockCatalogReaderExtended;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlTestFactory;
 import org.polypheny.db.sql.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.util.Collation.Coercibility;
+import org.polypheny.db.util.Conformance;
 
 
 /**

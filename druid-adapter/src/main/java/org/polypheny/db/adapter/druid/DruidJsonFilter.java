@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -455,6 +455,7 @@ abstract class DruidJsonFilter implements DruidJson {
         private static JsonExpressionFilter alwaysFalse() {
             return new JsonExpressionFilter( "1 == 2" );
         }
+
     }
 
 
@@ -487,6 +488,7 @@ abstract class DruidJsonFilter implements DruidJson {
             DruidQuery.writeFieldIf( generator, "extractionFn", extractionFunction );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -544,6 +546,7 @@ abstract class DruidJsonFilter implements DruidJson {
             DruidQuery.writeFieldIf( generator, "extractionFn", extractionFunction );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -579,6 +582,7 @@ abstract class DruidJsonFilter implements DruidJson {
             }
             generator.writeEndObject();
         }
+
     }
 
 
@@ -611,6 +615,7 @@ abstract class DruidJsonFilter implements DruidJson {
             DruidQuery.writeFieldIf( generator, "extractionFn", extractionFunction );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -640,6 +645,7 @@ abstract class DruidJsonFilter implements DruidJson {
             DruidQuery.writeField( generator, "filter", filter );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -648,4 +654,5 @@ abstract class DruidJsonFilter implements DruidJson {
         dateFormatter.setTimeZone( DateTimeUtils.UTC_ZONE );
         return dateFormatter;
     }
+
 }

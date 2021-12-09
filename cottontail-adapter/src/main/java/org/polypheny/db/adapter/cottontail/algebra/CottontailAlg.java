@@ -20,8 +20,8 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.cottontail.CottontailTable;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptTable;
 
 
 public interface CottontailAlg extends AlgNode {

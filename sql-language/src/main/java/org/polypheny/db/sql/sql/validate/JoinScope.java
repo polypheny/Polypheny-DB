@@ -98,4 +98,5 @@ public class JoinScope extends ListScope {
         // go from the JOIN to the enclosing SELECT
         return usingScope.isWithin( scope2 );
     }
+
 }

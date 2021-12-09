@@ -269,6 +269,8 @@ public class AggregatingSelectScope extends DelegatingScope implements Aggregati
             }
             return -1;
         }
+
     }
+
 }
 

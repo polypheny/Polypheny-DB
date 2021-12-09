@@ -18,17 +18,18 @@ package org.polypheny.db.sql.sql.fun;
 
 
 import java.util.Arrays;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.nodes.Call;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.OperatorBinding;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlCallBinding;
 import org.polypheny.db.sql.sql.SqlIdentifier;
@@ -37,17 +38,16 @@ import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**

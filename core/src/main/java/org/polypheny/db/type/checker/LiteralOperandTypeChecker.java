@@ -21,9 +21,9 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
 

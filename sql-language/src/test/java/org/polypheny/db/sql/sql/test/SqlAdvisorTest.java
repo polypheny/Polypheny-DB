@@ -38,7 +38,6 @@ import org.junit.Test;
 import org.junit.rules.MethodRule;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.MonikerType;
-import org.polypheny.db.util.Moniker;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.sql.sql.SqlTestFactory;
 import org.polypheny.db.sql.sql.advise.SqlAdvisor;
@@ -51,6 +50,7 @@ import org.polypheny.db.sql.sql.utils.SqlTester;
 import org.polypheny.db.sql.sql.utils.SqlValidatorTestCase;
 import org.polypheny.db.sql.sql.utils.SqlValidatorTester;
 import org.polypheny.db.sql.sql.utils.WithLex;
+import org.polypheny.db.util.Moniker;
 
 
 /**

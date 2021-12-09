@@ -39,5 +39,6 @@ abstract class SqlAbstractStringLiteral extends SqlLiteral {
      * @return StringLiteral with concatenated value. this == lits[0], used only for method dispatch.
      */
     protected abstract SqlAbstractStringLiteral concat1( List<SqlLiteral> literals );
+
 }
 

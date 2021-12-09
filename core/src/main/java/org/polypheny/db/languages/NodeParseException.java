@@ -152,4 +152,5 @@ public class NodeParseException extends Exception implements PolyphenyDbParserEx
     private Object writeReplace() {
         return new RuntimeException( getClass().getName() + ": " + getMessage() );
     }
+
 }

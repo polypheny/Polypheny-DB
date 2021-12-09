@@ -21,9 +21,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.file.algebra.FileRules;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.Convention;
 
 
 public class FileConvention extends Convention.Impl {

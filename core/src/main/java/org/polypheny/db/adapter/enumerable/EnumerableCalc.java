@@ -50,23 +50,23 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.constant.ConformanceEnum;
-import org.polypheny.db.util.Conformance;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPredicateList;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
 
 
@@ -182,7 +182,8 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                     enumeratorType,
                     EnumUtils.NO_EXPRS,
                     Expressions.list(
-                            Expressions.fieldDecl( Modifier.PUBLIC | Modifier.FINAL,
+                            Expressions.fieldDecl(
+                                    Modifier.PUBLIC | Modifier.FINAL,
                                     inputEnumerator,
                                     Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
                             EnumUtils.overridingMethodDecl(
@@ -233,7 +234,8 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._list, Expressions.constant( Collections.emptyList() ) ),
                             Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._i, Expressions.constant( 0 ) ),
                             Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._unset, Expressions.constant( true ) ),
-                            Expressions.fieldDecl( Modifier.PUBLIC | Modifier.FINAL,
+                            Expressions.fieldDecl(
+                                    Modifier.PUBLIC | Modifier.FINAL,
                                     inputEnumerator,
                                     Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
                             EnumUtils.overridingMethodDecl(

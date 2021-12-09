@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,18 +41,18 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.util.BuiltInMethod;
@@ -183,8 +183,10 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
                         getCluster().getRexBuilder() );
         program.addCondition( condition );
         builder.add(
-                Expressions.return_( null,
-                        RexToLixTranslator.translateCondition( program.getProgram(),
+                Expressions.return_(
+                        null,
+                        RexToLixTranslator.translateCondition(
+                                program.getProgram(),
                                 implementor.getTypeFactory(),
                                 builder,
                                 new RexToLixTranslator.InputGetterImpl( ImmutableList.of( Pair.of( (Expression) left_, leftPhysType ), Pair.of( (Expression) right_, rightPhysType ) ) ),
@@ -192,5 +194,6 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
                                 implementor.getConformance() ) ) );
         return Expressions.lambda( Predicate2.class, builder.toBlock(), left_, right_ );
     }
+
 }
 

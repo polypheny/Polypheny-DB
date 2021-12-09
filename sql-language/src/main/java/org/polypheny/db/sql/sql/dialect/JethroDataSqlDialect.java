@@ -33,10 +33,10 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlOperator;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 
 
@@ -179,6 +179,7 @@ public class JethroDataSqlDialect extends SqlDialect {
             }
             return true;
         }
+
     }
 
 
@@ -188,6 +189,7 @@ public class JethroDataSqlDialect extends SqlDialect {
     public interface JethroInfoCache {
 
         JethroInfo get( DatabaseMetaData databaseMetaData );
+
     }
 
 
@@ -236,6 +238,7 @@ public class JethroDataSqlDialect extends SqlDialect {
                 throw new RuntimeException( msg + "; make sure your Jethro server is up to date", e );
             }
         }
+
     }
 
 
@@ -252,6 +255,8 @@ public class JethroDataSqlDialect extends SqlDialect {
         public JethroInfo( Multimap<String, JethroSupportedFunction> supportedFunctions ) {
             this.supportedFunctions = ImmutableSetMultimap.copyOf( supportedFunctions );
         }
+
     }
+
 }
 

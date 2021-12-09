@@ -51,26 +51,26 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.reflect.TypeUtils;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.nodes.CallBinding;
-import org.polypheny.db.nodes.DataTypeSpec;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.util.ValidatorUtil;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.DataTypeSpec;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
@@ -180,7 +180,6 @@ public abstract class PolyTypeUtil {
         }
         return type;
     }
-
 
 
     /**

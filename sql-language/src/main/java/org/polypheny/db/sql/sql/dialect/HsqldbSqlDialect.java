@@ -20,6 +20,7 @@ package org.polypheny.db.sql.sql.dialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlBasicCall;
@@ -33,7 +34,6 @@ import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.fun.SqlCase;
 import org.polypheny.db.sql.sql.fun.SqlFloorFunction;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -162,7 +162,8 @@ public class HsqldbSqlDialect extends SqlDialect {
                         SqlNodeList.of(
                                 nullLiteral,
                                 (SqlNode) OperatorRegistry.get( OperatorName.MIN ).createCall( ParserPos.ZERO, operand ) ),
-                        (SqlNode) OperatorRegistry.get( OperatorName.SCALAR_QUERY ).createCall( ParserPos.ZERO,
+                        (SqlNode) OperatorRegistry.get( OperatorName.SCALAR_QUERY ).createCall(
+                                ParserPos.ZERO,
                                 OperatorRegistry.get( OperatorName.UNION_ALL ).createCall( ParserPos.ZERO, unionOperand, unionOperand ) ) );
 
         log.debug( "SINGLE_VALUE rewritten into [{}]", caseExpr );

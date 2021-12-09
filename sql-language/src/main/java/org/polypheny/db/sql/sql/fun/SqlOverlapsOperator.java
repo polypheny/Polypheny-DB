@@ -19,17 +19,16 @@ package org.polypheny.db.sql.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.CoreUtil;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlCallBinding;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlUtil;
 import org.polypheny.db.sql.sql.SqlWriter;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -37,6 +36,7 @@ import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.CoreUtil;
 
 
 /**

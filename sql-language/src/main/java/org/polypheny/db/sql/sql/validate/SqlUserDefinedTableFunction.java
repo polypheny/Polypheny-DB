@@ -20,11 +20,11 @@ package org.polypheny.db.sql.sql.validate;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.polypheny.db.algebra.constant.FunctionCategory;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.TableFunction;
+import org.polypheny.db.sql.sql.SqlIdentifier;
+import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.PolyOperandTypeInference;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -83,4 +83,5 @@ public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implemen
         List<Object> arguments = SqlUserDefinedTableMacro.convertArguments( typeFactory, operandList, function, getNameAsId(), false );
         return getFunction().getElementType( arguments );
     }
+
 }

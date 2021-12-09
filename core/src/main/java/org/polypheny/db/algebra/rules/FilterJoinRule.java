@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,17 +40,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.EquiJoin;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
@@ -265,6 +265,7 @@ public abstract class FilterJoinRule extends AlgOptRule {
             Join join = call.alg( 0 );
             perform( call, null, join );
         }
+
     }
 
 
@@ -289,6 +290,7 @@ public abstract class FilterJoinRule extends AlgOptRule {
             Join join = call.alg( 1 );
             perform( call, filter, join );
         }
+
     }
 
 
@@ -298,6 +300,8 @@ public abstract class FilterJoinRule extends AlgOptRule {
     public interface Predicate {
 
         boolean apply( Join join, JoinAlgType joinType, RexNode exp );
+
     }
+
 }
 

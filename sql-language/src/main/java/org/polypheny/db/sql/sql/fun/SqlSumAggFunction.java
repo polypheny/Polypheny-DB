@@ -21,8 +21,8 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.SplittableAggFunction;
 import org.polypheny.db.algebra.fun.SumAggFunction;
-import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
@@ -57,5 +57,6 @@ public class SqlSumAggFunction extends SqlAggFunction implements SumAggFunction 
         }
         return super.unwrap( clazz );
     }
+
 }
 

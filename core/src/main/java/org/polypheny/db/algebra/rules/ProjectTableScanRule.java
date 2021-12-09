@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,15 +37,15 @@ package org.polypheny.db.algebra.rules;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Bindables.BindableTableScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -139,5 +139,6 @@ public abstract class ProjectTableScanRule extends AlgOptRule {
         final List<Integer> projects2 = Mappings.apply( (Mapping) mapping, projects );
         call.transformTo( Bindables.BindableTableScan.create( scan.getCluster(), scan.getTable(), filters, projects2 ) );
     }
+
 }
 

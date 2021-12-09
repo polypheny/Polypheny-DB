@@ -429,6 +429,7 @@ public class SqlSimpleParser {
             }
             return i;
         }
+
     }
 
 
@@ -461,6 +462,7 @@ public class SqlSimpleParser {
                 buf.append( s );
             }
         }
+
     }
 
 
@@ -470,6 +472,7 @@ public class SqlSimpleParser {
             super( type, s );
             assert (type == TokenType.DQID) || (type == TokenType.ID);
         }
+
     }
 
 
@@ -824,6 +827,8 @@ public class SqlSimpleParser {
             }
             return false;
         }
+
     }
+
 }
 

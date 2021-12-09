@@ -18,10 +18,10 @@ package org.polypheny.db.sql.sql;
 
 
 import java.util.List;
-import org.polypheny.db.util.Collation;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Util;
 
@@ -81,5 +81,6 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
                                 literal -> ((SqlCharStringLiteral) literal).getNlsString() ) ),
                 literals.get( 0 ).getPos() );
     }
+
 }
 

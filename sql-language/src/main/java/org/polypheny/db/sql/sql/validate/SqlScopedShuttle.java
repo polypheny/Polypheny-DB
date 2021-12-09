@@ -66,5 +66,6 @@ public abstract class SqlScopedShuttle extends SqlShuttle {
     protected SqlValidatorScope getScope() {
         return scopes.peek();
     }
+
 }
 

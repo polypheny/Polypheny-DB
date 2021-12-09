@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,12 +39,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
 
 
@@ -161,4 +161,5 @@ public interface ElasticsearchRel extends AlgNode {
         }
 
     }
+
 }

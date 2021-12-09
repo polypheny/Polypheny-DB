@@ -16,9 +16,9 @@
 
 package org.polypheny.db.cql;
 
-import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.BinaryOperator;
 
 
 public enum Comparator {

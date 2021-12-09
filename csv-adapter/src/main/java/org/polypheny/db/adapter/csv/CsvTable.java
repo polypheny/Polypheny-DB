@@ -88,5 +88,6 @@ public abstract class CsvTable extends AbstractTable {
     public enum Flavor {
         SCANNABLE, FILTERABLE, TRANSLATABLE
     }
+
 }
 

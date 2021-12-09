@@ -29,15 +29,30 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.prepare.Context;
+import org.polypheny.db.algebra.rules.SortRemoveRule;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbServerStatement;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.AlgOptAbstractTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -49,28 +64,13 @@ import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.AbstractConverter.ExpandConversionRule;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgFieldCollation;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.Aggregate;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.logical.LogicalAggregate;
-import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.metadata.AlgMdCollation;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.rules.SortRemoveRule;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.SchemaPlus;
@@ -151,7 +151,8 @@ public class TraitPropagationTest {
             final AlgNode rt1 = EnumerableTableScan.create( cluster, t1 );
 
             // project s column
-            AlgNode project = LogicalProject.create( rt1,
+            AlgNode project = LogicalProject.create(
+                    rt1,
                     ImmutableList.of( (RexNode) rexBuilder.makeInputRef( stringType, 0 ), rexBuilder.makeInputRef( integerType, 1 ) ),
                     typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build() );
 

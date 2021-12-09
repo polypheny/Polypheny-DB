@@ -43,5 +43,6 @@ public class VerticaSqlDialect extends SqlDialect {
     public boolean supportsNestedAggregations() {
         return false;
     }
+
 }
 

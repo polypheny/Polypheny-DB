@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public class ArrayType extends AbstractPolyType {
             sb.append( elementType.toString() );
         }
         sb.append( " ARRAY" );
-        if( withDetail ) {
+        if ( withDetail ) {
             sb.append( String.format( "(%d,%d)", cardinality, dimension ) );
         }
     }
@@ -101,10 +101,10 @@ public class ArrayType extends AbstractPolyType {
 
 
     /*
-    * @return This returns the type of a nested ArrayType. E.g. for an array of an array of Integers, this will return the Integer type.
-    */
+     * @return This returns the type of a nested ArrayType. E.g. for an array of an array of Integers, this will return the Integer type.
+     */
     public AlgDataType getNestedComponentType() {
-        if( this.getComponentType().getPolyType() == PolyType.ARRAY ) {
+        if ( this.getComponentType().getPolyType() == PolyType.ARRAY ) {
             return ((ArrayType) this.elementType).getNestedComponentType();
         } else {
             return this.elementType;
@@ -115,14 +115,15 @@ public class ArrayType extends AbstractPolyType {
     /**
      * @return the largest cardinality of all nested arrays
      */
-    public long getMaxCardinality () {
+    public long getMaxCardinality() {
         return this.cardinality;
     }
+
 
     /**
      * @return the dimension of this array
      */
-    public long getMaxDimension () {
+    public long getMaxDimension() {
         return this.dimension;
     }
 
@@ -157,4 +158,5 @@ public class ArrayType extends AbstractPolyType {
             }
         };
     }
+
 }

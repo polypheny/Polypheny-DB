@@ -22,17 +22,6 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgTraitDef;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.volcano.AbstractConverter.ExpandConversionRule;
-import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationImpl;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -41,6 +30,17 @@ import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.volcano.AbstractConverter.ExpandConversionRule;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.core.volcano.PlannerTests.TestLeafAlg;
 import org.polypheny.db.sql.core.volcano.PlannerTests.TestSingleAlg;
@@ -110,12 +110,14 @@ public class CollationConversionTest {
         public void onMatch( AlgOptRuleCall call ) {
             NoneSingleRel single = call.alg( 0 );
             AlgNode input = single.getInput();
-            AlgNode physInput = convert( input,
+            AlgNode physInput = convert(
+                    input,
                     single.getTraitSet()
                             .replace( PlannerTests.PHYS_CALLING_CONVENTION )
                             .plus( ROOT_COLLATION ) );
             call.transformTo( new RootSingleRel( single.getCluster(), physInput ) );
         }
+
     }
 
 
@@ -139,6 +141,7 @@ public class CollationConversionTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new RootSingleRel( getCluster(), sole( inputs ) );
         }
+
     }
 
 
@@ -163,6 +166,7 @@ public class CollationConversionTest {
             NoneLeafRel leafRel = call.alg( 0 );
             call.transformTo( new LeafRel( leafRel.getCluster(), leafRel.label ) );
         }
+
     }
 
 
@@ -186,6 +190,7 @@ public class CollationConversionTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new LeafRel( getCluster(), label );
         }
+
     }
 
 
@@ -205,6 +210,7 @@ public class CollationConversionTest {
             assert inputs.isEmpty();
             return this;
         }
+
     }
 
 
@@ -223,6 +229,7 @@ public class CollationConversionTest {
             assert traitSet.comprises( Convention.NONE, LEAF_COLLATION );
             return new NoneSingleRel( getCluster(), sole( inputs ) );
         }
+
     }
 
 
@@ -240,6 +247,7 @@ public class CollationConversionTest {
         public AlgTraitDef getTraitDef() {
             return COLLATION_TRAIT_DEF;
         }
+
     }
 
 
@@ -287,6 +295,7 @@ public class CollationConversionTest {
         public boolean canConvert( AlgOptPlanner planner, AlgCollation fromTrait, AlgCollation toTrait ) {
             return true;
         }
+
     }
 
 
@@ -310,6 +319,8 @@ public class CollationConversionTest {
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             return planner.getCostFactory().makeTinyCost();
         }
+
     }
+
 }
 

@@ -17,17 +17,17 @@
 package org.polypheny.db.sql.sql2alg;
 
 
-import org.polypheny.db.util.InitializerExpressionFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexRangeRef;
+import org.polypheny.db.util.InitializerExpressionFactory;
 
 
 /**
@@ -88,4 +88,5 @@ public interface SqlRexContext {
      * Converts a literal.
      */
     RexNode convertLiteral( SqlLiteral literal );
+
 }

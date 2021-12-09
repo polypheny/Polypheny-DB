@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,15 +37,15 @@ package org.polypheny.db.adapter.pig;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -75,6 +75,7 @@ public class PigAlgFactories {
         public AlgNode createScan( AlgOptCluster cluster, AlgOptTable table ) {
             return new PigTableScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), table );
         }
+
     }
 
 
@@ -90,6 +91,7 @@ public class PigAlgFactories {
         public AlgNode createFilter( AlgNode input, RexNode condition ) {
             return new PigFilter( input.getCluster(), input.getTraitSet().replace( PigAlg.CONVENTION ), input, condition );
         }
+
     }
 
 
@@ -105,6 +107,7 @@ public class PigAlgFactories {
         public AlgNode createAggregate( AlgNode input, boolean indicator, ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
             return new PigAggregate( input.getCluster(), input.getTraitSet(), input, indicator, groupSet, groupSets, aggCalls );
         }
+
     }
 
 
@@ -122,5 +125,6 @@ public class PigAlgFactories {
         }
 
     }
+
 }
 

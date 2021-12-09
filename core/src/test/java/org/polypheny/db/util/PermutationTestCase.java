@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,10 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.type.PolyType;
 
@@ -172,4 +172,5 @@ public class PermutationTestCase {
         final Permutation perm2 = Project.getPermutation( 2, ImmutableList.of( builder.makeInputRef( doubleType, 1 ), builder.makeInputRef( doubleType, 0 ) ) );
         assertThat( perm2, is( new Permutation( new int[]{ 1, 0 } ) ) );
     }
+
 }

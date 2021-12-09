@@ -18,9 +18,9 @@ package org.polypheny.db.sql.sql.fun;
 
 
 import com.google.common.base.Preconditions;
-import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.SplittableAggFunction;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;

@@ -43,5 +43,6 @@ public class AccessSqlDialect extends SqlDialect {
     public boolean supportsWindowFunctions() {
         return false;
     }
+
 }
 

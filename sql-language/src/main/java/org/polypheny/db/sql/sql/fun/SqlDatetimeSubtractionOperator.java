@@ -19,14 +19,14 @@ package org.polypheny.db.sql.sql.fun;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.OperatorBinding;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.sql.SqlSyntax;
 import org.polypheny.db.sql.sql.SqlWriter;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -71,5 +71,6 @@ public class SqlDatetimeSubtractionOperator extends SqlSpecialOperator {
     public Monotonicity getMonotonicity( OperatorBinding call ) {
         return OperatorRegistry.get( OperatorName.MINUS ).getMonotonicity( call );
     }
+
 }
 

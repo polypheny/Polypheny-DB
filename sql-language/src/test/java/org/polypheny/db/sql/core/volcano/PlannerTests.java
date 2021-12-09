@@ -18,14 +18,6 @@ package org.polypheny.db.sql.core.volcano;
 
 
 import java.util.List;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -34,6 +26,14 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
@@ -109,6 +109,7 @@ class PlannerTests {
         public String algCompareString() {
             return this.getClass().getSimpleName() + "$" + label + "&";
         }
+
     }
 
 
@@ -138,6 +139,7 @@ class PlannerTests {
         public String algCompareString() {
             return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
         }
+
     }
 
 
@@ -156,6 +158,7 @@ class PlannerTests {
             assert traitSet.comprises( Convention.NONE );
             return new NoneSingleAlg( getCluster(), sole( inputs ) );
         }
+
     }
 
 
@@ -175,6 +178,7 @@ class PlannerTests {
             assert inputs.isEmpty();
             return this;
         }
+
     }
 
 
@@ -200,6 +204,7 @@ class PlannerTests {
             assert inputs.isEmpty();
             return this;
         }
+
     }
 
 
@@ -224,6 +229,7 @@ class PlannerTests {
             assert traitSet.comprises( PHYS_CALLING_CONVENTION );
             return new PhysSingleAlg( getCluster(), sole( inputs ) );
         }
+
     }
 
 
@@ -248,6 +254,7 @@ class PlannerTests {
             NoneLeafAlg leafRel = call.alg( 0 );
             call.transformTo( new PhysLeafAlg( leafRel.getCluster(), leafRel.label ) );
         }
+
     }
 
 
@@ -274,6 +281,8 @@ class PlannerTests {
             AlgNode physInput = convert( input, single.getTraitSet().replace( PHYS_CALLING_CONVENTION ) );
             call.transformTo( new PhysSingleAlg( single.getCluster(), physInput ) );
         }
+
     }
+
 }
 

@@ -43,5 +43,6 @@ public class SqlLateralOperator extends SqlSpecialOperator {
             SqlUtil.unparseFunctionSyntax( this, writer, call );
         }
     }
+
 }
 

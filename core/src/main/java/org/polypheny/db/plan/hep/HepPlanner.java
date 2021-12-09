@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,14 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.Converter;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.convert.TraitMatchingRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
-import org.polypheny.db.plan.CommonRelSubExprRule;
-import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptCostImpl;
@@ -58,13 +63,8 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.convert.Converter;
-import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.convert.TraitMatchingRule;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.CommonRelSubExprRule;
+import org.polypheny.db.plan.Context;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.graph.BreadthFirstIterator;
@@ -942,5 +942,6 @@ public class HepPlanner extends AbstractRelOptPlanner {
         // TODO jvs 20-Apr-2006: This is overly conservative.  Better would be to keep a timestamp per HepAlgVertex, and update only affected vertices and all ancestors on each transformation.
         return nTransformations;
     }
+
 }
 

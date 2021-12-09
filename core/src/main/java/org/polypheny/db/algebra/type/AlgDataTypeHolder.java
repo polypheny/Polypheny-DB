@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ class AlgDataTypeHolder {
      * Get field if exists, otherwise inserts a new field. The new field by default will have "any" type, except for the
      * dynamic star field.
      *
-     * @param fieldName     Request field name
+     * @param fieldName Request field name
      * @param caseSensitive Case Sensitive
      * @return A pair of RelDataTypeField and Boolean. Boolean indicates whether a new field is added to this holder.
      */

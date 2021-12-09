@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,25 +45,20 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.constant.Syntax;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.OperatorImpl;
 import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.util.Moniker;
-import org.polypheny.db.util.MonikerImpl;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
-import org.polypheny.db.util.ValidatorUtil;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.OperatorImpl;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
@@ -81,8 +76,13 @@ import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.util.MonikerImpl;
+import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**

@@ -63,13 +63,12 @@ import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.Conformance;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -83,6 +82,7 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -145,7 +145,8 @@ public class RexToLixTranslator {
     }
 
 
-    private RexToLixTranslator( RexProgram program, JavaTypeFactory typeFactory, Expression root, InputGetter inputGetter, BlockBuilder list,
+    private RexToLixTranslator(
+            RexProgram program, JavaTypeFactory typeFactory, Expression root, InputGetter inputGetter, BlockBuilder list,
             Map<? extends RexNode, Boolean> exprNullableMap, RexBuilder builder, Conformance conformance, RexToLixTranslator parent, Function1<String, InputGetter> correlates, Map<RexNode, Expression> replace ) {
         this.program = program; // may be null
         this.typeFactory = Objects.requireNonNull( typeFactory );
@@ -162,7 +163,8 @@ public class RexToLixTranslator {
     }
 
 
-    public static List<Expression> translateProjects( RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
+    public static List<Expression> translateProjects(
+            RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
             InputGetter inputGetter, Function1<String, InputGetter> correlates ) {
         return translateProjects( program, typeFactory, conformance, list, outputPhysType, root, inputGetter, correlates, new UnwindContext() );
     }
@@ -181,7 +183,8 @@ public class RexToLixTranslator {
      * @param correlates Provider of references to the values of correlated variables
      * @return Sequence of expressions, optional condition
      */
-    public static List<Expression> translateProjects( RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
+    public static List<Expression> translateProjects(
+            RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
             InputGetter inputGetter, Function1<String, InputGetter> correlates, UnwindContext unwindContext ) {
         List<Type> storageTypes = null;
         if ( outputPhysType != null ) {

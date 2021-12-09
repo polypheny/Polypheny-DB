@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,11 +42,11 @@ import java.util.Set;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.parser.SqlParserUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -173,13 +173,13 @@ public class Ast {
 
         @Override
         public Node clone( ParserPos pos ) {
-            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
         }
 
 
         @Override
         public Kind getKind() {
-            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
         }
 
 
@@ -191,19 +191,19 @@ public class Ast {
 
         @Override
         public boolean isA( Set<Kind> category ) {
-            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
         }
 
 
         @Override
         public boolean equalsDeep( Node node, Litmus litmus ) {
-            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
         }
 
 
         @Override
         public <R> R accept( NodeVisitor<R> visitor ) {
-            throw new UnsupportedOperationException("Pig nodes cannot be cloned.");
+            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
         }
 
     }
@@ -387,7 +387,8 @@ public class Ast {
         final Literal count;
 
 
-        public LimitStmt( ParserPos pos, Identifier target,
+        public LimitStmt(
+                ParserPos pos, Identifier target,
                 Identifier source, Literal count ) {
             super( pos, Op.LIMIT, target, source );
             this.count = count;

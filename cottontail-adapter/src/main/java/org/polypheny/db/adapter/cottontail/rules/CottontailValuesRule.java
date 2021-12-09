@@ -18,9 +18,9 @@ package org.polypheny.db.adapter.cottontail.rules;
 
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailValues;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 

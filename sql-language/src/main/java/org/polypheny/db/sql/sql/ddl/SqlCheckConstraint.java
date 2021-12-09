@@ -19,9 +19,9 @@ package org.polypheny.db.sql.sql.ddl;
 
 import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;

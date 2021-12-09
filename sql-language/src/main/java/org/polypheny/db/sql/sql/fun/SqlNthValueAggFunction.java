@@ -43,5 +43,6 @@ public class SqlNthValueAggFunction extends SqlAggFunction {
                 true,
                 Optionality.FORBIDDEN );
     }
+
 }
 

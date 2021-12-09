@@ -29,25 +29,25 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.sql.sql.SqlToAlgTestBase;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgOptUtil.Logic;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgOptUtil.Logic;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.LogicVisitor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTransformer;
+import org.polypheny.db.sql.sql.SqlToAlgTestBase;
 import org.polypheny.db.type.PolyType;
 
 
@@ -405,5 +405,6 @@ public class RexTransformerTest {
         assertThat( list.size(), is( 1 ) );
         return list.get( 0 );
     }
+
 }
 

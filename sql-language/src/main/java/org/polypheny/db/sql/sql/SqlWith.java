@@ -20,10 +20,10 @@ package org.polypheny.db.sql.sql;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
 

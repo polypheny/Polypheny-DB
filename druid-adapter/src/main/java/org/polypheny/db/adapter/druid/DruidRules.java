@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,23 +44,16 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.joda.time.Interval;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPredicateList;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExtractProjectRule;
 import org.polypheny.db.algebra.rules.AggregateFilterTransposeRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
@@ -70,6 +63,13 @@ import org.polypheny.db.algebra.rules.ProjectSortTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexExecutor;
@@ -114,7 +114,8 @@ public class DruidRules {
     public static final DruidHavingFilterRule DRUID_HAVING_FILTER_RULE = new DruidHavingFilterRule( AlgFactories.LOGICAL_BUILDER );
 
     public static final List<AlgOptRule> RULES =
-            ImmutableList.of( FILTER,
+            ImmutableList.of(
+                    FILTER,
                     PROJECT_FILTER_TRANSPOSE,
                     AGGREGATE_FILTER_TRANSPOSE,
                     AGGREGATE_PROJECT,
@@ -231,6 +232,7 @@ public class DruidRules {
             }
             return ImmutableTriple.of( timeRangeNodes, pushableNodes, nonPushableNodes );
         }
+
     }
 
 
@@ -261,6 +263,7 @@ public class DruidRules {
                 call.transformTo( newDruidQuery );
             }
         }
+
     }
 
 
@@ -355,6 +358,7 @@ public class DruidRules {
             }
             return Pair.of( aboveNodes, belowNodes );
         }
+
     }
 
 
@@ -408,6 +412,7 @@ public class DruidRules {
                 call.transformTo( newQuery );
             }
         }
+
     }
 
 
@@ -449,6 +454,7 @@ public class DruidRules {
             final AlgNode newAggregate = aggregate.copy( aggregate.getTraitSet(), ImmutableList.of( query.getTopNode() ) );
             call.transformTo( DruidQuery.extendQuery( query, newAggregate ) );
         }
+
     }
 
 
@@ -680,6 +686,7 @@ public class DruidRules {
         public DruidSortProjectTransposeRule( AlgBuilderFactory algBuilderFactory ) {
             super( operand( Sort.class, operand( Project.class, operand( DruidQuery.class, none() ) ) ), algBuilderFactory, null );
         }
+
     }
 
 
@@ -696,6 +703,7 @@ public class DruidRules {
         public DruidProjectSortTransposeRule( AlgBuilderFactory algBuilderFactory ) {
             super( operand( Project.class, operand( Sort.class, operand( DruidQuery.class, none() ) ) ), algBuilderFactory, null );
         }
+
     }
 
 
@@ -735,6 +743,7 @@ public class DruidRules {
             final AlgNode newSort = sort.copy( sort.getTraitSet(), ImmutableList.of( Util.last( query.algs ) ) );
             call.transformTo( DruidQuery.extendQuery( query, newSort ) );
         }
+
     }
 
 
@@ -752,6 +761,7 @@ public class DruidRules {
         public DruidProjectFilterTransposeRule( AlgBuilderFactory algBuilderFactory ) {
             super( operand( Project.class, operand( Filter.class, operand( DruidQuery.class, none() ) ) ), expr -> false, algBuilderFactory );
         }
+
     }
 
 
@@ -768,6 +778,7 @@ public class DruidRules {
         public DruidFilterProjectTransposeRule( AlgBuilderFactory algBuilderFactory ) {
             super( operand( Filter.class, operand( Project.class, operand( DruidQuery.class, none() ) ) ), true, true, algBuilderFactory );
         }
+
     }
 
 
@@ -784,6 +795,7 @@ public class DruidRules {
         public DruidAggregateFilterTransposeRule( AlgBuilderFactory algBuilderFactory ) {
             super( operand( Aggregate.class, operand( Filter.class, operand( DruidQuery.class, none() ) ) ), algBuilderFactory );
         }
+
     }
 
 
@@ -800,6 +812,7 @@ public class DruidRules {
         public DruidFilterAggregateTransposeRule( AlgBuilderFactory algBuilderFactory ) {
             super( operand( Filter.class, operand( Aggregate.class, operand( DruidQuery.class, none() ) ) ), algBuilderFactory );
         }
+
     }
 
 
@@ -816,6 +829,7 @@ public class DruidRules {
         public DruidAggregateExtractProjectRule( AlgBuilderFactory algBuilderFactory ) {
             super( operand( Aggregate.class, operand( DruidQuery.class, none() ) ), algBuilderFactory );
         }
+
     }
 
 }

@@ -43,6 +43,9 @@ import java.util.TreeMap;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Correlate;
@@ -60,20 +63,17 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.FilterCorrelateRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCostImpl;
 import org.polypheny.db.plan.AlgOptRule;
@@ -1643,9 +1643,11 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
         RemoveCorrelationForScalarProjectRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( LogicalCorrelate.class,
+                    operand(
+                            LogicalCorrelate.class,
                             operand( AlgNode.class, any() ),
-                            operand( LogicalAggregate.class,
+                            operand(
+                                    LogicalAggregate.class,
                                     operand( LogicalProject.class, operand( AlgNode.class, any() ) ) ) ),
                     algBuilderFactory, null );
         }
@@ -1814,9 +1816,11 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
         RemoveCorrelationForScalarAggregateRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( LogicalCorrelate.class,
+                    operand(
+                            LogicalCorrelate.class,
                             operand( AlgNode.class, any() ),
-                            operand( LogicalProject.class,
+                            operand(
+                                    LogicalProject.class,
                                     operandJ( LogicalAggregate.class,
                                             null, Aggregate::isSimple,
                                             operand( LogicalProject.class, operand( AlgNode.class, any() ) ) ) ) ),

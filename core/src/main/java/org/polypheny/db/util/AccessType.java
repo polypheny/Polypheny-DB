@@ -66,4 +66,5 @@ public class AccessType {
         String[] accessNames = accessString.split( "," );
         return create( accessNames );
     }
+
 }

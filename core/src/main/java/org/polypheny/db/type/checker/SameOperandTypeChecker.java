@@ -22,15 +22,15 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.CallBinding;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.OperatorBinding;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Util;
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.Linq4j;
-import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.algebra.metadata.NullSentinel;
+import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -165,6 +165,8 @@ public class RexAnalyzer {
                     return super.visitCall( call );
             }
         }
+
     }
+
 }
 

@@ -18,9 +18,9 @@ package org.polypheny.db.sql.sql.fun;
 
 
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.sql.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.sql.SqlCallBinding;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;

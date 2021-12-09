@@ -19,12 +19,12 @@ package org.polypheny.db.languages.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import lombok.Getter;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
 
 
 /**

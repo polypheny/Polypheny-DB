@@ -49,4 +49,5 @@ public class SqlNewOperator extends SqlPrefixOperator {
     public boolean requiresDecimalExpansion() {
         return false;
     }
+
 }

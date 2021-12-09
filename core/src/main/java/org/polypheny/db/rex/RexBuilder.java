@@ -50,22 +50,20 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.SpecialOperator;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MapPolyType;
@@ -73,6 +71,8 @@ import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
@@ -574,7 +574,8 @@ public class RexBuilder {
         if ( !exp.getType().isNullable() ) {
             return casted;
         }
-        return makeCall( toType,
+        return makeCall(
+                toType,
                 OperatorRegistry.get( OperatorName.CASE ),
                 ImmutableList.of(
                         makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), exp ),

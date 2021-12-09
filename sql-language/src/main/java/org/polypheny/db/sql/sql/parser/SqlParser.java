@@ -18,13 +18,13 @@ package org.polypheny.db.sql.sql.parser;
 
 
 import java.io.StringReader;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlSelect;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 
 
 /**

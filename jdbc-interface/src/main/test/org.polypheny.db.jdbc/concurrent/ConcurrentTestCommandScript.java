@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -727,6 +727,7 @@ public class ConcurrentTestCommandScript
             this.state = state;
             this.stateData = stateData;
         }
+
     }
 
 
@@ -743,6 +744,7 @@ public class ConcurrentTestCommandScript
             this.x = x;
             this.y = y;
         }
+
     }
 
 
@@ -770,6 +772,7 @@ public class ConcurrentTestCommandScript
             Excn( String msg ) {
                 super( msg );
             }
+
         }
 
 
@@ -846,6 +849,7 @@ public class ConcurrentTestCommandScript
                 return in;
             }
         }
+
     }
 
 
@@ -891,6 +895,7 @@ public class ConcurrentTestCommandScript
                 this.var = parts[0];
                 this.val = parts[1];
             }
+
         }
 
 
@@ -1406,6 +1411,7 @@ public class ConcurrentTestCommandScript
             }
             return line;
         }
+
     }
 
 
@@ -1471,6 +1477,7 @@ public class ConcurrentTestCommandScript
             BufferedWriter out = threadBufferedWriters.get( threadId );
             threadResultsReaders.put( threadId, new ResultsReader( out, nth, count, time, total ) );
         }
+
     }
 
 
@@ -1491,6 +1498,7 @@ public class ConcurrentTestCommandScript
         protected void doExecute( ConcurrentTestCommandExecutor executor ) throws SQLException {
             storeMessage( executor.getThreadId(), msg );
         }
+
     }
 
 
@@ -1531,6 +1539,7 @@ public class ConcurrentTestCommandScript
                     };
             pluginCommand.execute( context );
         }
+
     }
 
 
@@ -1598,6 +1607,7 @@ public class ConcurrentTestCommandScript
                 storeMessage( threadId, "command " + command + ": failed with exception " + e.getMessage() );
             }
         }
+
     }
 
 
@@ -1627,6 +1637,7 @@ public class ConcurrentTestCommandScript
             }
             return -1;
         }
+
     }
 
 
@@ -1655,6 +1666,7 @@ public class ConcurrentTestCommandScript
                 stmt.setMaxRows( rowLimit );
             }
         }
+
     }
 
 
@@ -1712,6 +1724,7 @@ public class ConcurrentTestCommandScript
                 stmt.close();
             }
         }
+
     }
 
 
@@ -1791,6 +1804,7 @@ public class ConcurrentTestCommandScript
                 stmt.close();
             }
         }
+
     }
 
 
@@ -1823,6 +1837,7 @@ public class ConcurrentTestCommandScript
 
             executor.setStatement( stmt );
         }
+
     }
 
 
@@ -1843,6 +1858,7 @@ public class ConcurrentTestCommandScript
 
             storeResults( executor.getThreadId(), stmt.executeQuery(), timeout );
         }
+
     }
 
 
@@ -2061,6 +2077,7 @@ public class ConcurrentTestCommandScript
             }
             out.println( " |" );
         }
+
     }
 
 
@@ -2180,6 +2197,7 @@ public class ConcurrentTestCommandScript
             }
             return true;
         }
+
     }
 
 
@@ -2192,5 +2210,6 @@ public class ConcurrentTestCommandScript
         int status = new Tool().run( args );
         Unsafe.systemExit( status );
     }
+
 }
 

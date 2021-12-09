@@ -18,12 +18,12 @@ package org.polypheny.db.nodes.validate;
 
 
 import java.util.List;
-import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.util.Moniker;
-import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.util.NameMatcher;
 
 
 /**

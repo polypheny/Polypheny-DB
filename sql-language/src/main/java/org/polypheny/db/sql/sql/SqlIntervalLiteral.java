@@ -143,5 +143,7 @@ public class SqlIntervalLiteral extends SqlLiteral {
         public String toString() {
             return intervalStr;
         }
+
     }
+
 }

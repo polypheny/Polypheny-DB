@@ -32,10 +32,8 @@ import java.util.List;
 import java.util.Locale;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.NameMatchers;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlTestFactory;
@@ -43,7 +41,9 @@ import org.polypheny.db.sql.sql.utils.SqlTester;
 import org.polypheny.db.sql.sql.utils.SqlValidatorTester;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.util.NameMatchers;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**

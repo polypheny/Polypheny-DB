@@ -18,8 +18,8 @@ package org.polypheny.db.sql.sql.advise;
 
 
 import java.util.List;
-import org.polypheny.db.util.Moniker;
 import org.polypheny.db.algebra.constant.MonikerType;
+import org.polypheny.db.util.Moniker;
 
 
 /**
@@ -57,4 +57,5 @@ public class SqlAdvisorHint {
                         : names.toArray( new String[0] );
         type = id.getType().name();
     }
+
 }

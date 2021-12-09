@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,14 +44,14 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.metadata.AlgMdUtil;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.metadata.AlgMdUtil;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPermuteInputsShuttle;
@@ -329,6 +329,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
             this.factors = factors;
             this.cost = cost;
         }
+
     }
 
 
@@ -356,6 +357,7 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
                     + ", fieldOffset: " + fieldOffset
                     + ")";
         }
+
     }
 
 
@@ -389,6 +391,8 @@ public class MultiJoinOptimizeBushyRule extends AlgOptRule {
                     + ", rightFactor: " + rightFactor
                     + ")";
         }
+
     }
+
 }
 

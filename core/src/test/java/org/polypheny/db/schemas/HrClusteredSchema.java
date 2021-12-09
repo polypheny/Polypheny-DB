@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,8 @@ public final class HrClusteredSchema extends AbstractSchema {
     public HrClusteredSchema() {
         super();
         tables = ImmutableMap.<String, Table>builder()
-                .put( "emps",
+                .put(
+                        "emps",
                         new PkClusteredTable(
                                 factory ->
                                         new AlgDataTypeFactory.Builder( factory )
@@ -85,7 +86,8 @@ public final class HrClusteredSchema extends AbstractSchema {
                                         new Object[]{ 150, 10, "Sebastian", 7000, null },
                                         new Object[]{ 200, 20, "Eric", 8000, 500 } )
                         ) )
-                .put( "depts",
+                .put(
+                        "depts",
                         new PkClusteredTable(
                                 factory ->
                                         new AlgDataTypeFactory.Builder( factory )
@@ -146,4 +148,5 @@ public final class HrClusteredSchema extends AbstractSchema {
         }
 
     }
+
 }

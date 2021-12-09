@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,13 @@ package org.polypheny.db.tools;
 
 
 import java.io.Reader;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.languages.NodeParseException;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 

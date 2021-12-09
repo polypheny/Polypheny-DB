@@ -22,12 +22,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.Combiner.CombinerType;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.helper.AlgBuildTestHelper;
-import org.polypheny.db.algebra.AlgNode;
 
 
 public class CombinerTest extends AlgBuildTestHelper {

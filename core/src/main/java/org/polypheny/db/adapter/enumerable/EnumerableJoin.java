@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,20 +39,20 @@ import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgNodes;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.EquiJoin;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.JoinInfo;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.InvalidAlgException;
-import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgNodes;
-import org.polypheny.db.algebra.core.CorrelationId;
-import org.polypheny.db.algebra.core.EquiJoin;
-import org.polypheny.db.algebra.core.JoinInfo;
-import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.metadata.AlgMdCollation;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableIntList;
@@ -165,18 +165,19 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
         return implementor.result(
                 physType,
                 builder.append(
-                        Expressions.call(
-                                leftExpression,
-                                BuiltInMethod.JOIN.method,
-                                Expressions.list(
-                                        rightExpression,
-                                        leftResult.physType.generateAccessor( leftKeys ),
-                                        rightResult.physType.generateAccessor( rightKeys ),
-                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ) )
-                                        .append( Util.first( keyPhysType.comparer(), Expressions.constant( null ) ) )
-                                        .append( Expressions.constant( joinType.generatesNullsOnLeft() ) )
-                                        .append( Expressions.constant( joinType.generatesNullsOnRight() ) ) ) )
+                                Expressions.call(
+                                        leftExpression,
+                                        BuiltInMethod.JOIN.method,
+                                        Expressions.list(
+                                                        rightExpression,
+                                                        leftResult.physType.generateAccessor( leftKeys ),
+                                                        rightResult.physType.generateAccessor( rightKeys ),
+                                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ) )
+                                                .append( Util.first( keyPhysType.comparer(), Expressions.constant( null ) ) )
+                                                .append( Expressions.constant( joinType.generatesNullsOnLeft() ) )
+                                                .append( Expressions.constant( joinType.generatesNullsOnRight() ) ) ) )
                         .toBlock() );
     }
+
 }
 

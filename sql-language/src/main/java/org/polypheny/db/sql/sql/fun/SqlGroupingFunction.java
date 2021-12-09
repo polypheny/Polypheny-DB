@@ -48,5 +48,6 @@ public class SqlGroupingFunction extends SqlAbstractGroupFunction {
                 OperandTypes.ONE_OR_MORE,
                 FunctionCategory.SYSTEM );
     }
+
 }
 

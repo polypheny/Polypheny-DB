@@ -40,5 +40,6 @@ final class CompoundNameColumn {
     String getName() {
         return (first.isEmpty() ? "" : ("\"" + first + "\".")) + ("\"" + second + "\"");
     }
+
 }
 

@@ -21,10 +21,10 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.OperatorBinding;
-import org.polypheny.db.sql.sql.SqlCallBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.nodes.OperatorBinding;
+import org.polypheny.db.sql.sql.SqlCallBinding;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -85,5 +85,6 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
                 typeFactory.leastRestrictive( Util.quotientList( argTypes, 2, 0 ) ),
                 typeFactory.leastRestrictive( Util.quotientList( argTypes, 2, 1 ) ) );
     }
+
 }
 

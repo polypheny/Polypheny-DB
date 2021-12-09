@@ -25,21 +25,9 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg;
 import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTrait;
-import org.polypheny.db.plan.AlgTraitDef;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.volcano.VolcanoPlanner;
+import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -49,6 +37,18 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.util.Pair;
 
 
@@ -256,6 +256,7 @@ public class VolcanoPlannerTraitTest {
         public String toString() {
             return description;
         }
+
     }
 
 
@@ -335,6 +336,7 @@ public class VolcanoPlannerTraitTest {
 
             conversionMap.put( fromTrait, Pair.of( toTrait, converterRule ) );
         }
+
     }
 
 
@@ -384,6 +386,7 @@ public class VolcanoPlannerTraitTest {
         public String algCompareString() {
             return this.getClass().getSimpleName() + "$" + label + "&";
         }
+
     }
 
 
@@ -401,6 +404,7 @@ public class VolcanoPlannerTraitTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new NoneLeafRel( getCluster(), getLabel() );
         }
+
     }
 
 
@@ -454,6 +458,7 @@ public class VolcanoPlannerTraitTest {
         public String algCompareString() {
             return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
         }
+
     }
 
 
@@ -476,6 +481,7 @@ public class VolcanoPlannerTraitTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new NoneSingleAlg( getCluster(), traitSet, sole( inputs ) );
         }
+
     }
 
 
@@ -515,6 +521,7 @@ public class VolcanoPlannerTraitTest {
         public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
             return null;
         }
+
     }
 
 
@@ -541,6 +548,7 @@ public class VolcanoPlannerTraitTest {
             NoneLeafRel leafRel = call.alg( 0 );
             call.transformTo( new PhysLeafRel( leafRel.getCluster(), leafRel.getLabel() ) );
         }
+
     }
 
 
@@ -576,6 +584,7 @@ public class VolcanoPlannerTraitTest {
 
             call.transformTo( new IterSingleRel( alg.getCluster(), converted ) );
         }
+
     }
 
 
@@ -613,6 +622,7 @@ public class VolcanoPlannerTraitTest {
 
             call.transformTo( new IterSingleRel( alg.getCluster(), child ) );
         }
+
     }
 
 
@@ -640,6 +650,7 @@ public class VolcanoPlannerTraitTest {
         public boolean isGuaranteed() {
             return true;
         }
+
     }
 
 
@@ -661,6 +672,7 @@ public class VolcanoPlannerTraitTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new AltTraitConverter( getCluster(), AbstractAlgNode.sole( inputs ), toTrait );
         }
+
     }
 
 
@@ -678,6 +690,7 @@ public class VolcanoPlannerTraitTest {
         public AlgNode convert( AlgNode alg ) {
             return new PhysToIteratorConverter( alg.getCluster(), alg );
         }
+
     }
 
 
@@ -695,6 +708,7 @@ public class VolcanoPlannerTraitTest {
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new PhysToIteratorConverter( getCluster(), AbstractAlgNode.sole( inputs ) );
         }
+
     }
 
 
@@ -713,6 +727,7 @@ public class VolcanoPlannerTraitTest {
             IterSingleRel singleRel = call.alg( 0 );
             call.transformTo( new IterMergedRel( singleRel.getCluster(), null ) );
         }
+
     }
 
 
@@ -744,5 +759,7 @@ public class VolcanoPlannerTraitTest {
         public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
             return null;
         }
+
     }
+
 }

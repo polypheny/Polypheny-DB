@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,5 +63,6 @@ public interface TableFunction extends Function {
      * @return element type of the table (e.g. {@code Object[].class})
      */
     Type getElementType( List<Object> arguments );
+
 }
 

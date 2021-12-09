@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.util.Moniker;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.sql.sql.SqlCall;
@@ -36,8 +36,8 @@ import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.sql.sql.SqlWindow;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.Pair;
 
 
@@ -195,6 +195,7 @@ public interface SqlValidatorScope extends ValidatorScope {
         void found( SqlValidatorNamespace namespace, boolean nullable, SqlValidatorScope scope, Path path, List<String> remainingNames );
 
         int count();
+
     }
 
 
@@ -252,6 +253,7 @@ public interface SqlValidatorScope extends ValidatorScope {
         public String toString() {
             return stepNames().toString();
         }
+
     }
 
 
@@ -295,6 +297,7 @@ public interface SqlValidatorScope extends ValidatorScope {
             parent.build( paths );
             paths.add( this );
         }
+
     }
 
 
@@ -376,6 +379,8 @@ public interface SqlValidatorScope extends ValidatorScope {
                     .getTypeFactory()
                     .createTypeWithNullability( namespace.getRowType(), nullable );
         }
+
     }
+
 }
 

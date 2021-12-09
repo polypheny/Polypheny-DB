@@ -34,5 +34,6 @@ public class IngresSqlDialect extends SqlDialect {
     public IngresSqlDialect( Context context ) {
         super( context );
     }
+
 }
 

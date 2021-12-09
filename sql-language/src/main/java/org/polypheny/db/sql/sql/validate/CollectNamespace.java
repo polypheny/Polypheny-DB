@@ -18,9 +18,9 @@ package org.polypheny.db.sql.sql.validate;
 
 
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -73,5 +73,6 @@ public class CollectNamespace extends AbstractNamespace {
     public SqlValidatorScope getScope() {
         return scope;
     }
+
 }
 

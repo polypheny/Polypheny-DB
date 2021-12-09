@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,13 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.nodes.IntervalQualifier;
-import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Glossary;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**

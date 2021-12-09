@@ -73,4 +73,5 @@ public class SqlInfixOperator extends SqlSpecialOperator {
             operand.e.unparse( writer, leftPrec, getLeftPrec() );
         }
     }
+
 }

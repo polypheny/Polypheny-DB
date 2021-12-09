@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,11 +66,6 @@ import org.polypheny.db.adapter.enumerable.EnumerableFilter;
 import org.polypheny.db.adapter.enumerable.EnumerableJoin;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.interpreter.JaninoRexCompiler;
-import org.polypheny.db.plan.hep.HepAlgVertex;
-import org.polypheny.db.plan.volcano.AbstractConverter;
-import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
@@ -92,6 +87,11 @@ import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalWindow;
 import org.polypheny.db.algebra.stream.LogicalChi;
 import org.polypheny.db.algebra.stream.LogicalDelta;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.interpreter.JaninoRexCompiler;
+import org.polypheny.db.plan.hep.HepAlgVertex;
+import org.polypheny.db.plan.volcano.AbstractConverter;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Pair;
@@ -123,7 +123,8 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
     // Pre-register the most common relational operators, to reduce the number of times we re-generate.
     static {
         DEFAULT.register(
-                Arrays.asList( AlgNode.class,
+                Arrays.asList(
+                        AlgNode.class,
                         AbstractAlgNode.class,
                         AlgSubset.class,
                         HepAlgVertex.class,
@@ -546,6 +547,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
         public NoHandler( Class<? extends AlgNode> algClass ) {
             this.algClass = algClass;
         }
+
     }
 
 
@@ -580,6 +582,8 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                     && ((Key) obj).provider.equals( provider )
                     && ((Key) obj).algClasses.equals( algClasses );
         }
+
     }
+
 }
 

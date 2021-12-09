@@ -34,5 +34,6 @@ public class NeoviewSqlDialect extends SqlDialect {
     public NeoviewSqlDialect( Context context ) {
         super( context );
     }
+
 }
 

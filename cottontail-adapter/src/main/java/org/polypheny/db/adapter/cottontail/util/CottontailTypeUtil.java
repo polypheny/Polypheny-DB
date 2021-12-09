@@ -35,17 +35,17 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.sql.sql.SqlLiteral;
-import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.sql.sql.SqlLiteral;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.DateString;
@@ -183,7 +183,8 @@ public class CottontailTypeUtil {
 
 
     public static Expression rexDynamicParamToDataExpression( RexDynamicParam dynamicParam, ParameterExpression dynamicParameterMap_, PolyType actualType ) {
-        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD,
+        return Expressions.call(
+                COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD,
                 Expressions.call(
                         dynamicParameterMap_,
                         BuiltInMethod.MAP_GET.method,

@@ -136,5 +136,6 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
                     }
                 } );
     }
+
 }
 

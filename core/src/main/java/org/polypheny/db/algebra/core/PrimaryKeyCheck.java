@@ -17,9 +17,9 @@
 package org.polypheny.db.algebra.core;
 
 
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptTable;
 
 
 public abstract class PrimaryKeyCheck extends AbstractAlgNode {

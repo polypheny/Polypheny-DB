@@ -21,10 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.sql.sql.util.ReflectiveSqlOperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.sql.sql.SqlFunction;
+import org.polypheny.db.sql.sql.util.ReflectiveSqlOperatorTable;
 import org.polypheny.db.type.PolyTypeTransforms;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -168,5 +168,6 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
         }
         return instance;
     }
+
 }
 

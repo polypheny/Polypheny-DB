@@ -42,6 +42,7 @@ public class PolyphenyDbSqlDialect extends SqlDialect {
         super( context );
     }
 
+
     @Override
     public boolean supportsNestedArrays() {
         return true;

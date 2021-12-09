@@ -19,8 +19,8 @@ package org.polypheny.db.sql.sql.fun;
 
 import java.util.AbstractList;
 import java.util.Map;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.RowOperator;
 import org.polypheny.db.sql.sql.SqlCall;
@@ -28,9 +28,9 @@ import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.sql.SqlSyntax;
 import org.polypheny.db.sql.sql.SqlUtil;
 import org.polypheny.db.sql.sql.SqlWriter;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Pair;
 
 
@@ -94,5 +94,6 @@ public class SqlRowOperator extends SqlSpecialOperator implements RowOperator {
     public boolean requiresDecimalExpansion() {
         return false;
     }
+
 }
 

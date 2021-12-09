@@ -61,5 +61,6 @@ public class GroupByScope extends DelegatingScope {
         // expression needs to be valid in parent scope too
         parent.validateExpr( expanded );
     }
+
 }
 

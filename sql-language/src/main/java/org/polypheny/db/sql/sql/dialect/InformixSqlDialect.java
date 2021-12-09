@@ -34,5 +34,6 @@ public class InformixSqlDialect extends SqlDialect {
     public InformixSqlDialect( Context context ) {
         super( context );
     }
+
 }
 

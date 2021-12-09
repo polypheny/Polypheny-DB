@@ -17,9 +17,9 @@
 package org.polypheny.db.sql.sql2alg;
 
 
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.rex.RexNode;
 
 
 /**
@@ -28,4 +28,5 @@ import org.polypheny.db.rex.RexNode;
 public interface SqlRexConvertlet {
 
     RexNode convertCall( SqlRexContext cx, SqlCall call );
+
 }

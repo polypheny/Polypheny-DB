@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,19 +37,19 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.nodes.validate.ValidatorException;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.OperatorBinding;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.OperatorBinding;
+import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
+import org.polypheny.db.util.CoreUtil;
 
 
 /**
@@ -116,6 +116,7 @@ public class RexCallBinding extends OperatorBinding {
 
         return Monotonicity.NOT_MONOTONIC;
     }
+
 
     @Override
     public boolean isOperandNull( int ordinal, boolean allowCast ) {

@@ -33,9 +33,10 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.CoreUtil;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.sql.SqlDateLiteral;
 import org.polypheny.db.sql.sql.SqlIntervalLiteral;
@@ -51,8 +52,7 @@ import org.polypheny.db.sql.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.sql.SqlSpecialOperator.TokenSequence;
 import org.polypheny.db.sql.sql.SqlTimeLiteral;
 import org.polypheny.db.sql.sql.SqlTimestampLiteral;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.PrecedenceClimbingParser;
 import org.polypheny.db.util.SaffronProperties;
@@ -486,7 +486,8 @@ public final class SqlParserUtil {
      * @return the root node of the tree which the list condenses into
      */
     public static SqlNode toTreeEx( TokenSequence list, int start, final int minPrec, final Kind stopperKind ) {
-        PrecedenceClimbingParser parser = list.parser( start,
+        PrecedenceClimbingParser parser = list.parser(
+                start,
                 token -> {
                     if ( token instanceof PrecedenceClimbingParser.Op ) {
                         final SqlOperator op = ((ToTreeListItem) token.o).op;

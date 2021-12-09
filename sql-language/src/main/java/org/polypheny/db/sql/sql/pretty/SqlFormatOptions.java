@@ -193,5 +193,6 @@ public class SqlFormatOptions {
     public void setIndentation( int indentation ) {
         this.indentation = indentation;
     }
+
 }
 

@@ -17,14 +17,14 @@
 package org.polypheny.db.processing;
 
 import org.polypheny.db.PolyResult;
-import org.polypheny.db.util.DeadlockException;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.QueryPlanBuilder;
 
@@ -33,13 +33,13 @@ public class JsonRelProcessorImpl extends Processor {
 
     @Override
     public Node parse( String query ) {
-        throw new RuntimeException("JsonProcessor does not support PigNode representation!");
+        throw new RuntimeException( "JsonProcessor does not support PigNode representation!" );
     }
 
 
     @Override
     public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
-        throw new RuntimeException("JsonProcessor does not support validation!");
+        throw new RuntimeException( "JsonProcessor does not support validation!" );
     }
 
 
@@ -51,19 +51,19 @@ public class JsonRelProcessorImpl extends Processor {
 
     @Override
     public PolyResult prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
-        throw new RuntimeException("JsonProcessor does not support DDLs!");
+        throw new RuntimeException( "JsonProcessor does not support DDLs!" );
     }
 
 
     @Override
     public void unlock( Statement statement ) {
-        throw new RuntimeException("The JsonRelProcessor does not support DML or DDLs and should therefore not lock.");
+        throw new RuntimeException( "The JsonRelProcessor does not support DML or DDLs and should therefore not lock." );
     }
 
 
     @Override
     public void lock( Statement statement ) throws DeadlockException {
-        throw new RuntimeException("The JsonRelProcessor does not support DML or DDLs and should therefore not lock.");
+        throw new RuntimeException( "The JsonRelProcessor does not support DML or DDLs and should therefore not lock." );
     }
 
 
@@ -75,7 +75,7 @@ public class JsonRelProcessorImpl extends Processor {
 
     @Override
     public AlgDataType getParameterRowType( Node left ) {
-        throw new RuntimeException("JsonProcessor does not support getParameterRowType!");
+        throw new RuntimeException( "JsonProcessor does not support getParameterRowType!" );
     }
 
 }

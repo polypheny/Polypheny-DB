@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,14 +38,14 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.pig.data.DataType;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
@@ -106,4 +106,5 @@ public class PigTableScan extends TableScan implements PigAlg {
         // Make sure planner picks PigJoin over EnumerableJoin. Should there be a rule for this instead for removing ENUMERABLE_JOIN_RULE here?
         planner.removeRule( EnumerableRules.ENUMERABLE_JOIN_RULE );
     }
+
 }

@@ -293,5 +293,6 @@ public class PolyTypeTest {
         // SQLXML not supported yet
         assertNull( "SQLXML maps to non-null type", tn );
     }
+
 }
 

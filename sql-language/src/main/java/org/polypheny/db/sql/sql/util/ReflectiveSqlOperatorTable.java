@@ -25,11 +25,11 @@ import java.util.List;
 import java.util.Locale;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 

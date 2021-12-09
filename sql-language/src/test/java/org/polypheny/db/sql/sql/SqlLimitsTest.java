@@ -29,13 +29,13 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.core.DiffRepository;
 import org.polypheny.db.sql.sql.dialect.AnsiSqlDialect;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 

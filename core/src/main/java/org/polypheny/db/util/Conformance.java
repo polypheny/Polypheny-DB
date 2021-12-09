@@ -330,5 +330,6 @@ public interface Conformance {
      * false otherwise.
      */
     boolean allowExtendedTrim();
+
 }
 

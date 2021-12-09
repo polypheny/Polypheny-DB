@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.util.Advisor;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Advisor;
 
 
 /**

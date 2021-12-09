@@ -32,34 +32,34 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
-import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
-import org.polypheny.db.plan.AlgOptListener.AlgEvent;
-import org.polypheny.db.sql.core.volcano.PlannerTests.NoneLeafAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.NoneSingleAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafAlg;
-import org.polypheny.db.sql.core.volcano.PlannerTests.PhysSingleAlg;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptListener;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.volcano.AlgSubset;
-import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.rules.ProjectRemoveRule;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptListener;
+import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgEvent;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.volcano.AlgSubset;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.sql.core.volcano.PlannerTests.GoodSingleRule;
+import org.polypheny.db.sql.core.volcano.PlannerTests.NoneLeafAlg;
+import org.polypheny.db.sql.core.volcano.PlannerTests.NoneSingleAlg;
+import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafAlg;
 import org.polypheny.db.sql.core.volcano.PlannerTests.PhysLeafRule;
+import org.polypheny.db.sql.core.volcano.PlannerTests.PhysSingleAlg;
 import org.polypheny.db.sql.core.volcano.PlannerTests.TestSingleAlg;
 import org.polypheny.db.tools.AlgBuilder;
 
@@ -402,6 +402,7 @@ public class VolcanoPlannerTest {
             assert traitSet.comprises( EnumerableConvention.INSTANCE );
             return new PhysToIteratorConverter( getCluster(), AbstractAlgNode.sole( inputs ) );
         }
+
     }
 
 
@@ -433,6 +434,7 @@ public class VolcanoPlannerTest {
             assertThat( call.algs.length, equalTo( 2 ) );
             buf.add( singleRel.getClass().getSimpleName() + ":" + childRel.getDigest() );
         }
+
     }
 
     // NOTE: Previously, ReformedSingleRule didn't work because it explicitly specifies PhysLeafAlg rather than {@link AlgNode} for the single input. Since the PhysLeafAlg is in a different subset from the original NoneLeafAlg,
@@ -463,6 +465,7 @@ public class VolcanoPlannerTest {
             AlgNode physInput = convert( childRel, singleRel.getTraitSet().replace( PlannerTests.PHYS_CALLING_CONVENTION ) );
             call.transformTo( new PhysSingleAlg( singleRel.getCluster(), physInput ) );
         }
+
     }
 
 
@@ -488,6 +491,7 @@ public class VolcanoPlannerTest {
             AlgNode childRel = project.getInput();
             call.transformTo( new PhysLeafAlg( childRel.getCluster(), "b" ) );
         }
+
     }
 
 
@@ -513,6 +517,7 @@ public class VolcanoPlannerTest {
             PhysLeafAlg leafRel = call.alg( 1 );
             call.transformTo( new PhysLeafAlg( singleRel.getCluster(), "c" ) );
         }
+
     }
 
 
@@ -538,6 +543,7 @@ public class VolcanoPlannerTest {
             PhysLeafAlg leafRel = call.alg( 1 );
             call.transformTo( new PhysLeafAlg( singleRel.getCluster(), "c" ) );
         }
+
     }
 
 
@@ -596,6 +602,8 @@ public class VolcanoPlannerTest {
         public void ruleProductionSucceeded( RuleProductionEvent event ) {
             recordEvent( event );
         }
+
     }
+
 }
 

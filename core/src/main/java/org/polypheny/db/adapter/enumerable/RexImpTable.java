@@ -82,19 +82,19 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.TrimFunction.Flag;
 import org.polypheny.db.algebra.fun.UserDefined;
-import org.polypheny.db.nodes.BinaryOperator;
-import org.polypheny.db.nodes.JsonAgg;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.BinaryOperator;
+import org.polypheny.db.nodes.JsonAgg;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -229,7 +229,8 @@ public class RexImpTable {
                         BuiltInMethod.UNIX_DATE_FLOOR.method ),
                 false );
         defineImplementor( OperatorRegistry.get( OperatorName.CEIL ), NullPolicy.STRICT,
-                new FloorImplementor( BuiltInMethod.CEIL.method.getName(),
+                new FloorImplementor(
+                        BuiltInMethod.CEIL.method.getName(),
                         BuiltInMethod.UNIX_TIMESTAMP_CEIL.method,
                         BuiltInMethod.UNIX_DATE_CEIL.method ),
                 false );
@@ -1077,7 +1078,8 @@ public class RexImpTable {
             List<Expression> acc = add.accumulator();
             Expression flag = acc.get( 0 );
             add.currentBlock().add(
-                    Expressions.ifThen( flag,
+                    Expressions.ifThen(
+                            flag,
                             Expressions.throw_(
                                     Expressions.new_(
                                             IllegalStateException.class,
@@ -1224,7 +1226,8 @@ public class RexImpTable {
                     final int i = keyOrdinals.indexOf( k );
                     assert i >= 0;
                     final Expression e2 =
-                            Expressions.condition( result.keyField( keyOrdinals.size() + i ),
+                            Expressions.condition(
+                                    result.keyField( keyOrdinals.size() + i ),
                                     Expressions.constant( x ),
                                     Expressions.constant( 0L ) );
                     if ( e == null ) {
@@ -1416,7 +1419,8 @@ public class RexImpTable {
         public Expression implementResult( AggContext info, AggResultContext result ) {
             WinAggResultContext winResult = (WinAggResultContext) result;
 
-            return Expressions.condition( winResult.hasRows(),
+            return Expressions.condition(
+                    winResult.hasRows(),
                     winResult.rowTranslator( winResult.computeIndex( Expressions.constant( 0 ), seekType ) )
                             .translate( winResult.rexArguments().get( 0 ), info.returnType() ),
                     getDefaultValue( info.returnType() ) );
@@ -1653,7 +1657,8 @@ public class RexImpTable {
             Expression tiles = winResult.rowTranslator( winResult.index() ).translate( rexArgs.get( 0 ), int.class );
 
             Expression ntile =
-                    Expressions.add( Expressions.constant( 1 ),
+                    Expressions.add(
+                            Expressions.constant( 1 ),
                             Expressions.divide(
                                     Expressions.multiply(
                                             tiles,

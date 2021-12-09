@@ -22,19 +22,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.util.ValidatorUtil;
-import org.polypheny.db.nodes.validate.ValidatorTable;
-import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.sql.sql.SqlNodeList;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.sql.SqlIdentifier;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**

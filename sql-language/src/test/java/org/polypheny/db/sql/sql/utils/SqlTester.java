@@ -20,14 +20,14 @@ package org.polypheny.db.sql.sql.utils;
 import java.sql.ResultSet;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.util.Conformance;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.sql.SqlTestFactory;
 import org.polypheny.db.sql.sql.utils.SqlValidatorTestCase.Tester;
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.util.Conformance;
 
 
 /**
@@ -234,7 +234,8 @@ public interface SqlTester extends AutoCloseable, Tester {
 
     /**
      * Declares that this test is for a given operator. So we can check that all operators are tested.
-     *  @param operator Operator
+     *
+     * @param operator Operator
      * @param unimplementedVmNames Names of virtual machines for which this
      */
     void setFor( Operator operator, VmName... unimplementedVmNames );

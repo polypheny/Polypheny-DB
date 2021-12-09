@@ -18,9 +18,9 @@ package org.polypheny.db.sql.sql.validate;
 
 
 import java.util.Map;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIdentifier;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**

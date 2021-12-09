@@ -61,5 +61,6 @@ public class SqlRollupOperator extends SqlInternalOperator {
         }
         writer.endList( frame );
     }
+
 }
 

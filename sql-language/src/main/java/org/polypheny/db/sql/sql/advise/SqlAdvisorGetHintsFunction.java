@@ -32,7 +32,6 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
-import org.polypheny.db.util.Moniker;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.FunctionParameter;
@@ -40,6 +39,7 @@ import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Moniker;
 
 
 /**
@@ -49,7 +49,8 @@ public class SqlAdvisorGetHintsFunction implements TableFunction, ImplementableF
 
     private static final Expression ADVISOR =
             Expressions.convert_(
-                    Expressions.call( DataContext.ROOT,
+                    Expressions.call(
+                            DataContext.ROOT,
                             BuiltInMethod.DATA_CONTEXT_GET.method,
                             Expressions.constant( DataContext.Variable.SQL_ADVISOR.camelName ) ),
                     SqlAdvisor.class );
@@ -61,7 +62,8 @@ public class SqlAdvisorGetHintsFunction implements TableFunction, ImplementableF
     private static final CallImplementor IMPLEMENTOR =
             RexImpTable.createImplementor(
                     ( translator, call, operands ) ->
-                            Expressions.call( GET_COMPLETION_HINTS,
+                            Expressions.call(
+                                    GET_COMPLETION_HINTS,
                                     Iterables.concat( Collections.singleton( ADVISOR ), operands ) ),
                     NullPolicy.ANY, false );
 
@@ -116,5 +118,6 @@ public class SqlAdvisorGetHintsFunction implements TableFunction, ImplementableF
         }
         return Linq4j.asEnumerable( res ).asQueryable();
     }
+
 }
 

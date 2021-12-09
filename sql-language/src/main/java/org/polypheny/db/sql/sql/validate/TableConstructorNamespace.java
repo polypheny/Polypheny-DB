@@ -20,9 +20,9 @@ package org.polypheny.db.sql.sql.validate;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Modality;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -81,5 +81,6 @@ public class TableConstructorNamespace extends AbstractNamespace {
     public boolean supportsModality( Modality modality ) {
         return modality == Modality.RELATION;
     }
+
 }
 

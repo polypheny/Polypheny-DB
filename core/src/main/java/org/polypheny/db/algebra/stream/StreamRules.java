@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,17 +37,12 @@ package org.polypheny.db.algebra.stream;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
@@ -59,6 +54,11 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.StreamableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilder;
@@ -113,6 +113,7 @@ public class StreamRules {
             final LogicalProject newProject = LogicalProject.create( newDelta, project.getProjects(), project.getRowType().getFieldNames() );
             call.transformTo( newProject );
         }
+
     }
 
 
@@ -142,6 +143,7 @@ public class StreamRules {
             final LogicalFilter newFilter = LogicalFilter.create( newDelta, filter.getCondition() );
             call.transformTo( newFilter );
         }
+
     }
 
 
@@ -173,6 +175,7 @@ public class StreamRules {
             final LogicalAggregate newAggregate = LogicalAggregate.create( newDelta, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
             call.transformTo( newAggregate );
         }
+
     }
 
 
@@ -202,6 +205,7 @@ public class StreamRules {
             final LogicalSort newSort = LogicalSort.create( newDelta, sort.collation, sort.offset, sort.fetch );
             call.transformTo( newSort );
         }
+
     }
 
 
@@ -235,6 +239,7 @@ public class StreamRules {
             final LogicalUnion newUnion = LogicalUnion.create( newInputs, union.all );
             call.transformTo( newUnion );
         }
+
     }
 
 
@@ -276,6 +281,7 @@ public class StreamRules {
                 call.transformTo( newScan );
             }
         }
+
     }
 
 
@@ -307,6 +313,7 @@ public class StreamRules {
                 call.transformTo( builder.values( delta.getRowType() ).build() );
             }
         }
+
     }
 
 
@@ -358,6 +365,8 @@ public class StreamRules {
             final LogicalUnion newNode = LogicalUnion.create( inputsToUnion, true );
             call.transformTo( newNode );
         }
+
     }
+
 }
 

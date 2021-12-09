@@ -17,9 +17,9 @@
 package org.polypheny.db.sql.sql;
 
 
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 
@@ -76,5 +76,6 @@ public class SqlDateLiteral extends SqlAbstractDateTimeLiteral {
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.getDialect().unparseDateTimeLiteral( writer, this, leftPrec, rightPrec );
     }
+
 }
 

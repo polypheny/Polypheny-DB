@@ -36,10 +36,10 @@ package org.polypheny.db.algebra;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**

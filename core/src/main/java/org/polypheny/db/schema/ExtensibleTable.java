@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,5 +61,6 @@ public interface ExtensibleTable extends Table {
      * Returns the starting offset of the first extended column, which may differ from the field count when the table stores metadata columns that are not counted in the row-type field count.
      */
     int getExtendedColumnOffset();
+
 }
 

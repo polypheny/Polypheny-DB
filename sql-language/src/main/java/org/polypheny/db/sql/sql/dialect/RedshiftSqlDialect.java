@@ -45,5 +45,6 @@ public class RedshiftSqlDialect extends SqlDialect {
     public void unparseOffsetFetch( SqlWriter writer, SqlNode offset, SqlNode fetch ) {
         unparseFetchUsingLimit( writer, offset, fetch );
     }
+
 }
 

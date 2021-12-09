@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,24 +40,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.QuantifyOperator;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.AlgDecorrelator;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.QuantifyOperator;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.LogicVisitor;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexInputRef;
@@ -168,7 +168,8 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
         //
         final QuantifyOperator op = (QuantifyOperator) e.op;
         builder.push( e.alg )
-                .aggregate( builder.groupKey(),
+                .aggregate(
+                        builder.groupKey(),
                         op.getComparisonKind() == Kind.GREATER_THAN || op.getComparisonKind() == Kind.GREATER_THAN_OR_EQUAL
                                 ? builder.min( "m", builder.field( 0 ) )
                                 : builder.max( "m", builder.field( 0 ) ),
@@ -176,7 +177,8 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
                         builder.count( false, "d", builder.field( 0 ) ) )
                 .as( "q" )
                 .join( JoinAlgType.INNER );
-        return builder.call( OperatorRegistry.get( OperatorName.CASE ),
+        return builder.call(
+                OperatorRegistry.get( OperatorName.CASE ),
                 builder.call( OperatorRegistry.get( OperatorName.EQUALS ), builder.field( "q", "c" ), builder.literal( 0 ) ),
                 builder.literal( false ),
                 builder.call( OperatorRegistry.get( OperatorName.IS_TRUE ), builder.call( AlgOptUtil.op( op.getComparisonKind(), null ), e.operands.get( 0 ), builder.field( "q", "m" ) ) ),
@@ -345,14 +347,16 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
                     builder.project( builder.alias( project, "cs" ) );
 
                     if ( variablesSet.isEmpty() ) {
-                        builder.aggregate( builder.groupKey( builder.field( "cs" ) ),
+                        builder.aggregate(
+                                builder.groupKey( builder.field( "cs" ) ),
                                 builder.count( false, "c" ) );
 
                         // sorts input with desc order since we are interested only in the case when one of the values is true.
                         // When true value is absent then we are interested only in false value.
                         builder.sortLimit( 0, 1,
                                 ImmutableList.of(
-                                        builder.call( OperatorRegistry.get( OperatorName.DESC ),
+                                        builder.call(
+                                                OperatorRegistry.get( OperatorName.DESC ),
                                                 builder.field( "cs" ) ) ) );
                     } else {
                         builder.distinct();
@@ -369,7 +373,8 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
                 case TRUE_FALSE_UNKNOWN:
                 case UNKNOWN_AS_TRUE:
                     // Builds the cross join
-                    builder.aggregate( builder.groupKey(),
+                    builder.aggregate(
+                            builder.groupKey(),
                             builder.count( false, "c" ),
                             builder.count( builder.fields() ).as( "ck" ) );
                     builder.as( "ct" );
@@ -432,10 +437,12 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
         }
 
         if ( allLiterals ) {
-            operands.add( builder.isNotNull( builder.field( "cs" ) ),
+            operands.add(
+                    builder.isNotNull( builder.field( "cs" ) ),
                     builder.literal( true ) );
         } else {
-            operands.add( builder.isNotNull( Util.last( builder.fields() ) ),
+            operands.add(
+                    builder.isNotNull( Util.last( builder.fields() ) ),
                     builder.literal( true ) );
         }
 

@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.sql.validate;
 
 
-import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.sql.sql.SqlNode;
 
 
 /**
@@ -53,5 +53,6 @@ class ParameterNamespace extends AbstractNamespace {
     public AlgDataType getRowType() {
         return type;
     }
+
 }
 

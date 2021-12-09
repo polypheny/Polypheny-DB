@@ -678,6 +678,8 @@ public class DiffRepository {
          * @return Expanded text after filtering
          */
         String filter( DiffRepository diffRepository, String testCaseName, String tag, String text, String expanded );
+
     }
+
 }
 

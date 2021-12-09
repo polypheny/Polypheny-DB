@@ -24,9 +24,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.util.Moniker;
-import org.polypheny.db.util.NameMatcher;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.prepare.Prepare;
+import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.schema.Table;
+import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.sql.SqlDynamicParam;
@@ -35,14 +41,8 @@ import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.sql.sql.SqlWindow;
-import org.polypheny.db.plan.AlgOptSchema;
-import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -245,5 +245,6 @@ class EmptyScope implements SqlValidatorScope {
         // scope is not ordered
         return null;
     }
+
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,12 +48,12 @@ import java.util.Calendar;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
 import org.junit.Test;
-import org.polypheny.db.util.Collation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.TimeString;
@@ -450,7 +450,8 @@ public class RexBuilderTest {
             final TimeString timeString = new TimeString( "24:00" );
             fail( "expected exception, got " + timeString );
         } catch ( IllegalArgumentException e ) {
-            assertThat( e.getMessage(),
+            assertThat(
+                    e.getMessage(),
                     containsString( "Invalid time format: [24:00]" ) );
         }
     }

@@ -20,14 +20,14 @@ package org.polypheny.db.sql;
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.sql.sql.SqlOperator;
 import org.polypheny.db.sql.sql.util.ListSqlOperatorTable;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 

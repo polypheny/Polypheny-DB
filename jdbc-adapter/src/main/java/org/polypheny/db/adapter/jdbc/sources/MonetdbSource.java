@@ -31,10 +31,10 @@ import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.dialect.MonetdbSqlDialect;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.sql.SqlDialect;
+import org.polypheny.db.sql.sql.dialect.MonetdbSqlDialect;
 
 
 @Slf4j

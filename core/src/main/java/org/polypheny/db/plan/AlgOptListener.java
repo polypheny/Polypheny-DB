@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,7 @@ public interface AlgOptListener extends EventListener {
         public AlgNode getRel() {
             return alg;
         }
+
     }
 
 
@@ -113,6 +114,7 @@ public interface AlgOptListener extends EventListener {
         public AlgChosenEvent( Object eventSource, AlgNode alg ) {
             super( eventSource, alg );
         }
+
     }
 
 
@@ -140,6 +142,7 @@ public interface AlgOptListener extends EventListener {
         public boolean isPhysical() {
             return isPhysical;
         }
+
     }
 
 
@@ -151,6 +154,7 @@ public interface AlgOptListener extends EventListener {
         public AlgDiscardedEvent( Object eventSource, AlgNode alg ) {
             super( eventSource, alg );
         }
+
     }
 
 
@@ -171,6 +175,7 @@ public interface AlgOptListener extends EventListener {
         public AlgOptRuleCall getRuleCall() {
             return ruleCall;
         }
+
     }
 
 
@@ -191,6 +196,7 @@ public interface AlgOptListener extends EventListener {
         public boolean isBefore() {
             return before;
         }
+
     }
 
 
@@ -202,5 +208,7 @@ public interface AlgOptListener extends EventListener {
         public RuleProductionEvent( Object eventSource, AlgNode alg, AlgOptRuleCall ruleCall, boolean before ) {
             super( eventSource, alg, ruleCall, before );
         }
+
     }
+
 }

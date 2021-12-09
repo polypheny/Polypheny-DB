@@ -24,6 +24,8 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlBasicCall;
@@ -39,8 +41,6 @@ import org.polypheny.db.sql.sql.SqlNodeList;
 import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.fun.SqlCase;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
@@ -154,7 +154,8 @@ public class MysqlSqlDialect extends SqlDialect {
         //   ELSE (SELECT NULL UNION ALL SELECT NULL)
         //   END
         final SqlNode caseExpr =
-                new SqlCase( ParserPos.ZERO,
+                new SqlCase(
+                        ParserPos.ZERO,
                         (SqlNode) OperatorRegistry.get( OperatorName.COUNT ).createCall( ParserPos.ZERO, operand ),
                         SqlNodeList.of(
                                 SqlLiteral.createExactNumeric( "0", ParserPos.ZERO ),
@@ -243,7 +244,8 @@ public class MysqlSqlDialect extends SqlDialect {
 
 
     @Override
-    public void unparseSqlIntervalQualifier( SqlWriter writer,
+    public void unparseSqlIntervalQualifier(
+            SqlWriter writer,
             SqlIntervalQualifier qualifier, AlgDataTypeSystem typeSystem ) {
 
         //  Unit Value         | Expected Format

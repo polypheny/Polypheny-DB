@@ -34,8 +34,8 @@
 package org.polypheny.db.schema;
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 
 
 /**

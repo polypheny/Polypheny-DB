@@ -44,5 +44,6 @@ class ScopeChild {
         this.namespace = namespace;
         this.nullable = nullable;
     }
+
 }
 

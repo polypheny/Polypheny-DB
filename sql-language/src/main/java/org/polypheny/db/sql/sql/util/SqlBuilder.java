@@ -275,5 +275,6 @@ public class SqlBuilder {
         buf.insert( offset, str );
         return this;
     }
+
 }
 

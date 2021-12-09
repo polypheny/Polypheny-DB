@@ -17,10 +17,10 @@
 package org.polypheny.db.sql.sql.validate;
 
 
-import org.polypheny.db.sql.sql.SqlJoin;
-import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.sql.sql.SqlJoin;
+import org.polypheny.db.sql.sql.SqlNode;
 
 
 /**
@@ -62,4 +62,5 @@ class JoinNamespace extends AbstractNamespace {
     public SqlNode getNode() {
         return join;
     }
+
 }

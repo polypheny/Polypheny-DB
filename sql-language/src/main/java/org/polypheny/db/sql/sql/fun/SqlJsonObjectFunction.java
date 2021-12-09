@@ -18,13 +18,14 @@ package org.polypheny.db.sql.sql.fun;
 
 
 import java.util.Locale;
-import org.polypheny.db.nodes.Call;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.json.JsonConstructorNullClause;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlCallBinding;
 import org.polypheny.db.sql.sql.SqlFunction;
@@ -32,7 +33,6 @@ import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlWriter;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;

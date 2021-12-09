@@ -101,6 +101,7 @@ public class PolyResult {
         }
     }
 
+
     public Enumerable<Object> enumerable( DataContext dataContext ) {
         return enumerable( getBindable(), dataContext );
     }
@@ -231,7 +232,7 @@ public class PolyResult {
     }
 
 
-    private static Iterator<Object> createIterator(Bindable<Object> bindable, Statement statement, boolean isAnalyzed ) {
+    private static Iterator<Object> createIterator( Bindable<Object> bindable, Statement statement, boolean isAnalyzed ) {
         if ( isAnalyzed ) {
             statement.getOverviewDuration().start( "Execution" );
         }

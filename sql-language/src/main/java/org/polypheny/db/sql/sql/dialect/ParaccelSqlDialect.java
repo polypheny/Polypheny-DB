@@ -37,5 +37,6 @@ public class ParaccelSqlDialect extends SqlDialect {
     public ParaccelSqlDialect( Context context ) {
         super( context );
     }
+
 }
 

@@ -43,4 +43,5 @@ public class SqlGroupIdFunction extends SqlAbstractGroupFunction {
                 OperandTypes.NILADIC,
                 FunctionCategory.SYSTEM );
     }
+
 }

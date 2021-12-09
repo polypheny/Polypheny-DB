@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,16 +24,6 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.interpreter.Bindables;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
-import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.volcano.VolcanoCost;
-import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
@@ -58,6 +48,16 @@ import org.polypheny.db.algebra.rules.SortUnionTransposeRule;
 import org.polypheny.db.algebra.rules.TableScanRule;
 import org.polypheny.db.algebra.rules.ValuesReduceRule;
 import org.polypheny.db.algebra.stream.StreamRules;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.interpreter.Bindables;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.plan.volcano.VolcanoCost;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.transaction.Statement;
 

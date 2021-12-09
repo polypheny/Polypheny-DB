@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ import org.apache.calcite.linq4j.tree.MemberExpression;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.util.BuiltInMethod;

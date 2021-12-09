@@ -64,5 +64,6 @@ public class SqlBinaryStringLiteral extends SqlAbstractStringLiteral {
                 BitString.concat( Util.transform( literals, literal -> ((SqlBinaryStringLiteral) literal).getBitString() ) ),
                 literals.get( 0 ).getPos() );
     }
+
 }
 

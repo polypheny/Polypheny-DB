@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,8 +52,8 @@ import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.hamcrest.core.Is;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.util.Util;
 
 
@@ -254,6 +254,7 @@ public class Matchers {
             final double max = expected.doubleValue() + epsilon;
             return min <= a && a <= max;
         }
+
     }
 
 
@@ -291,6 +292,8 @@ public class Matchers {
         protected void describeMismatchSafely( F item, Description mismatchDescription ) {
             mismatchDescription.appendText( "was " ).appendValue( f.apply( item ) );
         }
+
     }
+
 }
 

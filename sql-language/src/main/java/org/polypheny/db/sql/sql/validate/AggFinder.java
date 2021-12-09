@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
-import org.polypheny.db.nodes.Call;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.nodes.Call;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.util.Util;
@@ -121,6 +121,8 @@ class AggFinder extends AggVisitor {
         public Iterator<SqlCall> iterator() {
             return calls.iterator();
         }
+
     }
+
 }
 

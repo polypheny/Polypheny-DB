@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,8 @@ public class CachingAlgMetadataProvider implements AlgMetadataProvider {
         return ( alg, mq ) -> {
             final Metadata metadata = function.bind( alg, mq );
             return metadataClass.cast(
-                    Proxy.newProxyInstance( metadataClass.getClassLoader(),
+                    Proxy.newProxyInstance(
+                            metadataClass.getClassLoader(),
                             new Class[]{ metadataClass },
                             new CachingInvocationHandler( metadata ) ) );
         };
@@ -98,6 +99,7 @@ public class CachingAlgMetadataProvider implements AlgMetadataProvider {
 
         long timestamp;
         Object result;
+
     }
 
 
@@ -153,5 +155,7 @@ public class CachingAlgMetadataProvider implements AlgMetadataProvider {
                 throw e.getCause();
             }
         }
+
     }
+
 }

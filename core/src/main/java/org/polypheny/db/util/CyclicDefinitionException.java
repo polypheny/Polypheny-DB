@@ -38,5 +38,6 @@ public class CyclicDefinitionException extends RuntimeException {
         this.depth = depth;
         this.path = ImmutableList.copyOf( path );
     }
+
 }
 

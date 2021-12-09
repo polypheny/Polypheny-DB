@@ -18,9 +18,9 @@ package org.polypheny.db.util;
 
 
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
 
@@ -55,4 +55,5 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
     public RexNode newAttributeInitializer( AlgDataType type, Operator constructor, int iAttribute, List<RexNode> constructorArgs, InitializerContext context ) {
         return context.getRexBuilder().constantNull();
     }
+
 }

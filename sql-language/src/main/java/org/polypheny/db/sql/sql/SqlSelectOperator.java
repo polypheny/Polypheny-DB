@@ -19,13 +19,13 @@ package org.polypheny.db.sql.sql;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.nodes.Call;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
@@ -64,7 +64,8 @@ public class SqlSelectOperator extends SqlOperator {
     @Override
     public SqlCall createCall( Literal functionQualifier, ParserPos pos, Node... operands ) {
         assert functionQualifier == null;
-        return new SqlSelect( pos,
+        return new SqlSelect(
+                pos,
                 (SqlNodeList) operands[0],
                 (SqlNodeList) operands[1],
                 (SqlNode) operands[2],

@@ -33,10 +33,6 @@
 
 package org.polypheny.db.languages.mql.parser;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-import java.util.TreeSet;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserPos;
@@ -47,7 +43,6 @@ import org.polypheny.db.util.PolyphenyDbParserException;
  * {@link MqlParseException} defines a checked exception corresponding to {@link Parser}.
  */
 public class MqlParseException extends NodeParseException implements PolyphenyDbParserException {
-
 
 
     /**

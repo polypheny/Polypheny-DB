@@ -20,14 +20,14 @@ import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.constant.Syntax;
-import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
-import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.nodes.validate.ValidatorScope;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.nodes.Function.FunctionType;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.util.Litmus;
 
 public interface Operator {

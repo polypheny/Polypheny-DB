@@ -483,6 +483,8 @@ public interface SqlWriter {
          * @return whether to further indent code within a frame of this type
          */
         boolean needsIndent();
+
     }
+
 }
 

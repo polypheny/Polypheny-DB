@@ -18,8 +18,8 @@ package org.polypheny.db.nodes;
 
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.util.Litmus;
 

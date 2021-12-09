@@ -21,11 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.polypheny.db.util.NameMatcher;
-import org.polypheny.db.sql.sql.SqlMatchRecognize;
-import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.sql.sql.SqlMatchRecognize;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.util.NameMatcher;
 
 
 /**

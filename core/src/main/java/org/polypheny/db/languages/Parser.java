@@ -20,9 +20,9 @@ import java.io.Reader;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Lex;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.SourceStringReader;
@@ -113,6 +113,7 @@ public interface Parser {
         ParserFactory parserFactory();
 
     }
+
 
     /**
      * Builder for a {@link ParserConfig}.

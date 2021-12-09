@@ -36,4 +36,5 @@ public class SqlUnParserTest extends SqlParserTest {
     protected boolean isUnparserTest() {
         return true;
     }
+
 }

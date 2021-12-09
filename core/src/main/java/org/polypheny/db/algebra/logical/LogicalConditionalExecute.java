@@ -18,10 +18,10 @@ package org.polypheny.db.algebra.logical;
 
 
 import java.util.List;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.ConditionalExecute;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 public class LogicalConditionalExecute extends ConditionalExecute {

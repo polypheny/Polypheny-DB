@@ -29,18 +29,18 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.algebra.constant.Lex;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.prepare.ContextImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -65,7 +65,8 @@ public class LexCaseSensitiveTest {
                 .defaultSchema( schema )
                 .traitDefs( traitDefs )
                 .programs( programs )
-                .prepareContext( new ContextImpl( PolyphenyDbSchema.from( schema ),
+                .prepareContext( new ContextImpl(
+                        PolyphenyDbSchema.from( schema ),
                         new SlimDataContext() {
                             @Override
                             public JavaTypeFactory getTypeFactory() {

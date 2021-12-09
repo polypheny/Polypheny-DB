@@ -58,5 +58,6 @@ public class SqlRandFunction extends SqlFunction {
     public boolean isDynamicFunction() {
         return true;
     }
+
 }
 

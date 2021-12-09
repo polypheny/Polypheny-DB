@@ -36,7 +36,8 @@ public class CqlQuery {
     public final Projections projections;
 
 
-    public CqlQuery( final Tree<Combiner, TableIndex> queryRelation,
+    public CqlQuery(
+            final Tree<Combiner, TableIndex> queryRelation,
             final Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters,
             final Map<String, TableIndex> tableIndexMapping,
             final Map<String, ColumnIndex> columnIndexMapping,

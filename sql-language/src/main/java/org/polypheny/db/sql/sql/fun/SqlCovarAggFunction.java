@@ -37,7 +37,8 @@ public class SqlCovarAggFunction extends SqlAggFunction {
      * Creates a SqlCovarAggFunction.
      */
     public SqlCovarAggFunction( Kind kind ) {
-        super( kind.name(),
+        super(
+                kind.name(),
                 null,
                 kind,
                 kind == Kind.REGR_COUNT ? ReturnTypes.BIGINT : ReturnTypes.COVAR_REGR_FUNCTION,

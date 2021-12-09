@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ package org.polypheny.db.type.checker;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.CallBinding;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.OperatorBinding;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Static;
 
 

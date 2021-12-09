@@ -49,5 +49,6 @@ public class H2SqlDialect extends SqlDialect {
     public boolean supportsWindowFunctions() {
         return false;
     }
+
 }
 

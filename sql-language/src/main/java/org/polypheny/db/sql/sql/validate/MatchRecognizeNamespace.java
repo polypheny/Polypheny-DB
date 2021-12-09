@@ -17,9 +17,9 @@
 package org.polypheny.db.sql.sql.validate;
 
 
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.sql.sql.SqlMatchRecognize;
 import org.polypheny.db.sql.sql.SqlNode;
-import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -50,5 +50,6 @@ public class MatchRecognizeNamespace extends AbstractNamespace {
     public SqlMatchRecognize getNode() {
         return matchRecognize;
     }
+
 }
 

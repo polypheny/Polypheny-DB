@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.sql2alg;
 
 
-import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.sql.SqlCall;
 
 
 /**
@@ -41,5 +41,6 @@ public interface SubQueryConverter {
      * @return the equivalent expression or null if the sub-query couldn't be converted
      */
     RexNode convertSubQuery( SqlCall subQuery, SqlToAlgConverter parentConverter, boolean isExists, boolean isExplain );
+
 }
 

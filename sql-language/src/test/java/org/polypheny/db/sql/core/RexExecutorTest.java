@@ -40,15 +40,13 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.sql.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.sql.fun.SqlMonotonicBinaryOperator;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.prepare.ContextImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutable;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -61,6 +59,8 @@ import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.sql.sql.SqlBinaryOperator;
+import org.polypheny.db.sql.sql.fun.SqlMonotonicBinaryOperator;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.transaction.Statement;
@@ -76,7 +76,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for {@link org.polypheny.db.rex.RexExecutorImpl}.
  */
-public class RexExecutorTest extends SqlLanguagelDependant{
+public class RexExecutorTest extends SqlLanguagelDependant {
 
     public RexExecutorTest() {
     }
@@ -256,7 +256,8 @@ public class RexExecutorTest extends SqlLanguagelDependant{
     public void testDeterministic3() throws Exception {
         check( ( rexBuilder, executor ) -> {
             final RexNode plus =
-                    rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ),
+                    rexBuilder.makeCall(
+                            OperatorRegistry.get( OperatorName.PLUS ),
                             rexBuilder.makeCall( PLUS_RANDOM, rexBuilder.makeExactLiteral( BigDecimal.ONE ), rexBuilder.makeExactLiteral( BigDecimal.ONE ) ),
                             rexBuilder.makeExactLiteral( BigDecimal.ONE ) );
             assertThat( RexUtil.isDeterministic( plus ), equalTo( false ) );

@@ -19,10 +19,10 @@ package org.polypheny.db.adapter.mongodb;
 import java.util.HashMap;
 import java.util.List;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.StructKind;
+import org.polypheny.db.catalog.Catalog;
 
 public class MongoRowType extends AlgRecordType {
 

@@ -22,16 +22,16 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.type.DynamicRecordType;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.validate.SqlQualified;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -412,5 +412,6 @@ public class SqlIdentifier extends SqlNode implements Identifier {
         final SqlIdentifier fqId = qualified.identifier;
         return qualified.namespace.resolve().getMonotonicity( Util.last( fqId.names ) );
     }
+
 }
 

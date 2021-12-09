@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,5 +76,6 @@ public interface FunctionParameter {
      * If a parameter is optional its default value is NULL. We may in future allow functions to specify other default values.
      */
     boolean isOptional();
+
 }
 

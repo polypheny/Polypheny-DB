@@ -364,6 +364,8 @@ public class CassandraSchema extends AbstractSchema {
         String logicalName;
         String physicalName;
         AlgDataType dataType;
+
     }
+
 }
 

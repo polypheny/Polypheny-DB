@@ -21,16 +21,16 @@ import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.polypheny.db.util.InitializerContext;
-import org.polypheny.db.util.InitializerExpressionFactory;
-import org.polypheny.db.util.NullInitializerExpressionFactory;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.util.InitializerContext;
+import org.polypheny.db.util.InitializerExpressionFactory;
+import org.polypheny.db.util.NullInitializerExpressionFactory;
 
 
 /**

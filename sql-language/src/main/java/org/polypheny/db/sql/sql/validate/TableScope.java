@@ -57,4 +57,5 @@ class TableScope extends ListScope {
         SqlValidatorScope s = getValidator().getSelectScope( (SqlSelect) node );
         return s.isWithin( scope2 );
     }
+
 }

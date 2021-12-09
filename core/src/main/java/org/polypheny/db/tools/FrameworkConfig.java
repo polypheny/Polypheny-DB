@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,14 +36,14 @@ package org.polypheny.db.tools;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.AlgOptCostFactory;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.plan.Context;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.SchemaPlus;
 

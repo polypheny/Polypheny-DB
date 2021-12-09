@@ -27,11 +27,11 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -101,7 +101,7 @@ public abstract class Index {
         final QueryProcessor processor = statement.getQueryProcessor();
         final PolyResult result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
-        final Iterable<Object> enumerable = result.enumerable( statement.getDataContext());
+        final Iterable<Object> enumerable = result.enumerable( statement.getDataContext() );
         final Iterator<Object> iterator = enumerable.iterator();
         final List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), iterator, new ArrayList<>() );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );

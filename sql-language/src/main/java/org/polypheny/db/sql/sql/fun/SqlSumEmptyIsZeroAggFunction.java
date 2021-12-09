@@ -56,4 +56,5 @@ public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction implements SumE
         }
         return super.unwrap( clazz );
     }
+
 }

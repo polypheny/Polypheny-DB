@@ -26,18 +26,18 @@ import java.util.regex.Pattern;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.util.CoreUtil;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
-import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.type.PolyIntervalQualifier;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -420,7 +420,8 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     }
 
 
-    private boolean isLeadFieldInRange( AlgDataTypeSystem typeSystem,
+    private boolean isLeadFieldInRange(
+            AlgDataTypeSystem typeSystem,
             BigDecimal value, TimeUnit unit ) {
         // we should never get handed a negative field value
         assert value.compareTo( ZERO ) >= 0;
@@ -433,7 +434,8 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
     }
 
 
-    private void checkLeadFieldInRange( AlgDataTypeSystem typeSystem, int sign,
+    private void checkLeadFieldInRange(
+            AlgDataTypeSystem typeSystem, int sign,
             BigDecimal value, TimeUnit unit, ParserPos pos ) {
         if ( !isLeadFieldInRange( typeSystem, value, unit ) ) {
             throw fieldExceedsPrecisionException(
@@ -1175,7 +1177,8 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
      * @throws PolyphenyDbContextException if the interval
      * value is illegal
      */
-    public int[] evaluateIntervalLiteral( String value, ParserPos pos,
+    public int[] evaluateIntervalLiteral(
+            String value, ParserPos pos,
             AlgDataTypeSystem typeSystem ) {
         // save original value for if we have to throw
         final String value0 = value;
@@ -1249,7 +1252,8 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
 
 
     private PolyphenyDbContextException invalidValueException( ParserPos pos, String value ) {
-        return CoreUtil.newContextException( pos,
+        return CoreUtil.newContextException(
+                pos,
                 RESOURCE.unsupportedIntervalLiteral(
                         "'" + value + "'", "INTERVAL " + toString() ) );
     }
@@ -1261,7 +1265,8 @@ public class SqlIntervalQualifier extends SqlNode implements IntervalQualifier {
         if ( sign == -1 ) {
             value = value.negate();
         }
-        return CoreUtil.newContextException( pos,
+        return CoreUtil.newContextException(
+                pos,
                 RESOURCE.intervalFieldExceedsPrecision(
                         value, type.name() + "(" + precision + ")" ) );
     }

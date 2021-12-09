@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,18 +42,18 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
-import org.polypheny.db.interpreter.BindableConvention;
-import org.polypheny.db.interpreter.BindableAlg;
-import org.polypheny.db.interpreter.Node;
-import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.interpreter.BindableAlg;
+import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.interpreter.Node;
+import org.polypheny.db.interpreter.Row;
+import org.polypheny.db.interpreter.Sink;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -135,6 +135,8 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
         public AlgNode convert( AlgNode alg ) {
             return new EnumerableBindable( alg.getCluster(), alg );
         }
+
     }
+
 }
 

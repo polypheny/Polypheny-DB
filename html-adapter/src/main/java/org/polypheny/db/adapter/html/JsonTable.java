@@ -70,5 +70,6 @@ public class JsonTable extends AbstractTable implements ScannableTable {
             }
         };
     }
+
 }
 

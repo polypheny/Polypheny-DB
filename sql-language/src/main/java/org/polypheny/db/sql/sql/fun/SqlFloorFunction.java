@@ -21,8 +21,8 @@ import com.google.common.base.Preconditions;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.sql.sql.SqlLiteral;
@@ -40,7 +40,8 @@ public class SqlFloorFunction extends SqlMonotonicUnaryFunction {
 
 
     public SqlFloorFunction( Kind kind ) {
-        super( kind.name(),
+        super(
+                kind.name(),
                 kind,
                 ReturnTypes.ARG0_OR_EXACT_NO_SCALE,
                 null,

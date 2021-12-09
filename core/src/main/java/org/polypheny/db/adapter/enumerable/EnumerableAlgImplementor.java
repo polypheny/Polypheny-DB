@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,12 +74,12 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.VisitorImpl;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
-import org.polypheny.db.util.Conformance;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.plan.AlgImplementor;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Conformance;
 
 
 /**
@@ -136,7 +136,8 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
         // final Integer v1stashed = (Integer) root.get("v1stashed")
         // It is convenient for passing non-literal "compile-time" constants
         final Collection<Statement> stashed =
-                Collections2.transform( stashedParameters.values(),
+                Collections2.transform(
+                        stashedParameters.values(),
                         input -> Expressions.declare( Modifier.FINAL, input,
                                 Expressions.convert_(
                                         Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET.method, Expressions.constant( input.name ) ),

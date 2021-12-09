@@ -183,5 +183,6 @@ public final class Span {
         posList.clear();
         return this;
     }
+
 }
 

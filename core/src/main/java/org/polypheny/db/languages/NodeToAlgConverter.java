@@ -21,12 +21,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.AlgFieldTrimmer;
-import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexSubQuery;
@@ -156,6 +156,7 @@ public interface NodeToAlgConverter {
             return this;
         }
 
+
         /**
          * Builds a {@link Config}.
          */
@@ -173,6 +174,7 @@ public interface NodeToAlgConverter {
     @Getter
     @AllArgsConstructor
     class ConfigImpl implements Config {
+
         private final boolean convertTableAccess;
         private final boolean decorrelationEnabled;
         private final boolean trimUnusedFields;
@@ -181,6 +183,7 @@ public interface NodeToAlgConverter {
         private final boolean expand;
         private final int inSubQueryThreshold;
         private final AlgBuilderFactory algBuilderFactory;
+
     }
 
 }

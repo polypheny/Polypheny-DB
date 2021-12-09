@@ -19,11 +19,11 @@ package org.polypheny.db.sql.sql.fun;
 
 import java.util.List;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;

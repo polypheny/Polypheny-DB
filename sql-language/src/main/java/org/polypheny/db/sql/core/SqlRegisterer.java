@@ -26,9 +26,9 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
-import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.sql.sql.SqlAsOperator;
 import org.polypheny.db.sql.sql.SqlBinaryOperator;
@@ -150,6 +150,7 @@ public class SqlRegisterer {
     @Getter
     @VisibleForTesting
     private static boolean isInit = false;
+
 
     public static void registerOperators() {
         if ( isInit ) {
@@ -294,7 +295,8 @@ public class SqlRegisterer {
         /**
          * String concatenation operator, '<code>||</code>'.
          */
-        register( OperatorName.CONCAT,
+        register(
+                OperatorName.CONCAT,
                 new SqlBinaryOperator(
                         "||",
                         Kind.OTHER,
@@ -307,7 +309,8 @@ public class SqlRegisterer {
         /**
          * Arithmetic division operator, '<code>/</code>'.
          */
-        register( OperatorName.DIVIDE,
+        register(
+                OperatorName.DIVIDE,
                 new SqlBinaryOperator(
                         "/",
                         Kind.DIVIDE,
@@ -322,7 +325,8 @@ public class SqlRegisterer {
          *
          * @see SqlConformance#isPercentRemainderAllowed
          */
-        register( OperatorName.PERCENT_REMAINDER,
+        register(
+                OperatorName.PERCENT_REMAINDER,
                 new SqlBinaryOperator(
                         "%",
                         Kind.MOD,
@@ -346,7 +350,8 @@ public class SqlRegisterer {
          * Internal integer arithmetic division operator, '<code>/INT</code>'. This is only used to adjust scale for numerics. We distinguish it from user-requested division since some personalities want a floating-point computation,
          * whereas for the internal scaling use of division, we always want integer division.
          */
-        register( OperatorName.DIVIDE_INTEGER,
+        register(
+                OperatorName.DIVIDE_INTEGER,
                 new SqlBinaryOperator(
                         "/INT",
                         Kind.DIVIDE,
@@ -364,7 +369,8 @@ public class SqlRegisterer {
         /**
          * Logical equals operator, '<code>=</code>'.
          */
-        register( OperatorName.EQUALS,
+        register(
+                OperatorName.EQUALS,
                 new SqlBinaryOperator(
                         "=",
                         Kind.EQUALS,
@@ -377,7 +383,8 @@ public class SqlRegisterer {
         /**
          * Logical greater-than operator, '<code>&gt;</code>'.
          */
-        register( OperatorName.GREATER_THAN,
+        register(
+                OperatorName.GREATER_THAN,
                 new SqlBinaryOperator(
                         ">",
                         Kind.GREATER_THAN,
@@ -390,7 +397,8 @@ public class SqlRegisterer {
         /**
          * <code>IS DISTINCT FROM</code> operator.
          */
-        register( OperatorName.IS_DISTINCT_FROM,
+        register(
+                OperatorName.IS_DISTINCT_FROM,
                 new SqlBinaryOperator(
                         "IS DISTINCT FROM",
                         Kind.IS_DISTINCT_FROM,
@@ -403,7 +411,8 @@ public class SqlRegisterer {
         /**
          * <code>IS NOT DISTINCT FROM</code> operator. Is equivalent to <code>NOT(x IS DISTINCT FROM y)</code>
          */
-        register( OperatorName.IS_NOT_DISTINCT_FROM,
+        register(
+                OperatorName.IS_NOT_DISTINCT_FROM,
                 new SqlBinaryOperator(
                         "IS NOT DISTINCT FROM",
                         Kind.IS_NOT_DISTINCT_FROM,
@@ -416,7 +425,8 @@ public class SqlRegisterer {
         /**
          * The internal <code>$IS_DIFFERENT_FROM</code> operator is the same as the user-level {@link #IS_DISTINCT_FROM} in all respects except that the test for equality on character datatypes treats trailing spaces as significant.
          */
-        register( OperatorName.IS_DIFFERENT_FROM,
+        register(
+                OperatorName.IS_DIFFERENT_FROM,
                 new SqlBinaryOperator(
                         "$IS_DIFFERENT_FROM",
                         Kind.OTHER,
@@ -429,7 +439,8 @@ public class SqlRegisterer {
         /**
          * Logical greater-than-or-equal operator, '<code>&gt;=</code>'.
          */
-        register( OperatorName.GREATER_THAN_OR_EQUAL,
+        register(
+                OperatorName.GREATER_THAN_OR_EQUAL,
                 new SqlBinaryOperator(
                         ">=",
                         Kind.GREATER_THAN_OR_EQUAL,
@@ -482,7 +493,8 @@ public class SqlRegisterer {
         /**
          * Logical less-than operator, '<code>&lt;</code>'.
          */
-        register( OperatorName.LESS_THAN,
+        register(
+                OperatorName.LESS_THAN,
                 new SqlBinaryOperator(
                         "<",
                         Kind.LESS_THAN,
@@ -495,7 +507,8 @@ public class SqlRegisterer {
         /**
          * Logical less-than-or-equal operator, '<code>&lt;=</code>'.
          */
-        register( OperatorName.LESS_THAN_OR_EQUAL,
+        register(
+                OperatorName.LESS_THAN_OR_EQUAL,
                 new SqlBinaryOperator(
                         "<=",
                         Kind.LESS_THAN_OR_EQUAL,
@@ -510,7 +523,8 @@ public class SqlRegisterer {
          *
          * Its precedence is less than the prefix {@link #UNARY_PLUS +} and {@link #UNARY_MINUS -} operators.
          */
-        register( OperatorName.MINUS,
+        register(
+                OperatorName.MINUS,
                 new SqlMonotonicBinaryOperator(
                         "-",
                         Kind.MINUS,
@@ -525,7 +539,8 @@ public class SqlRegisterer {
         /**
          * Arithmetic multiplication operator, '<code>*</code>'.
          */
-        register( OperatorName.MULTIPLY,
+        register(
+                OperatorName.MULTIPLY,
                 new SqlMonotonicBinaryOperator(
                         "*",
                         Kind.TIMES,
@@ -538,7 +553,8 @@ public class SqlRegisterer {
         /**
          * Logical not-equals operator, '<code>&lt;&gt;</code>'.
          */
-        register( OperatorName.NOT_EQUALS,
+        register(
+                OperatorName.NOT_EQUALS,
                 new SqlBinaryOperator(
                         "<>",
                         Kind.NOT_EQUALS,
@@ -551,7 +567,8 @@ public class SqlRegisterer {
         /**
          * Logical <code>OR</code> operator.
          */
-        register( OperatorName.OR,
+        register(
+                OperatorName.OR,
                 new SqlBinaryOperator(
                         "OR",
                         Kind.OR,
@@ -564,7 +581,8 @@ public class SqlRegisterer {
         /**
          * Infix arithmetic plus operator, '<code>+</code>'.
          */
-        register( OperatorName.PLUS,
+        register(
+                OperatorName.PLUS,
                 new SqlMonotonicBinaryOperator(
                         "+",
                         Kind.PLUS,
@@ -605,7 +623,8 @@ public class SqlRegisterer {
          * <code>MULTISET ['blue', 'red'] SUBMULTISET OF MULTISET ['red', 'almost green', 'blue']</code>
          * </blockquote>
          */
-        register( OperatorName.SUBMULTISET_OF,
+        register(
+                OperatorName.SUBMULTISET_OF,
 
                 // TODO: check if precedence is correct
                 new SqlBinaryOperator(
@@ -617,7 +636,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.MULTISET_MULTISET ) );
 
-        register( OperatorName.NOT_SUBMULTISET_OF,
+        register(
+                OperatorName.NOT_SUBMULTISET_OF,
 
                 // TODO: check if precedence is correct
                 new SqlBinaryOperator(
@@ -632,7 +652,8 @@ public class SqlRegisterer {
         //-------------------------------------------------------------
         //                   POSTFIX OPERATORS
         //-------------------------------------------------------------
-        register( OperatorName.DESC,
+        register(
+                OperatorName.DESC,
                 new SqlPostfixOperator(
                         "DESC",
                         Kind.DESCENDING,
@@ -641,7 +662,8 @@ public class SqlRegisterer {
                         InferTypes.RETURN_TYPE,
                         OperandTypes.ANY ) );
 
-        register( OperatorName.NULLS_FIRST,
+        register(
+                OperatorName.NULLS_FIRST,
                 new SqlPostfixOperator(
                         "NULLS FIRST",
                         Kind.NULLS_FIRST,
@@ -650,7 +672,8 @@ public class SqlRegisterer {
                         InferTypes.RETURN_TYPE,
                         OperandTypes.ANY ) );
 
-        register( OperatorName.NULLS_LAST,
+        register(
+                OperatorName.NULLS_LAST,
                 new SqlPostfixOperator(
                         "NULLS LAST",
                         Kind.NULLS_LAST,
@@ -659,7 +682,8 @@ public class SqlRegisterer {
                         InferTypes.RETURN_TYPE,
                         OperandTypes.ANY ) );
 
-        register( OperatorName.IS_NOT_NULL,
+        register(
+                OperatorName.IS_NOT_NULL,
                 new SqlPostfixOperator(
                         "IS NOT NULL",
                         Kind.IS_NOT_NULL,
@@ -668,7 +692,8 @@ public class SqlRegisterer {
                         InferTypes.VARCHAR_1024,
                         OperandTypes.ANY ) );
 
-        register( OperatorName.IS_NULL,
+        register(
+                OperatorName.IS_NULL,
                 new SqlPostfixOperator(
                         "IS NULL",
                         Kind.IS_NULL,
@@ -677,7 +702,8 @@ public class SqlRegisterer {
                         InferTypes.VARCHAR_1024,
                         OperandTypes.ANY ) );
 
-        register( OperatorName.IS_NOT_TRUE,
+        register(
+                OperatorName.IS_NOT_TRUE,
                 new SqlPostfixOperator(
                         "IS NOT TRUE",
                         Kind.IS_NOT_TRUE,
@@ -686,7 +712,8 @@ public class SqlRegisterer {
                         InferTypes.BOOLEAN,
                         OperandTypes.BOOLEAN ) );
 
-        register( OperatorName.IS_TRUE,
+        register(
+                OperatorName.IS_TRUE,
                 new SqlPostfixOperator(
                         "IS TRUE",
                         Kind.IS_TRUE,
@@ -695,7 +722,8 @@ public class SqlRegisterer {
                         InferTypes.BOOLEAN,
                         OperandTypes.BOOLEAN ) );
 
-        register( OperatorName.IS_NOT_FALSE,
+        register(
+                OperatorName.IS_NOT_FALSE,
                 new SqlPostfixOperator(
                         "IS NOT FALSE",
                         Kind.IS_NOT_FALSE,
@@ -704,7 +732,8 @@ public class SqlRegisterer {
                         InferTypes.BOOLEAN,
                         OperandTypes.BOOLEAN ) );
 
-        register( OperatorName.IS_FALSE,
+        register(
+                OperatorName.IS_FALSE,
                 new SqlPostfixOperator(
                         "IS FALSE",
                         Kind.IS_FALSE,
@@ -713,7 +742,8 @@ public class SqlRegisterer {
                         InferTypes.BOOLEAN,
                         OperandTypes.BOOLEAN ) );
 
-        register( OperatorName.IS_NOT_UNKNOWN,
+        register(
+                OperatorName.IS_NOT_UNKNOWN,
                 new SqlPostfixOperator(
                         "IS NOT UNKNOWN",
                         Kind.IS_NOT_NULL,
@@ -722,7 +752,8 @@ public class SqlRegisterer {
                         InferTypes.BOOLEAN,
                         OperandTypes.BOOLEAN ) );
 
-        register( OperatorName.IS_UNKNOWN,
+        register(
+                OperatorName.IS_UNKNOWN,
                 new SqlPostfixOperator(
                         "IS UNKNOWN",
                         Kind.IS_NULL,
@@ -731,7 +762,8 @@ public class SqlRegisterer {
                         InferTypes.BOOLEAN,
                         OperandTypes.BOOLEAN ) );
 
-        register( OperatorName.IS_A_SET,
+        register(
+                OperatorName.IS_A_SET,
                 new SqlPostfixOperator(
                         "IS A SET",
                         Kind.OTHER,
@@ -740,7 +772,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.MULTISET ) );
 
-        register( OperatorName.IS_NOT_A_SET,
+        register(
+                OperatorName.IS_NOT_A_SET,
                 new SqlPostfixOperator(
                         "IS NOT A SET",
                         Kind.OTHER,
@@ -749,7 +782,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.MULTISET ) );
 
-        register( OperatorName.IS_EMPTY,
+        register(
+                OperatorName.IS_EMPTY,
                 new SqlPostfixOperator(
                         "IS EMPTY",
                         Kind.OTHER,
@@ -758,7 +792,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.COLLECTION_OR_MAP ) );
 
-        register( OperatorName.IS_NOT_EMPTY,
+        register(
+                OperatorName.IS_NOT_EMPTY,
                 new SqlPostfixOperator(
                         "IS NOT EMPTY",
                         Kind.OTHER,
@@ -767,7 +802,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.COLLECTION_OR_MAP ) );
 
-        register( OperatorName.IS_JSON_VALUE,
+        register(
+                OperatorName.IS_JSON_VALUE,
                 new SqlPostfixOperator(
                         "IS JSON VALUE",
                         Kind.OTHER,
@@ -776,7 +812,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.CHARACTER ) );
 
-        register( OperatorName.IS_NOT_JSON_VALUE,
+        register(
+                OperatorName.IS_NOT_JSON_VALUE,
                 new SqlPostfixOperator(
                         "IS NOT JSON VALUE",
                         Kind.OTHER,
@@ -785,7 +822,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.CHARACTER ) );
 
-        register( OperatorName.IS_JSON_OBJECT,
+        register(
+                OperatorName.IS_JSON_OBJECT,
                 new SqlPostfixOperator(
                         "IS JSON OBJECT",
                         Kind.OTHER,
@@ -794,7 +832,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.CHARACTER ) );
 
-        register( OperatorName.IS_NOT_JSON_OBJECT,
+        register(
+                OperatorName.IS_NOT_JSON_OBJECT,
                 new SqlPostfixOperator(
                         "IS NOT JSON OBJECT",
                         Kind.OTHER,
@@ -803,7 +842,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.CHARACTER ) );
 
-        register( OperatorName.IS_JSON_ARRAY,
+        register(
+                OperatorName.IS_JSON_ARRAY,
                 new SqlPostfixOperator(
                         "IS JSON ARRAY",
                         Kind.OTHER,
@@ -812,7 +852,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.CHARACTER ) );
 
-        register( OperatorName.IS_NOT_JSON_ARRAY,
+        register(
+                OperatorName.IS_NOT_JSON_ARRAY,
                 new SqlPostfixOperator(
                         "IS NOT JSON ARRAY",
                         Kind.OTHER,
@@ -821,7 +862,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.CHARACTER ) );
 
-        register( OperatorName.IS_JSON_SCALAR,
+        register(
+                OperatorName.IS_JSON_SCALAR,
                 new SqlPostfixOperator(
                         "IS JSON SCALAR",
                         Kind.OTHER,
@@ -830,7 +872,8 @@ public class SqlRegisterer {
                         null,
                         OperandTypes.CHARACTER ) );
 
-        register( OperatorName.IS_NOT_JSON_SCALAR,
+        register(
+                OperatorName.IS_NOT_JSON_SCALAR,
                 new SqlPostfixOperator(
                         "IS NOT JSON SCALAR",
                         Kind.OTHER,
@@ -842,7 +885,8 @@ public class SqlRegisterer {
         //-------------------------------------------------------------
         //                   PREFIX OPERATORS
         //-------------------------------------------------------------
-        register( OperatorName.EXISTS,
+        register(
+                OperatorName.EXISTS,
                 new SqlPrefixOperator(
                         "EXISTS",
                         Kind.EXISTS,
@@ -865,7 +909,8 @@ public class SqlRegisterer {
                     }
                 } );
 
-        register( OperatorName.NOT,
+        register(
+                OperatorName.NOT,
                 new SqlPrefixOperator(
                         "NOT",
                         Kind.NOT,
@@ -879,7 +924,8 @@ public class SqlRegisterer {
          *
          * Its precedence is greater than the infix '{@link #PLUS +}' and '{@link #MINUS -}' operators.
          */
-        register( OperatorName.UNARY_MINUS,
+        register(
+                OperatorName.UNARY_MINUS,
                 new SqlPrefixOperator(
                         "-",
                         Kind.MINUS_PREFIX,
@@ -893,7 +939,8 @@ public class SqlRegisterer {
          *
          * Its precedence is greater than the infix '{@link #PLUS +}' and '{@link #MINUS -}' operators.
          */
-        register( OperatorName.UNARY_PLUS,
+        register(
+                OperatorName.UNARY_PLUS,
                 new SqlPrefixOperator(
                         "+",
                         Kind.PLUS_PREFIX,
@@ -906,7 +953,8 @@ public class SqlRegisterer {
          * Keyword which allows an identifier to be explicitly flagged as a table.
          * For example, <code>select * from (TABLE t)</code> or <code>TABLE t</code>. See also {@link #COLLECTION_TABLE}.
          */
-        register( OperatorName.EXPLICIT_TABLE,
+        register(
+                OperatorName.EXPLICIT_TABLE,
                 new SqlPrefixOperator(
                         "TABLE",
                         Kind.EXPLICIT_TABLE,
@@ -918,7 +966,8 @@ public class SqlRegisterer {
         /**
          * {@code FINAL} function to be used within {@code MATCH_RECOGNIZE}.
          */
-        register( OperatorName.FINAL,
+        register(
+                OperatorName.FINAL,
                 new SqlPrefixOperator(
                         "FINAL",
                         Kind.FINAL,
@@ -930,7 +979,8 @@ public class SqlRegisterer {
         /**
          * {@code RUNNING} function to be used within {@code MATCH_RECOGNIZE}.
          */
-        register( OperatorName.RUNNING,
+        register(
+                OperatorName.RUNNING,
                 new SqlPrefixOperator(
                         "RUNNING",
                         Kind.RUNNING,
@@ -1088,7 +1138,8 @@ public class SqlRegisterer {
         /**
          * <code>HISTOGRAM_MIN</code> window aggregate function.
          */
-        register( OperatorName.HISTOGRAM_MIN,
+        register(
+                OperatorName.HISTOGRAM_MIN,
                 new SqlFunction(
                         "$HISTOGRAM_MIN",
                         Kind.OTHER_FUNCTION,
@@ -1100,7 +1151,8 @@ public class SqlRegisterer {
         /**
          * <code>HISTOGRAM_MAX</code> window aggregate function.
          */
-        register( OperatorName.HISTOGRAM_MAX,
+        register(
+                OperatorName.HISTOGRAM_MAX,
                 new SqlFunction(
                         "$HISTOGRAM_MAX",
                         Kind.OTHER_FUNCTION,
@@ -1112,7 +1164,8 @@ public class SqlRegisterer {
         /**
          * <code>HISTOGRAM_FIRST_VALUE</code> window aggregate function.
          */
-        register( OperatorName.HISTOGRAM_FIRST_VALUE,
+        register(
+                OperatorName.HISTOGRAM_FIRST_VALUE,
                 new SqlFunction(
                         "$HISTOGRAM_FIRST_VALUE",
                         Kind.OTHER_FUNCTION,
@@ -1124,7 +1177,8 @@ public class SqlRegisterer {
         /**
          * <code>HISTOGRAM_LAST_VALUE</code> window aggregate function.
          */
-        register( OperatorName.HISTOGRAM_LAST_VALUE,
+        register(
+                OperatorName.HISTOGRAM_LAST_VALUE,
                 new SqlFunction(
                         "$HISTOGRAM_LAST_VALUE",
                         Kind.OTHER_FUNCTION,
@@ -1319,7 +1373,8 @@ public class SqlRegisterer {
          * An <code>REINTERPRET</code> operator is internal to the planner. When the physical storage of two types is the same, this operator may be used to reinterpret values of one type as the other. This operator is similar to a cast,
          * except that it does not alter the data value. Like a regular cast it accepts one operand and stores the target type as the return type. It performs an overflow check if it has <i>any</i> second operand, whether true or not.
          */
-        register( OperatorName.REINTERPRET,
+        register(
+                OperatorName.REINTERPRET,
                 new SqlSpecialOperator( "Reinterpret", Kind.REINTERPRET ) {
                     @Override
                     public OperandCountRange getOperandCountRange() {
@@ -1351,7 +1406,8 @@ public class SqlRegisterer {
         /**
          * The {@code REPLACE(string, search, replace)} function. Not standard SQL, but in Oracle and Postgres.
          */
-        register( OperatorName.REPLACE,
+        register(
+                OperatorName.REPLACE,
                 new SqlFunction(
                         "REPLACE",
                         Kind.OTHER_FUNCTION,
@@ -1378,7 +1434,8 @@ public class SqlRegisterer {
 
         register( OperatorName.POSITION, new SqlPositionFunction() );
 
-        register( OperatorName.CHAR_LENGTH,
+        register(
+                OperatorName.CHAR_LENGTH,
                 new SqlFunction(
                         "CHAR_LENGTH",
                         Kind.OTHER_FUNCTION,
@@ -1387,7 +1444,8 @@ public class SqlRegisterer {
                         OperandTypes.CHARACTER,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.CHARACTER_LENGTH,
+        register(
+                OperatorName.CHARACTER_LENGTH,
                 new SqlFunction(
                         "CHARACTER_LENGTH",
                         Kind.OTHER_FUNCTION,
@@ -1396,7 +1454,8 @@ public class SqlRegisterer {
                         OperandTypes.CHARACTER,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.UPPER,
+        register(
+                OperatorName.UPPER,
                 new SqlFunction(
                         "UPPER",
                         Kind.OTHER_FUNCTION,
@@ -1405,7 +1464,8 @@ public class SqlRegisterer {
                         OperandTypes.CHARACTER,
                         FunctionCategory.STRING ) );
 
-        register( OperatorName.LOWER,
+        register(
+                OperatorName.LOWER,
                 new SqlFunction(
                         "LOWER",
                         Kind.OTHER_FUNCTION,
@@ -1414,7 +1474,8 @@ public class SqlRegisterer {
                         OperandTypes.CHARACTER,
                         FunctionCategory.STRING ) );
 
-        register( OperatorName.INITCAP,
+        register(
+                OperatorName.INITCAP,
                 new SqlFunction(
                         "INITCAP",
                         Kind.OTHER_FUNCTION,
@@ -1426,7 +1487,8 @@ public class SqlRegisterer {
         /**
          * Uses SqlOperatorTable.useDouble for its return type since we don't know what the result type will be by just looking at the operand types. For example POW(int, int) can return a non integer if the second operand is negative.
          */
-        register( OperatorName.POWER,
+        register(
+                OperatorName.POWER,
                 new SqlFunction(
                         "POWER",
                         Kind.OTHER_FUNCTION,
@@ -1435,7 +1497,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC_NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.SQRT,
+        register(
+                OperatorName.SQRT,
                 new SqlFunction(
                         "SQRT",
                         Kind.OTHER_FUNCTION,
@@ -1449,7 +1512,8 @@ public class SqlRegisterer {
          *
          * @see #PERCENT_REMAINDER
          */
-        register( OperatorName.MOD,
+        register(
+                OperatorName.MOD,
                 // Return type is same as divisor (2nd operand)
                 // SQL2003 Part2 Section 6.27, Syntax Rules 9
                 new SqlFunction(
@@ -1460,7 +1524,8 @@ public class SqlRegisterer {
                         OperandTypes.EXACT_NUMERIC_EXACT_NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.LN,
+        register(
+                OperatorName.LN,
                 new SqlFunction(
                         "LN",
                         Kind.OTHER_FUNCTION,
@@ -1469,7 +1534,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.LOG10,
+        register(
+                OperatorName.LOG10,
                 new SqlFunction(
                         "LOG10",
                         Kind.OTHER_FUNCTION,
@@ -1478,7 +1544,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.ABS,
+        register(
+                OperatorName.ABS,
                 new SqlFunction(
                         "ABS",
                         Kind.OTHER_FUNCTION,
@@ -1487,7 +1554,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC_OR_INTERVAL,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.ACOS,
+        register(
+                OperatorName.ACOS,
                 new SqlFunction(
                         "ACOS",
                         Kind.OTHER_FUNCTION,
@@ -1496,7 +1564,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.ASIN,
+        register(
+                OperatorName.ASIN,
                 new SqlFunction(
                         "ASIN",
                         Kind.OTHER_FUNCTION,
@@ -1505,7 +1574,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.ATAN,
+        register(
+                OperatorName.ATAN,
                 new SqlFunction(
                         "ATAN",
                         Kind.OTHER_FUNCTION,
@@ -1514,7 +1584,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.ATAN2,
+        register(
+                OperatorName.ATAN2,
                 new SqlFunction(
                         "ATAN2",
                         Kind.OTHER_FUNCTION,
@@ -1523,7 +1594,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC_NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.COS,
+        register(
+                OperatorName.COS,
                 new SqlFunction(
                         "COS",
                         Kind.OTHER_FUNCTION,
@@ -1532,7 +1604,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.COT,
+        register(
+                OperatorName.COT,
                 new SqlFunction(
                         "COT",
                         Kind.OTHER_FUNCTION,
@@ -1541,7 +1614,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.DEGREES,
+        register(
+                OperatorName.DEGREES,
                 new SqlFunction(
                         "DEGREES",
                         Kind.OTHER_FUNCTION,
@@ -1550,7 +1624,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.EXP,
+        register(
+                OperatorName.EXP,
                 new SqlFunction(
                         "EXP",
                         Kind.OTHER_FUNCTION,
@@ -1559,7 +1634,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.RADIANS,
+        register(
+                OperatorName.RADIANS,
                 new SqlFunction(
                         "RADIANS",
                         Kind.OTHER_FUNCTION,
@@ -1568,7 +1644,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.ROUND,
+        register(
+                OperatorName.ROUND,
                 new SqlFunction(
                         "ROUND",
                         Kind.OTHER_FUNCTION,
@@ -1577,7 +1654,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC_OPTIONAL_INTEGER,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.SIGN,
+        register(
+                OperatorName.SIGN,
                 new SqlFunction(
                         "SIGN",
                         Kind.OTHER_FUNCTION,
@@ -1586,7 +1664,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.SIN,
+        register(
+                OperatorName.SIN,
                 new SqlFunction(
                         "SIN",
                         Kind.OTHER_FUNCTION,
@@ -1595,7 +1674,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.TAN,
+        register(
+                OperatorName.TAN,
                 new SqlFunction(
                         "TAN",
                         Kind.OTHER_FUNCTION,
@@ -1604,7 +1684,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.TRUNCATE,
+        register(
+                OperatorName.TRUNCATE,
                 new SqlFunction(
                         "TRUNCATE",
                         Kind.OTHER_FUNCTION,
@@ -1613,7 +1694,8 @@ public class SqlRegisterer {
                         OperandTypes.NUMERIC_OPTIONAL_INTEGER,
                         FunctionCategory.NUMERIC ) );
 
-        register( OperatorName.PI,
+        register(
+                OperatorName.PI,
                 new SqlBaseContextVariable(
                         "PI",
                         ReturnTypes.DOUBLE,
@@ -1622,7 +1704,8 @@ public class SqlRegisterer {
         /**
          * {@code FIRST} function to be used within {@code MATCH_RECOGNIZE}.
          */
-        register( OperatorName.FIRST,
+        register(
+                OperatorName.FIRST,
                 new SqlFunction(
                         "FIRST",
                         Kind.FIRST,
@@ -1634,7 +1717,8 @@ public class SqlRegisterer {
         /**
          * {@code LAST} function to be used within {@code MATCH_RECOGNIZE}.
          */
-        register( OperatorName.LAST,
+        register(
+                OperatorName.LAST,
                 new SqlFunction(
                         "LAST",
                         Kind.LAST,
@@ -1646,7 +1730,8 @@ public class SqlRegisterer {
         /**
          * {@code PREV} function to be used within {@code MATCH_RECOGNIZE}.
          */
-        register( OperatorName.PREV,
+        register(
+                OperatorName.PREV,
                 new SqlFunction(
                         "PREV",
                         Kind.PREV,
@@ -1658,7 +1743,8 @@ public class SqlRegisterer {
         /**
          * {@code NEXT} function to be used within {@code MATCH_RECOGNIZE}.
          */
-        register( OperatorName.NEXT,
+        register(
+                OperatorName.NEXT,
                 new SqlFunction(
                         "NEXT",
                         Kind.NEXT,
@@ -1670,7 +1756,8 @@ public class SqlRegisterer {
         /**
          * {@code CLASSIFIER} function to be used within {@code MATCH_RECOGNIZE}.
          */
-        register( OperatorName.CLASSIFIER,
+        register(
+                OperatorName.CLASSIFIER,
                 new SqlFunction(
                         "CLASSIFIER",
                         Kind.CLASSIFIER,
@@ -1682,7 +1769,8 @@ public class SqlRegisterer {
         /**
          * {@code MATCH_NUMBER} function to be used within {@code MATCH_RECOGNIZE}.
          */
-        register( OperatorName.MATCH_NUMBER,
+        register(
+                OperatorName.MATCH_NUMBER,
                 new SqlFunction(
                         "MATCH_NUMBER ",
                         Kind.MATCH_NUMBER,
@@ -1786,7 +1874,8 @@ public class SqlRegisterer {
         /**
          * Use of the <code>IN_FENNEL</code> operator forces the argument to be evaluated in Fennel. Otherwise acts as identity function.
          */
-        register( OperatorName.IN_FENNEL,
+        register(
+                OperatorName.IN_FENNEL,
                 new SqlMonotonicUnaryFunction(
                         "IN_FENNEL",
                         Kind.OTHER_FUNCTION,
@@ -1881,7 +1970,8 @@ public class SqlRegisterer {
         /**
          * The ELEMENT operator, used to convert a multiset with only one item to a "regular" type. Example ... log(ELEMENT(MULTISET[1])) ...
          */
-        register( OperatorName.ELEMENT,
+        register(
+                OperatorName.ELEMENT,
                 new SqlFunction(
                         "ELEMENT",
                         Kind.OTHER_FUNCTION,
@@ -1919,7 +2009,8 @@ public class SqlRegisterer {
          *
          * <code>$SLICE</code> is often translated away when the multiset type is converted back to scalar values.
          */
-        register( OperatorName.SLICE,
+        register(
+                OperatorName.SLICE,
                 new SqlInternalOperator(
                         "$SLICE",
                         Kind.OTHER,
@@ -1938,7 +2029,8 @@ public class SqlRegisterer {
          *
          * NOTE: jhyde, 2006/1/9: Usages of this operator are commented out, but I'm not deleting the operator, because some multiset tests are disabled, and we may need this operator to get them working!
          */
-        register( OperatorName.ELEMENT_SLICE,
+        register(
+                OperatorName.ELEMENT_SLICE,
                 new SqlInternalOperator(
                         "$ELEMENT_SLICE",
                         Kind.OTHER,
@@ -1956,7 +2048,8 @@ public class SqlRegisterer {
         /**
          * The internal "$SCALAR_QUERY" operator returns a scalar value from a record type. It assumes the record type only has one field, and returns that field as the output.
          */
-        register( OperatorName.SCALAR_QUERY,
+        register(
+                OperatorName.SCALAR_QUERY,
                 new SqlInternalOperator(
                         "$SCALAR_QUERY",
                         Kind.SCALAR_QUERY,
@@ -1990,7 +2083,8 @@ public class SqlRegisterer {
         /**
          * The CARDINALITY operator, used to retrieve the number of elements in a MULTISET, ARRAY or MAP.
          */
-        register( OperatorName.CARDINALITY,
+        register(
+                OperatorName.CARDINALITY,
                 new SqlFunction(
                         "CARDINALITY",
                         Kind.OTHER_FUNCTION,
@@ -2002,7 +2096,8 @@ public class SqlRegisterer {
         /**
          * The COLLECT operator. Multiset aggregator function.
          */
-        register( OperatorName.COLLECT,
+        register(
+                OperatorName.COLLECT,
                 new SqlAggFunction(
                         "COLLECT",
                         null,
@@ -2019,7 +2114,8 @@ public class SqlRegisterer {
         /**
          * The FUSION operator. Multiset aggregator function.
          */
-        register( OperatorName.FUSION,
+        register(
+                OperatorName.FUSION,
                 new SqlAggFunction(
                         "FUSION",
                         null,
@@ -2056,7 +2152,8 @@ public class SqlRegisterer {
          *
          * Operand #0 is a query or table; Operand #1 is a {@link SqlSampleSpec} wrapped in a {@link SqlLiteral}.
          */
-        register( OperatorName.TABLESAMPLE,
+        register(
+                OperatorName.TABLESAMPLE,
                 new SqlSpecialOperator(
                         "TABLESAMPLE",
                         Kind.TABLESAMPLE,
@@ -2076,7 +2173,8 @@ public class SqlRegisterer {
         /**
          * The {@code TUMBLE} group function.
          */
-        register( OperatorName.TUMBLE,
+        register(
+                OperatorName.TUMBLE,
                 new SqlGroupedWindowFunction(
                         Kind.TUMBLE.name(),
                         Kind.TUMBLE,
@@ -2106,7 +2204,8 @@ public class SqlRegisterer {
         /**
          * The {@code HOP} group function.
          */
-        register( OperatorName.HOP,
+        register(
+                OperatorName.HOP,
                 new SqlGroupedWindowFunction(
                         Kind.HOP.name(),
                         Kind.HOP,
@@ -2137,7 +2236,8 @@ public class SqlRegisterer {
         /**
          * The {@code SESSION} group function.
          */
-        register( OperatorName.SESSION,
+        register(
+                OperatorName.SESSION,
                 new SqlGroupedWindowFunction(
                         Kind.SESSION.name(),
                         Kind.SESSION,
@@ -2170,7 +2270,8 @@ public class SqlRegisterer {
          *
          * If {@code p1} and {@code p2} are patterns then {@code p1 | p2} is a pattern that matches {@code p1} or {@code p2}.
          */
-        register( OperatorName.PATTERN_ALTER,
+        register(
+                OperatorName.PATTERN_ALTER,
                 new SqlBinaryOperator(
                         "|",
                         Kind.PATTERN_ALTER,
@@ -2185,7 +2286,8 @@ public class SqlRegisterer {
          *
          * If {@code p1} and {@code p2} are patterns then {@code p1 p2} is a pattern that matches {@code p1} followed by {@code p2}.
          */
-        register( OperatorName.PATTERN_CONCAT,
+        register(
+                OperatorName.PATTERN_CONCAT,
                 new SqlBinaryOperator(
                         "",
                         Kind.PATTERN_CONCAT,
@@ -2200,7 +2302,8 @@ public class SqlRegisterer {
          *
          * If {@code p} is a pattern then {@code p{3, 5}} is a pattern that matches between 3 and 5 occurrences of {@code p}.
          */
-        register( OperatorName.PATTERN_QUANTIFIER,
+        register(
+                OperatorName.PATTERN_QUANTIFIER,
                 new SqlSpecialOperator( "PATTERN_QUANTIFIER", Kind.PATTERN_QUANTIFIER, 90 ) {
                     @Override
                     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
@@ -2241,7 +2344,8 @@ public class SqlRegisterer {
          *
          * If {@code p1} and {@code p2} are patterns then {@code PERMUTE (p1, p2)} is a pattern that matches all permutations of {@code p1} and {@code p2}.
          */
-        register( OperatorName.PATTERN_PERMUTE,
+        register(
+                OperatorName.PATTERN_PERMUTE,
                 new SqlSpecialOperator( "PATTERN_PERMUTE", Kind.PATTERN_PERMUTE, 100 ) {
                     @Override
                     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
@@ -2263,7 +2367,8 @@ public class SqlRegisterer {
          *
          * If {@code p} is a pattern then {@code {- p -} }} is a pattern that excludes {@code p} from the output.
          */
-        register( OperatorName.PATTERN_EXCLUDE,
+        register(
+                OperatorName.PATTERN_EXCLUDE,
                 new SqlSpecialOperator( "PATTERN_EXCLUDE", Kind.PATTERN_EXCLUDED, 100 ) {
                     @Override
                     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
@@ -2273,8 +2378,6 @@ public class SqlRegisterer {
                         writer.endList( frame );
                     }
                 } );
-
-
 
         isInit = true;
     }

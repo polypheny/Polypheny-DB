@@ -56,24 +56,24 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.util.BsonUtil;
-import org.polypheny.db.sql.sql.fun.SqlItemOperator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.sql.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.JsonBuilder;
 
 
@@ -319,7 +319,8 @@ public class MongoFilter extends Filter implements MongoAlg {
             assert node.getType().getPolyType() == PolyType.BOOLEAN;
             String name = getRandomName();
             preProjections.put( name, new BsonDynamic( node ) );
-            attachCondition( null, "$expr", new BsonDocument( "$function",
+            attachCondition( null, "$expr", new BsonDocument(
+                    "$function",
                     new BsonDocument()
                             .append( "body", new BsonString( "function(val){ return val }" ) )
                             .append( "args", new BsonArray( Collections.singletonList( new BsonString( "$" + name ) ) ) )
@@ -678,7 +679,8 @@ public class MongoFilter extends Filter implements MongoAlg {
                     break;
 
                 case INPUT_REF:
-                    attachCondition( null, "$expr", new BsonDocument( "$eq",
+                    attachCondition( null, "$expr", new BsonDocument(
+                            "$eq",
                             new BsonArray(
                                     Arrays.asList(
                                             new BsonString( "$" + getPhysicalName( (RexInputRef) left ) ),

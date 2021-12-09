@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,29 +62,12 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Ord;
 import org.joda.time.Interval;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.util.ValidatorUtil;
-import org.polypheny.db.interpreter.BindableAlg;
-import org.polypheny.db.interpreter.Bindables;
-import org.polypheny.db.interpreter.Compiler;
-import org.polypheny.db.interpreter.Node;
-import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Filter;
@@ -93,8 +76,24 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.interpreter.BindableAlg;
+import org.polypheny.db.interpreter.Bindables;
+import org.polypheny.db.interpreter.Compiler;
+import org.polypheny.db.interpreter.Node;
+import org.polypheny.db.interpreter.Sink;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -107,6 +106,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
@@ -947,7 +947,8 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
     }
 
 
-    protected QuerySpec getQuery( AlgDataType rowType, Filter filter, Project project, ImmutableBitSet groupSet, List<AggregateCall> aggCalls, List<String> aggNames, List<Integer> collationIndexes, List<Direction> collationDirections,
+    protected QuerySpec getQuery(
+            AlgDataType rowType, Filter filter, Project project, ImmutableBitSet groupSet, List<AggregateCall> aggCalls, List<String> aggNames, List<Integer> collationIndexes, List<Direction> collationDirections,
             ImmutableBitSet numericCollationIndexes, Integer fetch, Project postProject, Filter havingFilter ) {
         // Handle filter
         final DruidJsonFilter jsonFilter = computeFilter( filter, this );
@@ -1504,7 +1505,8 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
             if ( pagingIdentifier == null ) {
                 return queryString;
             }
-            return queryString.replace( "\"threshold\":",
+            return queryString.replace(
+                    "\"threshold\":",
                     "\"pagingIdentifiers\":{\"" + pagingIdentifier + "\":" + offset + "},\"threshold\":" );
         }
 
@@ -1701,7 +1703,8 @@ public class DruidQuery extends AbstractAlgNode implements BindableAlg {
         final List<String> fieldNames;
 
 
-        private JsonCardinalityAggregation( String type, String name,
+        private JsonCardinalityAggregation(
+                String type, String name,
                 List<String> fieldNames ) {
             super( type, name, null, null );
             this.fieldNames = fieldNames;

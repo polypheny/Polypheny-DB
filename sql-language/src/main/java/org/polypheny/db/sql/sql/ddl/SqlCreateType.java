@@ -19,12 +19,12 @@ package org.polypheny.db.sql.sql.ddl;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.sql.SqlCreate;
 import org.polypheny.db.sql.sql.SqlDataTypeSpec;

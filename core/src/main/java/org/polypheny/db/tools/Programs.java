@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,26 +41,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
-import org.polypheny.db.interpreter.NoneToBindableConverterRule;
-import org.polypheny.db.plan.AlgOptCostImpl;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.plan.hep.HepMatchOrder;
-import org.polypheny.db.plan.hep.HepPlanner;
-import org.polypheny.db.plan.hep.HepProgram;
-import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.ChainedAlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
-import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.CalcMergeRule;
@@ -84,6 +72,18 @@ import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SubQueryRemoveRule;
 import org.polypheny.db.algebra.rules.TableScanRule;
+import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.interpreter.NoneToBindableConverterRule;
+import org.polypheny.db.plan.AlgOptCostImpl;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.hep.HepMatchOrder;
+import org.polypheny.db.plan.hep.HepPlanner;
+import org.polypheny.db.plan.hep.HepProgram;
+import org.polypheny.db.plan.hep.HepProgramBuilder;
 
 
 /**
@@ -338,7 +338,8 @@ public class Programs {
                     return rootRel3;
                 };
 
-        return sequence( subQuery( metadataProvider ),
+        return sequence(
+                subQuery( metadataProvider ),
                 new DecorrelateProgram(),
                 new TrimFieldsProgram(),
                 program1,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,22 +44,22 @@ import static org.polypheny.db.plan.AlgOptRule.unordered;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalIntersect;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.tools.AlgBuilder;
@@ -307,7 +307,8 @@ public abstract class PruneEmptyRules {
      */
     public static final AlgOptRule JOIN_RIGHT_INSTANCE =
             new AlgOptRule(
-                    operand( Join.class,
+                    operand(
+                            Join.class,
                             some(
                                     operand( AlgNode.class, any() ),
                                     operandJ( Values.class, null, Values::isEmpty, none() ) ) ),
@@ -356,6 +357,8 @@ public abstract class PruneEmptyRules {
             SingleAlg single = call.alg( 0 );
             call.transformTo( call.builder().push( single ).empty().build() );
         }
+
     }
+
 }
 

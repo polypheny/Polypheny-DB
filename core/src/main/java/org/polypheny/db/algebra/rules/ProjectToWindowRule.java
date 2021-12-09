@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,17 +44,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.logical.LogicalCalc;
+import org.polypheny.db.algebra.logical.LogicalWindow;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalCalc;
-import org.polypheny.db.algebra.logical.LogicalWindow;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
@@ -128,6 +128,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
             AlgNode newRel = transform.execute();
             call.transformTo( newRel );
         }
+
     }
 
 
@@ -191,6 +192,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
             AlgNode newRel = transform.execute();
             call.transformTo( newRel );
         }
+
     }
 
 
@@ -391,5 +393,7 @@ public abstract class ProjectToWindowRule extends AlgOptRule {
             assert graph.vertexSet().size() == exprs.size();
             return graph;
         }
+
     }
+
 }

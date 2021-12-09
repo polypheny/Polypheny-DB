@@ -20,10 +20,10 @@ package org.polypheny.db.sql.sql.fun;
 import java.util.List;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.sql.sql.SqlNode;
@@ -44,7 +44,8 @@ public class SqlCoalesceFunction extends SqlFunction {
     public SqlCoalesceFunction() {
         // NOTE jvs 26-July-2006:  We fill in the type strategies here, but normally they are not used because the validator invokes rewriteCall to convert
         // COALESCE into CASE early.  However, validator rewrite can optionally be disabled, in which case these strategies are used.
-        super( "COALESCE",
+        super(
+                "COALESCE",
                 Kind.COALESCE,
                 ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.LEAST_NULLABLE ),
                 null,
@@ -80,5 +81,6 @@ public class SqlCoalesceFunction extends SqlFunction {
         assert call.getFunctionQuantifier() == null;
         return SqlCase.createSwitched( pos, null, whenList, thenList, elseExpr );
     }
+
 }
 

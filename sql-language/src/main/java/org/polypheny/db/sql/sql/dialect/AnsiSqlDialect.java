@@ -40,7 +40,7 @@ public class AnsiSqlDialect extends SqlDialect {
     public static final SqlDialect NULL_DIALECT =
             new AnsiSqlDialect( emptyContext()
                     .withDatabaseProduct( DatabaseProduct.UNKNOWN )
-                    .withIdentifierQuoteString( "`" ) ){
+                    .withIdentifierQuoteString( "`" ) ) {
                 @Override
                 public boolean supportsNestedArrays() {
                     return true;
@@ -54,5 +54,6 @@ public class AnsiSqlDialect extends SqlDialect {
     public AnsiSqlDialect( Context context ) {
         super( context );
     }
+
 }
 

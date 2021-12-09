@@ -30,5 +30,6 @@ public interface SqlRexConvertletTable extends RexConvertletTable {
      * Returns the convertlet applicable to a given expression.
      */
     SqlRexConvertlet get( SqlCall call );
+
 }
 

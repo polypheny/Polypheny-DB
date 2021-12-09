@@ -20,13 +20,12 @@ package org.polypheny.db.sql.sql.fun;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
-import org.polypheny.db.nodes.CallBinding;
-import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.sql.SqlFunction;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -34,6 +33,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Util;
 
 

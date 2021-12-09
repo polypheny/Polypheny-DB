@@ -35,6 +35,7 @@ public class Collation implements Serializable {
     @Getter
     protected final Coercibility coercibility;
 
+
     /**
      * Creates a SqlCollation with the default collation name and the given credibility.
      *
@@ -43,6 +44,7 @@ public class Collation implements Serializable {
     public Collation( Coercibility coercibility ) {
         this( SaffronProperties.INSTANCE.defaultCollation().get(), coercibility );
     }
+
 
     /**
      * Creates a Collation by its name and its coercibility
