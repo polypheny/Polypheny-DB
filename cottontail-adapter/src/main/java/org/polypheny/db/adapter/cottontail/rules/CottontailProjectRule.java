@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.cottontail.rel.CottontailProject;
 import org.polypheny.db.document.rules.DocumentRules;
 import org.polypheny.db.plan.Convention;

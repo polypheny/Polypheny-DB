@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.cottontail;
+package org.polypheny.db.adapter.cottontail.rel;
 
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.cottontail.CottontailConvention;
+import org.polypheny.db.adapter.cottontail.CottontailSchema;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailEnumerableFactory;
 import org.polypheny.db.adapter.cottontail.rel.CottontailRel.CottontailImplementContext;
@@ -45,12 +46,10 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterImpl;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Pair;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 
 public class CottontailToEnumerableConverter extends ConverterImpl implements EnumerableRel {
@@ -100,14 +99,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         final CottontailConvention convention = (CottontailConvention) getInput().getConvention();
         final RelDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
-
-        List<Pair<String, String>> pairs = Pair.zip(
-                rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ),
-                rowType.getFieldNames() );
-        List<String> physicalFieldNames = pairs.stream()
-                .map( it -> it.left != null ? it.left : it.right )
-                .collect( Collectors.toList() );
-
         final Expression enumerable;
 
         switch ( cottontailContext.queryType ) {
@@ -205,6 +196,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 DataContext.ROOT ) ) );
 
         list.add( Expressions.return_( null, enumerable ) );
+
 
         return implementor.result( physType, list.toBlock() );
     }
