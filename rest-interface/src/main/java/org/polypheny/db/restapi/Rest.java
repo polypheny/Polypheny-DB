@@ -560,16 +560,16 @@ public class Rest {
         RestResult restResult;
         try {
             // Prepare
-            PolyResult signature = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyResult result = statement.getQueryProcessor().prepareQuery( algRoot, true );
             log.debug( "AlgRoot was prepared." );
 
-            final Iterable<Object> iterable = signature.enumerable( statement.getDataContext(), Object.class );
+            final Iterable<Object> iterable = result.enumerable( statement.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();
-            restResult = new RestResult( algRoot.kind, iterator, signature.rowType, signature.getColumns() );
+            restResult = new RestResult( algRoot.kind, iterator, result.rowType, result.getColumns() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
             if ( !algRoot.kind.belongsTo( Kind.DML ) ) {
-                signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
+                result.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 
             statement.getTransaction().commit();

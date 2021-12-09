@@ -61,6 +61,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -92,8 +93,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.InformationGroup;
@@ -101,6 +100,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Transaction;
@@ -195,10 +195,10 @@ public class DbmsMeta implements ProtobufMeta {
                         StatementType.SELECT,
                         new ExecutionTimeMonitor(),
                         SchemaType.RELATIONAL ) {
-                    @Override
+                    /*@Override
                     public Enumerable<Object> enumerable( DataContext dataContext ) {
                         return Linq4j.asEnumerable( firstFrame.rows );
-                    }
+                    }*/
                 };
         return MetaResultSet.create( ch.id, statementHandle.id, true, signature, firstFrame );
     }
@@ -1271,10 +1271,6 @@ public class DbmsMeta implements ProtobufMeta {
                 } else {
                     num = ((Number) object).intValue();
                 }
-                // Check if num is equal for all adapters
-                /*if ( rowsChanged != -1 && rowsChanged != num ) {
-                    throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
-                }*/
                 rowsChanged = num;
             }
 

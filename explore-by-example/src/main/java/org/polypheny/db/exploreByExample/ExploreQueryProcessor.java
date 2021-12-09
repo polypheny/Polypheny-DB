@@ -113,17 +113,17 @@ public class ExploreQueryProcessor {
 
 
     private ExploreQueryResult executeSqlSelect( final Statement statement, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
-        PolyResult signature;
+        PolyResult result;
         try {
-            signature = processQuery( statement, sqlSelect );
+            result = processQuery( statement, sqlSelect );
         } catch ( Throwable t ) {
             throw new ExploreQueryProcessor.QueryExecutionException( t );
         }
-        List<List<Object>> rows = signature.getRows( statement, DEFAULT_SIZE );
+        List<List<Object>> rows = result.getRows( statement, DEFAULT_SIZE );
 
         List<String> typeInfo = new ArrayList<>();
         List<String> name = new ArrayList<>();
-        for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
             typeInfo.add( metaData.getType().getFullTypeString() );
             name.add( metaData.getName() );
         }
@@ -161,7 +161,7 @@ public class ExploreQueryProcessor {
 
 
     private PolyResult processQuery( Statement statement, String sql ) {
-        PolyResult signature;
+        PolyResult result;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
 
         Node parsed = sqlProcessor.parse( sql );
@@ -174,9 +174,9 @@ public class ExploreQueryProcessor {
             AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            result = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
-        return signature;
+        return result;
     }
 
 

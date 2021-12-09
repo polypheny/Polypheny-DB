@@ -56,7 +56,7 @@ public abstract class Processor {
                 // Acquire global schema lock
                 lock( statement );
                 // Execute statement
-                return getDbSignature( statement, parsed, parameters );
+                return getResult( statement, parsed, parameters );
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "Exception while acquiring global schema lock", e );
             } catch ( TransactionException | NoTablePrimaryKeyException e ) {
@@ -71,7 +71,7 @@ public abstract class Processor {
     }
 
 
-    PolyResult getDbSignature( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
+    PolyResult getResult( Statement statement, Node parsed, QueryParameters parameters ) throws TransactionException, NoTablePrimaryKeyException {
         ((ExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, parameters );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();

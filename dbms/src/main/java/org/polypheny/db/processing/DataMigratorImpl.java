@@ -30,6 +30,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.PolyResult;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -37,19 +46,10 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.logical.LogicalValues;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
@@ -123,30 +123,30 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void executeQuery( List<CatalogColumn> selectColumnList, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
-            PolyResult signature;
+            PolyResult result;
             if ( isMaterializedView ) {
-                signature = sourceStatement.getQueryProcessor().prepareQuery(
+                result = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
                         sourceAlg.alg.getCluster().getTypeFactory().builder().build(),
                         false,
                         false,
                         doesSubstituteOrderBy );
             } else {
-                signature = sourceStatement.getQueryProcessor().prepareQuery(
+                result = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
                         sourceAlg.alg.getCluster().getTypeFactory().builder().build(),
                         true,
                         false,
                         false );
             }
-            final Enumerable<Object> enumerable = signature.enumerable( sourceStatement.getDataContext(), Object.class );
+            final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
                     if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
                         resultColMapping.put( catalogColumn.id, i );
                     }
@@ -165,7 +165,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( signature.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
                 Map<Long, List<Object>> values = new HashMap<>();
 
                 for ( List<Object> list : rows ) {
@@ -463,15 +463,15 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyResult signature = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
-            final Enumerable<Object> enumerable = signature.enumerable( sourceStatement.getDataContext(), Object.class );
+            PolyResult result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
                     if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
                         resultColMapping.put( catalogColumn.id, i );
                     }
@@ -482,7 +482,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
                 List<List<Object>> rows = MetaImpl.collect(
-                        signature.getCursorFactory(),
+                        result.getCursorFactory(),
                         LimitIterator.of( sourceIterator, batchSize ),
                         new ArrayList<>() );
                 Map<Long, List<Object>> values = new HashMap<>();
@@ -586,15 +586,15 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyResult signature = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
-            final Enumerable<?> enumerable = signature.enumerable( sourceStatement.getDataContext() );
+            PolyResult result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            final Enumerable<?> enumerable = result.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = (Iterator<Object>) enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( CatalogColumn catalogColumn : selectColumnList ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
                     if ( metaData.getName().equalsIgnoreCase( catalogColumn.name ) ) {
                         resultColMapping.put( catalogColumn.id, i );
                     }
@@ -615,7 +615,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( signature.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
 
                 Map<Long, Map<Long, List<Object>>> partitionValues = new HashMap<>();
 

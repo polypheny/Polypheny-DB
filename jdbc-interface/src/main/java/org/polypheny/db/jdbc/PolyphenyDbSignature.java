@@ -123,12 +123,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
 
 
     public Enumerable<T> enumerable( DataContext dataContext ) {
-        Enumerable<T> enumerable = bindable.bind( dataContext );
-        if ( maxRowCount >= 0 ) {
-            // Apply limit. In JDBC 0 means "no limit". But for us, -1 means "no limit", and 0 is a valid limit.
-            enumerable = EnumerableDefaults.take( enumerable, maxRowCount );
-        }
-        return enumerable;
+        return PolyResult.enumerable( bindable, dataContext );
     }
 
 }

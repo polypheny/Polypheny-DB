@@ -249,7 +249,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<ProposedRoutingPlan> proposedRoutingPlans = null;
         List<AlgNode> optimalNodeList = new ArrayList<>();
         List<AlgRoot> parameterizedRootList = new ArrayList<>();
-        List<PolyResult> signatures = new ArrayList<>();
+        List<PolyResult> results = new ArrayList<>();
         List<String> generatedCodes = new ArrayList<>();
 
         //
@@ -404,8 +404,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Parameterize" );
         }
 
-        // Add optional parameterizedRoots and signatures for all routed RelRoots.
-        // Index of routedRoot, parameterizedRootList and signatures correspond!
+        // Add optional parameterizedRoots and results for all routed RelRoots.
+        // Index of routedRoot, parameterizedRootList and results correspond!
         for ( ProposedRoutingPlan routingPlan : proposedRoutingPlans ) {
             AlgRoot routedRoot = routingPlan.getRoutedRoot();
             AlgRoot parameterizedRoot;
@@ -438,23 +438,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
                 AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
                 if ( preparedResult != null ) {
-                    PolyResult signature = createSignature(
+                    PolyResult result = createPolyResult(
                             preparedResult,
                             parameterizedRoot.kind,
                             optimalNode,
                             parameterizedRoot.validatedRowType,
                             resultConvention,
                             executionTimeMonitor, schemaType );
-                    signatures.add( signature );
+                    results.add( result );
                     generatedCodes.add( preparedResult.getCode() );
                     optimalNodeList.add( optimalNode );
                 } else {
-                    signatures.add( null );
+                    results.add( null );
                     generatedCodes.add( null );
                     optimalNodeList.add( null );
                 }
             } else {
-                signatures.add( null );
+                results.add( null );
                 generatedCodes.add( null );
                 optimalNodeList.add( null );
             }
@@ -465,11 +465,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // Can we return earlier?
-        if ( signatures.stream().allMatch( Objects::nonNull ) && optimalNodeList.stream().allMatch( Objects::nonNull ) ) {
+        if ( results.stream().allMatch( Objects::nonNull ) && optimalNodeList.stream().allMatch( Objects::nonNull ) ) {
             return new ProposedImplementations(
                     proposedRoutingPlans,
                     optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
-                    signatures.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                    results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     logicalQueryInformation );
         }
@@ -498,7 +498,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Planning & Optimization" );
         }
 
-        // OptimalNode same size as routed, parametrized and signature
+        // OptimalNode same size as routed, parametrized and result
         for ( int i = 0; i < optimalNodeList.size(); i++ ) {
             if ( optimalNodeList.get( i ) != null ) {
                 continue;
@@ -520,7 +520,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         for ( int i = 0; i < optimalNodeList.size(); i++ ) {
-            if ( signatures.get( i ) != null ) {
+            if ( results.get( i ) != null ) {
                 continue;
             }
 
@@ -543,12 +543,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
 
-            PolyResult signature = createSignature(
+            PolyResult result = createPolyResult(
                     preparedResult,
                     optimalRoot.kind,
                     optimalRoot.alg,
                     optimalRoot.validatedRowType, resultConvention, executionTimeMonitor, schemaType );
-            signatures.set( i, signature );
+            results.set( i, result );
             generatedCodes.set( i, preparedResult.getCode() );
             optimalNodeList.set( i, optimalRoot.alg );
         }
@@ -565,7 +565,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         return new ProposedImplementations(
                 proposedRoutingPlans,
                 optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
-                signatures.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 logicalQueryInformation );
     }
@@ -577,7 +577,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         private final List<ProposedRoutingPlan> proposedRoutingPlans;
         private final List<AlgNode> optimizedPlans;
-        private final List<PolyResult> signatures;
+        private final List<PolyResult> results;
         private final List<String> generatedCodes;
         private final LogicalQueryInformation logicalQueryInformation;
 
@@ -1207,7 +1207,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PolyResult createSignature( PreparedResult preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, SchemaType schemaType ) {
+    private PolyResult createPolyResult( PreparedResult preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, SchemaType schemaType ) {
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
         return new PolyResult(
                 jdbcType,
@@ -1443,7 +1443,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // Lists should all be same size
         List<ProposedRoutingPlan> proposedRoutingPlans = proposedImplementations.getProposedRoutingPlans();
         List<AlgNode> optimalAlgs = proposedImplementations.getOptimizedPlans();
-        List<PolyResult> signatures = proposedImplementations.getSignatures();
+        List<PolyResult> results = proposedImplementations.getResults();
         List<String> generatedCodes = proposedImplementations.getGeneratedCodes();
         LogicalQueryInformation queryInformation = proposedImplementations.getLogicalQueryInformation();
 
@@ -1460,7 +1460,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     queryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() ) );
         }
 
-        if ( signatures.size() == 1 ) {
+        if ( results.size() == 1 ) {
             // If only one plan proposed, return this without further selection
             if ( statement.getTransaction().isAnalyze() ) {
                 UiRoutingPageUtil.outputSingleResult(
@@ -1469,7 +1469,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         statement.getTransaction().getQueryAnalyzer() );
                 addGeneratedCodeToQueryAnalyzer( generatedCodes.get( 0 ) );
             }
-            return new Pair<>( signatures.get( 0 ), proposedRoutingPlans.get( 0 ) );
+            return new Pair<>( results.get( 0 ), proposedRoutingPlans.get( 0 ) );
         } else {
             // Calculate costs and get selected plan from plan selector
             approximatedCosts = optimalAlgs.stream()
@@ -1486,7 +1486,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
                 addGeneratedCodeToQueryAnalyzer( generatedCodes.get( index ) );
             }
-            return new Pair<>( proposedImplementations.getSignatures().get( index ), (ProposedRoutingPlan) routingPlan );
+            return new Pair<>( proposedImplementations.getResults().get( index ), (ProposedRoutingPlan) routingPlan );
         }
     }
 

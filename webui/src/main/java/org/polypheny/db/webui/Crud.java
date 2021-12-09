@@ -2932,7 +2932,7 @@ public class Crud implements InformationObserver {
         AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
-        PolyResult signature = statement.getQueryProcessor().prepareQuery( root, true );
+        PolyResult polyResult = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -3047,15 +3047,15 @@ public class Crud implements InformationObserver {
 
         List<List<Object>> rows;
         try {
-            rows = signature.getRows( statement, getPageSize(), true, false );
+            rows = polyResult.getRows( statement, getPageSize(), true, false );
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
             return new Result( e );
         }
 
-        DbColumn[] header = new DbColumn[signature.getRowType().getFieldCount()];
+        DbColumn[] header = new DbColumn[polyResult.getRowType().getFieldCount()];
         int counter = 0;
-        for ( AlgDataTypeField col : signature.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField col : polyResult.getRowType().getFieldList() ) {
             header[counter++] = new DbColumn(
                     col.getName(),
                     col.getType().getFullTypeString(),
@@ -3671,15 +3671,15 @@ public class Crud implements InformationObserver {
 
 
     private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
-        PolyResult signature;
+        PolyResult result;
         List<List<Object>> rows;
         boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
-            signature = processQuery( statement, sqlSelect, isAnalyze );
-            rows = signature.getRows( statement, noLimit ? -1 : getPageSize(), true, isAnalyze );
-            hasMoreRows = signature.hasMoreRows();
+            result = processQuery( statement, sqlSelect, isAnalyze );
+            rows = result.getRows( statement, noLimit ? -1 : getPageSize(), true, isAnalyze );
+            hasMoreRows = result.hasMoreRows();
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
@@ -3707,7 +3707,7 @@ public class Crud implements InformationObserver {
         }
 
         ArrayList<DbColumn> header = new ArrayList<>();
-        for ( AlgDataTypeField metaData : signature.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
             String columnName = metaData.getName();
 
             String filter = "";
@@ -3749,10 +3749,10 @@ public class Crud implements InformationObserver {
         ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
         if ( tableType != null ) {
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         } else {
             //if we do not have a fix table it is not possible to change anything within the resultSet therefore we use TableType.SOURCE
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), signature.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ), result.getSchemaType(), QueryLanguage.SQL ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         }
     }
 
@@ -3919,7 +3919,7 @@ public class Crud implements InformationObserver {
 
 
     private PolyResult processQuery( Statement statement, String sql, boolean isAnalyze ) {
-        PolyResult signature;
+        PolyResult result;
         if ( isAnalyze ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
@@ -3931,7 +3931,7 @@ public class Crud implements InformationObserver {
         AlgRoot logicalRoot = null;
         QueryParameters parameters = new QueryParameters( sql, SchemaType.RELATIONAL );
         if ( parsed.isA( Kind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statement, parsed, parameters );
+            result = sqlProcessor.prepareDdl( statement, parsed, parameters );
         } else {
             if ( isAnalyze ) {
                 statement.getOverviewDuration().start( "Validation" );
@@ -3945,9 +3945,9 @@ public class Crud implements InformationObserver {
             if ( isAnalyze ) {
                 statement.getOverviewDuration().stop( "Translation" );
             }
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            result = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
-        return signature;
+        return result;
     }
 
 
@@ -3957,10 +3957,10 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        PolyResult signature;
+        PolyResult result;
 
         try {
-            signature = processQuery( statement, sqlUpdate, transaction.isAnalyze() );
+            result = processQuery( statement, sqlUpdate, transaction.isAnalyze() );
         } catch ( Throwable t ) {
             if ( transaction.isAnalyze() ) {
                 InformationManager analyzer = transaction.getQueryAnalyzer();
@@ -3979,12 +3979,12 @@ public class Crud implements InformationObserver {
 
         }
 
-        if ( Kind.DDL.contains( signature.getKind() ) ) {
+        if ( Kind.DDL.contains( result.getKind() ) ) {
             return 1;
-        } else if ( Kind.DML.contains( signature.getKind() ) ) {
+        } else if ( Kind.DML.contains( result.getKind() ) ) {
             int rowsChanged = -1;
             try {
-                Iterator<?> iterator = signature.enumerable( statement.getDataContext() ).iterator();
+                Iterator<?> iterator = result.enumerable( statement.getDataContext() ).iterator();
                 Object object;
                 while ( iterator.hasNext() ) {
                     object = iterator.next();
@@ -4013,7 +4013,7 @@ public class Crud implements InformationObserver {
 
             return rowsChanged;
         } else {
-            throw new QueryExecutionException( "Unknown result type: " + signature.getKind() );
+            throw new QueryExecutionException( "Unknown result type: " + result.getKind() );
         }
     }
 

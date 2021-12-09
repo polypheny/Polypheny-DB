@@ -99,11 +99,11 @@ public abstract class Index {
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyResult signature = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+        final PolyResult result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
-        final Iterable<Object> enumerable = signature.enumerable( statement.getDataContext(), Object.class );
+        final Iterable<Object> enumerable = result.enumerable( statement.getDataContext());
         final Iterator<Object> iterator = enumerable.iterator();
-        final List<List<Object>> rows = MetaImpl.collect( signature.getCursorFactory(), iterator, new ArrayList<>() );
+        final List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), iterator, new ArrayList<>() );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
         for ( final List<Object> row : rows ) {
             if ( row.size() > columns.size() ) {

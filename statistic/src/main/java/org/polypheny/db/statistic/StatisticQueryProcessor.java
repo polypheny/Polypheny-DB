@@ -228,12 +228,12 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeSqlSelect( final Statement statement, final String sqlSelect ) throws QueryExecutionException {
-        PolyResult signature;
+        PolyResult result;
         List<List<Object>> rows;
 
         try {
-            signature = processQuery( statement, sqlSelect );
-            rows = signature.getRows( statement, getPageSize() );
+            result = processQuery( statement, sqlSelect );
+            rows = result.getRows( statement, getPageSize() );
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );
         }
@@ -241,8 +241,8 @@ public class StatisticQueryProcessor {
         List<PolyType> types = new ArrayList<>();
         List<String> names = new ArrayList<>();
         int i = 0;
-        for ( ColumnMetaData metaData : signature.getColumns() ) {
-            types.add( signature.getRowType().getFieldList().get( i ).getType().getPolyType() );
+        for ( ColumnMetaData metaData : result.getColumns() ) {
+            types.add( result.getRowType().getFieldList().get( i ).getType().getPolyType() );
             names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
             i++;
         }

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -32,9 +33,9 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Convention;
@@ -52,7 +53,7 @@ public class PolyResult {
     public final AlgDataType rowType;
     private final long maxRowCount = -1;
     private final Kind kind;
-    private Bindable<Object[]> bindable;
+    private Bindable<Object> bindable;
     private final SchemaType schemaType;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
@@ -60,9 +61,10 @@ public class PolyResult {
     private List<ColumnMetaData> columns;
     private final PreparedResult preparedResult;
     private final Statement statement;
-    @Getter
     @Accessors(fluent = true)
     private boolean hasMoreRows;
+    @Accessors(fluent = true)
+    private final boolean isDDL;
 
 
     /**
@@ -70,22 +72,22 @@ public class PolyResult {
      * It should minimize the needed variables to be instantiated and defer access of more complex information
      * on access e.g. {@link #getColumns()}
      *
-     * @param rowType
-     * @param schemaType
-     * @param executionTimeMonitor
-     * @param preparedResult
-     * @param kind
-     * @param statement
-     * @param resultConvention
+     * @param rowType defines the types of the result
+     * @param schemaType type of the
+     * @param executionTimeMonitor to keep track of different execution times
+     * @param preparedResult nullable result, which holds all info from the execution
+     * @param kind of initial query, which is used to get type of result e.g. DDL, DQL,...
+     * @param statement used statement for this result
+     * @param resultConvention the nullable result convention
      */
     public PolyResult(
-            AlgDataType rowType,
+            @Nullable AlgDataType rowType,
             SchemaType schemaType,
             ExecutionTimeMonitor executionTimeMonitor,
-            PreparedResult preparedResult,
+            @Nullable PreparedResult preparedResult,
             Kind kind,
             Statement statement,
-            Convention resultConvention ) {
+            @Nullable Convention resultConvention ) {
         this.rowType = rowType;
         this.schemaType = schemaType;
         this.executionTimeMonitor = executionTimeMonitor;
@@ -93,19 +95,19 @@ public class PolyResult {
         this.kind = kind;
         this.statement = statement;
         this.resultConvention = resultConvention;
-        if ( Kind.DDL.contains( kind ) ) {
+        this.isDDL = Kind.DDL.contains( kind );
+        if ( this.isDDL ) {
             this.columns = ImmutableList.of();
         }
     }
 
-
-    public Enumerable<?> enumerable( DataContext dataContext ) {
-        return getBindable().bind( dataContext );
+    public Enumerable<Object> enumerable( DataContext dataContext ) {
+        return enumerable( getBindable(), dataContext );
     }
 
 
-    public <T> Enumerable<T> enumerable( DataContext dataContext, Class<T> clazz ) {
-        return (Enumerable<T>) getBindable().bind( dataContext );
+    public static <T> Enumerable<T> enumerable( Bindable<T> bindable, DataContext dataContext ) {
+        return bindable.bind( dataContext );
     }
 
 
@@ -139,7 +141,7 @@ public class PolyResult {
     }
 
 
-    public Bindable<?> getBindable() {
+    public Bindable<Object> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
             return null;
         }
@@ -185,15 +187,7 @@ public class PolyResult {
         Iterator<Object> iterator = null;
         StopWatch stopWatch = null;
         try {
-            if ( isAnalyzed ) {
-                statement.getOverviewDuration().start( "Execution" );
-            }
-            final Enumerable<Object> enumerable = enumerable( statement.getDataContext(), Object.class );
-            if ( isAnalyzed ) {
-                statement.getOverviewDuration().stop( "Execution" );
-            }
-
-            iterator = enumerable.iterator();
+            iterator = createIterator( getBindable(), statement, isAnalyzed );
             List<List<Object>> res;
 
             if ( isTimed ) {
@@ -234,6 +228,19 @@ public class PolyResult {
                 }
             }
         }
+    }
+
+
+    private static Iterator<Object> createIterator(Bindable<Object> bindable, Statement statement, boolean isAnalyzed ) {
+        if ( isAnalyzed ) {
+            statement.getOverviewDuration().start( "Execution" );
+        }
+        final Enumerable<Object> enumerable = enumerable( bindable, statement.getDataContext() );
+        if ( isAnalyzed ) {
+            statement.getOverviewDuration().stop( "Execution" );
+        }
+
+        return enumerable.iterator();
     }
 
 

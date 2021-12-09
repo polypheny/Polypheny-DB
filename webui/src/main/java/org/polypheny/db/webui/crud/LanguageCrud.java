@@ -165,9 +165,9 @@ public class LanguageCrud {
                 statement.getOverviewDuration().stop( "Translation" );
             }
 
-            PolyResult signature = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyResult polyResult = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
-            Result result = getResult( QueryLanguage.PIG, statement, request, query, signature, request.noLimit );
+            Result result = getResult( QueryLanguage.PIG, statement, request, query, polyResult, request.noLimit );
 
             String commitStatus;
             try {
@@ -250,12 +250,12 @@ public class LanguageCrud {
                 statement.getOverviewDuration().start( "Translation" );
             }
 
-            PolyResult signature = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyResult polyResult = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Execution" );
             }
-            Result result = getResult( QueryLanguage.CQL, statement, request, query, signature, request.noLimit );
+            Result result = getResult( QueryLanguage.CQL, statement, request, query, polyResult, request.noLimit );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Execution" );
             }
@@ -296,7 +296,7 @@ public class LanguageCrud {
             InformationObserver observer ) {
 
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
-        PolyResult signature;
+        PolyResult polyResult;
         MqlProcessor mqlProcessor = (MqlProcessor) transaction.getProcessor( QueryLanguage.MONGO_QL );
         String mql = request.query;
 
@@ -358,12 +358,12 @@ public class LanguageCrud {
                 }
 
                 // Prepare
-                signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+                polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().start( "Execution" );
                 }
-                results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, signature, noLimit ) );
+                results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, polyResult, noLimit ) );
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().stop( "Execution" );
                 }
@@ -396,11 +396,11 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyResult signature, final boolean noLimit ) {
+    public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyResult result, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
-        List<List<Object>> rows = signature.getRows( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
-        boolean hasMoreRows = signature.hasMoreRows();
+        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        boolean hasMoreRows = result.hasMoreRows();
 
         CatalogTable catalogTable = null;
         if ( request.tableId != null ) {
@@ -413,7 +413,7 @@ public class LanguageCrud {
         }
 
         ArrayList<DbColumn> header = new ArrayList<>();
-        for ( AlgDataTypeField metaData : signature.rowType.getFieldList() ) {
+        for ( AlgDataTypeField metaData : result.rowType.getFieldList() ) {
             String columnName = metaData.getName();
 
             String filter = "";
@@ -455,7 +455,7 @@ public class LanguageCrud {
         ArrayList<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
         return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) )
-                .setSchemaType( signature.getSchemaType() )
+                .setSchemaType( result.getSchemaType() )
                 .setLanguage( language )
                 .setAffectedRows( data.size() )
                 .setHasMoreRows( hasMoreRows )
