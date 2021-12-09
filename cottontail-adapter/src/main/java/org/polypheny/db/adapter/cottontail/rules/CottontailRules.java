@@ -16,13 +16,11 @@
 
 package org.polypheny.db.adapter.cottontail.rules;
 
-
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverterRule;
-import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -40,8 +38,7 @@ public class CottontailRules {
                 new CottontailTableModificationRule( out, algBuilderFactory ),
                 new CottontailProjectRule( out, algBuilderFactory ),
                 new CottontailFilterRule( out, algBuilderFactory ),
-                new CottontailSortAndProjectRule( out, algBuilderFactory ),
-                new CottontailLimitRule( out, algBuilderFactory )
+                new CottontailSortRule( out, algBuilderFactory )
         );
     }
 

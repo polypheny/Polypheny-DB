@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.algebra;
 
-
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -28,16 +27,12 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
@@ -48,12 +43,6 @@ public class CottontailValues extends Values implements CottontailAlg {
 
     public CottontailValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
-    }
-
-
-    @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( CottontailConvention.COST_MULTIPLIER );
     }
 
 
@@ -97,7 +86,8 @@ public class CottontailValues extends Values implements CottontailAlg {
             for ( Pair<Pair<String, PolyType>, RexLiteral> pair : Pair.zip( physicalColumnNames, values ) ) {
                 builder.add(
                         Expressions.statement(
-                                Expressions.call( valuesMap_,
+                                Expressions.call(
+                                        valuesMap_,
                                         BuiltInMethod.MAP_PUT.method,
                                         Expressions.constant( pair.left.left ),
                                         CottontailTypeUtil.rexLiteralToDataExpression( pair.right, pair.left.right ) ) )
@@ -110,4 +100,5 @@ public class CottontailValues extends Values implements CottontailAlg {
         context.blockBuilder = builder;
         context.valuesHashMapList = valuesMapList_;
     }
+
 }

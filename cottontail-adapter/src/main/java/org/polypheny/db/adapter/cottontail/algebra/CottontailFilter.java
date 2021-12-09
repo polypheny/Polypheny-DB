@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.cottontail.algebra;
 
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -31,13 +30,13 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.CompoundPredicate.Op;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -45,6 +44,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
@@ -52,7 +52,6 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.ComparisonOperator;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ConnectionOperator;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Literals;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
@@ -125,9 +124,16 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
         public Translator( AlgDataType rowType ) {
             this.rowType = rowType;
-            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( AlgDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
-            this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
-            this.columnTypes = rowType.getFieldList().stream().map( AlgDataTypeField::getType ).map( AlgDataType::getPolyType ).collect( Collectors.toList() );
+            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream()
+                    .map( AlgDataTypeField::getPhysicalName )
+                    .collect( Collectors.toList() ), rowType.getFieldNames() );
+            this.fieldNames = pairs.stream()
+                    .map( it -> it.left != null ? it.left : it.right )
+                    .collect( Collectors.toList() );
+            this.columnTypes = rowType.getFieldList().stream()
+                    .map( AlgDataTypeField::getType )
+                    .map( AlgDataType::getPolyType )
+                    .collect( Collectors.toList() );
         }
 
 
@@ -166,12 +172,14 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
                 switch ( compoundPredicate.op ) {
                     case AND:
-                        return Expressions.call( CREATE_COMPOUND_PREDICATE_METHOD,
+                        return Expressions.call(
+                                CREATE_COMPOUND_PREDICATE_METHOD,
                                 Expressions.constant( ConnectionOperator.AND ),
                                 convertBooleanPredicate( compoundPredicate.left, builder, dynamicParameterMap_, negated ),
                                 convertBooleanPredicate( compoundPredicate.right, builder, dynamicParameterMap_, negated ) );
                     case OR:
-                        return Expressions.call( CREATE_COMPOUND_PREDICATE_METHOD,
+                        return Expressions.call(
+                                CREATE_COMPOUND_PREDICATE_METHOD,
                                 Expressions.constant( ConnectionOperator.OR ),
                                 convertBooleanPredicate( compoundPredicate.left, builder, dynamicParameterMap_, negated ),
                                 convertBooleanPredicate( compoundPredicate.right, builder, dynamicParameterMap_, negated ) );
@@ -226,7 +234,8 @@ public class CottontailFilter extends Filter implements CottontailAlg {
         }
 
 
-        private Expression translateBinary2( ComparisonOperator op,
+        private Expression translateBinary2(
+                ComparisonOperator op,
                 RexNode left,
                 RexNode right,
                 ParameterExpression dynamicParameterMap_,
@@ -310,7 +319,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                     .setNot( not )
                     .setLeft( ColumnName.newBuilder().setName( attribute ) )
                     .setOp( operator )
-                    .setRight( AtomicBooleanOperand.newBuilder().setLiterals( Literals.newBuilder().addLiteral( data ) ).build() )
+                    .setRight( AtomicBooleanOperand.newBuilder().setExpressions( CottontailGrpc.Expressions.newBuilder().addExpression( CottontailGrpc.Expression.newBuilder().setLiteral( data ) ) ).build() )
                     .build();
         }
 
@@ -342,7 +351,8 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                     if ( returnValue == null ) {
                         returnValue = temp;
                     } else {
-                        returnValue = new CompoundPredicate( Op.AND,
+                        returnValue = new CompoundPredicate(
+                                Op.AND,
                                 returnValue,
                                 temp );
                     }
@@ -360,7 +370,8 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                     if ( returnValue == null ) {
                         returnValue = temp;
                     } else {
-                        returnValue = new CompoundPredicate( Op.OR,
+                        returnValue = new CompoundPredicate(
+                                Op.OR,
                                 returnValue,
                                 temp );
                     }
@@ -369,7 +380,8 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                 return returnValue;
             }
             case NOT: {
-                return new CompoundPredicate( Op.NOT,
+                return new CompoundPredicate(
+                        Op.NOT,
                         convertRexToBooleanPredicate( ((RexCall) condition).getOperands().get( 0 ) ),
                         null );
             }
@@ -544,7 +556,8 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
         private static BooleanPredicate pushDownNot( CompoundPredicate predicate ) {
             CompoundPredicate inner = (CompoundPredicate) predicate.left;
-            return new CompoundPredicate( inner.op.inverse(),
+            return new CompoundPredicate(
+                    inner.op.inverse(),
                     new CompoundPredicate( Op.NOT, inner.left, null ),
                     new CompoundPredicate( Op.NOT, inner.right, null ) );
         }
@@ -568,7 +581,8 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                 otherPredicate = predicate.left;
             }
 
-            return new CompoundPredicate( Op.AND,
+            return new CompoundPredicate(
+                    Op.AND,
                     new CompoundPredicate( Op.OR, orPredicate.left, otherPredicate ),
                     new CompoundPredicate( Op.OR, orPredicate.right, otherPredicate ) );
         }

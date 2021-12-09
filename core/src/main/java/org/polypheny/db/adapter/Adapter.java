@@ -440,17 +440,18 @@ public abstract class Adapter {
         );
         informationElements.add( physicalColumnNames );
 
+        Catalog catalog = Catalog.getInstance();
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
-            Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).forEach( placement -> {
-                List<CatalogPartitionPlacement> cpps = Catalog.getInstance().getPartitionPlacementsByAdapter( adapterId );
-                cpps.forEach( cpp ->
+            List<CatalogPartitionPlacement> cpps = catalog.getPartitionPlacementsByAdapter( adapterId );
+            cpps.forEach( cpp ->
+                    catalog.getColumnPlacementsOnAdapterPerTable( adapterId, cpp.tableId ).forEach( placement -> {
                         physicalColumnNames.addRow(
                                 placement.columnId,
-                                Catalog.getInstance().getColumn( placement.columnId ).name,
-                                cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName )
-                );
-            } );
+                                catalog.getColumn( placement.columnId ).name,
+                                cpp.physicalSchemaName + "." + cpp.physicalTableName + "." + placement.physicalColumnName );
+                    } )
+            );
         } );
 
         informationGroups.add( group );

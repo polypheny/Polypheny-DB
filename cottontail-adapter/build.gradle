@@ -1,8 +1,9 @@
 
 group "org.polypheny"
 
-version = versionMajor + "." + versionMinor + versionQualifier
+apply plugin: "kotlin"
 
+version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
@@ -12,7 +13,7 @@ dependencies {
     // Cottontail DB
     implementation group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version
     implementation group: "org.vitrivr", name: "cottontaildb-proto", version: cottontaildb_driver_version
-    implementation group: 'io.grpc', name: 'grpc-all', version: cottontaildb_grpc_version
+    implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
 
     implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
 
@@ -22,6 +23,8 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: junit_version
 
 }
+
+compileJava.dependsOn(processResources)
 
 
 sourceSets {

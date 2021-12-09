@@ -32,7 +32,6 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
 
@@ -700,7 +699,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    statement.executeUpdate( "DROP VIEW dateOrderby_VIEW" );
+                    statement.executeUpdate( "DROP VIEW IF EXISTS dateOrderby_VIEW" );
                     dropTables( statement );
                 }
             }
@@ -746,7 +745,7 @@ public class ComplexViewTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CottontailExcluded.class })
+    @Category({ FileExcluded.class })
     public void testQ1() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -810,7 +809,7 @@ public class ComplexViewTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    statement.executeUpdate( "DROP MATERIALIZED VIEW q1_Materialized" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW IF EXISTS q1_Materialized" );
                     statement.executeUpdate( "DROP VIEW IF EXISTS q1_VIEW" );
                     dropTables( statement );
                 }

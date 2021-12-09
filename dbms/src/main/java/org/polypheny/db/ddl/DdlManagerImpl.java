@@ -769,6 +769,9 @@ public class DdlManagerImpl extends DdlManager {
                     null );
         }
 
+        // Make sure that the stores have created the schema
+        PolySchemaBuilder.getInstance().getCurrent();
+
         // Create table on store
         dataStore.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
         // Copy data to the newly added placements

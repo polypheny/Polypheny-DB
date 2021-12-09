@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.cottontail.algebra;
+package org.polypheny.db.adapter.cottontail.rules;
 
 
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -42,9 +42,9 @@ public class CottontailToEnumerableConverterRule extends ConverterRule {
 
 
     @Override
-    public AlgNode convert( AlgNode alg ) {
-        AlgTraitSet newTraitSet = alg.getTraitSet().replace( getOutTrait() );
-        return new CottontailToEnumerableConverter( alg.getCluster(), newTraitSet, alg );
+    public AlgNode convert( AlgNode rel ) {
+        AlgTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
+        return new CottontailToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
     }
 
 }

@@ -28,24 +28,24 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.rules.JoinToCorrelateRule;
 import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.ConventionTraitDef;
+import org.polypheny.db.prepare.ContextImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schemas.HrClusteredSchema;
@@ -61,7 +61,7 @@ import org.polypheny.db.util.Util;
 /**
  * Tests the application of the {@link SortRemoveRule}.
  */
-public final class SortRemoveRuleTest {
+public final class SortRemoveRuleTest extends SqlLanguagelDependant {
 
     /**
      * The default schema that is used in these tests provides tables sorted on the primary key. Due to this scan operators always come with a {@link AlgCollation} trait.

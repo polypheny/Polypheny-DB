@@ -4,6 +4,9 @@ group "org.polypheny"
 
 configurations {
     javacc
+    tests {
+        extendsFrom testRuntimeOnly
+    }
 }
 
 

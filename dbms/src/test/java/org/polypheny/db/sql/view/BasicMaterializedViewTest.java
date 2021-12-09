@@ -426,7 +426,8 @@ public class BasicMaterializedViewTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
-                            )
+                            ),
+                            true
                     );
                 } catch ( InterruptedException e ) {
                     log.warn( "Interrupted", e );
@@ -498,7 +499,8 @@ public class BasicMaterializedViewTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
-                            )
+                            ),
+                            true
                     );
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
@@ -513,7 +515,7 @@ public class BasicMaterializedViewTest {
 
 
     @Test
-    public void testOneStores() throws SQLException {
+    public void testOneStore() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -909,7 +911,8 @@ public class BasicMaterializedViewTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
-                            )
+                            ),
+                            true
                     );
 
                     TestHelper.checkResultSet(
@@ -918,7 +921,8 @@ public class BasicMaterializedViewTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
-                            )
+                            ),
+                            true
                     );
 
                     TestHelper.checkResultSet(
@@ -927,7 +931,8 @@ public class BasicMaterializedViewTest {
                                     new Object[]{ 1, "IT", 1, 0 },
                                     new Object[]{ 2, "Sales", 2, 1 },
                                     new Object[]{ 3, "HR", 3, 2 }
-                            ) );
+                            ),
+                            true );
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp1" );
@@ -1077,8 +1082,8 @@ public class BasicMaterializedViewTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
-                            )
-                    );
+                            ),
+                            true );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
@@ -1086,8 +1091,8 @@ public class BasicMaterializedViewTest {
                                     new Object[]{ 1, "Max", "Muster", 1, 0 },
                                     new Object[]{ 2, "Ernst", "Walter", 2, 1 },
                                     new Object[]{ 3, "Elsa", "Kuster", 3, 2 }
-                            )
-                    );
+                            ),
+                            true );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
@@ -1095,7 +1100,8 @@ public class BasicMaterializedViewTest {
                                     new Object[]{ 1, "IT", 1, 0 },
                                     new Object[]{ 2, "Sales", 2, 1 },
                                     new Object[]{ 3, "HR", 3, 2 }
-                            ) );
+                            ),
+                            true );
 
                     statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
                     statement.executeUpdate( "TRUNCATE TABLE viewTestDepTable" );
@@ -1104,18 +1110,15 @@ public class BasicMaterializedViewTest {
                     waiter.await( 2, TimeUnit.SECONDS );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp" ),
-                            ImmutableList.of()
-                    );
+                            ImmutableList.of() );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
-                            ImmutableList.of()
-                    );
+                            ImmutableList.of() );
 
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM viewTestDep" ),
-                            ImmutableList.of()
-                    );
+                            ImmutableList.of() );
 
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );

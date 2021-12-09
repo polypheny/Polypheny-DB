@@ -16,42 +16,30 @@
 
 package org.polypheny.db.adapter.cottontail.rules;
 
-
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.algebra.CottontailLimit;
-import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailSort;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
-public class CottontailLimitRule extends CottontailConverterRule {
+/**
+ * Matches
+ */
+public class CottontailSortRule extends CottontailConverterRule {
 
-    CottontailLimitRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
-        super( Sort.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailLimitRule" + out.getName() );
+    CottontailSortRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Sort.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailSortRule" + out.getName() );
     }
 
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
         final Sort sort = call.alg( 0 );
-
-        // Check if this contains sort statements. The CottontailLimit only implements limits
-        if ( sort.getCollation().getFieldCollations().size() > 0 ) {
-            return false;
-        }
-
-        if ( sort.fetch != null ) {
-            return true;
-        }
-
-        if ( sort.offset != null ) {
-            return true;
-        }
-
-        return false;
+        return sort.getCollation().getFieldCollations().size() > 0 || sort.fetch != null || sort.offset != null;
     }
 
 
@@ -63,7 +51,7 @@ public class CottontailLimitRule extends CottontailConverterRule {
         final AlgTraitSet inputTraitSet = sort.getInput().getTraitSet().replace( out );
         input = convert( sort.getInput(), inputTraitSet );
 
-        return new CottontailLimit( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );
+        return new CottontailSort( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );
     }
 
 }

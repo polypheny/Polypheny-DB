@@ -147,7 +147,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     }
 
 
-    protected static <T> T sole( List<T> collection ) {
+    public static <T> T sole( List<T> collection ) {
         assert collection.size() == 1;
         return collection.get( 0 );
     }

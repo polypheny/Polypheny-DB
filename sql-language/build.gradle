@@ -8,7 +8,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 configurations {
     javacc
     tests {
-        extendsFrom testRuntime
+        extendsFrom testRuntimeOnly
     }
 }
 
