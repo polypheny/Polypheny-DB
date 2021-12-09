@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.metadata;
 
 
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.core.enums.ExplainLevel;
+import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.util.BuiltInMethod;
 
 

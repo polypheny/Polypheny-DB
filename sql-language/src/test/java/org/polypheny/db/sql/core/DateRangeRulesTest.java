@@ -28,7 +28,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.Test;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.algebra.rules.DateRangeRules;
 import org.polypheny.db.rex.RexNode;
@@ -40,7 +40,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link DateRangeRules} algorithms.
  */
-public class DateRangeRulesTest extends SqLanguagelDependant {
+public class DateRangeRulesTest extends SqlLanguagelDependant {
 
     @Test
     public void testExtractYearFromDateColumn() {

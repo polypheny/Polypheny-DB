@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.sql.validate;
 
 
-import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlCallBinding;
 import org.polypheny.db.sql.sql.SqlNode;

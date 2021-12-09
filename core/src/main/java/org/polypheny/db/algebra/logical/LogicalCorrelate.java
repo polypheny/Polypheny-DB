@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.logical;
 
 
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.enums.SemiJoinType;
+import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;

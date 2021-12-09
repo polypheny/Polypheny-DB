@@ -19,7 +19,7 @@ package org.polypheny.db.sql.sql.ddl;
 
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlCollation;
 import org.polypheny.db.sql.sql.SqlDataTypeSpec;

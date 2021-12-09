@@ -54,7 +54,7 @@ import org.polypheny.db.adapter.pig.PigAlg;
 import org.polypheny.db.adapter.pig.PigAlgFactories;
 import org.polypheny.db.adapter.pig.PigRules;
 import org.polypheny.db.adapter.pig.PigTable;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;

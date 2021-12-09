@@ -17,10 +17,10 @@
 package org.polypheny.db.sql.sql;
 
 
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.core.validate.ValidatorScope;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;
 import org.polypheny.db.algebra.type.AlgDataType;

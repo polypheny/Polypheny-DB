@@ -21,10 +21,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
-import org.polypheny.db.core.fun.AggFunction;
-import org.polypheny.db.core.nodes.BinaryOperator;
-import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.nodes.BinaryOperator;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.algebra.operators.OperatorName;
 
 /**
  * OperatorRegistry is used to provide access to all available functions/operators, which Polypheny is able to handle.

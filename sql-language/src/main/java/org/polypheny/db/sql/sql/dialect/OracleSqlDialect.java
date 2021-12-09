@@ -18,7 +18,7 @@ package org.polypheny.db.sql.sql.dialect;
 
 
 import org.apache.calcite.avatica.util.TimeUnitRange;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlLiteral;

@@ -34,7 +34,7 @@
 package org.polypheny.db.adapter.druid;
 
 
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 
 

@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlNodeList;

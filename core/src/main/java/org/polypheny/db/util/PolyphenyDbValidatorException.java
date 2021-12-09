@@ -34,7 +34,7 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.core.validate.ValidatorException;
+import org.polypheny.db.nodes.validate.ValidatorException;
 
 /**
  * Tagging interface to allow a {@link ValidatorException} to be identified without

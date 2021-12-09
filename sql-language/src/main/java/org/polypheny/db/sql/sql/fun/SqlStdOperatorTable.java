@@ -19,10 +19,10 @@ package org.polypheny.db.sql.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.sql.sql.SqlBasicCall;
 import org.polypheny.db.sql.sql.SqlCall;

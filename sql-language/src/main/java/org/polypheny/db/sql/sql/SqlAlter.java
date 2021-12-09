@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.sql;
 
 
-import org.polypheny.db.core.nodes.ExecutableStatement;
+import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.languages.ParserPos;
 
 

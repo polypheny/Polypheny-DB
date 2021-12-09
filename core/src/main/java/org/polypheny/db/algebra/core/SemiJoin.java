@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.core;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.polypheny.db.core.util.ValidatorUtil;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;

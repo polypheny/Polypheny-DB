@@ -18,10 +18,10 @@ package org.polypheny.db.sql.sql.validate;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.core.validate.ValidatorTable;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;

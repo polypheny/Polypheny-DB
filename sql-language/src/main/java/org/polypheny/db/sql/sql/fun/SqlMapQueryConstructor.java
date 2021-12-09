@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.sql.fun;
 
 
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 
 
 /**

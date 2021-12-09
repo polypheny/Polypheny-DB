@@ -37,7 +37,7 @@ package org.polypheny.db.algebra.logical;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.polypheny.db.core.util.ValidatorUtil;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;

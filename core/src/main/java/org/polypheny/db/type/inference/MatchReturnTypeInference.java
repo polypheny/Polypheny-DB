@@ -20,7 +20,7 @@ package org.polypheny.db.type.inference;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;

@@ -19,8 +19,8 @@ package org.polypheny.db.sql.sql.validate;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.util.Moniker;
-import org.polypheny.db.core.enums.MonikerType;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 
 

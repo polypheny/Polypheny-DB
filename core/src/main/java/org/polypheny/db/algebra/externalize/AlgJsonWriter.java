@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.core.enums.ExplainLevel;
+import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.util.JsonBuilder;
 import org.polypheny.db.util.Pair;
 

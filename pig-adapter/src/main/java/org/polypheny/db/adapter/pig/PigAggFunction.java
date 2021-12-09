@@ -34,7 +34,7 @@
 package org.polypheny.db.adapter.pig;
 
 
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 
 
 /**

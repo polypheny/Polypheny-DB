@@ -19,7 +19,7 @@ package org.polypheny.db.sql.sql.validate;
 
 import java.lang.reflect.Type;
 import java.util.List;
-import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -35,7 +35,7 @@ import org.polypheny.db.type.inference.PolyReturnTypeInference;
  *
  * Created by the validator, after resolving a function call to a function defined in a Polypheny-DB schema.
  */
-public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implements org.polypheny.db.core.fun.TableFunction {
+public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction implements org.polypheny.db.algebra.fun.TableFunction {
 
     public SqlUserDefinedTableFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<AlgDataType> paramTypes, TableFunction function ) {
         super(

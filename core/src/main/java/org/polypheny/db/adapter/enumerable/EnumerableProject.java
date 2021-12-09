@@ -35,7 +35,7 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.List;
-import org.polypheny.db.core.util.ValidatorUtil;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgCollationTraitDef;

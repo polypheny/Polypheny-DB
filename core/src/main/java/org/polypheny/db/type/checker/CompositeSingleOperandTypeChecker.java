@@ -18,8 +18,8 @@ package org.polypheny.db.type.checker;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.nodes.CallBinding;
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.util.Util;
 
 

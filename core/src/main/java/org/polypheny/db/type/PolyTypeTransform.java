@@ -34,7 +34,7 @@
 package org.polypheny.db.type;
 
 
-import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 
 

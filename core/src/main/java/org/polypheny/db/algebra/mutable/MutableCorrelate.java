@@ -35,7 +35,7 @@ package org.polypheny.db.algebra.mutable;
 
 
 import java.util.Objects;
-import org.polypheny.db.core.enums.SemiJoinType;
+import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.type.AlgDataType;

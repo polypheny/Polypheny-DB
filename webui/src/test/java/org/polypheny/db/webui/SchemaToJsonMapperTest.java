@@ -34,12 +34,12 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.languages.core.LanguageManagerDependant;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.type.PolyType;
 
 
-public class SchemaToJsonMapperTest extends LanguageManagerDependant {
+public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
 
 
     private static final String mockJson = "{\"tableName\":\"stores\",\"columns\":[{\"columnName\":\"sid\",\"type\":\"INTEGER\",\"nullable\":false},{\"columnName\":\"name\",\"type\":\"VARCHAR\",\"length\":50,\"nullable\":false},{\"columnName\":\"location\",\"type\":\"VARCHAR\",\"length\":30,\"nullable\":true,\"defaultValue\":\"Basel\"}],\"primaryKeyColumnNames\":[\"sid\",\"name\"]}";

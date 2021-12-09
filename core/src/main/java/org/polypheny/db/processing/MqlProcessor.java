@@ -16,7 +16,7 @@
 
 package org.polypheny.db.processing;
 
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.transaction.Statement;
 

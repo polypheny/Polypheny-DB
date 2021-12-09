@@ -18,10 +18,10 @@ package org.polypheny.db.sql.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.nodes.Identifier;
-import org.polypheny.db.core.util.Moniker;
-import org.polypheny.db.core.validate.ValidatorCatalogReader;
-import org.polypheny.db.core.validate.ValidatorTable;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
+import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 
 

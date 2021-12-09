@@ -21,7 +21,6 @@ dependencies {
     implementation project(":mql-language")
     implementation project(":pig-language")
     implementation project(":cql-language")
-    implementation project(":languages")
     implementation project(":cassandra-adapter")
     implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")
@@ -56,7 +55,6 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":sql-language", configuration: "tests")
-    testImplementation project(path: ":languages", configuration: "tests")
     testImplementation project(path: ":jdbc-interface", configuration: "tests")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0

@@ -31,20 +31,20 @@ import org.polypheny.db.catalog.MockCatalogReader;
 import org.polypheny.db.catalog.MockCatalogReaderDynamic;
 import org.polypheny.db.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.core.enums.ConformanceEnum;
-import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.core.algebra.AlgFieldTrimmer;
-import org.polypheny.db.core.util.Conformance;
-import org.polypheny.db.core.validate.ValidatorCatalogReader;
-import org.polypheny.db.core.validate.ValidatorTable;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.AlgFieldTrimmer;
+import org.polypheny.db.util.Conformance;
+import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
+import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.sql.MockSqlOperatorTable;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.sql.core.DiffRepository;
-import org.polypheny.db.sql.core.SqLanguagelDependant;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
@@ -87,7 +87,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  * SQL statements to be translated can use the schema defined in {@link MockCatalogReader}; note that this is slightly different from Farrago's SALES schema. If you get a parser or validator
  * error from your test SQL, look down in the stack until you see "Caused by", which will usually tell you the real error.
  */
-public abstract class SqlToAlgTestBase extends SqLanguagelDependant {
+public abstract class SqlToAlgTestBase extends SqlLanguagelDependant {
 
     protected static final String NL = System.getProperty( "line.separator" );
 

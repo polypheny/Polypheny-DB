@@ -5,14 +5,12 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
-    implementation project(":languages")
 
     implementation group: "org.apache.pig", name: "pig", version: pig_version, classifier:"h2"  // Apache 2.0
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":languages", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause

@@ -19,7 +19,7 @@ package org.polypheny.db.algebra.core;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;

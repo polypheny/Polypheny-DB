@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.polypheny.db.core.algebra.AlgDecorrelator;
+import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.sql.sql.SqlToAlgTestBase;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.AlgOptCluster;

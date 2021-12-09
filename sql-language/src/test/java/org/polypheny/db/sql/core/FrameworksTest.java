@@ -41,10 +41,10 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.enums.ExplainFormat;
-import org.polypheny.db.core.enums.ExplainLevel;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeParseException;
@@ -103,7 +103,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for methods in {@link Frameworks}.
  */
-public class FrameworksTest extends SqLanguagelDependant {
+public class FrameworksTest extends SqlLanguagelDependant {
 
     @Test
     public void testOptimize() {

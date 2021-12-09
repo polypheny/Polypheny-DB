@@ -23,11 +23,11 @@ import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.sql.core.SqLanguagelDependant;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
@@ -42,7 +42,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 /**
  * Unit tests for {@link RexProgram} and {@link RexProgramBuilder}.
  */
-public class SqlOperatorBindingTest extends SqLanguagelDependant {
+public class SqlOperatorBindingTest extends SqlLanguagelDependant {
 
     private RexBuilder rexBuilder;
     private AlgDataType integerDataType;

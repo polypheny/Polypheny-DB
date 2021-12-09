@@ -18,8 +18,8 @@ package org.polypheny.db.sql.sql.validate;
 
 
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.core.util.Conformance;
-import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.util.Conformance;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.sql.sql.SqlInsert;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.algebra.type.AlgDataType;

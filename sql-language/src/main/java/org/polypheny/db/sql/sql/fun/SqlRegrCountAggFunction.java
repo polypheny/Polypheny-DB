@@ -18,7 +18,7 @@ package org.polypheny.db.sql.sql.fun;
 
 
 import com.google.common.base.Preconditions;
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.type.checker.OperandTypes;
 
 

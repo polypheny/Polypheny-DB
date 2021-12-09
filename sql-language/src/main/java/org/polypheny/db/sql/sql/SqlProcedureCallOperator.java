@@ -18,8 +18,8 @@ package org.polypheny.db.sql.sql;
 
 
 import java.util.Collections;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.validate.SqlValidator;

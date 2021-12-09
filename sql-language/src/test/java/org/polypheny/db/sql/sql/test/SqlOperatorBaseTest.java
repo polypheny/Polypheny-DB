@@ -42,12 +42,12 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.core.enums.ConformanceEnum;
-import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.sql.core.SqLanguagelDependant;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlCallBinding;
@@ -125,7 +125,7 @@ import org.polypheny.db.util.Util;
  * <li>Executing the function. Pay particular attention to corner cases such as null arguments or null results.</li>
  * </ul>
  */
-public abstract class SqlOperatorBaseTest extends SqLanguagelDependant {
+public abstract class SqlOperatorBaseTest extends SqlLanguagelDependant {
 
     // TODO: Change message when Fnl3Fixed to something like "Invalid character for cast: PC=0 Code=22018"
     public static final String INVALID_CHAR_MESSAGE = Bug.FNL3_FIXED ? null : "(?s).*";

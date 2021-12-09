@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.sql.ddl;
 
 
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.ddl.DdlManager;

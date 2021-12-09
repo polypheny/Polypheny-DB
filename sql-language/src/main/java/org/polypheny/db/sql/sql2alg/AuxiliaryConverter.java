@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.sql2alg;
 
 
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.sql.sql.fun.SqlStdOperatorTable;

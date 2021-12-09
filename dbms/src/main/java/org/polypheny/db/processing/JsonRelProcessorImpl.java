@@ -17,10 +17,9 @@
 package org.polypheny.db.processing;
 
 import org.polypheny.db.PolyResult;
-import org.polypheny.db.core.DeadlockException;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;

@@ -18,7 +18,7 @@ package org.polypheny.db.languages.mql;
 
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.core.nodes.ExecutableStatement;
+import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;

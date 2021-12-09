@@ -18,7 +18,7 @@ package org.polypheny.db.sql.sql.validate;
 
 
 import java.util.List;
-import org.polypheny.db.core.util.NameMatcher;
+import org.polypheny.db.util.NameMatcher;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlWithItem;
 import org.polypheny.db.algebra.type.StructKind;

@@ -18,10 +18,10 @@ package org.polypheny.db.sql.sql.fun;
 
 
 import java.util.List;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.core.validate.ValidatorScope;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;

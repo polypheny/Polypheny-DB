@@ -45,7 +45,7 @@ import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.core.LanguageManagerImpl;
+import org.polypheny.db.language.LanguageManagerImpl;
 import org.polypheny.db.monitoring.core.MonitoringService;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.FrequencyMap;

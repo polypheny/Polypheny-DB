@@ -35,7 +35,7 @@ package org.polypheny.db.tools;
 
 
 import java.io.Reader;
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;

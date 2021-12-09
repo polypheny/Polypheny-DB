@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
-import org.polypheny.db.core.algebra.AlgDecorrelator;
+import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.sql.sql.SqlToAlgTestBase;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;

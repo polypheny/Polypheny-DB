@@ -77,7 +77,7 @@ import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.enums.ExplainLevel;
+import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;

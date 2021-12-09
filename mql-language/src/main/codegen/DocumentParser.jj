@@ -9,7 +9,6 @@ PARSER_BEGIN(MqlParserImpl)
 
 package org.polypheny.db.mql.parser.impl;
 
-import org.polypheny.db.languages.mql.parser.MqlParser;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.languages.mql.MqlAggregate;
 import org.polypheny.db.languages.mql.MqlCount;
@@ -36,8 +35,7 @@ import org.polypheny.db.languages.mql.parser.MqlAbstractParserImpl;
 import org.polypheny.db.languages.mql.parser.MqlParseException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.parser.MqlParserUtil;
-import org.polypheny.db.core.util.BsonUtil;
-import org.polypheny.db.languages.mql.parser.MqlParser;
+import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.languages.ParserFactory;
 
@@ -49,7 +47,6 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 /**
  * MongoDB query language (MQL) parser, generated from Parser.jj by JavaCC.
@@ -106,7 +103,6 @@ private static Metadata metadata;
       {
           return Input();
       }
-
 
 }
 

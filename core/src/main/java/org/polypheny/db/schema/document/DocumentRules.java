@@ -18,9 +18,9 @@ package org.polypheny.db.schema.document;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Function.FunctionType;
-import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Function.FunctionType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;

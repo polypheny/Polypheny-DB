@@ -18,10 +18,10 @@ package org.polypheny.db.sql.sql;
 
 
 import java.util.List;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Literal;
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Literal;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -62,7 +62,7 @@ public class SqlOrderBy extends SqlCall {
 
 
     @Override
-    public org.polypheny.db.core.nodes.Operator getOperator() {
+    public org.polypheny.db.nodes.Operator getOperator() {
         return (Operator) OPERATOR;
     }
 

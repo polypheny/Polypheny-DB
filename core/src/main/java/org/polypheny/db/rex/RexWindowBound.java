@@ -34,10 +34,10 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Literal;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.nodes.Window;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Literal;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Window;
 
 
 /**

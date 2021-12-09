@@ -17,10 +17,10 @@
 package org.polypheny.db.sql.sql.fun;
 
 
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.enums.Monotonicity;
-import org.polypheny.db.core.nodes.OperatorBinding;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.nodes.OperatorBinding;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlSpecialOperator;

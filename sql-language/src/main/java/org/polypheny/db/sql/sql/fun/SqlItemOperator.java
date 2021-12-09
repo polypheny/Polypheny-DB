@@ -18,8 +18,8 @@ package org.polypheny.db.sql.sql.fun;
 
 
 import java.util.Arrays;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlCallBinding;

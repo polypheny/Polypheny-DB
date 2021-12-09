@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.mutable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.util.ValidatorUtil;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;

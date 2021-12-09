@@ -37,7 +37,7 @@ package org.polypheny.db.adapter.enumerable;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.core.fun.AggFunction;
+import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.util.ImmutableBitSet;
 
 

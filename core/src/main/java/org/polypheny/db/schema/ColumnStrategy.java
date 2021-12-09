@@ -34,7 +34,7 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.core.InitializerExpressionFactory;
+import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.plan.AlgOptTable;
 
 

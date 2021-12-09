@@ -40,7 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.core.util.Collation;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.SerializableCharset;
 
 

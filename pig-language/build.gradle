@@ -24,12 +24,10 @@ dependencies {
 
     implementation project(':core')
     implementation project(':sql-language')
-    implementation project(':languages')
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":languages", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause

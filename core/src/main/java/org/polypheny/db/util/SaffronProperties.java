@@ -40,7 +40,7 @@ import java.security.AccessControlException;
 import java.util.Enumeration;
 import java.util.Properties;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
-import org.polypheny.db.core.validate.Validator;
+import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.BooleanProp;
 import org.polypheny.db.runtime.Resources.Default;

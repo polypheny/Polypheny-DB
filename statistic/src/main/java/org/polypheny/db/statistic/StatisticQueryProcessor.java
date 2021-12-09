@@ -18,7 +18,6 @@ package org.polypheny.db.statistic;
 
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -39,8 +38,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.Statement;

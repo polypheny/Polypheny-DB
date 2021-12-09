@@ -35,7 +35,7 @@ package org.polypheny.db.algebra;
 
 
 import java.util.List;
-import org.polypheny.db.core.enums.ExplainLevel;
+import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.util.Pair;
 
 

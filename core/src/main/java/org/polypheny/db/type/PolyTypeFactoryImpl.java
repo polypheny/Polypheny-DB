@@ -36,8 +36,8 @@ package org.polypheny.db.type;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import org.polypheny.db.core.util.Collation;
-import org.polypheny.db.core.nodes.IntervalQualifier;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;

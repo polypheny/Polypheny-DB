@@ -34,7 +34,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -56,7 +56,7 @@ import org.polypheny.db.transaction.Statement;
 /**
  * Unit tests for {@link Interpreter}.
  */
-public class InterpreterTest extends SqLanguagelDependant {
+public class InterpreterTest extends SqlLanguagelDependant {
 
     private SchemaPlus rootSchema;
     private Planner planner;

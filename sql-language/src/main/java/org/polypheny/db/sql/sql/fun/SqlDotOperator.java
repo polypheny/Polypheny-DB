@@ -18,17 +18,17 @@ package org.polypheny.db.sql.sql.fun;
 
 
 import java.util.Arrays;
-import org.polypheny.db.core.nodes.BasicNodeVisitor.ArgHandler;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.nodes.NodeVisitor;
-import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.util.CoreUtil;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.core.validate.ValidatorScope;
-import org.polypheny.db.core.util.ValidatorUtil;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlCallBinding;
 import org.polypheny.db.sql.sql.SqlIdentifier;

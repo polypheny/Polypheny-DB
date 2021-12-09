@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.rules;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.core.util.ValidatorUtil;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.algebra.AlgNode;

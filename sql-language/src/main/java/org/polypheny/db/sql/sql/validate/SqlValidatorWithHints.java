@@ -19,7 +19,7 @@ package org.polypheny.db.sql.sql.validate;
 
 import java.util.List;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.util.Moniker;
 import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.sql.sql.SqlNode;
 

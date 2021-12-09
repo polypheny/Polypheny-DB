@@ -36,7 +36,7 @@ package org.polypheny.db.adapter.druid;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 

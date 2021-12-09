@@ -34,8 +34,8 @@
 package org.polypheny.db.schema;
 
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 

@@ -18,8 +18,8 @@ package org.polypheny.db.type.checker;
 
 
 import java.util.Objects;
-import org.polypheny.db.core.nodes.CallBinding;
-import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 

@@ -37,7 +37,7 @@ package org.polypheny.db.adapter.pig;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;

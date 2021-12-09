@@ -35,7 +35,7 @@ package org.polypheny.db.type;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 

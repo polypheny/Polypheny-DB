@@ -34,7 +34,7 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexVisitorImpl;

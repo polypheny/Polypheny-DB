@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.sql.validate;
 
 
-import org.polypheny.db.core.util.Conformance;
-import org.polypheny.db.core.enums.ConformanceEnum;
+import org.polypheny.db.util.Conformance;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
 
 /**
  * Abstract base class for implementing {@link Conformance}.

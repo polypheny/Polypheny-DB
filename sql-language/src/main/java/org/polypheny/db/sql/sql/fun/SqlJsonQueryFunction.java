@@ -17,14 +17,14 @@
 package org.polypheny.db.sql.sql.fun;
 
 
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.enums.FunctionCategory;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Literal;
-import org.polypheny.db.core.nodes.Node;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Literal;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.core.json.JsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.core.json.JsonQueryWrapperBehavior;
+import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlFunction;
 import org.polypheny.db.sql.sql.SqlLiteral;

@@ -18,7 +18,7 @@ package org.polypheny.db.sql.sql;
 
 
 import java.math.BigDecimal;
-import org.polypheny.db.core.nodes.NumericLiteral;
+import org.polypheny.db.nodes.NumericLiteral;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;

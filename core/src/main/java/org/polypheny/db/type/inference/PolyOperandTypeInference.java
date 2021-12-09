@@ -17,7 +17,7 @@
 package org.polypheny.db.type.inference;
 
 
-import org.polypheny.db.core.nodes.CallBinding;
+import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 
 

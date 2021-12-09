@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.polypheny.db.core.util.Collation;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PolyType;

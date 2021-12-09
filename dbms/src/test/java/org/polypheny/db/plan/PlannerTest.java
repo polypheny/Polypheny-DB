@@ -79,23 +79,23 @@ import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.enums.ExplainFormat;
-import org.polypheny.db.core.enums.ExplainLevel;
-import org.polypheny.db.core.enums.FunctionCategory;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.enums.Lex;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.operators.ChainedOperatorTable;
-import org.polypheny.db.core.operators.OperatorTable;
-import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.core.validate.ValidatorScope;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Lex;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.algebra.operators.ChainedOperatorTable;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.sql.core.SqLanguagelDependant;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.SqlAggFunction;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlNode;
@@ -127,7 +127,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link Planner}.
  */
-public class PlannerTest extends SqLanguagelDependant {
+public class PlannerTest extends SqlLanguagelDependant {
 
     private void checkParseAndConvert( String query, String queryFromParseTree, String expectedRelExpr ) throws Exception {
         Planner planner = getPlanner( null );

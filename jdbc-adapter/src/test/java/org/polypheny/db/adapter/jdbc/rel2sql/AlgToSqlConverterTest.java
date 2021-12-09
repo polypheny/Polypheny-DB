@@ -33,9 +33,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.rules.UnionMergeRule;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.enums.NullCollation;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -43,7 +43,7 @@ import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.languages.core.LanguageManagerDependant;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlDialect.Context;
@@ -82,7 +82,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Tests for {@link AlgToSqlConverter}.
  */
-public class AlgToSqlConverterTest extends LanguageManagerDependant {
+public class AlgToSqlConverterTest extends SqlLanguagelDependant {
 
     static final Config DEFAULT_REL_CONFIG =
             NodeToAlgConverter.configBuilder()

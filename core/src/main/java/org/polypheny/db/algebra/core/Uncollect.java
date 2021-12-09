@@ -35,8 +35,8 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.List;
-import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.fun.UnnestOperator;
+import org.polypheny.db.util.CoreUtil;
+import org.polypheny.db.algebra.fun.UnnestOperator;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;

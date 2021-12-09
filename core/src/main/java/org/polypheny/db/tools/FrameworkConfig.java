@@ -35,7 +35,7 @@ package org.polypheny.db.tools;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.core.operators.OperatorTable;
+import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.languages.RexConvertletTable;

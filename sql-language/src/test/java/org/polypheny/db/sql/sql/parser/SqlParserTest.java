@@ -50,16 +50,16 @@ import org.hamcrest.Matcher;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.core.enums.ConformanceEnum;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.util.Conformance;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.sql.core.DiffTestCase;
-import org.polypheny.db.sql.core.SqLanguagelDependant;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
 import org.polypheny.db.sql.sql.SqlDialect;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlSetOption;
@@ -81,7 +81,7 @@ import org.polypheny.db.util.Util;
  *
  * To reuse this test for an extension parser, implement the {@link #parserImplFactory()} method to return the extension parser implementation.
  */
-public class SqlParserTest extends SqLanguagelDependant {
+public class SqlParserTest extends SqlLanguagelDependant {
 
     /**
      * List of reserved keywords.

@@ -53,9 +53,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.ByteString;
-import org.polypheny.db.core.util.Collation;
-import org.polypheny.db.core.util.CoreUtil;
-import org.polypheny.db.core.util.ValidatorUtil;
 import org.polypheny.db.runtime.Functions;
 
 

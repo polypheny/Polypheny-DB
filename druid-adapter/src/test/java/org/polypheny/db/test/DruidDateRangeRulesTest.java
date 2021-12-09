@@ -46,12 +46,12 @@ import org.hamcrest.Matcher;
 import org.joda.time.Interval;
 import org.junit.Test;
 import org.polypheny.db.adapter.druid.DruidDateTimeUtils;
-import org.polypheny.db.core.operators.OperatorName;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.core.LanguageManagerDependant;
-import org.polypheny.db.sql.core.TestFixture;
 import org.polypheny.db.algebra.rules.DateRangeRules;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
+import org.polypheny.db.sql.core.TestFixture;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.Util;
 
@@ -59,13 +59,14 @@ import org.polypheny.db.util.Util;
 /**
  * Unit tests for {@link DateRangeRules} algorithms.
  */
-public class DruidDateRangeRulesTest extends LanguageManagerDependant {
+public class DruidDateRangeRulesTest extends SqlLanguagelDependant {
 
     @Test
     public void testExtractYearAndMonthFromDateColumn() {
         final Fixture2 f = new Fixture2();
         // AND(>=($8, 2014-01-01), <($8, 2015-01-01), >=($8, 2014-06-01), <($8, 2014-07-01))
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYear, f.literal( 2014 ) ), f.eq( f.exMonth, f.literal( 6 ) ) ),
                 is( "[2014-06-01T00:00:00.000Z/2014-07-01T00:00:00.000Z]" ) );
     }
@@ -74,7 +75,8 @@ public class DruidDateRangeRulesTest extends LanguageManagerDependant {
     @Test
     public void testRangeCalc() {
         final Fixture2 f = new Fixture2();
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.le( f.timestampLiteral( 2011, Calendar.JANUARY, 1 ), f.t ), f.le( f.t, f.timestampLiteral( 2012, Calendar.FEBRUARY, 2 ) ) ),
                 is( "[2011-01-01T00:00:00.000Z/2012-02-02T00:00:00.001Z]" ) );
     }
@@ -91,7 +93,8 @@ public class DruidDateRangeRulesTest extends LanguageManagerDependant {
         //        AND(>=($8, 2010-08-31), <($8, 2010-09-01)),
         //        AND(>=($8, 2010-10-31), <($8, 2010-11-01)),
         //        AND(>=($8, 2010-12-31), <($8, 2011-01-01))))
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.eq( f.exYear, f.literal( 2010 ) ), f.eq( f.exDay, f.literal( 31 ) ) ),
                 is( "[2010-01-31T00:00:00.000Z/2010-02-01T00:00:00.000Z, "
                         + "2010-03-31T00:00:00.000Z/2010-04-01T00:00:00.000Z, "
@@ -119,7 +122,8 @@ public class DruidDateRangeRulesTest extends LanguageManagerDependant {
         //        AND(>=($8, 2019-02-01), <($8, 2019-03-01))),
         //     OR(AND(>=($8, 2012-02-29), <($8, 2012-03-01)),
         //        AND(>=($8, 2016-02-29), <($8, 2016-03-01))))
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.gt( f.exYear, f.literal( 2010 ) ), f.lt( f.exYear, f.literal( 2020 ) ), f.eq( f.exMonth, f.literal( 2 ) ), f.eq( f.exDay, f.literal( 29 ) ) ),
                 is( "[2012-02-29T00:00:00.000Z/2012-03-01T00:00:00.000Z, 2016-02-29T00:00:00.000Z/2016-03-01T00:00:00.000Z]" ) );
     }
@@ -141,7 +145,8 @@ public class DruidDateRangeRulesTest extends LanguageManagerDependant {
         //        AND(>=($9, 2019-02-01), <($9, 2019-03-01))),
         //     OR(AND(>=($9, 2012-02-29), <($9, 2012-03-01)),"
         //        AND(>=($9, 2016-02-29), <($9, 2016-03-01))))
-        checkDateRange( f,
+        checkDateRange(
+                f,
                 f.and( f.gt( f.exYear, f.literal( 2010 ) ), f.lt( f.exYear, f.literal( 2020 ) ), f.eq( f.exMonth, f.literal( 2 ) ), f.eq( f.exDay, f.literal( 29 ) ) ),
                 is( "[2012-02-29T00:00:00.000Z/2012-03-01T00:00:00.000Z, 2016-02-29T00:00:00.000Z/2016-03-01T00:00:00.000Z]" ) );
     }
@@ -162,7 +167,8 @@ public class DruidDateRangeRulesTest extends LanguageManagerDependant {
         final TimestampString to = TimestampString.fromCalendarFields( c );
 
         // d >= 2010-01-01 AND d < 2011-01-01
-        checkDateRangeNoSimplify( f,
+        checkDateRangeNoSimplify(
+                f,
                 f.and( f.ge( f.d, f.cast( f.timestampDataType, f.timestampLiteral( from ) ) ), f.lt( f.d, f.cast( f.timestampDataType, f.timestampLiteral( to ) ) ) ),
                 is( "[2010-01-01T00:00:00.000Z/2011-01-01T00:00:00.000Z]" ) );
     }

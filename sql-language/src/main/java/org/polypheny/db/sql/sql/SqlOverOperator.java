@@ -20,12 +20,12 @@ package org.polypheny.db.sql.sql;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.core.nodes.BasicNodeVisitor.ArgHandler;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.NodeVisitor;
-import org.polypheny.db.core.validate.Validator;
-import org.polypheny.db.core.validate.ValidatorScope;
+import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
 import org.polypheny.db.sql.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.sql.validate.SqlValidatorScope;

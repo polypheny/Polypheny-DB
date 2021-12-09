@@ -31,7 +31,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailFilter.CompoundPredicate.Op;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.algebra.AlgNode;

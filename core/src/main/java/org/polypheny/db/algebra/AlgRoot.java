@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.ImmutableIntList;

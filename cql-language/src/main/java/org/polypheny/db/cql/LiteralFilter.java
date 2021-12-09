@@ -18,7 +18,7 @@ package org.polypheny.db.cql;
 
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;

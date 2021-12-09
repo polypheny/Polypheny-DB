@@ -36,9 +36,9 @@ package org.polypheny.db.algebra.type;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import org.polypheny.db.core.nodes.Identifier;
-import org.polypheny.db.core.nodes.IntervalQualifier;
-import org.polypheny.db.core.util.Collation;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.type.PolyType;
 
 

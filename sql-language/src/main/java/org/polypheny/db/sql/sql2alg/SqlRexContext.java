@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.sql2alg;
 
 
-import org.polypheny.db.core.InitializerExpressionFactory;
+import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlLiteral;
 import org.polypheny.db.sql.sql.SqlNode;

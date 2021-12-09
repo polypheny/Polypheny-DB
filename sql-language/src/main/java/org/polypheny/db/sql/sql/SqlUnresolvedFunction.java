@@ -18,8 +18,8 @@ package org.polypheny.db.sql.sql;
 
 
 import java.util.List;
-import org.polypheny.db.core.enums.FunctionCategory;
-import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.type.PolyType;

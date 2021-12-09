@@ -17,11 +17,11 @@
 package org.polypheny.db.type.checker;
 
 
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.CallBinding;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.util.CoreUtil;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Static;

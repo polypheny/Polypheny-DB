@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.sql.advise;
 
 
-import org.polypheny.db.core.util.Moniker;
+import org.polypheny.db.util.Moniker;
 
 
 /**

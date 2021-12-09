@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.sql;
 
 
-import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.nodes.OperatorBinding;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 
 

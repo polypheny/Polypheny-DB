@@ -36,7 +36,7 @@ package org.polypheny.db.rex;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 
 

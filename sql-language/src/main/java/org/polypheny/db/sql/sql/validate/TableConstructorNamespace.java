@@ -19,7 +19,7 @@ package org.polypheny.db.sql.sql.validate;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import org.polypheny.db.core.enums.Modality;
+import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.algebra.type.AlgDataType;

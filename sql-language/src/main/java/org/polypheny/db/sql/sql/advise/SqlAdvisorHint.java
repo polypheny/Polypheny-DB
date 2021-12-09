@@ -18,8 +18,8 @@ package org.polypheny.db.sql.sql.advise;
 
 
 import java.util.List;
-import org.polypheny.db.core.util.Moniker;
-import org.polypheny.db.core.enums.MonikerType;
+import org.polypheny.db.util.Moniker;
+import org.polypheny.db.algebra.constant.MonikerType;
 
 
 /**

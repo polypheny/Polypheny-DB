@@ -20,8 +20,8 @@ package org.polypheny.db.sql.sql.fun;
 import com.google.common.base.Preconditions;
 import java.util.Objects;
 import lombok.Getter;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.QuantifyOperator;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.QuantifyOperator;
 
 
 /**

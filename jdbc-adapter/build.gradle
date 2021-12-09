@@ -6,7 +6,6 @@ version = versionMajor + "." + versionMinor + versionQualifier
 dependencies {
     implementation project(":core")
     implementation project(":sql-language")
-    implementation project(":languages")
 
     // JDBC Drivers
     implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version  // HSQLDB License (BSD-style)
@@ -17,7 +16,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    testImplementation project(path: ":languages", configuration: "tests")
+    testImplementation project(path: ":sql-language", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 }

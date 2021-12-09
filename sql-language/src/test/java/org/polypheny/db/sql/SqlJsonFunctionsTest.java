@@ -39,11 +39,11 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
-import org.polypheny.db.core.json.JsonConstructorNullClause;
-import org.polypheny.db.core.json.JsonExistsErrorBehavior;
-import org.polypheny.db.core.json.JsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.core.json.JsonQueryWrapperBehavior;
-import org.polypheny.db.core.json.JsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.algebra.json.JsonConstructorNullClause;
+import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
+import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
+import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.PolyphenyDbException;
 

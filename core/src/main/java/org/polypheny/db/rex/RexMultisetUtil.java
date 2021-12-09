@@ -37,8 +37,8 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.type.PolyType;
 

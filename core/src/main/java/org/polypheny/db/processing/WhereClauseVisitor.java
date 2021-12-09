@@ -19,7 +19,7 @@ package org.polypheny.db.processing;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.core.enums.Kind;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;

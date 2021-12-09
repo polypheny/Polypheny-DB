@@ -17,8 +17,8 @@
 package org.polypheny.db.sql.sql.validate;
 
 
-import org.polypheny.db.core.enums.Modality;
-import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.algebra.constant.Modality;
+import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.algebra.type.AlgDataType;

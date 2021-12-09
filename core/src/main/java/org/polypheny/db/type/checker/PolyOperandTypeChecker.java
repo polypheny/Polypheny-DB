@@ -18,8 +18,8 @@ package org.polypheny.db.type.checker;
 
 
 import java.io.Serializable;
-import org.polypheny.db.core.nodes.CallBinding;
-import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.OperandCountRange;
 
 

@@ -35,9 +35,9 @@ package org.polypheny.db.adapter.druid;
 
 
 import javax.annotation.Nullable;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Operator;
-import org.polypheny.db.core.operators.OperatorName;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;

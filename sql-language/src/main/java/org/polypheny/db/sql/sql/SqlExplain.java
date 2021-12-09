@@ -19,14 +19,14 @@ package org.polypheny.db.sql.sql;
 
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.nodes.Explain;
-import org.polypheny.db.core.enums.ExplainFormat;
-import org.polypheny.db.core.enums.ExplainLevel;
-import org.polypheny.db.core.enums.Kind;
-import org.polypheny.db.core.nodes.Literal;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.core.nodes.Operator;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Explain;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.Literal;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.util.ImmutableNullableList;
 

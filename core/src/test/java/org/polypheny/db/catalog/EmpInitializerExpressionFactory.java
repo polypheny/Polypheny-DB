@@ -18,8 +18,8 @@ package org.polypheny.db.catalog;
 
 
 import java.math.BigDecimal;
-import org.polypheny.db.core.InitializerContext;
-import org.polypheny.db.core.NullInitializerExpressionFactory;
+import org.polypheny.db.util.InitializerContext;
+import org.polypheny.db.util.NullInitializerExpressionFactory;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;

@@ -34,7 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
-import org.polypheny.db.core.enums.SemiJoinType;
+import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;

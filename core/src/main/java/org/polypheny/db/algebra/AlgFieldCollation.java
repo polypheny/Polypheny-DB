@@ -36,7 +36,7 @@ package org.polypheny.db.algebra;
 
 import java.io.Serializable;
 import java.util.Objects;
-import org.polypheny.db.core.enums.Monotonicity;
+import org.polypheny.db.algebra.constant.Monotonicity;
 
 
 /**

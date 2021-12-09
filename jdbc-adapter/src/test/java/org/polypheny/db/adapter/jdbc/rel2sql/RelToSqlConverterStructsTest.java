@@ -41,17 +41,15 @@ import java.util.List;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.junit.Test;
-import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.nodes.Node;
-import org.polypheny.db.languages.core.LanguageManagerDependant;
-import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Schema;
@@ -59,6 +57,8 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
+import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -66,7 +66,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Tests for {@link AlgToSqlConverter} on a schema that has nested structures of multiple levels.
  */
-public class RelToSqlConverterStructsTest extends LanguageManagerDependant {
+public class RelToSqlConverterStructsTest extends SqlLanguagelDependant {
 
     private static final Schema SCHEMA = new Schema() {
         @Override

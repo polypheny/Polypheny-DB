@@ -19,8 +19,8 @@ package org.polypheny.db.sql.sql.validate;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import org.polypheny.db.core.nodes.Call;
-import org.polypheny.db.core.nodes.NodeVisitor;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.sql.sql.SqlCall;
 import org.polypheny.db.sql.sql.SqlNode;
 import org.polypheny.db.sql.sql.util.SqlShuttle;

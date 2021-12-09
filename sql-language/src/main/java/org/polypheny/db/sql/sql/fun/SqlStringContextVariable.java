@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.sql.fun;
 
 
-import org.polypheny.db.core.enums.FunctionCategory;
+import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.type.inference.ReturnTypes;
 
 
