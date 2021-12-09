@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.information.exception.InformationRuntimeException;
@@ -29,6 +30,7 @@ public class InformationDuration extends Information {
 
     private final HashMap<String, Duration> children = new HashMap<>();
     private final boolean isChild = false;
+    private final InformationGroup group;
     /**
      * Duration in NanoSeconds
      */
@@ -42,6 +44,7 @@ public class InformationDuration extends Information {
      */
     public InformationDuration( final InformationGroup group ) {
         super( UUID.randomUUID().toString(), group.getId() );
+        this.group = group;
     }
 
 
@@ -71,6 +74,20 @@ public class InformationDuration extends Information {
     }
 
 
+    public InformationDuration merge( InformationDuration other ) {
+        Set<String> keySet = this.children.keySet();
+        keySet.retainAll( other.children.keySet() );
+        if ( this.children.keySet().size() + other.children.keySet().size() != 0 && keySet.size() != 0 ) {
+            throw new RuntimeException( "It was not possible to merge the InformationDuration." );
+        }
+        InformationDuration duration = new InformationDuration( this.group );
+        duration.children.putAll( this.children );
+        duration.children.putAll( other.children );
+
+        return duration;
+    }
+
+
     public Duration get( final String name ) {
         return this.children.get( name );
     }
@@ -80,6 +97,15 @@ public class InformationDuration extends Information {
         Duration child = this.get( name );
         if ( child == null ) {
             throw new InformationRuntimeException( "could no find duration: " + name );
+        }
+        return child.duration;
+    }
+
+
+    public long getDurationOrZero( final String name ) throws InformationRuntimeException {
+        Duration child = this.get( name );
+        if ( child == null ) {
+            return 0;
         }
         return child.duration;
     }

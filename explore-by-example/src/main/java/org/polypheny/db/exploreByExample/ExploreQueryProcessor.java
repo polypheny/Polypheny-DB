@@ -199,7 +199,7 @@ public class ExploreQueryProcessor {
             RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         return signature;
     }

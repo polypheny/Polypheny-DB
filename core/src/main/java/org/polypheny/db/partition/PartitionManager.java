@@ -36,6 +36,15 @@ public interface PartitionManager {
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, CatalogColumn partitionColumn );
 
+    /**
+     * Returns all placements of catalogTable and partitionIds
+     *
+     * @param catalogTable Table to look for placements
+     * @param partitionIds List of all requested partitions ids
+     * @return Returns map of AdapterId  -> [Map PartitionsId -> needed Columns Placements]
+     */
+    Map<Integer, Map<Long, List<CatalogColumnPlacement>>> getAllPlacements( CatalogTable catalogTable, List<Long> partitionIds );
+
     int getNumberOfPartitionsPerGroup( int numberOfPartitions );
 
     boolean requiresUnboundPartitionGroup();

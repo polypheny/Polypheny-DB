@@ -48,7 +48,7 @@ import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.logical.LogicalViewTableScan;
+import org.polypheny.db.rel.logical.LogicalViewScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -75,7 +75,7 @@ public class ViewManager {
             exprs.add( rexBuilder.makeInputRef( other, i ) );
         }
 
-        RelNode relNode = ((LogicalViewTableScan) other).getRelNode();
+        RelNode relNode = ((LogicalViewScan) other).getRelNode();
 
         if ( relNode instanceof Project && relNode.getRowType().getFieldNames().equals( other.getRowType().getFieldNames() ) ) {
             return relNode;
@@ -242,7 +242,7 @@ public class ViewManager {
 
 
         public RelNode checkNode( RelNode other ) {
-            if ( other instanceof LogicalViewTableScan ) {
+            if ( other instanceof LogicalViewScan ) {
                 return expandViewNode( other );
             } else if ( doesSubstituteOrderBy && other instanceof LogicalTableScan ) {
                 if ( other.getTable() instanceof RelOptTableImpl ) {
@@ -271,7 +271,7 @@ public class ViewManager {
          * @return the RelRoot after replacing all <code>LogicalViewTableScan</code>s
          */
         public RelRoot startSubstitution( RelRoot logicalRoot ) {
-            if ( logicalRoot.rel instanceof LogicalViewTableScan ) {
+            if ( logicalRoot.rel instanceof LogicalViewScan ) {
                 RelNode node = checkNode( logicalRoot.rel );
                 return RelRoot.of( node, logicalRoot.kind );
             } else {

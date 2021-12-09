@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,17 @@ package org.polypheny.db.plan;
 
 
 /**
- * RelOptCost defines an interface for optimizer cost in terms of number of rows processed, CPU cost, and I/O cost. Optimizer implementations may use all of this information,
- * or selectively ignore portions of it. The specific units for all of these quantities are rather vague; most relational expressions provide a default cost calculation,
- * but optimizers can override this by plugging in their own cost models with well-defined meanings for each unit. Optimizers which supply their own cost models may also
- * extend this interface with additional cost metrics such as memory usage.
+ * RelOptCost defines an interface for optimizer cost in terms of number of rows processed, CPU cost, and I/O cost.
+ * Optimizer implementations may use all of this information, or selectively ignore portions of it. The specific units for
+ * all of these quantities are rather vague; most relational expressions provide a default cost calculation, but optimizers
+ * can override this by plugging in their own cost models with well-defined meanings for each unit. Optimizers which supply
+ * their own cost models may also extend this interface with additional cost metrics such as memory usage.
  */
 public interface RelOptCost {
 
     /**
-     * @return number of rows processed; this should not be confused with the row count produced by a relational expression ({@link org.polypheny.db.rel.RelNode#estimateRowCount})
+     * @return number of rows processed; this should not be confused with the row count produced by a relational expression
+     * ({@link org.polypheny.db.rel.RelNode#estimateRowCount})
      */
     double getRows();
 
@@ -58,11 +60,17 @@ public interface RelOptCost {
     double getIo();
 
     /**
-     * @return true iff this cost represents an expression that hasn't actually been implemented (e.g. a pure relational algebra expression) or can't actually be implemented, e.g. a transfer of data between two disconnected sites
+     * @return true iff this cost represents an expression that hasn't actually been implemented (e.g. a pure algebra
+     * expression) or can't actually be implemented, e.g. a transfer of data between two disconnected sites.
      */
     boolean isInfinite();
 
-    // REVIEW jvs: We should standardize this to Comparator/equals/hashCode
+    /**
+     * @return the approximated costs of the element.
+     */
+    double getCosts();
+
+    // REVIEW: We should standardize this to Comparator/equals/hashCode
 
     /**
      * Compares this to another cost.
@@ -136,5 +144,6 @@ public interface RelOptCost {
      * Forces implementations to override {@link Object#toString} and provide a good cost rendering to use during tracing.
      */
     String toString();
+
 }
 

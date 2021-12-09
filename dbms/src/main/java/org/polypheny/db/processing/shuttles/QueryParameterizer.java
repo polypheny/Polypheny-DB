@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.processing.shuttles;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;

@@ -16,13 +16,12 @@
 
 package org.polypheny.db.monitoring.events.analyzer;
 
-import com.google.gson.Gson;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 
 
 @Slf4j
@@ -31,56 +30,21 @@ public class DmlEventAnalyzer {
     public static DmlDataPoint analyze( DmlEvent dmlEvent ) {
         DmlDataPoint metric = DmlDataPoint
                 .builder()
-                .description( dmlEvent.getDescription() )
-                .monitoringType( dmlEvent.getMonitoringType() )
                 .Id( dmlEvent.getId() )
                 .fieldNames( dmlEvent.getFieldNames() )
                 .executionTime( dmlEvent.getExecutionTime() )
                 .rowCount( dmlEvent.getRowCount() )
                 .isSubQuery( dmlEvent.isSubQuery() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
-                .accessedPartitions( dmlEvent.getAccessedPartitions() )
+                .accessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
+                .queryClass( dmlEvent.getLogicalQueryInformation().getQueryClass() )
+                .monitoringType( "DML" )
+                .physicalQueryClass( dmlEvent.getPhysicalQueryClass() )
                 .build();
-
-        RelRoot relRoot = dmlEvent.getRouted();
-        if ( relRoot != null ) {
-            RelNode node = relRoot.rel;
-            processRelNode( node, dmlEvent, metric );
-        }
-
-        if ( dmlEvent.isAnalyze() ) {
-            processDurationInfo( dmlEvent, metric );
-        }
+        metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );
 
         return metric;
     }
 
-
-    private static void processDurationInfo( DmlEvent dmlEvent, DmlDataPoint metric ) {
-        InformationDuration duration = new Gson().fromJson( dmlEvent.getDurations(), InformationDuration.class );
-        getDurationInfo( metric, "Index Lookup Rewrite", duration );
-        getDurationInfo( metric, "Constraint Enforcement", duration );
-        getDurationInfo( metric, "Implementation Caching", duration );
-        getDurationInfo( metric, "Index Update", duration );
-        getDurationInfo( metric, "Routing", duration );
-        getDurationInfo( metric, "Locking", duration );
-    }
-
-
-    private static void getDurationInfo( DmlDataPoint dmlMetric, String durationName, InformationDuration duration ) {
-        long time = duration.getNanoDuration( durationName );
-        dmlMetric.getDataElements().put( durationName, time );
-    }
-
-
-    private static void processRelNode( RelNode node, DmlEvent event, DmlDataPoint metric ) {
-        for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            processRelNode( node.getInput( i ), event, metric );
-        }
-
-        if ( node.getTable() != null ) {
-            metric.getTables().addAll( node.getTable().getQualifiedName() );
-        }
-    }
-
 }
+

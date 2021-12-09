@@ -3,7 +3,7 @@ import org.jetbrains.gradle.ext.*
 buildscript {
     repositories {
         maven {
-            url 'https://plugins.gradle.org/m2/'
+            url "https://plugins.gradle.org/m2/"
         }
     }
     dependencies {
@@ -15,8 +15,7 @@ buildscript {
 
 
 plugins {
-    id "org.jetbrains.kotlin.jvm" version '1.5.31'
-    id "org.jetbrains.gradle.plugin.idea-ext" version "1.0"
+    id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.1"
 }
 
 
@@ -59,10 +58,6 @@ allprojects {
             // DBIS Nexus
             url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
         }
-        maven {
-            url "https://clojars.org/repo/"
-        }
-        mavenCentral()
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
@@ -129,6 +124,9 @@ allprojects {
         showFailedStandardStreams true
         logLevel 'lifecycle'
     }
+
+    lombok.config['lombok.val.flagUsage'] = 'error'
+    lombok.config['lombok.var.flagUsage'] = 'error'
 
     idea {
         module {

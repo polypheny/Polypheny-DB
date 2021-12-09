@@ -21,26 +21,33 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.analyzer.QueryEventAnalyzer;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 
 
 @Getter
 @Setter
+@Slf4j
 public class QueryEvent extends StatementEvent {
 
-    private String eventType = "QUERY EVENT";
+    protected boolean updatePostCosts = false;
 
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
-        return Arrays.asList( (Class<T>) QueryDataPoint.class );
+        return Arrays.asList( (Class<T>) QueryDataPointImpl.class );
     }
 
 
     @Override
     public List<MonitoringDataPoint> analyze() {
-        return Arrays.asList( QueryEventAnalyzer.analyze( this ) );
+        final QueryDataPoint queryDataPoint = QueryEventAnalyzer.analyze( this );
+        if ( updatePostCosts ) {
+            MonitoringServiceProvider.getInstance().updateQueryPostCosts( this.physicalQueryClass, this.executionTime );
+        }
+        return Arrays.asList( queryDataPoint );
     }
 
 }

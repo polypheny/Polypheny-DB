@@ -16,17 +16,17 @@
 
 package org.polypheny.db.monitoring.core;
 
+
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import lombok.val;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -42,7 +42,7 @@ class MonitoringQueueImplIntegrationTest {
 
         // Initialize mock repository
         TestMapDbRepository repo = new TestMapDbRepository();
-        repo.initialize(); // will delete the file
+        repo.initialize( true ); // will delete the file
 
         // Mock ui service, not really needed for testing
         MonitoringServiceUi uiService = Mockito.mock( MonitoringServiceUi.class );
@@ -51,12 +51,12 @@ class MonitoringQueueImplIntegrationTest {
         MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( repo );
 
         // Initialize the monitoringService
-        val sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
+        MonitoringService sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
 
         Assertions.assertNotNull( sut );
 
         // -- Act --
-        val events = createQueryEvent( 15 );
+        List<QueryEvent> events = createQueryEvent( 15 );
         events.forEach( sut::monitorEvent );
 
         try {
@@ -66,16 +66,16 @@ class MonitoringQueueImplIntegrationTest {
         }
 
         // -- Assert --
-        val result = sut.getAllDataPoints( QueryDataPoint.class );
+        List<QueryDataPointImpl> result = sut.getAllDataPoints( QueryDataPointImpl.class );
         Assertions.assertEquals( 15, result.size() );
     }
 
 
     private List<QueryEvent> createQueryEvent( int number ) {
-        val result = new ArrayList<QueryEvent>();
+        List<QueryEvent> result = new ArrayList<>();
 
         for ( int i = 0; i < number; i++ ) {
-            val event = new QueryEvent();
+            QueryEvent event = new QueryEvent();
             event.setRouted( null );
             event.setSignature( null );
             event.setStatement( Mockito.mock( Statement.class ) );

@@ -87,9 +87,7 @@ public class TransactionImpl implements Transaction, Comparable {
     private final boolean analyze;
 
 
-    private StatementEvent statementEventData;
-
-    private final AtomicLong statementCounter = new AtomicLong();
+    private StatementEvent statementEvent;
 
     private final List<Statement> statements = new ArrayList<>();
 
@@ -100,6 +98,9 @@ public class TransactionImpl implements Transaction, Comparable {
 
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
+
+    @Getter
+    private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
 
 
     TransactionImpl(
@@ -217,12 +218,6 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public JavaTypeFactory getTypeFactory() {
-        return new JavaTypeFactoryImpl();
-    }
-
-
-    @Override
     public PolyphenyDbCatalogReader getCatalogReader() {
         return new PolyphenyDbCatalogReader(
                 PolyphenyDbSchema.from( getSchema().plus() ),
@@ -296,14 +291,14 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public StatementEvent getMonitoringData() {
-        return this.statementEventData;
+    public StatementEvent getMonitoringEvent() {
+        return this.statementEvent;
     }
 
 
     @Override
-    public void setMonitoringData( StatementEvent event ) {
-        this.statementEventData = event;
+    public void setMonitoringEvent( StatementEvent event ) {
+        this.statementEvent = event;
     }
 
 
