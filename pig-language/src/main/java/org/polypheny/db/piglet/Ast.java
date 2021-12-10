@@ -179,7 +179,7 @@ public class Ast {
 
         @Override
         public Kind getKind() {
-            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
+            throw new UnsupportedOperationException( "Pig does not support this operation." );
         }
 
 
@@ -191,19 +191,19 @@ public class Ast {
 
         @Override
         public boolean isA( Set<Kind> category ) {
-            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
+            throw new UnsupportedOperationException( "Pig does not support this operation." );
         }
 
 
         @Override
         public boolean equalsDeep( Node node, Litmus litmus ) {
-            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
+            throw new UnsupportedOperationException( "Pig does not support this operation." );
         }
 
 
         @Override
         public <R> R accept( NodeVisitor<R> visitor ) {
-            throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
+            throw new UnsupportedOperationException( "Pig does not support this operation." );
         }
 
     }

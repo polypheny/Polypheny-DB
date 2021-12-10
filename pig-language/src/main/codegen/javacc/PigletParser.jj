@@ -997,7 +997,7 @@ String commonNonReservedKeyWord() :
      * not just hexits, in a binary string literal. */
     < BINARY_STRING_LITERAL: ["x","X"] <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
     |
-    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
+    < QUOTED_STRING: (<QUOTE> ( (~["'"]) | ("''"))* <QUOTE>) | (<DOUBLE_QUOTE> ( (~["\""]) | ("\"\""))* <DOUBLE_QUOTE>) >
     |
     < PREFIXED_STRING_LITERAL: ("_" <CHARSETNAME> | "N") <QUOTED_STRING> >
     |
