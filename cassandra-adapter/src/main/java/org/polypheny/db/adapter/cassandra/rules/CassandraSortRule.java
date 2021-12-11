@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,15 @@ import java.util.List;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraSort;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.plan.volcano.AlgSubset;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -38,29 +38,29 @@ import org.polypheny.db.tools.RelBuilderFactory;
  */
 public class CassandraSortRule extends CassandraConverterRule {
 
-    CassandraSortRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Sort.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraFilterRuleNew" );
+    CassandraSortRule( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Sort.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraFilterRuleNew" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        Sort sort = (Sort) rel;
-        final RelTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
-        return new CassandraSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
+    public AlgNode convert( AlgNode alg ) {
+        Sort sort = (Sort) alg;
+        final AlgTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
+        return new CassandraSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( AlgCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
     }
 
 
     @Override
-    public boolean matches( RelOptRuleCall call ) {
-        final Sort sort = call.rel( 0 );
+    public boolean matches( AlgOptRuleCall call ) {
+        final Sort sort = call.alg( 0 );
 
         // We only deal with limit here!
 //        return sort.getCollation().getFieldCollations().isEmpty();
         CassandraTable table = null;
         // This is a copy in getRelList, so probably expensive!
-        if ( sort.getInput() instanceof RelSubset ) {
-            RelSubset subset = (RelSubset) sort.getInput();
+        if ( sort.getInput() instanceof AlgSubset ) {
+            AlgSubset subset = (AlgSubset) sort.getInput();
 //            table = CassandraUtils.getUnderlyingTable( subset );
         }
 
@@ -79,7 +79,7 @@ public class CassandraSortRule extends CassandraConverterRule {
      * @return True if it is possible to achieve this sort in Cassandra
      */
 //    private boolean collationsCompatible( RelCollation sortCollation, RelCollation implicitCollation ) {
-    private boolean collationsCompatible( List<RelFieldCollation> sortFieldCollations, List<RelFieldCollation> implicitFieldCollations ) {
+    private boolean collationsCompatible( List<AlgFieldCollation> sortFieldCollations, List<AlgFieldCollation> implicitFieldCollations ) {
 //        List<RelFieldCollation> sortFieldCollations = sortCollation.getFieldCollations();
 //        List<RelFieldCollation> implicitFieldCollations = implicitCollation.getFieldCollations();
 
@@ -94,8 +94,8 @@ public class CassandraSortRule extends CassandraConverterRule {
         boolean reversed = reverseDirection( sortFieldCollations.get( 0 ).getDirection() ) == implicitFieldCollations.get( 0 ).getDirection();
 
         for ( int i = 0; i < sortFieldCollations.size(); i++ ) {
-            RelFieldCollation sorted = sortFieldCollations.get( i );
-            RelFieldCollation implied = implicitFieldCollations.get( i );
+            AlgFieldCollation sorted = sortFieldCollations.get( i );
+            AlgFieldCollation implied = implicitFieldCollations.get( i );
 
             // Check that the fields being sorted match
             if ( sorted.getFieldIndex() != implied.getFieldIndex() ) {
@@ -103,8 +103,8 @@ public class CassandraSortRule extends CassandraConverterRule {
             }
 
             // Either all fields must be sorted in the same direction or the opposite direction based on whether we decided if the sort direction should be reversed above
-            RelFieldCollation.Direction sortDirection = sorted.getDirection();
-            RelFieldCollation.Direction implicitDirection = implied.getDirection();
+            AlgFieldCollation.Direction sortDirection = sorted.getDirection();
+            AlgFieldCollation.Direction implicitDirection = implied.getDirection();
             if ( (!reversed && sortDirection != implicitDirection) || (reversed && reverseDirection( sortDirection ) != implicitDirection) ) {
                 return false;
             }
@@ -119,16 +119,17 @@ public class CassandraSortRule extends CassandraConverterRule {
      *
      * @return Reverse of the input direction
      */
-    private RelFieldCollation.Direction reverseDirection( RelFieldCollation.Direction direction ) {
+    private AlgFieldCollation.Direction reverseDirection( AlgFieldCollation.Direction direction ) {
         switch ( direction ) {
             case ASCENDING:
             case STRICTLY_ASCENDING:
-                return RelFieldCollation.Direction.DESCENDING;
+                return AlgFieldCollation.Direction.DESCENDING;
             case DESCENDING:
             case STRICTLY_DESCENDING:
-                return RelFieldCollation.Direction.ASCENDING;
+                return AlgFieldCollation.Direction.ASCENDING;
             default:
                 return null;
         }
     }
+
 }

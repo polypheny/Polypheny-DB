@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,22 +40,22 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.util.Objects;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Implementation of a {@link org.polypheny.db.rel.core.Filter} relational expression in Elasticsearch.
+ * Implementation of a {@link org.polypheny.db.algebra.core.Filter} relational expression in Elasticsearch.
  */
 public class ElasticsearchFilter extends Filter implements ElasticsearchRel {
 
-    ElasticsearchFilter( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition ) {
+    ElasticsearchFilter( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, RexNode condition ) {
         super( cluster, traitSet, child, condition );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
@@ -63,14 +63,14 @@ public class ElasticsearchFilter extends Filter implements ElasticsearchRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
 
     @Override
-    public Filter copy( RelTraitSet relTraitSet, RelNode input, RexNode condition ) {
-        return new ElasticsearchFilter( getCluster(), relTraitSet, input, condition );
+    public Filter copy( AlgTraitSet algTraitSet, AlgNode input, RexNode condition ) {
+        return new ElasticsearchFilter( getCluster(), algTraitSet, input, condition );
     }
 
 
@@ -110,6 +110,7 @@ public class ElasticsearchFilter extends Filter implements ElasticsearchRel {
             generator.close();
             return "{\"query\" : " + writer.toString() + "}";
         }
+
     }
 
 }

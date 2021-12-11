@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package org.polypheny.db.type.checker;
 
 
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeComparability;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeComparability;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.OperatorBinding;
 
 
 /**
@@ -30,11 +30,11 @@ import org.polypheny.db.sql.SqlOperatorBinding;
  */
 public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
 
-    private final RelDataTypeComparability requiredComparability;
+    private final AlgDataTypeComparability requiredComparability;
     private final Consistency consistency;
 
 
-    public ComparableOperandTypeChecker( int nOperands, RelDataTypeComparability requiredComparability, Consistency consistency ) {
+    public ComparableOperandTypeChecker( int nOperands, AlgDataTypeComparability requiredComparability, Consistency consistency ) {
         super( nOperands );
         this.requiredComparability = requiredComparability;
         this.consistency = Objects.requireNonNull( consistency );
@@ -42,10 +42,10 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         boolean b = true;
         for ( int i = 0; i < nOperands; ++i ) {
-            RelDataType type = callBinding.getOperandType( i );
+            AlgDataType type = callBinding.getOperandType( i );
             if ( !checkType( callBinding, throwOnFailure, type ) ) {
                 b = false;
             }
@@ -60,7 +60,7 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
     }
 
 
-    private boolean checkType( SqlCallBinding callBinding, boolean throwOnFailure, RelDataType type ) {
+    private boolean checkType( CallBinding callBinding, boolean throwOnFailure, AlgDataType type ) {
         if ( type.getComparability().ordinal() < requiredComparability.ordinal() ) {
             if ( throwOnFailure ) {
                 throw callBinding.newValidationSignatureError();
@@ -74,14 +74,14 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
 
 
     /**
-     * Similar functionality to {@link #checkOperandTypes(SqlCallBinding, boolean)}, but not part of the interface,
+     * Similar functionality to {@link PolyOperandTypeChecker#checkOperandTypes(CallBinding, boolean)}, but not part of the interface,
      * and cannot throw an error.
      */
     @Override
-    public boolean checkOperandTypes( SqlOperatorBinding callBinding ) {
+    public boolean checkOperandTypes( OperatorBinding callBinding ) {
         boolean b = true;
         for ( int i = 0; i < nOperands; ++i ) {
-            RelDataType type = callBinding.getOperandType( i );
+            AlgDataType type = callBinding.getOperandType( i );
             if ( type.getComparability().ordinal() < requiredComparability.ordinal() ) {
                 b = false;
             }
@@ -103,5 +103,6 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
     public Consistency getConsistency() {
         return consistency;
     }
+
 }
 

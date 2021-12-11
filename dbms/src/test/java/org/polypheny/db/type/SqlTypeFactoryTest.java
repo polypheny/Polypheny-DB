@@ -40,7 +40,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.collect.Lists;
 import org.junit.Test;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -51,7 +51,7 @@ public class SqlTypeFactoryTest {
     @Test
     public void testLeastRestrictiveWithAny() {
         SqlTypeFixture f = new SqlTypeFixture();
-        RelDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlBigInt, f.sqlAny ) );
+        AlgDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlBigInt, f.sqlAny ) );
         assertThat( leastRestrictive.getPolyType(), is( PolyType.ANY ) );
     }
 
@@ -59,7 +59,7 @@ public class SqlTypeFactoryTest {
     @Test
     public void testLeastRestrictiveWithNumbers() {
         SqlTypeFixture f = new SqlTypeFixture();
-        RelDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlBigInt, f.sqlInt ) );
+        AlgDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlBigInt, f.sqlInt ) );
         assertThat( leastRestrictive.getPolyType(), is( PolyType.BIGINT ) );
     }
 
@@ -67,7 +67,7 @@ public class SqlTypeFactoryTest {
     @Test
     public void testLeastRestrictiveWithNullability() {
         SqlTypeFixture f = new SqlTypeFixture();
-        RelDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlVarcharNullable, f.sqlAny ) );
+        AlgDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlVarcharNullable, f.sqlAny ) );
         assertThat( leastRestrictive.getPolyType(), is( PolyType.ANY ) );
         assertThat( leastRestrictive.isNullable(), is( true ) );
     }
@@ -76,7 +76,7 @@ public class SqlTypeFactoryTest {
     @Test
     public void testLeastRestrictiveWithNull() {
         SqlTypeFixture f = new SqlTypeFixture();
-        RelDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlNull, f.sqlNull ) );
+        AlgDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlNull, f.sqlNull ) );
         assertThat( leastRestrictive.getPolyType(), is( PolyType.NULL ) );
         assertThat( leastRestrictive.isNullable(), is( true ) );
     }
@@ -87,7 +87,7 @@ public class SqlTypeFactoryTest {
      */
     @Test
     public void testMaxPrecision() {
-        final int un = RelDataType.PRECISION_NOT_SPECIFIED;
+        final int un = AlgDataType.PRECISION_NOT_SPECIFIED;
         checkPrecision( 1, 1, 1, 0 );
         checkPrecision( 2, 1, 2, 1 );
         checkPrecision( 2, 100, 100, -1 );
@@ -117,7 +117,7 @@ public class SqlTypeFactoryTest {
     }
 
 
-    private int checkPrecendenceList( RelDataType t, RelDataType type1, RelDataType type2 ) {
+    private int checkPrecendenceList( AlgDataType t, AlgDataType type1, AlgDataType type2 ) {
         return t.getPrecedenceList().compareTypePrecedence( type1, type2 );
     }
 

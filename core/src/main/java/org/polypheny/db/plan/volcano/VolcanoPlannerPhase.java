@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,10 @@
 package org.polypheny.db.plan.volcano;
 
 
+import org.polypheny.db.algebra.AlgNode;
+
 /**
- * VolcanoPlannerPhase represents the phases of operation that the {@link VolcanoPlanner} passes through during optimization of a tree of {@link org.polypheny.db.rel.RelNode} objects.
+ * VolcanoPlannerPhase represents the phases of operation that the {@link VolcanoPlanner} passes through during optimization of a tree of {@link AlgNode} objects.
  */
 public enum VolcanoPlannerPhase {
     PRE_PROCESS_MDR, PRE_PROCESS, OPTIMIZE, CLEANUP,

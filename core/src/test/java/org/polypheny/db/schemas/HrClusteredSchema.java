@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,10 @@ import java.util.function.Function;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
@@ -68,10 +68,11 @@ public final class HrClusteredSchema extends AbstractSchema {
     public HrClusteredSchema() {
         super();
         tables = ImmutableMap.<String, Table>builder()
-                .put( "emps",
+                .put(
+                        "emps",
                         new PkClusteredTable(
                                 factory ->
-                                        new RelDataTypeFactory.Builder( factory )
+                                        new AlgDataTypeFactory.Builder( factory )
                                                 .add( "empid", null, factory.createJavaType( int.class ) )
                                                 .add( "deptno", null, factory.createJavaType( int.class ) )
                                                 .add( "name", null, factory.createJavaType( String.class ) )
@@ -85,10 +86,11 @@ public final class HrClusteredSchema extends AbstractSchema {
                                         new Object[]{ 150, 10, "Sebastian", 7000, null },
                                         new Object[]{ 200, 20, "Eric", 8000, 500 } )
                         ) )
-                .put( "depts",
+                .put(
+                        "depts",
                         new PkClusteredTable(
                                 factory ->
-                                        new RelDataTypeFactory.Builder( factory )
+                                        new AlgDataTypeFactory.Builder( factory )
                                                 .add( "deptno", null, factory.createJavaType( int.class ) )
                                                 .add( "name", null, factory.createJavaType( String.class ) )
                                                 .build(),
@@ -114,10 +116,10 @@ public final class HrClusteredSchema extends AbstractSchema {
 
         private final ImmutableBitSet pkColumns;
         private final List<Object[]> data;
-        private final Function<RelDataTypeFactory, RelDataType> typeBuilder;
+        private final Function<AlgDataTypeFactory, AlgDataType> typeBuilder;
 
 
-        PkClusteredTable( Function<RelDataTypeFactory, RelDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
+        PkClusteredTable( Function<AlgDataTypeFactory, AlgDataType> dataTypeBuilder, ImmutableBitSet pkColumns, List<Object[]> data ) {
             this.data = data;
             this.typeBuilder = dataTypeBuilder;
             this.pkColumns = pkColumns;
@@ -126,16 +128,16 @@ public final class HrClusteredSchema extends AbstractSchema {
 
         @Override
         public Statistic getStatistic() {
-            List<RelFieldCollation> collationFields = new ArrayList<>();
+            List<AlgFieldCollation> collationFields = new ArrayList<>();
             for ( Integer key : pkColumns ) {
-                collationFields.add( new RelFieldCollation( key, RelFieldCollation.Direction.ASCENDING, RelFieldCollation.NullDirection.LAST ) );
+                collationFields.add( new AlgFieldCollation( key, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.LAST ) );
             }
-            return Statistics.of( data.size(), ImmutableList.of( pkColumns ), ImmutableList.of( RelCollations.of( collationFields ) ) );
+            return Statistics.of( data.size(), ImmutableList.of( pkColumns ), ImmutableList.of( AlgCollations.of( collationFields ) ) );
         }
 
 
         @Override
-        public RelDataType getRowType( final RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( final AlgDataTypeFactory typeFactory ) {
             return typeBuilder.apply( typeFactory );
         }
 
@@ -146,4 +148,5 @@ public final class HrClusteredSchema extends AbstractSchema {
         }
 
     }
+
 }

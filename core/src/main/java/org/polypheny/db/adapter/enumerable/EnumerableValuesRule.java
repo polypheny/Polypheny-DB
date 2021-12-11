@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,32 +35,33 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.function.Predicate;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link org.polypheny.db.rel.logical.LogicalValues} relational expression {@link EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalValues} relational expression {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableValuesRule extends ConverterRule {
 
     /**
      * Creates an EnumerableValuesRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableValuesRule( RelBuilderFactory relBuilderFactory ) {
-        super( LogicalValues.class, (Predicate<RelNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, relBuilderFactory, "EnumerableValuesRule" );
+    public EnumerableValuesRule( AlgBuilderFactory algBuilderFactory ) {
+        super( LogicalValues.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableValuesRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        LogicalValues values = (LogicalValues) rel;
+    public AlgNode convert( AlgNode alg ) {
+        LogicalValues values = (LogicalValues) alg;
         return EnumerableValues.create( values.getCluster(), values.getRowType(), values.getTuples() );
     }
+
 }
 

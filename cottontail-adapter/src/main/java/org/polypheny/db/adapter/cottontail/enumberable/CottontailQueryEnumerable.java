@@ -21,11 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
-import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.ArrayType;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
@@ -106,11 +106,11 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
 
     public static class RowTypeParser implements Function1<Tuple, Object[]> {
 
-        private final RelDataType rowType;
+        private final AlgDataType rowType;
         private final List<String> physicalColumnNames;
 
 
-        public RowTypeParser( RelDataType rowType, List<String> physicalColumnNames ) {
+        public RowTypeParser( AlgDataType rowType, List<String> physicalColumnNames ) {
             this.rowType = rowType;
             this.physicalColumnNames = physicalColumnNames;
         }
@@ -119,9 +119,9 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
         @Override
         public Object[] apply( Tuple a0 ) {
             final Object[] returnValue = new Object[this.physicalColumnNames.size()];
-            final List<RelDataTypeField> fieldList = this.rowType.getFieldList();
+            final List<AlgDataTypeField> fieldList = this.rowType.getFieldList();
             for ( int i = 0; i < fieldList.size(); i++ ) {
-                final RelDataType type = fieldList.get( i ).getType();
+                final AlgDataType type = fieldList.get( i ).getType();
                 returnValue[i] = this.parseSingleField( a0.get( i ), type );
             }
 
@@ -133,10 +133,10 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
          * Internal method used to parse a single value returned from accessing a {@link Tuple}.
          *
          * @param data The data to convert.
-         * @param type The {@link RelDataType} expected by Polypheny-DB
+         * @param type The {@link AlgDataType} expected by Polypheny-DB
          * @return Converted value as {@link Object}
          */
-        private Object parseSingleField( Object data, RelDataType type ) {
+        private Object parseSingleField( Object data, AlgDataType type ) {
             switch ( type.getPolyType() ) {
                 case BOOLEAN:
                 case INTEGER:

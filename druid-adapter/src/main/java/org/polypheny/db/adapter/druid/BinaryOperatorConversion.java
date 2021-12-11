@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,10 @@ package org.polypheny.db.adapter.druid;
 
 
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 
 
 /**
@@ -46,24 +46,24 @@ import org.polypheny.db.sql.SqlOperator;
  */
 public class BinaryOperatorConversion implements DruidSqlOperatorConverter {
 
-    private final SqlOperator operator;
+    private final Operator operator;
     private final String druidOperator;
 
 
-    public BinaryOperatorConversion( final SqlOperator operator, final String druidOperator ) {
+    public BinaryOperatorConversion( final Operator operator, final String druidOperator ) {
         this.operator = operator;
         this.druidOperator = druidOperator;
     }
 
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
+    public Operator polyphenyDbOperator() {
         return operator;
     }
 
 
     @Override
-    public String toDruidExpression( RexNode rexNode, RelDataType rowType, DruidQuery druidQuery ) {
+    public String toDruidExpression( RexNode rexNode, AlgDataType rowType, DruidQuery druidQuery ) {
 
         final RexCall call = (RexCall) rexNode;
 
@@ -77,4 +77,5 @@ public class BinaryOperatorConversion implements DruidSqlOperatorConverter {
 
         return DruidQuery.format( "(%s %s %s)", druidExpressions.get( 0 ), druidOperator, druidExpressions.get( 1 ) );
     }
+
 }

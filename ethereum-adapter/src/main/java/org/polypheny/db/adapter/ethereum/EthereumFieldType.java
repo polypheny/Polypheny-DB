@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 
 
@@ -100,9 +100,9 @@ enum EthereumFieldType {
     }
 
 
-    public RelDataType toType( JavaTypeFactory typeFactory ) {
-        RelDataType javaType = typeFactory.createJavaType( clazz );
-        RelDataType sqlType = typeFactory.createPolyType( javaType.getPolyType() );
+    public AlgDataType toType( JavaTypeFactory typeFactory ) {
+        AlgDataType javaType = typeFactory.createJavaType( clazz );
+        AlgDataType sqlType = typeFactory.createPolyType( javaType.getPolyType() );
         return typeFactory.createTypeWithNullability( sqlType, true );
     }
 }

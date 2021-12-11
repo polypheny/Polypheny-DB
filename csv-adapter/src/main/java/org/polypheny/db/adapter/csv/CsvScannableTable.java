@@ -40,7 +40,7 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.util.Source;
 
@@ -55,7 +55,7 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
     /**
      * Creates a CsvScannableTable.
      */
-    protected CsvScannableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    protected CsvScannableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 
@@ -76,5 +76,6 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
             }
         };
     }
+
 }
 

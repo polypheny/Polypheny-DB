@@ -54,30 +54,30 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.runtime.SqlFunctions;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlDialect.CalendarPolicy;
-import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.sql.sql.SqlDialect;
+import org.polypheny.db.sql.sql.SqlDialect.CalendarPolicy;
+import org.polypheny.db.sql.sql.util.SqlString;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -90,7 +90,7 @@ import org.polypheny.db.util.BuiltInMethod;
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
  */
-public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableRel {
+public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
     public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod(
             JdbcSchema.class,
@@ -120,29 +120,29 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             DataContext.class );
 
 
-    protected JdbcToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
+    protected JdbcToEnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractRelNode.sole( inputs ) );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ) );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         // Generate:
         //   ResultSetEnumerable.of(schema.getDataSource(), "select ...")
         final BlockBuilder builder0 = new BlockBuilder( false );
-        final JdbcRel child = (JdbcRel) getInput();
+        final JdbcAlg child = (JdbcAlg) getInput();
         final PhysType physType =
                 PhysTypeImpl.of(
                         implementor.getTypeFactory(),
@@ -261,7 +261,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private UnaryExpression getTimeZoneExpression( EnumerableRelImplementor implementor ) {
+    private UnaryExpression getTimeZoneExpression( EnumerableAlgImplementor implementor ) {
         return Expressions.convert_(
                 Expressions.call(
                         implementor.getRootExpression(),
@@ -272,7 +272,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     private void generateGet(
-            EnumerableRelImplementor implementor,
+            EnumerableAlgImplementor implementor,
             PhysType physType,
             BlockBuilder builder,
             ParameterExpression resultSet_,
@@ -282,7 +282,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             CalendarPolicy calendarPolicy,
             SqlDialect dialect ) {
         final Primitive primitive = Primitive.ofBoxOr( physType.fieldClass( i ) );
-        final RelDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
+        final AlgDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
         dateTimeArgs.add( Expressions.constant( i + 1 ) );
         PolyType polyType = fieldType.getPolyType();
@@ -355,7 +355,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expression getFlavor = Expressions.call( getTransaction, Types.lookupMethod( Transaction.class, "getFlavor" ) );
                     Expression getBinaryStream = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
                     Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
-                    builder.add( Expressions.ifThenElse( Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
+                    builder.add( Expressions.ifThenElse(
+                            Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
                             Expressions.statement( Expressions.assign( target, getBytes ) ),
                             //assign a PushbackInputStream for the SQL META function
                             Expressions.statement( Expressions.assign( target, Expressions.new_( PushbackInputStream.class, getBinaryStream, Expressions.constant( 10240 ) ) ) ) ) );
@@ -425,7 +426,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     private String jdbcGetMethod( Primitive primitive ) {
         return primitive == null
                 ? "getObject"
-                : "get" + SqlFunctions.initcap( primitive.primitiveName );
+                : "get" + Functions.initcap( primitive.primitiveName );
     }
 
 

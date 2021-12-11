@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,10 @@ package org.polypheny.db.adapter.druid;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 
 
 /**
@@ -48,25 +48,25 @@ import org.polypheny.db.sql.SqlOperator;
  */
 public class NaryOperatorConverter implements DruidSqlOperatorConverter {
 
-    private final SqlOperator operator;
+    private final Operator operator;
     private final String druidOperatorName;
 
 
-    public NaryOperatorConverter( SqlOperator operator, String druidOperatorName ) {
+    public NaryOperatorConverter( Operator operator, String druidOperatorName ) {
         this.operator = Objects.requireNonNull( operator );
         this.druidOperatorName = Objects.requireNonNull( druidOperatorName );
     }
 
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
+    public Operator polyphenyDbOperator() {
         return operator;
     }
 
 
     @Nullable
     @Override
-    public String toDruidExpression( RexNode rexNode, RelDataType rowType, DruidQuery druidQuery ) {
+    public String toDruidExpression( RexNode rexNode, AlgDataType rowType, DruidQuery druidQuery ) {
         final RexCall call = (RexCall) rexNode;
         final List<String> druidExpressions = DruidExpressions.toDruidExpressions( druidQuery, rowType, call.getOperands() );
         if ( druidExpressions == null ) {
@@ -74,5 +74,6 @@ public class NaryOperatorConverter implements DruidSqlOperatorConverter {
         }
         return DruidExpressions.nAryOperatorCall( druidOperatorName, druidExpressions );
     }
+
 }
 

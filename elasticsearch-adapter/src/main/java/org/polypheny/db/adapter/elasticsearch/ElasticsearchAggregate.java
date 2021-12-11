@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,34 +41,35 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Aggregate} relational expression for ElasticSearch.
+ * Implementation of {@link org.polypheny.db.algebra.core.Aggregate} relational expression for ElasticSearch.
  */
 public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRel {
 
-    private static final Set<SqlKind> SUPPORTED_AGGREGATIONS = EnumSet.of( SqlKind.COUNT, SqlKind.MAX, SqlKind.MIN, SqlKind.AVG, SqlKind.SUM, SqlKind.ANY_VALUE );
+    private static final Set<Kind> SUPPORTED_AGGREGATIONS = EnumSet.of( Kind.COUNT, Kind.MAX, Kind.MIN, Kind.AVG, Kind.SUM, Kind.ANY_VALUE );
 
 
     /**
      * Creates a ElasticsearchAggregate
      */
-    ElasticsearchAggregate( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidRelException {
+    ElasticsearchAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
 
         if ( getConvention() != input.getConvention() ) {
@@ -82,37 +83,37 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
 
         for ( AggregateCall aggCall : aggCalls ) {
             if ( aggCall.isDistinct() && !aggCall.isApproximate() ) {
-                final String message = String.format( Locale.ROOT, "Only approximate distinct aggregations are supported in Elastic (cardinality aggregation). Use %s function", SqlStdOperatorTable.APPROX_COUNT_DISTINCT.getName() );
-                throw new InvalidRelException( message );
+                final String message = String.format( Locale.ROOT, "Only approximate distinct aggregations are supported in Elastic (cardinality aggregation). Use %s function", OperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT ).getName() );
+                throw new InvalidAlgException( message );
             }
 
-            final SqlKind kind = aggCall.getAggregation().getKind();
+            final Kind kind = aggCall.getAggregation().getKind();
             if ( !SUPPORTED_AGGREGATIONS.contains( kind ) ) {
                 final String message = String.format( Locale.ROOT, "Aggregation %s not supported (use one of %s)", kind, SUPPORTED_AGGREGATIONS );
-                throw new InvalidRelException( message );
+                throw new InvalidAlgException( message );
             }
         }
 
         if ( getGroupType() != Group.SIMPLE ) {
             final String message = String.format( Locale.ROOT, "Only %s grouping is supported. Yours is %s", Group.SIMPLE, getGroupType() );
-            throw new InvalidRelException( message );
+            throw new InvalidAlgException( message );
         }
 
     }
 
 
     @Override
-    public Aggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         try {
             return new ElasticsearchAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
-        } catch ( InvalidRelException e ) {
+        } catch ( InvalidAlgException e ) {
             throw new AssertionError( e );
         }
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -139,7 +140,7 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
 
             final String name = names.isEmpty() ? ElasticsearchConstants.ID : names.get( 0 );
             field.put( "field", implementor.expressionItemMap.getOrDefault( name, name ) );
-            if ( aggCall.getAggregation().getKind() == SqlKind.ANY_VALUE ) {
+            if ( aggCall.getAggregation().getKind() == Kind.ANY_VALUE ) {
                 field.put( "size", 1 );
             }
 
@@ -153,7 +154,7 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
      * But currently only one-to-one mapping is supported between sql agg and elastic aggregation.
      */
     private static String toElasticAggregate( AggregateCall call ) {
-        final SqlKind kind = call.getAggregation().getKind();
+        final Kind kind = call.getAggregation().getKind();
         switch ( kind ) {
             case COUNT:
                 // approx_count_distinct() vs count()
@@ -174,10 +175,10 @@ public class ElasticsearchAggregate extends Aggregate implements ElasticsearchRe
     }
 
 
-    private List<String> fieldNames( RelDataType relDataType ) {
+    private List<String> fieldNames( AlgDataType algDataType ) {
         List<String> names = new ArrayList<>();
 
-        for ( RelDataTypeField rdtf : relDataType.getFieldList() ) {
+        for ( AlgDataTypeField rdtf : algDataType.getFieldList() ) {
             names.add( rdtf.getName() );
         }
         return names;

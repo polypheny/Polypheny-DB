@@ -18,6 +18,10 @@ package org.polypheny.db.routing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -30,12 +34,8 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -44,7 +44,7 @@ import org.polypheny.db.transaction.Statement;
  */
 public class UiRoutingPageUtil {
 
-    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, RelNode optimalRelNode, InformationManager queryAnalyzer ) {
+    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, AlgNode optimalRelNode, InformationManager queryAnalyzer ) {
         addPhysicalPlanPage( optimalRelNode, queryAnalyzer );
 
         InformationPage page = queryAnalyzer.getPage( "routing" );
@@ -52,12 +52,12 @@ public class UiRoutingPageUtil {
             page = setBaseOutput( "Routing", 1, proposedRoutingPlan, queryAnalyzer );
         }
         addSelectedAdapterTable( queryAnalyzer, proposedRoutingPlan, page );
-        final RelRoot root = proposedRoutingPlan.getRoutedRoot();
-        addRoutedPlanPage( root.rel, queryAnalyzer );
+        final AlgRoot root = proposedRoutingPlan.getRoutedRoot();
+        addRoutedPlanPage( root.alg, queryAnalyzer );
     }
 
 
-    public static void addPhysicalPlanPage( RelNode optimalNode, InformationManager queryAnalyzer ) {
+    public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer ) {
         InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
         page.fullWidth();
         InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
@@ -65,12 +65,12 @@ public class UiRoutingPageUtil {
         queryAnalyzer.addGroup( group );
         InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
                 group,
-                RelOptUtil.dumpPlan( "Physical Query Plan", optimalNode, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+                AlgOptUtil.dumpPlan( "Physical Query Plan", optimalNode, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
         queryAnalyzer.registerInformation( informationQueryPlan );
     }
 
 
-    private static void addRoutedPlanPage( RelNode routedNode, InformationManager queryAnalyzer ) {
+    private static void addRoutedPlanPage( AlgNode routedNode, InformationManager queryAnalyzer ) {
         InformationPage page = new InformationPage( "Routed Query Plan" ).setLabel( "plans" );
         page.fullWidth();
         InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
@@ -78,7 +78,7 @@ public class UiRoutingPageUtil {
         queryAnalyzer.addGroup( group );
         InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
                 group,
-                RelOptUtil.dumpPlan( "Routed Query Plan", routedNode, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+                AlgOptUtil.dumpPlan( "Routed Query Plan", routedNode, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
         queryAnalyzer.registerInformation( informationQueryPlan );
     }
 
@@ -140,7 +140,7 @@ public class UiRoutingPageUtil {
 
 
     public static void addRoutingAndPlanPage(
-            List<RelOptCost> approximatedCosts,
+            List<AlgOptCost> approximatedCosts,
             List<Double> preCosts,
             List<Double> postCosts,
             List<Double> icarusCosts,
@@ -182,8 +182,8 @@ public class UiRoutingPageUtil {
         if ( selectedPlan instanceof ProposedRoutingPlan ) {
             ProposedRoutingPlan plan = (ProposedRoutingPlan) selectedPlan;
             addSelectedAdapterTable( queryAnalyzer, plan, page );
-            RelRoot root = plan.getRoutedRoot();
-            addRoutedPlanPage( root.rel, queryAnalyzer );
+            AlgRoot root = plan.getRoutedRoot();
+            addRoutedPlanPage( root.alg, queryAnalyzer );
         }
 
         /*val plans = routingPlans.stream().map( elem -> elem instanceof ProposedRoutingPlan ? (ProposedRoutingPlan) elem : null ).collect( Collectors.toList() );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,17 +35,17 @@ package org.polypheny.db.tools;
 
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.RexConvertletTable;
+import org.polypheny.db.plan.AlgOptCostFactory;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptCostFactory;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql2rel.SqlRexConvertletTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
 
 
 /**
@@ -56,14 +56,14 @@ import org.polypheny.db.sql2rel.SqlToRelConverter;
 public interface FrameworkConfig {
 
     /**
-     * The configuration of SQL parser.
+     * Returns the configuration of SQL parser.
      */
-    SqlParserConfig getParserConfig();
+    ParserConfig getParserConfig();
 
     /**
-     * The configuration of {@link SqlToRelConverter}.
+     * The configuration of {@link NodeToAlgConverter}.
      */
-    SqlToRelConverter.Config getSqlToRelConverterConfig();
+    NodeToAlgConverter.Config getSqlToRelConverterConfig();
 
     /**
      * Returns the default schema that should be checked before looking at the root schema.  Returns null to only consult the root schema.
@@ -91,49 +91,45 @@ public interface FrameworkConfig {
     /**
      * Returns operator table that should be used to resolve functions and operators during query validation.
      */
-    SqlOperatorTable getOperatorTable();
+    OperatorTable getOperatorTable();
 
     /**
      * Returns the cost factory that should be used when creating the planner.
      * If null, use the default cost factory for that planner.
      */
-    RelOptCostFactory getCostFactory();
+    AlgOptCostFactory getCostFactory();
 
     /**
      * Returns a list of trait definitions.
      *
-     * If the list is not null, the planner first de-registers any existing {@link RelTraitDef}s, then registers the
+     * If the list is not null, the planner first de-registers any existing {@link AlgTraitDef}s, then registers the
      * {@code RelTraitDef}s in this list.
      *
      * The order of {@code RelTraitDef}s in the list matters if the planner is VolcanoPlanner. The planner calls
-     * {@link RelTraitDef#convert} in the order of this list. The most important trait comes first in the list,
+     * {@link AlgTraitDef#convert} in the order of this list. The most important trait comes first in the list,
      * followed by the second most important one, etc.
      */
-    ImmutableList<RelTraitDef> getTraitDefs();
+    ImmutableList<AlgTraitDef> getTraitDefs();
 
     /**
      * Returns the convertlet table that should be used when converting from SQL to row expressions
      */
-    SqlRexConvertletTable getConvertletTable();
+    RexConvertletTable getConvertletTable();
 
     /**
-     * Returns the PlannerContext that should be made available during planning by calling {@link org.polypheny.db.plan.RelOptPlanner#getContext()}.
+     * Returns the PlannerContext that should be made available during planning by calling {@link AlgOptPlanner#getContext()}.
      */
     Context getContext();
 
     /**
      * Returns the type system.
      */
-    RelDataTypeSystem getTypeSystem();
-
-    /**
-     * Returns a view expander.
-     */
-    RelOptTable.ViewExpander getViewExpander();
+    AlgDataTypeSystem getTypeSystem();
 
     /**
      * Returns a prepare context.
      */
-    org.polypheny.db.jdbc.Context getPrepareContext();
+    org.polypheny.db.prepare.Context getPrepareContext();
+
 }
 

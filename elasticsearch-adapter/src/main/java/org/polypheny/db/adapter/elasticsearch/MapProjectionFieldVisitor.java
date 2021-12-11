@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,10 @@
 package org.polypheny.db.adapter.elasticsearch;
 
 
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 
 
 /**
@@ -55,9 +55,10 @@ class MapProjectionFieldVisitor extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall( RexCall call ) {
-        if ( call.op == SqlStdOperatorTable.ITEM ) {
+        if ( call.op.getOperatorName() == OperatorName.ITEM ) {
             return ((RexLiteral) call.getOperands().get( 1 )).getValueAs( String.class );
         }
         return super.visitCall( call );
     }
+
 }

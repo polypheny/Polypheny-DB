@@ -36,17 +36,17 @@ package org.polypheny.db.type;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 
 
 /**
- * Abstract base class for SQL implementations of {@link RelDataType}.
+ * Abstract base class for SQL implementations of {@link AlgDataType}.
  */
-public abstract class AbstractPolyType extends RelDataTypeImpl implements Cloneable {
+public abstract class AbstractPolyType extends AlgDataTypeImpl implements Cloneable {
 
     protected final PolyType typeName;
     protected boolean isNullable;
@@ -59,7 +59,7 @@ public abstract class AbstractPolyType extends RelDataTypeImpl implements Clonea
      * @param isNullable Whether nullable
      * @param fields Fields of type, or null if not a record type
      */
-    protected AbstractPolyType( PolyType typeName, boolean isNullable, List<? extends RelDataTypeField> fields ) {
+    protected AbstractPolyType( PolyType typeName, boolean isNullable, List<? extends AlgDataTypeField> fields ) {
         super( fields );
         this.typeName = Objects.requireNonNull( typeName );
         this.isNullable = isNullable || (typeName == PolyType.NULL);
@@ -82,15 +82,15 @@ public abstract class AbstractPolyType extends RelDataTypeImpl implements Clonea
 
     // implement RelDataType
     @Override
-    public RelDataTypeFamily getFamily() {
+    public AlgDataTypeFamily getFamily() {
         return typeName.getFamily();
     }
 
 
     // implement RelDataType
     @Override
-    public RelDataTypePrecedenceList getPrecedenceList() {
-        RelDataTypePrecedenceList list = PolyTypeExplicitPrecedenceList.getListForType( this );
+    public AlgDataTypePrecedenceList getPrecedenceList() {
+        AlgDataTypePrecedenceList list = PolyTypeExplicitPrecedenceList.getListForType( this );
         if ( list != null ) {
             return list;
         }

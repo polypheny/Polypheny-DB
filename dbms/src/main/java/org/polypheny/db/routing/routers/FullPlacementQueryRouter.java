@@ -26,17 +26,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.tools.RoutedRelBuilder;
+import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -44,13 +44,13 @@ import org.polypheny.db.transaction.Statement;
 public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
     @Override
-    protected List<RoutedRelBuilder> handleHorizontalPartitioning(
-            RelNode node,
+    protected List<RoutedAlgBuilder> handleHorizontalPartitioning(
+            AlgNode node,
             CatalogTable catalogTable,
             Statement statement,
             LogicalTable logicalTable,
-            List<RoutedRelBuilder> builders,
-            RelOptCluster cluster,
+            List<RoutedAlgBuilder> builders,
+            AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
 
         if ( log.isDebugEnabled() ) {
@@ -59,10 +59,10 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
         Collection<Map<Long, List<CatalogColumnPlacement>>> placements = selectPlacementHorizontalPartitioning( node, catalogTable, queryInformation );
 
-        List<RoutedRelBuilder> newBuilders = new ArrayList<>();
+        List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         for ( Map<Long, List<CatalogColumnPlacement>> placementCombination : placements ) {
-            for ( RoutedRelBuilder builder : builders ) {
-                RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
+            for ( RoutedAlgBuilder builder : builders ) {
+                RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, placementCombination ) );
                 newBuilders.add( newBuilder );
@@ -77,13 +77,13 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication(
-            RelNode node,
+    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
+            AlgNode node,
             CatalogTable catalogTable,
             Statement statement,
             LogicalTable logicalTable,
-            List<RoutedRelBuilder> builders,
-            RelOptCluster cluster,
+            List<RoutedAlgBuilder> builders,
+            AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
         // Same as no partitioning
         return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
@@ -91,12 +91,12 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedRelBuilder> handleNonePartitioning(
-            RelNode node,
+    protected List<RoutedAlgBuilder> handleNonePartitioning(
+            AlgNode node,
             CatalogTable catalogTable,
             Statement statement,
-            List<RoutedRelBuilder> builders,
-            RelOptCluster cluster,
+            List<RoutedAlgBuilder> builders,
+            AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
 
         if ( log.isDebugEnabled() ) {
@@ -105,13 +105,13 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
         final Set<List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable, queryInformation );
 
-        List<RoutedRelBuilder> newBuilders = new ArrayList<>();
+        List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         for ( List<CatalogColumnPlacement> placementCombination : placements ) {
             Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
             currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), placementCombination );
 
-            for ( RoutedRelBuilder builder : builders ) {
-                RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
+            for ( RoutedAlgBuilder builder : builders ) {
+                RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
@@ -125,7 +125,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     }
 
 
-    protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( RelNode node, CatalogTable catalogTable, LogicalQueryInformation queryInformation ) {
+    protected Collection<Map<Long, List<CatalogColumnPlacement>>> selectPlacementHorizontalPartitioning( AlgNode node, CatalogTable catalogTable, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 

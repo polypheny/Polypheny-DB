@@ -17,6 +17,10 @@ apply plugin: "com.github.johnrengelman.shadow"
 
 dependencies {
     implementation project(":core")
+    implementation project(":sql-language")
+    implementation project(":mql-language")
+    implementation project(":pig-language")
+    implementation project(":cql-language")
     implementation project(":cassandra-adapter")
     implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")
@@ -27,9 +31,8 @@ dependencies {
     implementation project(":catalog")
     implementation project(":webui")
     implementation project(":jdbc-interface")
-    implementation project(":mongoql-interface")
+    implementation project(":http-interface")
     implementation project(":rest-interface")
-    implementation project(":cql-interface")
     implementation project(":statistic")
     implementation project(":explore-by-example")
     implementation project(":monitoring")
@@ -51,6 +54,8 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":sql-language", configuration: "tests")
+    testImplementation project(path: ":jdbc-interface", configuration: "tests")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 

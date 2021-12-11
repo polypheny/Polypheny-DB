@@ -30,6 +30,10 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -41,10 +45,6 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BuiltInMethod;
@@ -94,14 +94,14 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
                 List<String> columnNames = new LinkedList<>();
 
-                RelDataType rowType;
-                final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+                AlgDataType rowType;
+                final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
 
-                final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+                final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
                 for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
                     columnNames.add( catalogColumn.name );
-                    fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) );
+                    fieldInfo.add( catalogColumn.name, null, catalogColumn.getAlgDataType( typeFactory ) );
                     fieldInfo.nullable( catalogColumn.nullable );
                 }
                 rowType = fieldInfo.build();
@@ -115,7 +115,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             catalogTable.name,
                             columnIds,
                             columnNames,
-                            RelDataTypeImpl.proto( fieldInfo.build() ) );
+                            AlgDataTypeImpl.proto( fieldInfo.build() ) );
                     s.add( catalogTable.name, view );
                     tableMap.put( catalogTable.name, view );
                 } else if ( catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.SOURCE || catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
@@ -125,7 +125,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             catalogTable.name,
                             columnIds,
                             columnNames,
-                            RelDataTypeImpl.proto( rowType ),
+                            AlgDataTypeImpl.proto( rowType ),
                             catalogSchema.schemaType );
                     s.add( catalogTable.name, table );
                     tableMap.put( catalogTable.name, table );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,11 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.function.Predicate;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalCorrelate;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -50,16 +50,16 @@ public class EnumerableCorrelateRule extends ConverterRule {
     /**
      * Creates an EnumerableCorrelateRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableCorrelateRule( RelBuilderFactory relBuilderFactory ) {
-        super( LogicalCorrelate.class, (Predicate<RelNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, relBuilderFactory, "EnumerableCorrelateRule" );
+    public EnumerableCorrelateRule( AlgBuilderFactory algBuilderFactory ) {
+        super( LogicalCorrelate.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableCorrelateRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalCorrelate c = (LogicalCorrelate) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalCorrelate c = (LogicalCorrelate) alg;
         return EnumerableCorrelate.create(
                 convert( c.getLeft(), c.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
                 convert( c.getRight(), c.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
@@ -67,5 +67,6 @@ public class EnumerableCorrelateRule extends ConverterRule {
                 c.getRequiredColumns(),
                 c.getJoinType() );
     }
+
 }
 

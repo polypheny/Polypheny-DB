@@ -16,15 +16,66 @@
 
 package org.polypheny.db.processing;
 
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.PolyResult;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.QueryPlanBuilder;
 
-public class JsonRelProcessorImpl implements JsonRelProcessor {
+public class JsonRelProcessorImpl extends Processor {
+
 
     @Override
-    public RelNode parseJsonRel( Statement statement, String json ) {
-        return QueryPlanBuilder.buildFromJsonRel( statement, json );
+    public Node parse( String query ) {
+        throw new RuntimeException( "JsonProcessor does not support PigNode representation!" );
+    }
+
+
+    @Override
+    public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
+        throw new RuntimeException( "JsonProcessor does not support validation!" );
+    }
+
+
+    @Override
+    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+        return AlgRoot.of( QueryPlanBuilder.buildFromJsonRel( statement, parameters.getQuery() ), Kind.SELECT );
+    }
+
+
+    @Override
+    public PolyResult prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+        throw new RuntimeException( "JsonProcessor does not support DDLs!" );
+    }
+
+
+    @Override
+    public void unlock( Statement statement ) {
+        throw new RuntimeException( "The JsonRelProcessor does not support DML or DDLs and should therefore not lock." );
+    }
+
+
+    @Override
+    public void lock( Statement statement ) throws DeadlockException {
+        throw new RuntimeException( "The JsonRelProcessor does not support DML or DDLs and should therefore not lock." );
+    }
+
+
+    @Override
+    public String getQuery( Node parsed, QueryParameters parameters ) {
+        return parameters.getQuery();
+    }
+
+
+    @Override
+    public AlgDataType getParameterRowType( Node left ) {
+        throw new RuntimeException( "JsonProcessor does not support getParameterRowType!" );
     }
 
 }

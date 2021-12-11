@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,39 +37,40 @@ package org.polypheny.db.plan.hep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgOptUtil;
 
 
 /**
- * HepRuleCall implements {@link RelOptRuleCall} for a {@link HepPlanner}. It remembers transformation results so that the planner can choose which one (if any) should replace the original expression.
+ * HepRuleCall implements {@link AlgOptRuleCall} for a {@link HepPlanner}. It remembers transformation results so that the planner can choose which one (if any) should replace the original expression.
  */
-public class HepRuleCall extends RelOptRuleCall {
+public class HepRuleCall extends AlgOptRuleCall {
 
-    private List<RelNode> results;
+    private List<AlgNode> results;
 
 
-    HepRuleCall( RelOptPlanner planner, RelOptRuleOperand operand, RelNode[] rels, Map<RelNode, List<RelNode>> nodeChildren, List<RelNode> parents ) {
-        super( planner, operand, rels, nodeChildren, parents );
+    HepRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeChildren, List<AlgNode> parents ) {
+        super( planner, operand, algs, nodeChildren, parents );
         results = new ArrayList<>();
     }
 
 
     // implement RelOptRuleCall
     @Override
-    public void transformTo( RelNode rel, Map<RelNode, RelNode> equiv ) {
-        final RelNode rel0 = rels[0];
-        RelOptUtil.verifyTypeEquivalence( rel0, rel, rel0 );
-        results.add( rel );
-        rel( 0 ).getCluster().invalidateMetadataQuery();
+    public void transformTo( AlgNode alg, Map<AlgNode, AlgNode> equiv ) {
+        final AlgNode alg0 = algs[0];
+        AlgOptUtil.verifyTypeEquivalence( alg0, alg, alg0 );
+        results.add( alg );
+        alg( 0 ).getCluster().invalidateMetadataQuery();
     }
 
 
-    List<RelNode> getResults() {
+    List<AlgNode> getResults() {
         return results;
     }
+
 }
 

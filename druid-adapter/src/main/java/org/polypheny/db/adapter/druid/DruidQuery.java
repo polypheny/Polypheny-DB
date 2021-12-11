@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,117 +62,118 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Ord;
 import org.joda.time.Interval;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgFieldCollation.Direction;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.metadata.AlgMdUtil;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.interpreter.BindableRel;
+import org.polypheny.db.interpreter.BindableAlg;
 import org.polypheny.db.interpreter.Bindables;
 import org.polypheny.db.interpreter.Compiler;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelFieldCollation.Direction;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelWriter;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.core.Filter;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.metadata.RelMdUtil;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.ScannableTable;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
  * Relational expression representing a scan of a Druid data set.
  */
-public class DruidQuery extends AbstractRelNode implements BindableRel {
+public class DruidQuery extends AbstractAlgNode implements BindableAlg {
 
     /**
      * Provides a standard list of supported Polypheny-DB operators that can be converted to Druid Expressions. This can be used as is or re-adapted based on underline engine operator syntax.
      */
     public static final List<DruidSqlOperatorConverter> DEFAULT_OPERATORS_LIST =
             ImmutableList.<DruidSqlOperatorConverter>builder()
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.EXP, "exp" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.CONCAT, "concat" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.DIVIDE_INTEGER, "div" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.LIKE, "like" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.LN, "log" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.SQRT, "sqrt" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.LOWER, "lower" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.LOG10, "log10" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.REPLACE, "replace" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.UPPER, "upper" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.POWER, "pow" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.ABS, "abs" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.SIN, "sin" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.COS, "cos" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.TAN, "tan" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.CASE, "case_searched" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.CHAR_LENGTH, "strlen" ) )
-                    .add( new DirectOperatorConversion( SqlStdOperatorTable.CHARACTER_LENGTH, "strlen" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.EQUALS, "==" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.NOT_EQUALS, "!=" ) )
-                    .add( new NaryOperatorConverter( SqlStdOperatorTable.OR, "||" ) )
-                    .add( new NaryOperatorConverter( SqlStdOperatorTable.AND, "&&" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.LESS_THAN, "<" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, "<=" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.GREATER_THAN, ">" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, ">=" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.PLUS, "+" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.MINUS, "-" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.MULTIPLY, "*" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.DIVIDE, "/" ) )
-                    .add( new BinaryOperatorConversion( SqlStdOperatorTable.MOD, "%" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.EXP ), "exp" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.CONCAT ), "concat" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), "div" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.LIKE ), "like" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.LN ), "log" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.SQRT ), "sqrt" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.LOWER ), "lower" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.LOG10 ), "log10" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.REPLACE ), "replace" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.UPPER ), "upper" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.POWER ), "pow" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.ABS ), "abs" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.SIN ), "sin" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.COS ), "cos" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.TAN ), "tan" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.CASE ), "case_searched" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.CHAR_LENGTH ), "strlen" ) )
+                    .add( new DirectOperatorConversion( OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ), "strlen" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.EQUALS ), "==" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.NOT_EQUALS ), "!=" ) )
+                    .add( new NaryOperatorConverter( OperatorRegistry.get( OperatorName.OR ), "||" ) )
+                    .add( new NaryOperatorConverter( OperatorRegistry.get( OperatorName.AND ), "&&" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.LESS_THAN ), "<" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "<=" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.GREATER_THAN ), ">" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), ">=" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.PLUS ), "+" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.MINUS ), "-" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.MULTIPLY ), "*" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.DIVIDE ), "/" ) )
+                    .add( new BinaryOperatorConversion( OperatorRegistry.get( OperatorName.MOD ), "%" ) )
                     .add( new DruidSqlCastConverter() )
                     .add( new ExtractOperatorConversion() )
-                    .add( new UnaryPrefixOperatorConversion( SqlStdOperatorTable.NOT, "!" ) )
-                    .add( new UnaryPrefixOperatorConversion( SqlStdOperatorTable.UNARY_MINUS, "-" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_FALSE, "<= 0" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_NOT_TRUE, "<= 0" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_TRUE, "> 0" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_NOT_FALSE, "> 0" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_NULL, "== null" ) )
-                    .add( new UnarySuffixOperatorConversion( SqlStdOperatorTable.IS_NOT_NULL, "!= null" ) )
+                    .add( new UnaryPrefixOperatorConversion( OperatorRegistry.get( OperatorName.NOT ), "!" ) )
+                    .add( new UnaryPrefixOperatorConversion( OperatorRegistry.get( OperatorName.UNARY_MINUS ), "-" ) )
+                    .add( new UnarySuffixOperatorConversion( OperatorRegistry.get( OperatorName.IS_FALSE ), "<= 0" ) )
+                    .add( new UnarySuffixOperatorConversion( OperatorRegistry.get( OperatorName.IS_NOT_TRUE ), "<= 0" ) )
+                    .add( new UnarySuffixOperatorConversion( OperatorRegistry.get( OperatorName.IS_TRUE ), "> 0" ) )
+                    .add( new UnarySuffixOperatorConversion( OperatorRegistry.get( OperatorName.IS_NOT_FALSE ), "> 0" ) )
+                    .add( new UnarySuffixOperatorConversion( OperatorRegistry.get( OperatorName.IS_NULL ), "== null" ) )
+                    .add( new UnarySuffixOperatorConversion( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), "!= null" ) )
                     .add( new FloorOperatorConversion() )
                     .add( new CeilOperatorConversion() )
                     .add( new SubstringOperatorConversion() )
                     .build();
     protected QuerySpec querySpec;
 
-    final RelOptTable table;
+    final AlgOptTable table;
     final DruidTable druidTable;
     final ImmutableList<Interval> intervals;
-    final ImmutableList<RelNode> rels;
+    final ImmutableList<AlgNode> algs;
     /**
      * This operator map provides DruidSqlOperatorConverter instance to convert a Polypheny-DB RexNode to Druid Expression when possible.
      */
-    final Map<SqlOperator, DruidSqlOperatorConverter> converterOperatorMap;
+    final Map<Operator, DruidSqlOperatorConverter> converterOperatorMap;
 
     private static final Pattern VALID_SIG = Pattern.compile( "sf?p?(a?|ah|ah?o)l?" );
     private static final String EXTRACT_COLUMN_NAME_PREFIX = "extract";
@@ -189,15 +190,15 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * @param table Table
      * @param druidTable Druid table
      * @param intervals Intervals for the query
-     * @param rels Internal relational expressions
+     * @param algs Internal relational expressions
      * @param converterOperatorMap mapping of Polypheny-DB Sql Operator to Druid Expression API.
      */
-    protected DruidQuery( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<Interval> intervals, List<RelNode> rels, Map<SqlOperator, DruidSqlOperatorConverter> converterOperatorMap ) {
+    protected DruidQuery( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
         super( cluster, traitSet );
         this.table = table;
         this.druidTable = druidTable;
         this.intervals = ImmutableList.copyOf( intervals );
-        this.rels = ImmutableList.copyOf( rels );
+        this.algs = ImmutableList.copyOf( algs );
         this.converterOperatorMap = Objects.requireNonNull( converterOperatorMap, "Operator map can not be null" );
         assert isValid( Litmus.THROW, null );
     }
@@ -214,37 +215,37 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<RelNode> rels ) {
-        final ImmutableMap.Builder<SqlOperator, DruidSqlOperatorConverter> mapBuilder = ImmutableMap.builder();
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<AlgNode> algs ) {
+        final ImmutableMap.Builder<Operator, DruidSqlOperatorConverter> mapBuilder = ImmutableMap.builder();
         for ( DruidSqlOperatorConverter converter : DEFAULT_OPERATORS_LIST ) {
             mapBuilder.put( converter.polyphenyDbOperator(), converter );
         }
-        return create( cluster, traitSet, table, druidTable, druidTable.intervals, rels, mapBuilder.build() );
+        return create( cluster, traitSet, table, druidTable, druidTable.intervals, algs, mapBuilder.build() );
     }
 
 
     /**
      * Creates a DruidQuery.
      */
-    public static DruidQuery create( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<RelNode> rels, Map<SqlOperator, DruidSqlOperatorConverter> converterOperatorMap ) {
-        return create( cluster, traitSet, table, druidTable, druidTable.intervals, rels, converterOperatorMap );
+    public static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+        return create( cluster, traitSet, table, druidTable, druidTable.intervals, algs, converterOperatorMap );
     }
 
 
     /**
      * Creates a DruidQuery.
      */
-    private static DruidQuery create( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, DruidTable druidTable, List<Interval> intervals, List<RelNode> rels, Map<SqlOperator, DruidSqlOperatorConverter> converterOperatorMap ) {
-        return new DruidQuery( cluster, traitSet, table, druidTable, intervals, rels, converterOperatorMap );
+    private static DruidQuery create( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, DruidTable druidTable, List<Interval> intervals, List<AlgNode> algs, Map<Operator, DruidSqlOperatorConverter> converterOperatorMap ) {
+        return new DruidQuery( cluster, traitSet, table, druidTable, intervals, algs, converterOperatorMap );
     }
 
 
     /**
      * Extends a DruidQuery.
      */
-    public static DruidQuery extendQuery( DruidQuery query, RelNode r ) {
-        final ImmutableList.Builder<RelNode> builder = ImmutableList.builder();
-        return DruidQuery.create( query.getCluster(), r.getTraitSet().replace( query.getConvention() ), query.getTable(), query.druidTable, query.intervals, builder.addAll( query.rels ).add( r ).build(), query.getOperatorConversionMap() );
+    public static DruidQuery extendQuery( DruidQuery query, AlgNode r ) {
+        final ImmutableList.Builder<AlgNode> builder = ImmutableList.builder();
+        return DruidQuery.create( query.getCluster(), r.getTraitSet().replace( query.getConvention() ), query.getTable(), query.druidTable, query.intervals, builder.addAll( query.algs ).add( r ).build(), query.getOperatorConversionMap() );
     }
 
 
@@ -252,7 +253,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * Extends a DruidQuery.
      */
     public static DruidQuery extendQuery( DruidQuery query, List<Interval> intervals ) {
-        return DruidQuery.create( query.getCluster(), query.getTraitSet(), query.getTable(), query.druidTable, intervals, query.rels, query.getOperatorConversionMap() );
+        return DruidQuery.create( query.getCluster(), query.getTraitSet(), query.getTable(), query.druidTable, intervals, query.algs, query.getOperatorConversionMap() );
     }
 
 
@@ -262,7 +263,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * @param druidQuery druid query
      * @return {@link Pair} of Column name and Extraction Function on the top of the input ref or {@link Pair of(null, null)} when can not translate to valid Druid column
      */
-    protected static Pair<String, ExtractionFunction> toDruidColumn( RexNode rexNode, RelDataType rowType, DruidQuery druidQuery ) {
+    protected static Pair<String, ExtractionFunction> toDruidColumn( RexNode rexNode, AlgDataType rowType, DruidQuery druidQuery ) {
         final String columnName;
         final ExtractionFunction extractionFunction;
         final Granularity granularity;
@@ -350,9 +351,9 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * @return true if the operand is an inputRef and it is a valid Druid Cast operation
      */
     private static boolean isValidLeafCast( RexNode rexNode ) {
-        assert rexNode.isA( SqlKind.CAST );
+        assert rexNode.isA( Kind.CAST );
         final RexNode input = ((RexCall) rexNode).getOperands().get( 0 );
-        if ( !input.isA( SqlKind.INPUT_REF ) ) {
+        if ( !input.isA( Kind.INPUT_REF ) ) {
             // it is not a leaf cast don't bother going further.
             return false;
         }
@@ -386,8 +387,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * @return Druid column name or null when not possible to translate.
      */
     @Nullable
-    protected static String extractColumnName( RexNode rexNode, RelDataType rowType, DruidQuery query ) {
-        if ( rexNode.getKind() == SqlKind.INPUT_REF ) {
+    protected static String extractColumnName( RexNode rexNode, AlgDataType rowType, DruidQuery query ) {
+        if ( rexNode.getKind() == Kind.INPUT_REF ) {
             final RexInputRef ref = (RexInputRef) rexNode;
             final String columnName = rowType.getFieldNames().get( ref.getIndex() );
             if ( columnName == null ) {
@@ -427,16 +428,16 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     String signature() {
         final StringBuilder b = new StringBuilder();
         boolean flag = false;
-        for ( RelNode rel : rels ) {
-            b.append( rel instanceof TableScan ? 's'
-                    : (rel instanceof Project && flag) ? 'o'
-                            : (rel instanceof Filter && flag) ? 'h'
-                                    : rel instanceof Aggregate ? 'a'
-                                            : rel instanceof Filter ? 'f'
-                                                    : rel instanceof Sort ? 'l'
-                                                            : rel instanceof Project ? 'p'
+        for ( AlgNode alg : algs ) {
+            b.append( alg instanceof TableScan ? 's'
+                    : (alg instanceof Project && flag) ? 'o'
+                            : (alg instanceof Filter && flag) ? 'h'
+                                    : alg instanceof Aggregate ? 'a'
+                                            : alg instanceof Filter ? 'f'
+                                                    : alg instanceof Sort ? 'l'
+                                                            : alg instanceof Project ? 'p'
                                                                     : '!' );
-            flag = flag || rel instanceof Aggregate;
+            flag = flag || alg instanceof Aggregate;
         }
         return b.toString();
     }
@@ -451,22 +452,22 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         if ( !isValidSignature( signature ) ) {
             return litmus.fail( "invalid signature [{}]", signature );
         }
-        if ( rels.isEmpty() ) {
+        if ( algs.isEmpty() ) {
             return litmus.fail( "must have at least one rel" );
         }
-        for ( int i = 0; i < rels.size(); i++ ) {
-            final RelNode r = rels.get( i );
+        for ( int i = 0; i < algs.size(); i++ ) {
+            final AlgNode r = algs.get( i );
             if ( i == 0 ) {
                 if ( !(r instanceof TableScan) ) {
-                    return litmus.fail( "first rel must be TableScan, was ", r );
+                    return litmus.fail( "first alg must be TableScan, was ", r );
                 }
                 if ( r.getTable() != table ) {
-                    return litmus.fail( "first rel must be based on table table" );
+                    return litmus.fail( "first alg must be based on table table" );
                 }
             } else {
-                final List<RelNode> inputs = r.getInputs();
-                if ( inputs.size() != 1 || inputs.get( 0 ) != rels.get( i - 1 ) ) {
-                    return litmus.fail( "each rel must have a single input" );
+                final List<AlgNode> inputs = r.getInputs();
+                if ( inputs.size() != 1 || inputs.get( 0 ) != algs.get( i - 1 ) ) {
+                    return litmus.fail( "each alg must have a single input" );
                 }
                 if ( r instanceof Aggregate ) {
                     final Aggregate aggregate = (Aggregate) r;
@@ -493,38 +494,38 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     }
 
 
-    protected Map<SqlOperator, DruidSqlOperatorConverter> getOperatorConversionMap() {
+    protected Map<Operator, DruidSqlOperatorConverter> getOperatorConversionMap() {
         return converterOperatorMap;
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
         return this;
     }
 
 
     @Override
-    public RelDataType deriveRowType() {
+    public AlgDataType deriveRowType() {
         return getCluster().getTypeFactory().createStructType(
-                Pair.right( Util.last( rels ).getRowType().getFieldList() ),
+                Pair.right( Util.last( algs ).getRowType().getFieldList() ),
                 getQuerySpec().fieldNames );
     }
 
 
     public TableScan getTableScan() {
-        return (TableScan) rels.get( 0 );
+        return (TableScan) algs.get( 0 );
     }
 
 
-    public RelNode getTopNode() {
-        return Util.last( rels );
+    public AlgNode getTopNode() {
+        return Util.last( algs );
     }
 
 
     @Override
-    public RelOptTable getTable() {
+    public AlgOptTable getTable() {
         return table;
     }
 
@@ -535,34 +536,34 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
 
     @Override
-    public RelWriter explainTerms( RelWriter pw ) {
-        for ( RelNode rel : rels ) {
-            if ( rel instanceof TableScan ) {
-                TableScan tableScan = (TableScan) rel;
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        for ( AlgNode alg : algs ) {
+            if ( alg instanceof TableScan ) {
+                TableScan tableScan = (TableScan) alg;
                 pw.item( "table", tableScan.getTable().getQualifiedName() );
                 pw.item( "intervals", intervals );
-            } else if ( rel instanceof Filter ) {
-                pw.item( "filter", ((Filter) rel).getCondition() );
-            } else if ( rel instanceof Project ) {
-                if ( ((Project) rel).getInput() instanceof Aggregate ) {
-                    pw.item( "post_projects", ((Project) rel).getProjects() );
+            } else if ( alg instanceof Filter ) {
+                pw.item( "filter", ((Filter) alg).getCondition() );
+            } else if ( alg instanceof Project ) {
+                if ( ((Project) alg).getInput() instanceof Aggregate ) {
+                    pw.item( "post_projects", ((Project) alg).getProjects() );
                 } else {
-                    pw.item( "projects", ((Project) rel).getProjects() );
+                    pw.item( "projects", ((Project) alg).getProjects() );
                 }
-            } else if ( rel instanceof Aggregate ) {
-                final Aggregate aggregate = (Aggregate) rel;
+            } else if ( alg instanceof Aggregate ) {
+                final Aggregate aggregate = (Aggregate) alg;
                 pw.item( "groups", aggregate.getGroupSet() ).item( "aggs", aggregate.getAggCallList() );
-            } else if ( rel instanceof Sort ) {
-                final Sort sort = (Sort) rel;
-                for ( Ord<RelFieldCollation> ord : Ord.zip( sort.collation.getFieldCollations() ) ) {
+            } else if ( alg instanceof Sort ) {
+                final Sort sort = (Sort) alg;
+                for ( Ord<AlgFieldCollation> ord : Ord.zip( sort.collation.getFieldCollations() ) ) {
                     pw.item( "sort" + ord.i, ord.e.getFieldIndex() );
                 }
-                for ( Ord<RelFieldCollation> ord : Ord.zip( sort.collation.getFieldCollations() ) ) {
+                for ( Ord<AlgFieldCollation> ord : Ord.zip( sort.collation.getFieldCollations() ) ) {
                     pw.item( "dir" + ord.i, ord.e.shortString() );
                 }
                 pw.itemIf( "fetch", sort.fetch, sort.fetch != null );
             } else {
-                throw new AssertionError( "rel type not supported in Druid query " + rel );
+                throw new AssertionError( "rel type not supported in Druid query " + alg );
             }
         }
         return pw;
@@ -570,15 +571,15 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        return Util.last( rels ).computeSelfCost( planner, mq )
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return Util.last( algs ).computeSelfCost( planner, mq )
                 // Cost increases with the number of fields queried. A plan returning 100 or more columns will have 2x the cost of a plan returning 2 columns. A plan where all extra columns are pruned will be preferred.
-                .multiplyBy( RelMdUtil.linear( querySpec.fieldNames.size(), 2, 100, 1d, 2d ) )
+                .multiplyBy( AlgMdUtil.linear( querySpec.fieldNames.size(), 2, 100, 1d, 2d ) )
                 .multiplyBy( getQueryTypeCostMultiplier() )
                 // A Scan leaf filter is better than having filter spec if possible.
-                .multiplyBy( rels.size() > 1 && rels.get( 1 ) instanceof Filter ? 0.5 : 1.0 )
+                .multiplyBy( algs.size() > 1 && algs.get( 1 ) instanceof Filter ? 0.5 : 1.0 )
                 // a plan with sort pushed to druid is better than doing sort outside of druid
-                .multiplyBy( Util.last( rels ) instanceof Sort ? 0.1 : 1.0 )
+                .multiplyBy( Util.last( algs ) instanceof Sort ? 0.1 : 1.0 )
                 .multiplyBy( getIntervalCostMultiplier() );
     }
 
@@ -589,7 +590,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             days += interval.toDuration().getStandardDays();
         }
         // Cost increases with the wider interval being queries. A plan querying 10 or more years of data will have 10x the cost of a plan returning 1 day data. A plan where least interval is queries will be preferred.
-        return RelMdUtil.linear( days, 1, DAYS_IN_TEN_YEARS, 0.1d, 1d );
+        return AlgMdUtil.linear( days, 1, DAYS_IN_TEN_YEARS, 0.1d, 1d );
     }
 
 
@@ -611,21 +612,21 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : DruidRules.RULES ) {
+    public void register( AlgOptPlanner planner ) {
+        for ( AlgOptRule rule : DruidRules.RULES ) {
             planner.addRule( rule );
         }
-        for ( RelOptRule rule : Bindables.RULES ) {
+        for ( AlgOptRule rule : Bindables.RULES ) {
             planner.addRule( rule );
         }
     }
 
 
     @Override
-    public String relCompareString() {
+    public String algCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 String.join( ".", table.getQualifiedName() ) + "$" +
-                (rels != null ? rels.stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) : "") + "&";
+                (algs != null ? algs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
 
@@ -657,48 +658,48 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
 
     protected QuerySpec deriveQuerySpec() {
-        final RelDataType rowType = table.getRowType();
+        final AlgDataType rowType = table.getRowType();
         int i = 1;
 
         Filter filterRel = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Filter ) {
-            filterRel = (Filter) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Filter ) {
+            filterRel = (Filter) algs.get( i++ );
         }
 
         Project project = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Project ) {
-            project = (Project) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Project ) {
+            project = (Project) algs.get( i++ );
         }
 
         ImmutableBitSet groupSet = null;
         List<AggregateCall> aggCalls = null;
         List<String> aggNames = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Aggregate ) {
-            final Aggregate aggregate = (Aggregate) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Aggregate ) {
+            final Aggregate aggregate = (Aggregate) algs.get( i++ );
             groupSet = aggregate.getGroupSet();
             aggCalls = aggregate.getAggCallList();
             aggNames = Util.skip( aggregate.getRowType().getFieldNames(), groupSet.cardinality() );
         }
 
         Filter havingFilter = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Filter ) {
-            havingFilter = (Filter) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Filter ) {
+            havingFilter = (Filter) algs.get( i++ );
         }
 
         Project postProject = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Project ) {
-            postProject = (Project) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Project ) {
+            postProject = (Project) algs.get( i++ );
         }
 
         List<Integer> collationIndexes = null;
         List<Direction> collationDirections = null;
         ImmutableBitSet.Builder numericCollationBitSetBuilder = ImmutableBitSet.builder();
         Integer fetch = null;
-        if ( i < rels.size() && rels.get( i ) instanceof Sort ) {
-            final Sort sort = (Sort) rels.get( i++ );
+        if ( i < algs.size() && algs.get( i ) instanceof Sort ) {
+            final Sort sort = (Sort) algs.get( i++ );
             collationIndexes = new ArrayList<>();
             collationDirections = new ArrayList<>();
-            for ( RelFieldCollation fCol : sort.collation.getFieldCollations() ) {
+            for ( AlgFieldCollation fCol : sort.collation.getFieldCollations() ) {
                 collationIndexes.add( fCol.getFieldIndex() );
                 collationDirections.add( fCol.getDirection() );
                 if ( sort.getRowType().getFieldList().get( fCol.getFieldIndex() ).getType().getFamily() == PolyTypeFamily.NUMERIC ) {
@@ -708,7 +709,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             fetch = sort.fetch != null ? RexLiteral.intValue( sort.fetch ) : null;
         }
 
-        if ( i != rels.size() ) {
+        if ( i != algs.size() ) {
             throw new AssertionError( "could not implement all rels" );
         }
 
@@ -732,7 +733,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
 
     /**
-     * Translates Filter rel to Druid Filter Json object if possible. Currently Filter rel input has to be Druid Table scan
+     * Translates Filter alg to Druid Filter Json object if possible. Currently Filter alg input has to be Druid Table scan
      *
      * @param filterRel input filter rel
      * @param druidQuery Druid query
@@ -744,7 +745,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             return null;
         }
         final RexNode filter = filterRel.getCondition();
-        final RelDataType inputRowType = filterRel.getInput().getRowType();
+        final AlgDataType inputRowType = filterRel.getInput().getRowType();
         if ( filter != null ) {
             return DruidJsonFilter.toDruidFilters( filter, inputRowType, druidQuery );
         }
@@ -760,7 +761,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * @return Pair of list of Druid Columns and Expression Virtual Columns or null when can not translate one of the projects.
      */
     @Nullable
-    protected static Pair<List<String>, List<VirtualColumn>> computeProjectAsScan( @Nullable Project projectRel, RelDataType inputRowType, DruidQuery druidQuery ) {
+    protected static Pair<List<String>, List<VirtualColumn>> computeProjectAsScan( @Nullable Project projectRel, AlgDataType inputRowType, DruidQuery druidQuery ) {
         if ( projectRel == null ) {
             return null;
         }
@@ -776,7 +777,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 if ( expression == null ) {
                     return null;
                 }
-                final String virColName = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                final String virColName = ValidatorUtil.uniquify( "vc", usedFieldNames, ValidatorUtil.EXPR_SUGGESTER );
                 virtualColumnsBuilder.add( VirtualColumn.builder()
                         .withName( virColName )
                         .withExpression( expression ).withType( DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) )
@@ -786,7 +787,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             } else {
                 // simple inputRef or extractable function
                 if ( usedFieldNames.contains( druidColumn.left ) ) {
-                    final String virColName = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                    final String virColName = ValidatorUtil.uniquify( "vc", usedFieldNames, ValidatorUtil.EXPR_SUGGESTER );
                     virtualColumnsBuilder.add( VirtualColumn.builder()
                             .withName( virColName )
                             .withExpression( DruidExpressions.fromColumn( druidColumn.left ) ).withType( DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) )
@@ -813,7 +814,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
      * @return A list of {@link DimensionSpec} containing the group by dimensions, and a list of {@link VirtualColumn} containing Druid virtual column projections; or null, if translation is not possible. Note that the size of lists can be different.
      */
     @Nullable
-    protected static Pair<List<DimensionSpec>, List<VirtualColumn>> computeProjectGroupSet( @Nullable Project projectNode, ImmutableBitSet groupSet, RelDataType inputRowType, DruidQuery druidQuery ) {
+    protected static Pair<List<DimensionSpec>, List<VirtualColumn>> computeProjectGroupSet( @Nullable Project projectNode, ImmutableBitSet groupSet, AlgDataType inputRowType, DruidQuery druidQuery ) {
         final List<DimensionSpec> dimensionSpecList = new ArrayList<>();
         final List<VirtualColumn> virtualColumnList = new ArrayList<>();
         final Set<String> usedFieldNames = new HashSet<>();
@@ -835,12 +836,12 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 // CASE it is an extraction Dimension
                 final String columnPrefix;
                 // TODO: Remove it! if else statement is not really needed it is here to make tests pass.
-                if ( project.getKind() == SqlKind.EXTRACT ) {
+                if ( project.getKind() == Kind.EXTRACT ) {
                     columnPrefix = EXTRACT_COLUMN_NAME_PREFIX + "_" + Objects
                             .requireNonNull( DruidDateTimeUtils
                                     .extractGranularity( project, druidQuery.getConnectionConfig().timeZone() )
                                     .getType().lowerName );
-                } else if ( project.getKind() == SqlKind.FLOOR ) {
+                } else if ( project.getKind() == Kind.FLOOR ) {
                     columnPrefix =
                             FLOOR_COLUMN_NAME_PREFIX + "_" + Objects
                                     .requireNonNull( DruidDateTimeUtils
@@ -849,7 +850,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 } else {
                     columnPrefix = "extract";
                 }
-                final String uniqueExtractColumnName = SqlValidatorUtil.uniquify( columnPrefix, usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                final String uniqueExtractColumnName = ValidatorUtil.uniquify( columnPrefix, usedFieldNames, ValidatorUtil.EXPR_SUGGESTER );
                 dimensionSpec = new ExtractionDimensionSpec( druidColumn.left, druidColumn.right, uniqueExtractColumnName );
                 usedFieldNames.add( uniqueExtractColumnName );
             } else {
@@ -858,7 +859,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 if ( Strings.isNullOrEmpty( expression ) ) {
                     return null;
                 }
-                final String name = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                final String name = ValidatorUtil.uniquify( "vc", usedFieldNames, ValidatorUtil.EXPR_SUGGESTER );
                 VirtualColumn vc = new VirtualColumn( name, expression, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) );
                 virtualColumnList.add( vc );
                 dimensionSpec = new DefaultDimensionSpec( name, name, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) );
@@ -890,7 +891,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             final AggregateCall aggCall = agg.left;
             final RexNode filterNode;
             // Type check First
-            final RelDataType type = aggCall.getType();
+            final AlgDataType type = aggCall.getType();
             final PolyType polyType = type.getPolyType();
             final boolean isNotAcceptedType;
             if ( PolyTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( polyType ) || PolyTypeFamily.INTEGER.getTypeNames().contains( polyType ) ) {
@@ -921,8 +922,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     expression = null;
                 } else {
                     final RexNode rexNode = project.getProjects().get( index );
-                    final RelDataType inputRowType = project.getInput().getRowType();
-                    if ( rexNode.isA( SqlKind.INPUT_REF ) ) {
+                    final AlgDataType inputRowType = project.getInput().getRowType();
+                    if ( rexNode.isA( Kind.INPUT_REF ) ) {
                         expression = null;
                         fieldName = extractColumnName( rexNode, inputRowType, druidQuery );
                     } else {
@@ -946,7 +947,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     }
 
 
-    protected QuerySpec getQuery( RelDataType rowType, Filter filter, Project project, ImmutableBitSet groupSet, List<AggregateCall> aggCalls, List<String> aggNames, List<Integer> collationIndexes, List<Direction> collationDirections,
+    protected QuerySpec getQuery(
+            AlgDataType rowType, Filter filter, Project project, ImmutableBitSet groupSet, List<AggregateCall> aggCalls, List<String> aggNames, List<Integer> collationIndexes, List<Direction> collationDirections,
             ImmutableBitSet numericCollationIndexes, Integer fetch, Project postProject, Filter havingFilter ) {
         // Handle filter
         final DruidJsonFilter jsonFilter = computeFilter( filter, this );
@@ -980,7 +982,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
         final List<JsonExpressionPostAgg> postAggs = new ArrayList<>();
         final JsonLimit limit;
-        final RelDataType aggInputRowType = table.getRowType();
+        final AlgDataType aggInputRowType = table.getRowType();
         final List<String> aggregateStageFieldNames = new ArrayList<>();
 
         Pair<List<DimensionSpec>, List<VirtualColumn>> projectGroupSet = computeProjectGroupSet( project, groupSet, aggInputRowType, this );
@@ -1006,7 +1008,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         final List<String> postAggregateStageFieldNames;
         if ( postProject != null ) {
             final List<String> postProjectDimListBuilder = new ArrayList<>();
-            final RelDataType postAggInputRowType = getCluster().getTypeFactory().createStructType( Pair.right( postProject.getInput().getRowType().getFieldList() ), aggregateStageFieldNames );
+            final AlgDataType postAggInputRowType = getCluster().getTypeFactory().createStructType( Pair.right( postProject.getInput().getRowType().getFieldList() ), aggregateStageFieldNames );
             final Set<String> existingAggFieldsNames = new HashSet<>( aggregateStageFieldNames );
             // this is an index of existing columns coming out aggregate layer. Will use this index to: filter out any project down the road that doesn't change values e.g inputRef/identity cast
             Map<String, String> existingProjects = Maps.uniqueIndex( aggregateStageFieldNames, DruidExpressions::fromColumn );
@@ -1018,7 +1020,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     // simple input ref or Druid runtime identity cast will skip it, since it is here already
                     postProjectDimListBuilder.add( existingFieldName );
                 } else {
-                    final String uniquelyProjectFieldName = SqlValidatorUtil.uniquify( pair.right, existingAggFieldsNames, SqlValidatorUtil.EXPR_SUGGESTER );
+                    final String uniquelyProjectFieldName = ValidatorUtil.uniquify( pair.right, existingAggFieldsNames, ValidatorUtil.EXPR_SUGGESTER );
                     postAggs.add( new JsonExpressionPostAgg( uniquelyProjectFieldName, expression, null ) );
                     postProjectDimListBuilder.add( uniquelyProjectFieldName );
                     existingAggFieldsNames.add( uniquelyProjectFieldName );
@@ -1299,13 +1301,14 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             }
             return sw.toString();
         }
+
     }
 
 
     @Nullable
     private static JsonAggregation getJsonAggregation( String name, AggregateCall aggCall, RexNode filterNode, String fieldName, String aggExpression, DruidQuery druidQuery ) {
         final boolean fractional;
-        final RelDataType type = aggCall.getType();
+        final AlgDataType type = aggCall.getType();
         final PolyType polyType = type.getPolyType();
         final JsonAggregation aggregation;
 
@@ -1502,9 +1505,11 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             if ( pagingIdentifier == null ) {
                 return queryString;
             }
-            return queryString.replace( "\"threshold\":",
+            return queryString.replace(
+                    "\"threshold\":",
                     "\"pagingIdentifiers\":{\"" + pagingIdentifier + "\":" + offset + "},\"threshold\":" );
         }
+
     }
 
 
@@ -1529,7 +1534,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         @Override
         public void run() throws InterruptedException {
             final List<ColumnMetaData.Rep> fieldTypes = new ArrayList<>();
-            for ( RelDataTypeField field : query.getRowType().getFieldList() ) {
+            for ( AlgDataTypeField field : query.getRowType().getFieldList() ) {
                 fieldTypes.add( getPrimitive( field ) );
             }
             final DruidConnectionImpl connection = new DruidConnectionImpl( query.druidTable.schema.url, query.druidTable.schema.coordinatorUrl );
@@ -1547,7 +1552,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         }
 
 
-        private ColumnMetaData.Rep getPrimitive( RelDataTypeField field ) {
+        private ColumnMetaData.Rep getPrimitive( AlgDataTypeField field ) {
             switch ( field.getType().getPolyType() ) {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 case TIMESTAMP:
@@ -1569,6 +1574,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     return null;
             }
         }
+
     }
 
 
@@ -1600,6 +1606,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "expression", expression );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1626,6 +1633,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "ordering", ordering );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1654,6 +1662,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "columns", collations );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1682,6 +1691,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "dimensionOrder", dimensionOrder );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1693,7 +1703,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         final List<String> fieldNames;
 
 
-        private JsonCardinalityAggregation( String type, String name,
+        private JsonCardinalityAggregation(
+                String type, String name,
                 List<String> fieldNames ) {
             super( type, name, null, null );
             this.fieldNames = fieldNames;
@@ -1708,6 +1719,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeFieldIf( generator, "fieldNames", fieldNames );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1736,6 +1748,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             writeField( generator, "aggregator", aggregation );
             generator.writeEndObject();
         }
+
     }
 
 
@@ -1776,5 +1789,6 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     protected int getTimestampFieldIndex() {
         return Iterables.indexOf( this.getRowType().getFieldList(), input -> druidTable.timestampFieldName.equals( input.getName() ) );
     }
+
 }
 

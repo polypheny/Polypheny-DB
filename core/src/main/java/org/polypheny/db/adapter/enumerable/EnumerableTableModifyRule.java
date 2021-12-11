@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,38 +35,38 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.function.Predicate;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link org.polypheny.db.rel.logical.LogicalTableModify} relational expression {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalTableModify} relational expression {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableTableModifyRule extends ConverterRule {
 
     /**
      * Creates an EnumerableTableModifyRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableTableModifyRule( RelBuilderFactory relBuilderFactory ) {
-        super( LogicalTableModify.class, (Predicate<RelNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, relBuilderFactory, "EnumerableTableModificationRule" );
+    public EnumerableTableModifyRule( AlgBuilderFactory algBuilderFactory ) {
+        super( LogicalTableModify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableTableModificationRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalTableModify modify = (LogicalTableModify) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalTableModify modify = (LogicalTableModify) alg;
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
         if ( modifiableTable == null ) {
             return null;
         }
-        final RelTraitSet traitSet = modify.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        final AlgTraitSet traitSet = modify.getTraitSet().replace( EnumerableConvention.INSTANCE );
         return new EnumerableTableModify(
                 modify.getCluster(),
                 traitSet,
@@ -78,5 +78,6 @@ public class EnumerableTableModifyRule extends ConverterRule {
                 modify.getSourceExpressionList(),
                 modify.isFlattened() );
     }
+
 }
 

@@ -46,24 +46,28 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 import org.joda.time.chrono.ISOChronology;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlSelectKeyword;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.sql.SqlCall;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.sql.sql.SqlSelectKeyword;
 import org.polypheny.db.type.PolyType;
 
 
@@ -77,7 +81,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
     final DruidSchema schema;
     final String dataSource;
-    final RelProtoDataType protoRowType;
+    final AlgProtoDataType protoRowType;
     final ImmutableSet<String> metricFieldNames;
     final ImmutableList<Interval> intervals;
     final String timestampFieldName;
@@ -95,7 +99,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
      * @param intervals Default interval if query does not constrain the time, or null
      * @param timestampFieldName Name of the column that contains the time
      */
-    public DruidTable( DruidSchema schema, String dataSource, RelProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
+    public DruidTable( DruidSchema schema, String dataSource, AlgProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
         this.timestampFieldName = Objects.requireNonNull( timestampFieldName );
         this.schema = Objects.requireNonNull( schema );
         this.dataSource = Objects.requireNonNull( dataSource );
@@ -172,37 +176,37 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
+    public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
         assert isRolledUp( column );
         final boolean approximateDistinctCount = RuntimeConfig.APPROXIMATE_DISTINCT_COUNT.getBoolean();
         // Our rolled up columns are only allowed in COUNT(DISTINCT ...) aggregate functions. We only allow this when approximate results are acceptable.
         return ((approximateDistinctCount
-                && isCountDistinct( call ))
-                || call.getOperator() == SqlStdOperatorTable.APPROX_COUNT_DISTINCT)
+                && isCountDistinct( (SqlCall) call ))
+                || call.getOperator().equals( OperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT ) ))
                 && call.getOperandList().size() == 1 // for COUNT(a_1, a_2, ... a_n). n should be 1
-                && isValidParentKind( parent );
+                && isValidParentKind( (SqlNode) parent );
     }
 
 
     private boolean isValidParentKind( SqlNode node ) {
-        return node.getKind() == SqlKind.SELECT
-                || node.getKind() == SqlKind.FILTER
+        return node.getKind() == Kind.SELECT
+                || node.getKind() == Kind.FILTER
                 || isSupportedPostAggOperation( node.getKind() );
     }
 
 
     private boolean isCountDistinct( SqlCall call ) {
-        return call.getKind() == SqlKind.COUNT
+        return call.getKind() == Kind.COUNT
                 && call.getFunctionQuantifier() != null
                 && call.getFunctionQuantifier().getValue() == SqlSelectKeyword.DISTINCT;
     }
 
 
     // Post aggs support +, -, /, * so we should allow the parent of a count distinct to be any one of those.
-    private boolean isSupportedPostAggOperation( SqlKind kind ) {
-        return kind == SqlKind.PLUS
-                || kind == SqlKind.MINUS
-                || kind == SqlKind.DIVIDE || kind == SqlKind.TIMES;
+    private boolean isSupportedPostAggOperation( Kind kind ) {
+        return kind == Kind.PLUS
+                || kind == Kind.MINUS
+                || kind == Kind.DIVIDE || kind == Kind.TIMES;
     }
 
 
@@ -225,8 +229,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-        final RelDataType rowType = protoRowType.apply( typeFactory );
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+        final AlgDataType rowType = protoRowType.apply( typeFactory );
         final List<String> fieldNames = rowType.getFieldNames();
         Preconditions.checkArgument( fieldNames.contains( timestampFieldName ) );
         Preconditions.checkArgument( fieldNames.containsAll( metricFieldNames ) );
@@ -235,11 +239,11 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        final RelOptCluster cluster = context.getCluster();
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+        final AlgOptCluster cluster = context.getCluster();
         // ViewTableScan needed for Views
-        final LogicalTableScan scan = LogicalTableScan.create( cluster, relOptTable );
-        return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), relOptTable, this, ImmutableList.of( scan ) );
+        final LogicalTableScan scan = LogicalTableScan.create( cluster, algOptTable );
+        return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), algOptTable, this, ImmutableList.of( scan ) );
     }
 
 
@@ -249,9 +253,9 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
     /**
-     * Creates a {@link RelDataType} from a map of field names and types.
+     * Creates a {@link AlgDataType} from a map of field names and types.
      */
-    private static class MapRelProtoDataType implements RelProtoDataType {
+    private static class MapRelProtoDataType implements AlgProtoDataType {
 
         private final ImmutableMap<String, PolyType> fields;
         private final String timestampColumn;
@@ -270,8 +274,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
 
 
         @Override
-        public RelDataType apply( RelDataTypeFactory typeFactory ) {
-            final RelDataTypeFactory.Builder builder = typeFactory.builder();
+        public AlgDataType apply( AlgDataTypeFactory typeFactory ) {
+            final AlgDataTypeFactory.Builder builder = typeFactory.builder();
             for ( Map.Entry<String, PolyType> field : fields.entrySet() ) {
                 final String key = field.getKey();
                 // TODO (PCP)

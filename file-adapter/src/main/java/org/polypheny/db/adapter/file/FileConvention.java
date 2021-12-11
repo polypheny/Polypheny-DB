@@ -20,10 +20,10 @@ package org.polypheny.db.adapter.file;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.adapter.file.rel.FileRules;
+import org.polypheny.db.adapter.file.algebra.FileRules;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
 
 
 public class FileConvention extends Convention.Impl {
@@ -34,7 +34,7 @@ public class FileConvention extends Convention.Impl {
     private final FileSchema fileSchema;
     /**
      * Whether the query is a modification (insert, update, delete) or a select query.
-     * Needed for the {@see org.polypheny.db.adapter.file.rel.FileRules.FileUnionRule}
+     * Needed for the {@see org.polypheny.db.adapter.file.alg.FileRules.FileUnionRule}
      */
     @Getter
     @Setter
@@ -42,15 +42,15 @@ public class FileConvention extends Convention.Impl {
 
 
     public FileConvention( String name, Expression fileSchemaExpression, FileSchema fileSchema ) {
-        super( "FileConvention." + name, FileRel.class );
+        super( "FileConvention." + name, FileAlg.class );
         this.fileSchemaExpression = fileSchemaExpression;
         this.fileSchema = fileSchema;
     }
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : FileRules.rules( this, FileMethod.EXECUTE.method, fileSchema ) ) {
+    public void register( AlgOptPlanner planner ) {
+        for ( AlgOptRule rule : FileRules.rules( this, FileMethod.EXECUTE.method, fileSchema ) ) {
             planner.addRule( rule );
         }
     }

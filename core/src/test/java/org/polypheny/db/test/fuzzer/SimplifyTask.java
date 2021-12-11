@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Tracks rex nodes used in {@link RexProgramFuzzyTest} to identify the ones which take most time to simplify.
  */
-class SimplifyTask implements Comparable<SimplifyTask> {
+public class SimplifyTask implements Comparable<SimplifyTask> {
 
     public final RexNode node;
     public final long seed;
@@ -48,7 +48,7 @@ class SimplifyTask implements Comparable<SimplifyTask> {
     public final long duration;
 
 
-    SimplifyTask( RexNode node, long seed, RexNode result, long duration ) {
+    public SimplifyTask( RexNode node, long seed, RexNode result, long duration ) {
         this.node = node;
         this.seed = seed;
         this.result = result;
@@ -63,4 +63,5 @@ class SimplifyTask implements Comparable<SimplifyTask> {
         }
         return Integer.compare( node.toString().length(), o.node.toString().length() );
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,14 +96,14 @@ import javax.annotation.Nonnull;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlValuesOperator;
-import org.polypheny.db.sql.fun.SqlRowOperator;
-import org.polypheny.db.sql.util.SqlBasicVisitor;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.nodes.BasicNodeVisitor;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Literal;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.RowOperator;
+import org.polypheny.db.nodes.ValuesOperator;
 import org.slf4j.Logger;
 
 
@@ -158,29 +158,29 @@ public class Util {
      * @param call the expression to evaluate
      * @return Whether it is ensured that the call produces a single value
      */
-    public static boolean isSingleValue( SqlCall call ) {
-        if ( call.getOperator() instanceof SqlAggFunction ) {
+    public static boolean isSingleValue( Call call ) {
+        if ( call.getOperator() instanceof AggFunction ) {
             return true;
-        } else if ( call.getOperator() instanceof SqlValuesOperator || call.getOperator() instanceof SqlRowOperator ) {
-            List<SqlNode> operands = call.getOperandList();
+        } else if ( call.getOperator() instanceof ValuesOperator || call.getOperator() instanceof RowOperator ) {
+            List<Node> operands = call.getOperandList();
             if ( operands.size() == 1 ) {
-                SqlNode operand = operands.get( 0 );
-                if ( operand instanceof SqlLiteral ) {
+                Node operand = operands.get( 0 );
+                if ( operand instanceof Literal ) {
                     return true;
-                } else if ( operand instanceof SqlCall ) {
-                    return isSingleValue( (SqlCall) operand );
+                } else if ( operand instanceof Call ) {
+                    return isSingleValue( (Call) operand );
                 }
             }
 
             return false;
         } else {
             boolean isScalar = true;
-            for ( SqlNode operand : call.getOperandList() ) {
-                if ( operand instanceof SqlLiteral ) {
+            for ( Node operand : call.getOperandList() ) {
+                if ( operand instanceof Literal ) {
                     continue;
                 }
 
-                if ( !(operand instanceof SqlCall) || !Util.isSingleValue( (SqlCall) operand ) ) {
+                if ( !(operand instanceof Call) || !Util.isSingleValue( (Call) operand ) ) {
                     isScalar = false;
                     break;
                 }
@@ -706,64 +706,6 @@ public class Util {
             description = o.getClass().toString() + ": " + o.toString();
         }
         throw new UnsupportedOperationException( description );
-    }
-
-
-    /**
-     * Flags a piece of code as needing to be cleaned up before you check in.
-     *
-     * Introduce a call to this method to indicate that a piece of code, or a javadoc comment, needs work before you check in. If you have an IDE which
-     * can easily trace references, this is an easy way to maintain a to-do list.
-     *
-     * <strong>Checked-in code must never call this method</strong>: you must remove all calls/references to this method before you check in.
-     *
-     * The <code>argument</code> has generic type and determines the type of the result. This allows you to use the method inside an expression,
-     * for example
-     *
-     * <blockquote>
-     * <pre><code>int x = Util.deprecated(0, false);</code></pre>
-     * </blockquote>
-     *
-     * but the usual usage is to pass in a descriptive string.
-     *
-     * <h3>Examples</h3>
-     *
-     * <h4>Example #1: Using <code>deprecated</code> to fail if a piece of
-     * supposedly dead code is reached</h4>
-     *
-     * <blockquote>
-     * <pre><code>void foo(int x) {
-     *     if (x &lt; 0) {
-     *         // If this code is executed, an error will be thrown.
-     *         Util.deprecated(
-     *             "no longer need to handle negative numbers", true);
-     *         bar(x);
-     *     } else {
-     *         baz(x);
-     *     }
-     * }</code></pre>
-     * </blockquote>
-     *
-     * <h4>Example #2: Using <code>deprecated</code> to comment out dead
-     * code</h4>
-     *
-     * <blockquote>
-     * <pre>if (Util.deprecated(false, false)) {
-     *     // This code will not be executed, but an error will not be thrown.
-     *     baz();
-     * }</pre>
-     * </blockquote>
-     *
-     * @param argument Arbitrary argument to the method.
-     * @param fail Whether to throw an exception if this method is called
-     * @return The value of the <code>argument</code>.
-     * @deprecated If a piece of code calls this method, it indicates that the code needs to be cleaned up.
-     */
-    public static <T> T deprecated( T argument, boolean fail ) {
-        if ( fail ) {
-            throw new UnsupportedOperationException();
-        }
-        return argument;
     }
 
 
@@ -2073,7 +2015,6 @@ public class Util {
     }
 
 
-
     /**
      * Exception used to interrupt a tree walk of any kind.
      */
@@ -2095,24 +2036,26 @@ public class Util {
         public Object getNode() {
             return node;
         }
+
     }
 
 
     /**
-     * Visitor which looks for an OVER clause inside a tree of {@link SqlNode} objects.
+     * Visitor which looks for an OVER clause inside a tree of {@link Node} objects.
      */
-    public static class OverFinder extends SqlBasicVisitor<Void> {
+    public static class OverFinder extends BasicNodeVisitor<Void> {
 
         public static final OverFinder INSTANCE = new Util.OverFinder();
 
 
         @Override
-        public Void visit( SqlCall call ) {
-            if ( call.getKind() == SqlKind.OVER ) {
+        public Void visit( Call call ) {
+            if ( call.getKind() == Kind.OVER ) {
                 throw FoundOne.NULL;
             }
             return super.visit( call );
         }
+
     }
 
 
@@ -2151,6 +2094,7 @@ public class Util {
         public Iterator<T> iterator() {
             return listIterator();
         }
+
     }
 
 
@@ -2165,6 +2109,7 @@ public class Util {
         RandomAccessTransformingList( List<F> list, java.util.function.Function<F, T> function ) {
             super( list, function );
         }
+
     }
 
 
@@ -2211,6 +2156,8 @@ public class Util {
             }
             return (T) DUMMY;
         }
+
     }
+
 }
 

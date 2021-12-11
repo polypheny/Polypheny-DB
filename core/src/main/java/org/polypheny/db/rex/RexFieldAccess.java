@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@
 package org.polypheny.db.rex;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 /**
@@ -66,10 +66,10 @@ import org.polypheny.db.sql.SqlKind;
 public class RexFieldAccess extends RexNode {
 
     private final RexNode expr;
-    private final RelDataTypeField field;
+    private final AlgDataTypeField field;
 
 
-    RexFieldAccess( RexNode expr, RelDataTypeField field ) {
+    RexFieldAccess( RexNode expr, AlgDataTypeField field ) {
         this.expr = expr;
         this.field = field;
         this.digest = expr + "." + field.getName();
@@ -77,20 +77,20 @@ public class RexFieldAccess extends RexNode {
     }
 
 
-    public RelDataTypeField getField() {
+    public AlgDataTypeField getField() {
         return field;
     }
 
 
     @Override
-    public RelDataType getType() {
+    public AlgDataType getType() {
         return field.getType();
     }
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.FIELD_ACCESS;
+    public Kind getKind() {
+        return Kind.FIELD_ACCESS;
     }
 
 
@@ -135,5 +135,6 @@ public class RexFieldAccess extends RexNode {
         result = 31 * result + field.hashCode();
         return result;
     }
+
 }
 

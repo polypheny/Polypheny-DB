@@ -61,7 +61,7 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
+import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
@@ -213,7 +213,8 @@ public class CsvTest {
     @Test
     public void testBadDirectory() throws SQLException {
         Properties info = new Properties();
-        info.put( "model",
+        info.put(
+                "model",
                 "inline:"
                         + "{\n"
                         + "  version: '1.0',\n"
@@ -472,7 +473,8 @@ public class CsvTest {
                 + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT) } as t\n"
                 + "from EMPS group by {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT ) } ";
         sql( "model", sql )
-                .returnsUnordered( "C=1; T=1996-08-04",
+                .returnsUnordered(
+                        "C=1; T=1996-08-04",
                         "C=1; T=2002-05-04",
                         "C=1; T=2005-09-08",
                         "C=1; T=2007-01-02",
@@ -483,7 +485,8 @@ public class CsvTest {
                 + "  {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT) } as t\n"
                 + "from EMPS group by {fn timestampadd(SQL_TSI_MONTH, 1, JOINEDAT ) } ";
         sql( "model", sql2 )
-                .returnsUnordered( "C=1; T=2002-06-03",
+                .returnsUnordered(
+                        "C=1; T=2002-06-03",
                         "C=1; T=2005-10-07",
                         "C=1; T=2007-02-01",
                         "C=1; T=2001-02-01",
@@ -526,7 +529,7 @@ public class CsvTest {
         final String sql = "SELECT e.name\n"
                 + "FROM emps AS e\n"
                 + "WHERE cast(e.empno as bigint) in ";
-        final int threshold = SqlToRelConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD;
+        final int threshold = SqlToAlgConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD;
         sql( "smart", sql + range( 130, threshold - 5 ) ).returns( "NAME=Alice" ).ok();
         sql( "smart", sql + range( 130, threshold ) ).returns( "NAME=Alice" ).ok();
         sql( "smart", sql + range( 130, threshold + 1000 ) ).returns( "NAME=Alice" ).ok();
@@ -541,7 +544,7 @@ public class CsvTest {
         final String sql = "SELECT e.name\n"
                 + "FROM emps AS e\n"
                 + "WHERE e.empno in "
-                + range( 130, SqlToRelConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD );
+                + range( 130, SqlToAlgConverter.DEFAULT_IN_SUB_QUERY_THRESHOLD );
         sql( "smart", sql ).returns( "NAME=Alice" ).ok();
     }
 
@@ -930,6 +933,7 @@ public class CsvTest {
                 // ignore
             }
         }
+
     }
 
 
@@ -986,6 +990,8 @@ public class CsvTest {
         Fluent returnsUnordered( String... expectedLines ) {
             return checking( expectUnordered( expectedLines ) );
         }
+
     }
+
 }
 

@@ -82,29 +82,27 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
-import org.polypheny.db.mql.fun.MqlStdOperatorTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.fun.TrimFunction.Flag;
+import org.polypheny.db.algebra.fun.UserDefined;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.BinaryOperator;
+import org.polypheny.db.nodes.JsonAgg;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.ImplementableAggFunction;
 import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlBinaryOperator;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
-import org.polypheny.db.sql.fun.SqlJsonArrayAggAggFunction;
-import org.polypheny.db.sql.fun.SqlJsonObjectAggAggFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.fun.SqlTrimFunction;
-import org.polypheny.db.sql.fun.SqlTrimFunction.Flag;
-import org.polypheny.db.sql.validate.SqlUserDefinedAggFunction;
-import org.polypheny.db.sql.validate.SqlUserDefinedFunction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
@@ -123,58 +121,58 @@ public class RexImpTable {
     public static final MemberExpression BOXED_FALSE_EXPR = Expressions.field( null, Boolean.class, "FALSE" );
     public static final MemberExpression BOXED_TRUE_EXPR = Expressions.field( null, Boolean.class, "TRUE" );
 
-    private final Map<SqlOperator, CallImplementor> map = new HashMap<>();
-    private final Map<SqlAggFunction, Supplier<? extends AggImplementor>> aggMap = new HashMap<>();
-    private final Map<SqlAggFunction, Supplier<? extends WinAggImplementor>> winAggMap = new HashMap<>();
+    private final Map<Operator, CallImplementor> map = new HashMap<>();
+    private final Map<AggFunction, Supplier<? extends AggImplementor>> aggMap = new HashMap<>();
+    private final Map<AggFunction, Supplier<? extends WinAggImplementor>> winAggMap = new HashMap<>();
 
 
     RexImpTable() {
-        defineMethod( SqlStdOperatorTable.ROW, BuiltInMethod.ARRAY.method, NullPolicy.ANY );
-        defineMethod( SqlStdOperatorTable.UPPER, BuiltInMethod.UPPER.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.LOWER, BuiltInMethod.LOWER.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.INITCAP, BuiltInMethod.INITCAP.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.SUBSTRING, BuiltInMethod.SUBSTRING.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.REPLACE, BuiltInMethod.REPLACE.method, NullPolicy.STRICT );
-        defineMethod( OracleSqlOperatorTable.TRANSLATE3, BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.CHARACTER_LENGTH, BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.CHAR_LENGTH, BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.CONCAT, BuiltInMethod.STRING_CONCAT.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.OVERLAY, BuiltInMethod.OVERLAY.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.POSITION, BuiltInMethod.POSITION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ROW ), BuiltInMethod.ARRAY.method, NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.UPPER ), BuiltInMethod.UPPER.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.LOWER ), BuiltInMethod.LOWER.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.INITCAP ), BuiltInMethod.INITCAP.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.SUBSTRING ), BuiltInMethod.SUBSTRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.REPLACE ), BuiltInMethod.REPLACE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ), BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT ); // TODO DL
+        defineMethod( OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ), BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.CHAR_LENGTH ), BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.CONCAT ), BuiltInMethod.STRING_CONCAT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.OVERLAY ), BuiltInMethod.OVERLAY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.POSITION ), BuiltInMethod.POSITION.method, NullPolicy.STRICT );
 
         final TrimImplementor trimImplementor = new TrimImplementor();
-        defineImplementor( SqlStdOperatorTable.TRIM, NullPolicy.STRICT, trimImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.TRIM ), NullPolicy.STRICT, trimImplementor, false );
 
         // logical
-        defineBinary( SqlStdOperatorTable.AND, AndAlso, NullPolicy.AND, null );
-        defineBinary( SqlStdOperatorTable.OR, OrElse, NullPolicy.OR, null );
-        defineUnary( SqlStdOperatorTable.NOT, Not, NullPolicy.NOT );
+        defineBinary( OperatorRegistry.get( OperatorName.AND ), AndAlso, NullPolicy.AND, null );
+        defineBinary( OperatorRegistry.get( OperatorName.OR ), OrElse, NullPolicy.OR, null );
+        defineUnary( OperatorRegistry.get( OperatorName.NOT ), Not, NullPolicy.NOT );
 
         // comparisons
-        defineBinary( SqlStdOperatorTable.LESS_THAN, LessThan, NullPolicy.STRICT, "lt" );
-        defineBinary( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, LessThanOrEqual, NullPolicy.STRICT, "le" );
-        defineBinary( SqlStdOperatorTable.GREATER_THAN, GreaterThan, NullPolicy.STRICT, "gt" );
-        defineBinary( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, GreaterThanOrEqual, NullPolicy.STRICT, "ge" );
-        defineBinary( SqlStdOperatorTable.EQUALS, Equal, NullPolicy.STRICT, "eq" );
-        defineBinary( SqlStdOperatorTable.NOT_EQUALS, NotEqual, NullPolicy.STRICT, "ne" );
+        defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN ), LessThan, NullPolicy.STRICT, "lt" );
+        defineBinary( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), LessThanOrEqual, NullPolicy.STRICT, "le" );
+        defineBinary( OperatorRegistry.get( OperatorName.GREATER_THAN ), GreaterThan, NullPolicy.STRICT, "gt" );
+        defineBinary( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), GreaterThanOrEqual, NullPolicy.STRICT, "ge" );
+        defineBinary( OperatorRegistry.get( OperatorName.EQUALS ), Equal, NullPolicy.STRICT, "eq" );
+        defineBinary( OperatorRegistry.get( OperatorName.NOT_EQUALS ), NotEqual, NullPolicy.STRICT, "ne" );
 
         // arithmetic
-        defineBinary( SqlStdOperatorTable.PLUS, Add, NullPolicy.STRICT, "plus" );
-        defineBinary( SqlStdOperatorTable.MINUS, Subtract, NullPolicy.STRICT, "minus" );
-        defineBinary( SqlStdOperatorTable.MULTIPLY, Multiply, NullPolicy.STRICT, "multiply" );
-        defineBinary( SqlStdOperatorTable.DIVIDE, Divide, NullPolicy.STRICT, "divide" );
-        defineBinary( SqlStdOperatorTable.DIVIDE_INTEGER, Divide, NullPolicy.STRICT, "divide" );
-        defineUnary( SqlStdOperatorTable.UNARY_MINUS, Negate, NullPolicy.STRICT );
-        defineUnary( SqlStdOperatorTable.UNARY_PLUS, UnaryPlus, NullPolicy.STRICT );
+        defineBinary( OperatorRegistry.get( OperatorName.PLUS ), Add, NullPolicy.STRICT, "plus" );
+        defineBinary( OperatorRegistry.get( OperatorName.MINUS ), Subtract, NullPolicy.STRICT, "minus" );
+        defineBinary( OperatorRegistry.get( OperatorName.MULTIPLY ), Multiply, NullPolicy.STRICT, "multiply" );
+        defineBinary( OperatorRegistry.get( OperatorName.DIVIDE ), Divide, NullPolicy.STRICT, "divide" );
+        defineBinary( OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), Divide, NullPolicy.STRICT, "divide" );
+        defineUnary( OperatorRegistry.get( OperatorName.UNARY_MINUS ), Negate, NullPolicy.STRICT );
+        defineUnary( OperatorRegistry.get( OperatorName.UNARY_PLUS ), UnaryPlus, NullPolicy.STRICT );
 
-        defineMethod( SqlStdOperatorTable.MOD, "mod", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.EXP, "exp", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.POWER, "power", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.LN, "ln", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.LOG10, "log10", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.ABS, "abs", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.MOD ), "mod", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.EXP ), "exp", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.POWER ), "power", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.LN ), "ln", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.LOG10 ), "log10", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ABS ), "abs", NullPolicy.STRICT );
 
-        defineImplementor( SqlStdOperatorTable.RAND, NullPolicy.STRICT,
+        defineImplementor( OperatorRegistry.get( OperatorName.RAND ), NullPolicy.STRICT,
                 new NotNullImplementor() {
                     final NotNullImplementor[] implementors = {
                             new ReflectiveCallNotNullImplementor( BuiltInMethod.RAND.method ),
@@ -187,7 +185,7 @@ public class RexImpTable {
                         return implementors[call.getOperands().size()].implement( translator, call, translatedOperands );
                     }
                 }, false );
-        defineImplementor( SqlStdOperatorTable.RAND_INTEGER, NullPolicy.STRICT,
+        defineImplementor( OperatorRegistry.get( OperatorName.RAND_INTEGER ), NullPolicy.STRICT,
                 new NotNullImplementor() {
                     final NotNullImplementor[] implementors = {
                             null,
@@ -202,187 +200,188 @@ public class RexImpTable {
                     }
                 }, false );
 
-        defineMethod( SqlStdOperatorTable.ACOS, "acos", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.ASIN, "asin", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.ATAN, "atan", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.ATAN2, "atan2", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.COS, "cos", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.COT, "cot", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.DEGREES, "degrees", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.RADIANS, "radians", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.ROUND, "sround", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.SIGN, "sign", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.SIN, "sin", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.TAN, "tan", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.TRUNCATE, "struncate", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.DISTANCE, "distance", NullPolicy.ANY );
-        defineMethod( SqlStdOperatorTable.META, "meta", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.ACOS ), "acos", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ASIN ), "asin", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ATAN ), "atan", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ATAN2 ), "atan2", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.COS ), "cos", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.COT ), "cot", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.DEGREES ), "degrees", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.RADIANS ), "radians", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ROUND ), "sround", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.SIGN ), "sign", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.SIN ), "sin", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.TAN ), "tan", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.TRUNCATE ), "struncate", NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.DISTANCE ), "distance", NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.META ), "meta", NullPolicy.ANY );
 
-        map.put( SqlStdOperatorTable.PI, ( translator, call, nullAs ) -> Expressions.constant( Math.PI ) );
+        map.put( OperatorRegistry.get( OperatorName.PI ), ( translator, call, nullAs ) -> Expressions.constant( Math.PI ) );
 
         // datetime
-        defineImplementor( SqlStdOperatorTable.DATETIME_PLUS, NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
-        defineImplementor( SqlStdOperatorTable.MINUS_DATE, NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
-        defineImplementor( SqlStdOperatorTable.EXTRACT, NullPolicy.STRICT, new ExtractImplementor(), false );
-        defineImplementor( SqlStdOperatorTable.FLOOR, NullPolicy.STRICT,
+        defineImplementor( OperatorRegistry.get( OperatorName.DATETIME_PLUS ), NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.MINUS_DATE ), NullPolicy.STRICT, new DatetimeArithmeticImplementor(), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.EXTRACT ), NullPolicy.STRICT, new ExtractImplementor(), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.FLOOR ), NullPolicy.STRICT,
                 new FloorImplementor(
                         BuiltInMethod.FLOOR.method.getName(),
                         BuiltInMethod.UNIX_TIMESTAMP_FLOOR.method,
                         BuiltInMethod.UNIX_DATE_FLOOR.method ),
                 false );
-        defineImplementor( SqlStdOperatorTable.CEIL, NullPolicy.STRICT,
-                new FloorImplementor( BuiltInMethod.CEIL.method.getName(),
+        defineImplementor( OperatorRegistry.get( OperatorName.CEIL ), NullPolicy.STRICT,
+                new FloorImplementor(
+                        BuiltInMethod.CEIL.method.getName(),
                         BuiltInMethod.UNIX_TIMESTAMP_CEIL.method,
                         BuiltInMethod.UNIX_DATE_CEIL.method ),
                 false );
 
-        map.put( SqlStdOperatorTable.IS_NULL, new IsXxxImplementor( null, false ) );
-        map.put( SqlStdOperatorTable.IS_NOT_NULL, new IsXxxImplementor( null, true ) );
-        map.put( SqlStdOperatorTable.IS_TRUE, new IsXxxImplementor( true, false ) );
-        map.put( SqlStdOperatorTable.IS_NOT_TRUE, new IsXxxImplementor( true, true ) );
-        map.put( SqlStdOperatorTable.IS_FALSE, new IsXxxImplementor( false, false ) );
-        map.put( SqlStdOperatorTable.IS_NOT_FALSE, new IsXxxImplementor( false, true ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_NULL ), new IsXxxImplementor( null, false ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), new IsXxxImplementor( null, true ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_TRUE ), new IsXxxImplementor( true, false ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_NOT_TRUE ), new IsXxxImplementor( true, true ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_FALSE ), new IsXxxImplementor( false, false ) );
+        map.put( OperatorRegistry.get( OperatorName.IS_NOT_FALSE ), new IsXxxImplementor( false, true ) );
 
         // LIKE and SIMILAR
         final MethodImplementor likeImplementor = new MethodImplementor( BuiltInMethod.LIKE.method );
-        defineImplementor( SqlStdOperatorTable.LIKE, NullPolicy.STRICT, likeImplementor, false );
-        defineImplementor( SqlStdOperatorTable.NOT_LIKE, NullPolicy.STRICT, NotImplementor.of( likeImplementor ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.LIKE ), NullPolicy.STRICT, likeImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.NOT_LIKE ), NullPolicy.STRICT, NotImplementor.of( likeImplementor ), false );
         final MethodImplementor similarImplementor = new MethodImplementor( BuiltInMethod.SIMILAR.method );
-        defineImplementor( SqlStdOperatorTable.SIMILAR_TO, NullPolicy.STRICT, similarImplementor, false );
-        defineImplementor( SqlStdOperatorTable.NOT_SIMILAR_TO, NullPolicy.STRICT, NotImplementor.of( similarImplementor ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.SIMILAR_TO ), NullPolicy.STRICT, similarImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.NOT_SIMILAR_TO ), NullPolicy.STRICT, NotImplementor.of( similarImplementor ), false );
 
         // Multisets & arrays
-        defineMethod( SqlStdOperatorTable.CARDINALITY, BuiltInMethod.COLLECTION_SIZE.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.SLICE, BuiltInMethod.SLICE.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.ELEMENT, BuiltInMethod.ELEMENT.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.STRUCT_ACCESS, BuiltInMethod.STRUCT_ACCESS.method, NullPolicy.ANY );
-        defineMethod( SqlStdOperatorTable.MEMBER_OF, BuiltInMethod.MEMBER_OF.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.CARDINALITY ), BuiltInMethod.COLLECTION_SIZE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.SLICE ), BuiltInMethod.SLICE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.ELEMENT ), BuiltInMethod.ELEMENT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.STRUCT_ACCESS ), BuiltInMethod.STRUCT_ACCESS.method, NullPolicy.ANY );
+        defineMethod( OperatorRegistry.get( OperatorName.MEMBER_OF ), BuiltInMethod.MEMBER_OF.method, NullPolicy.NONE );
         final MethodImplementor isEmptyImplementor = new MethodImplementor( BuiltInMethod.IS_EMPTY.method );
-        defineImplementor( SqlStdOperatorTable.IS_EMPTY, NullPolicy.NONE, isEmptyImplementor, false );
-        defineImplementor( SqlStdOperatorTable.IS_NOT_EMPTY, NullPolicy.NONE, NotImplementor.of( isEmptyImplementor ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_EMPTY ), NullPolicy.NONE, isEmptyImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_EMPTY ), NullPolicy.NONE, NotImplementor.of( isEmptyImplementor ), false );
         final MethodImplementor isASetImplementor = new MethodImplementor( BuiltInMethod.IS_A_SET.method );
-        defineImplementor( SqlStdOperatorTable.IS_A_SET, NullPolicy.NONE, isASetImplementor, false );
-        defineImplementor( SqlStdOperatorTable.IS_NOT_A_SET, NullPolicy.NONE, NotImplementor.of( isASetImplementor ), false );
-        defineMethod( SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT, BuiltInMethod.MULTISET_INTERSECT_DISTINCT.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.MULTISET_INTERSECT, BuiltInMethod.MULTISET_INTERSECT_ALL.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT, BuiltInMethod.MULTISET_EXCEPT_DISTINCT.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.MULTISET_EXCEPT, BuiltInMethod.MULTISET_EXCEPT_ALL.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.MULTISET_UNION_DISTINCT, BuiltInMethod.MULTISET_UNION_DISTINCT.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.MULTISET_UNION, BuiltInMethod.MULTISET_UNION_ALL.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_A_SET ), NullPolicy.NONE, isASetImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_A_SET ), NullPolicy.NONE, NotImplementor.of( isASetImplementor ), false );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_INTERSECT_DISTINCT ), BuiltInMethod.MULTISET_INTERSECT_DISTINCT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_INTERSECT ), BuiltInMethod.MULTISET_INTERSECT_ALL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_EXCEPT_DISTINCT ), BuiltInMethod.MULTISET_EXCEPT_DISTINCT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_EXCEPT ), BuiltInMethod.MULTISET_EXCEPT_ALL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_UNION_DISTINCT ), BuiltInMethod.MULTISET_UNION_DISTINCT.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.MULTISET_UNION ), BuiltInMethod.MULTISET_UNION_ALL.method, NullPolicy.NONE );
         final MethodImplementor subMultisetImplementor = new MethodImplementor( BuiltInMethod.SUBMULTISET_OF.method );
-        defineImplementor( SqlStdOperatorTable.SUBMULTISET_OF, NullPolicy.NONE, subMultisetImplementor, false );
-        defineImplementor( SqlStdOperatorTable.NOT_SUBMULTISET_OF, NullPolicy.NONE, NotImplementor.of( subMultisetImplementor ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.SUBMULTISET_OF ), NullPolicy.NONE, subMultisetImplementor, false );
+        defineImplementor( OperatorRegistry.get( OperatorName.NOT_SUBMULTISET_OF ), NullPolicy.NONE, NotImplementor.of( subMultisetImplementor ), false );
 
-        map.put( SqlStdOperatorTable.CASE, new CaseImplementor() );
-        map.put( SqlStdOperatorTable.COALESCE, new CoalesceImplementor() );
-        map.put( SqlStdOperatorTable.CAST, new CastOptimizedImplementor() );
+        map.put( OperatorRegistry.get( OperatorName.CASE ), new CaseImplementor() );
+        map.put( OperatorRegistry.get( OperatorName.COALESCE ), new CoalesceImplementor() );
+        map.put( OperatorRegistry.get( OperatorName.CAST ), new CastOptimizedImplementor() );
 
-        defineImplementor( SqlStdOperatorTable.REINTERPRET, NullPolicy.STRICT, new ReinterpretImplementor(), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.REINTERPRET ), NullPolicy.STRICT, new ReinterpretImplementor(), false );
 
         final CallImplementor value = new ValueConstructorImplementor();
-        map.put( SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR, value );
-        map.put( SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR, value );
-        map.put( SqlStdOperatorTable.ITEM, new ItemImplementor() );
+        map.put( OperatorRegistry.get( OperatorName.MAP_VALUE_CONSTRUCTOR ), value );
+        map.put( OperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), value );
+        map.put( OperatorRegistry.get( OperatorName.ITEM ), new ItemImplementor() );
 
-        map.put( SqlStdOperatorTable.DEFAULT, ( translator, call, nullAs ) -> Expressions.constant( null ) );
+        map.put( OperatorRegistry.get( OperatorName.DEFAULT ), ( translator, call, nullAs ) -> Expressions.constant( null ) );
 
         // Sequences
-        defineMethod( SqlStdOperatorTable.CURRENT_VALUE, BuiltInMethod.SEQUENCE_CURRENT_VALUE.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.NEXT_VALUE, BuiltInMethod.SEQUENCE_NEXT_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.CURRENT_VALUE ), BuiltInMethod.SEQUENCE_CURRENT_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.NEXT_VALUE ), BuiltInMethod.SEQUENCE_NEXT_VALUE.method, NullPolicy.STRICT );
 
         // Json Operators
-        defineMethod( SqlStdOperatorTable.JSON_VALUE_EXPRESSION, BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.JSON_VALUE_EXPRESSION_EXCLUDED, BuiltInMethod.JSON_VALUE_EXPRESSION_EXCLUDE.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.JSON_STRUCTURED_VALUE_EXPRESSION, BuiltInMethod.JSON_STRUCTURED_VALUE_EXPRESSION.method, NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.JSON_API_COMMON_SYNTAX, BuiltInMethod.JSON_API_COMMON_SYNTAX.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.JSON_EXISTS, BuiltInMethod.JSON_EXISTS.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.JSON_VALUE_ANY, BuiltInMethod.JSON_VALUE_ANY.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.JSON_QUERY, BuiltInMethod.JSON_QUERY.method, NullPolicy.NONE );
-        defineMethod( SqlStdOperatorTable.JSON_OBJECT, BuiltInMethod.JSON_OBJECT.method, NullPolicy.NONE );
-        aggMap.put( SqlStdOperatorTable.JSON_OBJECTAGG, JsonObjectAggImplementor.supplierFor( BuiltInMethod.JSON_OBJECTAGG_ADD.method ) );
-        defineMethod( SqlStdOperatorTable.JSON_ARRAY, BuiltInMethod.JSON_ARRAY.method, NullPolicy.NONE );
-        aggMap.put( SqlStdOperatorTable.JSON_ARRAYAGG, JsonArrayAggImplementor.supplierFor( BuiltInMethod.JSON_ARRAYAGG_ADD.method ) );
-        defineImplementor( SqlStdOperatorTable.IS_JSON_VALUE, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_VALUE.method ), false );
-        defineImplementor( SqlStdOperatorTable.IS_JSON_OBJECT, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ), false );
-        defineImplementor( SqlStdOperatorTable.IS_JSON_ARRAY, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ), false );
-        defineImplementor( SqlStdOperatorTable.IS_JSON_SCALAR, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ), false );
-        defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_VALUE, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_VALUE.method ) ), false );
-        defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_OBJECT, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ) ), false );
-        defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_ARRAY, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
-        defineImplementor( SqlStdOperatorTable.IS_NOT_JSON_SCALAR, NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION ), BuiltInMethod.JSON_VALUE_EXPRESSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_EXPRESSION_EXCLUDED ), BuiltInMethod.JSON_VALUE_EXPRESSION_EXCLUDE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_STRUCTURED_VALUE_EXPRESSION ), BuiltInMethod.JSON_STRUCTURED_VALUE_EXPRESSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_API_COMMON_SYNTAX ), BuiltInMethod.JSON_API_COMMON_SYNTAX.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_EXISTS ), BuiltInMethod.JSON_EXISTS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_ANY ), BuiltInMethod.JSON_VALUE_ANY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_QUERY ), BuiltInMethod.JSON_QUERY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_OBJECT ), BuiltInMethod.JSON_OBJECT.method, NullPolicy.NONE );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.JSON_OBJECTAGG ), JsonObjectAggImplementor.supplierFor( BuiltInMethod.JSON_OBJECTAGG_ADD.method ) );
+        defineMethod( OperatorRegistry.get( OperatorName.JSON_ARRAY ), BuiltInMethod.JSON_ARRAY.method, NullPolicy.NONE );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.JSON_ARRAYAGG ), JsonArrayAggImplementor.supplierFor( BuiltInMethod.JSON_ARRAYAGG_ADD.method ) );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_JSON_VALUE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_VALUE.method ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_JSON_OBJECT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_JSON_ARRAY ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_JSON_SCALAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_VALUE ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_VALUE.method ) ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_OBJECT ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_OBJECT.method ) ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_ARRAY ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
+        defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_SCALAR ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
 
-        defineBinary( MqlStdOperatorTable.DOC_ITEM, ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
-        defineImplementor( MqlStdOperatorTable.DOC_EQ, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
-        defineImplementor( MqlStdOperatorTable.DOC_GT, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
-        defineImplementor( MqlStdOperatorTable.DOC_GTE, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
-        defineImplementor( MqlStdOperatorTable.DOC_LT, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
-        defineImplementor( MqlStdOperatorTable.DOC_LTE, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
-        defineImplementor( MqlStdOperatorTable.DOC_SIZE_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
-        defineImplementor( MqlStdOperatorTable.DOC_REGEX_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
-        defineImplementor( MqlStdOperatorTable.DOC_JSON_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
-        defineImplementor( MqlStdOperatorTable.DOC_TYPE_MATCH, NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
-        defineMethod( MqlStdOperatorTable.DOC_SLICE, BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_QUERY_VALUE, BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_QUERY_EXCLUDE, BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_ADD_FIELDS, BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
+        defineBinary( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GTE.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LT.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_LTE.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_SIZE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_SIZE_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_REGEX_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_REGEX_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSON_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_JSON_MATCH.method ), false );
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_TYPE_MATCH ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_TYPE_MATCH.method ), false );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_SLICE ), BuiltInMethod.DOC_SLICE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_QUERY_VALUE ), BuiltInMethod.DOC_QUERY_VALUE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EXCLUDE ), BuiltInMethod.DOC_QUERY_EXCLUDE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ADD_FIELDS ), BuiltInMethod.DOC_ADD_FIELDS.method, NullPolicy.STRICT );
 
-        defineMethod( MqlStdOperatorTable.DOC_UPDATE_MIN, BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_UPDATE_MAX, BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_UPDATE_ADD_TO_SET, BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_UPDATE_RENAME, BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_UPDATE_REPLACE, BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_UPDATE_REMOVE, BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_EXISTS, BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
-        defineMethod( MqlStdOperatorTable.DOC_JSONIZE, BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
-        map.put( MqlStdOperatorTable.DOC_ELEM_MATCH, new ElemMatchImplementor() );
-        map.put( MqlStdOperatorTable.DOC_UNWIND, new UnwindImplementor() );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_MIN ), BuiltInMethod.DOC_UPDATE_MIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_MAX ), BuiltInMethod.DOC_UPDATE_MAX.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
+        map.put( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
+        map.put( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_UNWIND ), new UnwindImplementor() );
 
         // System functions
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
-        map.put( SqlStdOperatorTable.USER, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.CURRENT_USER, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.SESSION_USER, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.SYSTEM_USER, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.CURRENT_PATH, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.CURRENT_ROLE, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.CURRENT_CATALOG, systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.USER ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_USER ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.SESSION_USER ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.SYSTEM_USER ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_PATH ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_ROLE ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_CATALOG ), systemFunctionImplementor );
 
         // Current time functions
-        map.put( SqlStdOperatorTable.CURRENT_TIME, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.CURRENT_TIMESTAMP, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.CURRENT_DATE, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.LOCALTIME, systemFunctionImplementor );
-        map.put( SqlStdOperatorTable.LOCALTIMESTAMP, systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_TIME ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_TIMESTAMP ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.CURRENT_DATE ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.LOCALTIME ), systemFunctionImplementor );
+        map.put( OperatorRegistry.get( OperatorName.LOCALTIMESTAMP ), systemFunctionImplementor );
 
-        aggMap.put( SqlStdOperatorTable.COUNT, constructorSupplier( CountImplementor.class ) );
-        aggMap.put( SqlStdOperatorTable.REGR_COUNT, constructorSupplier( CountImplementor.class ) );
-        aggMap.put( SqlStdOperatorTable.SUM0, constructorSupplier( SumImplementor.class ) );
-        aggMap.put( SqlStdOperatorTable.SUM, constructorSupplier( SumImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.SUM0 ), constructorSupplier( SumImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.SUM ), constructorSupplier( SumImplementor.class ) );
         Supplier<MinMaxImplementor> minMax = constructorSupplier( MinMaxImplementor.class );
-        aggMap.put( SqlStdOperatorTable.MIN, minMax );
-        aggMap.put( SqlStdOperatorTable.MAX, minMax );
-        aggMap.put( SqlStdOperatorTable.ANY_VALUE, minMax );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.MIN ), minMax );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.MAX ), minMax );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.ANY_VALUE ), minMax );
         final Supplier<BitOpImplementor> bitop = constructorSupplier( BitOpImplementor.class );
-        aggMap.put( SqlStdOperatorTable.BIT_AND, bitop );
-        aggMap.put( SqlStdOperatorTable.BIT_OR, bitop );
-        aggMap.put( SqlStdOperatorTable.SINGLE_VALUE, constructorSupplier( SingleValueImplementor.class ) );
-        aggMap.put( SqlStdOperatorTable.COLLECT, constructorSupplier( CollectImplementor.class ) );
-        aggMap.put( SqlStdOperatorTable.FUSION, constructorSupplier( FusionImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.BIT_AND ), bitop );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.BIT_OR ), bitop );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.SINGLE_VALUE ), constructorSupplier( SingleValueImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.COLLECT ), constructorSupplier( CollectImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.FUSION ), constructorSupplier( FusionImplementor.class ) );
         final Supplier<GroupingImplementor> grouping = constructorSupplier( GroupingImplementor.class );
-        aggMap.put( SqlStdOperatorTable.GROUPING, grouping );
-        aggMap.put( SqlStdOperatorTable.GROUP_ID, grouping );
-        aggMap.put( SqlStdOperatorTable.GROUPING_ID, grouping );
-        winAggMap.put( SqlStdOperatorTable.RANK, constructorSupplier( RankImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.DENSE_RANK, constructorSupplier( DenseRankImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.ROW_NUMBER, constructorSupplier( RowNumberImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.FIRST_VALUE, constructorSupplier( FirstValueImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.NTH_VALUE, constructorSupplier( NthValueImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.LAST_VALUE, constructorSupplier( LastValueImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.LEAD, constructorSupplier( LeadImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.LAG, constructorSupplier( LagImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.NTILE, constructorSupplier( NtileImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.COUNT, constructorSupplier( CountWinImplementor.class ) );
-        winAggMap.put( SqlStdOperatorTable.REGR_COUNT, constructorSupplier( CountWinImplementor.class ) );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.GROUPING ), grouping );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.GROUP_ID ), grouping );
+        aggMap.put( OperatorRegistry.getAgg( OperatorName.GROUPING_ID ), grouping );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.RANK ), constructorSupplier( RankImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.DENSE_RANK ), constructorSupplier( DenseRankImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.ROW_NUMBER ), constructorSupplier( RowNumberImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.FIRST_VALUE ), constructorSupplier( FirstValueImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.NTH_VALUE ), constructorSupplier( NthValueImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.LAST_VALUE ), constructorSupplier( LastValueImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.LEAD ), constructorSupplier( LeadImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.LAG ), constructorSupplier( LagImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.NTILE ), constructorSupplier( NtileImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.COUNT ), constructorSupplier( CountWinImplementor.class ) );
+        winAggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountWinImplementor.class ) );
     }
 
 
@@ -403,7 +402,7 @@ public class RexImpTable {
     }
 
 
-    private void defineImplementor( SqlOperator operator, NullPolicy nullPolicy, NotNullImplementor implementor, boolean harmonize ) {
+    private void defineImplementor( Operator operator, NullPolicy nullPolicy, NotNullImplementor implementor, boolean harmonize ) {
         CallImplementor callImplementor = createImplementor( implementor, nullPolicy, harmonize );
         map.put( operator, callImplementor );
     }
@@ -441,7 +440,7 @@ public class RexImpTable {
                 //   : b0 ? b1
                 //   : Boolean.FALSE;
                 return ( translator, call, nullAs ) -> {
-                    assert call.getOperator() == SqlStdOperatorTable.AND : "AND null semantics is supported only for AND operator. Actual operator is " + call.getOperator();
+                    assert call.getOperator().getOperatorName() == OperatorName.AND : "AND null semantics is supported only for AND operator. Actual operator is " + call.getOperator();
                     final RexCall call2 = call2( false, translator, call );
                     switch ( nullAs ) {
                         case NOT_POSSIBLE:
@@ -475,7 +474,7 @@ public class RexImpTable {
                 //   : !b0 ? b1
                 //   : Boolean.TRUE;
                 return ( translator, call, nullAs ) -> {
-                    assert call.getOperator() == SqlStdOperatorTable.OR : "OR null semantics is supported only for OR operator. Actual operator is " + call.getOperator();
+                    assert call.getOperator().getOperatorName() == OperatorName.OR : "OR null semantics is supported only for OR operator. Actual operator is " + call.getOperator();
                     final RexCall call2 = call2( harmonize, translator, call );
                     switch ( nullAs ) {
                         case NOT_POSSIBLE:
@@ -539,27 +538,27 @@ public class RexImpTable {
     }
 
 
-    private void defineMethod( SqlOperator operator, String functionName, NullPolicy nullPolicy ) {
+    private void defineMethod( Operator operator, String functionName, NullPolicy nullPolicy ) {
         defineImplementor( operator, nullPolicy, new MethodNameImplementor( functionName ), false );
     }
 
 
-    private void defineMethod( SqlOperator operator, Method method, NullPolicy nullPolicy ) {
+    private void defineMethod( Operator operator, Method method, NullPolicy nullPolicy ) {
         defineImplementor( operator, nullPolicy, new MethodImplementor( method ), false );
     }
 
 
-    private void defineMethodReflective( SqlOperator operator, Method method, NullPolicy nullPolicy ) {
+    private void defineMethodReflective( Operator operator, Method method, NullPolicy nullPolicy ) {
         defineImplementor( operator, nullPolicy, new ReflectiveCallNotNullImplementor( method ), false );
     }
 
 
-    private void defineUnary( SqlOperator operator, ExpressionType expressionType, NullPolicy nullPolicy ) {
+    private void defineUnary( Operator operator, ExpressionType expressionType, NullPolicy nullPolicy ) {
         defineImplementor( operator, nullPolicy, new UnaryImplementor( expressionType ), false );
     }
 
 
-    private void defineBinary( SqlOperator operator, ExpressionType expressionType, NullPolicy nullPolicy, String backupMethodName ) {
+    private void defineBinary( Operator operator, ExpressionType expressionType, NullPolicy nullPolicy, String backupMethodName ) {
         defineImplementor( operator, nullPolicy, new BinaryImplementor( expressionType, backupMethodName ), true );
     }
 
@@ -567,9 +566,9 @@ public class RexImpTable {
     public static final RexImpTable INSTANCE = new RexImpTable();
 
 
-    public CallImplementor get( final SqlOperator operator ) {
-        if ( operator instanceof SqlUserDefinedFunction ) {
-            org.polypheny.db.schema.Function udf = ((SqlUserDefinedFunction) operator).getFunction();
+    public CallImplementor get( final Operator operator ) {
+        if ( operator instanceof UserDefined ) {
+            Function udf = ((UserDefined) operator).getFunction();
             if ( !(udf instanceof ImplementableFunction) ) {
                 throw new IllegalStateException( "User defined function " + operator + " must implement ImplementableFunction" );
             }
@@ -579,13 +578,13 @@ public class RexImpTable {
     }
 
 
-    public AggImplementor get( final SqlAggFunction aggregation, boolean forWindowAggregate ) {
-        if ( aggregation instanceof SqlUserDefinedAggFunction ) {
-            final SqlUserDefinedAggFunction udaf = (SqlUserDefinedAggFunction) aggregation;
-            if ( !(udaf.function instanceof ImplementableAggFunction) ) {
+    public AggImplementor get( final AggFunction aggregation, boolean forWindowAggregate ) {
+        if ( aggregation instanceof UserDefined ) {
+            final UserDefined udaf = (UserDefined) aggregation;
+            if ( !(udaf.getFunction() instanceof ImplementableAggFunction) ) {
                 throw new IllegalStateException( "User defined aggregation " + aggregation + " must implement ImplementableAggFunction" );
             }
-            return ((ImplementableAggFunction) udaf.function).getImplementor( forWindowAggregate );
+            return ((ImplementableAggFunction) udaf.getFunction()).getImplementor( forWindowAggregate );
         }
         if ( forWindowAggregate ) {
             Supplier<? extends WinAggImplementor> winAgg = winAggMap.get( aggregation );
@@ -638,10 +637,10 @@ public class RexImpTable {
      */
     private static List<RexNode> harmonize( final RexToLixTranslator translator, final List<RexNode> operands ) {
         int nullCount = 0;
-        final List<RelDataType> types = new ArrayList<>();
-        final RelDataTypeFactory typeFactory = translator.builder.getTypeFactory();
+        final List<AlgDataType> types = new ArrayList<>();
+        final AlgDataTypeFactory typeFactory = translator.builder.getTypeFactory();
         for ( RexNode operand : operands ) {
-            RelDataType type = operand.getType();
+            AlgDataType type = operand.getType();
             type = toSql( typeFactory, type );
             if ( translator.isNullable( operand ) ) {
                 ++nullCount;
@@ -654,7 +653,7 @@ public class RexImpTable {
             // Operands have the same nullability and type. Return them unchanged.
             return operands;
         }
-        final RelDataType type = typeFactory.leastRestrictive( types );
+        final AlgDataType type = typeFactory.leastRestrictive( types );
         if ( type == null ) {
             // There is no common type. Presumably this is a binary operator with asymmetric arguments (e.g. interval / integer) which is not intended to be harmonized.
             return operands;
@@ -668,8 +667,8 @@ public class RexImpTable {
     }
 
 
-    private static RelDataType toSql( RelDataTypeFactory typeFactory, RelDataType type ) {
-        if ( type instanceof RelDataTypeFactoryImpl.JavaType ) {
+    private static AlgDataType toSql( AlgDataTypeFactory typeFactory, AlgDataType type ) {
+        if ( type instanceof AlgDataTypeFactoryImpl.JavaType ) {
             final PolyType typeName = type.getPolyType();
             if ( typeName != null && typeName != PolyType.OTHER ) {
                 return typeFactory.createTypeWithNullability( typeFactory.createPolyType( typeName ), type.isNullable() );
@@ -951,7 +950,7 @@ public class RexImpTable {
         @Override
         public List<Type> getNotNullState( WinAggContext info ) {
             boolean hasNullable = false;
-            for ( RelDataType type : info.parameterRelTypes() ) {
+            for ( AlgDataType type : info.parameterAlgTypes() ) {
                 if ( type.isNullable() ) {
                     hasNullable = true;
                     break;
@@ -1030,7 +1029,7 @@ public class RexImpTable {
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
             Expression acc = reset.accumulator().get( 0 );
             Primitive p = Primitive.of( acc.getType() );
-            boolean isMin = SqlStdOperatorTable.MIN == info.aggregation();
+            boolean isMin = OperatorName.MIN == info.aggregation().getOperatorName();
             Object inf = p == null ? null : (isMin ? p.max : p.min);
             reset.currentBlock().add( Expressions.statement( Expressions.assign( acc, Expressions.constant( inf, acc.getType() ) ) ) );
         }
@@ -1040,8 +1039,8 @@ public class RexImpTable {
         public void implementNotNullAdd( AggContext info, AggAddContext add ) {
             Expression acc = add.accumulator().get( 0 );
             Expression arg = add.arguments().get( 0 );
-            SqlAggFunction aggregation = info.aggregation();
-            final Method method = (aggregation == SqlStdOperatorTable.MIN
+            AggFunction aggregation = info.aggregation();
+            final Method method = (aggregation.getOperatorName() == OperatorName.MIN
                     ? BuiltInMethod.LESSER
                     : BuiltInMethod.GREATER).method;
             Expression next = Expressions.call( method.getDeclaringClass(), method.getName(), acc, Expressions.unbox( arg ) );
@@ -1079,7 +1078,8 @@ public class RexImpTable {
             List<Expression> acc = add.accumulator();
             Expression flag = acc.get( 0 );
             add.currentBlock().add(
-                    Expressions.ifThen( flag,
+                    Expressions.ifThen(
+                            flag,
                             Expressions.throw_(
                                     Expressions.new_(
                                             IllegalStateException.class,
@@ -1160,7 +1160,7 @@ public class RexImpTable {
 
         @Override
         protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
-            Object initValue = info.aggregation() == SqlStdOperatorTable.BIT_AND ? -1 : 0;
+            Object initValue = info.aggregation().equals( OperatorRegistry.getAgg( OperatorName.BIT_AND ) ) ? -1 : 0;
             Expression start = Expressions.constant( initValue, info.returnType() );
 
             reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), start ) ) );
@@ -1171,8 +1171,8 @@ public class RexImpTable {
         public void implementNotNullAdd( AggContext info, AggAddContext add ) {
             Expression acc = add.accumulator().get( 0 );
             Expression arg = add.arguments().get( 0 );
-            SqlAggFunction aggregation = info.aggregation();
-            final Method method = (aggregation == SqlStdOperatorTable.BIT_AND
+            AggFunction aggregation = info.aggregation();
+            final Method method = (aggregation.equals( OperatorRegistry.getAgg( OperatorName.BIT_AND ) )
                     ? BuiltInMethod.BIT_AND
                     : BuiltInMethod.BIT_OR).method;
             Expression next = Expressions.call( method.getDeclaringClass(), method.getName(), acc, Expressions.unbox( arg ) );
@@ -1206,7 +1206,7 @@ public class RexImpTable {
         @Override
         public Expression implementResult( AggContext info, AggResultContext result ) {
             final List<Integer> keys;
-            switch ( info.aggregation().kind ) {
+            switch ( info.aggregation().getKind() ) {
                 case GROUPING: // "GROUPING(e, ...)", also "GROUPING_ID(e, ...)"
                     keys = result.call().getArgList();
                     break;
@@ -1226,7 +1226,8 @@ public class RexImpTable {
                     final int i = keyOrdinals.indexOf( k );
                     assert i >= 0;
                     final Expression e2 =
-                            Expressions.condition( result.keyField( keyOrdinals.size() + i ),
+                            Expressions.condition(
+                                    result.keyField( keyOrdinals.size() + i ),
                                     Expressions.constant( x ),
                                     Expressions.constant( 0L ) );
                     if ( e == null ) {
@@ -1418,7 +1419,8 @@ public class RexImpTable {
         public Expression implementResult( AggContext info, AggResultContext result ) {
             WinAggResultContext winResult = (WinAggResultContext) result;
 
-            return Expressions.condition( winResult.hasRows(),
+            return Expressions.condition(
+                    winResult.hasRows(),
                     winResult.rowTranslator( winResult.computeIndex( Expressions.constant( 0 ), seekType ) )
                             .translate( winResult.rexArguments().get( 0 ), info.returnType() ),
                     getDefaultValue( info.returnType() ) );
@@ -1655,7 +1657,8 @@ public class RexImpTable {
             Expression tiles = winResult.rowTranslator( winResult.index() ).translate( rexArgs.get( 0 ), int.class );
 
             Expression ntile =
-                    Expressions.add( Expressions.constant( 1 ),
+                    Expressions.add(
+                            Expressions.constant( 1 ),
                             Expressions.divide(
                                     Expressions.multiply(
                                             tiles,
@@ -1728,7 +1731,7 @@ public class RexImpTable {
 
         @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
-            final SqlJsonObjectAggAggFunction function = (SqlJsonObjectAggAggFunction) info.aggregation();
+            final JsonAgg function = (JsonAgg) info.aggregation();
             add.currentBlock().add(
                     Expressions.statement(
                             Expressions.call(
@@ -1784,7 +1787,7 @@ public class RexImpTable {
 
         @Override
         public void implementAdd( AggContext info, AggAddContext add ) {
-            final SqlJsonArrayAggAggFunction function = (SqlJsonArrayAggAggFunction) info.aggregation();
+            final JsonAgg function = (JsonAgg) info.aggregation();
             add.currentBlock().add(
                     Expressions.statement(
                             Expressions.call(
@@ -1816,8 +1819,8 @@ public class RexImpTable {
             Flag flag = (Flag) value;
             return Expressions.call(
                     BuiltInMethod.TRIM.method,
-                    Expressions.constant( flag == SqlTrimFunction.Flag.BOTH || flag == SqlTrimFunction.Flag.LEADING ),
-                    Expressions.constant( flag == SqlTrimFunction.Flag.BOTH || flag == SqlTrimFunction.Flag.TRAILING ),
+                    Expressions.constant( flag == Flag.BOTH || flag == Flag.LEADING ),
+                    Expressions.constant( flag == Flag.BOTH || flag == Flag.TRAILING ),
                     translatedOperands.get( 1 ),
                     translatedOperands.get( 2 ),
                     Expressions.constant( strict ) );
@@ -1889,7 +1892,7 @@ public class RexImpTable {
 
 
         private Expression call( Expression operand, Type type, TimeUnit timeUnit ) {
-            return Expressions.call( SqlFunctions.class, methodName,
+            return Expressions.call( Functions.class, methodName,
                     Types.castIfNecessary( type, operand ),
                     Types.castIfNecessary( type, Expressions.constant( timeUnit.multiplier ) ) );
         }
@@ -1943,7 +1946,7 @@ public class RexImpTable {
 
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
-            return Expressions.call( SqlFunctions.class, methodName, translatedOperands );
+            return Expressions.call( Functions.class, methodName, translatedOperands );
         }
 
     }
@@ -1959,12 +1962,12 @@ public class RexImpTable {
          */
         private static final List<Primitive> COMP_OP_TYPES = ImmutableList.of( Primitive.BYTE, Primitive.CHAR, Primitive.SHORT, Primitive.INT, Primitive.LONG, Primitive.FLOAT, Primitive.DOUBLE );
 
-        private static final List<SqlBinaryOperator> COMPARISON_OPERATORS =
+        private static final List<BinaryOperator> COMPARISON_OPERATORS =
                 ImmutableList.of(
-                        SqlStdOperatorTable.LESS_THAN,
-                        SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                        SqlStdOperatorTable.GREATER_THAN,
-                        SqlStdOperatorTable.GREATER_THAN_OR_EQUAL );
+                        OperatorRegistry.get( OperatorName.LESS_THAN, BinaryOperator.class ),
+                        OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL, BinaryOperator.class ),
+                        OperatorRegistry.get( OperatorName.GREATER_THAN, BinaryOperator.class ),
+                        OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL, BinaryOperator.class ) );
         public static final String METHOD_POSTFIX_FOR_ANY_TYPE = "Any";
 
         private final ExpressionType expressionType;
@@ -2000,13 +2003,13 @@ public class RexImpTable {
 
                 final Type type0 = expressions.get( 0 ).getType();
                 final Type type1 = expressions.get( 1 ).getType();
-                final SqlBinaryOperator op = (SqlBinaryOperator) call.getOperator();
+                final BinaryOperator op = (BinaryOperator) call.getOperator();
                 final Primitive primitive = Primitive.ofBoxOr( type0 );
                 if ( primitive == null
                         || type1 == BigDecimal.class
                         || COMPARISON_OPERATORS.contains( op )
                         && !COMP_OP_TYPES.contains( primitive ) ) {
-                    return Expressions.call( SqlFunctions.class, backupMethodName, expressions );
+                    return Expressions.call( Functions.class, backupMethodName, expressions );
                 }
             }
 
@@ -2034,7 +2037,7 @@ public class RexImpTable {
             // one or both of parameter(s) is(are) ANY type
             final Expression expression0 = maybeBox( expressions.get( 0 ) );
             final Expression expression1 = maybeBox( expressions.get( 1 ) );
-            return Expressions.call( SqlFunctions.class, backupMethodNameForAnyType, expression0, expression1 );
+            return Expressions.call( Functions.class, backupMethodNameForAnyType, expression0, expression1 );
         }
 
 
@@ -2348,14 +2351,14 @@ public class RexImpTable {
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             assert call.getOperands().size() == 1;
-            final RelDataType sourceType = call.getOperands().get( 0 ).getType();
+            final AlgDataType sourceType = call.getOperands().get( 0 ).getType();
             // It's only possible for the result to be null if both expression and target type are nullable. We assume that the caller did not make a mistake. If expression looks nullable, caller WILL have
             // checked that expression is not null before calling us.
             final boolean nullable =
                     translator.isNullable( call )
                             && sourceType.isNullable()
                             && !Primitive.is( translatedOperands.get( 0 ).getType() );
-            final RelDataType targetType = translator.nullifyType( call.getType(), nullable );
+            final AlgDataType targetType = translator.nullifyType( call.getType(), nullable );
             return translator.translateCast( sourceType, targetType, translatedOperands.get( 0 ) );
         }
 
@@ -2505,7 +2508,7 @@ public class RexImpTable {
 
         private RexNode substitute( RexToLixTranslator translator, RexNode node, int pos ) {
             RexNode transformed = node;
-            if ( node.isA( SqlKind.LOCAL_REF ) ) {
+            if ( node.isA( Kind.LOCAL_REF ) ) {
                 transformed = translator.deref( node );
             }
             if ( transformed instanceof RexCall ) {
@@ -2542,28 +2545,28 @@ public class RexImpTable {
                 case IS_NOT_NULL:
                     return Expressions.constant( true );
             }
-            final SqlOperator op = call.getOperator();
+            final Operator op = call.getOperator();
             final Expression root = translator.getRoot();
-            if ( op == SqlStdOperatorTable.CURRENT_USER
-                    || op == SqlStdOperatorTable.SESSION_USER
-                    || op == SqlStdOperatorTable.USER ) {
+            if ( op.equals( OperatorRegistry.get( OperatorName.CURRENT_USER ) )
+                    || op.getOperatorName() == OperatorName.SESSION_USER
+                    || op.getOperatorName() == OperatorName.USER ) {
                 return Expressions.constant( "sa" );
-            } else if ( op == SqlStdOperatorTable.SYSTEM_USER ) {
+            } else if ( op.getOperatorName() == OperatorName.SYSTEM_USER ) {
                 return Expressions.constant( System.getProperty( "user.name" ) );
-            } else if ( op == SqlStdOperatorTable.CURRENT_PATH
-                    || op == SqlStdOperatorTable.CURRENT_ROLE
-                    || op == SqlStdOperatorTable.CURRENT_CATALOG ) {
+            } else if ( op.getOperatorName() == OperatorName.CURRENT_PATH
+                    || op.getOperatorName() == OperatorName.CURRENT_ROLE
+                    || op.getOperatorName() == OperatorName.CURRENT_CATALOG ) {
                 // By default, the CURRENT_ROLE and CURRENT_CATALOG functions return the empty string because a role or a catalog has to be set explicitly.
                 return Expressions.constant( "" );
-            } else if ( op == SqlStdOperatorTable.CURRENT_TIMESTAMP ) {
+            } else if ( op.getOperatorName() == OperatorName.CURRENT_TIMESTAMP ) {
                 return Expressions.call( BuiltInMethod.CURRENT_TIMESTAMP.method, root );
-            } else if ( op == SqlStdOperatorTable.CURRENT_TIME ) {
+            } else if ( op.getOperatorName() == OperatorName.CURRENT_TIME ) {
                 return Expressions.call( BuiltInMethod.CURRENT_TIME.method, root );
-            } else if ( op == SqlStdOperatorTable.CURRENT_DATE ) {
+            } else if ( op.getOperatorName() == OperatorName.CURRENT_DATE ) {
                 return Expressions.call( BuiltInMethod.CURRENT_DATE.method, root );
-            } else if ( op == SqlStdOperatorTable.LOCALTIMESTAMP ) {
+            } else if ( op.getOperatorName() == OperatorName.LOCALTIMESTAMP ) {
                 return Expressions.call( BuiltInMethod.LOCAL_TIMESTAMP.method, root );
-            } else if ( op == SqlStdOperatorTable.LOCALTIME ) {
+            } else if ( op.getOperatorName() == OperatorName.LOCALTIME ) {
                 return Expressions.call( BuiltInMethod.LOCAL_TIME.method, root );
             } else {
                 throw new AssertionError( "unknown function " + op );
@@ -2632,7 +2635,7 @@ public class RexImpTable {
         }
 
 
-        private static NotNullImplementor of( NotNullImplementor implementor ) {
+        static NotNullImplementor of( NotNullImplementor implementor ) {
             return new NotImplementor( implementor );
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.util.ReflectUtil;
@@ -161,7 +161,7 @@ public abstract class ReflectiveFunctionBase implements Function {
 
 
                         @Override
-                        public RelDataType getType( RelDataTypeFactory typeFactory ) {
+                        public AlgDataType getType( AlgDataTypeFactory typeFactory ) {
                             return typeFactory.createJavaType( type );
                         }
 
@@ -182,6 +182,8 @@ public abstract class ReflectiveFunctionBase implements Function {
             }
             return this;
         }
+
     }
+
 }
 

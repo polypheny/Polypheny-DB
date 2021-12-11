@@ -23,24 +23,24 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptTable.ToRelContext;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.rex.RexNode;
 
 public class LogicalTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
 
-    private RelProtoDataType protoRowType;
+    private AlgProtoDataType protoRowType;
 
     @Getter
     private final SchemaType schemaType;
@@ -64,7 +64,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
             String logicalTableName,
             List<Long> columnIds,
             List<String> logicalColumnNames,
-            RelProtoDataType protoRowType,
+            AlgProtoDataType protoRowType,
             SchemaType schemaType ) {
         super( Object[].class );
         this.tableId = tableId;
@@ -83,11 +83,11 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
 
 
     @Override
-    public TableModify toModificationRel(
-            RelOptCluster cluster,
-            RelOptTable table,
+    public TableModify toModificationAlg(
+            AlgOptCluster cluster,
+            AlgOptTable table,
             CatalogReader catalogReader,
-            RelNode input,
+            AlgNode input,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
@@ -106,7 +106,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
 
@@ -130,8 +130,8 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
 
 
     @Override
-    public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
-        throw new RuntimeException( "toRel() is not implemented for Logical Tables!" );
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+        throw new RuntimeException( "toAlg() is not implemented for Logical Tables!" );
     }
 
 }

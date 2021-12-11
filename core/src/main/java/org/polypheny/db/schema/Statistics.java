@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,10 @@ package org.polypheny.db.schema;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelDistribution;
-import org.polypheny.db.rel.RelDistributionTraitDef;
-import org.polypheny.db.rel.RelReferentialConstraint;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -70,20 +70,20 @@ public class Statistics {
 
 
                 @Override
-                public List<RelReferentialConstraint> getReferentialConstraints() {
+                public List<AlgReferentialConstraint> getReferentialConstraints() {
                     return ImmutableList.of();
                 }
 
 
                 @Override
-                public List<RelCollation> getCollations() {
+                public List<AlgCollation> getCollations() {
                     return ImmutableList.of();
                 }
 
 
                 @Override
-                public RelDistribution getDistribution() {
-                    return RelDistributionTraitDef.INSTANCE.getDefault();
+                public AlgDistribution getDistribution() {
+                    return AlgDistributionTraitDef.INSTANCE.getDefault();
                 }
             };
 
@@ -91,7 +91,7 @@ public class Statistics {
     /**
      * Returns a statistic with a given set of referential constraints.
      */
-    public static Statistic of( final List<RelReferentialConstraint> referentialConstraints ) {
+    public static Statistic of( final List<AlgReferentialConstraint> referentialConstraints ) {
         return of( null, ImmutableList.of(), referentialConstraints, ImmutableList.of() );
     }
 
@@ -107,7 +107,7 @@ public class Statistics {
     /**
      * Returns a statistic with a given row count, set of unique keys, and collations.
      */
-    public static Statistic of( final double rowCount, final List<ImmutableBitSet> keys, final List<RelCollation> collations ) {
+    public static Statistic of( final double rowCount, final List<ImmutableBitSet> keys, final List<AlgCollation> collations ) {
         return of( rowCount, keys, ImmutableList.of(), collations );
     }
 
@@ -115,7 +115,7 @@ public class Statistics {
     /**
      * Returns a statistic with a given row count, set of unique keys, referential constraints, and collations.
      */
-    public static Statistic of( final Double rowCount, final List<ImmutableBitSet> keys, final List<RelReferentialConstraint> referentialConstraints, final List<RelCollation> collations ) {
+    public static Statistic of( final Double rowCount, final List<ImmutableBitSet> keys, final List<AlgReferentialConstraint> referentialConstraints, final List<AlgCollation> collations ) {
         return new Statistic() {
             @Override
             public Double getRowCount() {
@@ -135,22 +135,23 @@ public class Statistics {
 
 
             @Override
-            public List<RelReferentialConstraint> getReferentialConstraints() {
+            public List<AlgReferentialConstraint> getReferentialConstraints() {
                 return referentialConstraints;
             }
 
 
             @Override
-            public List<RelCollation> getCollations() {
+            public List<AlgCollation> getCollations() {
                 return collations;
             }
 
 
             @Override
-            public RelDistribution getDistribution() {
-                return RelDistributionTraitDef.INSTANCE.getDefault();
+            public AlgDistribution getDistribution() {
+                return AlgDistributionTraitDef.INSTANCE.getDefault();
             }
         };
     }
+
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.enumerable.AggResultContext;
 import org.polypheny.db.adapter.enumerable.PhysType;
-import org.polypheny.db.rel.core.AggregateCall;
+import org.polypheny.db.algebra.core.AggregateCall;
 
 
 /**
@@ -85,4 +85,5 @@ public class AggResultContextImpl extends AggResetContextImpl implements AggResu
     public AggregateCall call() {
         return call;
     }
+
 }

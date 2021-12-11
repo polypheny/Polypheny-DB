@@ -60,8 +60,15 @@ import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.Catalog.TableType.PrimitiveTableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -92,14 +99,10 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -190,11 +193,12 @@ public class DbmsMeta implements ProtobufMeta {
                         -1,
                         null,
                         StatementType.SELECT,
-                        new ExecutionTimeMonitor() ) {
-                    @Override
+                        new ExecutionTimeMonitor(),
+                        SchemaType.RELATIONAL ) {
+                    /*@Override
                     public Enumerable<Object> enumerable( DataContext dataContext ) {
                         return Linq4j.asEnumerable( firstFrame.rows );
-                    }
+                    }*/
                 };
         return MetaResultSet.create( ch.id, statementHandle.id, true, signature, firstFrame );
     }
@@ -648,7 +652,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "getTypeInfo( ConnectionHandle {} )", ch );
             }
             final StatementHandle statementHandle = createStatement( ch );
-            final RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
+            final AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
             final List<Object> objects = new LinkedList<>();
             for ( PolyType polyType : PolyType.values() ) {
                 objects.add(
@@ -958,13 +962,13 @@ public class DbmsMeta implements ProtobufMeta {
             polyphenyDbStatement.setPreparedQuery( sql );
 
             Transaction transaction = connection.getCurrentOrCreateNewTransaction();
-            SqlProcessor sqlProcessor = transaction.getSqlProcessor();
+            Processor sqlProcessor = transaction.getProcessor( QueryLanguage.SQL );
 
-            SqlNode parsed = sqlProcessor.parse( sql );
+            Node parsed = sqlProcessor.parse( sql );
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
             // JDBC driver would expect more parameter fields than there actually are in the query.
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( transaction, parsed, false );
-            RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate( transaction, parsed, false );
+            AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             List<AvaticaParameter> avaticaParameters = deriveAvaticaParameters( parameterRowType );
 
@@ -980,7 +984,8 @@ public class DbmsMeta implements ProtobufMeta {
                     -1,
                     null,
                     StatementType.SELECT,
-                    null );
+                    null,
+                    SchemaType.RELATIONAL );
             h.signature = signature;
             polyphenyDbStatement.setSignature( signature );
 
@@ -1222,23 +1227,23 @@ public class DbmsMeta implements ProtobufMeta {
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
         PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
-        SqlProcessor sqlProcessor = statementHandle.getStatement().getTransaction().getSqlProcessor();
+        Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.SQL );
 
-        SqlNode parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql );
 
         PolyphenyDbSignature<?> signature;
-        if ( parsed.isA( SqlKind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed );
+        if ( parsed.isA( Kind.DDL ) ) {
+            signature = PolyphenyDbSignature.from( sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql, SchemaType.RELATIONAL ) ) );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate(
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate(
                     statementHandle.getStatement().getTransaction(),
                     parsed,
                     RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            RelRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left );
-            RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
+            AlgRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, null );
+            AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
+            signature = PolyphenyDbSignature.from( statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true ) );
         }
 
         h.signature = signature;
@@ -1266,10 +1271,6 @@ public class DbmsMeta implements ProtobufMeta {
                 } else {
                     num = ((Number) object).intValue();
                 }
-                // Check if num is equal for all adapters
-                /*if ( rowsChanged != -1 && rowsChanged != num ) {
-                    throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
-                }*/
                 rowsChanged = num;
             }
 
@@ -1616,15 +1617,15 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    public List<AvaticaParameter> deriveAvaticaParameters( RelDataType parameterRowType ) {
+    public List<AvaticaParameter> deriveAvaticaParameters( AlgDataType parameterRowType ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( RelDataTypeField field : parameterRowType.getFieldList() ) {
-            RelDataType type = field.getType();
+        for ( AlgDataTypeField field : parameterRowType.getFieldList() ) {
+            AlgDataType type = field.getType();
             parameters.add(
                     new AvaticaParameter(
                             false,
-                            type.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED ? 0 : type.getPrecision(),
-                            type.getScale() == RelDataType.SCALE_NOT_SPECIFIED ? 0 : type.getScale(),
+                            type.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED ? 0 : type.getPrecision(),
+                            type.getScale() == AlgDataType.SCALE_NOT_SPECIFIED ? 0 : type.getScale(),
                             type.getPolyType().getJdbcOrdinal(),
                             type.getPolyType().getTypeName(),
                             Object.class.getName(),

@@ -19,28 +19,28 @@ package org.polypheny.db.adapter.cottontail.rules;
 
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailTable;
-import org.polypheny.db.adapter.cottontail.rel.CottontailTableModify;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailTableModify;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 public class CottontailTableModificationRule extends CottontailConverterRule {
 
-    CottontailTableModificationRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( TableModify.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
+    CottontailTableModificationRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( TableModify.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailTableModificationRule:" + out.getName() );
     }
 
 
     @Override
-    public boolean matches( RelOptRuleCall call ) {
-        final TableModify tableModify = call.rel( 0 );
+    public boolean matches( AlgOptRuleCall call ) {
+        final TableModify tableModify = call.alg( 0 );
         if ( tableModify.getTable().unwrap( CottontailTable.class ) == null ) {
             return false;
         }
@@ -53,8 +53,8 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final TableModify modify = (TableModify) rel;
+    public AlgNode convert( AlgNode alg ) {
+        final TableModify modify = (TableModify) alg;
 
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
 
@@ -65,14 +65,14 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
             return null;
         }
 
-        final RelTraitSet traitSet = modify.getTraitSet().replace( out );
+        final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
 
         return new CottontailTableModify(
                 modify.getCluster(),
                 traitSet,
                 modify.getTable(),
                 modify.getCatalogReader(),
-                RelOptRule.convert( modify.getInput(), traitSet ),
+                AlgOptRule.convert( modify.getInput(), traitSet ),
                 modify.getOperation(),
                 modify.getUpdateColumnList(),
                 modify.getSourceExpressionList(),

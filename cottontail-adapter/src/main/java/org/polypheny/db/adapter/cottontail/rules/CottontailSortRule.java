@@ -17,13 +17,13 @@
 package org.polypheny.db.adapter.cottontail.rules;
 
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailSort;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailSort;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -31,24 +31,24 @@ import org.polypheny.db.tools.RelBuilderFactory;
  */
 public class CottontailSortRule extends CottontailConverterRule {
 
-    CottontailSortRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Sort.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailSortRule" + out.getName() );
+    CottontailSortRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Sort.class, r -> true, Convention.NONE, out, algBuilderFactory, "CottontailSortRule" + out.getName() );
     }
 
 
     @Override
-    public boolean matches( RelOptRuleCall call ) {
-        final Sort sort = call.rel( 0 );
+    public boolean matches( AlgOptRuleCall call ) {
+        final Sort sort = call.alg( 0 );
         return sort.getCollation().getFieldCollations().size() > 0 || sort.fetch != null || sort.offset != null;
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        Sort sort = (Sort) rel;
-        final RelTraitSet traitSet = sort.getTraitSet().replace( out );
-        final RelNode input;
-        final RelTraitSet inputTraitSet = sort.getInput().getTraitSet().replace( out );
+    public AlgNode convert( AlgNode alg ) {
+        Sort sort = (Sort) alg;
+        final AlgTraitSet traitSet = sort.getTraitSet().replace( out );
+        final AlgNode input;
+        final AlgTraitSet inputTraitSet = sort.getInput().getTraitSet().replace( out );
         input = convert( sort.getInput(), inputTraitSet );
 
         return new CottontailSort( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );

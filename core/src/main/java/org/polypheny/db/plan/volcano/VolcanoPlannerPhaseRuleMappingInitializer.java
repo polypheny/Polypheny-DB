@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,16 +36,16 @@ package org.polypheny.db.plan.volcano;
 
 import java.util.Map;
 import java.util.Set;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleOperand;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleOperand;
 
 
 /**
  * VolcanoPlannerPhaseRuleMappingInitializer describes an inteface for initializing the mapping of {@link VolcanoPlannerPhase}s to sets of rule descriptions.
  *
- * <b>Note:</b> Rule descriptions are obtained via {@link RelOptRule#toString()}. By default they are the class's simple name (e.g. class name sans package),
+ * <b>Note:</b> Rule descriptions are obtained via {@link AlgOptRule#toString()}. By default they are the class's simple name (e.g. class name sans package),
  * unless the class is an inner class, in which case the default is the inner class's simple name. Some rules explicitly provide alternate descriptions by calling the
- * {@link RelOptRule#RelOptRule(RelOptRuleOperand, String)} constructor.
+ * {@link AlgOptRule#AlgOptRule(AlgOptRuleOperand, String)} constructor.
  */
 public interface VolcanoPlannerPhaseRuleMappingInitializer {
 
@@ -56,5 +56,6 @@ public interface VolcanoPlannerPhaseRuleMappingInitializer {
      * @param phaseRuleMap a {@link VolcanoPlannerPhase}-to-rule map
      */
     void initialize( Map<VolcanoPlannerPhase, Set<String>> phaseRuleMap );
+
 }
 

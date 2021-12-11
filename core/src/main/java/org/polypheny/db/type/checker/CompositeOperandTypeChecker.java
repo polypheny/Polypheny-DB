@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.util.Util;
@@ -123,7 +123,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         if ( allowedSignatures != null ) {
             return allowedSignatures;
         }
@@ -133,7 +133,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
         StringBuilder ret = new StringBuilder();
         for ( Ord<PolyOperandTypeChecker> ord : Ord.<PolyOperandTypeChecker>zip( allowedRules ) ) {
             if ( ord.i > 0 ) {
-                ret.append( SqlOperator.NL );
+                ret.append( Operator.NL );
             }
             ret.append( ord.e.getAllowedSignatures( op, opName ) );
             if ( composition == Composition.AND ) {
@@ -244,7 +244,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         if ( check( callBinding ) ) {
             return true;
         }
@@ -262,7 +262,7 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
     }
 
 
-    private boolean check( SqlCallBinding callBinding ) {
+    private boolean check( CallBinding callBinding ) {
         switch ( composition ) {
             case REPEAT:
                 if ( !range.isValidCount( callBinding.getOperandCount() ) ) {

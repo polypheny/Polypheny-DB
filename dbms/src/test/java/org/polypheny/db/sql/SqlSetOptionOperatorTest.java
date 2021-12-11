@@ -39,8 +39,12 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.sql.sql.SqlCall;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.sql.sql.SqlSetOption;
 
 
 /**
@@ -49,34 +53,34 @@ import org.polypheny.db.sql.parser.SqlParser;
 public class SqlSetOptionOperatorTest {
 
     @Test
-    public void testSqlSetOptionOperatorScopeSet() throws SqlParseException {
-        SqlNode node = parse( "alter system set optionA.optionB.optionC = true" );
+    public void testSqlSetOptionOperatorScopeSet() throws NodeParseException {
+        Node node = parse( "alter system set optionA.optionB.optionC = true" );
         checkSqlSetOptionSame( node );
     }
 
 
-    public SqlNode parse( String s ) throws SqlParseException {
-        return SqlParser.create( s ).parseStmt();
+    public Node parse( String s ) throws NodeParseException {
+        return Parser.create( s ).parseStmt();
     }
 
 
     @Test
-    public void testSqlSetOptionOperatorScopeReset() throws SqlParseException {
-        SqlNode node = parse( "alter session reset param1.param2.param3" );
+    public void testSqlSetOptionOperatorScopeReset() throws NodeParseException {
+        Node node = parse( "alter session reset param1.param2.param3" );
         checkSqlSetOptionSame( node );
     }
 
 
-    private static void checkSqlSetOptionSame( SqlNode node ) {
+    private static void checkSqlSetOptionSame( Node node ) {
         SqlSetOption opt = (SqlSetOption) node;
         SqlNode[] sqlNodes = new SqlNode[opt.getOperandList().size()];
-        SqlCall returned = opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getParserPosition(), opt.getOperandList().toArray( sqlNodes ) );
+        SqlCall returned = (SqlCall) opt.getOperator().createCall( opt.getFunctionQuantifier(), opt.getPos(), opt.getOperandList().toArray( sqlNodes ) );
         assertThat( opt.getClass(), equalTo( (Class) returned.getClass() ) );
         SqlSetOption optRet = (SqlSetOption) returned;
         assertThat( optRet.getScope(), is( opt.getScope() ) );
         assertThat( optRet.getName(), is( opt.getName() ) );
         assertThat( optRet.getFunctionQuantifier(), is( opt.getFunctionQuantifier() ) );
-        assertThat( optRet.getParserPosition(), is( opt.getParserPosition() ) );
+        assertThat( optRet.getPos(), is( opt.getPos() ) );
         assertThat( optRet.getValue(), is( opt.getValue() ) );
         assertThat( optRet.toString(), is( opt.toString() ) );
     }

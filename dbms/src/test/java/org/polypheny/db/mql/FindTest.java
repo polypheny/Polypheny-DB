@@ -28,7 +28,7 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.mongoql.model.Result;
+import org.polypheny.db.webui.models.Result;
 
 
 @Category({ AdapterTestSuite.class, FileExcluded.class, CassandraExcluded.class })

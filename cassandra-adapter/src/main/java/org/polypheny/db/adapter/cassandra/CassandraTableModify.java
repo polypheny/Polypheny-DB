@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,27 +24,27 @@ import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.cassandra.CassandraRel.CassandraImplementContext.Type;
+import org.polypheny.db.adapter.cassandra.CassandraAlg.CassandraImplementContext.Type;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.util.Pair;
 
 
 @Slf4j
-public class CassandraTableModify extends TableModify implements CassandraRel {
+public class CassandraTableModify extends TableModify implements CassandraAlg {
 
     public final CassandraTable cassandraTable;
 
@@ -57,22 +57,22 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
      * <pre>UPDATE table SET iden1 = exp1, ident2 = exp2  WHERE condition</pre>
      * </blockquote>
      *
-     * @param cluster              Cluster this relational expression belongs to
-     * @param traitSet             Traits of this relational expression
-     * @param table                Target table to modify
-     * @param catalogReader        accessor to the table metadata.
-     * @param input                Sub-query or filter condition
-     * @param operation            Modify operation (INSERT, UPDATE, DELETE)
-     * @param updateColumnList     List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
+     * @param cluster Cluster this relational expression belongs to
+     * @param traitSet Traits of this relational expression
+     * @param table Target table to modify
+     * @param catalogReader accessor to the table metadata.
+     * @param input Sub-query or filter condition
+     * @param operation Modify operation (INSERT, UPDATE, DELETE)
+     * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
-     * @param flattened            Whether set flattens the input row type
+     * @param flattened Whether set flattens the input row type
      */
     public CassandraTableModify(
-            RelOptCluster cluster,
-            RelTraitSet traitSet,
-            RelOptTable table,
+            AlgOptCluster cluster,
+            AlgTraitSet traitSet,
+            AlgOptTable table,
             CatalogReader catalogReader,
-            RelNode input,
+            AlgNode input,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,
@@ -83,19 +83,19 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new CassandraTableModify(
                 getCluster(),
                 traitSet,
                 getTable(),
                 getCatalogReader(),
-                AbstractRelNode.sole( inputs ),
+                AbstractAlgNode.sole( inputs ),
                 getOperation(),
                 getUpdateColumnList(),
                 getSourceExpressionList(),
@@ -104,7 +104,7 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
+    public void register( AlgOptPlanner planner ) {
         getConvention().register( planner );
     }
 
@@ -163,4 +163,5 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
                 throw new RuntimeException( "Merge is not supported." );
         }
     }
+
 }

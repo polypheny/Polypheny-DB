@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,18 +41,18 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.core.Join;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.util.BuiltInMethod;
@@ -62,21 +62,21 @@ import org.polypheny.db.util.Pair;
 /**
  * Implementation of {@link Join} in {@link EnumerableConvention enumerable calling convention} that allows conditions that are not just {@code =} (equals).
  */
-public class EnumerableThetaJoin extends Join implements EnumerableRel {
+public class EnumerableThetaJoin extends Join implements EnumerableAlg {
 
     /**
      * Creates an EnumerableThetaJoin.
      */
-    protected EnumerableThetaJoin( RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType ) throws InvalidRelException {
+    protected EnumerableThetaJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, variablesSet, joinType );
     }
 
 
     @Override
-    public EnumerableThetaJoin copy( RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone ) {
+    public EnumerableThetaJoin copy( AlgTraitSet traitSet, RexNode condition, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         try {
             return new EnumerableThetaJoin( getCluster(), traitSet, left, right, condition, variablesSet, joinType );
-        } catch ( InvalidRelException e ) {
+        } catch ( InvalidAlgException e ) {
             // Semantic error not possible. Must be a bug. Convert to internal error.
             throw new AssertionError( e );
         }
@@ -86,18 +86,18 @@ public class EnumerableThetaJoin extends Join implements EnumerableRel {
     /**
      * Creates an EnumerableThetaJoin.
      */
-    public static EnumerableThetaJoin create( RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType ) throws InvalidRelException {
-        final RelOptCluster cluster = left.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet =
+    public static EnumerableThetaJoin create( AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+        final AlgOptCluster cluster = left.getCluster();
+        final AlgMetadataQuery mq = cluster.getMetadataQuery();
+        final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
-                        .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableThetaJoin( mq, left, right, joinType ) );
+                        .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableThetaJoin( mq, left, right, joinType ) );
         return new EnumerableThetaJoin( cluster, traitSet, left, right, condition, variablesSet, joinType );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         double rowCount = mq.getRowCount( this );
 
         // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost. To make the results stable between versions of the planner,
@@ -147,11 +147,11 @@ public class EnumerableThetaJoin extends Join implements EnumerableRel {
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );
+        final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
         Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
-        final Result rightResult = implementor.visitChild( this, 1, (EnumerableRel) right, pref );
+        final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
         Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
         final BlockBuilder builder2 = new BlockBuilder();
@@ -170,7 +170,7 @@ public class EnumerableThetaJoin extends Join implements EnumerableRel {
     }
 
 
-    Expression predicate( EnumerableRelImplementor implementor, BlockBuilder builder, PhysType leftPhysType, PhysType rightPhysType, RexNode condition ) {
+    Expression predicate( EnumerableAlgImplementor implementor, BlockBuilder builder, PhysType leftPhysType, PhysType rightPhysType, RexNode condition ) {
         final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaRowType(), "left" );
         final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaRowType(), "right" );
         final RexProgramBuilder program =
@@ -183,8 +183,10 @@ public class EnumerableThetaJoin extends Join implements EnumerableRel {
                         getCluster().getRexBuilder() );
         program.addCondition( condition );
         builder.add(
-                Expressions.return_( null,
-                        RexToLixTranslator.translateCondition( program.getProgram(),
+                Expressions.return_(
+                        null,
+                        RexToLixTranslator.translateCondition(
+                                program.getProgram(),
                                 implementor.getTypeFactory(),
                                 builder,
                                 new RexToLixTranslator.InputGetterImpl( ImmutableList.of( Pair.of( (Expression) left_, leftPhysType ), Pair.of( (Expression) right_, rightPhysType ) ) ),
@@ -192,5 +194,6 @@ public class EnumerableThetaJoin extends Join implements EnumerableRel {
                                 implementor.getConformance() ) ) );
         return Expressions.lambda( Predicate2.class, builder.toBlock(), left_, right_ );
     }
+
 }
 

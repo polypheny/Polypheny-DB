@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,15 +42,15 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Correlate;
-import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.sql.SemiJoinType;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.SemiJoinType;
+import org.polypheny.db.algebra.core.Correlate;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -58,9 +58,9 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Implementation of {@link Correlate} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableCorrelate extends Correlate implements EnumerableRel {
+public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
 
-    public EnumerableCorrelate( RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    public EnumerableCorrelate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
         super( cluster, traits, left, right, correlationId, requiredColumns, joinType );
     }
 
@@ -68,24 +68,24 @@ public class EnumerableCorrelate extends Correlate implements EnumerableRel {
     /**
      * Creates an EnumerableCorrelate.
      */
-    public static EnumerableCorrelate create( RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
-        final RelOptCluster cluster = left.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableCorrelate( mq, left, right, joinType ) );
+    public static EnumerableCorrelate create( AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+        final AlgOptCluster cluster = left.getCluster();
+        final AlgMetadataQuery mq = cluster.getMetadataQuery();
+        final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableCorrelate( mq, left, right, joinType ) );
         return new EnumerableCorrelate( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );
     }
 
 
     @Override
-    public EnumerableCorrelate copy( RelTraitSet traitSet, RelNode left, RelNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+    public EnumerableCorrelate copy( AlgTraitSet traitSet, AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
         return new EnumerableCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );
+        final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
         Expression leftExpression = builder.append( "left", leftResult.block );
 
         final BlockBuilder corrBlock = new BlockBuilder();
@@ -102,7 +102,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableRel {
 
         implementor.registerCorrelVariable( getCorrelVariable(), corrRef, corrBlock, leftResult.physType );
 
-        final Result rightResult = implementor.visitChild( this, 1, (EnumerableRel) right, pref );
+        final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
 
         implementor.clearCorrelVariable( getCorrelVariable() );
 
@@ -130,5 +130,6 @@ public class EnumerableCorrelate extends Correlate implements EnumerableRel {
 
         return implementor.result( physType, builder.toBlock() );
     }
+
 }
 

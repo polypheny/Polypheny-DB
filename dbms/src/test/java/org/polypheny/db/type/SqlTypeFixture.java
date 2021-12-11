@@ -34,33 +34,34 @@
 package org.polypheny.db.type;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 
 
 /**
- * Reusable {@link RelDataType} fixtures for tests.
+ * Reusable {@link AlgDataType} fixtures for tests.
  */
 class SqlTypeFixture {
 
-    PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-    final RelDataType sqlBoolean = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
-    final RelDataType sqlBigInt = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), false );
-    final RelDataType sqlBigIntNullable = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), true );
-    final RelDataType sqlInt = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), false );
-    final RelDataType sqlDate = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.DATE ), false );
-    final RelDataType sqlVarchar = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.VARCHAR ), false );
-    final RelDataType sqlChar = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.CHAR ), false );
-    final RelDataType sqlVarcharNullable = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.VARCHAR ), true );
-    final RelDataType sqlNull = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.NULL ), false );
-    final RelDataType sqlAny = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), false );
-    final RelDataType sqlFloat = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.FLOAT ), false );
-    final RelDataType arrayFloat = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlFloat, -1 ), false );
-    final RelDataType arrayBigInt = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlBigIntNullable, -1 ), false );
-    final RelDataType multisetFloat = typeFactory.createTypeWithNullability( typeFactory.createMultisetType( sqlFloat, -1 ), false );
-    final RelDataType multisetBigInt = typeFactory.createTypeWithNullability( typeFactory.createMultisetType( sqlBigIntNullable, -1 ), false );
-    final RelDataType arrayBigIntNullable = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlBigIntNullable, -1 ), true );
-    final RelDataType arrayOfArrayBigInt = typeFactory.createTypeWithNullability( typeFactory.createArrayType( arrayBigInt, -1 ), false );
-    final RelDataType arrayOfArrayFloat = typeFactory.createTypeWithNullability( typeFactory.createArrayType( arrayFloat, -1 ), false );
+    PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+    final AlgDataType sqlBoolean = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
+    final AlgDataType sqlBigInt = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), false );
+    final AlgDataType sqlBigIntNullable = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), true );
+    final AlgDataType sqlInt = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), false );
+    final AlgDataType sqlDate = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.DATE ), false );
+    final AlgDataType sqlVarchar = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.VARCHAR ), false );
+    final AlgDataType sqlChar = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.CHAR ), false );
+    final AlgDataType sqlVarcharNullable = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.VARCHAR ), true );
+    final AlgDataType sqlNull = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.NULL ), false );
+    final AlgDataType sqlAny = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), false );
+    final AlgDataType sqlFloat = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.FLOAT ), false );
+    final AlgDataType arrayFloat = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlFloat, -1 ), false );
+    final AlgDataType arrayBigInt = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlBigIntNullable, -1 ), false );
+    final AlgDataType multisetFloat = typeFactory.createTypeWithNullability( typeFactory.createMultisetType( sqlFloat, -1 ), false );
+    final AlgDataType multisetBigInt = typeFactory.createTypeWithNullability( typeFactory.createMultisetType( sqlBigIntNullable, -1 ), false );
+    final AlgDataType arrayBigIntNullable = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlBigIntNullable, -1 ), true );
+    final AlgDataType arrayOfArrayBigInt = typeFactory.createTypeWithNullability( typeFactory.createArrayType( arrayBigInt, -1 ), false );
+    final AlgDataType arrayOfArrayFloat = typeFactory.createTypeWithNullability( typeFactory.createArrayType( arrayFloat, -1 ), false );
+
 }
 

@@ -21,21 +21,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.Pair;
 
 public class EthereumPredicateFactory {
 
-    static final List<SqlKind> REX_COMPARATORS = new ArrayList<SqlKind>() {{
-        this.add( SqlKind.EQUALS );
-        this.add( SqlKind.LESS_THAN );
-        this.add( SqlKind.LESS_THAN_OR_EQUAL );
-        this.add( SqlKind.GREATER_THAN );
-        this.add( SqlKind.GREATER_THAN_OR_EQUAL );
+    static final List<Kind> REX_COMPARATORS = new ArrayList<Kind>() {{
+        this.add( Kind.EQUALS );
+        this.add( Kind.LESS_THAN );
+        this.add( Kind.LESS_THAN_OR_EQUAL );
+        this.add( Kind.GREATER_THAN );
+        this.add( Kind.GREATER_THAN_OR_EQUAL );
     }};
     static final Predicate<BigInteger> ALWAYS_TRUE = bigInteger -> true;
 
@@ -70,7 +70,7 @@ public class EthereumPredicateFactory {
         if ( filter.isA( REX_COMPARATORS ) ) {
             final RexCall call = (RexCall) filter;
             RexNode left = call.getOperands().get( 0 );
-            if ( left.isA( SqlKind.CAST ) ) {
+            if ( left.isA( Kind.CAST ) ) {
                 left = ((RexCall) left).operands.get( 0 );
             }
             final RexNode right = call.getOperands().get( 1 );
@@ -81,19 +81,19 @@ public class EthereumPredicateFactory {
                 }
                 exists = true;
                 BigInteger value = new BigInteger( String.valueOf( dataContext.getParameterValue( ((RexDynamicParam) right).getIndex() ) ) );
-                if ( filter.isA( SqlKind.EQUALS ) ) {
+                if ( filter.isA( Kind.EQUALS ) ) {
                     result = bigInteger.compareTo( value ) == 0;
-                } else if ( filter.isA( SqlKind.LESS_THAN ) ) {
+                } else if ( filter.isA( Kind.LESS_THAN ) ) {
                     result = bigInteger.compareTo( value ) == -1;
-                } else if ( filter.isA( SqlKind.LESS_THAN_OR_EQUAL ) ) {
+                } else if ( filter.isA( Kind.LESS_THAN_OR_EQUAL ) ) {
                     result = bigInteger.compareTo( value ) <= 0;
-                } else if ( filter.isA( SqlKind.GREATER_THAN ) ) {
+                } else if ( filter.isA( Kind.GREATER_THAN ) ) {
                     result = bigInteger.compareTo( value ) == 1;
-                } else if ( filter.isA( SqlKind.GREATER_THAN_OR_EQUAL ) ) {
+                } else if ( filter.isA( Kind.GREATER_THAN_OR_EQUAL ) ) {
                     result = bigInteger.compareTo( value ) >= 0;
                 }
             }
-        } else if ( filter.isA( SqlKind.AND ) ) {
+        } else if ( filter.isA( Kind.AND ) ) {
             for ( RexNode and : ((RexCall) filter).getOperands() ) {
                 Pair<Boolean, Boolean> x = match( bigInteger, dataContext, and, blockNumberField );
                 exists |= x.left;
@@ -101,7 +101,7 @@ public class EthereumPredicateFactory {
                     result &= x.right;
                 }
             }
-        } else if ( filter.isA( SqlKind.OR ) ) {
+        } else if ( filter.isA( Kind.OR ) ) {
             result = false;
             for ( RexNode and : ((RexCall) filter).getOperands() ) {
                 Pair<Boolean, Boolean> x = match( bigInteger, dataContext, and, blockNumberField );
@@ -110,7 +110,7 @@ public class EthereumPredicateFactory {
                     result |= x.right;
                 }
             }
-        } else if ( filter.isA( SqlKind.NOT ) ) {
+        } else if ( filter.isA( Kind.NOT ) ) {
             Pair<Boolean, Boolean> x = match( bigInteger, dataContext, ((RexCall) filter).getOperands().get( 0 ), blockNumberField );
             if ( x.left ) {
                 exists = true;

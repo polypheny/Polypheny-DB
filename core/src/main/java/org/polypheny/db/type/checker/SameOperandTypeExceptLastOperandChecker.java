@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ package org.polypheny.db.type.checker;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Static;
 
 
@@ -44,13 +44,13 @@ public class SameOperandTypeExceptLastOperandChecker extends SameOperandTypeChec
 
 
     @Override
-    protected boolean checkOperandTypesImpl( SqlOperatorBinding operatorBinding, boolean throwOnFailure, SqlCallBinding callBinding ) {
+    protected boolean checkOperandTypesImpl( OperatorBinding operatorBinding, boolean throwOnFailure, CallBinding callBinding ) {
         int nOperandsActual = nOperands;
         if ( nOperandsActual == -1 ) {
             nOperandsActual = operatorBinding.getOperandCount();
         }
         assert !(throwOnFailure && (callBinding == null));
-        RelDataType[] types = new RelDataType[nOperandsActual];
+        AlgDataType[] types = new AlgDataType[nOperandsActual];
         final List<Integer> operandList = getOperandList( operatorBinding.getOperandCount() );
         for ( int i : operandList ) {
             if ( operatorBinding.isOperandNull( i, false ) ) {
@@ -81,15 +81,16 @@ public class SameOperandTypeExceptLastOperandChecker extends SameOperandTypeChec
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         final String typeName = getTypeName();
         if ( nOperands == -1 ) {
-            return SqlUtil.getAliasedSignature( op, opName, ImmutableList.of( typeName, typeName, "..." ) );
+            return CoreUtil.getAliasedSignature( op, opName, ImmutableList.of( typeName, typeName, "..." ) );
         } else {
             List<String> types = Collections.nCopies( nOperands - 1, typeName );
             types.add( lastOperandTypeName );
-            return SqlUtil.getAliasedSignature( op, opName, types );
+            return CoreUtil.getAliasedSignature( op, opName, types );
         }
     }
+
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,27 +56,27 @@ import org.polypheny.db.adapter.enumerable.impl.WinAggAddContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.WinAggResetContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.WinAggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.core.Window;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.runtime.SortedMultiMap;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -85,24 +85,24 @@ import org.polypheny.db.util.Util;
 /**
  * Implementation of {@link Window} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableWindow extends Window implements EnumerableRel {
+public class EnumerableWindow extends Window implements EnumerableAlg {
 
     /**
      * Creates an EnumerableWindowRel.
      */
-    EnumerableWindow( RelOptCluster cluster, RelTraitSet traits, RelNode child, List<RexLiteral> constants, RelDataType rowType, List<Group> groups ) {
+    EnumerableWindow( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, List<RexLiteral> constants, AlgDataType rowType, List<Group> groups ) {
         super( cluster, traits, child, constants, rowType, groups );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new EnumerableWindow( getCluster(), traitSet, AbstractRelNode.sole( inputs ), constants, rowType, groups );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new EnumerableWindow( getCluster(), traitSet, AbstractAlgNode.sole( inputs ), constants, rowType, groups );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( EnumerableConvention.COST_MULTIPLIER );
     }
 
@@ -134,6 +134,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             }
             return constants.get( index - actualInputFieldCount );
         }
+
     }
 
 
@@ -185,9 +186,9 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
-        final EnumerableRel child = (EnumerableRel) getInput();
+        final EnumerableAlg child = (EnumerableAlg) getInput();
         final BlockBuilder builder = new BlockBuilder();
         final Result result = implementor.visitChild( this, 0, child, pref );
         Expression source_ = builder.append( "source", result.block );
@@ -237,7 +238,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             for ( AggImpState agg : aggs ) {
                 typeBuilder.add( agg.call.name, null, agg.call.type );
             }
-            RelDataType outputRowType = typeBuilder.build();
+            AlgDataType outputRowType = typeBuilder.build();
             final PhysType outputPhysType = PhysTypeImpl.of( typeFactory, outputRowType, pref.prefer( result.format ) );
 
             final Expression list_ =
@@ -319,7 +320,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
                 hasRows = builder4.append( "hasRows", Expressions.lessThanOrEqual( startTmp, endTmp ) );
                 builder4.add(
-                        Expressions.ifThenElse( hasRows,
+                        Expressions.ifThenElse(
+                                hasRows,
                                 Expressions.block(
                                         Expressions.statement( Expressions.assign( startPe, startTmp ) ),
                                         Expressions.statement( Expressions.assign( endPe, endTmp ) ) ),
@@ -391,7 +393,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
             final Function<AggImpState, List<RexNode>> rexArguments = agg -> {
                 List<Integer> argList = agg.call.getArgList();
-                List<RelDataType> inputTypes = EnumUtils.fieldRowTypes( result.physType.getRowType(), constants, argList );
+                List<AlgDataType> inputTypes = EnumUtils.fieldRowTypes( result.physType.getRowType(), constants, argList );
                 List<RexNode> args = new ArrayList<>( inputTypes.size() );
                 for ( int i = 0; i < argList.size(); i++ ) {
                     Integer idx = argList.get( i );
@@ -463,7 +465,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
     private Function<BlockBuilder, WinAggFrameResultContext>
     getBlockBuilderWinAggFrameResultContextFunction(
-            final JavaTypeFactory typeFactory, final SqlConformance conformance,
+            final JavaTypeFactory typeFactory, final Conformance conformance,
             final Result result, final List<Expression> translatedConstants,
             final Expression comparator_,
             final Expression rows_, final ParameterExpression i_,
@@ -510,7 +512,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                 }
 
                 //noinspection UnnecessaryLocalVariable
-                Expression res = block.append( "rowInFrame",
+                Expression res = block.append(
+                        "rowInFrame",
                         Expressions.foldAnd(
                                 ImmutableList.of(
                                         hasRows,
@@ -606,11 +609,13 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             //       SortedMultiMap.singletonArrayIterator(comparator, tempList);
             //   final List<Xxx> list = new ArrayList<Xxx>(tempList.size());
 
-            final Expression tempList_ = builder.append( "tempList",
+            final Expression tempList_ = builder.append(
+                    "tempList",
                     Expressions.convert_(
                             Expressions.call( source_, BuiltInMethod.INTO.method, Expressions.new_( ArrayList.class ) ),
                             List.class ) );
-            return Pair.of( tempList_,
+            return Pair.of(
+                    tempList_,
                     builder.append(
                             "iterator",
                             Expressions.call( null, BuiltInMethod.SORTED_MULTI_MAP_SINGLETON.method, comparator_, tempList_ ) ) );
@@ -649,7 +654,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                                 BuiltInMethod.ENUMERABLE_FOREACH.method,
                                 Expressions.lambda( builder2.toBlock(), v_ ) ) ) );
 
-        return Pair.of( multiMap_,
+        return Pair.of(
+                multiMap_,
                 builder.append(
                         "iterator",
                         Expressions.call(
@@ -677,32 +683,33 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             agg.context =
                     new WinAggContext() {
                         @Override
-                        public SqlAggFunction aggregation() {
+                        public AggFunction aggregation() {
                             return agg.call.getAggregation();
                         }
 
 
                         @Override
-                        public RelDataType returnRelType() {
+                        public AlgDataType returnAlgType() {
                             return agg.call.type;
                         }
 
 
                         @Override
                         public Type returnType() {
-                            return EnumUtils.javaClass( typeFactory, returnRelType() );
+                            return EnumUtils.javaClass( typeFactory, returnAlgType() );
                         }
 
 
                         @Override
                         public List<? extends Type> parameterTypes() {
-                            return EnumUtils.fieldTypes( typeFactory,
-                                    parameterRelTypes() );
+                            return EnumUtils.fieldTypes(
+                                    typeFactory,
+                                    parameterAlgTypes() );
                         }
 
 
                         @Override
-                        public List<? extends RelDataType> parameterRelTypes() {
+                        public List<? extends AlgDataType> parameterAlgTypes() {
                             return EnumUtils.fieldRowTypes( result.physType.getRowType(),
                                     constants, agg.call.getArgList() );
                         }
@@ -721,7 +728,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
 
                         @Override
-                        public List<? extends RelDataType> keyRelTypes() {
+                        public List<? extends AlgDataType> keyAlgTypes() {
                             throw new UnsupportedOperationException();
                         }
 
@@ -753,7 +760,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
 
             builder.add(
                     Expressions.declare( 0, aggRes,
-                            Expressions.constant( Primitive.is( aggRes.getType() )
+                            Expressions.constant(
+                                    Primitive.is( aggRes.getType() )
                                             ? Primitive.of( aggRes.getType() ).defaultValue
                                             : null,
                                     aggRes.getType() ) ) );
@@ -803,7 +811,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                 continue;
             }
             nonEmpty = true;
-            Expression res = agg.implementor.implementResult( agg.context,
+            Expression res = agg.implementor.implementResult(
+                    agg.context,
                     new WinAggResultContextImpl( builder, agg.state, frame ) {
                         @Override
                         public List<RexNode> rexArguments() {
@@ -818,7 +827,8 @@ public class EnumerableWindow extends Window implements EnumerableRel {
     }
 
 
-    private Expression translateBound( RexToLixTranslator translator, ParameterExpression i_, Expression row_, Expression min_, Expression max_, Expression rows_, Group group, boolean lower,
+    private Expression translateBound(
+            RexToLixTranslator translator, ParameterExpression i_, Expression row_, Expression min_, Expression max_, Expression rows_, Group group, boolean lower,
             PhysType physType, Expression rowComparator, Expression keySelector, Expression keyComparator ) {
         RexWindowBound bound = lower ? group.lowerBound : group.upperBound;
         if ( bound.isUnbounded() ) {
@@ -852,7 +862,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
             }
         }
 
-        List<RelFieldCollation> fieldCollations = group.collation().getFieldCollations();
+        List<AlgFieldCollation> fieldCollations = group.collation().getFieldCollations();
         if ( bound.isCurrentRow() && fieldCollations.size() != 1 ) {
             return Expressions.call(
                     (lower
@@ -863,7 +873,7 @@ public class EnumerableWindow extends Window implements EnumerableRel {
         assert fieldCollations.size() == 1 : "When using range window specification, ORDER BY should have exactly one expression. Actual collation is " + group.collation();
         // isRange
         int orderKey = fieldCollations.get( 0 ).getFieldIndex();
-        RelDataType keyType = physType.getRowType().getFieldList().get( orderKey ).getType();
+        AlgDataType keyType = physType.getRowType().getFieldList().get( orderKey ).getType();
         Type desiredKeyType = translator.typeFactory.getJavaClass( keyType );
         if ( bound.getOffset() == null ) {
             desiredKeyType = Primitive.box( desiredKeyType );
@@ -885,5 +895,6 @@ public class EnumerableWindow extends Window implements EnumerableRel {
                         : BuiltInMethod.BINARY_SEARCH6_UPPER).method,
                 rows_, val, searchLower, searchUpper, keySelector, keyComparator );
     }
+
 }
 

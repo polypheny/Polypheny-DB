@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,10 @@ import java.util.TimeZone;
 import org.apache.calcite.avatica.ConnectionProperty;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.NullCollation;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
-import org.polypheny.db.util.Bug;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.algebra.constant.Lex;
+import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 
 
 /**
@@ -57,7 +57,8 @@ import org.polypheny.db.util.Bug;
 public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
 
     /**
-     * How NULL values should be sorted if neither NULLS FIRST nor NULLS LAST are specified. The default, HIGH, sorts NULL values the same as Oracle.
+     * How NULL values should be sorted if neither NULLS FIRST nor NULLS LAST are specified. The default, HIGH, sorts NULL
+     * values the same as Oracle.
      */
     DEFAULT_NULL_COLLATION( "defaultNullCollation", Type.ENUM, NullCollation.HIGH, true, NullCollation.class ),
 
@@ -77,7 +78,8 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     LEX( "lex", Type.ENUM, Lex.POLYPHENY, false ),
 
     /**
-     * Collection of built-in functions and operators. Valid values include "standard", "oracle" and "spatial", and also comma-separated lists, for example "oracle,spatial".
+     * Collection of built-in functions and operators. Valid values include "standard", "oracle" and "spatial", and also
+     * comma-separated lists, for example "oracle,spatial".
      */
     FUN( "fun", Type.STRING, "standard", true ),
 
@@ -96,11 +98,10 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
      */
     UNQUOTED_CASING( "unquotedCasing", Type.ENUM, null, false, Casing.class ),
 
-
     /**
      * Parser factory.
      *
-     * The name of a class that implements {@link org.polypheny.db.sql.parser.SqlParserImplFactory}.
+     * The name of a class that implements {#@link org.polypheny.db.sql.parser.SqlParserImplFactory}.
      */
     PARSER_FACTORY( "parserFactory", Type.PLUGIN, null, false ),
 
@@ -110,25 +111,27 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     SCHEMA( "schema", Type.STRING, null, false ),
 
     /**
-     * Returns the time zone from the connect string, for example 'gmt-3'. If the time zone is not set then the JVM time zone is returned.
-     * Never null.
+     * Returns the time zone from the connect string, for example 'gmt-3'. If the time zone is not set then the JVM time zone
+     * is returned. Never null.
      */
     TIME_ZONE( "timeZone", Type.STRING, TimeZone.getDefault().getID(), false ),
 
     /**
-     * If the planner should try de-correlating as much as it is possible. If true (the default), Polypheny-DB de-correlates the plan.
+     * If the planner should try de-correlating as much as it is possible. If true (the default), Polypheny-DB de-correlates
+     * the plan.
      */
     FORCE_DECORRELATE( "forceDecorrelate", Type.BOOLEAN, true, false ),
 
     /**
-     * Type system. The name of a class that implements {@link org.polypheny.db.rel.type.RelDataTypeSystem} and has a public default constructor or an {@code INSTANCE} constant.
+     * Type system. The name of a class that implements {@link AlgDataTypeSystem} and has a
+     * public default constructor or an {@code INSTANCE} constant.
      */
     TYPE_SYSTEM( "typeSystem", Type.PLUGIN, null, false ),
 
     /**
      * SQL conformance level.
      */
-    CONFORMANCE( "conformance", Type.ENUM, SqlConformanceEnum.DEFAULT, false );
+    CONFORMANCE( "conformance", Type.ENUM, ConformanceEnum.DEFAULT, false );
 
     private final String camelName;
     private final Type type;
@@ -205,7 +208,6 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
      * Fixed version of {@link org.apache.calcite.avatica.ConnectionConfigImpl#parse} until we upgrade Avatica.
      */
     private static Map<ConnectionProperty, String> parse2( Properties properties, Map<String, ? extends ConnectionProperty> nameToProps ) {
-        Bug.upgrade( "avatica-1.10" );
         final Map<ConnectionProperty, String> map = new LinkedHashMap<>();
         for ( String name : properties.stringPropertyNames() ) {
             final ConnectionProperty connectionProperty = nameToProps.get( name.toUpperCase( Locale.ROOT ) );
@@ -220,4 +222,3 @@ public enum PolyphenyDbConnectionProperty implements ConnectionProperty {
     }
 
 }
-

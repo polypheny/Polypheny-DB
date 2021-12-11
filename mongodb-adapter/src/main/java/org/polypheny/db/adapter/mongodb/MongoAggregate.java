@@ -37,50 +37,51 @@ package org.polypheny.db.adapter.mongodb;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.fun.SqlSingleValueAggFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.fun.SqlSumAggFunction;
-import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.sql.sql.fun.SqlSingleValueAggFunction;
+import org.polypheny.db.sql.sql.fun.SqlSumAggFunction;
+import org.polypheny.db.sql.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Aggregate} relational expression in MongoDB.
+ * Implementation of {@link org.polypheny.db.algebra.core.Aggregate} relational expression in MongoDB.
  */
-public class MongoAggregate extends Aggregate implements MongoRel {
+public class MongoAggregate extends Aggregate implements MongoAlg {
 
-    public MongoAggregate( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidRelException {
+    public MongoAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
         assert getConvention() == CONVENTION;
         assert getConvention() == child.getConvention();
 
         for ( AggregateCall aggCall : aggCalls ) {
             if ( aggCall.isDistinct() ) {
-                throw new InvalidRelException( "distinct aggregation not supported" );
+                throw new InvalidAlgException( "distinct aggregation not supported" );
             }
         }
         switch ( getGroupType() ) {
             case SIMPLE:
                 break;
             default:
-                throw new InvalidRelException( "unsupported group type: " + getGroupType() );
+                throw new InvalidAlgException( "unsupported group type: " + getGroupType() );
         }
     }
 
 
     @Override
-    public Aggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public Aggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         try {
             return new MongoAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
-        } catch ( InvalidRelException e ) {
+        } catch ( InvalidAlgException e ) {
             // Semantic error not possible. Must be a bug. Convert to internal error.
             throw new AssertionError( e );
         }
@@ -147,8 +148,8 @@ public class MongoAggregate extends Aggregate implements MongoRel {
     }
 
 
-    private String toMongo( SqlAggFunction aggregation, List<String> inNames, List<Integer> args, Implementor implementor ) {
-        if ( aggregation == SqlStdOperatorTable.COUNT ) {
+    private String toMongo( AggFunction aggregation, List<String> inNames, List<Integer> args, Implementor implementor ) {
+        if ( aggregation.getOperatorName() == OperatorName.COUNT ) {
             if ( args.size() == 0 ) {
                 return "{$sum: 1}";
             } else {
@@ -162,17 +163,17 @@ public class MongoAggregate extends Aggregate implements MongoRel {
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$sum: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == SqlStdOperatorTable.MIN ) {
+        } else if ( aggregation.getOperatorName() == OperatorName.MIN ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$min: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == SqlStdOperatorTable.MAX ) {
+        } else if ( aggregation.equals( OperatorRegistry.getAgg( OperatorName.MAX ) ) ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );
             return "{$max: " + MongoRules.maybeQuote( "$" + inName ) + "}";
-        } else if ( aggregation == SqlStdOperatorTable.AVG || aggregation.kind == SqlStdOperatorTable.AVG.kind ) {
+        } else if ( aggregation.getOperatorName() == OperatorName.AVG || aggregation.getKind() == OperatorRegistry.getAgg( OperatorName.AVG ).getKind() ) {
             assert args.size() == 1;
             final String inName = inNames.get( args.get( 0 ) );
             implementor.physicalMapper.add( inName );

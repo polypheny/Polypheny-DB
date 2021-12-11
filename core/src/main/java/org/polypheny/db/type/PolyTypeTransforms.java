@@ -36,10 +36,10 @@ package org.polypheny.db.type;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.util.Util;
 
 
@@ -68,7 +68,7 @@ public abstract class PolyTypeTransforms {
      * and only if all of a call's operands are nullable.
      */
     public static final PolyTypeTransform TO_NULLABLE_ALL = ( opBinding, type ) -> {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.createTypeWithNullability( type, PolyTypeUtil.allNullable( opBinding.collectOperandTypes() ) );
     };
 
@@ -95,7 +95,7 @@ public abstract class PolyTypeTransforms {
      */
     public static final PolyTypeTransform LEAST_NULLABLE =
             ( opBinding, typeToTransform ) -> {
-                for ( RelDataType type : opBinding.collectOperandTypes() ) {
+                for ( AlgDataType type : opBinding.collectOperandTypes() ) {
                     if ( !type.isNullable() ) {
                         return opBinding.getTypeFactory().createTypeWithNullability( typeToTransform, false );
                     }
@@ -111,7 +111,7 @@ public abstract class PolyTypeTransforms {
     public static final PolyTypeTransform TO_VARYING =
             new PolyTypeTransform() {
                 @Override
-                public RelDataType transformType( SqlOperatorBinding opBinding, RelDataType typeToTransform ) {
+                public AlgDataType transformType( OperatorBinding opBinding, AlgDataType typeToTransform ) {
                     switch ( typeToTransform.getPolyType() ) {
                         case VARCHAR:
                         case VARBINARY:
@@ -120,7 +120,7 @@ public abstract class PolyTypeTransforms {
 
                     PolyType retTypeName = toVar( typeToTransform );
 
-                    RelDataType ret = opBinding.getTypeFactory().createPolyType( retTypeName, typeToTransform.getPrecision() );
+                    AlgDataType ret = opBinding.getTypeFactory().createPolyType( retTypeName, typeToTransform.getPrecision() );
                     if ( PolyTypeUtil.inCharFamily( typeToTransform ) ) {
                         ret = opBinding.getTypeFactory()
                                 .createTypeWithCharsetAndCollation(
@@ -132,7 +132,7 @@ public abstract class PolyTypeTransforms {
                 }
 
 
-                private PolyType toVar( RelDataType type ) {
+                private PolyType toVar( AlgDataType type ) {
                     final PolyType polyType = type.getPolyType();
                     switch ( polyType ) {
                         case CHAR:
@@ -158,7 +158,7 @@ public abstract class PolyTypeTransforms {
     /**
      * Parameter type-inference transform strategy that wraps a given type in a multiset.
      *
-     * @see RelDataTypeFactory#createMultisetType(RelDataType, long)
+     * @see AlgDataTypeFactory#createMultisetType(AlgDataType, long)
      */
     public static final PolyTypeTransform TO_MULTISET = ( opBinding, typeToTransform ) -> opBinding.getTypeFactory().createMultisetType( typeToTransform, -1 );
 
@@ -168,7 +168,7 @@ public abstract class PolyTypeTransforms {
      */
     public static final PolyTypeTransform ONLY_COLUMN =
             ( opBinding, typeToTransform ) -> {
-                final List<RelDataTypeField> fields = typeToTransform.getFieldList();
+                final List<AlgDataTypeField> fields = typeToTransform.getFieldList();
                 assert fields.size() == 1;
                 return fields.get( 0 ).getType();
             };

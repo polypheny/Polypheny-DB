@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,6 @@ import java.lang.management.MemoryType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -106,13 +105,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.runtime.ConsList;
 import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.runtime.Resources;
-import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.util.SqlBuilder;
-import org.polypheny.db.sql.util.SqlString;
-import org.polypheny.db.test.DiffTestCase;
 import org.polypheny.db.test.Matchers;
 
 
@@ -515,40 +509,6 @@ public class UtilTest {
 
 
     /**
-     * Tests the difference engine, {@link DiffTestCase#diff}.
-     */
-    @Test
-    public void testDiffLines() {
-        String[] before = {
-                "Get a dose of her in jackboots and kilt",
-                "She's killer-diller when she's dressed to the hilt",
-                "She's the kind of a girl that makes The News of The World",
-                "Yes you could say she was attractively built.",
-                "Yeah yeah yeah."
-        };
-        String[] after = {
-                "Get a dose of her in jackboots and kilt",
-                "(they call her \"Polythene Pam\")",
-                "She's killer-diller when she's dressed to the hilt",
-                "She's the kind of a girl that makes The Sunday Times",
-                "seem more interesting.",
-                "Yes you could say she was attractively built."
-        };
-        String diff = DiffTestCase.diffLines( Arrays.asList( before ), Arrays.asList( after ) );
-        assertThat( Util.toLinux( diff ),
-                equalTo( "1a2\n"
-                        + "> (they call her \"Polythene Pam\")\n"
-                        + "3c4,5\n"
-                        + "< She's the kind of a girl that makes The News of The World\n"
-                        + "---\n"
-                        + "> She's the kind of a girl that makes The Sunday Times\n"
-                        + "> seem more interesting.\n"
-                        + "5d6\n"
-                        + "< Yeah yeah yeah.\n" ) );
-    }
-
-
-    /**
      * Tests the {@link Util#toPosix(TimeZone, boolean)} method.
      */
     @Test
@@ -620,50 +580,6 @@ public class UtilTest {
         assertEquals( "HEAP", Util.enumVal( MemoryType.class, "HEAP" ).name() );
         assertNull( Util.enumVal( MemoryType.class, "heap" ) );
         assertNull( Util.enumVal( MemoryType.class, "nonexistent" ) );
-    }
-
-
-    /**
-     * Tests SQL builders.
-     */
-    @Test
-    public void testSqlBuilder() {
-        final SqlBuilder buf = new SqlBuilder( PolyphenyDbSqlDialect.DEFAULT );
-        assertEquals( 0, buf.length() );
-        buf.append( "select " );
-        assertEquals( "select ", buf.getSql() );
-
-        buf.identifier( "x" );
-        assertEquals( "select \"x\"", buf.getSql() );
-
-        buf.append( ", " );
-        buf.identifier( "y", "a b" );
-        assertEquals( "select \"x\", \"y\".\"a b\"", buf.getSql() );
-
-        final SqlString sqlString = buf.toSqlString();
-        assertEquals( PolyphenyDbSqlDialect.DEFAULT, sqlString.getDialect() );
-        assertEquals( buf.getSql(), sqlString.getSql() );
-
-        assertTrue( buf.getSql().length() > 0 );
-        assertEquals( buf.getSqlAndClear(), sqlString.getSql() );
-        assertEquals( 0, buf.length() );
-
-        buf.clear();
-        assertEquals( 0, buf.length() );
-
-        buf.literal( "can't get no satisfaction" );
-        assertEquals( "'can''t get no satisfaction'", buf.getSqlAndClear() );
-
-        buf.literal( new Timestamp( 0 ) );
-        assertEquals( "TIMESTAMP '1970-01-01 00:00:00'", buf.getSqlAndClear() );
-
-        buf.clear();
-        assertEquals( 0, buf.length() );
-
-        buf.append( "hello world" );
-        assertEquals( 2, buf.indexOf( "l" ) );
-        assertEquals( -1, buf.indexOf( "z" ) );
-        assertEquals( 9, buf.indexOf( "l", 5 ) );
     }
 
 
@@ -1280,7 +1196,7 @@ public class UtilTest {
         final List<Enumerator<List<String>>> list = new ArrayList<>();
         list.add( Linq4j.enumerator( l2( l1( "a" ), l1( "b" ) ) ) );
         list.add( Linq4j.enumerator( l3( l2( "x", "p" ), l2( "y", "q" ), l2( "z", "r" ) ) ) );
-        final Enumerable<FlatLists.ComparableList<String>> product = SqlFunctions.product( list, 3, false );
+        final Enumerable<FlatLists.ComparableList<String>> product = Functions.product( list, 3, false );
         int n = 0;
         FlatLists.ComparableList<String> previous = FlatLists.of();
         for ( FlatLists.ComparableList<String> strings : product ) {
@@ -2284,7 +2200,7 @@ public class UtilTest {
 
     @Test
     public void testNlsStringClone() {
-        final NlsString s = new NlsString( "foo", "LATIN1", SqlCollation.IMPLICIT );
+        final NlsString s = new NlsString( "foo", "LATIN1", Collation.IMPLICIT );
         assertThat( s.toString(), is( "_LATIN1'foo'" ) );
         final Object s2 = s.clone();
         assertThat( s2, instanceOf( NlsString.class ) );
@@ -2473,5 +2389,6 @@ public class UtilTest {
         m.describeTo( d );
         return d.toString();
     }
+
 }
 

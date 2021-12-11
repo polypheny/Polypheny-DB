@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ package org.polypheny.db.rex;
 
 
 import java.util.Objects;
-import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -51,7 +51,7 @@ public class RexCorrelVariable extends RexVariable {
     public final CorrelationId id;
 
 
-    RexCorrelVariable( CorrelationId id, RelDataType type ) {
+    RexCorrelVariable( CorrelationId id, AlgDataType type ) {
         super( id.getName(), type );
         this.id = Objects.requireNonNull( id );
     }
@@ -70,8 +70,8 @@ public class RexCorrelVariable extends RexVariable {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.CORREL_VARIABLE;
+    public Kind getKind() {
+        return Kind.CORREL_VARIABLE;
     }
 
 
@@ -89,5 +89,6 @@ public class RexCorrelVariable extends RexVariable {
     public int hashCode() {
         return Objects.hash( digest, type, id );
     }
+
 }
 

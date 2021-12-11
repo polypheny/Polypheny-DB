@@ -41,13 +41,15 @@ import java.util.List;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.junit.Test;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgReferentialConstraint;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelDistribution;
-import org.polypheny.db.rel.RelReferentialConstraint;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Schema;
@@ -55,17 +57,16 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.core.SqlLanguagelDependant;
+import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
- * Tests for {@link RelToSqlConverter} on a schema that has nested structures of multiple levels.
+ * Tests for {@link AlgToSqlConverter} on a schema that has nested structures of multiple levels.
  */
-public class RelToSqlConverterStructsTest {
+public class RelToSqlConverterStructsTest extends SqlLanguagelDependant {
 
     private static final Schema SCHEMA = new Schema() {
         @Override
@@ -81,7 +82,7 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public RelProtoDataType getType( String name ) {
+        public AlgProtoDataType getType( String name ) {
             return null;
         }
 
@@ -138,16 +139,16 @@ public class RelToSqlConverterStructsTest {
     // { a: INT, n1: { n11: { b INT }, n12: {c: Int } }, n2: { d: Int }, e: Int }
     private static final Table TABLE = new Table() {
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-            final RelDataType aType = typeFactory.createPolyType( PolyType.BIGINT );
-            final RelDataType bType = typeFactory.createPolyType( PolyType.BIGINT );
-            final RelDataType cType = typeFactory.createPolyType( PolyType.BIGINT );
-            final RelDataType dType = typeFactory.createPolyType( PolyType.BIGINT );
-            final RelDataType eType = typeFactory.createPolyType( PolyType.BIGINT );
-            final RelDataType n11Type = typeFactory.createStructType( ImmutableList.of( bType ), ImmutableList.of( "b" ) );
-            final RelDataType n12Type = typeFactory.createStructType( ImmutableList.of( cType ), ImmutableList.of( "c" ) );
-            final RelDataType n1Type = typeFactory.createStructType( ImmutableList.of( n11Type, n12Type ), ImmutableList.of( "n11", "n12" ) );
-            final RelDataType n2Type = typeFactory.createStructType( ImmutableList.of( dType ), ImmutableList.of( "d" ) );
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+            final AlgDataType aType = typeFactory.createPolyType( PolyType.BIGINT );
+            final AlgDataType bType = typeFactory.createPolyType( PolyType.BIGINT );
+            final AlgDataType cType = typeFactory.createPolyType( PolyType.BIGINT );
+            final AlgDataType dType = typeFactory.createPolyType( PolyType.BIGINT );
+            final AlgDataType eType = typeFactory.createPolyType( PolyType.BIGINT );
+            final AlgDataType n11Type = typeFactory.createStructType( ImmutableList.of( bType ), ImmutableList.of( "b" ) );
+            final AlgDataType n12Type = typeFactory.createStructType( ImmutableList.of( cType ), ImmutableList.of( "c" ) );
+            final AlgDataType n1Type = typeFactory.createStructType( ImmutableList.of( n11Type, n12Type ), ImmutableList.of( "n11", "n12" ) );
+            final AlgDataType n2Type = typeFactory.createStructType( ImmutableList.of( dType ), ImmutableList.of( "d" ) );
             return typeFactory.createStructType(
                     ImmutableList.of( aType, n1Type, n2Type, eType ),
                     ImmutableList.of( "a", "n1", "n2", "e" ) );
@@ -173,7 +174,7 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
+        public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
             return false;
         }
     };
@@ -192,19 +193,19 @@ public class RelToSqlConverterStructsTest {
 
 
         @Override
-        public List<RelReferentialConstraint> getReferentialConstraints() {
+        public List<AlgReferentialConstraint> getReferentialConstraints() {
             return ImmutableList.of();
         }
 
 
         @Override
-        public List<RelCollation> getCollations() {
+        public List<AlgCollation> getCollations() {
             return ImmutableList.of();
         }
 
 
         @Override
-        public RelDistribution getDistribution() {
+        public AlgDistribution getDistribution() {
             return null;
         }
     };
@@ -212,12 +213,12 @@ public class RelToSqlConverterStructsTest {
     private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( "" ).add( "myDb", SCHEMA, SchemaType.RELATIONAL ).plus();
 
 
-    private RelToSqlConverterTest.Sql sql( String sql ) {
-        return new RelToSqlConverterTest.Sql(
+    private AlgToSqlConverterTest.Sql sql( String sql ) {
+        return new AlgToSqlConverterTest.Sql(
                 ROOT_SCHEMA,
                 sql,
                 PolyphenyDbSqlDialect.DEFAULT,
-                RelToSqlConverterTest.DEFAULT_REL_CONFIG,
+                AlgToSqlConverterTest.DEFAULT_REL_CONFIG,
                 ImmutableList.of() );
     }
 

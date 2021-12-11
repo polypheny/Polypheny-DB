@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,9 @@ package org.polypheny.db.config;
 import org.apache.calcite.avatica.ConnectionConfig;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
-import org.polypheny.db.sql.Lex;
-import org.polypheny.db.sql.NullCollation;
-import org.polypheny.db.sql.validate.SqlConformance;
-
+import org.polypheny.db.algebra.constant.Lex;
+import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.util.Conformance;
 
 /**
  * Interface for reading connection properties within Polypheny-DB code. There is a method for every property.
@@ -101,12 +100,13 @@ public interface PolyphenyDbConnectionConfig extends ConnectionConfig {
     /**
      * @see PolyphenyDbConnectionProperty#CONFORMANCE
      */
-    SqlConformance conformance();
+    Conformance conformance();
 
     /**
      * @see PolyphenyDbConnectionProperty#TIME_ZONE
      */
     @Override
     String timeZone();
+
 }
 

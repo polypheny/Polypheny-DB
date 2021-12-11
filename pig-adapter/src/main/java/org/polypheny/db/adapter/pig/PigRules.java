@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,20 +36,20 @@ package org.polypheny.db.adapter.pig;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableScan;
 
 
 /**
- * Various {@link RelOptRule}s using the Pig convention.
+ * Various {@link AlgOptRule}s using the Pig convention.
  */
 public class PigRules {
 
@@ -62,7 +62,7 @@ public class PigRules {
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalFilter} to a {@link PigFilter}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalFilter} to a {@link PigFilter}.
      */
     private static class PigFilterRule extends ConverterRule {
 
@@ -70,16 +70,17 @@ public class PigRules {
 
 
         private PigFilterRule() {
-            super( LogicalFilter.class, Convention.NONE, PigRel.CONVENTION, "PigFilterRule" );
+            super( LogicalFilter.class, Convention.NONE, PigAlg.CONVENTION, "PigFilterRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalFilter filter = (LogicalFilter) rel;
-            final RelTraitSet traitSet = filter.getTraitSet().replace( PigRel.CONVENTION );
-            return new PigFilter( rel.getCluster(), traitSet, convert( filter.getInput(), PigRel.CONVENTION ), filter.getCondition() );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalFilter filter = (LogicalFilter) alg;
+            final AlgTraitSet traitSet = filter.getTraitSet().replace( PigAlg.CONVENTION );
+            return new PigFilter( alg.getCluster(), traitSet, convert( filter.getInput(), PigAlg.CONVENTION ), filter.getCondition() );
         }
+
     }
 
 
@@ -92,21 +93,22 @@ public class PigRules {
 
 
         private PigTableScanRule() {
-            super( LogicalTableScan.class, Convention.NONE, PigRel.CONVENTION, "PigTableScanRule" );
+            super( LogicalTableScan.class, Convention.NONE, PigAlg.CONVENTION, "PigTableScanRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalTableScan scan = (LogicalTableScan) rel;
-            final RelTraitSet traitSet = scan.getTraitSet().replace( PigRel.CONVENTION );
-            return new PigTableScan( rel.getCluster(), traitSet, scan.getTable() );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalTableScan scan = (LogicalTableScan) alg;
+            final AlgTraitSet traitSet = scan.getTraitSet().replace( PigAlg.CONVENTION );
+            return new PigTableScan( alg.getCluster(), traitSet, scan.getTable() );
         }
+
     }
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalProject} to a {@link PigProject}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link PigProject}.
      */
     private static class PigProjectRule extends ConverterRule {
 
@@ -114,21 +116,22 @@ public class PigRules {
 
 
         private PigProjectRule() {
-            super( LogicalProject.class, Convention.NONE, PigRel.CONVENTION, "PigProjectRule" );
+            super( LogicalProject.class, Convention.NONE, PigAlg.CONVENTION, "PigProjectRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalProject project = (LogicalProject) rel;
-            final RelTraitSet traitSet = project.getTraitSet().replace( PigRel.CONVENTION );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalProject project = (LogicalProject) alg;
+            final AlgTraitSet traitSet = project.getTraitSet().replace( PigAlg.CONVENTION );
             return new PigProject( project.getCluster(), traitSet, project.getInput(), project.getProjects(), project.getRowType() );
         }
+
     }
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalAggregate} to a {@link PigAggregate}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalAggregate} to a {@link PigAggregate}.
      */
     private static class PigAggregateRule extends ConverterRule {
 
@@ -136,21 +139,22 @@ public class PigRules {
 
 
         private PigAggregateRule() {
-            super( LogicalAggregate.class, Convention.NONE, PigRel.CONVENTION, "PigAggregateRule" );
+            super( LogicalAggregate.class, Convention.NONE, PigAlg.CONVENTION, "PigAggregateRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalAggregate agg = (LogicalAggregate) rel;
-            final RelTraitSet traitSet = agg.getTraitSet().replace( PigRel.CONVENTION );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalAggregate agg = (LogicalAggregate) alg;
+            final AlgTraitSet traitSet = agg.getTraitSet().replace( PigAlg.CONVENTION );
             return new PigAggregate( agg.getCluster(), traitSet, agg.getInput(), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
         }
+
     }
 
 
     /**
-     * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalJoin} to a {@link PigJoin}.
+     * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalJoin} to a {@link PigJoin}.
      */
     private static class PigJoinRule extends ConverterRule {
 
@@ -158,16 +162,18 @@ public class PigRules {
 
 
         private PigJoinRule() {
-            super( LogicalJoin.class, Convention.NONE, PigRel.CONVENTION, "PigJoinRule" );
+            super( LogicalJoin.class, Convention.NONE, PigAlg.CONVENTION, "PigJoinRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            final LogicalJoin join = (LogicalJoin) rel;
-            final RelTraitSet traitSet = join.getTraitSet().replace( PigRel.CONVENTION );
+        public AlgNode convert( AlgNode alg ) {
+            final LogicalJoin join = (LogicalJoin) alg;
+            final AlgTraitSet traitSet = join.getTraitSet().replace( PigAlg.CONVENTION );
             return new PigJoin( join.getCluster(), traitSet, join.getLeft(), join.getRight(), join.getCondition(), join.getJoinType() );
         }
+
     }
+
 }
 

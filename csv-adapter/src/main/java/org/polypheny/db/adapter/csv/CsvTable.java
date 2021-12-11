@@ -37,9 +37,9 @@ package org.polypheny.db.adapter.csv;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Source;
 
@@ -50,7 +50,7 @@ import org.polypheny.db.util.Source;
 public abstract class CsvTable extends AbstractTable {
 
     protected final Source source;
-    protected final RelProtoDataType protoRowType;
+    protected final AlgProtoDataType protoRowType;
     protected List<CsvFieldType> fieldTypes;
     protected final int[] fields;
     protected final CsvSource csvSource;
@@ -59,7 +59,7 @@ public abstract class CsvTable extends AbstractTable {
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    CsvTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
@@ -69,7 +69,7 @@ public abstract class CsvTable extends AbstractTable {
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
         }
@@ -88,5 +88,6 @@ public abstract class CsvTable extends AbstractTable {
     public enum Flavor {
         SCANNABLE, FILTERABLE, TRANSLATABLE
     }
+
 }
 

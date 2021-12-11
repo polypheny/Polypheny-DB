@@ -51,25 +51,26 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.reflect.TypeUtils;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.DataTypeSpec;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql.validate.SqlValidatorScope;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
@@ -82,21 +83,21 @@ public abstract class PolyTypeUtil {
      *
      * @return Returns true if all operands are of char type and if they are comparable, i.e. of the same charset and collation of same charset
      */
-    public static boolean isCharTypeComparable( List<RelDataType> argTypes ) {
+    public static boolean isCharTypeComparable( List<AlgDataType> argTypes ) {
         assert argTypes != null;
         assert argTypes.size() >= 2;
 
         // Filter out ANY elements.
-        List<RelDataType> argTypes2 = new ArrayList<>();
-        for ( RelDataType t : argTypes ) {
+        List<AlgDataType> argTypes2 = new ArrayList<>();
+        for ( AlgDataType t : argTypes ) {
             if ( !isAny( t ) ) {
                 argTypes2.add( t );
             }
         }
 
-        for ( Pair<RelDataType, RelDataType> pair : Pair.adjacents( argTypes2 ) ) {
-            RelDataType t0 = pair.left;
-            RelDataType t1 = pair.right;
+        for ( Pair<AlgDataType, AlgDataType> pair : Pair.adjacents( argTypes2 ) ) {
+            AlgDataType t0 = pair.left;
+            AlgDataType t1 = pair.right;
 
             if ( !inCharFamily( t0 ) || !inCharFamily( t1 ) ) {
                 return false;
@@ -127,9 +128,9 @@ public abstract class PolyTypeUtil {
      * @param throwOnFailure Whether to throw an exception on failure
      * @return whether operands are valid
      */
-    public static boolean isCharTypeComparable( SqlCallBinding binding, List<SqlNode> operands, boolean throwOnFailure ) {
-        final SqlValidator validator = binding.getValidator();
-        final SqlValidatorScope scope = binding.getScope();
+    public static boolean isCharTypeComparable( CallBinding binding, List<? extends Node> operands, boolean throwOnFailure ) {
+        final Validator validator = binding.getValidator();
+        final ValidatorScope scope = binding.getScope();
         assert operands != null;
         assert operands.size() >= 2;
 
@@ -153,10 +154,10 @@ public abstract class PolyTypeUtil {
     /**
      * Iterates over all operands, derives their types, and collects them into a list.
      */
-    public static List<RelDataType> deriveAndCollectTypes( SqlValidator validator, SqlValidatorScope scope, List<SqlNode> operands ) {
+    public static List<AlgDataType> deriveAndCollectTypes( Validator validator, ValidatorScope scope, List<? extends Node> operands ) {
         // NOTE: Do not use an AbstractList. Don't want to be lazy. We want errors.
-        List<RelDataType> types = new ArrayList<>();
-        for ( SqlNode operand : operands ) {
+        List<AlgDataType> types = new ArrayList<>();
+        for ( Node operand : operands ) {
             types.add( validator.deriveType( scope, operand ) );
         }
         return types;
@@ -170,7 +171,7 @@ public abstract class PolyTypeUtil {
      * @param fieldName name to give field in row type; null for default of "ROW_VALUE"
      * @return row type
      */
-    public static RelDataType promoteToRowType( RelDataTypeFactory typeFactory, RelDataType type, String fieldName ) {
+    public static AlgDataType promoteToRowType( AlgDataTypeFactory typeFactory, AlgDataType type, String fieldName ) {
         if ( !type.isStruct() ) {
             if ( fieldName == null ) {
                 fieldName = "ROW_VALUE";
@@ -182,26 +183,9 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Recreates a given RelDataType with nullability iff any of the operands of a call are nullable.
-     */
-    public static RelDataType makeNullableIfOperandsAre( final SqlValidator validator, final SqlValidatorScope scope, final SqlCall call, RelDataType type ) {
-        for ( SqlNode operand : call.getOperandList() ) {
-            RelDataType operandType = validator.deriveType( scope, operand );
-
-            if ( containsNullable( operandType ) ) {
-                RelDataTypeFactory typeFactory = validator.getTypeFactory();
-                type = typeFactory.createTypeWithNullability( type, true );
-                break;
-            }
-        }
-        return type;
-    }
-
-
-    /**
      * Recreates a given RelDataType with nullability iff any of the param argTypes are nullable.
      */
-    public static RelDataType makeNullableIfOperandsAre( final RelDataTypeFactory typeFactory, final List<RelDataType> argTypes, RelDataType type ) {
+    public static AlgDataType makeNullableIfOperandsAre( final AlgDataTypeFactory typeFactory, final List<AlgDataType> argTypes, AlgDataType type ) {
         Objects.requireNonNull( type );
         if ( containsNullable( argTypes ) ) {
             type = typeFactory.createTypeWithNullability( type, true );
@@ -213,8 +197,8 @@ public abstract class PolyTypeUtil {
     /**
      * Returns whether all of array of types are nullable.
      */
-    public static boolean allNullable( List<RelDataType> types ) {
-        for ( RelDataType type : types ) {
+    public static boolean allNullable( List<AlgDataType> types ) {
+        for ( AlgDataType type : types ) {
             if ( !containsNullable( type ) ) {
                 return false;
             }
@@ -226,8 +210,8 @@ public abstract class PolyTypeUtil {
     /**
      * Returns whether one or more of an array of types is nullable.
      */
-    public static boolean containsNullable( List<RelDataType> types ) {
-        for ( RelDataType type : types ) {
+    public static boolean containsNullable( List<AlgDataType> types ) {
+        for ( AlgDataType type : types ) {
             if ( containsNullable( type ) ) {
                 return true;
             }
@@ -239,14 +223,14 @@ public abstract class PolyTypeUtil {
     /**
      * Determines whether a type or any of its fields (if a structured type) are nullable.
      */
-    public static boolean containsNullable( RelDataType type ) {
+    public static boolean containsNullable( AlgDataType type ) {
         if ( type.isNullable() ) {
             return true;
         }
         if ( !type.isStruct() ) {
             return false;
         }
-        for ( RelDataTypeField field : type.getFieldList() ) {
+        for ( AlgDataTypeField field : type.getFieldList() ) {
             if ( containsNullable( field.getType() ) ) {
                 return true;
             }
@@ -258,7 +242,7 @@ public abstract class PolyTypeUtil {
     /**
      * Returns typeName.equals(type.getPolyType()). If typeName.equals(PolyType.Any) true is always returned.
      */
-    public static boolean isOfSameTypeName( PolyType typeName, RelDataType type ) {
+    public static boolean isOfSameTypeName( PolyType typeName, AlgDataType type ) {
         return PolyType.ANY == typeName || typeName == type.getPolyType();
     }
 
@@ -266,9 +250,9 @@ public abstract class PolyTypeUtil {
     /**
      * Returns true if any element in <code>typeNames</code> matches type.getPolyType().
      *
-     * @see #isOfSameTypeName(PolyType, RelDataType)
+     * @see #isOfSameTypeName(PolyType, AlgDataType)
      */
-    public static boolean isOfSameTypeName( Collection<PolyType> typeNames, RelDataType type ) {
+    public static boolean isOfSameTypeName( Collection<PolyType> typeNames, AlgDataType type ) {
         for ( PolyType typeName : typeNames ) {
             if ( isOfSameTypeName( typeName, type ) ) {
                 return true;
@@ -281,7 +265,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is DATE, TIME, or TIMESTAMP
      */
-    public static boolean isDatetime( RelDataType type ) {
+    public static boolean isDatetime( AlgDataType type ) {
         return PolyTypeFamily.DATETIME.contains( type );
     }
 
@@ -289,7 +273,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is some kind of INTERVAL
      */
-    public static boolean isInterval( RelDataType type ) {
+    public static boolean isInterval( AlgDataType type ) {
         return PolyTypeFamily.DATETIME_INTERVAL.contains( type );
     }
 
@@ -297,7 +281,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is in SqlTypeFamily.Character
      */
-    public static boolean inCharFamily( RelDataType type ) {
+    public static boolean inCharFamily( AlgDataType type ) {
         return type.getFamily() == PolyTypeFamily.CHARACTER;
     }
 
@@ -313,7 +297,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is in SqlTypeFamily.Boolean
      */
-    public static boolean inBooleanFamily( RelDataType type ) {
+    public static boolean inBooleanFamily( AlgDataType type ) {
         return type.getFamily() == PolyTypeFamily.BOOLEAN;
     }
 
@@ -321,7 +305,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if two types are in same type family
      */
-    public static boolean inSameFamily( RelDataType t1, RelDataType t2 ) {
+    public static boolean inSameFamily( AlgDataType t1, AlgDataType t2 ) {
         return t1.getFamily() == t2.getFamily();
     }
 
@@ -329,7 +313,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if two types are in same type family, or one or the other is of type {@link PolyType#NULL}.
      */
-    public static boolean inSameFamilyOrNull( RelDataType t1, RelDataType t2 ) {
+    public static boolean inSameFamilyOrNull( AlgDataType t1, AlgDataType t2 ) {
         return (t1.getPolyType() == PolyType.NULL)
                 || (t2.getPolyType() == PolyType.NULL)
                 || (t1.getFamily() == t2.getFamily());
@@ -339,7 +323,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type family is either character or binary
      */
-    public static boolean inCharOrBinaryFamilies( RelDataType type ) {
+    public static boolean inCharOrBinaryFamilies( AlgDataType type ) {
         return (type.getFamily() == PolyTypeFamily.CHARACTER) || (type.getFamily() == PolyTypeFamily.BINARY);
     }
 
@@ -347,7 +331,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is a LOB of some kind
      */
-    public static boolean isLob( RelDataType type ) {
+    public static boolean isLob( AlgDataType type ) {
         // TODO jvs 9-Dec-2004:  once we support LOB types
         return false;
     }
@@ -356,7 +340,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is variable width with bounded precision
      */
-    public static boolean isBoundedVariableWidth( RelDataType type ) {
+    public static boolean isBoundedVariableWidth( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
@@ -377,7 +361,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is one of the integer types
      */
-    public static boolean isIntType( RelDataType type ) {
+    public static boolean isIntType( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
@@ -397,7 +381,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is decimal
      */
-    public static boolean isDecimal( RelDataType type ) {
+    public static boolean isDecimal( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
@@ -409,7 +393,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is bigint
      */
-    public static boolean isBigint( RelDataType type ) {
+    public static boolean isBigint( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
@@ -421,7 +405,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is numeric with exact precision
      */
-    public static boolean isExactNumeric( RelDataType type ) {
+    public static boolean isExactNumeric( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
@@ -442,7 +426,7 @@ public abstract class PolyTypeUtil {
     /**
      * Returns whether a type's scale is set.
      */
-    public static boolean hasScale( RelDataType type ) {
+    public static boolean hasScale( AlgDataType type ) {
         return type.getScale() != Integer.MIN_VALUE;
     }
 
@@ -450,7 +434,7 @@ public abstract class PolyTypeUtil {
     /**
      * Returns the maximum value of an integral type, as a long value
      */
-    public static long maxValue( RelDataType type ) {
+    public static long maxValue( AlgDataType type ) {
         assert PolyTypeUtil.isIntType( type );
         switch ( type.getPolyType() ) {
             case TINYINT:
@@ -470,7 +454,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is numeric with approximate precision
      */
-    public static boolean isApproximateNumeric( RelDataType type ) {
+    public static boolean isApproximateNumeric( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
@@ -489,7 +473,7 @@ public abstract class PolyTypeUtil {
     /**
      * @return true if type is numeric
      */
-    public static boolean isNumeric( RelDataType type ) {
+    public static boolean isNumeric( AlgDataType type ) {
         return isExactNumeric( type ) || isApproximateNumeric( type );
     }
 
@@ -501,7 +485,7 @@ public abstract class PolyTypeUtil {
      *
      * @return true if types have same name and structure
      */
-    public static boolean sameNamedType( RelDataType t1, RelDataType t2 ) {
+    public static boolean sameNamedType( AlgDataType t1, AlgDataType t2 ) {
         if ( t1.isStruct() || t2.isStruct() ) {
             if ( !t1.isStruct() || !t2.isStruct() ) {
                 return false;
@@ -509,8 +493,8 @@ public abstract class PolyTypeUtil {
             if ( t1.getFieldCount() != t2.getFieldCount() ) {
                 return false;
             }
-            List<RelDataTypeField> fields1 = t1.getFieldList();
-            List<RelDataTypeField> fields2 = t2.getFieldList();
+            List<AlgDataTypeField> fields1 = t1.getFieldList();
+            List<AlgDataTypeField> fields2 = t2.getFieldList();
             for ( int i = 0; i < fields1.size(); ++i ) {
                 if ( !sameNamedType( fields1.get( i ).getType(), fields2.get( i ).getType() ) ) {
                     return false;
@@ -518,8 +502,8 @@ public abstract class PolyTypeUtil {
             }
             return true;
         }
-        RelDataType comp1 = t1.getComponentType();
-        RelDataType comp2 = t2.getComponentType();
+        AlgDataType comp1 = t1.getComponentType();
+        AlgDataType comp2 = t2.getComponentType();
         if ( (comp1 != null) || (comp2 != null) ) {
             if ( (comp1 == null) || (comp2 == null) ) {
                 return false;
@@ -540,7 +524,7 @@ public abstract class PolyTypeUtil {
      * @param type type for which to compute storage
      * @return maximum bytes, or 0 for a fixed-width type or type with unknown maximum
      */
-    public static int getMaxByteSize( RelDataType type ) {
+    public static int getMaxByteSize( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
 
         if ( typeName == null ) {
@@ -573,7 +557,7 @@ public abstract class PolyTypeUtil {
      *
      * @param type a numeric type
      */
-    public static long getMinValue( RelDataType type ) {
+    public static long getMinValue( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         switch ( typeName ) {
             case TINYINT:
@@ -596,7 +580,7 @@ public abstract class PolyTypeUtil {
      *
      * @param type a numeric type
      */
-    public static long getMaxValue( RelDataType type ) {
+    public static long getMaxValue( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
         switch ( typeName ) {
             case TINYINT:
@@ -614,7 +598,7 @@ public abstract class PolyTypeUtil {
     }
 
 
-    private static boolean isAny( RelDataType t ) {
+    private static boolean isAny( AlgDataType t ) {
         return t.getFamily() == PolyTypeFamily.ANY;
     }
 
@@ -626,7 +610,7 @@ public abstract class PolyTypeUtil {
      * @param fromType type of the source value
      * @return true iff assignable
      */
-    public static boolean canAssignFrom( RelDataType toType, RelDataType fromType ) {
+    public static boolean canAssignFrom( AlgDataType toType, AlgDataType fromType ) {
         if ( isAny( toType ) || isAny( fromType ) ) {
             return true;
         }
@@ -646,8 +630,8 @@ public abstract class PolyTypeUtil {
             ArrayType fromPolyType = (ArrayType) fromType;
             ArrayType toPolyType = (ArrayType) toType;
             //check if the nested types can be assigned
-            RelDataType fromComponentType = fromPolyType.getNestedComponentType();
-            RelDataType toComponentType = toPolyType.getNestedComponentType();
+            AlgDataType fromComponentType = fromPolyType.getNestedComponentType();
+            AlgDataType toComponentType = toPolyType.getNestedComponentType();
             return canAssignFrom( toComponentType, fromComponentType );
         }
 
@@ -673,7 +657,7 @@ public abstract class PolyTypeUtil {
      * @param t2 second type
      * @return true iff mismatched
      */
-    public static boolean areCharacterSetsMismatched( RelDataType t1, RelDataType t2 ) {
+    public static boolean areCharacterSetsMismatched( AlgDataType t1, AlgDataType t2 ) {
         if ( isAny( t1 ) || isAny( t2 ) ) {
             return false;
         }
@@ -701,7 +685,7 @@ public abstract class PolyTypeUtil {
      * @param coerce if true, the SQL rules for CAST are used; if false, the rules are similar to Java; e.g. you can't assign short x = (int) y, and you can't assign int x = (String) z.
      * @return true iff cast is legal
      */
-    public static boolean canCastFrom( RelDataType toType, RelDataType fromType, boolean coerce ) {
+    public static boolean canCastFrom( AlgDataType toType, AlgDataType fromType, boolean coerce ) {
         if ( toType == fromType ) {
             return true;
         }
@@ -729,8 +713,8 @@ public abstract class PolyTypeUtil {
                     return false;
                 }
                 for ( int i = 0; i < n; ++i ) {
-                    RelDataTypeField toField = toType.getFieldList().get( i );
-                    RelDataTypeField fromField = fromType.getFieldList().get( i );
+                    AlgDataTypeField toField = toType.getFieldList().get( i );
+                    AlgDataTypeField fromField = fromType.getFieldList().get( i );
                     if ( !canCastFrom( toField.getType(), fromField.getType(), coerce ) ) {
                         return false;
                     }
@@ -750,9 +734,9 @@ public abstract class PolyTypeUtil {
                 return toType.getFamily() == fromType.getFamily();
             }
         }
-        RelDataType c1 = toType.getComponentType();
+        AlgDataType c1 = toType.getComponentType();
         if ( c1 != null ) {
-            RelDataType c2 = fromType.getComponentType();
+            AlgDataType c2 = fromType.getComponentType();
             if ( c2 == null ) {
                 return false;
             }
@@ -788,19 +772,19 @@ public abstract class PolyTypeUtil {
      * @param flatteningMap if non-null, receives map from unflattened ordinal to flattened ordinal (must have length at least recordType.getFieldList().size())
      * @return flattened equivalent
      */
-    public static RelDataType flattenRecordType( RelDataTypeFactory typeFactory, RelDataType recordType, int[] flatteningMap ) {
+    public static AlgDataType flattenRecordType( AlgDataTypeFactory typeFactory, AlgDataType recordType, int[] flatteningMap ) {
         if ( !recordType.isStruct() ) {
             return recordType;
         }
-        List<RelDataTypeField> fieldList = new ArrayList<>();
+        List<AlgDataTypeField> fieldList = new ArrayList<>();
         boolean nested = flattenFields( typeFactory, recordType, fieldList, flatteningMap );
         if ( !nested ) {
             return recordType;
         }
-        List<RelDataType> types = new ArrayList<>();
+        List<AlgDataType> types = new ArrayList<>();
         List<String> fieldNames = new ArrayList<>();
         int i = -1;
-        for ( RelDataTypeField field : fieldList ) {
+        for ( AlgDataTypeField field : fieldList ) {
             ++i;
             types.add( field.getType() );
             fieldNames.add( field.getName() + "_" + i );
@@ -809,26 +793,26 @@ public abstract class PolyTypeUtil {
     }
 
 
-    public static boolean needsNullIndicator( RelDataType recordType ) {
+    public static boolean needsNullIndicator( AlgDataType recordType ) {
         // NOTE jvs: It would be more storage-efficient to say that no null indicator is required for structured type columns
         // declared as NOT NULL.  However, the uniformity of always having a null indicator makes things cleaner in many places.
         return recordType.getPolyType() == PolyType.STRUCTURED;
     }
 
 
-    private static boolean flattenFields( RelDataTypeFactory typeFactory, RelDataType type, List<RelDataTypeField> list, int[] flatteningMap ) {
+    private static boolean flattenFields( AlgDataTypeFactory typeFactory, AlgDataType type, List<AlgDataTypeField> list, int[] flatteningMap ) {
         boolean nested = false;
         if ( needsNullIndicator( type ) ) {
-            // NOTE jvs 9-Mar-2005:  other code (e.g. RelStructuredTypeFlattener) relies on the null indicator field coming first.
-            RelDataType indicatorType = typeFactory.createPolyType( PolyType.BOOLEAN );
+            // NOTE jvs 9-Mar-2005:  other code (e.g. AlgStructuredTypeFlattener) relies on the null indicator field coming first.
+            AlgDataType indicatorType = typeFactory.createPolyType( PolyType.BOOLEAN );
             if ( type.isNullable() ) {
                 indicatorType = typeFactory.createTypeWithNullability( indicatorType, true );
             }
-            RelDataTypeField nullIndicatorField = new RelDataTypeFieldImpl( "NULL_VALUE", 0, indicatorType );
+            AlgDataTypeField nullIndicatorField = new AlgDataTypeFieldImpl( "NULL_VALUE", 0, indicatorType );
             list.add( nullIndicatorField );
             nested = true;
         }
-        for ( RelDataTypeField field : type.getFieldList() ) {
+        for ( AlgDataTypeField field : type.getFieldList() ) {
             if ( flatteningMap != null ) {
                 flatteningMap[field.getIndex()] = list.size();
             }
@@ -839,7 +823,7 @@ public abstract class PolyTypeUtil {
                 nested = true;
 
                 // TODO jvs: generalize to any kind of collection type
-                RelDataType flattenedCollectionType =
+                AlgDataType flattenedCollectionType =
                         typeFactory.createMultisetType(
                                 flattenRecordType( typeFactory, field.getType().getComponentType(), null ),
                                 -1 );
@@ -849,7 +833,7 @@ public abstract class PolyTypeUtil {
                                     flattenRecordType( typeFactory, field.getType().getComponentType(), null ),
                                     -1 );
                 }
-                field = new RelDataTypeFieldImpl( field.getName(), field.getIndex(), flattenedCollectionType );
+                field = new AlgDataTypeFieldImpl( field.getName(), field.getIndex(), flattenedCollectionType );
                 list.add( field );
             } else {
                 list.add( field );
@@ -865,12 +849,12 @@ public abstract class PolyTypeUtil {
      * @param type type descriptor
      * @return corresponding parse representation
      */
-    public static SqlDataTypeSpec convertTypeToSpec( RelDataType type ) {
+    public static DataTypeSpec convertTypeToSpec( AlgDataType type ) {
         PolyType typeName = type.getPolyType();
 
         // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
         assert typeName != null;
-        SqlIdentifier typeIdentifier = new SqlIdentifier( typeName.name(), SqlParserPos.ZERO );
+        Identifier typeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, typeName.name(), ParserPos.ZERO );
 
         String charSetName = null;
 
@@ -884,25 +868,28 @@ public abstract class PolyTypeUtil {
         // REVIEW angel: Use neg numbers to indicate unspecified precision/scale
 
         if ( typeName.allowsScale() ) {
-            return new SqlDataTypeSpec(
+            return LanguageManager.getInstance().createDataTypeSpec(
+                    QueryLanguage.SQL,
                     typeIdentifier,
                     type.getPrecision(),
                     type.getScale(),
                     charSetName,
                     null,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         } else if ( typeName.allowsPrec() ) {
-            return new SqlDataTypeSpec(
+            return LanguageManager.getInstance().createDataTypeSpec(
+                    QueryLanguage.SQL,
                     typeIdentifier,
                     type.getPrecision(),
                     -1,
                     charSetName,
                     null,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
             ArrayType arrayType = (ArrayType) type;
-            SqlIdentifier componentTypeIdentifier = new SqlIdentifier( arrayType.getComponentType().getPolyType().getName(), SqlParserPos.ZERO );
-            return new SqlDataTypeSpec(
+            Identifier componentTypeIdentifier = LanguageManager.getInstance().createIdentifier( QueryLanguage.SQL, arrayType.getComponentType().getPolyType().getName(), ParserPos.ZERO );
+            return LanguageManager.getInstance().createDataTypeSpec(
+                    QueryLanguage.SQL,
                     typeIdentifier,
                     componentTypeIdentifier,
                     arrayType.getComponentType().getPrecision(),
@@ -912,33 +899,34 @@ public abstract class PolyTypeUtil {
                     charSetName,
                     null,
                     arrayType.isNullable(),
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         } else {
-            return new SqlDataTypeSpec(
+            return LanguageManager.getInstance().createDataTypeSpec(
+                    QueryLanguage.SQL,
                     typeIdentifier,
                     -1,
                     -1,
                     charSetName,
                     null,
-                    SqlParserPos.ZERO );
+                    ParserPos.ZERO );
         }
     }
 
 
-    public static RelDataType createMultisetType( RelDataTypeFactory typeFactory, RelDataType type, boolean nullable ) {
-        RelDataType ret = typeFactory.createMultisetType( type, -1 );
+    public static AlgDataType createMultisetType( AlgDataTypeFactory typeFactory, AlgDataType type, boolean nullable ) {
+        AlgDataType ret = typeFactory.createMultisetType( type, -1 );
         return typeFactory.createTypeWithNullability( ret, nullable );
     }
 
 
-    public static RelDataType createArrayType( RelDataTypeFactory typeFactory, RelDataType type, boolean nullable, int dimension, int cardinality ) {
-        RelDataType rdt = typeFactory.createArrayType( type, cardinality, dimension );
+    public static AlgDataType createArrayType( AlgDataTypeFactory typeFactory, AlgDataType type, boolean nullable, int dimension, int cardinality ) {
+        AlgDataType rdt = typeFactory.createArrayType( type, cardinality, dimension );
         return typeFactory.createTypeWithNullability( rdt, nullable );
     }
 
 
-    public static RelDataType createMapType( RelDataTypeFactory typeFactory, RelDataType keyType, RelDataType valueType, boolean nullable ) {
-        RelDataType ret = typeFactory.createMapType( keyType, valueType );
+    public static AlgDataType createMapType( AlgDataTypeFactory typeFactory, AlgDataType keyType, AlgDataType valueType, boolean nullable ) {
+        AlgDataType ret = typeFactory.createMapType( keyType, valueType );
         return typeFactory.createTypeWithNullability( ret, nullable );
     }
 
@@ -950,7 +938,7 @@ public abstract class PolyTypeUtil {
      * @param typeFactory Type factory
      * @return Type with added charset and collation, or unchanged type if it is not a char type.
      */
-    public static RelDataType addCharsetAndCollation( RelDataType type, RelDataTypeFactory typeFactory ) {
+    public static AlgDataType addCharsetAndCollation( AlgDataType type, AlgDataTypeFactory typeFactory ) {
         if ( !inCharFamily( type ) ) {
             return type;
         }
@@ -958,14 +946,14 @@ public abstract class PolyTypeUtil {
         if ( charset == null ) {
             charset = typeFactory.getDefaultCharset();
         }
-        SqlCollation collation = type.getCollation();
+        Collation collation = type.getCollation();
         if ( collation == null ) {
-            collation = SqlCollation.IMPLICIT;
+            collation = Collation.IMPLICIT;
         }
 
         // todo: should get the implicit collation from repository instead of null
         type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
-        SqlValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
+        ValidatorUtil.checkCharsetAndCollateConsistentIfCharType( type );
         return type;
     }
 
@@ -980,7 +968,7 @@ public abstract class PolyTypeUtil {
      * @param type2 Second type
      * @return whether types are equal, ignoring nullability
      */
-    public static boolean equalSansNullability( RelDataTypeFactory factory, RelDataType type1, RelDataType type2 ) {
+    public static boolean equalSansNullability( AlgDataTypeFactory factory, AlgDataType type1, AlgDataType type2 ) {
         if ( type1.equals( type2 ) ) {
             return true;
         }
@@ -1000,10 +988,10 @@ public abstract class PolyTypeUtil {
      * @param fieldName Name of field
      * @return Ordinal of field
      */
-    public static int findField( RelDataType type, String fieldName ) {
-        List<RelDataTypeField> fields = type.getFieldList();
+    public static int findField( AlgDataType type, String fieldName ) {
+        List<AlgDataTypeField> fields = type.getFieldList();
         for ( int i = 0; i < fields.size(); i++ ) {
-            RelDataTypeField field = fields.get( i );
+            AlgDataTypeField field = fields.get( i );
             if ( field.getName().equals( fieldName ) ) {
                 return i;
             }
@@ -1021,12 +1009,12 @@ public abstract class PolyTypeUtil {
      * @param requiredFields ordinals of the projected fields
      * @return list of data types that are requested by requiredFields
      */
-    public static List<RelDataType> projectTypes( final RelDataType rowType, final List<? extends Number> requiredFields ) {
-        final List<RelDataTypeField> fields = rowType.getFieldList();
+    public static List<AlgDataType> projectTypes( final AlgDataType rowType, final List<? extends Number> requiredFields ) {
+        final List<AlgDataTypeField> fields = rowType.getFieldList();
 
-        return new AbstractList<RelDataType>() {
+        return new AbstractList<AlgDataType>() {
             @Override
-            public RelDataType get( int index ) {
+            public AlgDataType get( int index ) {
                 return fields.get( requiredFields.get( index ).intValue() ).getType();
             }
 
@@ -1045,7 +1033,7 @@ public abstract class PolyTypeUtil {
      * @param typeFactory Type factory
      * @return Struct type with no fields
      */
-    public static RelDataType createEmptyStructType( RelDataTypeFactory typeFactory ) {
+    public static AlgDataType createEmptyStructType( AlgDataTypeFactory typeFactory ) {
         return typeFactory.createStructType( ImmutableList.of(), ImmutableList.of() );
     }
 
@@ -1054,9 +1042,9 @@ public abstract class PolyTypeUtil {
      * Returns whether a type is flat. It is not flat if it is a record type that has one or more fields that are
      * themselves record types.
      */
-    public static boolean isFlat( RelDataType type ) {
+    public static boolean isFlat( AlgDataType type ) {
         if ( type.isStruct() ) {
-            for ( RelDataTypeField field : type.getFieldList() ) {
+            for ( AlgDataTypeField field : type.getFieldList() ) {
                 if ( field.getType().isStruct() ) {
                     return false;
                 }
@@ -1074,7 +1062,7 @@ public abstract class PolyTypeUtil {
      * @param type2 Second type
      * @return Whether types are comparable
      */
-    public static boolean isComparable( RelDataType type1, RelDataType type2 ) {
+    public static boolean isComparable( AlgDataType type1, AlgDataType type2 ) {
         if ( type1.isStruct() != type2.isStruct() ) {
             return false;
         }
@@ -1084,7 +1072,7 @@ public abstract class PolyTypeUtil {
             if ( n != type2.getFieldCount() ) {
                 return false;
             }
-            for ( Pair<RelDataTypeField, RelDataTypeField> pair : Pair.zip( type1.getFieldList(), type2.getFieldList() ) ) {
+            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFieldList(), type2.getFieldList() ) ) {
                 if ( !isComparable( pair.left.getType(), pair.right.getType() ) ) {
                     return false;
                 }
@@ -1092,8 +1080,8 @@ public abstract class PolyTypeUtil {
             return true;
         }
 
-        final RelDataTypeFamily family1 = family( type1 );
-        final RelDataTypeFamily family2 = family( type2 );
+        final AlgDataTypeFamily family1 = family( type1 );
+        final AlgDataTypeFamily family2 = family( type2 );
         if ( family1 == family2 ) {
             return true;
         }
@@ -1124,13 +1112,13 @@ public abstract class PolyTypeUtil {
      * Returns the least restrictive type T, such that a value of type T can be compared with values of type {@code type0}
      * and {@code type1} using {@code =}.
      */
-    public static RelDataType leastRestrictiveForComparison( RelDataTypeFactory typeFactory, RelDataType type1, RelDataType type2 ) {
-        final RelDataType type = typeFactory.leastRestrictive( ImmutableList.of( type1, type2 ) );
+    public static AlgDataType leastRestrictiveForComparison( AlgDataTypeFactory typeFactory, AlgDataType type1, AlgDataType type2 ) {
+        final AlgDataType type = typeFactory.leastRestrictive( ImmutableList.of( type1, type2 ) );
         if ( type != null ) {
             return type;
         }
-        final RelDataTypeFamily family1 = family( type1 );
-        final RelDataTypeFamily family2 = family( type2 );
+        final AlgDataTypeFamily family1 = family( type1 );
+        final AlgDataTypeFamily family2 = family( type2 );
 
         // If one of the arguments is of type 'ANY', we can compare.
         if ( family1 == PolyTypeFamily.ANY ) {
@@ -1160,9 +1148,9 @@ public abstract class PolyTypeUtil {
     }
 
 
-    protected static RelDataTypeFamily family( RelDataType type ) {
+    protected static AlgDataTypeFamily family( AlgDataType type ) {
         // REVIEW jvs: This is needed to keep the Saffron type system happy.
-        RelDataTypeFamily family = null;
+        AlgDataTypeFamily family = null;
         if ( type.getPolyType() != null ) {
             family = type.getPolyType().getFamily();
         }
@@ -1175,17 +1163,17 @@ public abstract class PolyTypeUtil {
 
     /**
      * Returns whether all types in a collection have the same family, as determined by
-     * {@link #isSameFamily(RelDataType, RelDataType)}.
+     * {@link #isSameFamily(AlgDataType, AlgDataType)}.
      *
      * @param types Types to check
      * @return true if all types are of the same family
      */
-    public static boolean areSameFamily( Iterable<RelDataType> types ) {
-        final List<RelDataType> typeList = ImmutableList.copyOf( types );
+    public static boolean areSameFamily( Iterable<AlgDataType> types ) {
+        final List<AlgDataType> typeList = ImmutableList.copyOf( types );
         if ( Sets.newHashSet( RexUtil.families( typeList ) ).size() < 2 ) {
             return true;
         }
-        for ( Pair<RelDataType, RelDataType> adjacent : Pair.adjacents( typeList ) ) {
+        for ( Pair<AlgDataType, AlgDataType> adjacent : Pair.adjacents( typeList ) ) {
             if ( !isSameFamily( adjacent.left, adjacent.right ) ) {
                 return false;
             }
@@ -1202,7 +1190,7 @@ public abstract class PolyTypeUtil {
      * @param type2 Second type
      * @return Whether types have the same family
      */
-    private static boolean isSameFamily( RelDataType type1, RelDataType type2 ) {
+    private static boolean isSameFamily( AlgDataType type1, AlgDataType type2 ) {
         if ( type1.isStruct() != type2.isStruct() ) {
             return false;
         }
@@ -1212,7 +1200,7 @@ public abstract class PolyTypeUtil {
             if ( n != type2.getFieldCount() ) {
                 return false;
             }
-            for ( Pair<RelDataTypeField, RelDataTypeField> pair : Pair.zip( type1.getFieldList(), type2.getFieldList() ) ) {
+            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFieldList(), type2.getFieldList() ) ) {
                 if ( !isSameFamily( pair.left.getType(), pair.right.getType() ) ) {
                     return false;
                 }
@@ -1220,8 +1208,8 @@ public abstract class PolyTypeUtil {
             return true;
         }
 
-        final RelDataTypeFamily family1 = family( type1 );
-        final RelDataTypeFamily family2 = family( type2 );
+        final AlgDataTypeFamily family1 = family( type1 );
+        final AlgDataTypeFamily family2 = family( type2 );
         return family1 == family2;
     }
 
@@ -1229,7 +1217,7 @@ public abstract class PolyTypeUtil {
     /**
      * Returns whether a character data type can be implicitly converted to a given family in a compare operation.
      */
-    private static boolean canConvertStringInCompare( RelDataTypeFamily family ) {
+    private static boolean canConvertStringInCompare( AlgDataTypeFamily family ) {
         if ( family instanceof PolyTypeFamily ) {
             PolyTypeFamily polyTypeFamily = (PolyTypeFamily) family;
             switch ( polyTypeFamily ) {
@@ -1256,7 +1244,7 @@ public abstract class PolyTypeUtil {
      * @param type type to test
      * @return whether type represents Unicode character data
      */
-    public static boolean isUnicode( RelDataType type ) {
+    public static boolean isUnicode( AlgDataType type ) {
         Charset charset = type.getCharset();
         if ( charset == null ) {
             return false;
@@ -1266,32 +1254,32 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Returns the larger of two precisions, treating {@link RelDataType#PRECISION_NOT_SPECIFIED} as infinity.
+     * Returns the larger of two precisions, treating {@link AlgDataType#PRECISION_NOT_SPECIFIED} as infinity.
      */
     public static int maxPrecision( int p0, int p1 ) {
-        return (p0 == RelDataType.PRECISION_NOT_SPECIFIED || p0 >= p1 && p1 != RelDataType.PRECISION_NOT_SPECIFIED) ? p0 : p1;
+        return (p0 == AlgDataType.PRECISION_NOT_SPECIFIED || p0 >= p1 && p1 != AlgDataType.PRECISION_NOT_SPECIFIED) ? p0 : p1;
     }
 
 
     /**
      * Returns whether a precision is greater or equal than another, treating
-     * {@link RelDataType#PRECISION_NOT_SPECIFIED} as infinity.
+     * {@link AlgDataType#PRECISION_NOT_SPECIFIED} as infinity.
      */
     public static int comparePrecision( int p0, int p1 ) {
         if ( p0 == p1 ) {
             return 0;
         }
-        if ( p0 == RelDataType.PRECISION_NOT_SPECIFIED ) {
+        if ( p0 == AlgDataType.PRECISION_NOT_SPECIFIED ) {
             return 1;
         }
-        if ( p1 == RelDataType.PRECISION_NOT_SPECIFIED ) {
+        if ( p1 == AlgDataType.PRECISION_NOT_SPECIFIED ) {
             return -1;
         }
         return Integer.compare( p0, p1 );
     }
 
 
-    public static boolean isArray( RelDataType type ) {
+    public static boolean isArray( AlgDataType type ) {
         return type.getPolyType() == PolyType.ARRAY;
     }
 

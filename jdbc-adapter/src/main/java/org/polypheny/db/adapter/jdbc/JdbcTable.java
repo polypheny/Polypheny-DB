@@ -47,17 +47,21 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ScannableTable;
@@ -65,15 +69,14 @@ import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.SqlBasicCall;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.sql.sql.SqlBasicCall;
+import org.polypheny.db.sql.sql.SqlIdentifier;
+import org.polypheny.db.sql.sql.SqlNode;
+import org.polypheny.db.sql.sql.SqlNodeList;
+import org.polypheny.db.sql.sql.SqlOperator;
+import org.polypheny.db.sql.sql.SqlSelect;
+import org.polypheny.db.sql.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.sql.util.SqlString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -87,7 +90,7 @@ import org.polypheny.db.util.Util;
  */
 public class JdbcTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
 
-    private RelProtoDataType protoRowType;
+    private AlgProtoDataType protoRowType;
     private JdbcSchema jdbcSchema;
 
     private final String physicalSchemaName;
@@ -107,7 +110,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             String logicalTableName,
             List<String> logicalColumnNames,
             TableType jdbcTableType,
-            RelProtoDataType protoRowType,
+            AlgProtoDataType protoRowType,
             String physicalSchemaName,
             String physicalTableName,
             List<String> physicalColumnNames ) {
@@ -137,15 +140,15 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
 
 
     private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
-        final RelDataType rowType = protoRowType.apply( typeFactory );
+        final AlgDataType rowType = protoRowType.apply( typeFactory );
         return Lists.transform( rowType.getFieldList(), f -> {
-            final RelDataType type = f.getType();
+            final AlgDataType type = f.getType();
             final Class clazz = (Class) typeFactory.getJavaClass( type );
             final ColumnMetaData.Rep rep = Util.first( ColumnMetaData.Rep.of( clazz ), ColumnMetaData.Rep.OBJECT );
             return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
@@ -156,13 +159,13 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     SqlString generateSql() {
         List<SqlNode> pcnl = Expressions.list();
         for ( String str : physicalColumnNames ) {
-            pcnl.add( new SqlIdentifier( Arrays.asList( physicalTableName, str ), SqlParserPos.ZERO ) );
+            pcnl.add( new SqlIdentifier( Arrays.asList( physicalTableName, str ), ParserPos.ZERO ) );
         }
         //final SqlNodeList selectList = new SqlNodeList( Collections.singletonList( SqlIdentifier.star( SqlParserPos.ZERO ) ), SqlParserPos.ZERO );
-        final SqlNodeList selectList = new SqlNodeList( pcnl, SqlParserPos.ZERO );
-        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physicalSchemaName, this.physicalTableName ), SqlParserPos.ZERO );
+        final SqlNodeList selectList = new SqlNodeList( pcnl, ParserPos.ZERO );
+        SqlIdentifier physicalTableName = new SqlIdentifier( Arrays.asList( physicalSchemaName, this.physicalTableName ), ParserPos.ZERO );
         SqlSelect node = new SqlSelect(
-                SqlParserPos.ZERO,
+                ParserPos.ZERO,
                 SqlNodeList.EMPTY,
                 selectList,
                 physicalTableName,
@@ -180,13 +183,13 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     public SqlIdentifier physicalTableName() {
-        return new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName ), SqlParserPos.ZERO );
+        return new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName ), ParserPos.ZERO );
     }
 
 
     public SqlIdentifier physicalColumnName( String logicalColumnName ) {
         String physicalName = physicalColumnNames.get( logicalColumnNames.indexOf( logicalColumnName ) );
-        return new SqlIdentifier( Arrays.asList( physicalName ), SqlParserPos.ZERO );
+        return new SqlIdentifier( Arrays.asList( physicalName ), ParserPos.ZERO );
     }
 
 
@@ -200,18 +203,18 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         int i = 0;
         for ( String str : physicalColumnNames ) {
             SqlNode[] operands = new SqlNode[]{
-                    new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), SqlParserPos.ZERO ),
-                    new SqlIdentifier( Arrays.asList( logicalColumnNames.get( i++ ) ), SqlParserPos.ZERO )
+                    new SqlIdentifier( Arrays.asList( physicalSchemaName, physicalTableName, str ), ParserPos.ZERO ),
+                    new SqlIdentifier( Arrays.asList( logicalColumnNames.get( i++ ) ), ParserPos.ZERO )
             };
-            pcnl.add( new SqlBasicCall( SqlStdOperatorTable.AS, operands, SqlParserPos.ZERO ) );
+            pcnl.add( new SqlBasicCall( (SqlOperator) OperatorRegistry.get( OperatorName.AS ), operands, ParserPos.ZERO ) );
         }
-        return new SqlNodeList( pcnl, SqlParserPos.ZERO );
+        return new SqlNodeList( pcnl, ParserPos.ZERO );
     }
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        return new JdbcTableScan( context.getCluster(), relOptTable, this, jdbcSchema.getConvention() );
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+        return new JdbcTableScan( context.getCluster(), algOptTable, this, jdbcSchema.getConvention() );
     }
 
 
@@ -239,11 +242,11 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public TableModify toModificationRel(
-            RelOptCluster cluster,
-            RelOptTable table,
+    public TableModify toModificationAlg(
+            AlgOptCluster cluster,
+            AlgOptTable table,
             CatalogReader catalogReader,
-            RelNode input,
+            AlgNode input,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,

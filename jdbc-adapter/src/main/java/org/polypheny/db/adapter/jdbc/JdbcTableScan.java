@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,22 +37,22 @@ package org.polypheny.db.adapter.jdbc;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
  */
-public class JdbcTableScan extends TableScan implements JdbcRel {
+public class JdbcTableScan extends TableScan implements JdbcAlg {
 
     protected final JdbcTable jdbcTable;
 
 
-    protected JdbcTableScan( RelOptCluster cluster, RelOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
+    protected JdbcTableScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
         super( cluster, cluster.traitSetOf( jdbcConvention ), table );
         this.jdbcTable = jdbcTable;
         assert jdbcTable != null;
@@ -60,7 +60,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
         return new JdbcTableScan( getCluster(), table, jdbcTable, (JdbcConvention) getConvention() );
     }
@@ -74,5 +74,6 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
                 this,
                 null );
     }
+
 }
 

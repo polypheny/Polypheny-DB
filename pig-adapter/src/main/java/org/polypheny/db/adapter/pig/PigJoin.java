@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,35 +37,35 @@ package org.polypheny.db.adapter.pig;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Join;
-import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Join} in
- * {@link PigRel#CONVENTION Pig calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Join} in
+ * {@link PigAlg#CONVENTION Pig calling convention}.
  */
-public class PigJoin extends Join implements PigRel {
+public class PigJoin extends Join implements PigAlg {
 
     /**
      * Creates a PigJoin.
      */
-    public PigJoin( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, JoinRelType joinType ) {
+    public PigJoin( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode left, AlgNode right, RexNode condition, JoinAlgType joinType ) {
         super( cluster, traitSet, left, right, condition, new HashSet<>( 0 ), joinType );
         assert getConvention() == CONVENTION;
     }
 
 
     @Override
-    public Join copy( RelTraitSet traitSet, RexNode conditionExpr, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone ) {
+    public Join copy( AlgTraitSet traitSet, RexNode conditionExpr, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         return new PigJoin( getCluster(), traitSet, left, right, conditionExpr, joinType );
     }
 
@@ -82,7 +82,7 @@ public class PigJoin extends Join implements PigRel {
      * The Pig alias of the joined relation will have the same name as one from the left side of the join.
      */
     @Override
-    public RelOptTable getTable() {
+    public AlgOptTable getTable() {
         return getLeft().getTable();
     }
 
@@ -96,7 +96,7 @@ public class PigJoin extends Join implements PigRel {
      * <code>=</code>.
      */
     private String getPigJoinStatement( Implementor implementor ) {
-        if ( !getCondition().isA( SqlKind.EQUALS ) ) {
+        if ( !getCondition().isA( Kind.EQUALS ) ) {
             throw new IllegalArgumentException( "Only equi-join are supported" );
         }
         List<RexNode> operands = ((RexCall) getCondition()).getOperands();
@@ -106,14 +106,14 @@ public class PigJoin extends Join implements PigRel {
         List<Integer> leftKeys = new ArrayList<>( 1 );
         List<Integer> rightKeys = new ArrayList<>( 1 );
         List<Boolean> filterNulls = new ArrayList<>( 1 );
-        RelOptUtil.splitJoinCondition( getLeft(), getRight(), getCondition(), leftKeys, rightKeys, filterNulls );
+        AlgOptUtil.splitJoinCondition( getLeft(), getRight(), getCondition(), leftKeys, rightKeys, filterNulls );
 
-        String leftRelAlias = implementor.getPigRelationAlias( (PigRel) getLeft() );
-        String rightRelAlias = implementor.getPigRelationAlias( (PigRel) getRight() );
-        String leftJoinFieldName = implementor.getFieldName( (PigRel) getLeft(), leftKeys.get( 0 ) );
-        String rightJoinFieldName = implementor.getFieldName( (PigRel) getRight(), rightKeys.get( 0 ) );
+        String leftRelAlias = implementor.getPigRelationAlias( (PigAlg) getLeft() );
+        String rightRelAlias = implementor.getPigRelationAlias( (PigAlg) getRight() );
+        String leftJoinFieldName = implementor.getFieldName( (PigAlg) getLeft(), leftKeys.get( 0 ) );
+        String rightJoinFieldName = implementor.getFieldName( (PigAlg) getRight(), rightKeys.get( 0 ) );
 
-        return implementor.getPigRelationAlias( (PigRel) getLeft() ) + " = JOIN " + leftRelAlias + " BY " + leftJoinFieldName + ' ' + getPigJoinType() + ", " + rightRelAlias + " BY " + rightJoinFieldName + ';';
+        return implementor.getPigRelationAlias( (PigAlg) getLeft() ) + " = JOIN " + leftRelAlias + " BY " + leftJoinFieldName + ' ' + getPigJoinType() + ", " + rightRelAlias + " BY " + rightJoinFieldName + ';';
     }
 
 
@@ -128,4 +128,5 @@ public class PigJoin extends Join implements PigRel {
                 return getJoinType().name();
         }
     }
+
 }

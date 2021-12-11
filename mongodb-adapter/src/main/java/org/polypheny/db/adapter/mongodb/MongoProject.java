@@ -45,18 +45,18 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -64,9 +64,9 @@ import org.polypheny.db.util.Util;
 /**
  * Implementation of {@link Project} relational expression in MongoDB.
  */
-public class MongoProject extends Project implements MongoRel {
+public class MongoProject extends Project implements MongoAlg {
 
-    public MongoProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
+    public MongoProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert getConvention() == CONVENTION;
         //assert getConvention() == input.getConvention(); // TODO DL fix logicalFilter bug
@@ -74,13 +74,13 @@ public class MongoProject extends Project implements MongoRel {
 
 
     @Override
-    public Project copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
+    public Project copy( AlgTraitSet traitSet, AlgNode input, List<RexNode> projects, AlgDataType rowType ) {
         return new MongoProject( getCluster(), traitSet, input, projects, rowType );
     }
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
@@ -111,13 +111,13 @@ public class MongoProject extends Project implements MongoRel {
                     ? "_" + MongoRules.maybeFix( pair.right.substring( 2 ) )
                     : MongoRules.maybeFix( pair.right );
 
-            if ( pair.left.getKind() == SqlKind.DISTANCE ) {
+            if ( pair.left.getKind() == Kind.DISTANCE ) {
                 documents.put( pair.right, BsonFunctionHelper.getFunction( (RexCall) pair.left, mongoRowType, implementor ) );
                 continue;
             }
 
             if ( pair.left instanceof RexCall ) {
-                if ( ((RexCall) pair.left).operands.get( 0 ).isA( SqlKind.DOC_UPDATE_ADD ) ) {
+                if ( ((RexCall) pair.left).operands.get( 0 ).isA( Kind.MQL_ADD_FIELDS ) ) {
                     Pair<String, RexNode> ret = MongoRules.getAddFields( (RexCall) ((RexCall) pair.left).operands.get( 0 ), rowType );
                     String expr = ret.right.accept( translator );
                     implementor.preProjections.add( new BsonDocument( ret.left, BsonDocument.parse( expr ) ) );
@@ -132,7 +132,7 @@ public class MongoProject extends Project implements MongoRel {
             }
 
             // exclude projection cannot be handled this way, so it needs fixing
-            KindChecker visitor = new KindChecker( SqlKind.DOC_EXCLUDE );
+            KindChecker visitor = new KindChecker( Kind.MQL_EXCLUDE );
             pair.left.accept( visitor );
             if ( visitor.containsKind ) {
                 items.add( name + ":1" );
@@ -140,7 +140,7 @@ public class MongoProject extends Project implements MongoRel {
                 continue;
             }
 
-            visitor = new KindChecker( SqlKind.DOC_UNWIND );
+            visitor = new KindChecker( Kind.UNWIND );
             pair.left.accept( visitor );
             if ( visitor.containsKind ) {
                 // $unwinds need to projected out else $unwind is not possible
@@ -187,12 +187,12 @@ public class MongoProject extends Project implements MongoRel {
 
     public static class KindChecker extends RexVisitorImpl<Void> {
 
-        private final SqlKind kind;
+        private final Kind kind;
         @Getter
         boolean containsKind = false;
 
 
-        protected KindChecker( SqlKind kind ) {
+        protected KindChecker( Kind kind ) {
             super( true );
             this.kind = kind;
         }

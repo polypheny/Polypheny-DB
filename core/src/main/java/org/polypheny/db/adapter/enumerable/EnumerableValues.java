@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,31 +43,31 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelDistributionTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMdDistribution;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMdDistribution;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Values} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Values} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableValues extends Values implements EnumerableRel {
+public class EnumerableValues extends Values implements EnumerableAlg {
 
     /**
      * Creates an EnumerableValues.
      */
-    private EnumerableValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traitSet ) {
+    private EnumerableValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
         super( cluster, rowType, tuples, traitSet );
     }
 
@@ -75,25 +75,25 @@ public class EnumerableValues extends Values implements EnumerableRel {
     /**
      * Creates an EnumerableValues.
      */
-    public static EnumerableValues create( RelOptCluster cluster, final RelDataType rowType, final ImmutableList<ImmutableList<RexLiteral>> tuples ) {
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet =
+    public static EnumerableValues create( AlgOptCluster cluster, final AlgDataType rowType, final ImmutableList<ImmutableList<RexLiteral>> tuples ) {
+        final AlgMetadataQuery mq = cluster.getMetadataQuery();
+        final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
-                        .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.values( mq, rowType, tuples ) )
-                        .replaceIf( RelDistributionTraitDef.INSTANCE, () -> RelMdDistribution.values( rowType, tuples ) );
+                        .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.values( mq, rowType, tuples ) )
+                        .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.values( rowType, tuples ) );
         return new EnumerableValues( cluster, rowType, tuples, traitSet );
     }
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
         return create( getCluster(), rowType, tuples );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
 /*
           return Linq4j.asEnumerable(
               new Object[][] {
@@ -111,10 +111,10 @@ public class EnumerableValues extends Values implements EnumerableRel {
         final Type rowClass = physType.getJavaRowType();
 
         final List<Expression> expressions = new ArrayList<>();
-        final List<RelDataTypeField> fields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = rowType.getFieldList();
         for ( List<RexLiteral> tuple : tuples ) {
             final List<Expression> literals = new ArrayList<>();
-            for ( Pair<RelDataTypeField, RexLiteral> pair : Pair.zip( fields, tuple ) ) {
+            for ( Pair<AlgDataTypeField, RexLiteral> pair : Pair.zip( fields, tuple ) ) {
                 literals.add(
                         RexToLixTranslator.translateLiteral(
                                 pair.right,
@@ -132,5 +132,6 @@ public class EnumerableValues extends Values implements EnumerableRel {
                                 Expressions.newArrayInit( Primitive.box( rowClass ), expressions ) ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
+
 }
 

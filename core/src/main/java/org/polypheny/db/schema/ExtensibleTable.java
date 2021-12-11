@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ package org.polypheny.db.schema;
 
 
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 /**
@@ -55,11 +55,12 @@ public interface ExtensibleTable extends Table {
     /**
      * Returns a table that has the row type of this table plus the given fields.
      */
-    Table extend( List<RelDataTypeField> fields );
+    Table extend( List<AlgDataTypeField> fields );
 
     /**
      * Returns the starting offset of the first extended column, which may differ from the field count when the table stores metadata columns that are not counted in the row-type field count.
      */
     int getExtendedColumnOffset();
+
 }
 

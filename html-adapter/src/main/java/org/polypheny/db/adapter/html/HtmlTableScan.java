@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,20 +38,20 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg;
+import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.EnumerableRel;
-import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelWriter;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
@@ -61,13 +61,13 @@ import org.polypheny.db.rel.type.RelDataTypeField;
  *
  * Trivially modified from CsvTableScan.
  */
-class HtmlTableScan extends TableScan implements EnumerableRel {
+class HtmlTableScan extends TableScan implements EnumerableAlg {
 
     private final HtmlTable webTable;
     private final int[] fields;
 
 
-    protected HtmlTableScan( RelOptCluster cluster, RelOptTable table, HtmlTable webTable, int[] fields ) {
+    protected HtmlTableScan( AlgOptCluster cluster, AlgOptTable table, HtmlTable webTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.webTable = webTable;
         this.fields = fields;
@@ -77,22 +77,22 @@ class HtmlTableScan extends TableScan implements EnumerableRel {
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
         return new HtmlTableScan( getCluster(), table, webTable, fields );
     }
 
 
     @Override
-    public RelWriter explainTerms( RelWriter pw ) {
+    public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw ).item( "fields", Primitive.asList( fields ) );
     }
 
 
     @Override
-    public RelDataType deriveRowType() {
-        final List<RelDataTypeField> fieldList = table.getRowType().getFieldList();
-        final RelDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
+    public AlgDataType deriveRowType() {
+        final List<AlgDataTypeField> fieldList = table.getRowType().getFieldList();
+        final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         for ( int field : fields ) {
             builder.add( fieldList.get( field ) );
         }
@@ -101,9 +101,10 @@ class HtmlTableScan extends TableScan implements EnumerableRel {
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
 
         return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( HtmlTable.class ), "project", Expressions.constant( fields ) ) ) );
     }
+
 }

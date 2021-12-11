@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.enumerable.RexImpTable.CountImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable.SumImplementor;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -67,7 +67,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
 
 
     protected boolean nonDefaultOnEmptySet( AggContext info ) {
-        return info.returnRelType().isNullable();
+        return info.returnAlgType().isNullable();
     }
 
 
@@ -93,7 +93,7 @@ public abstract class StrictAggImplementor implements AggImplementor {
         if ( !needTrackEmptySet ) {
             return subState;
         }
-        final boolean hasNullableArgs = anyNullable( info.parameterRelTypes() );
+        final boolean hasNullableArgs = anyNullable( info.parameterAlgTypes() );
         trackNullsPerRow = !(info instanceof WinAggContext) || hasNullableArgs;
 
         List<Type> res = new ArrayList<>( subState.size() + 1 );
@@ -103,8 +103,8 @@ public abstract class StrictAggImplementor implements AggImplementor {
     }
 
 
-    private boolean anyNullable( List<? extends RelDataType> types ) {
-        for ( RelDataType type : types ) {
+    private boolean anyNullable( List<? extends AlgDataType> types ) {
+        for ( AlgDataType type : types ) {
             if ( type.isNullable() ) {
                 return true;
             }
@@ -137,7 +137,8 @@ public abstract class StrictAggImplementor implements AggImplementor {
     }
 
 
-    protected void implementNotNullReset( AggContext info,
+    protected void implementNotNullReset(
+            AggContext info,
             AggResetContext reset ) {
         BlockBuilder block = reset.currentBlock();
         List<Expression> accumulator = reset.accumulator();
@@ -145,7 +146,8 @@ public abstract class StrictAggImplementor implements AggImplementor {
             Expression exp = accumulator.get( i );
             block.add(
                     Expressions.statement(
-                            Expressions.assign( exp,
+                            Expressions.assign(
+                                    exp,
                                     RexImpTable.getDefaultValue( exp.getType() ) ) ) );
         }
     }
@@ -159,7 +161,8 @@ public abstract class StrictAggImplementor implements AggImplementor {
         conditions.addAll( translator.translateList( args, RexImpTable.NullAs.IS_NOT_NULL ) );
         if ( add.rexFilterArgument() != null ) {
             conditions.add(
-                    translator.translate( add.rexFilterArgument(),
+                    translator.translate(
+                            add.rexFilterArgument(),
                             RexImpTable.NullAs.FALSE ) );
         }
         Expression condition = Expressions.foldAnd( conditions );
@@ -227,7 +230,8 @@ public abstract class StrictAggImplementor implements AggImplementor {
         }
         result.currentBlock().add( Expressions.declare( 0, res, null ) );
         result.currentBlock().add(
-                Expressions.ifThenElse( seenNotNullRows,
+                Expressions.ifThenElse(
+                        seenNotNullRows,
                         thenBranch,
                         Expressions.statement(
                                 Expressions.assign(
@@ -240,5 +244,6 @@ public abstract class StrictAggImplementor implements AggImplementor {
     protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
         return result.accumulator().get( 0 );
     }
+
 }
 

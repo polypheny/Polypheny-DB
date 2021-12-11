@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package org.polypheny.db.type.inference;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.OperatorBinding;
 
 
 /**
@@ -35,8 +35,9 @@ public class OrdinalReturnTypeInference implements PolyReturnTypeInference {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         return opBinding.getOperandType( ordinal );
     }
+
 }
 

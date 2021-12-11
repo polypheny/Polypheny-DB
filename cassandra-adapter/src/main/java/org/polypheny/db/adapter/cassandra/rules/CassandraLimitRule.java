@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraLimit;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableLimit;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -31,15 +31,15 @@ import org.polypheny.db.tools.RelBuilderFactory;
  */
 public class CassandraLimitRule extends CassandraConverterRule {
 
-    CassandraLimitRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( EnumerableLimit.class, r -> true, EnumerableConvention.INSTANCE, out, relBuilderFactory, "CassandraLimitRule:" + out.getName() );
+    CassandraLimitRule( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( EnumerableLimit.class, r -> true, EnumerableConvention.INSTANCE, out, algBuilderFactory, "CassandraLimitRule:" + out.getName() );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final EnumerableLimit limit = (EnumerableLimit) rel;
-        final RelTraitSet traitSet = limit.getTraitSet().replace( out );
+    public AlgNode convert( AlgNode alg ) {
+        final EnumerableLimit limit = (EnumerableLimit) alg;
+        final AlgTraitSet traitSet = limit.getTraitSet().replace( out );
         return new CassandraLimit(
                 limit.getCluster(),
                 traitSet,
@@ -47,4 +47,5 @@ public class CassandraLimitRule extends CassandraConverterRule {
                 limit.offset,
                 limit.fetch );
     }
+
 }

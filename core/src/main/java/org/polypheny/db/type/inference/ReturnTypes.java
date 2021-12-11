@@ -20,23 +20,24 @@ package org.polypheny.db.type.inference;
 import com.google.common.base.Preconditions;
 import java.util.AbstractList;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.sql.ExplicitOperatorBinding;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.ExplicitOperatorBinding;
+import org.polypheny.db.nodes.OperatorBinding;
+import org.polypheny.db.nodes.validate.ValidatorNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeTransform;
 import org.polypheny.db.type.PolyTypeTransformCascade;
 import org.polypheny.db.type.PolyTypeTransforms;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Static;
 
@@ -63,7 +64,7 @@ public abstract class ReturnTypes {
     }
 
 
-    public static ExplicitReturnTypeInference explicit( RelProtoDataType protoType ) {
+    public static ExplicitReturnTypeInference explicit( AlgProtoDataType protoType ) {
         return new ExplicitReturnTypeInference( protoType );
     }
 
@@ -71,8 +72,8 @@ public abstract class ReturnTypes {
     /**
      * Creates an inference rule which returns a copy of a given data type.
      */
-    public static ExplicitReturnTypeInference explicit( RelDataType type ) {
-        return explicit( RelDataTypeImpl.proto( type ) );
+    public static ExplicitReturnTypeInference explicit( AlgDataType type ) {
+        return explicit( AlgDataTypeImpl.proto( type ) );
     }
 
 
@@ -80,7 +81,7 @@ public abstract class ReturnTypes {
      * Creates an inference rule which returns a type with no precision or scale, such as {@code DATE}.
      */
     public static ExplicitReturnTypeInference explicit( PolyType typeName ) {
-        return explicit( RelDataTypeImpl.proto( typeName, false ) );
+        return explicit( AlgDataTypeImpl.proto( typeName, false ) );
     }
 
 
@@ -88,7 +89,7 @@ public abstract class ReturnTypes {
      * Creates an inference rule which returns a type with precision but no scale, such as {@code VARCHAR(100)}.
      */
     public static ExplicitReturnTypeInference explicit( PolyType typeName, int precision ) {
-        return explicit( RelDataTypeImpl.proto( typeName, precision, false ) );
+        return explicit( AlgDataTypeImpl.proto( typeName, precision, false ) );
     }
 
 
@@ -125,8 +126,8 @@ public abstract class ReturnTypes {
     public static final PolyReturnTypeInference ARG0_NULLABLE_IF_EMPTY =
             new OrdinalReturnTypeInference( 0 ) {
                 @Override
-                public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
-                    final RelDataType type = super.inferReturnType( opBinding );
+                public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+                    final AlgDataType type = super.inferReturnType( opBinding );
                     if ( opBinding.getGroupCount() == 0 || opBinding.hasFilter() ) {
                         return opBinding.getTypeFactory().createTypeWithNullability( type, true );
                     } else {
@@ -173,7 +174,7 @@ public abstract class ReturnTypes {
                 //   cascade(ARG0, SqlTypeTransforms.TO_NULLABLE);
                 // but implemented by hand because used in AND, which is a very common operator.
                 final int n = opBinding.getOperandCount();
-                RelDataType type1 = null;
+                AlgDataType type1 = null;
                 for ( int i = 0; i < n; i++ ) {
                     type1 = opBinding.getOperandType( i );
                     if ( type1.isNullable() ) {
@@ -270,10 +271,10 @@ public abstract class ReturnTypes {
         ExplicitOperatorBinding newBinding =
                 new ExplicitOperatorBinding(
                         opBinding,
-                        new AbstractList<RelDataType>() {
+                        new AbstractList<AlgDataType>() {
                             @Override
-                            public RelDataType get( int index ) {
-                                RelDataType type = opBinding.getOperandType( index ).getComponentType();
+                            public AlgDataType get( int index ) {
+                                AlgDataType type = opBinding.getOperandType( index ).getComponentType();
                                 assert type != null;
                                 return type;
                             }
@@ -284,7 +285,7 @@ public abstract class ReturnTypes {
                                 return opBinding.getOperandCount();
                             }
                         } );
-        RelDataType biggestElementType = LEAST_RESTRICTIVE.inferReturnType( newBinding );
+        AlgDataType biggestElementType = LEAST_RESTRICTIVE.inferReturnType( newBinding );
         return opBinding.getTypeFactory().createMultisetType( biggestElementType, -1 );
     };
 
@@ -323,13 +324,13 @@ public abstract class ReturnTypes {
      * The result type of a call is a decimal with a scale of 0, and the same precision and nullability as the first argument.
      */
     public static final PolyReturnTypeInference DECIMAL_SCALE0 = opBinding -> {
-        RelDataType type1 = opBinding.getOperandType( 0 );
+        AlgDataType type1 = opBinding.getOperandType( 0 );
         if ( PolyTypeUtil.isDecimal( type1 ) ) {
             if ( type1.getScale() == 0 ) {
                 return type1;
             } else {
                 int p = type1.getPrecision();
-                RelDataType ret;
+                AlgDataType ret;
                 ret = opBinding.getTypeFactory().createPolyType( PolyType.DECIMAL, p, 0 );
                 if ( type1.isNullable() ) {
                     ret = opBinding.getTypeFactory().createTypeWithNullability( ret, true );
@@ -350,9 +351,9 @@ public abstract class ReturnTypes {
      * where at least one of the operands is a decimal.
      */
     public static final PolyReturnTypeInference DECIMAL_PRODUCT = opBinding -> {
-        RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        RelDataType type1 = opBinding.getOperandType( 0 );
-        RelDataType type2 = opBinding.getOperandType( 1 );
+        AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        AlgDataType type1 = opBinding.getOperandType( 0 );
+        AlgDataType type2 = opBinding.getOperandType( 1 );
         return typeFactory.createDecimalProduct( type1, type2 );
     };
     /**
@@ -372,9 +373,9 @@ public abstract class ReturnTypes {
      * at least one of the operands is a decimal.
      */
     public static final PolyReturnTypeInference DECIMAL_QUOTIENT = opBinding -> {
-        RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        RelDataType type1 = opBinding.getOperandType( 0 );
-        RelDataType type2 = opBinding.getOperandType( 1 );
+        AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        AlgDataType type1 = opBinding.getOperandType( 0 );
+        AlgDataType type2 = opBinding.getOperandType( 1 );
         return typeFactory.createDecimalQuotient( type1, type2 );
     };
     /**
@@ -404,8 +405,8 @@ public abstract class ReturnTypes {
      * @see Glossary#SQL2003 SQL:2003 Part 2 Section 6.26
      */
     public static final PolyReturnTypeInference DECIMAL_SUM = opBinding -> {
-        RelDataType type1 = opBinding.getOperandType( 0 );
-        RelDataType type2 = opBinding.getOperandType( 1 );
+        AlgDataType type1 = opBinding.getOperandType( 0 );
+        AlgDataType type2 = opBinding.getOperandType( 1 );
         if ( PolyTypeUtil.isExactNumeric( type1 ) && PolyTypeUtil.isExactNumeric( type2 ) ) {
             if ( PolyTypeUtil.isDecimal( type1 ) || PolyTypeUtil.isDecimal( type2 ) ) {
                 int p1 = type1.getPrecision();
@@ -413,9 +414,9 @@ public abstract class ReturnTypes {
                 int s1 = type1.getScale();
                 int s2 = type2.getScale();
 
-                final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+                final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
                 int scale = Math.max( s1, s2 );
-                final RelDataTypeSystem typeSystem = typeFactory.getTypeSystem();
+                final AlgDataTypeSystem typeSystem = typeFactory.getTypeSystem();
                 assert scale <= typeSystem.getMaxNumericScale();
                 int precision = Math.max( p1 - s1, p2 - s2 ) + scale + 1;
                 precision = Math.min( precision, typeSystem.getMaxNumericPrecision() );
@@ -458,21 +459,21 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference DYADIC_STRING_SUM_PRECISION =
             opBinding -> {
-                final RelDataType argType0 = opBinding.getOperandType( 0 );
-                final RelDataType argType1 = opBinding.getOperandType( 1 );
+                final AlgDataType argType0 = opBinding.getOperandType( 0 );
+                final AlgDataType argType1 = opBinding.getOperandType( 1 );
 
                 final boolean containsAnyType = (argType0.getPolyType() == PolyType.ANY) || (argType1.getPolyType() == PolyType.ANY);
 
                 if ( !containsAnyType && !(PolyTypeUtil.inCharOrBinaryFamilies( argType0 ) && PolyTypeUtil.inCharOrBinaryFamilies( argType1 )) ) {
                     Preconditions.checkArgument( PolyTypeUtil.sameNamedType( argType0, argType1 ) );
                 }
-                SqlCollation pickedCollation = null;
+                Collation pickedCollation = null;
                 if ( !containsAnyType && PolyTypeUtil.inCharFamily( argType0 ) ) {
                     if ( !PolyTypeUtil.isCharTypeComparable( opBinding.collectOperandTypes().subList( 0, 2 ) ) ) {
                         throw opBinding.newError( Static.RESOURCE.typeNotComparable( argType0.getFullTypeString(), argType1.getFullTypeString() ) );
                     }
 
-                    pickedCollation = SqlCollation.getCoercibilityDyadicOperator( argType0.getCollation(), argType1.getCollation() );
+                    pickedCollation = Collation.getCoercibilityDyadicOperator( argType0.getCollation(), argType1.getCollation() );
                     assert null != pickedCollation;
                 }
 
@@ -482,22 +483,22 @@ public abstract class ReturnTypes {
                     typeName = argType1.getPolyType();
                 }
 
-                RelDataType ret;
+                AlgDataType ret;
                 int typePrecision;
                 final long x = (long) argType0.getPrecision() + (long) argType1.getPrecision();
-                final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-                final RelDataTypeSystem typeSystem = typeFactory.getTypeSystem();
-                if ( argType0.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
-                        || argType1.getPrecision() == RelDataType.PRECISION_NOT_SPECIFIED
+                final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+                final AlgDataTypeSystem typeSystem = typeFactory.getTypeSystem();
+                if ( argType0.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED
+                        || argType1.getPrecision() == AlgDataType.PRECISION_NOT_SPECIFIED
                         || x > typeSystem.getMaxPrecision( typeName ) ) {
-                    typePrecision = RelDataType.PRECISION_NOT_SPECIFIED;
+                    typePrecision = AlgDataType.PRECISION_NOT_SPECIFIED;
                 } else {
                     typePrecision = (int) x;
                 }
 
                 ret = typeFactory.createPolyType( typeName, typePrecision );
                 if ( null != pickedCollation ) {
-                    RelDataType pickedType;
+                    AlgDataType pickedType;
                     if ( argType0.getCollation().equals( pickedCollation ) ) {
                         pickedType = argType0;
                     } else if ( argType1.getCollation().equals( pickedCollation ) ) {
@@ -523,11 +524,11 @@ public abstract class ReturnTypes {
 
     /**
      * Type-inference strategy where the expression is assumed to be registered as a
-     * {@link org.polypheny.db.sql.validate.SqlValidatorNamespace}, and therefore the result type of the call is the type of
+     * {@link ValidatorNamespace}, and therefore the result type of the call is the type of
      * that namespace.
      */
     public static final PolyReturnTypeInference SCOPE = opBinding -> {
-        SqlCallBinding callBinding = (SqlCallBinding) opBinding;
+        CallBinding callBinding = (CallBinding) opBinding;
         return callBinding.getValidator().getNamespace( callBinding.getCall() ).getRowType();
     };
 
@@ -537,12 +538,12 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference MULTISET_PROJECT0 = opBinding -> {
         assert opBinding.getOperandCount() == 1;
-        final RelDataType recordMultisetType = opBinding.getOperandType( 0 );
-        RelDataType multisetType = recordMultisetType.getComponentType();
+        final AlgDataType recordMultisetType = opBinding.getOperandType( 0 );
+        AlgDataType multisetType = recordMultisetType.getComponentType();
         assert multisetType != null : "expected a multiset type: " + recordMultisetType;
-        final List<RelDataTypeField> fields = multisetType.getFieldList();
+        final List<AlgDataTypeField> fields = multisetType.getFieldList();
         assert fields.size() > 0;
-        final RelDataType firstColType = fields.get( 0 ).getType();
+        final AlgDataType firstColType = fields.get( 0 ).getType();
         return opBinding.getTypeFactory().createMultisetType( firstColType, -1 );
     };
     /**
@@ -551,11 +552,11 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference MULTISET_RECORD = opBinding -> {
         assert opBinding.getOperandCount() == 1;
-        final RelDataType multisetType = opBinding.getOperandType( 0 );
-        RelDataType componentType = multisetType.getComponentType();
+        final AlgDataType multisetType = opBinding.getOperandType( 0 );
+        AlgDataType componentType = multisetType.getComponentType();
         assert componentType != null : "expected a multiset type: " + multisetType;
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType type = typeFactory.builder().add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, componentType ).build();
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataType type = typeFactory.builder().add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, componentType ).build();
         return typeFactory.createMultisetType( type, -1 );
     };
     /**
@@ -565,16 +566,16 @@ public abstract class ReturnTypes {
     public static final PolyReturnTypeInference RECORD_TO_SCALAR = opBinding -> {
         assert opBinding.getOperandCount() == 1;
 
-        final RelDataType recordType = opBinding.getOperandType( 0 );
+        final AlgDataType recordType = opBinding.getOperandType( 0 );
 
         boolean isStruct = recordType.isStruct();
         int fieldCount = recordType.getFieldCount();
 
         assert isStruct && (fieldCount == 1);
 
-        RelDataTypeField fieldType = recordType.getFieldList().get( 0 );
+        AlgDataTypeField fieldType = recordType.getFieldList().get( 0 );
         assert fieldType != null : "expected a record type with one field: " + recordType;
-        final RelDataType firstColType = fieldType.getType();
+        final AlgDataType firstColType = fieldType.getType();
         return opBinding.getTypeFactory().createTypeWithNullability( firstColType, true );
     };
 
@@ -584,8 +585,8 @@ public abstract class ReturnTypes {
      * implementation of RelDataTypeSystem, s has the same type name as x.
      */
     public static final PolyReturnTypeInference AGG_SUM = opBinding -> {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType type = typeFactory
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataType type = typeFactory
                 .getTypeSystem()
                 .deriveSumType( typeFactory, opBinding.getOperandType( 0 ) );
         if ( opBinding.getGroupCount() == 0 || opBinding.hasFilter() ) {
@@ -601,8 +602,8 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference AGG_SUM_EMPTY_IS_ZERO =
             opBinding -> {
-                final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-                final RelDataType sumType = typeFactory
+                final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+                final AlgDataType sumType = typeFactory
                         .getTypeSystem()
                         .deriveSumType(
                                 typeFactory,
@@ -615,7 +616,7 @@ public abstract class ReturnTypes {
      * Type-inference strategy for the {@code CUME_DIST} and {@code PERCENT_RANK} aggregate functions.
      */
     public static final PolyReturnTypeInference FRACTIONAL_RANK = opBinding -> {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.getTypeSystem().deriveFractionalRankType( typeFactory );
     };
 
@@ -624,32 +625,32 @@ public abstract class ReturnTypes {
      * functions.
      */
     public static final PolyReturnTypeInference RANK = opBinding -> {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.getTypeSystem().deriveRankType( typeFactory );
     };
 
     public static final PolyReturnTypeInference AVG_AGG_FUNCTION = opBinding -> {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType relDataType = typeFactory.getTypeSystem().deriveAvgAggType( typeFactory, opBinding.getOperandType( 0 ) );
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataType algDataType = typeFactory.getTypeSystem().deriveAvgAggType( typeFactory, opBinding.getOperandType( 0 ) );
         if ( opBinding.getGroupCount() == 0 || opBinding.hasFilter() ) {
-            return typeFactory.createTypeWithNullability( relDataType, true );
+            return typeFactory.createTypeWithNullability( algDataType, true );
         } else {
-            return relDataType;
+            return algDataType;
         }
     };
 
     public static final PolyReturnTypeInference COVAR_REGR_FUNCTION = opBinding -> {
-        final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final RelDataType relDataType = typeFactory
+        final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+        final AlgDataType algDataType = typeFactory
                 .getTypeSystem()
                 .deriveCovarType(
                         typeFactory,
                         opBinding.getOperandType( 0 ),
                         opBinding.getOperandType( 1 ) );
         if ( opBinding.getGroupCount() == 0 || opBinding.hasFilter() ) {
-            return typeFactory.createTypeWithNullability( relDataType, true );
+            return typeFactory.createTypeWithNullability( algDataType, true );
         } else {
-            return relDataType;
+            return algDataType;
         }
     };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,13 @@ package org.polypheny.db.tools;
 
 
 import java.io.Reader;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParseException;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
@@ -60,9 +60,9 @@ public interface Planner extends AutoCloseable {
      *
      * @param sql The SQL statement to parse.
      * @return The root node of the SQL parse tree.
-     * @throws SqlParseException on parse error
+     * @throws NodeParseException on parse error
      */
-    default SqlNode parse( String sql ) throws SqlParseException {
+    default Node parse( String sql ) throws NodeParseException {
         return parse( new SourceStringReader( sql ) );
     }
 
@@ -71,9 +71,9 @@ public interface Planner extends AutoCloseable {
      *
      * @param source A reader which will provide the SQL statement to parse.
      * @return The root node of the SQL parse tree.
-     * @throws SqlParseException on parse error
+     * @throws NodeParseException on parse error
      */
-    SqlNode parse( Reader source ) throws SqlParseException;
+    Node parse( Reader source ) throws NodeParseException;
 
     /**
      * Validates a SQL statement.
@@ -82,7 +82,7 @@ public interface Planner extends AutoCloseable {
      * @return Validated node
      * @throws ValidationException if not valid
      */
-    SqlNode validate( SqlNode sqlNode ) throws ValidationException;
+    Node validate( Node sqlNode ) throws ValidationException;
 
     /**
      * Validates a SQL statement.
@@ -91,34 +91,34 @@ public interface Planner extends AutoCloseable {
      * @return Validated node and its validated type.
      * @throws ValidationException if not valid
      */
-    Pair<SqlNode, RelDataType> validateAndGetType( SqlNode sqlNode ) throws ValidationException;
+    Pair<Node, AlgDataType> validateAndGetType( Node sqlNode ) throws ValidationException;
 
     /**
      * Converts a SQL parse tree into a tree of relational expressions.
      *
-     * You must call {@link #validate(org.polypheny.db.sql.SqlNode)} first.
+     * You must call {@link #validate(Node)} first.
      *
      * @param sql The root node of the SQL parse tree.
-     * @return The root node of the newly generated RelNode tree.
-     * @throws org.polypheny.db.tools.RelConversionException if the node cannot be converted or has not been validated
+     * @return The root node of the newly generated {@link AlgNode} tree.
+     * @throws AlgConversionException if the node cannot be converted or has not been validated
      */
-    RelRoot rel( SqlNode sql ) throws RelConversionException;
+    AlgRoot alg( Node sql ) throws AlgConversionException;
 
     /**
      * Returns the type factory.
      */
-    RelDataTypeFactory getTypeFactory();
+    AlgDataTypeFactory getTypeFactory();
 
     /**
      * Converts one relational expression tree into another relational expression based on a particular rule set and requires set of traits.
      *
      * @param ruleSetIndex The RuleSet to use for conversion purposes.  Note that this is zero-indexed and is based on the list and order of RuleSets provided in the construction of this Planner.
      * @param requiredOutputTraits The set of RelTraits required of the root node at the termination of the planning cycle.
-     * @param rel The root of the RelNode tree to convert.
-     * @return The root of the new RelNode tree.
-     * @throws org.polypheny.db.tools.RelConversionException on conversion error
+     * @param alg The root of the {@link AlgNode} tree to convert.
+     * @return The root of the new {@link AlgNode} tree.
+     * @throws AlgConversionException on conversion error
      */
-    RelNode transform( int ruleSetIndex, RelTraitSet requiredOutputTraits, RelNode rel ) throws RelConversionException;
+    AlgNode transform( int ruleSetIndex, AlgTraitSet requiredOutputTraits, AlgNode alg ) throws AlgConversionException;
 
     /**
      * Resets this {@code Planner} to be used with a new query. This should be called between each new query.
@@ -131,6 +131,7 @@ public interface Planner extends AutoCloseable {
     @Override
     void close();
 
-    RelTraitSet getEmptyTraitSet();
+    AlgTraitSet getEmptyTraitSet();
+
 }
 

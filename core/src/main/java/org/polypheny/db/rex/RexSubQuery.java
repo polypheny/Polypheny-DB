@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,15 +37,16 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import javax.annotation.Nonnull;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlQuantifyOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.QuantifyOperator;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.type.PolyType;
 
 
@@ -54,12 +55,12 @@ import org.polypheny.db.type.PolyType;
  */
 public class RexSubQuery extends RexCall {
 
-    public final RelNode rel;
+    public final AlgNode alg;
 
 
-    private RexSubQuery( RelDataType type, SqlOperator op, ImmutableList<RexNode> operands, RelNode rel ) {
+    private RexSubQuery( AlgDataType type, Operator op, ImmutableList<RexNode> operands, AlgNode alg ) {
         super( type, op, operands );
-        this.rel = rel;
+        this.alg = alg;
         this.digest = computeDigest( false );
     }
 
@@ -67,9 +68,9 @@ public class RexSubQuery extends RexCall {
     /**
      * Creates an IN sub-query.
      */
-    public static RexSubQuery in( RelNode rel, ImmutableList<RexNode> nodes ) {
-        final RelDataType type = type( rel, nodes );
-        return new RexSubQuery( type, SqlStdOperatorTable.IN, nodes, rel );
+    public static RexSubQuery in( AlgNode alg, ImmutableList<RexNode> nodes ) {
+        final AlgDataType type = type( alg, nodes );
+        return new RexSubQuery( type, OperatorRegistry.get( OperatorName.IN ), nodes, alg );
     }
 
 
@@ -79,23 +80,23 @@ public class RexSubQuery extends RexCall {
      * There is no ALL. For {@code x comparison ALL (sub-query)} use instead {@code NOT (x inverse-comparison SOME (sub-query))}.
      * If {@code comparison} is {@code >} then {@code negated-comparison} is {@code <=}, and so forth.
      */
-    public static RexSubQuery some( RelNode rel, ImmutableList<RexNode> nodes, SqlQuantifyOperator op ) {
-        assert op.kind == SqlKind.SOME;
-        final RelDataType type = type( rel, nodes );
-        return new RexSubQuery( type, op, nodes, rel );
+    public static RexSubQuery some( AlgNode alg, ImmutableList<RexNode> nodes, QuantifyOperator op ) {
+        assert op.getKind() == Kind.SOME;
+        final AlgDataType type = type( alg, nodes );
+        return new RexSubQuery( type, op, nodes, alg );
     }
 
 
-    static RelDataType type( RelNode rel, ImmutableList<RexNode> nodes ) {
-        assert rel.getRowType().getFieldCount() == nodes.size();
-        final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
+    static AlgDataType type( AlgNode alg, ImmutableList<RexNode> nodes ) {
+        assert alg.getRowType().getFieldCount() == nodes.size();
+        final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
         boolean nullable = false;
         for ( RexNode node : nodes ) {
             if ( node.getType().isNullable() ) {
                 nullable = true;
             }
         }
-        for ( RelDataTypeField field : rel.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : alg.getRowType().getFieldList() ) {
             if ( field.getType().isNullable() ) {
                 nullable = true;
             }
@@ -107,22 +108,22 @@ public class RexSubQuery extends RexCall {
     /**
      * Creates an EXISTS sub-query.
      */
-    public static RexSubQuery exists( RelNode rel ) {
-        final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
-        final RelDataType type = typeFactory.createPolyType( PolyType.BOOLEAN );
-        return new RexSubQuery( type, SqlStdOperatorTable.EXISTS, ImmutableList.of(), rel );
+    public static RexSubQuery exists( AlgNode alg ) {
+        final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
+        final AlgDataType type = typeFactory.createPolyType( PolyType.BOOLEAN );
+        return new RexSubQuery( type, OperatorRegistry.get( OperatorName.EXISTS ), ImmutableList.of(), alg );
     }
 
 
     /**
      * Creates a scalar sub-query.
      */
-    public static RexSubQuery scalar( RelNode rel ) {
-        final List<RelDataTypeField> fieldList = rel.getRowType().getFieldList();
+    public static RexSubQuery scalar( AlgNode alg ) {
+        final List<AlgDataTypeField> fieldList = alg.getRowType().getFieldList();
         assert fieldList.size() == 1;
-        final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
-        final RelDataType type = typeFactory.createTypeWithNullability( fieldList.get( 0 ).getType(), true );
-        return new RexSubQuery( type, SqlStdOperatorTable.SCALAR_QUERY, ImmutableList.of(), rel );
+        final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
+        final AlgDataType type = typeFactory.createTypeWithNullability( fieldList.get( 0 ).getType(), true );
+        return new RexSubQuery( type, OperatorRegistry.get( OperatorName.SCALAR_QUERY ), ImmutableList.of(), alg );
     }
 
 
@@ -148,25 +149,26 @@ public class RexSubQuery extends RexCall {
             sb.append( ", " );
         }
         sb.append( "{\n" );
-        sb.append( RelOptUtil.toString( rel ) );
+        sb.append( AlgOptUtil.toString( alg ) );
         sb.append( "})" );
         return sb.toString();
     }
 
 
     @Override
-    public RexSubQuery clone( RelDataType type, List<RexNode> operands ) {
-        return new RexSubQuery( type, getOperator(), ImmutableList.copyOf( operands ), rel );
+    public RexSubQuery clone( AlgDataType type, List<RexNode> operands ) {
+        return new RexSubQuery( type, getOperator(), ImmutableList.copyOf( operands ), alg );
     }
 
 
-    public RexSubQuery clone( RelNode rel ) {
-        return new RexSubQuery( type, getOperator(), operands, rel );
+    public RexSubQuery clone( AlgNode alg ) {
+        return new RexSubQuery( type, getOperator(), operands, alg );
     }
 
 
-    public RexSubQuery clone( RelDataType type, List<RexNode> operands, RelNode rel ) {
-        return new RexSubQuery( type, getOperator(), ImmutableList.copyOf( operands ), rel );
+    public RexSubQuery clone( AlgDataType type, List<RexNode> operands, AlgNode alg ) {
+        return new RexSubQuery( type, getOperator(), ImmutableList.copyOf( operands ), alg );
     }
+
 }
 

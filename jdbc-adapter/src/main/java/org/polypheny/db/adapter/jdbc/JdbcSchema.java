@@ -54,24 +54,24 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlDialectFactory;
+import org.polypheny.db.sql.sql.SqlDialect;
+import org.polypheny.db.sql.sql.SqlDialectFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
@@ -140,8 +140,8 @@ public class JdbcSchema implements Schema {
     public JdbcTable createJdbcTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
         // not a type; before being used, the proto-type will be copied into a real type factory.
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<String> logicalColumnNames = new LinkedList<>();
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = null;
@@ -152,7 +152,7 @@ public class JdbcSchema implements Schema {
                 physicalSchemaName = placement.physicalSchemaName;
             }
 
-            RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
+            AlgDataType sqlType = catalogColumn.getAlgDataType( typeFactory );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             logicalColumnNames.add( catalogColumn.name );
             physicalColumnNames.add( placement.physicalColumnName );
@@ -164,7 +164,7 @@ public class JdbcSchema implements Schema {
                 catalogTable.name,
                 logicalColumnNames,
                 TableType.TABLE,
-                RelDataTypeImpl.proto( fieldInfo.build() ),
+                AlgDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
                 partitionPlacement.physicalTableName,
                 physicalColumnNames );
@@ -263,7 +263,7 @@ public class JdbcSchema implements Schema {
      * Given "VARCHAR(10)", returns BasicSqlType(VARCHAR, 10).
      * Given "NUMERIC(10, 2)", returns BasicSqlType(NUMERIC, 10, 2).
      */
-    private RelDataType parseTypeString( RelDataTypeFactory typeFactory, String typeString ) {
+    private AlgDataType parseTypeString( AlgDataTypeFactory typeFactory, String typeString ) {
         int precision = -1;
         int scale = -1;
         int open = typeString.indexOf( "(" );
@@ -301,14 +301,14 @@ public class JdbcSchema implements Schema {
     }
 
 
-    protected Map<String, RelProtoDataType> getTypes() {
+    protected Map<String, AlgProtoDataType> getTypes() {
         // TODO: populate map from JDBC metadata
         return ImmutableMap.of();
     }
 
 
     @Override
-    public RelProtoDataType getType( String name ) {
+    public AlgProtoDataType getType( String name ) {
         return getTypes().get( name );
     }
 

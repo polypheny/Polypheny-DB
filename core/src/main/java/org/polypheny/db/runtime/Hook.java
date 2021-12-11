@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.interpreter.BindableConvention;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.Query;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.Query;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.Holder;
 
 
@@ -60,7 +62,7 @@ public enum Hook {
     STANDARD_STREAMS,
 
     /**
-     * Returns a boolean value, whether RelBuilder should simplify expressions.
+     * Returns a boolean value, whether{@link AlgBuilder}  should simplify expressions.
      * Default true.
      */
     REL_BUILDER_SIMPLIFY,
@@ -77,7 +79,7 @@ public enum Hook {
     PARSE_TREE,
 
     /**
-     * Converts a SQL string to a {@link Query} object. This hook is an opportunity to execute a {@link org.polypheny.db.rel.RelNode} query
+     * Converts a SQL string to a {@link Query} object. This hook is an opportunity to execute a {@link AlgNode} query
      * plan in the JDBC driver rather than the usual SQL string.
      */
     STRING_TO_QUERY,
@@ -218,6 +220,7 @@ public enum Hook {
         // override, removing "throws"
         @Override
         void close();
+
     }
 }
 

@@ -33,11 +33,11 @@
 
 package org.polypheny.db.schema;
 
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Node;
 
 
 /**
@@ -65,7 +65,7 @@ public interface Table {
      * @param typeFactory Type factory with which to create the type
      * @return Row type
      */
-    RelDataType getRowType( RelDataTypeFactory typeFactory );
+    AlgDataType getRowType( AlgDataTypeFactory typeFactory );
 
     /**
      * Returns a provider of statistics about this table.
@@ -88,10 +88,10 @@ public interface Table {
      *
      * @param column The column name for which {@code isRolledUp} is true
      * @param call The aggregate call
-     * @param parent Parent node of {@code call} in the {@link SqlNode} tree
+     * @param parent Parent node of {@code call} in the {@link Node} tree
      * @return true iff the given aggregate call is valid
      */
-    boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent );
+    boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent );
 
 
     default SchemaType getSchemaType() {

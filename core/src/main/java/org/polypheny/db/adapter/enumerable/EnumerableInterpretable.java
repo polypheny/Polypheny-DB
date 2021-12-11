@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,9 @@ import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Compiler;
@@ -58,12 +60,10 @@ import org.polypheny.db.interpreter.InterpretableRel;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
+import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
@@ -82,13 +82,13 @@ import org.polypheny.db.util.Util;
  */
 public class EnumerableInterpretable extends ConverterImpl implements InterpretableRel {
 
-    protected EnumerableInterpretable( RelOptCluster cluster, RelNode input ) {
+    protected EnumerableInterpretable( AlgOptCluster cluster, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( InterpretableConvention.INSTANCE ), input );
     }
 
 
     @Override
-    public EnumerableInterpretable copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public EnumerableInterpretable copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableInterpretable( getCluster(), sole( inputs ) );
     }
 
@@ -98,7 +98,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         final Bindable bindable = toBindable(
                 implementor.internalParameters,
                 implementor.spark,
-                (EnumerableRel) getInput(),
+                (EnumerableAlg) getInput(),
                 Prefer.ARRAY,
                 implementor.dataContext.getStatement() ).left;
         final ArrayBindable arrayBindable = box( bindable );
@@ -107,10 +107,10 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     }
 
 
-    public static Pair<Bindable<Object[]>, String> toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, Statement statement ) {
-        EnumerableRelImplementor relImplementor = new EnumerableRelImplementor( rel.getCluster().getRexBuilder(), parameters );
+    public static Pair<Bindable<Object[]>, String> toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableAlg alg, EnumerableAlg.Prefer prefer, Statement statement ) {
+        EnumerableAlgImplementor algImplementor = new EnumerableAlgImplementor( alg.getCluster().getRexBuilder(), parameters );
 
-        final ClassDeclaration expr = relImplementor.implementRoot( rel, prefer );
+        final ClassDeclaration expr = algImplementor.implementRoot( alg, prefer );
         String s = Expressions.toString( expr.memberDeclarations, "\n", false );
 
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
@@ -123,7 +123,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             if ( spark != null && spark.enabled() ) {
                 return new Pair<>( spark.compile( expr, s ), s );
             } else {
-                return new Pair<>( getBindable( expr, s, rel.getRowType().getFieldCount() ), s );
+                return new Pair<>( getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
             }
         } catch ( Exception e ) {
             throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );
@@ -223,9 +223,9 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         private final Sink sink;
 
 
-        EnumerableNode( Enumerable<Object[]> enumerable, Compiler compiler, EnumerableInterpretable rel ) {
+        EnumerableNode( Enumerable<Object[]> enumerable, Compiler compiler, EnumerableInterpretable alg ) {
             this.enumerable = enumerable;
-            this.sink = compiler.sink( rel );
+            this.sink = compiler.sink( alg );
         }
 
 
@@ -237,6 +237,8 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 sink.send( Row.of( values ) );
             }
         }
+
     }
+
 }
 

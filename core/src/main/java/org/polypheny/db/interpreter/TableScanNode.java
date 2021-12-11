@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,12 +48,12 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Enumerables;
@@ -71,12 +71,12 @@ import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
- * Interpreter node that implements a {@link org.polypheny.db.rel.core.TableScan}.
+ * Interpreter node that implements a {@link org.polypheny.db.algebra.core.TableScan}.
  */
 public class TableScanNode implements Node {
 
-    private TableScanNode( Compiler compiler, TableScan rel, Enumerable<Row> enumerable ) {
-        compiler.enumerable( rel, enumerable );
+    private TableScanNode( Compiler compiler, TableScan alg, Enumerable<Row> enumerable ) {
+        compiler.enumerable( alg, enumerable );
     }
 
 
@@ -91,51 +91,51 @@ public class TableScanNode implements Node {
      *
      * Tries various table SPIs, and negotiates with the table which filters and projects it can implement. Adds to the Enumerable implementations of any filters and projects that cannot be implemented by the table.
      */
-    static TableScanNode create( Compiler compiler, TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
-        final RelOptTable relOptTable = rel.getTable();
-        final ProjectableFilterableTable pfTable = relOptTable.unwrap( ProjectableFilterableTable.class );
+    static TableScanNode create( Compiler compiler, TableScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects ) {
+        final AlgOptTable algOptTable = alg.getTable();
+        final ProjectableFilterableTable pfTable = algOptTable.unwrap( ProjectableFilterableTable.class );
         if ( pfTable != null ) {
-            return createProjectableFilterable( compiler, rel, filters, projects, pfTable );
+            return createProjectableFilterable( compiler, alg, filters, projects, pfTable );
         }
-        final FilterableTable filterableTable = relOptTable.unwrap( FilterableTable.class );
+        final FilterableTable filterableTable = algOptTable.unwrap( FilterableTable.class );
         if ( filterableTable != null ) {
-            return createFilterable( compiler, rel, filters, projects, filterableTable );
+            return createFilterable( compiler, alg, filters, projects, filterableTable );
         }
-        final ScannableTable scannableTable = relOptTable.unwrap( ScannableTable.class );
+        final ScannableTable scannableTable = algOptTable.unwrap( ScannableTable.class );
         if ( scannableTable != null ) {
-            return createScannable( compiler, rel, filters, projects, scannableTable );
+            return createScannable( compiler, alg, filters, projects, scannableTable );
         }
         //noinspection unchecked
-        final Enumerable<Row> enumerable = relOptTable.unwrap( Enumerable.class );
+        final Enumerable<Row> enumerable = algOptTable.unwrap( Enumerable.class );
         if ( enumerable != null ) {
-            return createEnumerable( compiler, rel, enumerable, null, filters, projects );
+            return createEnumerable( compiler, alg, enumerable, null, filters, projects );
         }
-        final QueryableTable queryableTable = relOptTable.unwrap( QueryableTable.class );
+        final QueryableTable queryableTable = algOptTable.unwrap( QueryableTable.class );
         if ( queryableTable != null ) {
-            return createQueryable( compiler, rel, filters, projects, queryableTable );
+            return createQueryable( compiler, alg, filters, projects, queryableTable );
         }
-        throw new AssertionError( "cannot convert table " + relOptTable + " to enumerable" );
+        throw new AssertionError( "cannot convert table " + algOptTable + " to enumerable" );
     }
 
 
-    private static TableScanNode createScannable( Compiler compiler, TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects, ScannableTable scannableTable ) {
+    private static TableScanNode createScannable( Compiler compiler, TableScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ScannableTable scannableTable ) {
         final Enumerable<Row> rowEnumerable = Enumerables.toRow( scannableTable.scan( compiler.getDataContext() ) );
-        return createEnumerable( compiler, rel, rowEnumerable, null, filters, projects );
+        return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }
 
 
-    private static TableScanNode createQueryable( Compiler compiler, TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableTable queryableTable ) {
+    private static TableScanNode createQueryable( Compiler compiler, TableScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, QueryableTable queryableTable ) {
         final DataContext root = compiler.getDataContext();
-        final RelOptTable relOptTable = rel.getTable();
+        final AlgOptTable algOptTable = alg.getTable();
         final Type elementType = queryableTable.getElementType();
         SchemaPlus schema = root.getRootSchema();
-        for ( String name : Util.skipLast( relOptTable.getQualifiedName() ) ) {
+        for ( String name : Util.skipLast( algOptTable.getQualifiedName() ) ) {
             schema = schema.getSubSchema( name );
         }
         final Enumerable<Row> rowEnumerable;
         if ( elementType instanceof Class ) {
             //noinspection unchecked
-            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, relOptTable.getQualifiedName() );
+            final Queryable<Object> queryable = Schemas.queryable( root, (Class) elementType, algOptTable.getQualifiedName() );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
             Class type = (Class) elementType;
             for ( Field field : type.getFields() ) {
@@ -157,13 +157,13 @@ public class TableScanNode implements Node {
                 return new Row( values );
             } );
         } else {
-            rowEnumerable = Schemas.queryable( root, Row.class, relOptTable.getQualifiedName() );
+            rowEnumerable = Schemas.queryable( root, Row.class, algOptTable.getQualifiedName() );
         }
-        return createEnumerable( compiler, rel, rowEnumerable, null, filters, projects );
+        return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }
 
 
-    private static TableScanNode createFilterable( Compiler compiler, TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects, FilterableTable filterableTable ) {
+    private static TableScanNode createFilterable( Compiler compiler, TableScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, FilterableTable filterableTable ) {
         final DataContext root = compiler.getDataContext();
         final List<RexNode> mutableFilters = Lists.newArrayList( filters );
         final Enumerable<Object[]> enumerable = filterableTable.scan( root, mutableFilters );
@@ -173,17 +173,17 @@ public class TableScanNode implements Node {
             }
         }
         final Enumerable<Row> rowEnumerable = Enumerables.toRow( enumerable );
-        return createEnumerable( compiler, rel, rowEnumerable, null, mutableFilters, projects );
+        return createEnumerable( compiler, alg, rowEnumerable, null, mutableFilters, projects );
     }
 
 
-    private static TableScanNode createProjectableFilterable( Compiler compiler, TableScan rel, ImmutableList<RexNode> filters, ImmutableIntList projects, ProjectableFilterableTable pfTable ) {
+    private static TableScanNode createProjectableFilterable( Compiler compiler, TableScan alg, ImmutableList<RexNode> filters, ImmutableIntList projects, ProjectableFilterableTable pfTable ) {
         final DataContext root = compiler.getDataContext();
         final ImmutableIntList originalProjects = projects;
         for ( ; ; ) {
             final List<RexNode> mutableFilters = Lists.newArrayList( filters );
             final int[] projectInts;
-            if ( projects == null || projects.equals( TableScan.identity( rel.getTable() ) ) ) {
+            if ( projects == null || projects.equals( TableScan.identity( alg.getTable() ) ) ) {
                 projectInts = null;
             } else {
                 projectInts = projects.toIntArray();
@@ -194,7 +194,7 @@ public class TableScanNode implements Node {
                     throw RESOURCE.filterableTableInventedFilter( filter.toString() ).ex();
                 }
             }
-            final ImmutableBitSet usedFields = RelOptUtil.InputFinder.bits( mutableFilters, null );
+            final ImmutableBitSet usedFields = AlgOptUtil.InputFinder.bits( mutableFilters, null );
             if ( projects != null ) {
                 int changeCount = 0;
                 for ( int usedField : usedFields ) {
@@ -217,25 +217,25 @@ public class TableScanNode implements Node {
                 // We projected extra columns because they were needed in filters. Now project the leading columns.
                 rejectedProjects = ImmutableIntList.identity( originalProjects.size() );
             }
-            return createEnumerable( compiler, rel, rowEnumerable, projects, mutableFilters, rejectedProjects );
+            return createEnumerable( compiler, alg, rowEnumerable, projects, mutableFilters, rejectedProjects );
         }
     }
 
 
-    private static TableScanNode createEnumerable( Compiler compiler, TableScan rel, Enumerable<Row> enumerable, final ImmutableIntList acceptedProjects, List<RexNode> rejectedFilters, final ImmutableIntList rejectedProjects ) {
+    private static TableScanNode createEnumerable( Compiler compiler, TableScan alg, Enumerable<Row> enumerable, final ImmutableIntList acceptedProjects, List<RexNode> rejectedFilters, final ImmutableIntList rejectedProjects ) {
         if ( !rejectedFilters.isEmpty() ) {
-            final RexNode filter = RexUtil.composeConjunction( rel.getCluster().getRexBuilder(), rejectedFilters );
+            final RexNode filter = RexUtil.composeConjunction( alg.getCluster().getRexBuilder(), rejectedFilters );
             // Re-map filter for the projects that have been applied already
             final RexNode filter2;
-            final RelDataType inputRowType;
+            final AlgDataType inputRowType;
             if ( acceptedProjects == null ) {
                 filter2 = filter;
-                inputRowType = rel.getRowType();
+                inputRowType = alg.getRowType();
             } else {
-                final Mapping mapping = Mappings.target( acceptedProjects, rel.getTable().getRowType().getFieldCount() );
+                final Mapping mapping = Mappings.target( acceptedProjects, alg.getTable().getRowType().getFieldCount() );
                 filter2 = RexUtil.apply( mapping, filter );
-                final RelDataTypeFactory.Builder builder = rel.getCluster().getTypeFactory().builder();
-                final List<RelDataTypeField> fieldList = rel.getTable().getRowType().getFieldList();
+                final AlgDataTypeFactory.Builder builder = alg.getCluster().getTypeFactory().builder();
+                final List<AlgDataTypeField> fieldList = alg.getTable().getRowType().getFieldList();
                 for ( int acceptedProject : acceptedProjects ) {
                     builder.add( fieldList.get( acceptedProject ) );
                 }
@@ -265,7 +265,8 @@ public class TableScanNode implements Node {
                         }
                     } );
         }
-        return new TableScanNode( compiler, rel, enumerable );
+        return new TableScanNode( compiler, alg, enumerable );
     }
+
 }
 

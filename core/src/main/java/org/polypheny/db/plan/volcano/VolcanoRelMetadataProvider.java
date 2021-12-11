@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,18 +37,18 @@ package org.polypheny.db.plan.volcano;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import java.lang.reflect.Method;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.metadata.Metadata;
-import org.polypheny.db.rel.metadata.MetadataDef;
-import org.polypheny.db.rel.metadata.MetadataHandler;
-import org.polypheny.db.rel.metadata.RelMetadataProvider;
-import org.polypheny.db.rel.metadata.UnboundMetadata;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
+import org.polypheny.db.algebra.metadata.Metadata;
+import org.polypheny.db.algebra.metadata.MetadataDef;
+import org.polypheny.db.algebra.metadata.MetadataHandler;
+import org.polypheny.db.algebra.metadata.UnboundMetadata;
 
 
 /**
- * VolcanoRelMetadataProvider implements the {@link RelMetadataProvider} interface by combining metadata from the rels making up an equivalence class.
+ * VolcanoRelMetadataProvider implements the {@link AlgMetadataProvider} interface by combining metadata from the rels making up an equivalence class.
  */
-public class VolcanoRelMetadataProvider implements RelMetadataProvider {
+public class VolcanoRelMetadataProvider implements AlgMetadataProvider {
 
     @Override
     public boolean equals( Object obj ) {
@@ -63,15 +63,15 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
 
 
     @Override
-    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends RelNode> relClass, final Class<? extends M> metadataClass ) {
-        if ( relClass != RelSubset.class ) {
+    public <M extends Metadata> UnboundMetadata<M> apply( Class<? extends AlgNode> algClass, final Class<? extends M> metadataClass ) {
+        if ( algClass != AlgSubset.class ) {
             // let someone else further down the chain sort it out
             return null;
         }
 
-        return ( rel, mq ) -> {
-            final RelSubset subset = (RelSubset) rel;
-            final RelMetadataProvider provider = rel.getCluster().getMetadataProvider();
+        return ( alg, mq ) -> {
+            final AlgSubset subset = (AlgSubset) alg;
+            final AlgMetadataProvider provider = alg.getCluster().getMetadataProvider();
 
             // REVIEW jvs: I'm not sure what the correct precedence should be here.  Letting the current best plan take the first shot is probably the right thing to do for physical estimates
             // such as row count. Dunno about others, and whether we need a way to discriminate.
@@ -99,10 +99,10 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
 
             subset.set.inMetadataQuery = true;
             try {
-                for ( RelNode relCandidate : subset.set.rels ) {
-                    final UnboundMetadata<M> function = provider.apply( relCandidate.getClass(), metadataClass );
+                for ( AlgNode algCandidate : subset.set.algs ) {
+                    final UnboundMetadata<M> function = provider.apply( algCandidate.getClass(), metadataClass );
                     if ( function != null ) {
-                        final M result = function.bind( relCandidate, mq );
+                        final M result = function.bind( algCandidate, mq );
                         if ( result != null ) {
                             return result;
                         }
@@ -122,5 +122,6 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
     public <M extends Metadata> Multimap<Method, MetadataHandler<M>> handlers( MetadataDef<M> def ) {
         return ImmutableMultimap.of();
     }
+
 }
 

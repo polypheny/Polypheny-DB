@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,11 +43,11 @@ import org.polypheny.db.adapter.enumerable.CallImplementor;
 import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.ScalarFunction;
-import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.util.Static;
 
 
@@ -125,7 +125,7 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase implements Scalar
 
 
     @Override
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getReturnType( AlgDataTypeFactory typeFactory ) {
         return typeFactory.createJavaType( method.getReturnType() );
     }
 
@@ -157,13 +157,13 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase implements Scalar
     }
 
 
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory, SqlOperatorBinding opBinding ) {
+    public AlgDataType getReturnType( AlgDataTypeFactory typeFactory, OperatorBinding opBinding ) {
         // Strict and semi-strict functions can return null even if their Java functions return a primitive type. Because when one of their arguments
         // is null, they won't even be called.
-        final RelDataType returnType = getReturnType( typeFactory );
+        final AlgDataType returnType = getReturnType( typeFactory );
         switch ( getNullPolicy( method ) ) {
             case STRICT:
-                for ( RelDataType type : opBinding.collectOperandTypes() ) {
+                for ( AlgDataType type : opBinding.collectOperandTypes() ) {
                     if ( type.isNullable() ) {
                         return typeFactory.createTypeWithNullability( returnType, true );
                     }
@@ -174,5 +174,6 @@ public class ScalarFunctionImpl extends ReflectiveFunctionBase implements Scalar
         }
         return returnType;
     }
+
 }
 

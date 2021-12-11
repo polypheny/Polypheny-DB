@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.algebra.core.Project;
 
 
 /**
- * Interpreter node that implements a {@link org.polypheny.db.rel.core.Project}.
+ * Interpreter node that implements a {@link org.polypheny.db.algebra.core.Project}.
  */
 public class ProjectNode extends AbstractSingleNode<Project> {
 
@@ -47,10 +47,10 @@ public class ProjectNode extends AbstractSingleNode<Project> {
     private final int projectCount;
 
 
-    public ProjectNode( Compiler compiler, Project rel ) {
-        super( compiler, rel );
-        this.projectCount = rel.getProjects().size();
-        this.scalar = compiler.compile( rel.getProjects(), rel.getInput().getRowType() );
+    public ProjectNode( Compiler compiler, Project alg ) {
+        super( compiler, alg );
+        this.projectCount = alg.getProjects().size();
+        this.scalar = compiler.compile( alg.getProjects(), alg.getInput().getRowType() );
         this.context = compiler.createContext();
     }
 
@@ -65,5 +65,6 @@ public class ProjectNode extends AbstractSingleNode<Project> {
             sink.send( new Row( values ) );
         }
     }
+
 }
 

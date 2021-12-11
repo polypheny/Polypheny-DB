@@ -40,13 +40,13 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.FilterableTable;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.util.Source;
 
 
@@ -60,7 +60,7 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    public CsvFilterableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 
@@ -86,10 +86,10 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
 
 
     private boolean addFilter( RexNode filter, Object[] filterValues ) {
-        if ( filter.isA( SqlKind.EQUALS ) ) {
+        if ( filter.isA( Kind.EQUALS ) ) {
             final RexCall call = (RexCall) filter;
             RexNode left = call.getOperands().get( 0 );
-            if ( left.isA( SqlKind.CAST ) ) {
+            if ( left.isA( Kind.CAST ) ) {
                 left = ((RexCall) left).operands.get( 0 );
             }
             final RexNode right = call.getOperands().get( 1 );
@@ -103,5 +103,6 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
         }
         return false;
     }
+
 }
 

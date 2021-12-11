@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.polypheny.db.catalog.Catalog.LanguageType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
@@ -101,7 +101,7 @@ public class Result {
      * language type of result MQL/SQL/CQL
      */
     @Setter
-    private LanguageType languageType = LanguageType.SQL;
+    private QueryLanguage language = QueryLanguage.SQL;
 
     /**
      * Indicate that only a subset of the specified query is being displayed.
@@ -165,11 +165,11 @@ public class Result {
      * @param header columns of the result
      * @param data data of the result
      */
-    public Result( final DbColumn[] header, final String[][] data, SchemaType schemaType, LanguageType languageType ) {
+    public Result( final DbColumn[] header, final String[][] data, SchemaType schemaType, QueryLanguage language ) {
         this.header = header;
         this.data = data;
         this.schemaType = schemaType;
-        this.languageType = languageType;
+        this.language = language;
     }
 
 

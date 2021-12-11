@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ package org.polypheny.db.test;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ModifiableView;
@@ -46,17 +46,18 @@ public class JdbcTest {
 
 
         @Override
-        public TableModify toModificationRel(
-                RelOptCluster cluster,
-                RelOptTable table,
+        public TableModify toModificationAlg(
+                AlgOptCluster cluster,
+                AlgOptTable table,
                 Prepare.CatalogReader catalogReader,
-                RelNode child,
+                AlgNode child,
                 TableModify.Operation operation,
                 List<String> updateColumnList,
                 List<RexNode> sourceExpressionList,
                 boolean flattened ) {
             return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
+
     }
 
 
@@ -68,8 +69,8 @@ public class JdbcTest {
         protected AbstractModifiableView() {
             super();
         }
-    }
 
+    }
 
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package org.polypheny.db.type.inference;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.CallBinding;
 
 
 /**
@@ -27,19 +27,19 @@ import org.polypheny.db.sql.SqlCallBinding;
  */
 public class ExplicitOperandTypeInference implements PolyOperandTypeInference {
 
-    private final ImmutableList<RelDataType> paramTypes;
+    private final ImmutableList<AlgDataType> paramTypes;
 
 
     /**
      * Use {@link InferTypes#explicit(java.util.List)}.
      */
-    ExplicitOperandTypeInference( ImmutableList<RelDataType> paramTypes ) {
+    ExplicitOperandTypeInference( ImmutableList<AlgDataType> paramTypes ) {
         this.paramTypes = paramTypes;
     }
 
 
     @Override
-    public void inferOperandTypes( SqlCallBinding callBinding, RelDataType returnType, RelDataType[] operandTypes ) {
+    public void inferOperandTypes( CallBinding callBinding, AlgDataType returnType, AlgDataType[] operandTypes ) {
         if ( operandTypes.length != paramTypes.size() ) {
             // This call does not match the inference strategy.
             // It's likely that we're just about to give a validation error.
@@ -48,5 +48,6 @@ public class ExplicitOperandTypeInference implements PolyOperandTypeInference {
         }
         paramTypes.toArray( operandTypes );
     }
+
 }
 

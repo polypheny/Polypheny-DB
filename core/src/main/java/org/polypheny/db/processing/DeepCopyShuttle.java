@@ -17,62 +17,61 @@
 package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.core.TableFunctionScan;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
-import org.polypheny.db.rel.logical.LogicalCorrelate;
-import org.polypheny.db.rel.logical.LogicalExchange;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalIntersect;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalMatch;
-import org.polypheny.db.rel.logical.LogicalMinus;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalSort;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalUnion;
-import org.polypheny.db.rel.logical.LogicalValues;
-
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalCorrelate;
+import org.polypheny.db.algebra.logical.LogicalExchange;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalIntersect;
+import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.LogicalMatch;
+import org.polypheny.db.algebra.logical.LogicalMinus;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.plan.AlgTraitSet;
 
 /**
  * Shuttle for creating a deep copy of a query plan.
  */
-public class DeepCopyShuttle extends RelShuttleImpl {
+public class DeepCopyShuttle extends AlgShuttleImpl {
 
-    private RelTraitSet copy( final RelTraitSet other ) {
-        return RelTraitSet.createEmpty().merge( other );
+    private AlgTraitSet copy( final AlgTraitSet other ) {
+        return AlgTraitSet.createEmpty().merge( other );
     }
 
 
     @Override
-    public RelNode visit( TableScan scan ) {
-        final RelNode node = super.visit( scan );
+    public AlgNode visit( TableScan scan ) {
+        final AlgNode node = super.visit( scan );
         return new LogicalTableScan( node.getCluster(), copy( node.getTraitSet() ), node.getTable() );
     }
 
 
     @Override
-    public RelNode visit( TableFunctionScan scan ) {
-        final RelNode node = super.visit( scan );
+    public AlgNode visit( TableFunctionScan scan ) {
+        final AlgNode node = super.visit( scan );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public RelNode visit( LogicalValues values ) {
+    public AlgNode visit( LogicalValues values ) {
         final Values node = (Values) super.visit( values );
         return new LogicalValues( node.getCluster(), copy( node.getTraitSet() ), node.getRowType(), node.getTuples() );
     }
 
 
     @Override
-    public RelNode visit( LogicalFilter filter ) {
+    public AlgNode visit( LogicalFilter filter ) {
         final LogicalFilter node = (LogicalFilter) super.visit( filter );
         return new LogicalFilter(
                 node.getCluster(),
@@ -84,7 +83,7 @@ public class DeepCopyShuttle extends RelShuttleImpl {
 
 
     @Override
-    public RelNode visit( LogicalProject project ) {
+    public AlgNode visit( LogicalProject project ) {
         final Project node = (Project) super.visit( project );
         return new LogicalProject(
                 node.getCluster(),
@@ -96,8 +95,8 @@ public class DeepCopyShuttle extends RelShuttleImpl {
 
 
     @Override
-    public RelNode visit( LogicalJoin join ) {
-        final RelNode node = super.visit( join );
+    public AlgNode visit( LogicalJoin join ) {
+        final AlgNode node = super.visit( join );
         return new LogicalJoin(
                 node.getCluster(),
                 copy( node.getTraitSet() ),
@@ -112,36 +111,36 @@ public class DeepCopyShuttle extends RelShuttleImpl {
 
 
     @Override
-    public RelNode visit( LogicalCorrelate correlate ) {
-        final RelNode node = super.visit( correlate );
+    public AlgNode visit( LogicalCorrelate correlate ) {
+        final AlgNode node = super.visit( correlate );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public RelNode visit( LogicalUnion union ) {
-        final RelNode node = super.visit( union );
+    public AlgNode visit( LogicalUnion union ) {
+        final AlgNode node = super.visit( union );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public RelNode visit( LogicalIntersect intersect ) {
-        final RelNode node = super.visit( intersect );
+    public AlgNode visit( LogicalIntersect intersect ) {
+        final AlgNode node = super.visit( intersect );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public RelNode visit( LogicalMinus minus ) {
-        final RelNode node = super.visit( minus );
+    public AlgNode visit( LogicalMinus minus ) {
+        final AlgNode node = super.visit( minus );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public RelNode visit( LogicalAggregate aggregate ) {
-        final RelNode node = super.visit( aggregate );
+    public AlgNode visit( LogicalAggregate aggregate ) {
+        final AlgNode node = super.visit( aggregate );
         return new LogicalAggregate(
                 node.getCluster(),
                 copy( node.getTraitSet() ),
@@ -154,28 +153,28 @@ public class DeepCopyShuttle extends RelShuttleImpl {
 
 
     @Override
-    public RelNode visit( LogicalMatch match ) {
-        final RelNode node = super.visit( match );
+    public AlgNode visit( LogicalMatch match ) {
+        final AlgNode node = super.visit( match );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public RelNode visit( LogicalSort sort ) {
-        final RelNode node = super.visit( sort );
+    public AlgNode visit( LogicalSort sort ) {
+        final AlgNode node = super.visit( sort );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public RelNode visit( LogicalExchange exchange ) {
-        final RelNode node = super.visit( exchange );
+    public AlgNode visit( LogicalExchange exchange ) {
+        final AlgNode node = super.visit( exchange );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 
 
     @Override
-    public RelNode visit( LogicalConditionalExecute lce ) {
+    public AlgNode visit( LogicalConditionalExecute lce ) {
         return new LogicalConditionalExecute(
                 lce.getCluster(),
                 copy( lce.getTraitSet() ),
@@ -188,8 +187,8 @@ public class DeepCopyShuttle extends RelShuttleImpl {
 
 
     @Override
-    public RelNode visit( RelNode other ) {
-        final RelNode node = super.visit( other );
+    public AlgNode visit( AlgNode other ) {
+        final AlgNode node = super.visit( other );
         return node.copy( copy( node.getTraitSet() ), node.getInputs() );
     }
 

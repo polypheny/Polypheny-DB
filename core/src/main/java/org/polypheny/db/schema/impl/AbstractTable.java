@@ -34,20 +34,20 @@
 package org.polypheny.db.schema.impl;
 
 
+import org.polypheny.db.nodes.Call;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.sql.SqlCall;
-import org.polypheny.db.sql.SqlNode;
 
 
 /**
  * Abstract base class for implementing {@link Table}.
  *
- * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, SqlCall, SqlNode)} if their table can potentially contain rolled up values.
+ * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, Call, Node)} if their table can potentially contain rolled up values.
  * This information is used by the validator to check for illegal uses of these columns.
  */
 public abstract class AbstractTable implements Table, Wrapper {
@@ -85,7 +85,7 @@ public abstract class AbstractTable implements Table, Wrapper {
 
 
     @Override
-    public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
+    public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
         return true;
     }
 

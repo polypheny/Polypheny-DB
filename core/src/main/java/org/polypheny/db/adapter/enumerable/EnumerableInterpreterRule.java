@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,34 +35,36 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.function.Predicate;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.interpreter.BindableAlg;
 import org.polypheny.db.interpreter.BindableConvention;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts {@link org.polypheny.db.interpreter.BindableRel} to {@link org.polypheny.db.adapter.enumerable.EnumerableRel} by creating
+ * Planner rule that converts {@link BindableAlg} to {@link EnumerableAlg} by creating
  * an {@link org.polypheny.db.adapter.enumerable.EnumerableInterpreter}.
  */
 public class EnumerableInterpreterRule extends ConverterRule {
 
-    public static final EnumerableInterpreterRule INSTANCE = new EnumerableInterpreterRule( RelFactories.LOGICAL_BUILDER );
+    public static final EnumerableInterpreterRule INSTANCE = new EnumerableInterpreterRule( AlgFactories.LOGICAL_BUILDER );
 
 
     /**
      * Creates an EnumerableInterpreterRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableInterpreterRule( RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, BindableConvention.INSTANCE, EnumerableConvention.INSTANCE, relBuilderFactory, "EnumerableInterpreterRule" );
+    public EnumerableInterpreterRule( AlgBuilderFactory algBuilderFactory ) {
+        super( AlgNode.class, (Predicate<AlgNode>) r -> true, BindableConvention.INSTANCE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableInterpreterRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        return EnumerableInterpreter.create( rel, 0.5d );
+    public AlgNode convert( AlgNode alg ) {
+        return EnumerableInterpreter.create( alg, 0.5d );
     }
+
 }

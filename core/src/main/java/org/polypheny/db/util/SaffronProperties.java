@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import java.io.InputStream;
 import java.security.AccessControlException;
 import java.util.Enumeration;
 import java.util.Properties;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
+import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.BooleanProp;
 import org.polypheny.db.runtime.Resources.Default;
@@ -78,7 +80,7 @@ public interface SaffronProperties {
     /**
      * The string property "saffron.default.charset" is the name of the default
      * character set. The default is "ISO-8859-1". It is used in
-     * {@link org.polypheny.db.sql.validate.SqlValidator}.
+     * {@link Validator}.
      */
     @Resource("saffron.default.charset")
     @Default("ISO-8859-1")
@@ -98,7 +100,7 @@ public interface SaffronProperties {
     /**
      * The string property "saffron.default.collation.name" is the name of the
      * default collation. The default is "ISO-8859-1$en_US". Used in
-     * {@link org.polypheny.db.sql.SqlCollation} and
+     * {@link Collation} and
      * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.collation.name")
@@ -108,7 +110,7 @@ public interface SaffronProperties {
     /**
      * The string property "saffron.default.collation.strength" is the strength
      * of the default collation. The default is "primary". Used in
-     * {@link org.polypheny.db.sql.SqlCollation} and
+     * {@link Collation} and
      * {@code org.polypheny.db.sql.SqlLiteral#SqlLiteral}
      */
     @Resource("saffron.default.collation.strength")
@@ -167,6 +169,8 @@ public interface SaffronProperties {
             }
             return Resources.create( properties, SaffronProperties.class );
         }
+
     }
+
 }
 

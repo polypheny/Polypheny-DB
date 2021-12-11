@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.TransactionManager;
@@ -59,7 +60,7 @@ public class HttpServer implements Runnable {
     public void run() {
         final Service server = Service.ignite();
         server.port( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
-        Crud crud = new Crud( transactionManager, "pa", "APP" );
+        Crud crud = new Crud( transactionManager, Catalog.getInstance().getUser( Catalog.defaultUserId ).name, Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name );
 
         WebSocket webSocketHandler = new WebSocket( crud );
         webSockets( server, webSocketHandler );
@@ -136,7 +137,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/createTable", crud::createTable, gson::toJson );
 
-        webuiServer.post( "/createCollection", crud.documentCrud::createCollection, gson::toJson );
+        webuiServer.post( "/createCollection", crud.languageCrud::createCollection, gson::toJson );
 
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames, gson::toJson );
 
@@ -218,7 +219,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/usedDockerPorts", crud::getUsedDockerPorts, gsonExpose::toJson );
 
-        webuiServer.get( "/getDocumentDatabases", crud.documentCrud::getDocumentDatabases, gson::toJson );
+        webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases, gson::toJson );
 
     }
 

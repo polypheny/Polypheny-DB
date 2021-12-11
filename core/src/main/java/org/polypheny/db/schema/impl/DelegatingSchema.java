@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ package org.polypheny.db.schema.impl;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -100,7 +100,7 @@ public class DelegatingSchema implements Schema {
 
 
     @Override
-    public RelProtoDataType getType( String name ) {
+    public AlgProtoDataType getType( String name ) {
         return schema.getType( name );
     }
 
@@ -133,5 +133,6 @@ public class DelegatingSchema implements Schema {
     public Set<String> getSubSchemaNames() {
         return schema.getSubSchemaNames();
     }
+
 }
 

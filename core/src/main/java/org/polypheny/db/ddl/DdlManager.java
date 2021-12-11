@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
@@ -55,14 +58,11 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.nodes.DataTypeSpec;
+import org.polypheny.db.nodes.Identifier;
+import org.polypheny.db.nodes.Literal;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlLiteral;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -453,10 +453,10 @@ public abstract class DdlManager {
      *
      * @param viewName the name of the new view
      * @param schemaId the id of the schema to which the view belongs
-     * @param relNode the relNode which was built form the Select part of the view
+     * @param algNode the algNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
+    public abstract void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException;
 
 
     /**
@@ -464,10 +464,10 @@ public abstract class DdlManager {
      *
      * @param viewName the name of the new view
      * @param schemaId the id of the schema to which the view belongs
-     * @param relRoot the relNode which was built form the Select part of the view
+     * @param algRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
-    public abstract void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
+    public abstract void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, UnknownColumnException, ColumnNotExistsException, ColumnAlreadyExistsException;
 
 
     /**
@@ -636,7 +636,7 @@ public abstract class DdlManager {
         }
 
 
-        public static ColumnTypeInformation fromSqlDataTypeSpec( SqlDataTypeSpec sqlDataType ) {
+        public static ColumnTypeInformation fromDataTypeSpec( DataTypeSpec sqlDataType ) {
             return new ColumnTypeInformation(
                     sqlDataType.getType(),
                     sqlDataType.getCollectionsType(),
@@ -682,18 +682,18 @@ public abstract class DdlManager {
         }
 
 
-        public static PartitionInformation fromSqlLists(
+        public static PartitionInformation fromNodeLists(
                 CatalogTable table,
                 String typeName,
                 String columnName,
-                List<SqlIdentifier> partitionGroupNames,
+                List<Identifier> partitionGroupNames,
                 int numberOfPartitionGroups,
                 int numberOfPartitions,
-                List<List<SqlNode>> partitionQualifierList,
+                List<List<Node>> partitionQualifierList,
                 RawPartitionInformation rawPartitionInformation ) {
             List<String> names = partitionGroupNames
                     .stream()
-                    .map( SqlIdentifier::getSimple )
+                    .map( Identifier::getSimple )
                     .collect( Collectors.toList() );
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
@@ -710,10 +710,10 @@ public abstract class DdlManager {
          * @param node Node to be modified
          * @return String
          */
-        public static String getValueOfSqlNode( SqlNode node ) {
+        public static String getValueOfSqlNode( Node node ) {
 
-            if ( node instanceof SqlLiteral ) {
-                return ((SqlLiteral) node).toValue();
+            if ( node instanceof Literal ) {
+                return ((Literal) node).toValue();
             }
             return node.toString();
         }

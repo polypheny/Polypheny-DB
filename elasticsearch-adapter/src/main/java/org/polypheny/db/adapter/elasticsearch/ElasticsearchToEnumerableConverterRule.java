@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,11 @@ package org.polypheny.db.adapter.elasticsearch;
 
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -48,22 +48,23 @@ import org.polypheny.db.tools.RelBuilderFactory;
  */
 public class ElasticsearchToEnumerableConverterRule extends ConverterRule {
 
-    static final ConverterRule INSTANCE = new ElasticsearchToEnumerableConverterRule( RelFactories.LOGICAL_BUILDER );
+    static final ConverterRule INSTANCE = new ElasticsearchToEnumerableConverterRule( AlgFactories.LOGICAL_BUILDER );
 
 
     /**
      * Creates an ElasticsearchToEnumerableConverterRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    private ElasticsearchToEnumerableConverterRule( RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, ElasticsearchRel.CONVENTION, EnumerableConvention.INSTANCE, relBuilderFactory, "ElasticsearchToEnumerableConverterRule" );
+    private ElasticsearchToEnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
+        super( AlgNode.class, (Predicate<AlgNode>) r -> true, ElasticsearchRel.CONVENTION, EnumerableConvention.INSTANCE, algBuilderFactory, "ElasticsearchToEnumerableConverterRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode relNode ) {
-        RelTraitSet newTraitSet = relNode.getTraitSet().replace( getOutConvention() );
-        return new ElasticsearchToEnumerableConverter( relNode.getCluster(), newTraitSet, relNode );
+    public AlgNode convert( AlgNode algNode ) {
+        AlgTraitSet newTraitSet = algNode.getTraitSet().replace( getOutConvention() );
+        return new ElasticsearchToEnumerableConverter( algNode.getCluster(), newTraitSet, algNode );
     }
+
 }

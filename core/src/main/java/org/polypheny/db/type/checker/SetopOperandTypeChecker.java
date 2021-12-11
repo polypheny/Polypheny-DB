@@ -19,16 +19,17 @@ package org.polypheny.db.type.checker;
 
 import java.util.AbstractList;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.Select;
+import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Static;
 
 
@@ -46,13 +47,13 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         assert callBinding.getOperandCount() == 2 : "setops are binary (for now)";
-        final RelDataType[] argTypes = new RelDataType[callBinding.getOperandCount()];
+        final AlgDataType[] argTypes = new AlgDataType[callBinding.getOperandCount()];
         int colCount = -1;
-        final SqlValidator validator = callBinding.getValidator();
+        final Validator validator = callBinding.getValidator();
         for ( int i = 0; i < argTypes.length; i++ ) {
-            final RelDataType argType = argTypes[i] = callBinding.getOperandType( i );
+            final AlgDataType argType = argTypes[i] = callBinding.getOperandType( i );
             if ( !argType.isStruct() ) {
                 if ( throwOnFailure ) {
                     throw new AssertionError( "setop arg must be a struct" );
@@ -62,7 +63,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
             }
 
             // Each operand must have the same number of columns.
-            final List<RelDataTypeField> fields = argType.getFieldList();
+            final List<AlgDataTypeField> fields = argType.getFieldList();
             if ( i == 0 ) {
                 colCount = fields.size();
                 continue;
@@ -70,9 +71,9 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
 
             if ( fields.size() != colCount ) {
                 if ( throwOnFailure ) {
-                    SqlNode node = callBinding.operand( i );
-                    if ( node instanceof SqlSelect ) {
-                        node = ((SqlSelect) node).getSelectList();
+                    Node node = callBinding.operand( i );
+                    if ( node.getKind() == Kind.SELECT ) {
+                        node = ((Select) node).getSelectList();
                     }
                     throw validator.newValidationError( node, Static.RESOURCE.columnCountMismatchInSetop( callBinding.getOperator().getName() ) );
                 } else {
@@ -84,11 +85,11 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
         // The columns must be pairwise union compatible. For each column ordinal, form a 'slice' containing the types of the ordinal'th column j.
         for ( int i = 0; i < colCount; i++ ) {
             final int i2 = i;
-            final RelDataType type =
+            final AlgDataType type =
                     callBinding.getTypeFactory().leastRestrictive(
-                            new AbstractList<RelDataType>() {
+                            new AbstractList<AlgDataType>() {
                                 @Override
-                                public RelDataType get( int index ) {
+                                public AlgDataType get( int index ) {
                                     return argTypes[index].getFieldList().get( i2 ).getType();
                                 }
 
@@ -100,7 +101,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
                             } );
             if ( type == null ) {
                 if ( throwOnFailure ) {
-                    SqlNode field = SqlUtil.getSelectListItem( callBinding.operand( 0 ), i );
+                    Node field = CoreUtil.getSelectListItem( callBinding.operand( 0 ), i );
                     throw validator.newValidationError(
                             field,
                             Static.RESOURCE.columnTypeMismatchInSetop(
@@ -123,7 +124,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         return "{0} " + opName + " {1}";
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,37 +41,38 @@ import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableFunctionScan;
-import org.polypheny.db.rel.metadata.RelColumnMapping;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.fun.TableFunction;
+import org.polypheny.db.algebra.fun.UserDefined;
+import org.polypheny.db.algebra.metadata.AlgColumnMapping;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.QueryableTable;
 import org.polypheny.db.schema.impl.TableFunctionImpl;
-import org.polypheny.db.sql.validate.SqlUserDefinedTableFunction;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.TableFunctionScan} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.TableFunctionScan} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableTableFunctionScan extends TableFunctionScan implements EnumerableRel {
+public class EnumerableTableFunctionScan extends TableFunctionScan implements EnumerableAlg {
 
-    public EnumerableTableFunctionScan( RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, Type elementType, RelDataType rowType, RexNode call, Set<RelColumnMapping> columnMappings ) {
+    public EnumerableTableFunctionScan( AlgOptCluster cluster, AlgTraitSet traits, List<AlgNode> inputs, Type elementType, AlgDataType rowType, RexNode call, Set<AlgColumnMapping> columnMappings ) {
         super( cluster, traits, inputs, call, elementType, rowType, columnMappings );
     }
 
 
     @Override
-    public EnumerableTableFunctionScan copy( RelTraitSet traitSet, List<RelNode> inputs, RexNode rexCall, Type elementType, RelDataType rowType, Set<RelColumnMapping> columnMappings ) {
+    public EnumerableTableFunctionScan copy( AlgTraitSet traitSet, List<AlgNode> inputs, RexNode rexCall, Type elementType, AlgDataType rowType, Set<AlgColumnMapping> columnMappings ) {
         return new EnumerableTableFunctionScan( getCluster(), traitSet, inputs, elementType, rowType, rexCall, columnMappings );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder bb = new BlockBuilder();
         // Non-array user-specified types are not supported yet
         final JavaRowFormat format;
@@ -97,10 +98,10 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
             return false;
         }
         final RexCall call = (RexCall) getCall();
-        if ( !(call.getOperator() instanceof SqlUserDefinedTableFunction) ) {
+        if ( !(call.getOperator() instanceof UserDefined && call.getOperator() instanceof TableFunction) ) {
             return false;
         }
-        final SqlUserDefinedTableFunction udtf = (SqlUserDefinedTableFunction) call.getOperator();
+        final UserDefined udtf = (UserDefined) call.getOperator();
         if ( !(udtf.getFunction() instanceof TableFunctionImpl) ) {
             return false;
         }
@@ -108,5 +109,6 @@ public class EnumerableTableFunctionScan extends TableFunctionScan implements En
         final Method method = tableFunction.method;
         return QueryableTable.class.isAssignableFrom( method.getReturnType() );
     }
+
 }
 

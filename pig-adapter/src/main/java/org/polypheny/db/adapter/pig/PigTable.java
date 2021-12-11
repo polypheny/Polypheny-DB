@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,12 @@ package org.polypheny.db.adapter.pig;
 
 
 import org.apache.pig.data.DataType;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptTable.ToRelContext;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 
@@ -68,12 +68,12 @@ public class PigTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-        final RelDataTypeFactory.Builder builder = typeFactory.builder();
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+        final AlgDataTypeFactory.Builder builder = typeFactory.builder();
         for ( String fieldName : fieldNames ) {
             // only supports CHARARRAY types for now
-            final RelDataType relDataType = typeFactory.createPolyType( PigDataType.valueOf( DataType.CHARARRAY ).getSqlType() );
-            final RelDataType nullableRelDataType = typeFactory.createTypeWithNullability( relDataType, true );
+            final AlgDataType relDataType = typeFactory.createPolyType( PigDataType.valueOf( DataType.CHARARRAY ).getSqlType() );
+            final AlgDataType nullableRelDataType = typeFactory.createTypeWithNullability( relDataType, true );
             // TODO (PCP)
             String physicalColumnName = fieldName;
             builder.add( fieldName, physicalColumnName, nullableRelDataType );
@@ -88,9 +88,10 @@ public class PigTable extends AbstractTable implements TranslatableTable {
 
 
     @Override
-    public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
-        final RelOptCluster cluster = context.getCluster();
-        return new PigTableScan( cluster, cluster.traitSetOf( PigRel.CONVENTION ), relOptTable );
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+        final AlgOptCluster cluster = context.getCluster();
+        return new PigTableScan( cluster, cluster.traitSetOf( PigAlg.CONVENTION ), algOptTable );
     }
+
 }
 

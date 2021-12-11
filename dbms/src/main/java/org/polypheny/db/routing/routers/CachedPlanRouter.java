@@ -21,18 +21,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.prepare.RelOptTableImpl;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.tools.RoutedRelBuilder;
+import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -45,19 +45,19 @@ public class CachedPlanRouter extends BaseRouter {
     final static Catalog catalog = Catalog.getInstance();
 
 
-    public RoutedRelBuilder routeCached( RelRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement ) {
-        final RoutedRelBuilder builder = RoutedRelBuilder.create( statement, logicalRoot.rel.getCluster() );
-        return buildCachedSelect( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster(), routingPlanCached );
+    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, Statement statement ) {
+        final RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
+        return buildCachedSelect( logicalRoot.alg, builder, statement, logicalRoot.alg.getCluster(), routingPlanCached );
     }
 
 
-    private RoutedRelBuilder buildCachedSelect( RelNode node, RoutedRelBuilder builder, Statement statement, RelOptCluster cluster, CachedProposedRoutingPlan cachedPlan ) {
+    private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, Statement statement, AlgOptCluster cluster, CachedProposedRoutingPlan cachedPlan ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan );
         }
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
-            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
             if ( !(table.getTable() instanceof LogicalTable) ) {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }

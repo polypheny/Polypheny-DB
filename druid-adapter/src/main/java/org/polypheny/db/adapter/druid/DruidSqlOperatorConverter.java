@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ package org.polypheny.db.adapter.druid;
 
 
 import javax.annotation.Nullable;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
 
 
 /**
@@ -50,7 +50,7 @@ public interface DruidSqlOperatorConverter {
      *
      * @return operator
      */
-    SqlOperator polyphenyDbOperator();
+    Operator polyphenyDbOperator();
 
 
     /**
@@ -62,6 +62,7 @@ public interface DruidSqlOperatorConverter {
      * @return valid Druid expression or null if it can not convert the rexNode
      */
     @Nullable
-    String toDruidExpression( RexNode rexNode, RelDataType rowType, DruidQuery druidQuery );
+    String toDruidExpression( RexNode rexNode, AlgDataType rowType, DruidQuery druidQuery );
+
 }
 

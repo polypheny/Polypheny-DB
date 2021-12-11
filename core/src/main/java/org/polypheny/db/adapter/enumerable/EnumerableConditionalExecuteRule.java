@@ -17,12 +17,12 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 
 
 public class EnumerableConditionalExecuteRule extends ConverterRule {
@@ -31,15 +31,15 @@ public class EnumerableConditionalExecuteRule extends ConverterRule {
         super( LogicalConditionalExecute.class,
                 operand -> true,
                 Convention.NONE, EnumerableConvention.INSTANCE,
-                RelFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteRule" );
+                AlgFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteRule" );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalConditionalExecute lce = (LogicalConditionalExecute) rel;
-        final RelNode input = RelOptRule.convert( lce.getLeft(), lce.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        final RelNode action = RelOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalConditionalExecute lce = (LogicalConditionalExecute) alg;
+        final AlgNode input = AlgOptRule.convert( lce.getLeft(), lce.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        final AlgNode action = AlgOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final EnumerableConditionalExecute ece = EnumerableConditionalExecute.create( input, action, lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
         ece.setCheckDescription( lce.getCheckDescription() );
         ece.setCatalogSchema( lce.getCatalogSchema() );

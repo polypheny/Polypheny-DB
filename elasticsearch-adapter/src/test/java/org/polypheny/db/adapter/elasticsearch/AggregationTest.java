@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,7 +213,7 @@ public class AggregationTest {
 //
 //
 //    /**
-//     * Testing {@link SqlKind#ANY_VALUE} aggregate function
+//     * Testing {@link Kind#ANY_VALUE} aggregate function
 //     */
 //    @Test
 //    public void anyValue() {
@@ -270,7 +270,7 @@ public class AggregationTest {
 //
 //
 //    /**
-//     * Validate {@link SqlStdOperatorTable#APPROX_COUNT_DISTINCT}.
+//     * Validate {@link StdOperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT )}.
 //     */
 //    @Test
 //    public void approximateCountDistinct() {

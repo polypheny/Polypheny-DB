@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.routing.RouterPlanSelectionStrategy;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.routing.RoutingPlan;
@@ -40,7 +40,7 @@ public class RoutingPlanSelector {
 
     public RoutingPlan selectPlanBasedOnCosts(
             List<? extends RoutingPlan> routingPlans,
-            List<RelOptCost> approximatedCosts,
+            List<AlgOptCost> approximatedCosts,
             Statement statement ) {
         // 0 = only consider pre costs
         // 1 = only consider post costs
@@ -50,12 +50,12 @@ public class RoutingPlanSelector {
         final int n = routingPlans.size();
 
         // Calculate pre-costs or set them to 0 for all entries.
-        boolean calcPreCosts = Math.abs( ratioPre ) >= RelOptUtil.EPSILON; // <=0
+        boolean calcPreCosts = Math.abs( ratioPre ) >= AlgOptUtil.EPSILON; // <=0
         List<Double> preCosts = calcPreCosts ? normalizeApproximatedCosts( approximatedCosts ) : Collections.nCopies( n, 0.0 );
 
         // Calculate post-costs or set them to 0 for all entries.
         // If calculation is needed, get icarus original costs for printing debug output.
-        boolean calcPostCosts = Math.abs( ratioPost ) >= RelOptUtil.EPSILON; // > 0
+        boolean calcPostCosts = Math.abs( ratioPost ) >= AlgOptUtil.EPSILON; // > 0
         List<Double> icarusCosts;
         List<Double> postCosts;
         List<Double> percentageCosts = null;
@@ -109,7 +109,7 @@ public class RoutingPlanSelector {
             List<? extends RoutingPlan> routingPlans,
             List<Double> effectiveCosts ) {
         // Check for list all 0
-        if ( effectiveCosts.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
+        if ( effectiveCosts.stream().allMatch( value -> value <= AlgOptUtil.EPSILON ) ) {
             effectiveCosts = Collections.nCopies( effectiveCosts.size(), 1.0 );
         }
 
@@ -179,7 +179,7 @@ public class RoutingPlanSelector {
 
     private List<Double> calculateProbabilities( List<Double> input ) {
         // Check all zero
-        if ( input.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
+        if ( input.stream().allMatch( value -> value <= AlgOptUtil.EPSILON ) ) {
             return input;
         }
 
@@ -207,8 +207,8 @@ public class RoutingPlanSelector {
     }
 
 
-    private List<Double> normalizeApproximatedCosts( List<RelOptCost> approximatedCosts ) {
-        final List<Double> costs = approximatedCosts.stream().map( RelOptCost::getCosts ).collect( Collectors.toList() );
+    private List<Double> normalizeApproximatedCosts( List<AlgOptCost> approximatedCosts ) {
+        final List<Double> costs = approximatedCosts.stream().map( AlgOptCost::getCosts ).collect( Collectors.toList() );
         return calculateProbabilities( costs );
     }
 
@@ -218,7 +218,7 @@ public class RoutingPlanSelector {
      */
     private List<Double> normalizeMinMax( List<Double> costs ) {
         // Check all zero
-        if ( costs.stream().allMatch( value -> value <= RelOptUtil.EPSILON ) ) {
+        if ( costs.stream().allMatch( value -> value <= AlgOptUtil.EPSILON ) ) {
             return costs;
         }
 
@@ -226,7 +226,7 @@ public class RoutingPlanSelector {
         Double max = costs.stream().max( Double::compareTo ).get();
 
         // When min == mix, set min = 0
-        Double usedMin = Math.abs( min - max ) <= RelOptUtil.EPSILON ? 0.0 : min;
+        Double usedMin = Math.abs( min - max ) <= AlgOptUtil.EPSILON ? 0.0 : min;
         return costs.stream()
                 .map( c -> (c - usedMin) / (max - usedMin) )
                 .collect( Collectors.toList() );

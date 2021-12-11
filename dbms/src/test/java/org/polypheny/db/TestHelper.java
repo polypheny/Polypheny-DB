@@ -49,10 +49,10 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.mongoql.model.Result;
-import org.polypheny.db.runtime.SqlFunctions;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.webui.models.Result;
 
 
 @Slf4j
@@ -168,7 +168,8 @@ public class TestHelper {
                         if ( expectedRow[j] == null ) {
                             Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", row[j] );
                         } else {
-                            Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                            Assert.assertEquals(
+                                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
                                     new String( (byte[]) expectedRow[j] ),
                                     new String( (byte[]) row[j] ) );
                         }
@@ -258,7 +259,7 @@ public class TestHelper {
                         row[i - 1] = resultSet.getObject( i );
                     }
                 } else {
-                    row[i - 1] = SqlFunctions.deepArrayToList( resultSet.getArray( i ) );
+                    row[i - 1] = Functions.deepArrayToList( resultSet.getArray( i ) );
                 }
             }
             list.add( row );
@@ -333,14 +334,22 @@ public class TestHelper {
             request.basicAuth( "pa", "" );
             request.routeParam( "protocol", "http" );
             request.routeParam( "host", "127.0.0.1" );
-            request.routeParam( "port", "2717" );
+            request.routeParam( "port", "1337" );
             return request.asString();
         }
 
 
         private static Result getBody( HttpResponse<String> res ) {
             try {
-                return gson.fromJson( res.getBody(), Result.class );
+                Result[] result = gson.fromJson( res.getBody(), Result[].class );
+                if ( result.length == 1 ) {
+                    return gson.fromJson( res.getBody(), Result[].class )[0];
+                } else if ( result.length == 0 ) {
+                    return new Result();
+                }
+                fail( "There was more than one result in the response!" );
+                throw new RuntimeException( "This cannot happen" );
+
             } catch ( JsonSyntaxException e ) {
                 log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
                 fail();

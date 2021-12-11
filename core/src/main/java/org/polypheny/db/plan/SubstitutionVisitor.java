@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,24 +54,30 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalJoin;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.mutable.Holder;
+import org.polypheny.db.algebra.mutable.MutableAggregate;
+import org.polypheny.db.algebra.mutable.MutableAlg;
+import org.polypheny.db.algebra.mutable.MutableAlgVisitor;
+import org.polypheny.db.algebra.mutable.MutableAlgs;
+import org.polypheny.db.algebra.mutable.MutableFilter;
+import org.polypheny.db.algebra.mutable.MutableProject;
+import org.polypheny.db.algebra.mutable.MutableScan;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalUnion;
-import org.polypheny.db.rel.mutable.Holder;
-import org.polypheny.db.rel.mutable.MutableAggregate;
-import org.polypheny.db.rel.mutable.MutableFilter;
-import org.polypheny.db.rel.mutable.MutableProject;
-import org.polypheny.db.rel.mutable.MutableRel;
-import org.polypheny.db.rel.mutable.MutableRelVisitor;
-import org.polypheny.db.rel.mutable.MutableRels;
-import org.polypheny.db.rel.mutable.MutableScan;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexExecutor;
@@ -81,10 +88,8 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -116,12 +121,12 @@ import org.slf4j.Logger;
  * Uses a bottom-up matching algorithm. Nodes do not need to be identical. At each level, returns the residue.
  *
  * The inputs must only include the core relational operators:
- * {@link org.polypheny.db.rel.logical.LogicalTableScan},
- * {@link org.polypheny.db.rel.logical.LogicalFilter},
- * {@link org.polypheny.db.rel.logical.LogicalProject},
- * {@link org.polypheny.db.rel.logical.LogicalJoin},
+ * {@link LogicalTableScan},
+ * {@link LogicalFilter},
+ * {@link LogicalProject},
+ * {@link LogicalJoin},
  * {@link LogicalUnion},
- * {@link org.polypheny.db.rel.logical.LogicalAggregate}.
+ * {@link LogicalAggregate}.
  */
 public class SubstitutionVisitor {
 
@@ -143,28 +148,28 @@ public class SubstitutionVisitor {
     /**
      * Factory for a builder for relational expressions.
      */
-    protected final RelBuilder relBuilder;
+    protected final AlgBuilder algBuilder;
 
     private final ImmutableList<UnifyRule> rules;
     private final Map<Pair<Class, Class>, List<UnifyRule>> ruleMap = new HashMap<>();
-    private final RelOptCluster cluster;
+    private final AlgOptCluster cluster;
     private final RexSimplify simplify;
     private final Holder query;
-    private final MutableRel target;
+    private final MutableAlg target;
 
     /**
      * Nodes in {@link #target} that have no children.
      */
-    final List<MutableRel> targetLeaves;
+    final List<MutableAlg> targetLeaves;
 
     /**
      * Nodes in {@link #query} that have no children.
      */
-    final List<MutableRel> queryLeaves;
+    final List<MutableAlg> queryLeaves;
 
-    final Map<MutableRel, MutableRel> replacementMap = new HashMap<>();
+    final Map<MutableAlg, MutableAlg> replacementMap = new HashMap<>();
 
-    final Multimap<MutableRel, MutableRel> equivalents =
+    final Multimap<MutableAlg, MutableAlg> equivalents =
             LinkedHashMultimap.create();
 
     /**
@@ -172,40 +177,40 @@ public class SubstitutionVisitor {
      * Careful, re-entrant!
      * Assumes no rule needs more than 2 slots.
      */
-    protected final MutableRel[] slots = new MutableRel[2];
+    protected final MutableAlg[] slots = new MutableAlg[2];
 
 
     /**
      * Creates a SubstitutionVisitor with the default rule set.
      */
-    public SubstitutionVisitor( RelNode target_, RelNode query_ ) {
-        this( target_, query_, DEFAULT_RULES, RelFactories.LOGICAL_BUILDER );
+    public SubstitutionVisitor( AlgNode target_, AlgNode query_ ) {
+        this( target_, query_, DEFAULT_RULES, AlgFactories.LOGICAL_BUILDER );
     }
 
 
     /**
      * Creates a SubstitutionVisitor with the default logical builder.
      */
-    public SubstitutionVisitor( RelNode target_, RelNode query_, ImmutableList<UnifyRule> rules ) {
-        this( target_, query_, rules, RelFactories.LOGICAL_BUILDER );
+    public SubstitutionVisitor( AlgNode target_, AlgNode query_, ImmutableList<UnifyRule> rules ) {
+        this( target_, query_, rules, AlgFactories.LOGICAL_BUILDER );
     }
 
 
-    public SubstitutionVisitor( RelNode target_, RelNode query_, ImmutableList<UnifyRule> rules, RelBuilderFactory relBuilderFactory ) {
+    public SubstitutionVisitor( AlgNode target_, AlgNode query_, ImmutableList<UnifyRule> rules, AlgBuilderFactory algBuilderFactory ) {
         this.cluster = target_.getCluster();
         final RexExecutor executor = Util.first( cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR );
-        final RelOptPredicateList predicates = RelOptPredicateList.EMPTY;
+        final AlgOptPredicateList predicates = AlgOptPredicateList.EMPTY;
         this.simplify = new RexSimplify( cluster.getRexBuilder(), predicates, executor );
         this.rules = rules;
-        this.query = Holder.of( MutableRels.toMutable( query_ ) );
-        this.target = MutableRels.toMutable( target_ );
-        this.relBuilder = relBuilderFactory.create( cluster, null );
-        final Set<MutableRel> parents = Sets.newIdentityHashSet();
-        final List<MutableRel> allNodes = new ArrayList<>();
-        final MutableRelVisitor visitor =
-                new MutableRelVisitor() {
+        this.query = Holder.of( MutableAlgs.toMutable( query_ ) );
+        this.target = MutableAlgs.toMutable( target_ );
+        this.algBuilder = algBuilderFactory.create( cluster, null );
+        final Set<MutableAlg> parents = Sets.newIdentityHashSet();
+        final List<MutableAlg> allNodes = new ArrayList<>();
+        final MutableAlgVisitor visitor =
+                new MutableAlgVisitor() {
                     @Override
-                    public void visit( MutableRel node ) {
+                    public void visit( MutableAlg node ) {
                         parents.add( node.getParent() );
                         allNodes.add( node );
                         super.visit( node );
@@ -226,7 +231,7 @@ public class SubstitutionVisitor {
     }
 
 
-    void register( MutableRel result, MutableRel query ) {
+    void register( MutableAlg result, MutableAlg query ) {
     }
 
 
@@ -302,8 +307,8 @@ public class SubstitutionVisitor {
             RexNode x2 = RexUtil.composeConjunction( rexBuilder, ImmutableList.of( condition2, target2 ) );
             RexNode r = canonizeNode( rexBuilder, simplify.simplifyUnknownAsFalse( x2 ) );
             if ( !r.isAlwaysFalse() && isEquivalent( rexBuilder, condition2, r ) ) {
-                List<RexNode> conjs = RelOptUtil.conjunctions( r );
-                for ( RexNode e : RelOptUtil.conjunctions( target2 ) ) {
+                List<RexNode> conjs = AlgOptUtil.conjunctions( r );
+                for ( RexNode e : AlgOptUtil.conjunctions( target2 ) ) {
                     removeAll( conjs, e );
                 }
                 return RexUtil.composeConjunction( rexBuilder, conjs );
@@ -352,10 +357,10 @@ public class SubstitutionVisitor {
 
 
     private static RexNode splitOr( final RexBuilder rexBuilder, RexNode condition, RexNode target ) {
-        List<RexNode> conditions = RelOptUtil.disjunctions( condition );
+        List<RexNode> conditions = AlgOptUtil.disjunctions( condition );
         int conditionsLength = conditions.size();
         int targetsLength = 0;
-        for ( RexNode e : RelOptUtil.disjunctions( target ) ) {
+        for ( RexNode e : AlgOptUtil.disjunctions( target ) ) {
             removeAll( conditions, e );
             targetsLength++;
         }
@@ -373,8 +378,8 @@ public class SubstitutionVisitor {
         //  e: x = 1 AND y = 2 AND z = 3 AND NOT (x = 1 AND y = 2)
         //  disjunctions: {x = 1, y = 2, z = 3}
         //  notDisjunctions: {x = 1 AND y = 2}
-        final Set<String> conditionDisjunctions = new HashSet<>( RexUtil.strings( RelOptUtil.conjunctions( condition ) ) );
-        final Set<String> targetDisjunctions = new HashSet<>( RexUtil.strings( RelOptUtil.conjunctions( target ) ) );
+        final Set<String> conditionDisjunctions = new HashSet<>( RexUtil.strings( AlgOptUtil.conjunctions( condition ) ) );
+        final Set<String> targetDisjunctions = new HashSet<>( RexUtil.strings( AlgOptUtil.conjunctions( target ) ) );
         return conditionDisjunctions.equals( targetDisjunctions );
     }
 
@@ -391,7 +396,7 @@ public class SubstitutionVisitor {
         //  notDisjunctions: {x = 1 AND y = 2}
         final List<RexNode> disjunctions = new ArrayList<>();
         final List<RexNode> notDisjunctions = new ArrayList<>();
-        RelOptUtil.decomposeConjunction( e, disjunctions, notDisjunctions );
+        AlgOptUtil.decomposeConjunction( e, disjunctions, notDisjunctions );
 
         // If there is a single FALSE or NOT TRUE, the whole expression is always false.
         for ( RexNode disjunction : disjunctions ) {
@@ -416,7 +421,7 @@ public class SubstitutionVisitor {
         // Example #2. x AND y AND NOT (x AND y)        - not satisfiable
         // Example #3. x AND y AND NOT (x AND y AND z)  - may be satisfiable
         for ( RexNode notDisjunction : notDisjunctions ) {
-            final List<RexNode> disjunctions2 = RelOptUtil.conjunctions( notDisjunction );
+            final List<RexNode> disjunctions2 = AlgOptUtil.conjunctions( notDisjunction );
             if ( disjunctions.containsAll( disjunctions2 ) ) {
                 return false;
             }
@@ -425,17 +430,17 @@ public class SubstitutionVisitor {
     }
 
 
-    public RelNode go0( RelNode replacement_ ) {
+    public AlgNode go0( AlgNode replacement_ ) {
         assert false; // not called
-        MutableRel replacement = MutableRels.toMutable( replacement_ );
+        MutableAlg replacement = MutableAlgs.toMutable( replacement_ );
         assert equalType( "target", target, "replacement", replacement, Litmus.THROW );
         replacementMap.put( target, replacement );
         final UnifyResult unifyResult = matchRecurse( target );
         if ( unifyResult == null ) {
             return null;
         }
-        final MutableRel node0 = unifyResult.result;
-        MutableRel node = node0; // replaceAncestors(node0);
+        final MutableAlg node0 = unifyResult.result;
+        MutableAlg node = node0; // replaceAncestors(node0);
         if ( DEBUG ) {
             System.out.println( "Convert: query:\n"
                     + query.deep()
@@ -450,43 +455,43 @@ public class SubstitutionVisitor {
                     + "\nnode:\n"
                     + node.deep() );
         }
-        return MutableRels.fromMutable( node, relBuilder );
+        return MutableAlgs.fromMutable( node, algBuilder );
     }
 
 
     /**
-     * Returns a list of all possible rels that result from substituting the matched RelNode with the replacement RelNode within the query.
+     * Returns a list of all possible rels that result from substituting the matched {@link AlgNode} with the replacement {@link AlgNode} within the query.
      *
      * For example, the substitution result of A join B, while A and B are both a qualified match for replacement R, is R join B, R join R, A join R.
      */
-    public List<RelNode> go( RelNode replacement_ ) {
-        List<List<Replacement>> matches = go( MutableRels.toMutable( replacement_ ) );
+    public List<AlgNode> go( AlgNode replacement_ ) {
+        List<List<Replacement>> matches = go( MutableAlgs.toMutable( replacement_ ) );
         if ( matches.isEmpty() ) {
             return ImmutableList.of();
         }
-        List<RelNode> sub = new ArrayList<>();
-        sub.add( MutableRels.fromMutable( query.getInput(), relBuilder ) );
-        reverseSubstitute( relBuilder, query, matches, sub, 0, matches.size() );
+        List<AlgNode> sub = new ArrayList<>();
+        sub.add( MutableAlgs.fromMutable( query.getInput(), algBuilder ) );
+        reverseSubstitute( algBuilder, query, matches, sub, 0, matches.size() );
         return sub;
     }
 
 
     /**
-     * Substitutes the query with replacement whenever possible but meanwhile keeps track of all the substitutions and their original rel before replacement, so that in later processing stage,
+     * Substitutes the query with replacement whenever possible but meanwhile keeps track of all the substitutions and their original alg before replacement, so that in later processing stage,
      * the replacement can be recovered individually to produce a list of all possible rels with substitution in different places.
      */
-    private List<List<Replacement>> go( MutableRel replacement ) {
+    private List<List<Replacement>> go( MutableAlg replacement ) {
         assert equalType( "target", target, "replacement", replacement, Litmus.THROW );
-        final List<MutableRel> queryDescendants = MutableRels.descendants( query );
-        final List<MutableRel> targetDescendants = MutableRels.descendants( target );
+        final List<MutableAlg> queryDescendants = MutableAlgs.descendants( query );
+        final List<MutableAlg> targetDescendants = MutableAlgs.descendants( target );
 
         // Populate "equivalents" with (q, t) for each query descendant q and target descendant t that are equal.
-        final Map<MutableRel, MutableRel> map = new HashMap<>();
-        for ( MutableRel queryDescendant : queryDescendants ) {
+        final Map<MutableAlg, MutableAlg> map = new HashMap<>();
+        for ( MutableAlg queryDescendant : queryDescendants ) {
             map.put( queryDescendant, queryDescendant );
         }
-        for ( MutableRel targetDescendant : targetDescendants ) {
-            MutableRel queryDescendant = map.get( targetDescendant );
+        for ( MutableAlg targetDescendant : targetDescendants ) {
+            MutableAlg queryDescendant = map.get( targetDescendant );
             if ( queryDescendant != null ) {
                 assert queryDescendant.rowType.equals( targetDescendant.rowType );
                 equivalents.put( queryDescendant, targetDescendant );
@@ -499,22 +504,22 @@ public class SubstitutionVisitor {
 
         for ( ; ; ) {
             int count = 0;
-            MutableRel queryDescendant = query;
+            MutableAlg queryDescendant = query;
             outer:
             while ( queryDescendant != null ) {
                 for ( Replacement r : attempted ) {
                     if ( queryDescendant == r.after ) {
                         // This node has been replaced by previous iterations in the hope to match its ancestors, so the node itself should not be matched again.
-                        queryDescendant = MutableRels.preOrderTraverseNext( queryDescendant );
+                        queryDescendant = MutableAlgs.preOrderTraverseNext( queryDescendant );
                         continue outer;
                     }
                 }
-                final MutableRel next = MutableRels.preOrderTraverseNext( queryDescendant );
-                final MutableRel childOrNext =
+                final MutableAlg next = MutableAlgs.preOrderTraverseNext( queryDescendant );
+                final MutableAlg childOrNext =
                         queryDescendant.getInputs().isEmpty()
                                 ? next
                                 : queryDescendant.getInputs().get( 0 );
-                for ( MutableRel targetDescendant : targetDescendants ) {
+                for ( MutableAlg targetDescendant : targetDescendants ) {
                     for ( UnifyRule rule : applicableRules( queryDescendant, targetDescendant ) ) {
                         UnifyRuleCall call = rule.match( this, queryDescendant, targetDescendant );
                         if ( call != null ) {
@@ -522,11 +527,11 @@ public class SubstitutionVisitor {
                             if ( result != null ) {
                                 ++count;
                                 attempted.add( new Replacement( result.call.query, result.result ) );
-                                MutableRel parent = result.call.query.replaceInParent( result.result );
+                                MutableAlg parent = result.call.query.replaceInParent( result.result );
 
                                 // Replace previous equivalents with new equivalents, higher up the tree.
                                 for ( int i = 0; i < rule.slotCount; i++ ) {
-                                    Collection<MutableRel> equi = equivalents.get( slots[i] );
+                                    Collection<MutableAlg> equi = equivalents.get( slots[i] );
                                     if ( !equi.isEmpty() ) {
                                         equivalents.remove( slots[i], equi.iterator().next() );
                                     }
@@ -575,14 +580,15 @@ public class SubstitutionVisitor {
      */
     static class Replacement {
 
-        final MutableRel before;
-        final MutableRel after;
+        final MutableAlg before;
+        final MutableAlg after;
 
 
-        Replacement( MutableRel before, MutableRel after ) {
+        Replacement( MutableAlg before, MutableAlg after ) {
             this.before = before;
             this.after = after;
         }
+
     }
 
 
@@ -591,7 +597,7 @@ public class SubstitutionVisitor {
      *
      * Assumes relational expressions (and their descendants) are not null. Does not handle cycles.
      */
-    public static Replacement replace( MutableRel query, MutableRel find, MutableRel replace ) {
+    public static Replacement replace( MutableAlg query, MutableAlg find, MutableAlg replace ) {
         if ( find.equals( replace ) ) {
             // Short-cut common case.
             return null;
@@ -604,12 +610,12 @@ public class SubstitutionVisitor {
     /**
      * Helper for {@link #replace}.
      */
-    private static Replacement replaceRecurse( MutableRel query, MutableRel find, MutableRel replace ) {
+    private static Replacement replaceRecurse( MutableAlg query, MutableAlg find, MutableAlg replace ) {
         if ( find.equals( query ) ) {
             query.replaceInParent( replace );
             return new Replacement( query, replace );
         }
-        for ( MutableRel input : query.getInputs() ) {
+        for ( MutableAlg input : query.getInputs() ) {
             Replacement r = replaceRecurse( input, find, replace );
             if ( r != null ) {
                 return r;
@@ -634,27 +640,27 @@ public class SubstitutionVisitor {
     }
 
 
-    private static void reverseSubstitute( RelBuilder relBuilder, Holder query, List<List<Replacement>> matches, List<RelNode> sub, int replaceCount, int maxCount ) {
+    private static void reverseSubstitute( AlgBuilder algBuilder, Holder query, List<List<Replacement>> matches, List<AlgNode> sub, int replaceCount, int maxCount ) {
         if ( matches.isEmpty() ) {
             return;
         }
         final List<List<Replacement>> rem = matches.subList( 1, matches.size() );
-        reverseSubstitute( relBuilder, query, rem, sub, replaceCount, maxCount );
+        reverseSubstitute( algBuilder, query, rem, sub, replaceCount, maxCount );
         undoReplacement( matches.get( 0 ) );
         if ( ++replaceCount < maxCount ) {
-            sub.add( MutableRels.fromMutable( query.getInput(), relBuilder ) );
+            sub.add( MutableAlgs.fromMutable( query.getInput(), algBuilder ) );
         }
-        reverseSubstitute( relBuilder, query, rem, sub, replaceCount, maxCount );
+        reverseSubstitute( algBuilder, query, rem, sub, replaceCount, maxCount );
         redoReplacement( matches.get( 0 ) );
     }
 
 
-    private UnifyResult matchRecurse( MutableRel target ) {
+    private UnifyResult matchRecurse( MutableAlg target ) {
         assert false; // not called
-        final List<MutableRel> targetInputs = target.getInputs();
-        MutableRel queryParent = null;
+        final List<MutableAlg> targetInputs = target.getInputs();
+        MutableAlg queryParent = null;
 
-        for ( MutableRel targetInput : targetInputs ) {
+        for ( MutableAlg targetInput : targetInputs ) {
             UnifyResult unifyResult = matchRecurse( targetInput );
             if ( unifyResult == null ) {
                 return null;
@@ -663,7 +669,7 @@ public class SubstitutionVisitor {
         }
 
         if ( targetInputs.isEmpty() ) {
-            for ( MutableRel queryLeaf : queryLeaves ) {
+            for ( MutableAlg queryLeaf : queryLeaves ) {
                 for ( UnifyRule rule : applicableRules( queryLeaf, target ) ) {
                     final UnifyResult x = apply( rule, queryLeaf, target );
                     if ( x != null ) {
@@ -711,13 +717,13 @@ public class SubstitutionVisitor {
     }
 
 
-    private UnifyResult apply( UnifyRule rule, MutableRel query, MutableRel target ) {
+    private UnifyResult apply( UnifyRule rule, MutableAlg query, MutableAlg target ) {
         final UnifyRuleCall call = new UnifyRuleCall( rule, query, target, null );
         return rule.apply( call );
     }
 
 
-    private List<UnifyRule> applicableRules( MutableRel query, MutableRel target ) {
+    private List<UnifyRule> applicableRules( MutableAlg query, MutableAlg target ) {
         final Class queryClass = query.getClass();
         final Class targetClass = target.getClass();
         final Pair<Class, Class> key = Pair.of( queryClass, targetClass );
@@ -747,6 +753,7 @@ public class SubstitutionVisitor {
     protected static class MatchFailed extends ControlFlowException {
 
         public static final MatchFailed INSTANCE = new MatchFailed();
+
     }
 
 
@@ -788,7 +795,7 @@ public class SubstitutionVisitor {
         protected abstract UnifyResult apply( UnifyRuleCall call );
 
 
-        protected UnifyRuleCall match( SubstitutionVisitor visitor, MutableRel query, MutableRel target ) {
+        protected UnifyRuleCall match( SubstitutionVisitor visitor, MutableAlg query, MutableAlg target ) {
             if ( queryOperand.matches( visitor, query ) ) {
                 if ( targetOperand.matches( visitor, target ) ) {
                     return visitor.new UnifyRuleCall( this, query, target, copy( visitor.slots, slotCount ) );
@@ -809,6 +816,7 @@ public class SubstitutionVisitor {
                     return ImmutableList.copyOf( slots ).subList( 0, slotCount );
             }
         }
+
     }
 
 
@@ -818,12 +826,12 @@ public class SubstitutionVisitor {
     protected class UnifyRuleCall {
 
         protected final UnifyRule rule;
-        public final MutableRel query;
-        public final MutableRel target;
-        protected final ImmutableList<MutableRel> slots;
+        public final MutableAlg query;
+        public final MutableAlg target;
+        protected final ImmutableList<MutableAlg> slots;
 
 
-        public UnifyRuleCall( UnifyRule rule, MutableRel query, MutableRel target, ImmutableList<MutableRel> slots ) {
+        public UnifyRuleCall( UnifyRule rule, MutableAlg query, MutableAlg target, ImmutableList<MutableAlg> slots ) {
             this.rule = Objects.requireNonNull( rule );
             this.query = Objects.requireNonNull( query );
             this.target = Objects.requireNonNull( target );
@@ -831,10 +839,10 @@ public class SubstitutionVisitor {
         }
 
 
-        public UnifyResult result( MutableRel result ) {
-            assert MutableRels.contains( result, target );
+        public UnifyResult result( MutableAlg result ) {
+            assert MutableAlgs.contains( result, target );
             assert equalType( "result", result, "query", query, Litmus.THROW );
-            MutableRel replace = replacementMap.get( target );
+            MutableAlg replace = replacementMap.get( target );
             if ( replace != null ) {
                 assert false; // replacementMap is always empty
                 // result =
@@ -848,12 +856,12 @@ public class SubstitutionVisitor {
         /**
          * Creates a {@link UnifyRuleCall} based on the parent of {@code query}.
          */
-        public UnifyRuleCall create( MutableRel query ) {
+        public UnifyRuleCall create( MutableAlg query ) {
             return new UnifyRuleCall( rule, query, target, slots );
         }
 
 
-        public RelOptCluster getCluster() {
+        public AlgOptCluster getCluster() {
             return cluster;
         }
 
@@ -861,6 +869,7 @@ public class SubstitutionVisitor {
         public RexSimplify getSimplify() {
             return simplify;
         }
+
     }
 
 
@@ -872,14 +881,15 @@ public class SubstitutionVisitor {
 
         private final UnifyRuleCall call;
         // equivalent to "query", contains "result"
-        private final MutableRel result;
+        private final MutableAlg result;
 
 
-        UnifyResult( UnifyRuleCall call, MutableRel result ) {
+        UnifyResult( UnifyRuleCall call, MutableAlg result ) {
             this.call = call;
             assert equalType( "query", call.query, "result", result, Litmus.THROW );
             this.result = result;
         }
+
     }
 
 
@@ -911,7 +921,7 @@ public class SubstitutionVisitor {
         /**
          * Creates an operand with given inputs.
          */
-        protected static Operand operand( Class<? extends MutableRel> clazz, Operand... inputOperands ) {
+        protected static Operand operand( Class<? extends MutableAlg> clazz, Operand... inputOperands ) {
             return new InternalOperand( clazz, ImmutableList.copyOf( inputOperands ) );
         }
 
@@ -919,7 +929,7 @@ public class SubstitutionVisitor {
         /**
          * Creates an operand that doesn't check inputs.
          */
-        protected static Operand any( Class<? extends MutableRel> clazz ) {
+        protected static Operand any( Class<? extends MutableAlg> clazz ) {
             return new AnyOperand( clazz );
         }
 
@@ -939,13 +949,14 @@ public class SubstitutionVisitor {
         protected static Operand target( int ordinal ) {
             return new TargetOperand( ordinal );
         }
+
     }
 
 
     /**
      * Implementation of {@link UnifyRule} that matches if the query is already equal to the target.
      *
-     * Matches scans to the same table, because these will be {@link MutableScan}s with the same {@link org.polypheny.db.rel.logical.LogicalTableScan} instance.
+     * Matches scans to the same table, because these will be {@link MutableScan}s with the same {@link org.polypheny.db.algebra.logical.LogicalTableScan} instance.
      */
     private static class TrivialRule extends AbstractUnifyRule {
 
@@ -953,7 +964,7 @@ public class SubstitutionVisitor {
 
 
         private TrivialRule() {
-            super( any( MutableRel.class ), any( MutableRel.class ), 0 );
+            super( any( MutableAlg.class ), any( MutableAlg.class ), 0 );
         }
 
 
@@ -964,11 +975,12 @@ public class SubstitutionVisitor {
             }
             return null;
         }
+
     }
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches {@link org.polypheny.db.rel.logical.LogicalTableScan}.
+     * Implementation of {@link UnifyRule} that matches {@link org.polypheny.db.algebra.logical.LogicalTableScan}.
      */
     private static class ScanToProjectUnifyRule extends AbstractUnifyRule {
 
@@ -997,14 +1009,15 @@ public class SubstitutionVisitor {
                 return null;
             }
             final MutableProject newProject = MutableProject.of( query.rowType, target, newProjects );
-            final MutableRel newProject2 = MutableRels.strip( newProject );
+            final MutableAlg newProject2 = MutableAlgs.strip( newProject );
             return call.result( newProject2 );
         }
+
     }
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches {@link org.polypheny.db.rel.logical.LogicalProject}.
+     * Implementation of {@link UnifyRule} that matches {@link org.polypheny.db.algebra.logical.LogicalProject}.
      */
     private static class ProjectToProjectUnifyRule extends AbstractUnifyRule {
 
@@ -1028,9 +1041,10 @@ public class SubstitutionVisitor {
                 return null;
             }
             final MutableProject newProject = MutableProject.of( query.rowType, target, newProjects );
-            final MutableRel newProject2 = MutableRels.strip( newProject );
+            final MutableAlg newProject2 = MutableAlgs.strip( newProject );
             return call.result( newProject2 );
         }
+
     }
 
 
@@ -1063,10 +1077,10 @@ public class SubstitutionVisitor {
                 }
                 final MutableFilter newFilter = MutableFilter.of( target, newCondition );
                 if ( query.getParent() instanceof MutableProject ) {
-                    final MutableRel inverse = invert( ((MutableProject) query.getParent()).getNamedProjects(), newFilter, shuttle );
+                    final MutableAlg inverse = invert( ((MutableProject) query.getParent()).getNamedProjects(), newFilter, shuttle );
                     return call.create( query.getParent() ).result( inverse );
                 } else {
-                    final MutableRel inverse = invert( query, newFilter, target );
+                    final MutableAlg inverse = invert( query, newFilter, target );
                     return call.result( inverse );
                 }
             } catch ( MatchFailed e ) {
@@ -1075,7 +1089,7 @@ public class SubstitutionVisitor {
         }
 
 
-        protected MutableRel invert( List<Pair<RexNode, String>> namedProjects, MutableRel input, RexShuttle shuttle ) {
+        protected MutableAlg invert( List<Pair<RexNode, String>> namedProjects, MutableAlg input, RexShuttle shuttle ) {
             LOGGER.trace( "SubstitutionVisitor: invert:\nprojects: {}\ninput: {}\nproject: {}\n", namedProjects, input, shuttle );
             final List<RexNode> exprList = new ArrayList<>();
             final RexBuilder rexBuilder = input.cluster.getRexBuilder();
@@ -1094,14 +1108,14 @@ public class SubstitutionVisitor {
         }
 
 
-        protected MutableRel invert( MutableRel model, MutableRel input, MutableProject project ) {
+        protected MutableAlg invert( MutableAlg model, MutableAlg input, MutableProject project ) {
             LOGGER.trace( "SubstitutionVisitor: invert:\nmodel: {}\ninput: {}\nproject: {}\n", model, input, project );
             if ( project.projects.size() < model.rowType.getFieldCount() ) {
                 throw MatchFailed.INSTANCE;
             }
             final List<RexNode> exprList = new ArrayList<>();
             final RexBuilder rexBuilder = model.cluster.getRexBuilder();
-            for ( RelDataTypeField field : model.rowType.getFieldList() ) {
+            for ( AlgDataTypeField field : model.rowType.getFieldList() ) {
                 exprList.add( rexBuilder.makeZeroLiteral( field.getType() ) );
             }
             for ( Ord<RexNode> expr : Ord.zip( project.projects ) ) {
@@ -1114,6 +1128,7 @@ public class SubstitutionVisitor {
             }
             return MutableProject.of( model.rowType, input, exprList );
         }
+
     }
 
 
@@ -1160,6 +1175,7 @@ public class SubstitutionVisitor {
             }
             return MutableFilter.of( target, newCondition );
         }
+
     }
 
 
@@ -1191,11 +1207,12 @@ public class SubstitutionVisitor {
             }
             return null;
         }
+
     }
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches a {@link org.polypheny.db.rel.logical.LogicalAggregate} to a {@link org.polypheny.db.rel.logical.LogicalAggregate},
+     * Implementation of {@link UnifyRule} that matches a {@link org.polypheny.db.algebra.logical.LogicalAggregate} to a {@link org.polypheny.db.algebra.logical.LogicalAggregate},
      * provided that they have the same child.
      */
     private static class AggregateToAggregateUnifyRule extends AbstractUnifyRule {
@@ -1225,16 +1242,17 @@ public class SubstitutionVisitor {
             if ( !target.groupSet.contains( query.groupSet ) ) {
                 return null;
             }
-            MutableRel result = unifyAggregates( query, target );
+            MutableAlg result = unifyAggregates( query, target );
             if ( result == null ) {
                 return null;
             }
             return call.result( result );
         }
+
     }
 
 
-    public static MutableAggregate permute( MutableAggregate aggregate, MutableRel input, Mapping mapping ) {
+    public static MutableAggregate permute( MutableAggregate aggregate, MutableAlg input, Mapping mapping ) {
         ImmutableBitSet groupSet = Mappings.apply( mapping, aggregate.groupSet );
         ImmutableList<ImmutableBitSet> groupSets = Mappings.apply2( mapping, aggregate.groupSets );
         List<AggregateCall> aggregateCalls = Util.transform( aggregate.aggCalls, call -> call.transform( mapping ) );
@@ -1242,11 +1260,11 @@ public class SubstitutionVisitor {
     }
 
 
-    public static MutableRel unifyAggregates( MutableAggregate query, MutableAggregate target ) {
+    public static MutableAlg unifyAggregates( MutableAggregate query, MutableAggregate target ) {
         if ( query.getGroupType() != Aggregate.Group.SIMPLE || target.getGroupType() != Aggregate.Group.SIMPLE ) {
             throw new AssertionError( Bug.CALCITE_461_FIXED );
         }
-        MutableRel result;
+        MutableAlg result;
         if ( query.groupSet.equals( target.groupSet ) ) {
             // Same level of aggregation. Generate a project.
             final List<Integer> projects = new ArrayList<>();
@@ -1261,7 +1279,7 @@ public class SubstitutionVisitor {
                 }
                 projects.add( groupCount + i );
             }
-            result = MutableRels.createProject( target, projects );
+            result = MutableAlgs.createProject( target, projects );
         } else {
             // Target is coarser level of aggregation. Generate an aggregate.
             final ImmutableBitSet.Builder groupSet = ImmutableBitSet.builder();
@@ -1295,7 +1313,7 @@ public class SubstitutionVisitor {
             }
             result = MutableAggregate.of( target, groupSet.build(), null, aggregateCalls );
         }
-        return MutableRels.createCastRel( result, query.rowType, true );
+        return MutableAlgs.createCastAlg( result, query.rowType, true );
     }
 
 
@@ -1331,21 +1349,23 @@ public class SubstitutionVisitor {
                 return null;
             }
             final MutableAggregate aggregate2 = permute( query, project.getInput(), mapping.inverse() );
-            final MutableRel result = unifyAggregates( aggregate2, target );
+            final MutableAlg result = unifyAggregates( aggregate2, target );
             return result == null ? null : call.result( result );
         }
+
     }
 
 
-    public static SqlAggFunction getRollup( SqlAggFunction aggregation ) {
-        if ( aggregation == SqlStdOperatorTable.SUM
-                || aggregation == SqlStdOperatorTable.MIN
-                || aggregation == SqlStdOperatorTable.MAX
-                || aggregation == SqlStdOperatorTable.SUM0
-                || aggregation == SqlStdOperatorTable.ANY_VALUE ) {
+    public static AggFunction getRollup( AggFunction aggregation ) {
+        if ( Arrays.asList(
+                OperatorName.SUM,
+                OperatorName.MIN,
+                OperatorName.MAX,
+                OperatorName.SUM0,
+                OperatorName.ANY_VALUE ).contains( aggregation.getOperatorName() ) ) {
             return aggregation;
-        } else if ( aggregation == SqlStdOperatorTable.COUNT ) {
-            return SqlStdOperatorTable.SUM0;
+        } else if ( aggregation.getOperatorName() == OperatorName.COUNT ) {
+            return OperatorRegistry.getAgg( OperatorName.SUM0 );
         } else {
             return null;
         }
@@ -1384,39 +1404,39 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Returns if one rel is weaker than another.
+     * Returns if one alg is weaker than another.
      */
-    protected boolean isWeaker( MutableRel rel0, MutableRel rel ) {
-        if ( rel0 == rel || equivalents.get( rel0 ).contains( rel ) ) {
+    protected boolean isWeaker( MutableAlg alg0, MutableAlg alg ) {
+        if ( alg0 == alg || equivalents.get( alg0 ).contains( alg ) ) {
             return false;
         }
 
-        if ( !(rel0 instanceof MutableFilter) || !(rel instanceof MutableFilter) ) {
+        if ( !(alg0 instanceof MutableFilter) || !(alg instanceof MutableFilter) ) {
             return false;
         }
 
-        if ( !rel.rowType.equals( rel0.rowType ) ) {
+        if ( !alg.rowType.equals( alg0.rowType ) ) {
             return false;
         }
 
-        final MutableRel rel0input = ((MutableFilter) rel0).getInput();
-        final MutableRel relinput = ((MutableFilter) rel).getInput();
-        if ( rel0input != relinput && !equivalents.get( rel0input ).contains( relinput ) ) {
+        final MutableAlg alg0input = ((MutableFilter) alg0).getInput();
+        final MutableAlg alginput = ((MutableFilter) alg).getInput();
+        if ( alg0input != alginput && !equivalents.get( alg0input ).contains( alginput ) ) {
             return false;
         }
 
-        RexExecutorImpl rexImpl = (RexExecutorImpl) (rel.cluster.getPlanner().getExecutor());
-        RexImplicationChecker rexImplicationChecker = new RexImplicationChecker( rel.cluster.getRexBuilder(), rexImpl, rel.rowType );
+        RexExecutorImpl rexImpl = (RexExecutorImpl) (alg.cluster.getPlanner().getExecutor());
+        RexImplicationChecker rexImplicationChecker = new RexImplicationChecker( alg.cluster.getRexBuilder(), rexImpl, alg.rowType );
 
-        return rexImplicationChecker.implies( ((MutableFilter) rel0).condition, ((MutableFilter) rel).condition );
+        return rexImplicationChecker.implies( ((MutableFilter) alg0).condition, ((MutableFilter) alg).condition );
     }
 
 
     /**
      * Returns whether two relational expressions have the same row-type.
      */
-    public static boolean equalType( String desc0, MutableRel rel0, String desc1, MutableRel rel1, Litmus litmus ) {
-        return RelOptUtil.equal( desc0, rel0.rowType, desc1, rel1.rowType, litmus );
+    public static boolean equalType( String desc0, MutableAlg alg0, String desc1, MutableAlg alg1, Litmus litmus ) {
+        return AlgOptUtil.equal( desc0, alg0.rowType, desc1, alg1.rowType, litmus );
     }
 
 
@@ -1425,20 +1445,21 @@ public class SubstitutionVisitor {
      */
     protected abstract static class Operand {
 
-        protected final Class<? extends MutableRel> clazz;
+        protected final Class<? extends MutableAlg> clazz;
 
 
-        protected Operand( Class<? extends MutableRel> clazz ) {
+        protected Operand( Class<? extends MutableAlg> clazz ) {
             this.clazz = clazz;
         }
 
 
-        public abstract boolean matches( SubstitutionVisitor visitor, MutableRel rel );
+        public abstract boolean matches( SubstitutionVisitor visitor, MutableAlg alg );
 
 
-        public boolean isWeaker( SubstitutionVisitor visitor, MutableRel rel ) {
+        public boolean isWeaker( SubstitutionVisitor visitor, MutableAlg alg ) {
             return false;
         }
+
     }
 
 
@@ -1450,29 +1471,29 @@ public class SubstitutionVisitor {
         private final List<Operand> inputs;
 
 
-        InternalOperand( Class<? extends MutableRel> clazz, List<Operand> inputs ) {
+        InternalOperand( Class<? extends MutableAlg> clazz, List<Operand> inputs ) {
             super( clazz );
             this.inputs = inputs;
         }
 
 
         @Override
-        public boolean matches( SubstitutionVisitor visitor, MutableRel rel ) {
-            return clazz.isInstance( rel ) && allMatch( visitor, inputs, rel.getInputs() );
+        public boolean matches( SubstitutionVisitor visitor, MutableAlg alg ) {
+            return clazz.isInstance( alg ) && allMatch( visitor, inputs, alg.getInputs() );
         }
 
 
         @Override
-        public boolean isWeaker( SubstitutionVisitor visitor, MutableRel rel ) {
-            return clazz.isInstance( rel ) && allWeaker( visitor, inputs, rel.getInputs() );
+        public boolean isWeaker( SubstitutionVisitor visitor, MutableAlg alg ) {
+            return clazz.isInstance( alg ) && allWeaker( visitor, inputs, alg.getInputs() );
         }
 
 
-        private static boolean allMatch( SubstitutionVisitor visitor, List<Operand> operands, List<MutableRel> rels ) {
-            if ( operands.size() != rels.size() ) {
+        private static boolean allMatch( SubstitutionVisitor visitor, List<Operand> operands, List<MutableAlg> algs ) {
+            if ( operands.size() != algs.size() ) {
                 return false;
             }
-            for ( Pair<Operand, MutableRel> pair : Pair.zip( operands, rels ) ) {
+            for ( Pair<Operand, MutableAlg> pair : Pair.zip( operands, algs ) ) {
                 if ( !pair.left.matches( visitor, pair.right ) ) {
                     return false;
                 }
@@ -1481,17 +1502,18 @@ public class SubstitutionVisitor {
         }
 
 
-        private static boolean allWeaker( SubstitutionVisitor visitor, List<Operand> operands, List<MutableRel> rels ) {
-            if ( operands.size() != rels.size() ) {
+        private static boolean allWeaker( SubstitutionVisitor visitor, List<Operand> operands, List<MutableAlg> algs ) {
+            if ( operands.size() != algs.size() ) {
                 return false;
             }
-            for ( Pair<Operand, MutableRel> pair : Pair.zip( operands, rels ) ) {
+            for ( Pair<Operand, MutableAlg> pair : Pair.zip( operands, algs ) ) {
                 if ( !pair.left.isWeaker( visitor, pair.right ) ) {
                     return false;
                 }
             }
             return true;
         }
+
     }
 
 
@@ -1500,15 +1522,16 @@ public class SubstitutionVisitor {
      */
     private static class AnyOperand extends Operand {
 
-        AnyOperand( Class<? extends MutableRel> clazz ) {
+        AnyOperand( Class<? extends MutableAlg> clazz ) {
             super( clazz );
         }
 
 
         @Override
-        public boolean matches( SubstitutionVisitor visitor, MutableRel rel ) {
-            return clazz.isInstance( rel );
+        public boolean matches( SubstitutionVisitor visitor, MutableAlg alg ) {
+            return clazz.isInstance( alg );
         }
+
     }
 
 
@@ -1524,16 +1547,17 @@ public class SubstitutionVisitor {
 
 
         protected QueryOperand( int ordinal ) {
-            super( MutableRel.class );
+            super( MutableAlg.class );
             this.ordinal = ordinal;
         }
 
 
         @Override
-        public boolean matches( SubstitutionVisitor visitor, MutableRel rel ) {
-            visitor.slots[ordinal] = rel;
+        public boolean matches( SubstitutionVisitor visitor, MutableAlg alg ) {
+            visitor.slots[ordinal] = alg;
             return true;
         }
+
     }
 
 
@@ -1546,25 +1570,26 @@ public class SubstitutionVisitor {
 
 
         protected TargetOperand( int ordinal ) {
-            super( MutableRel.class );
+            super( MutableAlg.class );
             this.ordinal = ordinal;
         }
 
 
         @Override
-        public boolean matches( SubstitutionVisitor visitor, MutableRel rel ) {
-            final MutableRel rel0 = visitor.slots[ordinal];
-            assert rel0 != null : "QueryOperand should have been called first";
-            return rel0 == rel || visitor.equivalents.get( rel0 ).contains( rel );
+        public boolean matches( SubstitutionVisitor visitor, MutableAlg alg ) {
+            final MutableAlg alg0 = visitor.slots[ordinal];
+            assert alg0 != null : "QueryOperand should have been called first";
+            return alg0 == alg || visitor.equivalents.get( alg0 ).contains( alg );
         }
 
 
         @Override
-        public boolean isWeaker( SubstitutionVisitor visitor, MutableRel rel ) {
-            final MutableRel rel0 = visitor.slots[ordinal];
-            assert rel0 != null : "QueryOperand should have been called first";
-            return visitor.isWeaker( rel0, rel );
+        public boolean isWeaker( SubstitutionVisitor visitor, MutableAlg alg ) {
+            final MutableAlg alg0 = visitor.slots[ordinal];
+            assert alg0 != null : "QueryOperand should have been called first";
+            return visitor.isWeaker( alg0, alg );
         }
+
     }
 
 
@@ -1590,50 +1615,52 @@ public class SubstitutionVisitor {
                 }
             }
         }
+
     }
 
 
     /**
-     * Rule that converts a {@link org.polypheny.db.rel.logical.LogicalFilter} on top of a {@link org.polypheny.db.rel.logical.LogicalProject}
+     * Rule that converts a {@link org.polypheny.db.algebra.logical.LogicalFilter} on top of a {@link org.polypheny.db.algebra.logical.LogicalProject}
      * into a trivial filter (on a boolean column).
      */
-    public static class FilterOnProjectRule extends RelOptRule {
+    public static class FilterOnProjectRule extends AlgOptRule {
 
-        public static final FilterOnProjectRule INSTANCE = new FilterOnProjectRule( RelFactories.LOGICAL_BUILDER );
+        public static final FilterOnProjectRule INSTANCE = new FilterOnProjectRule( AlgFactories.LOGICAL_BUILDER );
 
 
         /**
          * Creates a FilterOnProjectRule.
          *
-         * @param relBuilderFactory Builder for relational expressions
+         * @param algBuilderFactory Builder for relational expressions
          */
-        public FilterOnProjectRule( RelBuilderFactory relBuilderFactory ) {
+        public FilterOnProjectRule( AlgBuilderFactory algBuilderFactory ) {
             super(
                     operandJ(
                             LogicalFilter.class,
                             null,
                             filter -> filter.getCondition() instanceof RexInputRef,
                             some( operand( LogicalProject.class, any() ) ) ),
-                    relBuilderFactory, null );
+                    algBuilderFactory, null );
         }
 
 
         @Override
-        public void onMatch( RelOptRuleCall call ) {
-            final LogicalFilter filter = call.rel( 0 );
-            final LogicalProject project = call.rel( 1 );
+        public void onMatch( AlgOptRuleCall call ) {
+            final LogicalFilter filter = call.alg( 0 );
+            final LogicalProject project = call.alg( 1 );
 
             final List<RexNode> newProjects = new ArrayList<>( project.getProjects() );
             newProjects.add( filter.getCondition() );
 
-            final RelOptCluster cluster = filter.getCluster();
-            RelDataType newRowType =
+            final AlgOptCluster cluster = filter.getCluster();
+            AlgDataType newRowType =
                     cluster.getTypeFactory().builder()
                             .addAll( project.getRowType().getFieldList() )
                             .add( "condition", null, Util.last( newProjects ).getType() )
                             .build();
-            final RelNode newProject =
-                    project.copy( project.getTraitSet(),
+            final AlgNode newProject =
+                    project.copy(
+                            project.getTraitSet(),
                             project.getInput(),
                             newProjects,
                             newRowType );
@@ -1642,6 +1669,8 @@ public class SubstitutionVisitor {
 
             call.transformTo( LogicalFilter.create( newProject, newCondition ) );
         }
+
     }
+
 }
 

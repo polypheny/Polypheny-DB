@@ -21,26 +21,26 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.cql.exception.UnknownIndexException;
-import org.polypheny.db.cql.helper.RelBuildTestHelper;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.cql.helper.AlgBuildTestHelper;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 
 
-public class FilterTest extends RelBuildTestHelper {
+public class FilterTest extends AlgBuildTestHelper {
 
-    private final RelNode baseNode;
-    private final Map<String, RelDataTypeField> filterMap = new HashMap<>();
+    private final AlgNode baseNode;
+    private final Map<String, AlgDataTypeField> filterMap = new HashMap<>();
 
 
     public FilterTest() throws UnknownIndexException {
-        super( RelBuildLevel.INITIAL_PROJECTION );
-        baseNode = relBuilder.peek();
-        RelDataType filtersRowType = baseNode.getRowType();
-        List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
+        super( AlgBuildLevel.INITIAL_PROJECTION );
+        baseNode = algBuilder.peek();
+        AlgDataType filtersRowType = baseNode.getRowType();
+        List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
         filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
     }
 
@@ -64,7 +64,7 @@ public class FilterTest extends RelBuildTestHelper {
                 "1"
         );
         RexNode rexNode = literalFilter.convert2RexNode( baseNode, rexBuilder, filterMap );
-        Assert.assertEquals( SqlKind.EQUALS, rexNode.getKind() );
+        Assert.assertEquals( Kind.EQUALS, rexNode.getKind() );
     }
 
 }

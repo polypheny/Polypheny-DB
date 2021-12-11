@@ -18,13 +18,13 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import lombok.SneakyThrows;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.ConditionalExecute;
+import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.ConditionalExecute;
-import org.polypheny.db.rel.core.ConditionalExecute.Condition;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 
 
 public class EnumerableConditionalExecuteFalseRule extends ConverterRule {
@@ -33,14 +33,14 @@ public class EnumerableConditionalExecuteFalseRule extends ConverterRule {
         super( LogicalConditionalExecute.class,
                 lce -> lce.getCondition() == Condition.FALSE,
                 Convention.NONE, EnumerableConvention.INSTANCE,
-                RelFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteFalseRule" );
+                AlgFactories.LOGICAL_BUILDER, "EnumerableConditionalExecuteFalseRule" );
     }
 
 
     @SneakyThrows
     @Override
-    public RelNode convert( RelNode rel ) {
-        ConditionalExecute ce = (ConditionalExecute) rel;
+    public AlgNode convert( AlgNode alg ) {
+        ConditionalExecute ce = (ConditionalExecute) alg;
         throw ce.getExceptionClass().getConstructor( String.class ).newInstance( ce.getExceptionMessage() );
     }
 

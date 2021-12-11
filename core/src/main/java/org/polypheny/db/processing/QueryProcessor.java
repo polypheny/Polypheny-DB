@@ -17,21 +17,20 @@
 package org.polypheny.db.processing;
 
 
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.PolyResult;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptPlanner;
 
 
-public interface QueryProcessor extends ViewExpander {
+public interface QueryProcessor {
 
     /**
      * @param logicalRoot Logical query plan.
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, boolean withMonitoring );
+    PolyResult prepareQuery( AlgRoot logicalRoot, boolean withMonitoring );
 
     /**
      * @param logicalRoot Logical query plan.
@@ -39,7 +38,7 @@ public interface QueryProcessor extends ViewExpander {
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean withMonitoring );
+    PolyResult prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean withMonitoring );
 
     /**
      * @param logicalRoot Logical query plan.
@@ -49,12 +48,12 @@ public interface QueryProcessor extends ViewExpander {
      * @param withMonitoring Activates or deactivates the monitoring.
      * @return prepared PolyphenyDbSignature
      */
-    PolyphenyDbSignature<?> prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
+    PolyResult prepareQuery( AlgRoot logicalRoot, AlgDataType parameters, boolean isRouted, boolean isSubquery, boolean withMonitoring );
 
     /**
      * @return Gets the planner.
      */
-    RelOptPlanner getPlanner();
+    AlgOptPlanner getPlanner();
 
     /**
      * Resets caches Implementation, QueryPlan, RoutingPlan and Router caches.

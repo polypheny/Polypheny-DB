@@ -22,10 +22,14 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -75,9 +79,6 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -86,7 +87,7 @@ public abstract class Catalog {
 
     public static Adapter defaultStore;
     public static Adapter defaultSource;
-    public static int defaultUser = 0;
+    public static int defaultUserId = 0;
     public static long defaultDatabaseId = 0;
     public static boolean resetDocker;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
@@ -118,9 +119,9 @@ public abstract class Catalog {
 
     public abstract void rollback();
 
-    public abstract Map<Long, RelDataType> getRelTypeInfo();
+    public abstract Map<Long, AlgDataType> getAlgTypeInfo();
 
-    public abstract Map<Long, RelNode> getNodeInfo();
+    public abstract Map<Long, AlgNode> getNodeInfo();
 
 
     /**
@@ -396,12 +397,12 @@ public abstract class Catalog {
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views
+     * @param definition {@link AlgNode} used to create Views
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
-    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language );
+    public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
 
 
     /**
@@ -412,8 +413,8 @@ public abstract class Catalog {
      * @param ownerId id of the owner
      * @param tableType type of table
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views
-     * @param relCollation relCollation used for materialized view
+     * @param definition {@link AlgNode} used to create Views
+     * @param algCollation relCollation used for materialized view
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @param materializedCriteria Information like freshness and last updated
@@ -422,7 +423,7 @@ public abstract class Catalog {
      * @param ordered if materialized view is ordered or not
      * @return id of the inserted materialized view
      */
-    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
+    public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
 
 
     /**
@@ -1505,28 +1506,6 @@ public abstract class Catalog {
     }
 
 
-    public enum LanguageType {
-        @SerializedName("sql")
-        SQL( 1 ),
-        @SerializedName("mql")
-        MQL( 2 ),
-        @SerializedName("cql")
-        CQL( 3 );
-
-        private final int id;
-
-
-        LanguageType( int id ) {
-            this.id = id;
-        }
-
-
-        public int getId() {
-            return id;
-        }
-    }
-
-
     public enum SchemaType {
         @SerializedName("relational")
         RELATIONAL( 1 ),
@@ -1576,9 +1555,16 @@ public abstract class Catalog {
 
 
     public enum QueryLanguage {
+        @SerializedName("sql")
         SQL( SchemaType.RELATIONAL ),
-        MONGOQL( SchemaType.DOCUMENT ),
-        RELALG( SchemaType.RELATIONAL );
+        @SerializedName("mql")
+        MONGO_QL( SchemaType.DOCUMENT ),
+        @SerializedName("cql")
+        CQL( SchemaType.RELATIONAL ),
+        @SerializedName("rel")
+        REL_ALG( SchemaType.RELATIONAL ),
+        @SerializedName("pig")
+        PIG( SchemaType.RELATIONAL );
 
         @Getter
         private final SchemaType schemaType;
@@ -1586,6 +1572,24 @@ public abstract class Catalog {
 
         QueryLanguage( SchemaType schemaType ) {
             this.schemaType = schemaType;
+        }
+
+
+        public static QueryLanguage from( String name ) {
+            String normalized = name.toLowerCase( Locale.ROOT );
+            switch ( normalized ) {
+                case "mql":
+                case "mongoql":
+                    return MONGO_QL;
+                case "sql":
+                    return SQL;
+                case "cql":
+                    return CQL;
+                case "pig":
+                    return PIG;
+            }
+
+            throw new RuntimeException( "The query language seems not to be supported!" );
         }
     }
 

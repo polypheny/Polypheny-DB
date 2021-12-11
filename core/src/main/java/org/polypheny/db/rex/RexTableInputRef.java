@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,11 @@ package org.polypheny.db.rex;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.AllPredicates;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.ExpressionLineage;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptTable;
 
 
 /**
@@ -48,7 +48,7 @@ import org.polypheny.db.sql.SqlKind;
  * This object is used by {@link ExpressionLineage} and {@link AllPredicates}.
  *
  * Given a relational expression, its purpose is to be able to reference uniquely the provenance of a given expression. For that, it uses a unique table reference
- * (contained in a {@link RelTableRef}) and an column index within the table.
+ * (contained in a {@link AlgTableRef}) and an column index within the table.
  *
  * For example, {@code A.#0.$3 + 2} column {@code $3} in the {@code 0} occurrence of table {@code A} in the plan.
  *
@@ -56,10 +56,10 @@ import org.polypheny.db.sql.SqlKind;
  */
 public class RexTableInputRef extends RexInputRef {
 
-    private final RelTableRef tableRef;
+    private final AlgTableRef tableRef;
 
 
-    private RexTableInputRef( RelTableRef tableRef, int index, RelDataType type ) {
+    private RexTableInputRef( AlgTableRef tableRef, int index, AlgDataType type ) {
         super( index, type );
         this.tableRef = tableRef;
         this.digest = tableRef.toString() + ".$" + index;
@@ -81,7 +81,7 @@ public class RexTableInputRef extends RexInputRef {
     }
 
 
-    public RelTableRef getTableRef() {
+    public AlgTableRef getTableRef() {
         return tableRef;
     }
 
@@ -96,12 +96,12 @@ public class RexTableInputRef extends RexInputRef {
     }
 
 
-    public static RexTableInputRef of( RelTableRef tableRef, int index, RelDataType type ) {
+    public static RexTableInputRef of( AlgTableRef tableRef, int index, AlgDataType type ) {
         return new RexTableInputRef( tableRef, index, type );
     }
 
 
-    public static RexTableInputRef of( RelTableRef tableRef, RexInputRef ref ) {
+    public static RexTableInputRef of( AlgTableRef tableRef, RexInputRef ref ) {
         return new RexTableInputRef( tableRef, ref.getIndex(), ref.getType() );
     }
 
@@ -119,22 +119,22 @@ public class RexTableInputRef extends RexInputRef {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.TABLE_INPUT_REF;
+    public Kind getKind() {
+        return Kind.TABLE_INPUT_REF;
     }
 
 
     /**
      * Identifies uniquely a table by its qualified name and its entity number (occurrence)
      */
-    public static class RelTableRef implements Comparable<RelTableRef> {
+    public static class AlgTableRef implements Comparable<AlgTableRef> {
 
-        private final RelOptTable table;
+        private final AlgOptTable table;
         private final int entityNumber;
         private final String digest;
 
 
-        private RelTableRef( RelOptTable table, int entityNumber ) {
+        private AlgTableRef( AlgOptTable table, int entityNumber ) {
             this.table = table;
             this.entityNumber = entityNumber;
             this.digest = table.getQualifiedName() + ".#" + entityNumber;
@@ -144,9 +144,9 @@ public class RexTableInputRef extends RexInputRef {
         @Override
         public boolean equals( Object obj ) {
             return this == obj
-                    || obj instanceof RelTableRef
-                    && table.getQualifiedName().equals( ((RelTableRef) obj).getQualifiedName() )
-                    && entityNumber == ((RelTableRef) obj).entityNumber;
+                    || obj instanceof AlgTableRef
+                    && table.getQualifiedName().equals( ((AlgTableRef) obj).getQualifiedName() )
+                    && entityNumber == ((AlgTableRef) obj).entityNumber;
         }
 
 
@@ -156,7 +156,7 @@ public class RexTableInputRef extends RexInputRef {
         }
 
 
-        public RelOptTable getTable() {
+        public AlgOptTable getTable() {
             return table;
         }
 
@@ -177,15 +177,17 @@ public class RexTableInputRef extends RexInputRef {
         }
 
 
-        public static RelTableRef of( RelOptTable table, int entityNumber ) {
-            return new RelTableRef( table, entityNumber );
+        public static AlgTableRef of( AlgOptTable table, int entityNumber ) {
+            return new AlgTableRef( table, entityNumber );
         }
 
 
         @Override
-        public int compareTo( RelTableRef o ) {
+        public int compareTo( AlgTableRef o ) {
             return digest.compareTo( o.digest );
         }
+
     }
+
 }
 

@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.source.QfsSchema;
 import org.polypheny.db.type.PolyType;
 

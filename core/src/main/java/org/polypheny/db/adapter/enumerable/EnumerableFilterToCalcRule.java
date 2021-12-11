@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,39 +34,39 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Variant of {@link org.polypheny.db.rel.rules.FilterToCalcRule} for {@link EnumerableConvention enumerable calling convention}.
+ * Variant of {@link org.polypheny.db.algebra.rules.FilterToCalcRule} for {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableFilterToCalcRule extends RelOptRule {
+public class EnumerableFilterToCalcRule extends AlgOptRule {
 
     /**
      * Creates an EnumerableFilterToCalcRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableFilterToCalcRule( RelBuilderFactory relBuilderFactory ) {
-        super( operand( EnumerableFilter.class, any() ), relBuilderFactory, null );
+    public EnumerableFilterToCalcRule( AlgBuilderFactory algBuilderFactory ) {
+        super( operand( EnumerableFilter.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
-    public void onMatch( RelOptRuleCall call ) {
-        final EnumerableFilter filter = call.rel( 0 );
-        final RelNode input = filter.getInput();
+    public void onMatch( AlgOptRuleCall call ) {
+        final EnumerableFilter filter = call.alg( 0 );
+        final AlgNode input = filter.getInput();
 
         // Create a program containing a filter.
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-        final RelDataType inputRowType = input.getRowType();
+        final AlgDataType inputRowType = input.getRowType();
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
         programBuilder.addIdentity();
         programBuilder.addCondition( filter.getCondition() );
@@ -75,5 +75,6 @@ public class EnumerableFilterToCalcRule extends RelOptRule {
         final EnumerableCalc calc = EnumerableCalc.create( input, program );
         call.transformTo( calc );
     }
+
 }
 

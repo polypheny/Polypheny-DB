@@ -4,18 +4,18 @@
  *
  * <h2>Overview</h2>
  *
- * A <dfn>planner</dfn> (also known as an <dfn>optimizer</dfn>) finds the most efficient implementation of a {@link org.polypheny.db.rel.RelNode relational expression}.
+ * A <dfn>planner</dfn> (also known as an <dfn>optimizer</dfn>) finds the most efficient implementation of a {@link org.polypheny.db.algebra.AlgNode relational expression}.
  *
- * Interface {@link org.polypheny.db.plan.RelOptPlanner} defines a planner, and class {@link org.polypheny.db.plan.volcano.VolcanoPlanner} is an implementation which uses a
+ * Interface {@link org.polypheny.db.plan.AlgOptPlanner} defines a planner, and class {@link org.polypheny.db.plan.volcano.VolcanoPlanner} is an implementation which uses a
  * dynamic programming technique. It is based upon the Volcano optimizer [<a href="#graefe93">1</a>].
  *
- * Interface {@link org.polypheny.db.plan.RelOptCost} defines a cost model; class {@link org.polypheny.db.plan.volcano.VolcanoCost} is the implementation for a <code>VolcanoPlanner</code>.
+ * Interface {@link org.polypheny.db.plan.AlgOptCost} defines a cost model; class {@link org.polypheny.db.plan.volcano.VolcanoCost} is the implementation for a <code>VolcanoPlanner</code>.
  *
- * A {@link org.polypheny.db.plan.volcano.RelSet} is a set of equivalent relational expressions.  They are equivalent because they will produce the same result for any set of input data.
- * It is an equivalence class: two expressions are in the same set if and only if they are in the same <code>RelSet</code>.
+ * A {@link org.polypheny.db.plan.volcano.AlgSet} is a set of equivalent relational expressions.  They are equivalent because they will produce the same result for any set of input data.
+ * It is an equivalence class: two expressions are in the same set if and only if they are in the same <code>AlgSet</code>.
  *
  * One of the unique features of the optimizer is that expressions can take on a variety of physical traits. Each relational expression has a set of traits. Each trait is described by an implementation of
- * {@link org.polypheny.db.plan.RelTraitDef}.  Manifestations of the trait implement {@link org.polypheny.db.plan.RelTrait}. The most common example of a trait is calling convention: the protocol used
+ * {@link org.polypheny.db.plan.AlgTraitDef}.  Manifestations of the trait implement {@link org.polypheny.db.plan.AlgTrait}. The most common example of a trait is calling convention: the protocol used
  * to receive and transmit data. {@link org.polypheny.db.plan.ConventionTraitDef} defines the trait and {@link org.polypheny.db.plan.Convention} enumerates the protocols. Every relational expression has a
  * single calling convention by which it returns its results. Some examples:</p>
  *
@@ -37,22 +37,22 @@
  *
  * <p>New traits are added to the planner in one of two ways:</p>
  * <ol>
- * <li>If the new trait is integral to Polypheny-DB, then each and every implementation of {@link org.polypheny.db.rel.RelNode} should include its manifestation of the trait as part of the {@link org.polypheny.db.plan.RelTraitSet} passed to
- * {@link org.polypheny.db.rel.AbstractRelNode}'s constructor. It may be useful to provide alternate <code>AbstractRelNode</code> constructors if most relational expressions use a single manifestation of the trait.</li>
+ * <li>If the new trait is integral to Polypheny-DB, then each and every implementation of {@link org.polypheny.db.algebra.AlgNode} should include its manifestation of the trait as part of the {@link org.polypheny.db.plan.AlgTraitSet} passed to
+ * {@link org.polypheny.db.algebra.AbstractAlgNode}'s constructor. It may be useful to provide alternate <code>AbstractRelNode</code> constructors if most relational expressions use a single manifestation of the trait.</li>
  *
- * <li>If the new trait describes some aspect of a Farrago extension, then the RelNodes passed to {@link org.polypheny.db.plan.volcano.VolcanoPlanner#setRoot(org.polypheny.db.rel.RelNode)} should have
- * their trait sets expanded before the <code>setRoot(RelNode)</code> call.</li>*
+ * <li>If the new trait describes some aspect of a Farrago extension, then the RelNodes passed to {@link org.polypheny.db.plan.volcano.VolcanoPlanner#setRoot(AlgNode)} should have
+ * their trait sets expanded before the <code>setRoot(AlgNode)</code> call.</li>*
  * </ol>
  *
- * The second trait extension mechanism requires that implementations of {@code org.polypheny.db.rel.AbstractRelNode#clone()} must not assume the type and quantity of traits in their trait set.
- * In either case, the new <code>RelTraitDef</code> implementation must be {@link org.polypheny.db.plan.volcano.VolcanoPlanner#addRelTraitDef(org.polypheny.db.plan.RelTraitDef)} registered with the planner.
+ * The second trait extension mechanism requires that implementations of {@code org.polypheny.db.alg.AbstractRelNode#clone()} must not assume the type and quantity of traits in their trait set.
+ * In either case, the new <code>RelTraitDef</code> implementation must be {@link org.polypheny.db.plan.volcano.VolcanoPlanner#addAlgTraitDef(AlgTraitDef)} registered with the planner.
  *
- * A {@link org.polypheny.db.plan.volcano.RelSubset} is a subset of a <code>RelSet</code> containing expressions which are equivalent and which have the same <code>Convention</code>.
- * Like <code>RelSet</code>,it is an equivalence class.
+ * A {@link org.polypheny.db.plan.volcano.AlgSubset} is a subset of a <code>AlgSet</code> containing expressions which are equivalent and which have the same <code>Convention</code>.
+ * Like <code>AlgSet</code>,it is an equivalence class.
  *
  * <h2>Related packages</h2>
  * <ul>
- * <li>{@code <a href="../rel/package-summary.html">org.polypheny.db.rel</a>} defines {@link org.polypheny.db.rel.RelNode relational expressions}.</li>
+ * <li>{@code <a href="../rel/package-summary.html">org.polypheny.db.rel</a>} defines {@link org.polypheny.db.algebra.AlgNode relational expressions}.</li>
  * </ul>
  *
  * <h2>Details</h2>
@@ -162,3 +162,5 @@
 
 package org.polypheny.db.plan.volcano;
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgTraitDef;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -591,7 +591,7 @@ public class ElasticSearchAdapterTest {
 //
 //
 //    /**
-//     * Test of {@link org.polypheny.db.sql.fun.SqlStdOperatorTable#APPROX_COUNT_DISTINCT} which will be translated to
+//     * Test of {@link org.polypheny.db.languages.sql.fun.StdOperatorRegistry.get( OperatorName.APPROX_COUNT_DISTINCT )} which will be translated to
 //     * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-cardinality-aggregation.html">Cardinality Aggregation</a>
 //     * (approximate counts using HyperLogLog++ algorithm).
 //     */

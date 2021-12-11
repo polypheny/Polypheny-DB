@@ -16,48 +16,44 @@
 
 package org.polypheny.db.processing;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.Meta;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.algebra.AlgDecorrelator;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.mql.MqlCollectionStatement;
-import org.polypheny.db.mql.MqlCreateCollection;
-import org.polypheny.db.mql.MqlExecutableStatement;
-import org.polypheny.db.mql.MqlNode;
-import org.polypheny.db.mql.parser.MqlParseException;
-import org.polypheny.db.mql.parser.MqlParser;
-import org.polypheny.db.mql.parser.MqlParser.MqlParserConfig;
-import org.polypheny.db.mql.parser.MqlParserPos;
-import org.polypheny.db.mql2rel.MqlToRelConverter;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.languages.mql.MqlCollectionStatement;
+import org.polypheny.db.languages.mql.MqlCreateCollection;
+import org.polypheny.db.languages.mql.MqlNode;
+import org.polypheny.db.languages.mql.MqlQueryParameters;
+import org.polypheny.db.languages.mql.parser.MqlParser;
+import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
+import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.routing.ExecutionTimeMonitor;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql2rel.RelDecorrelator;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.transaction.DeadlockException;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
+import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
+public class MqlProcessorImpl extends MqlProcessor {
 
     private static final MqlParserConfig parserConfig;
 
@@ -69,13 +65,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
 
     @Override
-    public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-        return null;
-    }
-
-
-    @Override
-    public MqlNode parse( String mql ) {
+    public Node parse( String mql ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyMQL statement ..." );
@@ -89,7 +79,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         try {
             final MqlParser parser = MqlParser.create( new SourceStringReader( mql ), parserConfig );
             parsed = parser.parseStmt();
-        } catch ( MqlParseException e ) {
+        } catch ( NodeParseException e ) {
             log.error( "Caught exception", e );
             throw new RuntimeException( e );
         }
@@ -105,16 +95,16 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
 
     @Override
-    public void validate( RelRoot root, boolean addDefaultValues ) {
-        return;
+    public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
+        throw new RuntimeException( "The MQL implementation does not support validation." );
     }
 
 
     @Override
-    public boolean needsDdlGeneration( MqlNode mql, String database ) {
+    public boolean needsDdlGeneration( Node mql, QueryParameters parameters ) {
         if ( mql instanceof MqlCollectionStatement ) {
             return Catalog.getInstance()
-                    .getTables( Catalog.defaultDatabaseId, new Pattern( database ), null )
+                    .getTables( Catalog.defaultDatabaseId, new Pattern( ((MqlQueryParameters) parameters).getDatabase() ), null )
                     .stream()
                     .noneMatch( t -> t.name.equals( ((MqlCollectionStatement) mql).getCollection() ) );
         }
@@ -122,9 +112,13 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
     }
 
 
-    @Override
-    public void autoGenerateDDL( Statement statement, MqlNode mql, String defaultDatabase ) {
-        new MqlCreateCollection( MqlParserPos.sum( Collections.singletonList( mql ) ), ((MqlCollectionStatement) mql).getCollection(), null ).execute( statement.getPrepareContext(), statement, defaultDatabase );
+    public void autoGenerateDDL( Statement statement, Node mql, QueryParameters parameters ) {
+        new MqlCreateCollection(
+                ParserPos.sum( Collections.singletonList( mql ) ),
+                ((MqlCollectionStatement) mql).getCollection(),
+                null
+        )
+                .execute( statement.getPrepareContext(), statement, parameters );
         try {
             statement.getTransaction().commit();
         } catch ( TransactionException e ) {
@@ -134,7 +128,7 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
 
     @Override
-    public RelRoot translate( Statement statement, MqlNode mql, String defaultDatabase ) {
+    public AlgRoot translate( Statement statement, Node mql, QueryParameters parameters ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
@@ -142,17 +136,17 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
         stopWatch.start();
 
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
-        final MqlToRelConverter mqlToRelConverter = new MqlToRelConverter( this, statement.getTransaction().getCatalogReader(), cluster );
-        RelRoot logicalRoot = mqlToRelConverter.convert( mql, defaultDatabase );
+        final MqlToAlgConverter mqlToAlgConverter = new MqlToAlgConverter( this, statement.getTransaction().getCatalogReader(), cluster );
+        AlgRoot logicalRoot = mqlToAlgConverter.convert( mql, parameters );
 
         // Decorrelate
-        final RelBuilder relBuilder = RelBuilder.create( statement );
-        logicalRoot = logicalRoot.withRel( RelDecorrelator.decorrelateQuery( logicalRoot.rel, relBuilder ) );
+        final AlgBuilder algBuilder = AlgBuilder.create( statement );
+        logicalRoot = logicalRoot.withAlg( AlgDecorrelator.decorrelateQuery( logicalRoot.alg, algBuilder ) );
 
         if ( log.isTraceEnabled() ) {
-            log.trace( "Logical query plan: [{}]", RelOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+            log.trace( "Logical query plan: [{}]", AlgOptUtil.dumpPlan( "-- Logical Plan", logicalRoot.alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
@@ -164,44 +158,25 @@ public class MqlProcessorImpl implements MqlProcessor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareDdl( Statement statement, MqlNode parsed, String mql, String database ) {
-        if ( parsed instanceof MqlExecutableStatement ) {
-            try { // TODO DL merge with sql processor
-                // Acquire global schema lock
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                // Execute statement
-                ((MqlExecutableStatement) parsed).execute( statement.getPrepareContext(), statement, database );
-                statement.getTransaction().commit();
-                Catalog.getInstance().commit();
-                return new PolyphenyDbSignature<>(
-                        mql,
-                        ImmutableList.of(),
-                        ImmutableMap.of(),
-                        null,
-                        ImmutableList.of(),
-                        Meta.CursorFactory.OBJECT,
-                        statement.getTransaction().getSchema(),
-                        ImmutableList.of(),
-                        -1,
-                        null,
-                        Meta.StatementType.OTHER_DDL,
-                        new ExecutionTimeMonitor() );
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( "Exception while acquiring global schema lock", e );
-            } catch ( TransactionException | NoTablePrimaryKeyException e ) {
-                throw new RuntimeException( e );
-            } finally {
-                // Release lock
-                LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
-            }
-        } else {
-            throw new RuntimeException( "All DDL queries should be of a type that inherits SqlExecutableStatement. But this one is of type " + parsed.getClass() );
-        }
+    public void unlock( Statement statement ) {
+        LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
     }
 
 
     @Override
-    public RelDataType getParameterRowType( MqlNode left ) {
+    public void lock( Statement statement ) throws DeadlockException {
+        LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+    }
+
+
+    @Override
+    public String getQuery( Node parsed, QueryParameters parameters ) {
+        return parameters.getQuery();
+    }
+
+
+    @Override
+    public AlgDataType getParameterRowType( Node left ) {
         return null;
     }
 

@@ -36,6 +36,15 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.BiAlg;
+import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalViewScan;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -103,17 +112,7 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
-import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
-import org.polypheny.db.rel.BiRel;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.SingleRel;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalViewScan;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -1529,7 +1528,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelNode relNode, RelCollation relCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, AlgNode algNode, AlgCollation algCollation, boolean replace, Statement statement, PlacementType placementType, List<String> projectedColumns, String query, QueryLanguage language ) throws TableAlreadyExistsException {
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( replace ) {
                 try {
@@ -1542,13 +1541,13 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        RelDataType fieldList = relNode.getRowType();
+        AlgDataType fieldList = algNode.getRowType();
 
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
 
-        findUnderlyingTablesOfView( relNode, underlyingTables, fieldList );
+        findUnderlyingTablesOfView( algNode, underlyingTables, fieldList );
 
         // add check if underlying table is of model document -> mql, relational -> sql
         underlyingTables.keySet().forEach( tableId -> checkModelLangCompatibility( language, tableId ) );
@@ -1559,8 +1558,8 @@ public class DdlManagerImpl extends DdlManager {
                 statement.getPrepareContext().getCurrentUserId(),
                 TableType.VIEW,
                 false,
-                relNode,
-                relCollation,
+                algNode,
+                algCollation,
                 underlyingTables,
                 fieldList,
                 query,
@@ -1585,7 +1584,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createMaterializedView( String viewName, long schemaId, RelRoot relRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException, ColumnNotExistsException, ColumnAlreadyExistsException {
+    public void createMaterializedView( String viewName, long schemaId, AlgRoot algRoot, boolean replace, Statement statement, List<DataStore> stores, PlacementType placementType, List<String> projectedColumns, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ifNotExists, boolean ordered ) throws TableAlreadyExistsException, GenericCatalogException {
         // Check if there is already a table with this name
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             if ( ifNotExists ) {
@@ -1601,10 +1600,10 @@ public class DdlManagerImpl extends DdlManager {
             stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
         }
 
-        RelDataType fieldList = relRoot.rel.getRowType();
+        AlgDataType fieldList = algRoot.alg.getRowType();
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
-        Map<Long, List<Long>> underlying = findUnderlyingTablesOfView( relRoot.rel, underlyingTables, fieldList );
+        Map<Long, List<Long>> underlying = findUnderlyingTablesOfView( algRoot.alg, underlyingTables, fieldList );
 
         // add check if underlying table is of model document -> mql, relational -> sql
         underlying.keySet().forEach( tableId -> checkModelLangCompatibility( language, tableId ) );
@@ -1623,8 +1622,8 @@ public class DdlManagerImpl extends DdlManager {
                 statement.getPrepareContext().getCurrentUserId(),
                 TableType.MATERIALIZED_VIEW,
                 false,
-                relRoot.rel,
-                relRoot.collation,
+                algRoot.alg,
+                algRoot.collation,
                 underlying,
                 fieldList,
                 materializedCriteria,
@@ -1700,7 +1699,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Selected data from tables is added into the newly crated materialized view
         MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
-        materializedManager.addData( statement.getTransaction(), stores, addedColumns, relRoot, catalogMaterializedView );
+        materializedManager.addData( statement.getTransaction(), stores, addedColumns, algRoot, catalogMaterializedView );
     }
 
 
@@ -1723,21 +1722,21 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList ) {
+    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList ) {
         return getColumnInformation( projectedColumns, fieldList, false, 0 );
     }
 
 
-    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, RelDataType fieldList, boolean addPrimary, long tableId ) {
+    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList, boolean addPrimary, long tableId ) {
         List<ColumnInformation> columns = new ArrayList<>();
 
         int position = 1;
-        for ( RelDataTypeField rel : fieldList.getFieldList() ) {
-            RelDataType type = rel.getValue();
-            if ( rel.getType().getPolyType() == PolyType.ARRAY ) {
-                type = ((ArrayType) rel.getValue()).getComponentType();
+        for ( AlgDataTypeField alg : fieldList.getFieldList() ) {
+            AlgDataType type = alg.getValue();
+            if ( alg.getType().getPolyType() == PolyType.ARRAY ) {
+                type = ((ArrayType) alg.getValue()).getComponentType();
             }
-            String colName = rel.getName();
+            String colName = alg.getName();
             if ( projectedColumns != null ) {
                 colName = projectedColumns.get( position - 1 );
             }
@@ -1746,12 +1745,12 @@ public class DdlManagerImpl extends DdlManager {
                     colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
                     new ColumnTypeInformation(
                             type.getPolyType(),
-                            rel.getType().getPolyType(),
+                            alg.getType().getPolyType(),
                             type.getRawPrecision(),
                             type.getScale(),
-                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getDimension() : -1,
-                            rel.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) rel.getValue()).getCardinality() : -1,
-                            rel.getValue().isNullable() ),
+                            alg.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getValue()).getDimension() : -1,
+                            alg.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getValue()).getCardinality() : -1,
+                            alg.getValue().isNullable() ),
                     Collation.getDefaultCollation(),
                     null,
                     position ) );
@@ -1780,32 +1779,32 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private Map<Long, List<Long>> findUnderlyingTablesOfView( RelNode relNode, Map<Long, List<Long>> underlyingTables, RelDataType fieldList ) {
-        if ( relNode instanceof LogicalTableScan ) {
-            List<Long> underlyingColumns = getUnderlyingColumns( relNode, fieldList );
-            underlyingTables.put( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId(), underlyingColumns );
-        } else if ( relNode instanceof LogicalViewScan ) {
-            List<Long> underlyingColumns = getUnderlyingColumns( relNode, fieldList );
-            underlyingTables.put( ((LogicalView) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId(), underlyingColumns );
+    private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
+        if ( algNode instanceof LogicalTableScan ) {
+            List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
+            underlyingTables.put( ((LogicalTable) algNode.getTable().getTable()).getTableId(), underlyingColumns );
+        } else if ( algNode instanceof LogicalViewScan ) {
+            List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
+            underlyingTables.put( ((LogicalView) algNode.getTable().getTable()).getTableId(), underlyingColumns );
         }
-        if ( relNode instanceof BiRel ) {
-            findUnderlyingTablesOfView( ((BiRel) relNode).getLeft(), underlyingTables, fieldList );
-            findUnderlyingTablesOfView( ((BiRel) relNode).getRight(), underlyingTables, fieldList );
-        } else if ( relNode instanceof SingleRel ) {
-            findUnderlyingTablesOfView( ((SingleRel) relNode).getInput(), underlyingTables, fieldList );
+        if ( algNode instanceof BiAlg ) {
+            findUnderlyingTablesOfView( ((BiAlg) algNode).getLeft(), underlyingTables, fieldList );
+            findUnderlyingTablesOfView( ((BiAlg) algNode).getRight(), underlyingTables, fieldList );
+        } else if ( algNode instanceof SingleAlg ) {
+            findUnderlyingTablesOfView( ((SingleAlg) algNode).getInput(), underlyingTables, fieldList );
         }
         return underlyingTables;
     }
 
 
-    private List<Long> getUnderlyingColumns( RelNode relNode, RelDataType fieldList ) {
-        List<Long> columnIds = ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getColumnIds();
-        List<String> logicalColumnNames = ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getLogicalColumnNames();
+    private List<Long> getUnderlyingColumns( AlgNode algNode, AlgDataType fieldList ) {
+        List<Long> columnIds = ((LogicalTable) algNode.getTable().getTable()).getColumnIds();
+        List<String> logicalColumnNames = ((LogicalTable) algNode.getTable().getTable()).getLogicalColumnNames();
         List<Long> underlyingColumns = new ArrayList<>();
         for ( int i = 0; i < columnIds.size(); i++ ) {
-            for ( RelDataTypeField relDataTypeField : fieldList.getFieldList() ) {
+            for ( AlgDataTypeField algDataTypeField : fieldList.getFieldList() ) {
                 String name = logicalColumnNames.get( i );
-                if ( relDataTypeField.getName().equals( name ) ) {
+                if ( algDataTypeField.getName().equals( name ) ) {
                     underlyingColumns.add( columnIds.get( i ) );
                 }
             }
@@ -1815,7 +1814,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException {
+    public void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException {
         try {
             // Check if there is already a table with this name
             if ( catalog.checkIfExistsTable( schemaId, tableName ) ) {

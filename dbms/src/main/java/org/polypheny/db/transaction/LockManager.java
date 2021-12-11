@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
+import org.polypheny.db.util.DeadlockException;
 
 // Based on code taken from https://github.com/dstibrany/LockManager
 public class LockManager {

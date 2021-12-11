@@ -22,9 +22,9 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileSchema;
-import org.polypheny.db.adapter.file.rel.FileRules;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.adapter.file.algebra.FileRules;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 
 
 public class QfsConvention extends FileConvention {
@@ -40,8 +40,8 @@ public class QfsConvention extends FileConvention {
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : FileRules.rules( this, FileMethod.EXECUTE_QFS.method, getFileSchema() ) ) {
+    public void register( AlgOptPlanner planner ) {
+        for ( AlgOptRule rule : FileRules.rules( this, FileMethod.EXECUTE_QFS.method, getFileSchema() ) ) {
             planner.addRule( rule );
         }
     }

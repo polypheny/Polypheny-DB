@@ -5,6 +5,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 dependencies {
     implementation project(":core")
+    implementation project(":sql-language")
 
     implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version  // Apache 2.0
     implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version  // Apache 2.0

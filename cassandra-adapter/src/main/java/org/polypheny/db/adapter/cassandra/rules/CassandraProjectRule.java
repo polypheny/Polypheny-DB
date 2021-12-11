@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,33 +19,33 @@ package org.polypheny.db.adapter.cassandra.rules;
 
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraProject;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalProject} to a {@link CassandraProject}.
+ * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalProject} to a {@link CassandraProject}.
  */
 public class CassandraProjectRule extends CassandraConverterRule {
 
-    CassandraProjectRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Project.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraProjectRule:" + out.getName() );
+    CassandraProjectRule( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Project.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraProjectRule:" + out.getName() );
     }
 
 
     // TODO js: Reimplement the old checks!
     @Override
-    public boolean matches( RelOptRuleCall call ) {
-        Project project = call.rel( 0 );
+    public boolean matches( AlgOptRuleCall call ) {
+        Project project = call.alg( 0 );
         for ( RexNode e : project.getProjects() ) {
             if ( !(e instanceof RexInputRef) && !(e instanceof RexLiteral) ) {
                 if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
@@ -59,9 +59,9 @@ public class CassandraProjectRule extends CassandraConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final Project project = (Project) rel;
-        final RelTraitSet traitSet = project.getTraitSet().replace( out );
+    public AlgNode convert( AlgNode alg ) {
+        final Project project = (Project) alg;
+        final AlgTraitSet traitSet = project.getTraitSet().replace( out );
 
         boolean arrayValueProject = true;
         for ( RexNode e : project.getProjects() ) {
@@ -78,4 +78,5 @@ public class CassandraProjectRule extends CassandraConverterRule {
                 project.getRowType(),
                 arrayValueProject );
     }
+
 }

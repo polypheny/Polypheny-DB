@@ -23,7 +23,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.mongoql.model.Result;
+import org.polypheny.db.webui.models.Result;
 
 
 /**

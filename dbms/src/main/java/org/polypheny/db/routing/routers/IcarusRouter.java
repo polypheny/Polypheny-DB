@@ -26,15 +26,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.factories.RouterFactory;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.tools.RoutedRelBuilder;
+import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
@@ -43,27 +43,27 @@ import org.polypheny.db.util.Pair;
 public class IcarusRouter extends FullPlacementQueryRouter {
 
     @Override
-    protected List<RoutedRelBuilder> handleHorizontalPartitioning( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         this.cancelQuery = true;
         return Collections.emptyList();
     }
 
 
     @Override
-    protected List<RoutedRelBuilder> handleVerticalPartitioningOrReplication( RelNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, CatalogTable catalogTable, Statement statement, LogicalTable logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // same as no partitioning
         return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
     }
 
 
     @Override
-    protected List<RoutedRelBuilder> handleNonePartitioning( RelNode node, CatalogTable catalogTable, Statement statement, List<RoutedRelBuilder> builders, RelOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, CatalogTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
         }
 
         final Set<List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable, queryInformation );
-        List<RoutedRelBuilder> newBuilders = new ArrayList<>();
+        List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         if ( placements.isEmpty() ) {
             this.cancelQuery = true;
             return Collections.emptyList();
@@ -75,7 +75,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 final Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
                 currentPlacementDistribution.put( catalogTable.partitionProperty.partitionIds.get( 0 ), currentPlacement );
 
-                final RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builders.get( 0 ) );
+                final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builders.get( 0 ) );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
@@ -95,7 +95,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 final int adapterId = currentPlacement.get( 0 ).adapterId;
 
                 // Find corresponding builder:
-                final RoutedRelBuilder builder = builders.stream().filter( b -> {
+                final RoutedAlgBuilder builder = builders.stream().filter( b -> {
                             final List<Pair<Integer, Long>> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
                                     .flatMap( Collection::stream )
                                     .collect( Collectors.toList() );
@@ -112,7 +112,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                     continue;
                 }
 
-                final RoutedRelBuilder newBuilder = RoutedRelBuilder.createCopy( statement, cluster, builder );
+                final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
                 newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );

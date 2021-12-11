@@ -17,12 +17,12 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.webui.models.UIRelNode;
+import org.polypheny.db.webui.models.UIAlgNode;
 
 
 public class RelAlgRequest extends UIRequest {
 
-    public UIRelNode topNode;
+    public UIAlgNode topNode;
     public boolean useCache;
     public boolean createView;
     public String viewName;

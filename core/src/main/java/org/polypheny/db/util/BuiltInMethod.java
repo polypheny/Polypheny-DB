@@ -65,7 +65,6 @@ import org.apache.calcite.linq4j.function.EqualityComparer;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.Function2;
-import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.FunctionExpression;
@@ -77,44 +76,49 @@ import org.polypheny.db.adapter.enumerable.OrderedAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SequencedAdderAggregateLambdaFactory;
 import org.polypheny.db.adapter.enumerable.SourceSorter;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.json.JsonConstructorNullClause;
+import org.polypheny.db.algebra.json.JsonQueryEmptyOrErrorBehavior;
+import org.polypheny.db.algebra.json.JsonQueryWrapperBehavior;
+import org.polypheny.db.algebra.json.JsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ColumnOrigin;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ColumnUniqueness;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.CumulativeCost;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.DistinctRowCount;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Distribution;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExplainVisibility;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.MaxRowCount;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Memory;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.MinRowCount;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.NodeTypes;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.NonCumulativeCost;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Parallelism;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.PercentageOriginalRows;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.PopulationSize;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Predicates;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.RowCount;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Selectivity;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
+import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
+import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.AllPredicates;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.Collation;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.ColumnOrigin;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.ColumnUniqueness;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.CumulativeCost;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.DistinctRowCount;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.Distribution;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.ExplainVisibility;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.ExpressionLineage;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.MaxRowCount;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.Memory;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.MinRowCount;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.NodeTypes;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.NonCumulativeCost;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.Parallelism;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.PercentageOriginalRows;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.PopulationSize;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.Predicates;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.RowCount;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.Selectivity;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.Size;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.TableReferences;
-import org.polypheny.db.rel.metadata.BuiltInMetadata.UniqueKeys;
-import org.polypheny.db.rel.metadata.Metadata;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Enumerables;
 import org.polypheny.db.runtime.FlatLists;
+import org.polypheny.db.runtime.Functions;
+import org.polypheny.db.runtime.Functions.FlatProductInputType;
 import org.polypheny.db.runtime.MqlFunctions;
 import org.polypheny.db.runtime.RandomFunction;
 import org.polypheny.db.runtime.SortedMultiMap;
-import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.runtime.SqlFunctions.FlatProductInputType;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ModifiableTable;
@@ -124,12 +128,6 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.SqlJsonConstructorNullClause;
-import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
-import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
-import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.PolyType;
 
 
@@ -137,7 +135,7 @@ import org.polypheny.db.type.PolyType;
  * Built-in methods.
  */
 public enum BuiltInMethod {
-    PARSE_ARRAY_FROM_TEXT( SqlArrayValueConstructor.class, "reparse", PolyType.class, Long.class, String.class ),
+    PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
     QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),
@@ -185,13 +183,13 @@ public enum BuiltInMethod {
     TAKE( ExtendedEnumerable.class, "take", int.class ),
     SINGLETON_ENUMERABLE( Linq4j.class, "singletonEnumerable", Object.class ),
     EMPTY_ENUMERABLE( Linq4j.class, "emptyEnumerable" ),
-    NULLS_COMPARATOR( Functions.class, "nullsComparator", boolean.class, boolean.class ),
-    ARRAY_COMPARER( Functions.class, "arrayComparer" ),
+    NULLS_COMPARATOR( org.apache.calcite.linq4j.function.Functions.class, "nullsComparator", boolean.class, boolean.class ),
+    ARRAY_COMPARER( org.apache.calcite.linq4j.function.Functions.class, "arrayComparer" ),
     FUNCTION0_APPLY( Function0.class, "apply" ),
     FUNCTION1_APPLY( Function1.class, "apply", Object.class ),
     ARRAYS_AS_LIST( Arrays.class, "asList", Object[].class ),
-    ARRAY( SqlFunctions.class, "array", Object[].class ),
-    FLAT_PRODUCT( SqlFunctions.class, "flatProduct", int[].class, boolean.class, FlatProductInputType[].class ),
+    ARRAY( Functions.class, "array", Object[].class ),
+    FLAT_PRODUCT( Functions.class, "flatProduct", int[].class, boolean.class, FlatProductInputType[].class ),
     LIST_N( FlatLists.class, "copyOf", Comparable[].class ),
     LIST2( FlatLists.class, "of", Object.class, Object.class ),
     LIST3( FlatLists.class, "of", Object.class, Object.class, Object.class ),
@@ -199,8 +197,8 @@ public enum BuiltInMethod {
     LIST5( FlatLists.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class ),
     LIST6( FlatLists.class, "of", Object.class, Object.class, Object.class, Object.class, Object.class, Object.class ),
     COMPARABLE_EMPTY_LIST( FlatLists.class, "COMPARABLE_EMPTY_LIST", true ),
-    IDENTITY_COMPARER( Functions.class, "identityComparer" ),
-    IDENTITY_SELECTOR( Functions.class, "identitySelector" ),
+    IDENTITY_COMPARER( org.apache.calcite.linq4j.function.Functions.class, "identityComparer" ),
+    IDENTITY_SELECTOR( org.apache.calcite.linq4j.function.Functions.class, "identitySelector" ),
     AS_ENUMERABLE( Linq4j.class, "asEnumerable", Object[].class ),
     AS_ENUMERABLE2( Linq4j.class, "asEnumerable", Iterable.class ),
     ENUMERABLE_TO_LIST( ExtendedEnumerable.class, "toList" ),
@@ -240,83 +238,83 @@ public enum BuiltInMethod {
     BINARY_SEARCH5_UPPER( BinarySearch.class, "upperBound", Object[].class, Object.class, int.class, int.class, Comparator.class ),
     BINARY_SEARCH6_LOWER( BinarySearch.class, "lowerBound", Object[].class, Object.class, int.class, int.class, Function1.class, Comparator.class ),
     BINARY_SEARCH6_UPPER( BinarySearch.class, "upperBound", Object[].class, Object.class, int.class, int.class, Function1.class, Comparator.class ),
-    ARRAY_ITEM( SqlFunctions.class, "arrayItemOptional", List.class, int.class ),
-    MAP_ITEM( SqlFunctions.class, "mapItemOptional", Map.class, Object.class ),
-    ANY_ITEM( SqlFunctions.class, "itemOptional", Object.class, Object.class ),
-    UPPER( SqlFunctions.class, "upper", String.class ),
-    LOWER( SqlFunctions.class, "lower", String.class ),
-    JSONIZE( SqlFunctions.class, "jsonize", Object.class ),
-    JSON_VALUE_EXPRESSION( SqlFunctions.class, "jsonValueExpression", String.class ),
-    JSON_VALUE_EXPRESSION_EXCLUDE( SqlFunctions.class, "jsonValueExpressionExclude", String.class, List.class ),
-    JSON_STRUCTURED_VALUE_EXPRESSION( SqlFunctions.class, "jsonStructuredValueExpression", Object.class ),
-    JSON_API_COMMON_SYNTAX( SqlFunctions.class, "jsonApiCommonSyntax", Object.class, String.class ),
-    JSON_EXISTS( SqlFunctions.class, "jsonExists", Object.class ),
-    JSON_VALUE_ANY( SqlFunctions.class, "jsonValueAny", Object.class, SqlJsonValueEmptyOrErrorBehavior.class, Object.class, SqlJsonValueEmptyOrErrorBehavior.class, Object.class ),
-    JSON_QUERY( SqlFunctions.class, "jsonQuery", Object.class, SqlJsonQueryWrapperBehavior.class, SqlJsonQueryEmptyOrErrorBehavior.class, SqlJsonQueryEmptyOrErrorBehavior.class ),
-    JSON_OBJECT( SqlFunctions.class, "jsonObject", SqlJsonConstructorNullClause.class ),
-    JSON_OBJECTAGG_ADD( SqlFunctions.class, "jsonObjectAggAdd", Map.class, String.class, Object.class, SqlJsonConstructorNullClause.class ),
-    JSON_ARRAY( SqlFunctions.class, "jsonArray", SqlJsonConstructorNullClause.class ),
-    JSON_ARRAYAGG_ADD( SqlFunctions.class, "jsonArrayAggAdd", List.class, Object.class, SqlJsonConstructorNullClause.class ),
-    IS_JSON_VALUE( SqlFunctions.class, "isJsonValue", String.class ),
-    IS_JSON_OBJECT( SqlFunctions.class, "isJsonObject", String.class ),
-    IS_JSON_ARRAY( SqlFunctions.class, "isJsonArray", String.class ),
-    IS_JSON_SCALAR( SqlFunctions.class, "isJsonScalar", String.class ),
-    INITCAP( SqlFunctions.class, "initcap", String.class ),
-    SUBSTRING( SqlFunctions.class, "substring", String.class, int.class, int.class ),
-    CHAR_LENGTH( SqlFunctions.class, "charLength", String.class ),
-    STRING_CONCAT( SqlFunctions.class, "concat", String.class, String.class ),
+    ARRAY_ITEM( Functions.class, "arrayItemOptional", List.class, int.class ),
+    MAP_ITEM( Functions.class, "mapItemOptional", Map.class, Object.class ),
+    ANY_ITEM( Functions.class, "itemOptional", Object.class, Object.class ),
+    UPPER( Functions.class, "upper", String.class ),
+    LOWER( Functions.class, "lower", String.class ),
+    JSONIZE( Functions.class, "jsonize", Object.class ),
+    JSON_VALUE_EXPRESSION( Functions.class, "jsonValueExpression", String.class ),
+    JSON_VALUE_EXPRESSION_EXCLUDE( Functions.class, "jsonValueExpressionExclude", String.class, List.class ),
+    JSON_STRUCTURED_VALUE_EXPRESSION( Functions.class, "jsonStructuredValueExpression", Object.class ),
+    JSON_API_COMMON_SYNTAX( Functions.class, "jsonApiCommonSyntax", Object.class, String.class ),
+    JSON_EXISTS( Functions.class, "jsonExists", Object.class ),
+    JSON_VALUE_ANY( Functions.class, "jsonValueAny", Object.class, JsonValueEmptyOrErrorBehavior.class, Object.class, JsonValueEmptyOrErrorBehavior.class, Object.class ),
+    JSON_QUERY( Functions.class, "jsonQuery", Object.class, JsonQueryWrapperBehavior.class, JsonQueryEmptyOrErrorBehavior.class, JsonQueryEmptyOrErrorBehavior.class ),
+    JSON_OBJECT( Functions.class, "jsonObject", JsonConstructorNullClause.class ),
+    JSON_OBJECTAGG_ADD( Functions.class, "jsonObjectAggAdd", Map.class, String.class, Object.class, JsonConstructorNullClause.class ),
+    JSON_ARRAY( Functions.class, "jsonArray", JsonConstructorNullClause.class ),
+    JSON_ARRAYAGG_ADD( Functions.class, "jsonArrayAggAdd", List.class, Object.class, JsonConstructorNullClause.class ),
+    IS_JSON_VALUE( Functions.class, "isJsonValue", String.class ),
+    IS_JSON_OBJECT( Functions.class, "isJsonObject", String.class ),
+    IS_JSON_ARRAY( Functions.class, "isJsonArray", String.class ),
+    IS_JSON_SCALAR( Functions.class, "isJsonScalar", String.class ),
+    INITCAP( Functions.class, "initcap", String.class ),
+    SUBSTRING( Functions.class, "substring", String.class, int.class, int.class ),
+    CHAR_LENGTH( Functions.class, "charLength", String.class ),
+    STRING_CONCAT( Functions.class, "concat", String.class, String.class ),
     FLOOR_DIV( DateTimeUtils.class, "floorDiv", long.class, long.class ),
     FLOOR_MOD( DateTimeUtils.class, "floorMod", long.class, long.class ),
-    ADD_MONTHS( SqlFunctions.class, "addMonths", long.class, int.class ),
-    ADD_MONTHS_INT( SqlFunctions.class, "addMonths", int.class, int.class ),
-    SUBTRACT_MONTHS( SqlFunctions.class, "subtractMonths", long.class, long.class ),
-    FLOOR( SqlFunctions.class, "floor", int.class, int.class ),
-    CEIL( SqlFunctions.class, "ceil", int.class, int.class ),
-    OVERLAY( SqlFunctions.class, "overlay", String.class, String.class, int.class ),
-    OVERLAY3( SqlFunctions.class, "overlay", String.class, String.class, int.class, int.class ),
-    POSITION( SqlFunctions.class, "position", String.class, String.class ),
+    ADD_MONTHS( Functions.class, "addMonths", long.class, int.class ),
+    ADD_MONTHS_INT( Functions.class, "addMonths", int.class, int.class ),
+    SUBTRACT_MONTHS( Functions.class, "subtractMonths", long.class, long.class ),
+    FLOOR( Functions.class, "floor", int.class, int.class ),
+    CEIL( Functions.class, "ceil", int.class, int.class ),
+    OVERLAY( Functions.class, "overlay", String.class, String.class, int.class ),
+    OVERLAY3( Functions.class, "overlay", String.class, String.class, int.class, int.class ),
+    POSITION( Functions.class, "position", String.class, String.class ),
     RAND( RandomFunction.class, "rand" ),
     RAND_SEED( RandomFunction.class, "randSeed", int.class ),
     RAND_INTEGER( RandomFunction.class, "randInteger", int.class ),
     RAND_INTEGER_SEED( RandomFunction.class, "randIntegerSeed", int.class, int.class ),
-    TRUNCATE( SqlFunctions.class, "truncate", String.class, int.class ),
-    TRUNCATE_OR_PAD( SqlFunctions.class, "truncateOrPad", String.class, int.class ),
-    TRIM( SqlFunctions.class, "trim", boolean.class, boolean.class, String.class, String.class, boolean.class ),
-    REPLACE( SqlFunctions.class, "replace", String.class, String.class, String.class ),
-    TRANSLATE3( SqlFunctions.class, "translate3", String.class, String.class, String.class ),
-    LTRIM( SqlFunctions.class, "ltrim", String.class ),
-    RTRIM( SqlFunctions.class, "rtrim", String.class ),
-    LIKE( SqlFunctions.class, "like", String.class, String.class ),
-    SIMILAR( SqlFunctions.class, "similar", String.class, String.class ),
-    IS_TRUE( SqlFunctions.class, "isTrue", Boolean.class ),
-    IS_NOT_FALSE( SqlFunctions.class, "isNotFalse", Boolean.class ),
-    NOT( SqlFunctions.class, "not", Boolean.class ),
-    LESSER( SqlFunctions.class, "lesser", Comparable.class, Comparable.class ),
-    GREATER( SqlFunctions.class, "greater", Comparable.class, Comparable.class ),
-    BIT_AND( SqlFunctions.class, "bitAnd", long.class, long.class ),
-    BIT_OR( SqlFunctions.class, "bitOr", long.class, long.class ),
+    TRUNCATE( Functions.class, "truncate", String.class, int.class ),
+    TRUNCATE_OR_PAD( Functions.class, "truncateOrPad", String.class, int.class ),
+    TRIM( Functions.class, "trim", boolean.class, boolean.class, String.class, String.class, boolean.class ),
+    REPLACE( Functions.class, "replace", String.class, String.class, String.class ),
+    TRANSLATE3( Functions.class, "translate3", String.class, String.class, String.class ),
+    LTRIM( Functions.class, "ltrim", String.class ),
+    RTRIM( Functions.class, "rtrim", String.class ),
+    LIKE( Functions.class, "like", String.class, String.class ),
+    SIMILAR( Functions.class, "similar", String.class, String.class ),
+    IS_TRUE( Functions.class, "isTrue", Boolean.class ),
+    IS_NOT_FALSE( Functions.class, "isNotFalse", Boolean.class ),
+    NOT( Functions.class, "not", Boolean.class ),
+    LESSER( Functions.class, "lesser", Comparable.class, Comparable.class ),
+    GREATER( Functions.class, "greater", Comparable.class, Comparable.class ),
+    BIT_AND( Functions.class, "bitAnd", long.class, long.class ),
+    BIT_OR( Functions.class, "bitOr", long.class, long.class ),
     MODIFIABLE_TABLE_GET_MODIFIABLE_COLLECTION( ModifiableTable.class, "getModifiableCollection" ),
     SCANNABLE_TABLE_SCAN( ScannableTable.class, "scan", DataContext.class ),
-    STRING_TO_BOOLEAN( SqlFunctions.class, "toBoolean", String.class ),
-    INTERNAL_TO_DATE( SqlFunctions.class, "internalToDate", int.class ),
-    INTERNAL_TO_TIME( SqlFunctions.class, "internalToTime", int.class ),
-    INTERNAL_TO_TIMESTAMP( SqlFunctions.class, "internalToTimestamp", long.class ),
+    STRING_TO_BOOLEAN( Functions.class, "toBoolean", String.class ),
+    INTERNAL_TO_DATE( Functions.class, "internalToDate", int.class ),
+    INTERNAL_TO_TIME( Functions.class, "internalToTime", int.class ),
+    INTERNAL_TO_TIMESTAMP( Functions.class, "internalToTimestamp", long.class ),
     STRING_TO_DATE( DateTimeUtils.class, "dateStringToUnixDate", String.class ),
     STRING_TO_TIME( DateTimeUtils.class, "timeStringToUnixDate", String.class ),
     STRING_TO_TIMESTAMP( DateTimeUtils.class, "timestampStringToUnixDate", String.class ),
-    STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( SqlFunctions.class, "toTimeWithLocalTimeZone", String.class ),
-    TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( SqlFunctions.class, "toTimeWithLocalTimeZone", String.class, TimeZone.class ),
-    STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( SqlFunctions.class, "toTimestampWithLocalTimeZone", String.class ),
-    TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( SqlFunctions.class, "toTimestampWithLocalTimeZone", String.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIME( SqlFunctions.class, "timeWithLocalTimeZoneToTime", int.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( SqlFunctions.class, "timeWithLocalTimeZoneToTimestamp", String.class, int.class, TimeZone.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( SqlFunctions.class, "timeWithLocalTimeZoneToTimestampWithLocalTimeZone", String.class, int.class ),
-    TIME_WITH_LOCAL_TIME_ZONE_TO_STRING( SqlFunctions.class, "timeWithLocalTimeZoneToString", int.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE( SqlFunctions.class, "timestampWithLocalTimeZoneToDate", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME( SqlFunctions.class, "timestampWithLocalTimeZoneToTime", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE( SqlFunctions.class, "timestampWithLocalTimeZoneToTimeWithLocalTimeZone", long.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( SqlFunctions.class, "timestampWithLocalTimeZoneToTimestamp", long.class, TimeZone.class ),
-    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( SqlFunctions.class, "timestampWithLocalTimeZoneToString", long.class, TimeZone.class ),
+    STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimeWithLocalTimeZone", String.class ),
+    TIME_STRING_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimeWithLocalTimeZone", String.class, TimeZone.class ),
+    STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimestampWithLocalTimeZone", String.class ),
+    TIMESTAMP_STRING_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "toTimestampWithLocalTimeZone", String.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIME( Functions.class, "timeWithLocalTimeZoneToTime", int.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timeWithLocalTimeZoneToTimestamp", String.class, int.class, TimeZone.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP_WITH_LOCAL_TIME_ZONE( Functions.class, "timeWithLocalTimeZoneToTimestampWithLocalTimeZone", String.class, int.class ),
+    TIME_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timeWithLocalTimeZoneToString", int.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_DATE( Functions.class, "timestampWithLocalTimeZoneToDate", long.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME( Functions.class, "timestampWithLocalTimeZoneToTime", long.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIME_WITH_LOCAL_TIME_ZONE( Functions.class, "timestampWithLocalTimeZoneToTimeWithLocalTimeZone", long.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP( Functions.class, "timestampWithLocalTimeZoneToTimestamp", long.class, TimeZone.class ),
+    TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_STRING( Functions.class, "timestampWithLocalTimeZoneToString", long.class, TimeZone.class ),
     UNIX_DATE_TO_STRING( DateTimeUtils.class, "unixDateToString", int.class ),
     UNIX_TIME_TO_STRING( DateTimeUtils.class, "unixTimeToString", int.class ),
     UNIX_TIMESTAMP_TO_STRING( DateTimeUtils.class, "unixTimestampToString", long.class ),
@@ -327,45 +325,45 @@ public enum BuiltInMethod {
     UNIX_DATE_CEIL( DateTimeUtils.class, "unixDateCeil", TimeUnitRange.class, int.class ),
     UNIX_TIMESTAMP_FLOOR( DateTimeUtils.class, "unixTimestampFloor", TimeUnitRange.class, long.class ),
     UNIX_TIMESTAMP_CEIL( DateTimeUtils.class, "unixTimestampCeil", TimeUnitRange.class, long.class ),
-    CURRENT_TIMESTAMP( SqlFunctions.class, "currentTimestamp", DataContext.class ),
-    CURRENT_TIME( SqlFunctions.class, "currentTime", DataContext.class ),
-    CURRENT_DATE( SqlFunctions.class, "currentDate", DataContext.class ),
-    LOCAL_TIMESTAMP( SqlFunctions.class, "localTimestamp", DataContext.class ),
-    LOCAL_TIME( SqlFunctions.class, "localTime", DataContext.class ),
-    TIME_ZONE( SqlFunctions.class, "timeZone", DataContext.class ),
-    BOOLEAN_TO_STRING( SqlFunctions.class, "toString", boolean.class ),
-    JDBC_ARRAY_TO_LIST( SqlFunctions.class, "arrayToList", java.sql.Array.class ),
-    JDBC_DEEP_ARRAY_TO_LIST( SqlFunctions.class, "deepArrayToList", java.sql.Array.class ),
+    CURRENT_TIMESTAMP( Functions.class, "currentTimestamp", DataContext.class ),
+    CURRENT_TIME( Functions.class, "currentTime", DataContext.class ),
+    CURRENT_DATE( Functions.class, "currentDate", DataContext.class ),
+    LOCAL_TIMESTAMP( Functions.class, "localTimestamp", DataContext.class ),
+    LOCAL_TIME( Functions.class, "localTime", DataContext.class ),
+    TIME_ZONE( Functions.class, "timeZone", DataContext.class ),
+    BOOLEAN_TO_STRING( Functions.class, "toString", boolean.class ),
+    JDBC_ARRAY_TO_LIST( Functions.class, "arrayToList", java.sql.Array.class ),
+    JDBC_DEEP_ARRAY_TO_LIST( Functions.class, "deepArrayToList", java.sql.Array.class ),
     OBJECT_TO_STRING( Object.class, "toString" ),
     OBJECTS_EQUAL( Objects.class, "equals", Object.class, Object.class ),
     HASH( Utilities.class, "hash", int.class, Object.class ),
     COMPARE( Utilities.class, "compare", Comparable.class, Comparable.class ),
     COMPARE_NULLS_FIRST( Utilities.class, "compareNullsFirst", Comparable.class, Comparable.class ),
     COMPARE_NULLS_LAST( Utilities.class, "compareNullsLast", Comparable.class, Comparable.class ),
-    ROUND_LONG( SqlFunctions.class, "round", long.class, long.class ),
-    ROUND_INT( SqlFunctions.class, "round", int.class, int.class ),
-    DATE_TO_INT( SqlFunctions.class, "toInt", java.util.Date.class ),
-    DATE_TO_INT_OPTIONAL( SqlFunctions.class, "toIntOptional", java.util.Date.class ),
-    TIME_TO_INT( SqlFunctions.class, "toInt", Time.class ),
-    TIME_TO_INT_OPTIONAL( SqlFunctions.class, "toIntOptional", Time.class ),
-    TIMESTAMP_TO_LONG( SqlFunctions.class, "toLong", java.util.Date.class ),
-    TIMESTAMP_TO_LONG_OFFSET( SqlFunctions.class, "toLong", java.util.Date.class, TimeZone.class ),
-    TIMESTAMP_TO_LONG_OPTIONAL( SqlFunctions.class, "toLongOptional", Timestamp.class ),
-    TIMESTAMP_TO_LONG_OPTIONAL_OFFSET( SqlFunctions.class, "toLongOptional", Timestamp.class, TimeZone.class ),
-    SEQUENCE_CURRENT_VALUE( SqlFunctions.class, "sequenceCurrentValue", String.class ),
-    SEQUENCE_NEXT_VALUE( SqlFunctions.class, "sequenceNextValue", String.class ),
-    SLICE( SqlFunctions.class, "slice", List.class ),
-    ELEMENT( SqlFunctions.class, "element", List.class ),
-    MEMBER_OF( SqlFunctions.class, "memberOf", Object.class, Collection.class ),
-    MULTISET_INTERSECT_DISTINCT( SqlFunctions.class, "multisetIntersectDistinct", Collection.class, Collection.class ),
-    MULTISET_INTERSECT_ALL( SqlFunctions.class, "multisetIntersectAll", Collection.class, Collection.class ),
-    MULTISET_EXCEPT_DISTINCT( SqlFunctions.class, "multisetExceptDistinct", Collection.class, Collection.class ),
-    MULTISET_EXCEPT_ALL( SqlFunctions.class, "multisetExceptAll", Collection.class, Collection.class ),
-    MULTISET_UNION_DISTINCT( SqlFunctions.class, "multisetUnionDistinct", Collection.class, Collection.class ),
-    MULTISET_UNION_ALL( SqlFunctions.class, "multisetUnionAll", Collection.class, Collection.class ),
-    IS_A_SET( SqlFunctions.class, "isASet", Collection.class ),
+    ROUND_LONG( Functions.class, "round", long.class, long.class ),
+    ROUND_INT( Functions.class, "round", int.class, int.class ),
+    DATE_TO_INT( Functions.class, "toInt", java.util.Date.class ),
+    DATE_TO_INT_OPTIONAL( Functions.class, "toIntOptional", java.util.Date.class ),
+    TIME_TO_INT( Functions.class, "toInt", Time.class ),
+    TIME_TO_INT_OPTIONAL( Functions.class, "toIntOptional", Time.class ),
+    TIMESTAMP_TO_LONG( Functions.class, "toLong", java.util.Date.class ),
+    TIMESTAMP_TO_LONG_OFFSET( Functions.class, "toLong", java.util.Date.class, TimeZone.class ),
+    TIMESTAMP_TO_LONG_OPTIONAL( Functions.class, "toLongOptional", Timestamp.class ),
+    TIMESTAMP_TO_LONG_OPTIONAL_OFFSET( Functions.class, "toLongOptional", Timestamp.class, TimeZone.class ),
+    SEQUENCE_CURRENT_VALUE( Functions.class, "sequenceCurrentValue", String.class ),
+    SEQUENCE_NEXT_VALUE( Functions.class, "sequenceNextValue", String.class ),
+    SLICE( Functions.class, "slice", List.class ),
+    ELEMENT( Functions.class, "element", List.class ),
+    MEMBER_OF( Functions.class, "memberOf", Object.class, Collection.class ),
+    MULTISET_INTERSECT_DISTINCT( Functions.class, "multisetIntersectDistinct", Collection.class, Collection.class ),
+    MULTISET_INTERSECT_ALL( Functions.class, "multisetIntersectAll", Collection.class, Collection.class ),
+    MULTISET_EXCEPT_DISTINCT( Functions.class, "multisetExceptDistinct", Collection.class, Collection.class ),
+    MULTISET_EXCEPT_ALL( Functions.class, "multisetExceptAll", Collection.class, Collection.class ),
+    MULTISET_UNION_DISTINCT( Functions.class, "multisetUnionDistinct", Collection.class, Collection.class ),
+    MULTISET_UNION_ALL( Functions.class, "multisetUnionAll", Collection.class, Collection.class ),
+    IS_A_SET( Functions.class, "isASet", Collection.class ),
     IS_EMPTY( Collection.class, "isEmpty" ),
-    SUBMULTISET_OF( SqlFunctions.class, "submultisetOf", Collection.class, Collection.class ),
+    SUBMULTISET_OF( Functions.class, "submultisetOf", Collection.class, Collection.class ),
     SELECTIVITY( Selectivity.class, "getSelectivity", RexNode.class ),
     UNIQUE_KEYS( UniqueKeys.class, "getUniqueKeys", boolean.class ),
     AVERAGE_ROW_SIZE( Size.class, "averageRowSize" ),
@@ -392,14 +390,14 @@ public enum BuiltInMethod {
     NON_CUMULATIVE_COST( NonCumulativeCost.class, "getNonCumulativeCost" ),
     PREDICATES( Predicates.class, "getPredicates" ),
     ALL_PREDICATES( AllPredicates.class, "getAllPredicates" ),
-    EXPLAIN_VISIBILITY( ExplainVisibility.class, "isVisibleInExplain", SqlExplainLevel.class ),
+    EXPLAIN_VISIBILITY( ExplainVisibility.class, "isVisibleInExplain", ExplainLevel.class ),
     SCALAR_EXECUTE1( Scalar.class, "execute", Context.class ),
     SCALAR_EXECUTE2( Scalar.class, "execute", Context.class, Object[].class ),
     CONTEXT_VALUES( Context.class, "values", true ),
     CONTEXT_ROOT( Context.class, "root", true ),
     DATA_CONTEXT_GET_QUERY_PROVIDER( DataContext.class, "getQueryProvider" ),
-    METADATA_REL( Metadata.class, "rel" ),
-    STRUCT_ACCESS( SqlFunctions.class, "structAccess", Object.class, int.class, String.class ),
+    METADATA_ALG( Metadata.class, "alg" ),
+    STRUCT_ACCESS( Functions.class, "structAccess", Object.class, int.class, String.class ),
     SOURCE_SORTER( SourceSorter.class, Function2.class, Function1.class, Comparator.class ),
     ORDERED_AGGREGATE_LAMBDA_FACTORY( OrderedAggregateLambdaFactory.class, Function0.class, List.class ),
     SEQUENCED_ADDER_AGGREGATE_LAMBDA_FACTORY( SequencedAdderAggregateLambdaFactory.class, Function0.class, List.class ),

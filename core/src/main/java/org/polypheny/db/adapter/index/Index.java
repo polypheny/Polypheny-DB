@@ -24,18 +24,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.avatica.MetaImpl;
+import org.polypheny.db.PolyResult;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -89,21 +89,21 @@ public abstract class Index {
         Statement statement = transaction.createStatement();
 
         // Prepare query
-        final RelBuilder builder = RelBuilder.create( statement );
+        final AlgBuilder builder = AlgBuilder.create( statement );
         List<String> cols = new ArrayList<>( columns );
         if ( !columns.equals( targetColumns ) ) {
             cols.addAll( targetColumns );
         }
-        final RelNode scan = builder
+        final AlgNode scan = builder
                 .scan( ImmutableList.of( table.getSchemaName(), table.name ) )
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyphenyDbSignature signature = processor.prepareQuery( RelRoot.of( scan, SqlKind.SELECT ), false );
+        final PolyResult result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
-        final Iterable<Object> enumerable = signature.enumerable( statement.getDataContext() );
+        final Iterable<Object> enumerable = result.enumerable( statement.getDataContext() );
         final Iterator<Object> iterator = enumerable.iterator();
-        final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
+        final List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), iterator, new ArrayList<>() );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
         for ( final List<Object> row : rows ) {
             if ( row.size() > columns.size() ) {
@@ -222,9 +222,9 @@ public abstract class Index {
 
     public abstract boolean containsAll( final PolyXid xid, final Iterable<List<Object>> values );
 
-    public abstract Values getAsValues( final PolyXid xid, RelBuilder builder, RelDataType rowType );
+    public abstract Values getAsValues( final PolyXid xid, AlgBuilder builder, AlgDataType rowType );
 
-    public abstract Values getAsValues( final PolyXid xid, RelBuilder builder, RelDataType rowType, final List<Object> key );
+    public abstract Values getAsValues( final PolyXid xid, AlgBuilder builder, AlgDataType rowType, final List<Object> key );
 
     abstract Object getRaw();
 
@@ -255,11 +255,11 @@ public abstract class Index {
      */
 
 
-    protected ImmutableList<RexLiteral> makeRexRow( final RelDataType rowType, final RexBuilder rexBuilder, final List<Object> tuple ) {
+    protected ImmutableList<RexLiteral> makeRexRow( final AlgDataType rowType, final RexBuilder rexBuilder, final List<Object> tuple ) {
         assert rowType.getFieldCount() == tuple.size();
         List<RexLiteral> row = new ArrayList<>( tuple.size() );
         for ( int i = 0; i < tuple.size(); ++i ) {
-            final RelDataType type = rowType.getFieldList().get( i ).getType();
+            final AlgDataType type = rowType.getFieldList().get( i ).getType();
             final Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) tuple.get( i ), type );
             row.add( new RexLiteral( converted.left, type, converted.right ) );
         }

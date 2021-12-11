@@ -38,8 +38,9 @@ import com.google.common.base.Preconditions;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.sql.SqlCollation;
+import lombok.Getter;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.SerializableCharset;
 
 
@@ -52,8 +53,9 @@ public class BasicPolyType extends AbstractPolyType {
 
     private final int precision;
     private final int scale;
-    private final RelDataTypeSystem typeSystem;
-    private final SqlCollation collation;
+    private final AlgDataTypeSystem typeSystem;
+    @Getter
+    private final Collation collation;
     private final SerializableCharset wrappedCharset;
 
 
@@ -63,7 +65,7 @@ public class BasicPolyType extends AbstractPolyType {
      * @param typeSystem Type system
      * @param typeName Type name
      */
-    public BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName ) {
+    public BasicPolyType( AlgDataTypeSystem typeSystem, PolyType typeName ) {
         this( typeSystem, typeName, false, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED, null, null );
         checkPrecScale( typeName, false, false );
     }
@@ -86,7 +88,7 @@ public class BasicPolyType extends AbstractPolyType {
      * @param typeName Type name
      * @param precision Precision (called length for some types)
      */
-    public BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName, int precision ) {
+    public BasicPolyType( AlgDataTypeSystem typeSystem, PolyType typeName, int precision ) {
         this( typeSystem, typeName, false, precision, SCALE_NOT_SPECIFIED, null, null );
         checkPrecScale( typeName, true, false );
     }
@@ -100,7 +102,7 @@ public class BasicPolyType extends AbstractPolyType {
      * @param precision Precision (called length for some types)
      * @param scale Scale
      */
-    public BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName, int precision, int scale ) {
+    public BasicPolyType( AlgDataTypeSystem typeSystem, PolyType typeName, int precision, int scale ) {
         this( typeSystem, typeName, false, precision, scale, null, null );
         checkPrecScale( typeName, true, true );
     }
@@ -110,12 +112,12 @@ public class BasicPolyType extends AbstractPolyType {
      * Internal constructor.
      */
     private BasicPolyType(
-            RelDataTypeSystem typeSystem,
+            AlgDataTypeSystem typeSystem,
             PolyType typeName,
             boolean nullable,
             int precision,
             int scale,
-            SqlCollation collation,
+            Collation collation,
             SerializableCharset wrappedCharset ) {
         super( typeName, nullable, null );
         this.typeSystem = Objects.requireNonNull( typeSystem );
@@ -123,7 +125,7 @@ public class BasicPolyType extends AbstractPolyType {
         this.scale = scale;
 
         if ( typeName == PolyType.JSON ) {
-            this.collation = SqlCollation.IMPLICIT;
+            this.collation = Collation.IMPLICIT;
             this.wrappedCharset = SerializableCharset.forCharset( StandardCharsets.ISO_8859_1 );
         } else {
             this.collation = collation;
@@ -157,7 +159,7 @@ public class BasicPolyType extends AbstractPolyType {
      * <p>
      * This must be a character type.
      */
-    BasicPolyType createWithCharsetAndCollation( Charset charset, SqlCollation collation ) {
+    BasicPolyType createWithCharsetAndCollation( Charset charset, Collation collation ) {
         Preconditions.checkArgument( PolyTypeUtil.inCharFamily( this ) );
         return new BasicPolyType(
                 this.typeSystem,
@@ -209,12 +211,6 @@ public class BasicPolyType extends AbstractPolyType {
     }
 
 
-    @Override
-    public SqlCollation getCollation() {
-        return collation;
-    }
-
-
     // implement RelDataTypeImpl
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
@@ -247,12 +243,12 @@ public class BasicPolyType extends AbstractPolyType {
         if ( !withDetail ) {
             return;
         }
-        if ( wrappedCharset != null && !SqlCollation.IMPLICIT.getCharset().equals( wrappedCharset.getCharset() ) ) {
+        if ( wrappedCharset != null && !Collation.IMPLICIT.getCharset().equals( wrappedCharset.getCharset() ) ) {
             sb.append( " CHARACTER SET \"" );
             sb.append( wrappedCharset.getCharset().name() );
             sb.append( "\"" );
         }
-        if ( collation != null && collation != SqlCollation.IMPLICIT && collation != SqlCollation.COERCIBLE ) {
+        if ( collation != null && collation != Collation.IMPLICIT && collation != Collation.COERCIBLE ) {
             sb.append( " COLLATE \"" );
             sb.append( collation.getCollationName() );
             sb.append( "\"" );

@@ -60,7 +60,7 @@ public class CqlTestHelper {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER INTERFACES ADD \"cql\" USING 'org.polypheny.db.cql.server.HttpCqlInterface' WITH '{\"port\":\"8087\"}'" );
+                statement.executeUpdate( "ALTER INTERFACES ADD \"cql\" USING 'org.polypheny.db.http.HttpInterface' WITH '{\"port\":\"8087\"}'" );
                 connection.commit();
             }
         }
@@ -199,7 +199,8 @@ public class CqlTestHelper {
     }
 
 
-    private static void insertIntoTestTable( long tbigint, boolean tboolean, Date tdate, double tdecimal,
+    private static void insertIntoTestTable(
+            long tbigint, boolean tboolean, Date tdate, double tdecimal,
             double tdouble, int tinteger, double treal, int tsmallint, int ttinyint, String tvarchar ) {
 
         String query = String.format( Locale.ROOT, "INSERT INTO test.testtable (tbigint, tboolean, tdate,"

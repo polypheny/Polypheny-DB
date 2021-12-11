@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,9 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.PolyType;
 
 
@@ -50,23 +51,23 @@ public class RexMultisetUtil {
     /**
      * A set defining all implementable multiset calls
      */
-    private static final Set<SqlOperator> MULTISET_OPERATORS =
+    private static final Set<Operator> MULTISET_OPERATORS =
             ImmutableSet.of(
-                    SqlStdOperatorTable.CARDINALITY,
-                    SqlStdOperatorTable.CAST,
-                    SqlStdOperatorTable.ELEMENT,
-                    SqlStdOperatorTable.ELEMENT_SLICE,
-                    SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT,
-                    SqlStdOperatorTable.MULTISET_EXCEPT,
-                    SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT,
-                    SqlStdOperatorTable.MULTISET_INTERSECT,
-                    SqlStdOperatorTable.MULTISET_UNION_DISTINCT,
-                    SqlStdOperatorTable.MULTISET_UNION,
-                    SqlStdOperatorTable.IS_A_SET,
-                    SqlStdOperatorTable.IS_NOT_A_SET,
-                    SqlStdOperatorTable.MEMBER_OF,
-                    SqlStdOperatorTable.NOT_SUBMULTISET_OF,
-                    SqlStdOperatorTable.SUBMULTISET_OF );
+                    OperatorRegistry.get( OperatorName.CARDINALITY ),
+                    OperatorRegistry.get( OperatorName.CAST ),
+                    OperatorRegistry.get( OperatorName.ELEMENT ),
+                    OperatorRegistry.get( OperatorName.ELEMENT_SLICE ),
+                    OperatorRegistry.get( OperatorName.MULTISET_EXCEPT_DISTINCT ),
+                    OperatorRegistry.get( OperatorName.MULTISET_EXCEPT ),
+                    OperatorRegistry.get( OperatorName.MULTISET_INTERSECT_DISTINCT ),
+                    OperatorRegistry.get( OperatorName.MULTISET_INTERSECT ),
+                    OperatorRegistry.get( OperatorName.MULTISET_UNION_DISTINCT ),
+                    OperatorRegistry.get( OperatorName.MULTISET_UNION ),
+                    OperatorRegistry.get( OperatorName.IS_A_SET ),
+                    OperatorRegistry.get( OperatorName.IS_NOT_A_SET ),
+                    OperatorRegistry.get( OperatorName.MEMBER_OF ),
+                    OperatorRegistry.get( OperatorName.NOT_SUBMULTISET_OF ),
+                    OperatorRegistry.get( OperatorName.SUBMULTISET_OF ) );
 
 
     private RexMultisetUtil() {
@@ -158,10 +159,10 @@ public class RexMultisetUtil {
         }
         final RexCall call = (RexCall) node;
         RexCall firstOne = null;
-        for ( SqlOperator op : MULTISET_OPERATORS ) {
+        for ( Operator op : MULTISET_OPERATORS ) {
             firstOne = RexUtil.findOperatorCall( op, call );
             if ( null != firstOne ) {
-                if ( firstOne.getOperator().equals( SqlStdOperatorTable.CAST ) && !isMultisetCast( firstOne ) ) {
+                if ( firstOne.getOperator().getOperatorName() == OperatorName.CAST && !isMultisetCast( firstOne ) ) {
                     firstOne = null;
                     continue;
                 }
@@ -179,7 +180,7 @@ public class RexMultisetUtil {
     /**
      * A RexShuttle that traverse all RexNode and counts total number of RexCalls traversed and number of multiset calls traversed.
      *
-     * totalCount >= multisetCount always holds true.
+     * totalCount {@code >=} multisetCount always holds true.
      */
     private static class RexCallMultisetOperatorCounter extends RexVisitorImpl<Void> {
 
@@ -202,12 +203,14 @@ public class RexMultisetUtil {
         public Void visitCall( RexCall call ) {
             ++totalCount;
             if ( MULTISET_OPERATORS.contains( call.getOperator() ) ) {
-                if ( !call.getOperator().equals( SqlStdOperatorTable.CAST ) || isMultisetCast( call ) ) {
+                if ( call.getOperator().getOperatorName() != OperatorName.CAST || isMultisetCast( call ) ) {
                     ++multisetCount;
                 }
             }
             return super.visitCall( call );
         }
+
     }
+
 }
 

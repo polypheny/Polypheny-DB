@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,30 +22,30 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.AlgOptCostImpl;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptCostImpl;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.util.Pair;
 
 
 /**
- * MockRelOptPlanner is a mock implementation of the {@link RelOptPlanner} interface.
+ * MockRelOptPlanner is a mock implementation of the {@link AlgOptPlanner} interface.
  */
 public class MockRelOptPlanner extends AbstractRelOptPlanner {
 
-    private RelNode root;
+    private AlgNode root;
 
-    private RelOptRule rule;
+    private AlgOptRule rule;
 
-    private RelNode transformationResult;
+    private AlgNode transformationResult;
 
     private long metadataTimestamp = 0L;
 
@@ -54,21 +54,21 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
      * Creates MockRelOptPlanner.
      */
     public MockRelOptPlanner( Context context ) {
-        super( RelOptCostImpl.FACTORY, context );
+        super( AlgOptCostImpl.FACTORY, context );
         setExecutor( new RexExecutorImpl( Schemas.createDataContext( null ) ) );
     }
 
 
     // implement RelOptPlanner
     @Override
-    public void setRoot( RelNode rel ) {
-        this.root = rel;
+    public void setRoot( AlgNode alg ) {
+        this.root = alg;
     }
 
 
     // implement RelOptPlanner
     @Override
-    public RelNode getRoot() {
+    public AlgNode getRoot() {
         return root;
     }
 
@@ -81,7 +81,7 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public List<RelOptRule> getRules() {
+    public List<AlgOptRule> getRules() {
         return rule == null
                 ? ImmutableList.of()
                 : ImmutableList.of( rule );
@@ -89,7 +89,7 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public boolean addRule( RelOptRule rule ) {
+    public boolean addRule( AlgOptRule rule ) {
         assert this.rule == null : "MockRelOptPlanner only supports a single rule";
         this.rule = rule;
         return false;
@@ -97,21 +97,21 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
 
 
     @Override
-    public boolean removeRule( RelOptRule rule ) {
+    public boolean removeRule( AlgOptRule rule ) {
         return false;
     }
 
 
     // implement RelOptPlanner
     @Override
-    public RelNode changeTraits( RelNode rel, RelTraitSet toTraits ) {
-        return rel;
+    public AlgNode changeTraits( AlgNode alg, AlgTraitSet toTraits ) {
+        return alg;
     }
 
 
     // implement RelOptPlanner
     @Override
-    public RelNode findBestExp() {
+    public AlgNode findBestExp() {
         if ( rule != null ) {
             matchRecursive( root, null, -1 );
         }
@@ -122,15 +122,15 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
     /**
      * Recursively matches a rule.
      *
-     * @param rel Relational expression
+     * @param alg Relational expression
      * @param parent Parent relational expression
      * @param ordinalInParent Ordinal of relational expression among its siblings
      * @return whether match occurred
      */
-    private boolean matchRecursive( RelNode rel, RelNode parent, int ordinalInParent ) {
-        List<RelNode> bindings = new ArrayList<>();
-        if ( match( rule.getOperand(), rel, bindings ) ) {
-            MockRuleCall call = new MockRuleCall( this, rule.getOperand(), bindings.toArray( new RelNode[0] ) );
+    private boolean matchRecursive( AlgNode alg, AlgNode parent, int ordinalInParent ) {
+        List<AlgNode> bindings = new ArrayList<>();
+        if ( match( rule.getOperand(), alg, bindings ) ) {
+            MockRuleCall call = new MockRuleCall( this, rule.getOperand(), bindings.toArray( new AlgNode[0] ) );
             if ( rule.matches( call ) ) {
                 rule.onMatch( call );
             }
@@ -145,9 +145,9 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
             return true;
         }
 
-        List<? extends RelNode> children = rel.getInputs();
+        List<? extends AlgNode> children = alg.getInputs();
         for ( int i = 0; i < children.size(); ++i ) {
-            if ( matchRecursive( children.get( i ), rel, i ) ) {
+            if ( matchRecursive( children.get( i ), alg, i ) ) {
                 return true;
             }
         }
@@ -159,25 +159,25 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
      * Matches a relational expression to a rule.
      *
      * @param operand Root operand of rule
-     * @param rel Relational expression
+     * @param alg Relational expression
      * @param bindings Bindings, populated on successful match
      * @return whether relational expression matched rule
      */
-    private boolean match( RelOptRuleOperand operand, RelNode rel, List<RelNode> bindings ) {
-        if ( !operand.matches( rel ) ) {
+    private boolean match( AlgOptRuleOperand operand, AlgNode alg, List<AlgNode> bindings ) {
+        if ( !operand.matches( alg ) ) {
             return false;
         }
-        bindings.add( rel );
+        bindings.add( alg );
         switch ( operand.childPolicy ) {
             case ANY:
                 return true;
         }
-        List<RelOptRuleOperand> childOperands = operand.getChildOperands();
-        List<? extends RelNode> childRels = rel.getInputs();
+        List<AlgOptRuleOperand> childOperands = operand.getChildOperands();
+        List<? extends AlgNode> childRels = alg.getInputs();
         if ( childOperands.size() != childRels.size() ) {
             return false;
         }
-        for ( Pair<RelOptRuleOperand, ? extends RelNode> pair : Pair.zip( childOperands, childRels ) ) {
+        for ( Pair<AlgOptRuleOperand, ? extends AlgNode> pair : Pair.zip( childOperands, childRels ) ) {
             if ( !match( pair.left, pair.right, bindings ) ) {
                 return false;
             }
@@ -188,27 +188,27 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public RelNode register( RelNode rel, RelNode equivRel ) {
-        return rel;
+    public AlgNode register( AlgNode alg, AlgNode equivRel ) {
+        return alg;
     }
 
 
     // implement RelOptPlanner
     @Override
-    public RelNode ensureRegistered( RelNode rel, RelNode equivRel ) {
-        return rel;
+    public AlgNode ensureRegistered( AlgNode alg, AlgNode equivRel ) {
+        return alg;
     }
 
 
     // implement RelOptPlanner
     @Override
-    public boolean isRegistered( RelNode rel ) {
+    public boolean isRegistered( AlgNode alg ) {
         return true;
     }
 
 
     @Override
-    public long getRelMetadataTimestamp( RelNode rel ) {
+    public long getRelMetadataTimestamp( AlgNode alg ) {
         return metadataTimestamp;
     }
 
@@ -224,25 +224,27 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
     /**
      * Mock call to a planner rule.
      */
-    private class MockRuleCall extends RelOptRuleCall {
+    private class MockRuleCall extends AlgOptRuleCall {
 
         /**
          * Creates a MockRuleCall.
          *
          * @param planner Planner
          * @param operand Operand
-         * @param rels List of matched relational expressions
+         * @param algs List of matched relational expressions
          */
-        MockRuleCall( RelOptPlanner planner, RelOptRuleOperand operand, RelNode[] rels ) {
-            super( planner, operand, rels, Collections.emptyMap() );
+        MockRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs ) {
+            super( planner, operand, algs, Collections.emptyMap() );
         }
 
 
         // implement RelOptRuleCall
         @Override
-        public void transformTo( RelNode rel, Map<RelNode, RelNode> equiv ) {
-            transformationResult = rel;
+        public void transformTo( AlgNode alg, Map<AlgNode, AlgNode> equiv ) {
+            transformationResult = alg;
         }
+
     }
+
 }
 

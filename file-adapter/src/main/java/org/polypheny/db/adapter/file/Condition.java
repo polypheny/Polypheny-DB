@@ -35,18 +35,18 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyType;
 
 
 public class Condition {
 
-    private final SqlKind operator;
+    private final Kind operator;
     private Integer columnReference;
     private Long literalIndex;
     private Object literal;
@@ -73,7 +73,7 @@ public class Condition {
     /**
      * Called by generated code, see {@link Condition#getExpression}
      */
-    public Condition( final SqlKind operator, final Integer columnReference, final Long literalIndex, final Object literal, final Condition[] operands ) {
+    public Condition( final Kind operator, final Integer columnReference, final Long literalIndex, final Object literal, final Condition[] operands ) {
         this.operator = operator;
         this.columnReference = columnReference;
         this.literalIndex = literalIndex;
@@ -93,7 +93,7 @@ public class Condition {
 
         return Expressions.new_(
                 Condition.class,
-                Expressions.constant( operator, SqlKind.class ),
+                Expressions.constant( operator, Kind.class ),
                 Expressions.constant( columnReference, Integer.class ),
                 Expressions.constant( literalIndex, Long.class ),
                 Expressions.constant( this.literal ),
@@ -123,16 +123,16 @@ public class Condition {
     @Nullable
     public Object getPKLookup( final Set<Integer> pkColumnReferences, final PolyType[] columnTypes, final int colSize, final DataContext dataContext ) {
         Object[] lookups = new Object[colSize];
-        if ( operator == SqlKind.EQUALS && pkColumnReferences.size() == 1 ) {
+        if ( operator == Kind.EQUALS && pkColumnReferences.size() == 1 ) {
             if ( pkColumnReferences.contains( columnReference ) ) {
                 lookups[columnReference] = getParamValue( dataContext, columnTypes[columnReference] );
                 return lookups;
             } else {
                 return null;
             }
-        } else if ( operator == SqlKind.AND ) {
+        } else if ( operator == Kind.AND ) {
             for ( Condition operand : operands ) {
-                if ( operand.operator == SqlKind.EQUALS ) {
+                if ( operand.operator == Kind.EQUALS ) {
                     if ( !pkColumnReferences.contains( operand.columnReference ) ) {
                         return null;
                     } else {

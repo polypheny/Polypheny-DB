@@ -18,11 +18,11 @@ package org.polypheny.db.processing;
 
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
@@ -75,13 +75,13 @@ public interface DataMigrator {
             List<Long> sourcePartitionIds,
             List<Long> targetPartitionIds );
 
-    RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
+    AlgRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
     //is used within copyData
-    void executeQuery( List<CatalogColumn> columns, RelRoot sourceRel, Statement sourceStatement, Statement targetStatement, RelRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+    void executeQuery( List<CatalogColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
 
-    RelRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
+    AlgRoot buildDeleteStatement( Statement statement, List<CatalogColumnPlacement> to, long partitionId );
 
-    RelRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
+    AlgRoot getSourceIterator( Statement statement, Map<Long, List<CatalogColumnPlacement>> placementDistribution );
 
 }

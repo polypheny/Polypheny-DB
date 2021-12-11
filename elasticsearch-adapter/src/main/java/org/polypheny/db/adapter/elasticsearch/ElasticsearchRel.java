@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,18 +39,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Relational expression that uses Elasticsearch calling convention.
  */
-public interface ElasticsearchRel extends RelNode {
+public interface ElasticsearchRel extends AlgNode {
 
     void implement( Implementor implementor );
 
@@ -72,7 +73,7 @@ public interface ElasticsearchRel extends RelNode {
          *
          * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-sort.html">Sort</a>
          */
-        final List<Map.Entry<String, RelFieldCollation.Direction>> sort = new ArrayList<>();
+        final List<Map.Entry<String, AlgFieldCollation.Direction>> sort = new ArrayList<>();
 
         /**
          * Elastic aggregation ({@code MIN / MAX / COUNT} etc.) statements (functions).
@@ -91,7 +92,7 @@ public interface ElasticsearchRel extends RelNode {
         /**
          * Keeps mapping between Polypheny-DB expression identifier (like {@code EXPR$0}) and original item call like {@code _MAP['foo.bar']} ({@code foo.bar} really). This information otherwise might be lost during query translation.
          *
-         * @see SqlStdOperatorTable#ITEM
+         * @see OperatorRegistry.get( OperatorName.ITEM )
          */
         final Map<String, String> expressionItemMap = new LinkedHashMap<>();
 
@@ -109,7 +110,7 @@ public interface ElasticsearchRel extends RelNode {
          */
         Long fetch;
 
-        RelOptTable table;
+        AlgOptTable table;
         ElasticsearchTable elasticsearchTable;
 
 
@@ -124,7 +125,7 @@ public interface ElasticsearchRel extends RelNode {
         }
 
 
-        void addSort( String field, RelFieldCollation.Direction direction ) {
+        void addSort( String field, AlgFieldCollation.Direction direction ) {
             Objects.requireNonNull( field, "field" );
             sort.add( new Pair<>( field, direction ) );
         }
@@ -154,10 +155,11 @@ public interface ElasticsearchRel extends RelNode {
         }
 
 
-        void visitChild( int ordinal, RelNode input ) {
+        void visitChild( int ordinal, AlgNode input ) {
             assert ordinal == 0;
             ((ElasticsearchRel) input).implement( this );
         }
 
     }
+
 }

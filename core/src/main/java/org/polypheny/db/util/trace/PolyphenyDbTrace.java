@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,10 @@ package org.polypheny.db.util.trace;
 import java.io.File;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
-import org.polypheny.db.plan.RelImplementor;
-import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.plan.AlgImplementor;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.sql.parser.SqlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
 public abstract class PolyphenyDbTrace {
 
     /**
-     * The "org.polypheny.db.sql.parser" tracer reports parser events in {@link SqlParser} and other classes at DEBUG.
+     * The "org.polypheny.db.sql.parser" tracer reports parser events in {@link Parser} and other classes at DEBUG.
      */
     public static final Logger PARSER_LOGGER = getParserTracer();
 
@@ -79,7 +79,7 @@ public abstract class PolyphenyDbTrace {
      * </ul>
      */
     public static Logger getPlannerTracer() {
-        return LoggerFactory.getLogger( RelOptPlanner.class.getName() );
+        return LoggerFactory.getLogger( AlgOptPlanner.class.getName() );
     }
 
 
@@ -92,10 +92,10 @@ public abstract class PolyphenyDbTrace {
 
 
     /**
-     * The "org.polypheny.db.rel.RelImplementorImpl" tracer reports when expressions are bound to variables (DEBUG, formerly FINE)
+     * The "org.polypheny.db.alg.RelImplementorImpl" tracer reports when expressions are bound to variables (DEBUG, formerly FINE)
      */
     public static Logger getRelImplementorTracer() {
-        return LoggerFactory.getLogger( RelImplementor.class );
+        return LoggerFactory.getLogger( AlgImplementor.class );
     }
 
 
@@ -132,5 +132,6 @@ public abstract class PolyphenyDbTrace {
     public static ThreadLocal<Function2<Void, File, String>> getDynamicHandler() {
         return DYNAMIC_HANDLER;
     }
+
 }
 

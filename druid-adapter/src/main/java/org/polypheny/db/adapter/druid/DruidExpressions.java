@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,13 +45,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
 import javax.annotation.Nullable;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -115,11 +115,11 @@ public class DruidExpressions {
      * @return Druid Expression or null when can not convert the RexNode
      */
     @Nullable
-    public static String toDruidExpression( final RexNode rexNode, final RelDataType inputRowType, final DruidQuery druidRel ) {
-        SqlKind kind = rexNode.getKind();
+    public static String toDruidExpression( final RexNode rexNode, final AlgDataType inputRowType, final DruidQuery druidRel ) {
+        Kind kind = rexNode.getKind();
         PolyType polyType = rexNode.getType().getPolyType();
 
-        if ( kind == SqlKind.INPUT_REF ) {
+        if ( kind == Kind.INPUT_REF ) {
             final RexInputRef ref = (RexInputRef) rexNode;
             final String columnName = inputRowType.getFieldNames().get( ref.getIndex() );
             if ( columnName == null ) {
@@ -132,7 +132,7 @@ public class DruidExpressions {
         }
 
         if ( rexNode instanceof RexCall ) {
-            final SqlOperator operator = ((RexCall) rexNode).getOperator();
+            final Operator operator = ((RexCall) rexNode).getOperator();
             final DruidSqlOperatorConverter conversion = druidRel.getOperatorConversionMap().get( operator );
             if ( conversion == null ) {
                 //unknown operator can not translate
@@ -141,7 +141,7 @@ public class DruidExpressions {
                 return conversion.toDruidExpression( rexNode, inputRowType, druidRel );
             }
         }
-        if ( kind == SqlKind.LITERAL ) {
+        if ( kind == Kind.LITERAL ) {
             // Translate literal.
             if ( RexLiteral.isNullLiteral( rexNode ) ) {
                 //case the filter/project might yield to unknown let Polypheny-DB deal with this for now
@@ -247,7 +247,7 @@ public class DruidExpressions {
      * @return list of Druid expressions in the same order as rexNodes, or null if not possible. If a non-null list is returned, all elements will be non-null.
      */
     @Nullable
-    public static List<String> toDruidExpressions( final DruidQuery druidRel, final RelDataType rowType, final List<RexNode> rexNodes ) {
+    public static List<String> toDruidExpressions( final DruidQuery druidRel, final AlgDataType rowType, final List<RexNode> rexNodes ) {
         final List<String> retVal = new ArrayList<>( rexNodes.size() );
         for ( RexNode rexNode : rexNodes ) {
             final String druidExpression = toDruidExpression( rexNode, rowType, druidRel );
@@ -278,5 +278,6 @@ public class DruidExpressions {
     public static String applyTimeExtract( String timeExpression, String druidUnit, TimeZone timeZone ) {
         return DruidExpressions.functionCall( "timestamp_extract", ImmutableList.of( timeExpression, DruidExpressions.stringLiteral( druidUnit ), DruidExpressions.stringLiteral( timeZone.getID() ) ) );
     }
+
 }
 

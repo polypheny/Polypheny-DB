@@ -50,37 +50,37 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelDistributionTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Calc;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMdDistribution;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgDistributionTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMdDistribution;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Implementation of {@link Calc} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableCalc extends Calc implements EnumerableRel {
+public class EnumerableCalc extends Calc implements EnumerableAlg {
 
     /**
      * Creates an EnumerableCalc.
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableCalc( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexProgram program ) {
+    public EnumerableCalc( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, RexProgram program ) {
         super( cluster, traitSet, input, program );
         assert getConvention() instanceof EnumerableConvention;
         assert !program.containsAggs();
@@ -90,29 +90,29 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
     /**
      * Creates an EnumerableCalc.
      */
-    public static EnumerableCalc create( final RelNode input, final RexProgram program ) {
-        final RelOptCluster cluster = input.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet = cluster.traitSet()
+    public static EnumerableCalc create( final AlgNode input, final RexProgram program ) {
+        final AlgOptCluster cluster = input.getCluster();
+        final AlgMetadataQuery mq = cluster.getMetadataQuery();
+        final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( EnumerableConvention.INSTANCE )
-                .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.calc( mq, input, program ) )
-                .replaceIf( RelDistributionTraitDef.INSTANCE, () -> RelMdDistribution.calc( mq, input, program ) );
+                .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.calc( mq, input, program ) )
+                .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.calc( mq, input, program ) );
         return new EnumerableCalc( cluster, traitSet, input, program );
     }
 
 
     @Override
-    public EnumerableCalc copy( RelTraitSet traitSet, RelNode child, RexProgram program ) {
+    public EnumerableCalc copy( AlgTraitSet traitSet, AlgNode child, RexProgram program ) {
         // we do not need to copy program; it is immutable
         return new EnumerableCalc( getCluster(), traitSet, child, program );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
-        final EnumerableRel child = (EnumerableRel) getInput();
+        final EnumerableAlg child = (EnumerableAlg) getInput();
 
         final Result result = implementor.visitChild( this, 0, child, pref );
 
@@ -131,8 +131,8 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
         Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
 
         final RexBuilder rexBuilder = getCluster().getRexBuilder();
-        final RelMetadataQuery mq = RelMetadataQuery.instance();
-        final RelOptPredicateList predicates = mq.getPulledUpPredicates( child );
+        final AlgMetadataQuery mq = AlgMetadataQuery.instance();
+        final AlgOptPredicateList predicates = mq.getPulledUpPredicates( child );
         final RexSimplify simplify = new RexSimplify( rexBuilder, predicates, RexUtil.EXECUTOR );
         final RexProgram program = this.program.normalize( rexBuilder, simplify );
 
@@ -159,7 +159,7 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
         }
 
         final BlockBuilder builder3 = new BlockBuilder();
-        final SqlConformance conformance = (SqlConformance) implementor.map.getOrDefault( "_conformance", SqlConformanceEnum.DEFAULT );
+        final Conformance conformance = (Conformance) implementor.map.getOrDefault( "_conformance", ConformanceEnum.DEFAULT );
         UnwindContext unwindContext = new UnwindContext();
         List<Expression> expressions =
                 RexToLixTranslator.translateProjects(
@@ -182,7 +182,8 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
                     enumeratorType,
                     EnumUtils.NO_EXPRS,
                     Expressions.list(
-                            Expressions.fieldDecl( Modifier.PUBLIC | Modifier.FINAL,
+                            Expressions.fieldDecl(
+                                    Modifier.PUBLIC | Modifier.FINAL,
                                     inputEnumerator,
                                     Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
                             EnumUtils.overridingMethodDecl(
@@ -233,7 +234,8 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
                             Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._list, Expressions.constant( Collections.emptyList() ) ),
                             Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._i, Expressions.constant( 0 ) ),
                             Expressions.fieldDecl( Modifier.PUBLIC, unwindContext._unset, Expressions.constant( true ) ),
-                            Expressions.fieldDecl( Modifier.PUBLIC | Modifier.FINAL,
+                            Expressions.fieldDecl(
+                                    Modifier.PUBLIC | Modifier.FINAL,
                                     inputEnumerator,
                                     Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ) ),
                             EnumUtils.overridingMethodDecl(

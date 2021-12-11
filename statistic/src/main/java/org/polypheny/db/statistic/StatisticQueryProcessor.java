@@ -18,15 +18,17 @@ package org.polypheny.db.statistic;
 
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.PolyResult;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -38,19 +40,14 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
 
@@ -231,88 +228,61 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeSqlSelect( final Statement statement, final String sqlSelect ) throws QueryExecutionException {
-        PolyphenyDbSignature signature;
+        PolyResult result;
         List<List<Object>> rows;
-        Iterator<Object> iterator = null;
 
         try {
-            signature = processQuery( statement, sqlSelect );
-            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-            //noinspection unchecked
-
-            iterator = enumerable.iterator();
-
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
-
+            result = processQuery( statement, sqlSelect );
+            rows = result.getRows( statement, getPageSize() );
         } catch ( Throwable t ) {
-            if ( iterator != null ) {
-                try {
-                    if ( iterator instanceof AutoCloseable ) {
-                        ((AutoCloseable) iterator).close();
-                    }
-                } catch ( Exception e ) {
-                    log.error( "Exception while closing result iterator", e );
-                }
-            }
             throw new QueryExecutionException( t );
         }
 
-        try {
-            List<PolyType> types = new ArrayList<>();
-            List<String> names = new ArrayList<>();
-            for ( ColumnMetaData metaData : signature.columns ) {
-
-                types.add( PolyType.get( metaData.type.name ) );
-                names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
-            }
-
-            List<String[]> data = new ArrayList<>();
-            for ( List<Object> row : rows ) {
-                String[] temp = new String[row.size()];
-                int counter = 0;
-                for ( Object o : row ) {
-                    if ( o == null ) {
-                        temp[counter] = null;
-                    } else {
-                        temp[counter] = o.toString();
-                    }
-                    counter++;
-                }
-                data.add( temp );
-            }
-
-            String[][] d = data.toArray( new String[0][] );
-
-            return new StatisticResult( names, types, d );
-        } finally {
-            try {
-                if ( iterator instanceof AutoCloseable ) {
-                    ((AutoCloseable) iterator).close();
-                }
-            } catch ( Exception e ) {
-                log.error( "Exception while closing result iterator2", e );
-            }
+        List<PolyType> types = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+        int i = 0;
+        for ( ColumnMetaData metaData : result.getColumns() ) {
+            types.add( result.getRowType().getFieldList().get( i ).getType().getPolyType() );
+            names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
+            i++;
         }
+
+        List<String[]> data = new ArrayList<>();
+        for ( List<Object> row : rows ) {
+            String[] temp = new String[row.size()];
+            int counter = 0;
+            for ( Object o : row ) {
+                if ( o == null ) {
+                    temp[counter] = null;
+                } else {
+                    temp[counter] = o.toString();
+                }
+                counter++;
+            }
+            data.add( temp );
+        }
+
+        String[][] d = data.toArray( new String[0][] );
+
+        return new StatisticResult( names, types, d );
+
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
-        PolyphenyDbSignature signature;
-        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
+    private PolyResult processQuery( Statement statement, String sql ) {
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+        Node parsed = sqlProcessor.parse( sql );
 
-        SqlNode parsed = sqlProcessor.parse( sql );
-
-        if ( parsed.isA( SqlKind.DDL ) ) {
+        if ( parsed.isA( Kind.DDL ) ) {
             // statistics module should not execute any ddls
             throw new RuntimeException( "No DDL expected here" );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
-            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
+            AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            return statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
-        return signature;
     }
 
 
@@ -337,16 +307,6 @@ public class StatisticQueryProcessor {
 
 
     static class QueryExecutionException extends Exception {
-
-        QueryExecutionException( String message ) {
-            super( message );
-        }
-
-
-        QueryExecutionException( String message, Exception e ) {
-            super( message, e );
-        }
-
 
         QueryExecutionException( Throwable t ) {
             super( t );

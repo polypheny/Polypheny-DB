@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ package org.polypheny.db.type;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
@@ -62,8 +62,8 @@ public class PolyTypeTransformCascade implements PolyReturnTypeInference {
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
-        RelDataType ret = rule.inferReturnType( opBinding );
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
+        AlgDataType ret = rule.inferReturnType( opBinding );
         if ( ret == null ) {
             // inferReturnType may return null; transformType does not accept or
             // return null types
@@ -74,5 +74,6 @@ public class PolyTypeTransformCascade implements PolyReturnTypeInference {
         }
         return ret;
     }
+
 }
 

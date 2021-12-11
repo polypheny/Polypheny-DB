@@ -17,12 +17,13 @@
 package org.polypheny.db.type.checker;
 
 
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
 
@@ -48,10 +49,10 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
+    public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
         Util.discard( iFormalOperand );
 
-        if ( SqlUtil.isNullLiteral( node, true ) ) {
+        if ( CoreUtil.isNullLiteral( node, true ) ) {
             if ( allowNull ) {
                 return true;
             }
@@ -60,7 +61,7 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
             }
             return false;
         }
-        if ( !SqlUtil.isLiteral( node ) && !SqlUtil.isLiteralChain( node ) ) {
+        if ( node.getKind() != Kind.LITERAL && node.getKind() != Kind.LITERAL_CHAIN ) {
             if ( throwOnFailure ) {
                 throw callBinding.newError( Static.RESOURCE.argumentMustBeLiteral( callBinding.getOperator().getName() ) );
             }
@@ -72,7 +73,7 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
         return checkSingleOperandType(
                 callBinding,
                 callBinding.operand( 0 ),
@@ -88,7 +89,7 @@ public class LiteralOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         return "<LITERAL>";
     }
 

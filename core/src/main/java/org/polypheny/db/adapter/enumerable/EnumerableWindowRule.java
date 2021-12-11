@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalWindow;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalWindow;
 
 
 /**
@@ -52,12 +52,13 @@ class EnumerableWindowRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalWindow winAgg = (LogicalWindow) rel;
-        final RelTraitSet traitSet = winAgg.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        final RelNode child = winAgg.getInput();
-        final RelNode convertedChild = convert( child, child.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        return new EnumerableWindow( rel.getCluster(), traitSet, convertedChild, winAgg.getConstants(), winAgg.getRowType(), winAgg.groups );
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalWindow winAgg = (LogicalWindow) alg;
+        final AlgTraitSet traitSet = winAgg.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        final AlgNode child = winAgg.getInput();
+        final AlgNode convertedChild = convert( child, child.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        return new EnumerableWindow( alg.getCluster(), traitSet, convertedChild, winAgg.getConstants(), winAgg.getRowType(), winAgg.groups );
     }
+
 }
 

@@ -28,7 +28,7 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
-import org.polypheny.db.mongoql.model.Result;
+import org.polypheny.db.webui.models.Result;
 
 
 /**
@@ -47,7 +47,8 @@ public class DmlTest extends MqlTestTemplate {
         Result result = find( "{}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet( result,
+                MongoConnection.checkResultSet(
+                        result,
                         ImmutableList.of( new Object[]{ "id_", data } ) ) );
 
     }

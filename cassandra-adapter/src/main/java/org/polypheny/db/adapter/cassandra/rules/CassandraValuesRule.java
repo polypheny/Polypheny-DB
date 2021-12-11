@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,26 +19,27 @@ package org.polypheny.db.adapter.cassandra.rules;
 
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraValues;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 public class CassandraValuesRule extends CassandraConverterRule {
 
-    CassandraValuesRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Values.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraValuesRule:" + out.getName() );
+    CassandraValuesRule( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Values.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraValuesRule:" + out.getName() );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        Values values = (Values) rel;
+    public AlgNode convert( AlgNode alg ) {
+        Values values = (Values) alg;
         return new CassandraValues(
                 values.getCluster(),
                 values.getRowType(),
                 values.getTuples(),
                 values.getTraitSet().replace( out ) );
     }
+
 }

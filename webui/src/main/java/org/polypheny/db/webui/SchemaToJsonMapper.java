@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.pretty.SqlPrettyWriter;
+import org.polypheny.db.sql.sql.SqlWriter;
+import org.polypheny.db.sql.sql.dialect.PolyphenyDbSqlDialect;
+import org.polypheny.db.sql.sql.pretty.SqlPrettyWriter;
 import org.polypheny.db.type.PolyType;
 
 
@@ -156,6 +156,7 @@ public class SchemaToJsonMapper {
         public final String tableName;
         public final List<JsonColumn> columns;
         public final List<String> primaryKeyColumnNames;
+
     }
 
 
@@ -169,6 +170,7 @@ public class SchemaToJsonMapper {
         public final boolean nullable;
         public final String defaultValue;
         public final String defaultFunctionName;
+
     }
 
 }

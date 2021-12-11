@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,16 +41,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Function;
+import org.polypheny.db.nodes.Function.FunctionType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlCastFunction;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
@@ -111,13 +112,13 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+    public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
         throw new RuntimeException( "Unsupported" );
     }
 
 
     @Override
-    public RelDataType getParameterType( long index ) {
+    public AlgDataType getParameterType( long index ) {
         throw new RuntimeException( "Unsupported" );
     }
 
@@ -128,12 +129,12 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( RelNode targetRel, LogicalFilter queryRel ) {
+    public static DataContext of( AlgNode targetRel, LogicalFilter queryRel ) {
         return of( targetRel.getRowType(), queryRel.getCondition() );
     }
 
 
-    public static DataContext of( RelDataType rowType, RexNode rex ) {
+    public static DataContext of( AlgDataType rowType, RexNode rex ) {
         final int size = rowType.getFieldList().size();
         final Object[] values = new Object[size];
         final List<RexNode> operands = ((RexCall) rex).getOperands();
@@ -150,7 +151,7 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( RelDataType rowType, List<Pair<RexInputRef, RexNode>> usageList ) {
+    public static DataContext of( AlgDataType rowType, List<Pair<RexInputRef, RexNode>> usageList ) {
         final int size = rowType.getFieldList().size();
         final Object[] values = new Object[size];
         for ( Pair<RexInputRef, RexNode> elem : usageList ) {
@@ -173,7 +174,7 @@ public class VisitorDataContext implements DataContext {
         if ( inputRef instanceof RexInputRef && literal instanceof RexLiteral ) {
             final int index = ((RexInputRef) inputRef).getIndex();
             final RexLiteral rexLiteral = (RexLiteral) literal;
-            final RelDataType type = inputRef.getType();
+            final AlgDataType type = inputRef.getType();
 
             if ( type.getPolyType() == null ) {
                 log.warn( "{} returned null PolyType", inputRef.toString() );
@@ -223,12 +224,13 @@ public class VisitorDataContext implements DataContext {
     private static RexNode removeCast( RexNode inputRef ) {
         if ( inputRef instanceof RexCall ) {
             final RexCall castedRef = (RexCall) inputRef;
-            final SqlOperator operator = castedRef.getOperator();
-            if ( operator instanceof SqlCastFunction ) {
+            final Operator operator = castedRef.getOperator();
+            if ( ((Function) operator).getFunctionType() == FunctionType.CAST ) {
                 inputRef = castedRef.getOperands().get( 0 );
             }
         }
         return inputRef;
     }
+
 }
 

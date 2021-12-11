@@ -91,129 +91,151 @@ public enum RuntimeConfig {
             ConfigType.INTEGER
     ),
 
-    REL_WRITER_INSERT_FIELD_NAMES( "runtime/relWriterInsertFieldName",
-            "If the rel writer should add the field names in brackets behind the ordinals in when printing query plans.",
+    REL_WRITER_INSERT_FIELD_NAMES(
+            "runtime/relWriterInsertFieldName",
+            "If the alg writer should add the field names in brackets behind the ordinals in when printing query plans.",
             false,
             ConfigType.BOOLEAN ),
 
-    QUERY_TIMEOUT( "runtime/queryTimeout",
+    QUERY_TIMEOUT(
+            "runtime/queryTimeout",
             "Time after which queries are aborted. 0 means infinite.",
             0,
             ConfigType.INTEGER,
             "processingExecutionGroup" ),
 
-    DEFAULT_COLLATION( "runtime/defaultCollation",
+    DEFAULT_COLLATION(
+            "runtime/defaultCollation",
             "Collation to use if no collation is specified",
             2,
             ConfigType.INTEGER ),
 
-    GENERATED_NAME_PREFIX( "runtime/generatedNamePrefix",
+    GENERATED_NAME_PREFIX(
+            "runtime/generatedNamePrefix",
             "Prefix for generated index, foreign key and constraint names.",
             "auto",
             ConfigType.STRING ),
 
-    ADD_DEFAULT_VALUES_IN_INSERTS( "processing/addDefaultValuesInInserts",
+    ADD_DEFAULT_VALUES_IN_INSERTS(
+            "processing/addDefaultValuesInInserts",
             "Reorder columns and add default values in insert statements.",
             true,
             ConfigType.BOOLEAN,
             "parsingGroup" ),
 
-    TRIM_UNUSED_FIELDS( "processing/trimUnusedFields",
-            "Walks over a tree of relational expressions, replacing each RelNode with a 'slimmed down' relational expression that projects only the columns required by its consumer.",
+    TRIM_UNUSED_FIELDS(
+            "processing/trimUnusedFields",
+            "Walks over a tree of relational expressions, replacing each {@link AlgNode} with a 'slimmed down' relational expression that projects only the columns required by its consumer.",
             true,
             ConfigType.BOOLEAN,
             "planningGroup" ),
 
-    DEBUG( "runtime/debug",
+    DEBUG(
+            "runtime/debug",
             "Print debugging output.",
             false,
             ConfigType.BOOLEAN ),
 
-    JOIN_COMMUTE( "runtime/joinCommute",
+    JOIN_COMMUTE(
+            "runtime/joinCommute",
             "Commute joins in planner.",
             false,
             ConfigType.BOOLEAN,
             "planningGroup" ),
 
-    VALIDATE_MM_CONTENT_TYPE( "validation/validateMultimediaContentType",
+    VALIDATE_MM_CONTENT_TYPE(
+            "validation/validateMultimediaContentType",
             "Validate multimedia data by checking its content-type.",
             true,
             ConfigType.BOOLEAN,
             "validationGroup"
     ),
 
-    TWO_PC_MODE( "runtime/twoPcMode",
+    TWO_PC_MODE(
+            "runtime/twoPcMode",
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
             ConfigType.BOOLEAN,
             "processingExecutionGroup" ),
 
-    DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
+    DYNAMIC_QUERYING(
+            "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
             true,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
-    STATISTICS_ON_STARTUP( "statistics/statisticsOnStartup",
+    STATISTICS_ON_STARTUP(
+            "statistics/statisticsOnStartup",
             "Whether to build statistics for all stored data on system startup.",
             true,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
-    ACTIVE_TRACKING( "statistics/activeTracking",
+    ACTIVE_TRACKING(
+            "statistics/activeTracking",
             "All transactions are tracked and statistics collected during execution.",
             true,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
-    PASSIVE_TRACKING( "statistics/passiveTracking",
+    PASSIVE_TRACKING(
+            "statistics/passiveTracking",
             "Reevaluates statistics for all columns constantly, after a set time interval.",
             false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
-    STATISTIC_BUFFER( "statistics/statisticColumnBuffer",
+    STATISTIC_BUFFER(
+            "statistics/statisticColumnBuffer",
             "Number of buffered statistics e.g. for unique values.",
             5,
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
 
-    UNIQUE_VALUES( "statistics/maxCharUniqueVal",
+    UNIQUE_VALUES(
+            "statistics/maxCharUniqueVal",
             "Maximum character of unique values",
             10,
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
 
-    STATISTIC_RATE( "statistics/passiveTrackingRate",
+    STATISTIC_RATE(
+            "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS_FIXED,
             ConfigType.ENUM ),
 
-    MATERIALIZED_VIEW_LOOP( "materializedView/freshnessLoopRate",
+    MATERIALIZED_VIEW_LOOP(
+            "materializedView/freshnessLoopRate",
             "Rate of freshness Loop for Materialized Views with update type interval.",
             TaskSchedulingType.EVERY_SECOND_FIXED,
             ConfigType.ENUM ),
 
-    EXPLORE_BY_EXAMPLE_TO_SQL( "exploreByExample/classificationToSQL",
+    EXPLORE_BY_EXAMPLE_TO_SQL(
+            "exploreByExample/classificationToSQL",
             "Build SQL query from classification.",
             true,
             ConfigType.BOOLEAN,
             "uiSettings" ),
 
-    UI_PAGE_SIZE( "ui/pageSize",
+    UI_PAGE_SIZE(
+            "ui/pageSize",
             "Number of rows per page in the data view.",
             10,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
-    UI_UPLOAD_SIZE_MB( "ui/uploadSizeMB",
+    UI_UPLOAD_SIZE_MB(
+            "ui/uploadSizeMB",
             "Maximum size of a file upload for multimedia data in the UI, in MB. "
                     + "When creating a HSQLDB multimedia column, this size is applied as the max-size of the underlying HSQLDB BLOB column.",
             10_000,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
-    UI_USE_HARDLINKS( "ui/useHardlinks",
+    UI_USE_HARDLINKS(
+            "ui/useHardlinks",
             "Whether or not to use hardlinks for temporal files in the UI. If false, softlinks are used. This config has only an effect when one or multiple file stores are deployed. "
                     + "With hardlinks, the data you see is is the correct data that was selected during the transaction. "
                     + "But with multiple file stores on different file systems, hardlinks won't work. "
@@ -222,142 +244,166 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "uiSettingsDataViewGroup" ),
 
-    HUB_IMPORT_BATCH_SIZE( "hub/hubImportBatchSize",
+    HUB_IMPORT_BATCH_SIZE(
+            "hub/hubImportBatchSize",
             "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
             100,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
-    SCHEMA_CACHING( "runtime/schemaCaching",
+    SCHEMA_CACHING(
+            "runtime/schemaCaching",
             "Cache polypheny-db schema",
             true,
             ConfigType.BOOLEAN ),
 
-    QUERY_PLAN_CACHING( "runtime/queryPlanCaching",
+    QUERY_PLAN_CACHING(
+            "runtime/queryPlanCaching",
             "Cache planned and optimized query plans.",
             true,
             ConfigType.BOOLEAN,
             "queryPlanCachingGroup" ),
 
-    QUERY_PLAN_CACHING_DML( "runtime/queryPlanCachingDml",
+    QUERY_PLAN_CACHING_DML(
+            "runtime/queryPlanCachingDml",
             "Cache DML query plans.",
             false,
             ConfigType.BOOLEAN,
             "queryPlanCachingGroup" ),
 
-    QUERY_PLAN_CACHING_SIZE( "runtime/queryPlanCachingSize",
+    QUERY_PLAN_CACHING_SIZE(
+            "runtime/queryPlanCachingSize",
             "Size of the query plan cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER,
             "queryPlanCachingGroup" ),
 
-    IMPLEMENTATION_CACHING( "runtime/implementationCaching",
+    IMPLEMENTATION_CACHING(
+            "runtime/implementationCaching",
             "Cache implemented query plans.",
             true,
             ConfigType.BOOLEAN,
             "implementationCachingGroup" ),
 
-    IMPLEMENTATION_CACHING_DML( "runtime/implementationCachingDml",
+    IMPLEMENTATION_CACHING_DML(
+            "runtime/implementationCachingDml",
             "Cache implementation for DML queries.",
             false,
             ConfigType.BOOLEAN,
             "implementationCachingGroup" ),
 
-    IMPLEMENTATION_CACHING_SIZE( "runtime/implementationCachingSize",
+    IMPLEMENTATION_CACHING_SIZE(
+            "runtime/implementationCachingSize",
             "Size of the implementation cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER,
             "implementationCachingGroup" ),
 
-    ROUTING_PLAN_CACHING( "runtime/routingPlanCaching",
+    ROUTING_PLAN_CACHING(
+            "runtime/routingPlanCaching",
             "Caching of routing plans.",
             true,
             ConfigType.BOOLEAN,
             "routingCache" ),
 
-    ROUTING_PLAN_CACHING_SIZE( "runtime/routingPlanCachingSize",
+    ROUTING_PLAN_CACHING_SIZE(
+            "runtime/routingPlanCachingSize",
             "Size of the routing plan cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER,
             "routingCache" ),
 
-    PARAMETERIZE_DML( "runtime/parameterizeDML",
+    PARAMETERIZE_DML(
+            "runtime/parameterizeDML",
             "Whether DML queries should be parameterized.",
             true,
             ConfigType.BOOLEAN,
             "queryParameterizationGroup" ),
 
-    PARAMETERIZE_INTERVALS( "runtime/parameterizeIntervals",
+    PARAMETERIZE_INTERVALS(
+            "runtime/parameterizeIntervals",
             "Whether intervals should be parameterized.",
             false,
             ConfigType.BOOLEAN,
             "queryParameterizationGroup" ),
 
-    JOINED_TABLE_SCAN_CACHE( "runtime/joinedTableScanCache",
+    JOINED_TABLE_SCAN_CACHE(
+            "runtime/joinedTableScanCache",
             "Whether to use the joined table scan caching.",
             false,
             ConfigType.BOOLEAN ),
 
-    JOINED_TABLE_SCAN_CACHE_SIZE( "runtime/joinedTableScanCacheSize",
+    JOINED_TABLE_SCAN_CACHE_SIZE(
+            "runtime/joinedTableScanCacheSize",
             "Size of the joined table scan cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER ),
 
-    DATA_MIGRATOR_BATCH_SIZE( "runtime/dataMigratorBatchSize",
+    DATA_MIGRATOR_BATCH_SIZE(
+            "runtime/dataMigratorBatchSize",
             "Batch size for data insertion on the target store.",
             1000,
             ConfigType.INTEGER ),
 
-    UNIQUE_CONSTRAINT_ENFORCEMENT( "runtime/uniqueConstraintEnforcement",
+    UNIQUE_CONSTRAINT_ENFORCEMENT(
+            "runtime/uniqueConstraintEnforcement",
             "Enable enforcement of uniqueness constraints.",
             false,
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
-    FOREIGN_KEY_ENFORCEMENT( "runtime/foreignKeyEnforcement",
+    FOREIGN_KEY_ENFORCEMENT(
+            "runtime/foreignKeyEnforcement",
             "Enable enforcement of foreign key constraints.",
             false,
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
-    POLYSTORE_INDEXES_ENABLED( "runtime/polystoreIndexesEnabled",
+    POLYSTORE_INDEXES_ENABLED(
+            "runtime/polystoreIndexesEnabled",
             "Enable and maintain indexes on the polystore level.",
             true,
             ConfigType.BOOLEAN,
             "polystoreIndexGroup" ),
 
-    POLYSTORE_INDEXES_SIMPLIFY( "runtime/polystoreIndexesSimplify",
+    POLYSTORE_INDEXES_SIMPLIFY(
+            "runtime/polystoreIndexesSimplify",
             "Enable query simplification using polystore level indexes.",
             false,
             ConfigType.BOOLEAN,
             "polystoreIndexGroup" ),
 
-    DOCKER_INSTANCES( "runtime/dockerInstances",
+    DOCKER_INSTANCES(
+            "runtime/dockerInstances",
             "Configure different docker instances, which can be used to place adapters on.",
             Collections.singletonList( new ConfigDocker( 0, "localhost", null, null, "localhost" )
                     .setDockerRunning( true ) ),
             ConfigType.INSTANCE_LIST,
             "dockerGroup" ),
 
-    FILE_HANDLE_CACHE_SIZE( "runtime/fileHandleCacheSize",
+    FILE_HANDLE_CACHE_SIZE(
+            "runtime/fileHandleCacheSize",
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
             0,
             ConfigType.INTEGER,
             "processingExecutionGroup" ),
 
-    QUEUE_PROCESSING_INTERVAL( "runtime/queueProcessingInterval",
+    QUEUE_PROCESSING_INTERVAL(
+            "runtime/queueProcessingInterval",
             "Rate of passive tracking of statistics.",
             TaskSchedulingType.EVERY_SECOND,
             ConfigType.ENUM,
             "monitoringSettingsQueueGroup" ),
 
-    QUEUE_PROCESSING_ELEMENTS( "runtime/queueProcessingElements",
+    QUEUE_PROCESSING_ELEMENTS(
+            "runtime/queueProcessingElements",
             "Number of elements in workload queue to process per time.",
             5000,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 
-    TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL( "runtime/partitionFrequencyProcessingInterval",
+    TEMPERATURE_FREQUENCY_PROCESSING_INTERVAL(
+            "runtime/partitionFrequencyProcessingInterval",
             "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
             BackgroundTask.TaskSchedulingType.EVERY_MINUTE,
             ConfigType.ENUM,

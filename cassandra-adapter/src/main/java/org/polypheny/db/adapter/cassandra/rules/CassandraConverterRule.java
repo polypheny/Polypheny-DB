@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package org.polypheny.db.adapter.cassandra.rules;
 
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -34,14 +34,15 @@ public abstract class CassandraConverterRule extends ConverterRule {
     protected final Convention out;
 
 
-    <R extends RelNode> CassandraConverterRule(
+    <R extends AlgNode> CassandraConverterRule(
             Class<R> clazz,
             Predicate<? super R> predicate,
-            RelTrait in,
+            AlgTrait in,
             CassandraConvention out,
-            RelBuilderFactory relBuilderFactory,
+            AlgBuilderFactory algBuilderFactory,
             String description ) {
-        super( clazz, predicate, in, out, relBuilderFactory, description );
+        super( clazz, predicate, in, out, algBuilderFactory, description );
         this.out = out;
     }
+
 }

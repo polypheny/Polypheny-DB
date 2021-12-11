@@ -19,31 +19,31 @@ package org.polypheny.db.adapter.cottontail.rules;
 
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 public class CottontailToEnumerableConverterRule extends ConverterRule {
 
 
-    public CottontailToEnumerableConverterRule( CottontailConvention in, RelBuilderFactory relBuilderFactory ) {
+    public CottontailToEnumerableConverterRule( CottontailConvention in, AlgBuilderFactory algBuilderFactory ) {
         super(
-                RelNode.class,
-                (Predicate<RelNode>) r -> true,
+                AlgNode.class,
+                (Predicate<AlgNode>) r -> true,
                 in,
                 EnumerableConvention.INSTANCE,
-                relBuilderFactory,
+                algBuilderFactory,
                 "CottontailToEnumerableConverterRule:" + in.getName() );
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
+    public AlgNode convert( AlgNode rel ) {
+        AlgTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
         return new CottontailToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
     }
 

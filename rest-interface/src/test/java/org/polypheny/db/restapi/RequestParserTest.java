@@ -26,14 +26,15 @@ import java.util.HashMap;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Pair;
 
 
@@ -85,18 +86,18 @@ public class RequestParserTest {
                 null,
                 "username",
                 "testdb" );
-        HashMap<String, Pair<SqlOperator, String>> operationMap = new HashMap<>();
-        operationMap.put( ">=10", new Pair<>( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, "10" ) );
-        operationMap.put( ">10", new Pair<>( SqlStdOperatorTable.GREATER_THAN, "10" ) );
-        operationMap.put( "<=10", new Pair<>( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, "10" ) );
-        operationMap.put( "<10", new Pair<>( SqlStdOperatorTable.LESS_THAN, "10" ) );
-        operationMap.put( "=10", new Pair<>( SqlStdOperatorTable.EQUALS, "10" ) );
-        operationMap.put( "!=10", new Pair<>( SqlStdOperatorTable.NOT_EQUALS, "10" ) );
-        operationMap.put( "%10", new Pair<>( SqlStdOperatorTable.LIKE, "10" ) );
-        operationMap.put( "!%10", new Pair<>( SqlStdOperatorTable.NOT_LIKE, "10" ) );
+        HashMap<String, Pair<Operator, String>> operationMap = new HashMap<>();
+        operationMap.put( ">=10", new Pair<>( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), "10" ) );
+        operationMap.put( ">10", new Pair<>( OperatorRegistry.get( OperatorName.GREATER_THAN ), "10" ) );
+        operationMap.put( "<=10", new Pair<>( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "10" ) );
+        operationMap.put( "<10", new Pair<>( OperatorRegistry.get( OperatorName.LESS_THAN ), "10" ) );
+        operationMap.put( "=10", new Pair<>( OperatorRegistry.get( OperatorName.EQUALS ), "10" ) );
+        operationMap.put( "!=10", new Pair<>( OperatorRegistry.get( OperatorName.NOT_EQUALS ), "10" ) );
+        operationMap.put( "%10", new Pair<>( OperatorRegistry.get( OperatorName.LIKE ), "10" ) );
+        operationMap.put( "!%10", new Pair<>( OperatorRegistry.get( OperatorName.NOT_LIKE ), "10" ) );
 
         operationMap.forEach( ( k, v ) -> {
-            Pair<SqlOperator, String> operationPair = requestParser.parseFilterOperation( k );
+            Pair<Operator, String> operationPair = requestParser.parseFilterOperation( k );
             assertEquals( v, operationPair );
         } );
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,23 +35,23 @@ package org.polypheny.db.adapter.enumerable;
 
 
 import java.util.List;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.util.ValidatorUtil;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Project} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Project} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableProject extends Project implements EnumerableRel {
+public class EnumerableProject extends Project implements EnumerableAlg {
 
     /**
      * Creates an EnumerableProject.
@@ -64,7 +64,7 @@ public class EnumerableProject extends Project implements EnumerableRel {
      * @param projects List of expressions for the input columns
      * @param rowType Output row type
      */
-    public EnumerableProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType ) {
+    public EnumerableProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
         super( cluster, traitSet, input, projects, rowType );
         assert getConvention() instanceof EnumerableConvention;
     }
@@ -73,32 +73,33 @@ public class EnumerableProject extends Project implements EnumerableRel {
     /**
      * Creates an EnumerableProject, specifying row type rather than field names.
      */
-    public static EnumerableProject create( final RelNode input, final List<? extends RexNode> projects, RelDataType rowType ) {
-        final RelOptCluster cluster = input.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet = cluster.traitSet().replace( EnumerableConvention.INSTANCE )
-                .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.project( mq, input, projects ) );
+    public static EnumerableProject create( final AlgNode input, final List<? extends RexNode> projects, AlgDataType rowType ) {
+        final AlgOptCluster cluster = input.getCluster();
+        final AlgMetadataQuery mq = cluster.getMetadataQuery();
+        final AlgTraitSet traitSet = cluster.traitSet().replace( EnumerableConvention.INSTANCE )
+                .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, input, projects ) );
         return new EnumerableProject( cluster, traitSet, input, projects, rowType );
     }
 
 
-    static RelNode create( RelNode child, List<? extends RexNode> projects, List<String> fieldNames ) {
-        final RelOptCluster cluster = child.getCluster();
-        final RelDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, SqlValidatorUtil.F_SUGGESTER );
+    static AlgNode create( AlgNode child, List<? extends RexNode> projects, List<String> fieldNames ) {
+        final AlgOptCluster cluster = child.getCluster();
+        final AlgDataType rowType = RexUtil.createStructType( cluster.getTypeFactory(), projects, fieldNames, ValidatorUtil.F_SUGGESTER );
         return create( child, projects, rowType );
     }
 
 
     @Override
-    public EnumerableProject copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
+    public EnumerableProject copy( AlgTraitSet traitSet, AlgNode input, List<RexNode> projects, AlgDataType rowType ) {
         return new EnumerableProject( getCluster(), traitSet, input, projects, rowType );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         // EnumerableCalcRel is always better
         throw new UnsupportedOperationException();
     }
+
 }
 

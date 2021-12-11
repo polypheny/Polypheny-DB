@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,11 @@ package org.polypheny.db.adapter.enumerable;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.SemiJoin;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.SemiJoin;
 
 
 /**
@@ -54,16 +54,17 @@ class EnumerableSemiJoinRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final SemiJoin semiJoin = (SemiJoin) rel;
-        final List<RelNode> newInputs = new ArrayList<>();
-        for ( RelNode input : semiJoin.getInputs() ) {
+    public AlgNode convert( AlgNode alg ) {
+        final SemiJoin semiJoin = (SemiJoin) alg;
+        final List<AlgNode> newInputs = new ArrayList<>();
+        for ( AlgNode input : semiJoin.getInputs() ) {
             if ( !(input.getConvention() instanceof EnumerableConvention) ) {
-                input = RelOptRule.convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+                input = AlgOptRule.convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
             }
             newInputs.add( input );
         }
         return EnumerableSemiJoin.create( newInputs.get( 0 ), newInputs.get( 1 ), semiJoin.getCondition(), semiJoin.leftKeys, semiJoin.rightKeys );
     }
+
 }
 

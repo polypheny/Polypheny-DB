@@ -17,20 +17,20 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.tools.RoutedRelBuilder;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
 
 public interface Router {
 
     /**
-     * @param relRoot The relRoot which will be routed.
+     * @param algRoot The algRoot which will be routed.
      * @param statement The corresponding statement.
      * @param queryInformation Different query information resulting from analyze step.
-     * @return Proposes multiple routed rel nodes as a List of  relBuilders.
+     * @return Proposes multiple routed alg nodes as a List of  relBuilders.
      */
-    List<RoutedRelBuilder> route( RelRoot relRoot, Statement statement, LogicalQueryInformation queryInformation );
+    List<RoutedAlgBuilder> route( AlgRoot algRoot, Statement statement, LogicalQueryInformation queryInformation );
 
     /**
      * Resets the routing caches, if some are used.

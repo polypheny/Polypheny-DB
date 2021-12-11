@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ package org.polypheny.db.rex;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
@@ -61,7 +61,7 @@ public class RexLocalRef extends RexSlot {
      * @param index Index of the field in the underlying row type
      * @param type Type of the column
      */
-    public RexLocalRef( int index, RelDataType type ) {
+    public RexLocalRef( int index, AlgDataType type ) {
         super( createName( index ), index, type );
         assert type != null;
         assert index >= 0;
@@ -69,8 +69,8 @@ public class RexLocalRef extends RexSlot {
 
 
     @Override
-    public SqlKind getKind() {
-        return SqlKind.LOCAL_REF;
+    public Kind getKind() {
+        return Kind.LOCAL_REF;
     }
 
 
@@ -102,4 +102,5 @@ public class RexLocalRef extends RexSlot {
     private static String createName( int index ) {
         return NAMES.get( index );
     }
+
 }

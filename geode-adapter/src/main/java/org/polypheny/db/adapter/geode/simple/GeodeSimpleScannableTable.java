@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.geode.cache.client.ClientCache;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 
@@ -52,16 +52,16 @@ import org.polypheny.db.schema.impl.AbstractTable;
  */
 public class GeodeSimpleScannableTable extends AbstractTable implements ScannableTable {
 
-    private final RelDataType relDataType;
+    private final AlgDataType algDataType;
     private String regionName;
     private ClientCache clientCache;
 
 
-    public GeodeSimpleScannableTable( String regionName, RelDataType relDataType, ClientCache clientCache ) {
+    public GeodeSimpleScannableTable( String regionName, AlgDataType algDataType, ClientCache clientCache ) {
         super();
         this.regionName = regionName;
         this.clientCache = clientCache;
-        this.relDataType = relDataType;
+        this.algDataType = algDataType;
     }
 
 
@@ -72,8 +72,8 @@ public class GeodeSimpleScannableTable extends AbstractTable implements Scannabl
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-        return relDataType;
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
+        return algDataType;
     }
 
 
@@ -85,7 +85,7 @@ public class GeodeSimpleScannableTable extends AbstractTable implements Scannabl
                 return new GeodeSimpleEnumerator<Object[]>( clientCache, regionName ) {
                     @Override
                     public Object[] convert( Object obj ) {
-                        Object values = convertToRowValues( relDataType.getFieldList(), obj );
+                        Object values = convertToRowValues( algDataType.getFieldList(), obj );
                         if ( values instanceof Object[] ) {
                             return (Object[]) values;
                         }
@@ -95,5 +95,6 @@ public class GeodeSimpleScannableTable extends AbstractTable implements Scannabl
             }
         };
     }
+
 }
 

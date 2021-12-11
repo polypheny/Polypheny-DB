@@ -34,8 +34,8 @@
 package org.polypheny.db.schema;
 
 import com.google.common.collect.ImmutableList;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.type.RelProtoDataType;
 
 
 /**
@@ -90,7 +90,7 @@ public interface SchemaPlus extends Schema {
     /**
      * Adds a type to this schema.
      */
-    void add( String name, RelProtoDataType type );
+    void add( String name, AlgProtoDataType type );
 
     @Override
     boolean isMutable();

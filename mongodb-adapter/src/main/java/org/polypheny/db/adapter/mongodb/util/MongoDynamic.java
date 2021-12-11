@@ -33,8 +33,8 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
-import org.polypheny.db.mql.parser.BsonUtil;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.BsonUtil;
 
 
 /**

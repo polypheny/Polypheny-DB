@@ -22,35 +22,36 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailToEnumerableConverter;
-import org.polypheny.db.adapter.cottontail.rel.CottontailProject;
-import org.polypheny.db.document.rules.DocumentRules;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailProject;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverter;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.nodes.ArrayValueConstructor;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.fun.SqlDistanceFunction;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.schema.document.DocumentRules;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.sql.fun.SqlDistanceFunction;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 public class CottontailProjectRule extends CottontailConverterRule {
 
-    CottontailProjectRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Project.class, p -> !DocumentRules.containsDocument( p ), Convention.NONE, out, relBuilderFactory, "CottontailProjectRule:" + out.getName() );
+    CottontailProjectRule( CottontailConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( Project.class, p -> !DocumentRules.containsDocument( p ), Convention.NONE, out, algBuilderFactory, "CottontailProjectRule:" + out.getName() );
     }
 
 
     @Override
-    public boolean matches( RelOptRuleCall call ) {
-        Project project = call.rel( 0 );
+    public boolean matches( AlgOptRuleCall call ) {
+        Project project = call.alg( 0 );
         if ( containsInnerProject( project ) ) {
             return super.matches( call );
         }
@@ -62,7 +63,7 @@ public class CottontailProjectRule extends CottontailConverterRule {
         for ( RexNode e : projects ) {
             if ( e instanceof RexInputRef ) {
                 containsInputRefs = true;
-            } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
+            } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof ArrayValueConstructor)) ) {
                 containsValueProjects = true;
             } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlDistanceFunction) ) {
                 RexCall rexCall = (RexCall) e;
@@ -83,9 +84,9 @@ public class CottontailProjectRule extends CottontailConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final Project project = (Project) rel;
-        final RelTraitSet traitSet = project.getTraitSet().replace( out );
+    public AlgNode convert( AlgNode alg ) {
+        final Project project = (Project) alg;
+        final AlgTraitSet traitSet = project.getTraitSet().replace( out );
         boolean arrayValueProject = true;
         for ( RexNode e : project.getProjects() ) {
             if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor))
@@ -107,21 +108,21 @@ public class CottontailProjectRule extends CottontailConverterRule {
 
 
     private static boolean containsInnerProject( Project project ) {
-        List<RelNode> rels = ((RelSubset) project.getInput()).getRelList();
-        Set<RelNode> alreadyChecked = new HashSet<>();
-        Deque<RelNode> innerLevel = new LinkedList<>( rels );
+        List<AlgNode> algs = ((AlgSubset) project.getInput()).getAlgList();
+        Set<AlgNode> alreadyChecked = new HashSet<>();
+        Deque<AlgNode> innerLevel = new LinkedList<>( algs );
 
         while ( !innerLevel.isEmpty() ) {
-            RelNode relNode = innerLevel.pop();
-            alreadyChecked.add( relNode );
-            if ( relNode instanceof Project ) {
+            AlgNode algNode = innerLevel.pop();
+            alreadyChecked.add( algNode );
+            if ( algNode instanceof Project ) {
                 return true;
             } else {
-                for ( RelNode innerNode : relNode.getInputs() ) {
-                    if ( innerNode instanceof RelSubset ) {
-                        for ( RelNode possibleNewRel : ((RelSubset) innerNode).getRelList() ) {
-                            if ( !alreadyChecked.contains( possibleNewRel ) ) {
-                                innerLevel.addLast( possibleNewRel );
+                for ( AlgNode innerNode : algNode.getInputs() ) {
+                    if ( innerNode instanceof AlgSubset ) {
+                        for ( AlgNode possibleNewAlg : ((AlgSubset) innerNode).getAlgList() ) {
+                            if ( !alreadyChecked.contains( possibleNewAlg ) ) {
+                                innerLevel.addLast( possibleNewAlg );
                             }
                         }
                     }

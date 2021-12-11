@@ -19,13 +19,13 @@ package org.polypheny.db.processing;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -56,7 +56,7 @@ public class WhereClauseVisitor extends RexShuttle {
         super.visitCall( call );
 
         if ( call.operands.size() == 2 ) {
-            if ( call.op.kind.equals( SqlKind.EQUALS ) ) {
+            if ( call.op.getKind() == Kind.EQUALS ) {
                 Object value;
                 if ( call.operands.get( 0 ) instanceof RexInputRef ) {
                     if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {

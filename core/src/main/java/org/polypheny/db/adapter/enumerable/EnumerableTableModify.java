@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,12 +45,12 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.util.BuiltInMethod;
@@ -59,9 +59,9 @@ import org.polypheny.db.util.BuiltInMethod;
 /**
  * Implementation of {@link TableModify} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableTableModify extends TableModify implements EnumerableRel {
+public class EnumerableTableModify extends TableModify implements EnumerableAlg {
 
-    public EnumerableTableModify( RelOptCluster cluster, RelTraitSet traits, RelOptTable table, Prepare.CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public EnumerableTableModify( AlgOptCluster cluster, AlgTraitSet traits, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traits, table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         assert child.getConvention() instanceof EnumerableConvention;
         assert getConvention() instanceof EnumerableConvention;
@@ -73,15 +73,15 @@ public class EnumerableTableModify extends TableModify implements EnumerableRel 
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableTableModify( getCluster(), traitSet, getTable(), getCatalogReader(), sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final Result result = implementor.visitChild( this, 0, (EnumerableRel) getInput(), pref );
+        final Result result = implementor.visitChild( this, 0, (EnumerableAlg) getInput(), pref );
         Expression childExp = builder.append( "child", result.block );
         final ParameterExpression collectionParameter = Expressions.parameter( Collection.class, builder.newName( "collection" ) );
         final Expression expression = table.getExpression( ModifiableTable.class );

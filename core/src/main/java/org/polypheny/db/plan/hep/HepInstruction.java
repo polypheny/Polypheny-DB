@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ package org.polypheny.db.plan.hep;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import org.polypheny.db.plan.RelOptRule;
+import org.polypheny.db.plan.AlgOptRule;
 
 
 /**
@@ -58,14 +58,14 @@ abstract class HepInstruction {
      *
      * @param <R> rule type
      */
-    static class RuleClass<R extends RelOptRule> extends HepInstruction {
+    static class RuleClass<R extends AlgOptRule> extends HepInstruction {
 
         Class<R> ruleClass;
 
         /**
          * Actual rule set instantiated during planning by filtering all of the planner's rules through ruleClass.
          */
-        Set<RelOptRule> ruleSet;
+        Set<AlgOptRule> ruleSet;
 
 
         @Override
@@ -81,6 +81,7 @@ abstract class HepInstruction {
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -92,13 +93,14 @@ abstract class HepInstruction {
         /**
          * Collection of rules to apply.
          */
-        Collection<RelOptRule> rules;
+        Collection<AlgOptRule> rules;
 
 
         @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -112,13 +114,14 @@ abstract class HepInstruction {
         /**
          * Actual rule set instantiated during planning by filtering all of the planner's rules, looking for the desired converters.
          */
-        Set<RelOptRule> ruleSet;
+        Set<AlgOptRule> ruleSet;
 
 
         @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -127,13 +130,14 @@ abstract class HepInstruction {
      */
     static class CommonRelSubExprRules extends HepInstruction {
 
-        Set<RelOptRule> ruleSet;
+        Set<AlgOptRule> ruleSet;
 
 
         @Override
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -150,7 +154,7 @@ abstract class HepInstruction {
         /**
          * Explicitly specified rule, or rule looked up by planner from description.
          */
-        RelOptRule rule;
+        AlgOptRule rule;
 
 
         @Override
@@ -170,6 +174,7 @@ abstract class HepInstruction {
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -185,6 +190,7 @@ abstract class HepInstruction {
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -200,6 +206,7 @@ abstract class HepInstruction {
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -221,6 +228,7 @@ abstract class HepInstruction {
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -241,6 +249,7 @@ abstract class HepInstruction {
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
 
 
@@ -252,7 +261,7 @@ abstract class HepInstruction {
         /**
          * Actual rule set instantiated during planning by collecting grouped rules.
          */
-        Set<RelOptRule> ruleSet;
+        Set<AlgOptRule> ruleSet;
 
         boolean collecting;
 
@@ -272,6 +281,8 @@ abstract class HepInstruction {
         void execute( HepPlanner planner ) {
             planner.executeInstruction( this );
         }
+
     }
+
 }
 

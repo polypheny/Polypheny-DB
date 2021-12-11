@@ -17,8 +17,8 @@
 package org.polypheny.db.schema;
 
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.type.RelProtoDataType;
 
 
 public class LogicalView extends LogicalTable {
@@ -29,7 +29,7 @@ public class LogicalView extends LogicalTable {
             String logicalTableName,
             List<Long> columnIds,
             List<String> logicalColumnNames,
-            RelProtoDataType protoRowType ) {
+            AlgProtoDataType protoRowType ) {
         super( tableId, logicalSchemaName, logicalTableName, columnIds, logicalColumnNames, protoRowType, SchemaType.RELATIONAL );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,24 +47,24 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.Converter;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.convert.TraitMatchingRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptCostFactory;
+import org.polypheny.db.plan.AlgOptCostImpl;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleOperand;
+import org.polypheny.db.plan.AlgTrait;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.CommonRelSubExprRule;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptCostFactory;
-import org.polypheny.db.plan.RelOptCostImpl;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleOperand;
-import org.polypheny.db.plan.RelTrait;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.Converter;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.convert.TraitMatchingRule;
-import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rel.metadata.RelMetadataProvider;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.graph.BreadthFirstIterator;
@@ -78,7 +78,7 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 
 
 /**
- * HepPlanner is a heuristic implementation of the {@link RelOptPlanner} interface.
+ * HepPlanner is a heuristic implementation of the {@link AlgOptPlanner} interface.
  */
 public class HepPlanner extends AbstractRelOptPlanner {
 
@@ -86,14 +86,14 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     private HepProgram currentProgram;
 
-    private HepRelVertex root;
+    private HepAlgVertex root;
 
-    private RelTraitSet requestedRootTraits;
+    private AlgTraitSet requestedRootTraits;
 
-    private final Map<String, HepRelVertex> mapDigestToVertex = new HashMap<>();
+    private final Map<String, HepAlgVertex> mapDigestToVertex = new HashMap<>();
 
     // NOTE jvs 24-Apr-2006:  We use LinkedHashSet in order to provide deterministic behavior.
-    private final Set<RelOptRule> allRules = new LinkedHashSet<>();
+    private final Set<AlgOptRule> allRules = new LinkedHashSet<>();
 
     private int nTransformations;
 
@@ -106,9 +106,9 @@ public class HepPlanner extends AbstractRelOptPlanner {
     /**
      * Query graph, with edges directed from parent to child. This is a single-rooted DAG, possibly with additional roots corresponding to discarded plan fragments which remain to be garbage-collected.
      */
-    private final DirectedGraph<HepRelVertex, DefaultEdge> graph = DefaultDirectedGraph.create();
+    private final DirectedGraph<HepAlgVertex, DefaultEdge> graph = DefaultDirectedGraph.create();
 
-    private final Function2<RelNode, RelNode, Void> onCopyHook;
+    private final Function2<AlgNode, AlgNode, Void> onCopyHook;
 
 
     /**
@@ -117,7 +117,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
      * @param program program controlling rule application
      */
     public HepPlanner( HepProgram program ) {
-        this( program, null, false, null, RelOptCostImpl.FACTORY );
+        this( program, null, false, null, AlgOptCostImpl.FACTORY );
     }
 
 
@@ -128,7 +128,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
      * @param context to carry while planning
      */
     public HepPlanner( HepProgram program, Context context ) {
-        this( program, context, false, null, RelOptCostImpl.FACTORY );
+        this( program, context, false, null, AlgOptCostImpl.FACTORY );
     }
 
 
@@ -139,7 +139,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
      * @param program Program controlling rule application
      * @param onCopyHook Function to call when a node is copied
      */
-    public HepPlanner( HepProgram program, Context context, boolean noDag, Function2<RelNode, RelNode, Void> onCopyHook, RelOptCostFactory costFactory ) {
+    public HepPlanner( HepProgram program, Context context, boolean noDag, Function2<AlgNode, AlgNode, Void> onCopyHook, AlgOptCostFactory costFactory ) {
         super( costFactory, context );
         this.mainProgram = program;
         this.onCopyHook = Util.first( onCopyHook, Functions.ignore2() );
@@ -149,28 +149,28 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public void setRoot( RelNode rel ) {
-        root = addRelToGraph( rel );
+    public void setRoot( AlgNode alg ) {
+        root = addRelToGraph( alg );
         dumpGraph();
     }
 
 
     // implement RelOptPlanner
     @Override
-    public RelNode getRoot() {
+    public AlgNode getRoot() {
         return root;
     }
 
 
     @Override
-    public List<RelOptRule> getRules() {
+    public List<AlgOptRule> getRules() {
         return ImmutableList.copyOf( allRules );
     }
 
 
     // implement RelOptPlanner
     @Override
-    public boolean addRule( RelOptRule rule ) {
+    public boolean addRule( AlgOptRule rule ) {
         boolean added = allRules.add( rule );
         if ( added ) {
             mapRuleDescription( rule );
@@ -182,14 +182,14 @@ public class HepPlanner extends AbstractRelOptPlanner {
     @Override
     public void clear() {
         super.clear();
-        for ( RelOptRule rule : ImmutableList.copyOf( allRules ) ) {
+        for ( AlgOptRule rule : ImmutableList.copyOf( allRules ) ) {
             removeRule( rule );
         }
     }
 
 
     @Override
-    public boolean removeRule( RelOptRule rule ) {
+    public boolean removeRule( AlgOptRule rule ) {
         unmapRuleDescription( rule );
         return allRules.remove( rule );
     }
@@ -197,18 +197,18 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public RelNode changeTraits( RelNode rel, RelTraitSet toTraits ) {
+    public AlgNode changeTraits( AlgNode alg, AlgTraitSet toTraits ) {
         // Ignore traits, except for the root, where we remember what the final conversion should be.
-        if ( (rel == root) || (rel == root.getCurrentRel()) ) {
+        if ( (alg == root) || (alg == root.getCurrentAlg()) ) {
             requestedRootTraits = toTraits;
         }
-        return rel;
+        return alg;
     }
 
 
     // implement RelOptPlanner
     @Override
-    public RelNode findBestExp() {
+    public AlgNode findBestExp() {
         assert root != null;
 
         executeProgram( mainProgram );
@@ -271,7 +271,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
         LOGGER.trace( "Applying rule class {}", instruction.ruleClass );
         if ( instruction.ruleSet == null ) {
             instruction.ruleSet = new LinkedHashSet<>();
-            for ( RelOptRule rule : allRules ) {
+            for ( AlgOptRule rule : allRules ) {
                 if ( instruction.ruleClass.isInstance( rule ) ) {
                     instruction.ruleSet.add( rule );
                 }
@@ -304,7 +304,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
         assert currentProgram.group == null;
         if ( instruction.ruleSet == null ) {
             instruction.ruleSet = new LinkedHashSet<>();
-            for ( RelOptRule rule : allRules ) {
+            for ( AlgOptRule rule : allRules ) {
                 if ( !(rule instanceof ConverterRule) ) {
                     continue;
                 }
@@ -317,7 +317,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
                 instruction.ruleSet.add( converter );
                 if ( !instruction.guaranteed ) {
                     // Add a TraitMatchingRule to work bottom-up
-                    instruction.ruleSet.add( new TraitMatchingRule( converter, RelFactories.LOGICAL_BUILDER ) );
+                    instruction.ruleSet.add( new TraitMatchingRule( converter, AlgFactories.LOGICAL_BUILDER ) );
                 }
             }
         }
@@ -329,7 +329,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
         assert currentProgram.group == null;
         if ( instruction.ruleSet == null ) {
             instruction.ruleSet = new LinkedHashSet<>();
-            for ( RelOptRule rule : allRules ) {
+            for ( AlgOptRule rule : allRules ) {
                 if ( !(rule instanceof CommonRelSubExprRule) ) {
                     continue;
                 }
@@ -370,11 +370,11 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private int depthFirstApply( Iterator<HepRelVertex> iter, Collection<RelOptRule> rules, boolean forceConversions, int nMatches ) {
+    private int depthFirstApply( Iterator<HepAlgVertex> iter, Collection<AlgOptRule> rules, boolean forceConversions, int nMatches ) {
         while ( iter.hasNext() ) {
-            HepRelVertex vertex = iter.next();
-            for ( RelOptRule rule : rules ) {
-                HepRelVertex newVertex = applyRule( rule, vertex, forceConversions );
+            HepAlgVertex vertex = iter.next();
+            for ( AlgOptRule rule : rules ) {
+                HepAlgVertex newVertex = applyRule( rule, vertex, forceConversions );
                 if ( newVertex == null || newVertex == vertex ) {
                     continue;
                 }
@@ -383,7 +383,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
                     return nMatches;
                 }
                 // To the extent possible, pick up where we left off; have to create a new iterator because old one was invalidated by transformation.
-                Iterator<HepRelVertex> depthIter = getGraphIterator( newVertex );
+                Iterator<HepAlgVertex> depthIter = getGraphIterator( newVertex );
                 nMatches = depthFirstApply( depthIter, rules, forceConversions, nMatches );
                 break;
             }
@@ -392,7 +392,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private void applyRules( Collection<RelOptRule> rules, boolean forceConversions ) {
+    private void applyRules( Collection<AlgOptRule> rules, boolean forceConversions ) {
         if ( currentProgram.group != null ) {
             assert currentProgram.group.collecting;
             currentProgram.group.ruleSet.addAll( rules );
@@ -407,12 +407,12 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
         boolean fixedPoint;
         do {
-            Iterator<HepRelVertex> iter = getGraphIterator( root );
+            Iterator<HepAlgVertex> iter = getGraphIterator( root );
             fixedPoint = true;
             while ( iter.hasNext() ) {
-                HepRelVertex vertex = iter.next();
-                for ( RelOptRule rule : rules ) {
-                    HepRelVertex newVertex = applyRule( rule, vertex, forceConversions );
+                HepAlgVertex vertex = iter.next();
+                for ( AlgOptRule rule : rules ) {
+                    HepAlgVertex newVertex = applyRule( rule, vertex, forceConversions );
                     if ( newVertex == null || newVertex == vertex ) {
                         continue;
                     }
@@ -441,7 +441,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private Iterator<HepRelVertex> getGraphIterator( HepRelVertex start ) {
+    private Iterator<HepAlgVertex> getGraphIterator( HepAlgVertex start ) {
         // Make sure there's no garbage, because topological sort doesn't start from a specific root, and rules can't deal with firing on garbage.
 
         // FIXME jvs 25-Sept-2006: I had to move this earlier because of FRG-215, which is still under investigation. Once we figure that one out, move down to location below for better optimizer performance.
@@ -470,8 +470,8 @@ public class HepPlanner extends AbstractRelOptPlanner {
 */
 
                 // TODO jvs 4-Apr-2006:  enhance TopologicalOrderIterator to support reverse walk.
-                final List<HepRelVertex> list = new ArrayList<>();
-                for ( HepRelVertex vertex : TopologicalOrderIterator.of( graph ) ) {
+                final List<HepAlgVertex> list = new ArrayList<>();
+                for ( HepAlgVertex vertex : TopologicalOrderIterator.of( graph ) ) {
                     list.add( vertex );
                 }
                 Collections.reverse( list );
@@ -483,18 +483,18 @@ public class HepPlanner extends AbstractRelOptPlanner {
     /**
      * Returns whether the vertex is valid.
      */
-    private boolean belongsToDag( HepRelVertex vertex ) {
-        String digest = vertex.getCurrentRel().getDigest();
+    private boolean belongsToDag( HepAlgVertex vertex ) {
+        String digest = vertex.getCurrentAlg().getDigest();
         return mapDigestToVertex.get( digest ) != null;
     }
 
 
-    private HepRelVertex applyRule( RelOptRule rule, HepRelVertex vertex, boolean forceConversions ) {
+    private HepAlgVertex applyRule( AlgOptRule rule, HepAlgVertex vertex, boolean forceConversions ) {
         if ( !belongsToDag( vertex ) ) {
             return null;
         }
-        RelTrait parentTrait = null;
-        List<RelNode> parents = null;
+        AlgTrait parentTrait = null;
+        List<AlgNode> parents = null;
         if ( rule instanceof ConverterRule ) {
             // Guaranteed converter rules require special casing to make sure they only fire where actually needed, otherwise they tend to fire to infinity and beyond.
             ConverterRule converterRule = (ConverterRule) rule;
@@ -506,25 +506,25 @@ public class HepPlanner extends AbstractRelOptPlanner {
             }
         } else if ( rule instanceof CommonRelSubExprRule ) {
             // Only fire CommonRelSubExprRules if the vertex is a common subexpression.
-            List<HepRelVertex> parentVertices = getVertexParents( vertex );
+            List<HepAlgVertex> parentVertices = getVertexParents( vertex );
             if ( parentVertices.size() < 2 ) {
                 return null;
             }
             parents = new ArrayList<>();
-            for ( HepRelVertex pVertex : parentVertices ) {
-                parents.add( pVertex.getCurrentRel() );
+            for ( HepAlgVertex pVertex : parentVertices ) {
+                parents.add( pVertex.getCurrentAlg() );
             }
         }
 
-        final List<RelNode> bindings = new ArrayList<>();
-        final Map<RelNode, List<RelNode>> nodeChildren = new HashMap<>();
-        boolean match = matchOperands( rule.getOperand(), vertex.getCurrentRel(), bindings, nodeChildren );
+        final List<AlgNode> bindings = new ArrayList<>();
+        final Map<AlgNode, List<AlgNode>> nodeChildren = new HashMap<>();
+        boolean match = matchOperands( rule.getOperand(), vertex.getCurrentAlg(), bindings, nodeChildren );
 
         if ( !match ) {
             return null;
         }
 
-        HepRuleCall call = new HepRuleCall( this, rule.getOperand(), bindings.toArray( new RelNode[0] ), nodeChildren, parents );
+        HepRuleCall call = new HepRuleCall( this, rule.getOperand(), bindings.toArray( new AlgNode[0] ), nodeChildren, parents );
 
         // Allow the rule to apply its own side-conditions.
         if ( !rule.matches( call ) ) {
@@ -541,11 +541,11 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private boolean doesConverterApply( ConverterRule converterRule, HepRelVertex vertex ) {
-        RelTrait outTrait = converterRule.getOutTrait();
-        List<HepRelVertex> parents = Graphs.predecessorListOf( graph, vertex );
-        for ( HepRelVertex parent : parents ) {
-            RelNode parentRel = parent.getCurrentRel();
+    private boolean doesConverterApply( ConverterRule converterRule, HepAlgVertex vertex ) {
+        AlgTrait outTrait = converterRule.getOutTrait();
+        List<HepAlgVertex> parents = Graphs.predecessorListOf( graph, vertex );
+        for ( HepAlgVertex parent : parents ) {
+            AlgNode parentRel = parent.getCurrentAlg();
             if ( parentRel instanceof Converter ) {
                 // We don't support converter chains.
                 continue;
@@ -567,14 +567,14 @@ public class HepPlanner extends AbstractRelOptPlanner {
      * @param vertex the vertex
      * @return the list of parents for the vertex
      */
-    private List<HepRelVertex> getVertexParents( HepRelVertex vertex ) {
-        final List<HepRelVertex> parents = new ArrayList<>();
-        final List<HepRelVertex> parentVertices = Graphs.predecessorListOf( graph, vertex );
+    private List<HepAlgVertex> getVertexParents( HepAlgVertex vertex ) {
+        final List<HepAlgVertex> parents = new ArrayList<>();
+        final List<HepAlgVertex> parentVertices = Graphs.predecessorListOf( graph, vertex );
 
-        for ( HepRelVertex pVertex : parentVertices ) {
-            RelNode parent = pVertex.getCurrentRel();
+        for ( HepAlgVertex pVertex : parentVertices ) {
+            AlgNode parent = pVertex.getCurrentAlg();
             for ( int i = 0; i < parent.getInputs().size(); i++ ) {
-                HepRelVertex child = (HepRelVertex) parent.getInputs().get( i );
+                HepAlgVertex child = (HepAlgVertex) parent.getInputs().get( i );
                 if ( child == vertex ) {
                     parents.add( pVertex );
                 }
@@ -584,22 +584,22 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private boolean matchOperands( RelOptRuleOperand operand, RelNode rel, List<RelNode> bindings, Map<RelNode, List<RelNode>> nodeChildren ) {
-        if ( !operand.matches( rel ) ) {
+    private boolean matchOperands( AlgOptRuleOperand operand, AlgNode alg, List<AlgNode> bindings, Map<AlgNode, List<AlgNode>> nodeChildren ) {
+        if ( !operand.matches( alg ) ) {
             return false;
         }
-        bindings.add( rel );
+        bindings.add( alg );
         @SuppressWarnings("unchecked")
-        List<HepRelVertex> childRels = (List) rel.getInputs();
+        List<HepAlgVertex> childRels = (List) alg.getInputs();
         switch ( operand.childPolicy ) {
             case ANY:
                 return true;
             case UNORDERED:
                 // For each operand, at least one child must match. If matchAnyChildren, usually there's just one operand.
-                for ( RelOptRuleOperand childOperand : operand.getChildOperands() ) {
+                for ( AlgOptRuleOperand childOperand : operand.getChildOperands() ) {
                     boolean match = false;
-                    for ( HepRelVertex childRel : childRels ) {
-                        match = matchOperands( childOperand, childRel.getCurrentRel(), bindings, nodeChildren );
+                    for ( HepAlgVertex childRel : childRels ) {
+                        match = matchOperands( childOperand, childRel.getCurrentAlg(), bindings, nodeChildren );
                         if ( match ) {
                             break;
                         }
@@ -608,19 +608,19 @@ public class HepPlanner extends AbstractRelOptPlanner {
                         return false;
                     }
                 }
-                final List<RelNode> children = new ArrayList<>( childRels.size() );
-                for ( HepRelVertex childRel : childRels ) {
-                    children.add( childRel.getCurrentRel() );
+                final List<AlgNode> children = new ArrayList<>( childRels.size() );
+                for ( HepAlgVertex childRel : childRels ) {
+                    children.add( childRel.getCurrentAlg() );
                 }
-                nodeChildren.put( rel, children );
+                nodeChildren.put( alg, children );
                 return true;
             default:
                 int n = operand.getChildOperands().size();
                 if ( childRels.size() < n ) {
                     return false;
                 }
-                for ( Pair<HepRelVertex, RelOptRuleOperand> pair : Pair.zip( childRels, operand.getChildOperands() ) ) {
-                    boolean match = matchOperands( pair.right, pair.left.getCurrentRel(), bindings, nodeChildren );
+                for ( Pair<HepAlgVertex, AlgOptRuleOperand> pair : Pair.zip( childRels, operand.getChildOperands() ) ) {
+                    boolean match = matchOperands( pair.right, pair.left.getCurrentAlg(), bindings, nodeChildren );
                     if ( !match ) {
                         return false;
                     }
@@ -630,27 +630,27 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private HepRelVertex applyTransformationResults( HepRelVertex vertex, HepRuleCall call, RelTrait parentTrait ) {
+    private HepAlgVertex applyTransformationResults( HepAlgVertex vertex, HepRuleCall call, AlgTrait parentTrait ) {
         // TODO jvs 5-Apr-2006:  Take the one that gives the best global cost rather than the best local cost.  That requires "tentative" graph edits.
 
         assert !call.getResults().isEmpty();
 
-        RelNode bestRel = null;
+        AlgNode bestRel = null;
 
         if ( call.getResults().size() == 1 ) {
             // No costing required; skip it to minimize the chance of hitting rels without cost information.
             bestRel = call.getResults().get( 0 );
         } else {
-            RelOptCost bestCost = null;
-            final RelMetadataQuery mq = call.getMetadataQuery();
-            for ( RelNode rel : call.getResults() ) {
-                RelOptCost thisCost = getCost( rel, mq );
+            AlgOptCost bestCost = null;
+            final AlgMetadataQuery mq = call.getMetadataQuery();
+            for ( AlgNode alg : call.getResults() ) {
+                AlgOptCost thisCost = getCost( alg, mq );
                 if ( LOGGER.isTraceEnabled() ) {
                     // Keep in the isTraceEnabled for the getRowCount method call
-                    LOGGER.trace( "considering {} with cumulative cost={} and rowcount={}", rel, thisCost, mq.getRowCount( rel ) );
+                    LOGGER.trace( "considering {} with cumulative cost={} and rowcount={}", alg, thisCost, mq.getRowCount( alg ) );
                 }
                 if ( (bestRel == null) || thisCost.isLt( bestCost ) ) {
-                    bestRel = rel;
+                    bestRel = alg;
                     bestCost = thisCost;
                 }
             }
@@ -661,11 +661,11 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
         // Before we add the result, make a copy of the list of vertex's parents.  We'll need this later during contraction so that we only update the existing parents, not the new parents (otherwise loops can result).
         // Also take care of filtering out parents by traits in case we're dealing with a converter rule.
-        final List<HepRelVertex> allParents = Graphs.predecessorListOf( graph, vertex );
-        final List<HepRelVertex> parents = new ArrayList<>();
-        for ( HepRelVertex parent : allParents ) {
+        final List<HepAlgVertex> allParents = Graphs.predecessorListOf( graph, vertex );
+        final List<HepAlgVertex> parents = new ArrayList<>();
+        for ( HepAlgVertex parent : allParents ) {
             if ( parentTrait != null ) {
-                RelNode parentRel = parent.getCurrentRel();
+                AlgNode parentRel = parent.getCurrentAlg();
                 if ( parentRel instanceof Converter ) {
                     // We don't support automatically chaining conversions. Treating a converter as a candidate parent here can cause the "iParentMatch" check below to
                     // throw away a new converter needed in the multi-parent DAG case.
@@ -679,7 +679,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
             parents.add( parent );
         }
 
-        HepRelVertex newVertex = addRelToGraph( bestRel );
+        HepAlgVertex newVertex = addRelToGraph( bestRel );
 
         // There's a chance that newVertex is the same as one of the parents due to common subexpression recognition (e.g. the LogicalProject added by JoinCommuteRule).  In that
         // case, treat the transformation as a nop to avoid creating a loop.
@@ -701,72 +701,72 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public RelNode register( RelNode rel, RelNode equivRel ) {
+    public AlgNode register( AlgNode alg, AlgNode equivRel ) {
         // Ignore; this call is mostly to tell Volcano how to avoid infinite loops.
-        return rel;
+        return alg;
     }
 
 
     @Override
-    public void onCopy( RelNode rel, RelNode newRel ) {
-        onCopyHook.apply( rel, newRel );
-    }
-
-
-    // implement RelOptPlanner
-    @Override
-    public RelNode ensureRegistered( RelNode rel, RelNode equivRel ) {
-        return rel;
+    public void onCopy( AlgNode alg, AlgNode newRel ) {
+        onCopyHook.apply( alg, newRel );
     }
 
 
     // implement RelOptPlanner
     @Override
-    public boolean isRegistered( RelNode rel ) {
+    public AlgNode ensureRegistered( AlgNode alg, AlgNode equivRel ) {
+        return alg;
+    }
+
+
+    // implement RelOptPlanner
+    @Override
+    public boolean isRegistered( AlgNode alg ) {
         return true;
     }
 
 
-    private HepRelVertex addRelToGraph( RelNode rel ) {
+    private HepAlgVertex addRelToGraph( AlgNode alg ) {
         // Check if a transformation already produced a reference to an existing vertex.
-        if ( graph.vertexSet().contains( rel ) ) {
-            return (HepRelVertex) rel;
+        if ( graph.vertexSet().contains( alg ) ) {
+            return (HepAlgVertex) alg;
         }
 
         // Recursively add children, replacing this rel's inputs with corresponding child vertices.
-        final List<RelNode> inputs = rel.getInputs();
-        final List<RelNode> newInputs = new ArrayList<>();
-        for ( RelNode input1 : inputs ) {
-            HepRelVertex childVertex = addRelToGraph( input1 );
+        final List<AlgNode> inputs = alg.getInputs();
+        final List<AlgNode> newInputs = new ArrayList<>();
+        for ( AlgNode input1 : inputs ) {
+            HepAlgVertex childVertex = addRelToGraph( input1 );
             newInputs.add( childVertex );
         }
 
         if ( !Util.equalShallow( inputs, newInputs ) ) {
-            RelNode oldRel = rel;
-            rel = rel.copy( rel.getTraitSet(), newInputs );
-            onCopy( oldRel, rel );
+            AlgNode oldRel = alg;
+            alg = alg.copy( alg.getTraitSet(), newInputs );
+            onCopy( oldRel, alg );
         }
         // Compute digest first time we add to DAG, otherwise can't get equivVertex for common sub-expression
-        rel.recomputeDigest();
+        alg.recomputeDigest();
 
-        // try to find equivalent rel only if DAG is allowed
+        // try to find equivalent alg only if DAG is allowed
         if ( !noDag ) {
             // Now, check if an equivalent vertex already exists in graph.
-            String digest = rel.getDigest();
-            HepRelVertex equivVertex = mapDigestToVertex.get( digest );
+            String digest = alg.getDigest();
+            HepAlgVertex equivVertex = mapDigestToVertex.get( digest );
             if ( equivVertex != null ) {
                 // Use existing vertex.
                 return equivVertex;
             }
         }
 
-        // No equivalence:  create a new vertex to represent this rel.
-        HepRelVertex newVertex = new HepRelVertex( rel );
+        // No equivalence:  create a new vertex to represent this alg.
+        HepAlgVertex newVertex = new HepAlgVertex( alg );
         graph.addVertex( newVertex );
-        updateVertex( newVertex, rel );
+        updateVertex( newVertex, alg );
 
-        for ( RelNode input : rel.getInputs() ) {
-            graph.addEdge( newVertex, (HepRelVertex) input );
+        for ( AlgNode input : alg.getInputs() ) {
+            graph.addEdge( newVertex, (HepAlgVertex) input );
         }
 
         nTransformations++;
@@ -774,21 +774,21 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private void contractVertices( HepRelVertex preservedVertex, HepRelVertex discardedVertex, List<HepRelVertex> parents ) {
+    private void contractVertices( HepAlgVertex preservedVertex, HepAlgVertex discardedVertex, List<HepAlgVertex> parents ) {
         if ( preservedVertex == discardedVertex ) {
             // Nop.
             return;
         }
 
-        RelNode rel = preservedVertex.getCurrentRel();
-        updateVertex( preservedVertex, rel );
+        AlgNode alg = preservedVertex.getCurrentAlg();
+        updateVertex( preservedVertex, alg );
 
         // Update specified parents of discardedVertex.
-        for ( HepRelVertex parent : parents ) {
-            RelNode parentRel = parent.getCurrentRel();
-            List<RelNode> inputs = parentRel.getInputs();
+        for ( HepAlgVertex parent : parents ) {
+            AlgNode parentRel = parent.getCurrentAlg();
+            List<AlgNode> inputs = parentRel.getInputs();
             for ( int i = 0; i < inputs.size(); ++i ) {
-                RelNode child = inputs.get( i );
+                AlgNode child = inputs.get( i );
                 if ( child != discardedVertex ) {
                     continue;
                 }
@@ -806,46 +806,46 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private void updateVertex( HepRelVertex vertex, RelNode rel ) {
-        if ( rel != vertex.getCurrentRel() ) {
+    private void updateVertex( HepAlgVertex vertex, AlgNode alg ) {
+        if ( alg != vertex.getCurrentAlg() ) {
             // REVIEW jvs: We'll do this again later during garbage collection.  Or we could get rid of mark/sweep garbage collection and do it precisely
             // at this point by walking down to all rels which are only reachable from here.
-            notifyDiscard( vertex.getCurrentRel() );
+            notifyDiscard( vertex.getCurrentAlg() );
         }
-        String oldDigest = vertex.getCurrentRel().toString();
+        String oldDigest = vertex.getCurrentAlg().toString();
         if ( mapDigestToVertex.get( oldDigest ) == vertex ) {
             mapDigestToVertex.remove( oldDigest );
         }
-        String newDigest = rel.getDigest();
-        // When a transformation happened in one rule apply, support vertex2 replace vertex1, but the current relNode of vertex1 and vertex2 is same, then the digest is also same. but we can't remove vertex2,
+        String newDigest = alg.getDigest();
+        // When a transformation happened in one rule apply, support vertex2 replace vertex1, but the current algNode of vertex1 and vertex2 is same, then the digest is also same. but we can't remove vertex2,
         // otherwise the digest will be removed wrongly in the mapDigestToVertex  when collectGC so it must update the digest that map to vertex
         mapDigestToVertex.put( newDigest, vertex );
-        if ( rel != vertex.getCurrentRel() ) {
-            vertex.replaceRel( rel );
+        if ( alg != vertex.getCurrentAlg() ) {
+            vertex.replaceRel( alg );
         }
-        notifyEquivalence( rel, vertex, false );
+        notifyEquivalence( alg, vertex, false );
     }
 
 
-    private RelNode buildFinalPlan( HepRelVertex vertex ) {
-        RelNode rel = vertex.getCurrentRel();
+    private AlgNode buildFinalPlan( HepAlgVertex vertex ) {
+        AlgNode alg = vertex.getCurrentAlg();
 
-        notifyChosen( rel );
+        notifyChosen( alg );
 
         // Recursively process children, replacing this rel's inputs with corresponding child rels.
-        List<RelNode> inputs = rel.getInputs();
+        List<AlgNode> inputs = alg.getInputs();
         for ( int i = 0; i < inputs.size(); ++i ) {
-            RelNode child = inputs.get( i );
-            if ( !(child instanceof HepRelVertex) ) {
+            AlgNode child = inputs.get( i );
+            if ( !(child instanceof HepAlgVertex) ) {
                 // Already replaced.
                 continue;
             }
-            child = buildFinalPlan( (HepRelVertex) child );
-            rel.replaceInput( i, child );
-            rel.recomputeDigest();
+            child = buildFinalPlan( (HepAlgVertex) child );
+            alg.replaceInput( i, child );
+            alg.recomputeDigest();
         }
 
-        return rel;
+        return alg;
     }
 
 
@@ -859,7 +859,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
         LOGGER.trace( "collecting garbage" );
 
         // Yer basic mark-and-sweep.
-        final Set<HepRelVertex> rootSet = new HashSet<>();
+        final Set<HepAlgVertex> rootSet = new HashSet<>();
         if ( graph.vertexSet().contains( root ) ) {
             BreadthFirstIterator.reachable( rootSet, graph, root );
         }
@@ -868,12 +868,12 @@ public class HepPlanner extends AbstractRelOptPlanner {
             // Everything is reachable:  no garbage to collect.
             return;
         }
-        final Set<HepRelVertex> sweepSet = new HashSet<>();
-        for ( HepRelVertex vertex : graph.vertexSet() ) {
+        final Set<HepAlgVertex> sweepSet = new HashSet<>();
+        for ( HepAlgVertex vertex : graph.vertexSet() ) {
             if ( !rootSet.contains( vertex ) ) {
                 sweepSet.add( vertex );
-                RelNode rel = vertex.getCurrentRel();
-                notifyDiscard( rel );
+                AlgNode alg = vertex.getCurrentAlg();
+                notifyDiscard( alg );
             }
         }
         assert !sweepSet.isEmpty();
@@ -881,9 +881,9 @@ public class HepPlanner extends AbstractRelOptPlanner {
         graphSizeLastGC = graph.vertexSet().size();
 
         // Clean up digest map too.
-        Iterator<Map.Entry<String, HepRelVertex>> digestIter = mapDigestToVertex.entrySet().iterator();
+        Iterator<Map.Entry<String, HepAlgVertex>> digestIter = mapDigestToVertex.entrySet().iterator();
         while ( digestIter.hasNext() ) {
-            HepRelVertex vertex = digestIter.next().getValue();
+            HepAlgVertex vertex = digestIter.next().getValue();
             if ( sweepSet.contains( vertex ) ) {
                 digestIter.remove();
             }
@@ -893,8 +893,8 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     private void assertNoCycles() {
         // Verify that the graph is acyclic.
-        final CycleDetector<HepRelVertex, DefaultEdge> cycleDetector = new CycleDetector<>( graph );
-        Set<HepRelVertex> cyclicVertices = cycleDetector.findCycles();
+        final CycleDetector<HepAlgVertex, DefaultEdge> cycleDetector = new CycleDetector<>( graph );
+        Set<HepAlgVertex> cyclicVertices = cycleDetector.findCycles();
         if ( cyclicVertices.isEmpty() ) {
             return;
         }
@@ -909,19 +909,19 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
         assertNoCycles();
 
-        final RelMetadataQuery mq = root.getCluster().getMetadataQuery();
+        final AlgMetadataQuery mq = root.getCluster().getMetadataQuery();
         final StringBuilder sb = new StringBuilder();
         sb.append( "\nBreadth-first from root:  {\n" );
-        for ( HepRelVertex vertex : BreadthFirstIterator.of( graph, root ) ) {
+        for ( HepAlgVertex vertex : BreadthFirstIterator.of( graph, root ) ) {
             sb.append( "    " )
                     .append( vertex )
                     .append( " = " );
-            RelNode rel = vertex.getCurrentRel();
-            sb.append( rel )
+            AlgNode alg = vertex.getCurrentAlg();
+            sb.append( alg )
                     .append( ", rowcount=" )
-                    .append( mq.getRowCount( rel ) )
+                    .append( mq.getRowCount( alg ) )
                     .append( ", cumulative cost=" )
-                    .append( getCost( rel, mq ) )
+                    .append( getCost( alg, mq ) )
                     .append( '\n' );
         }
         sb.append( "}" );
@@ -931,16 +931,17 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public void registerMetadataProviders( List<RelMetadataProvider> list ) {
-        list.add( 0, new HepRelMetadataProvider() );
+    public void registerMetadataProviders( List<AlgMetadataProvider> list ) {
+        list.add( 0, new HepAlgMetadataProvider() );
     }
 
 
     // implement RelOptPlanner
     @Override
-    public long getRelMetadataTimestamp( RelNode rel ) {
-        // TODO jvs 20-Apr-2006: This is overly conservative.  Better would be to keep a timestamp per HepRelVertex, and update only affected vertices and all ancestors on each transformation.
+    public long getRelMetadataTimestamp( AlgNode alg ) {
+        // TODO jvs 20-Apr-2006: This is overly conservative.  Better would be to keep a timestamp per HepAlgVertex, and update only affected vertices and all ancestors on each transformation.
         return nTransformations;
     }
+
 }
 

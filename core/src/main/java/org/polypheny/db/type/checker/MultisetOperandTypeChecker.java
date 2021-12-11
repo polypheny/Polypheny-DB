@@ -18,10 +18,10 @@ package org.polypheny.db.type.checker;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
@@ -44,19 +44,19 @@ public class MultisetOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        final SqlNode op0 = callBinding.operand( 0 );
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
+        final Node op0 = callBinding.operand( 0 );
         if ( !OperandTypes.MULTISET.checkSingleOperandType( callBinding, op0, 0, throwOnFailure ) ) {
             return false;
         }
 
-        final SqlNode op1 = callBinding.operand( 1 );
+        final Node op1 = callBinding.operand( 1 );
         if ( !OperandTypes.MULTISET.checkSingleOperandType( callBinding, op1, 0, throwOnFailure ) ) {
             return false;
         }
 
         // TODO: this won't work if element types are of ROW types and there is a mismatch.
-        RelDataType biggest =
+        AlgDataType biggest =
                 callBinding.getTypeFactory().leastRestrictive(
                         ImmutableList.of(
                                 callBinding.getValidator()
@@ -69,8 +69,8 @@ public class MultisetOperandTypeChecker implements PolyOperandTypeChecker {
             if ( throwOnFailure ) {
                 throw callBinding.newError(
                         Static.RESOURCE.typeNotComparable(
-                                op0.getParserPosition().toString(),
-                                op1.getParserPosition().toString() ) );
+                                op0.getPos().toString(),
+                                op1.getPos().toString() ) );
             }
 
             return false;
@@ -86,7 +86,7 @@ public class MultisetOperandTypeChecker implements PolyOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         return "<MULTISET> " + opName + " <MULTISET>";
     }
 

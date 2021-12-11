@@ -16,10 +16,13 @@ configurations {
 
 dependencies {
     implementation project(":core")
+    implementation project(":sql-language")
+    implementation project(":mql-language")
+    implementation project(":pig-language")
+    implementation project(":cql-language")
     implementation project(":monitoring")
     implementation project(":statistic")
     implementation project(":explore-by-example")
-    implementation project(":cql-interface")
 
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
 
@@ -38,6 +41,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":sql-language", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 }

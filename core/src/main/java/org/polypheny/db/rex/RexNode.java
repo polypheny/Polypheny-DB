@@ -35,14 +35,15 @@ package org.polypheny.db.rex;
 
 
 import java.util.Collection;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Node;
 
 
 /**
  * Row expression.
  *
- * Every row-expression has a type. (Compare with {@link org.polypheny.db.sql.SqlNode}, which is created before validation, and therefore types may not be available.)
+ * Every row-expression has a type. (Compare with {@link Node}, which is created before validation, and therefore types may not be available.)
  *
  * Some common row-expressions are: {@link RexLiteral} (constant value), {@link RexVariable} (variable), {@link RexCall} (call to operator with operands).
  * Expressions are generally created using a {@link RexBuilder} factory.
@@ -55,7 +56,7 @@ public abstract class RexNode {
     protected String digest;
 
 
-    public abstract RelDataType getType();
+    public abstract AlgDataType getType();
 
 
     /**
@@ -74,12 +75,12 @@ public abstract class RexNode {
     }
 
 
-    public boolean isA( SqlKind kind ) {
+    public boolean isA( Kind kind ) {
         return getKind() == kind;
     }
 
 
-    public boolean isA( Collection<SqlKind> kinds ) {
+    public boolean isA( Collection<Kind> kinds ) {
         return getKind().belongsTo( kinds );
     }
 
@@ -89,8 +90,8 @@ public abstract class RexNode {
      *
      * @return Node kind, never null
      */
-    public SqlKind getKind() {
-        return SqlKind.OTHER;
+    public Kind getKind() {
+        return Kind.OTHER;
     }
 
 

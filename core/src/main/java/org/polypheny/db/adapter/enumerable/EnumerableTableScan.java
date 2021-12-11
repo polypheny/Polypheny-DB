@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,15 +49,15 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.schema.QueryableTable;
@@ -70,7 +70,7 @@ import org.polypheny.db.util.BuiltInMethod;
 /**
  * Implementation of {@link TableScan} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableTableScan extends TableScan implements EnumerableRel {
+public class EnumerableTableScan extends TableScan implements EnumerableAlg {
 
     private final Class elementType;
 
@@ -80,7 +80,7 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
      *
      * Use {@link #create} unless you know what you are doing.
      */
-    public EnumerableTableScan( RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, Class elementType ) {
+    public EnumerableTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, Class elementType ) {
         super( cluster, traitSet, table );
         assert getConvention() instanceof EnumerableConvention;
         this.elementType = elementType;
@@ -90,18 +90,18 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
     /**
      * Creates an EnumerableTableScan.
      */
-    public static EnumerableTableScan create( RelOptCluster cluster, RelOptTable relOptTable ) {
-        final Table table = relOptTable.unwrap( Table.class );
+    public static EnumerableTableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
+        final Table table = algOptTable.unwrap( Table.class );
         Class elementType = EnumerableTableScan.deduceElementType( table );
-        final RelTraitSet traitSet =
+        final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
-                        .replaceIfs( RelCollationTraitDef.INSTANCE, () -> {
+                        .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
                             if ( table != null ) {
                                 return table.getStatistic().getCollations();
                             }
                             return ImmutableList.of();
                         } );
-        return new EnumerableTableScan( cluster, traitSet, relOptTable, elementType );
+        return new EnumerableTableScan( cluster, traitSet, algOptTable, elementType );
     }
 
 
@@ -148,7 +148,7 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
     }
 
 
-    public static JavaRowFormat deduceFormat( RelOptTable table ) {
+    public static JavaRowFormat deduceFormat( AlgOptTable table ) {
         final Class elementType = deduceElementType( table.unwrap( Table.class ) );
         return elementType == Object[].class
                 ? JavaRowFormat.ARRAY
@@ -209,16 +209,16 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
 
     private Expression fieldExpression( ParameterExpression row_, int i, PhysType physType, JavaRowFormat format ) {
         final Expression e = format.field( row_, i, null, physType.getJavaFieldType( i ) );
-        final RelDataType relFieldType = physType.getRowType().getFieldList().get( i ).getType();
-        switch ( relFieldType.getPolyType() ) {
+        final AlgDataType algFieldType = physType.getRowType().getFieldList().get( i ).getType();
+        switch ( algFieldType.getPolyType() ) {
             case ARRAY:
             case MULTISET:
                 // We can't represent a multiset or array as a List<Employee>, because the consumer does not know the element type.
                 // The standard element type is List. We need to convert to a List<List>.
                 final JavaTypeFactory typeFactory = (JavaTypeFactory) getCluster().getTypeFactory();
-                final PhysType elementPhysType = PhysTypeImpl.of( typeFactory, relFieldType.getComponentType(), JavaRowFormat.CUSTOM );
+                final PhysType elementPhysType = PhysTypeImpl.of( typeFactory, algFieldType.getComponentType(), JavaRowFormat.CUSTOM );
                 final MethodCallExpression e2 = Expressions.call( BuiltInMethod.AS_ENUMERABLE2.method, e );
-                final RelDataType dummyType = this.rowType;
+                final AlgDataType dummyType = this.rowType;
                 final Expression e3 = elementPhysType.convertTo( e2, PhysTypeImpl.of( typeFactory, dummyType, JavaRowFormat.LIST ) );
                 return Expressions.call( e3, BuiltInMethod.ENUMERABLE_TO_LIST.method );
             default:
@@ -247,8 +247,8 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
     }
 
 
-    private boolean hasCollectionField( RelDataType rowType ) {
-        for ( RelDataTypeField field : rowType.getFieldList() ) {
+    private boolean hasCollectionField( AlgDataType rowType ) {
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
             switch ( field.getType().getPolyType() ) {
                 case ARRAY:
                 case MULTISET:
@@ -260,13 +260,13 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
 
 
     @Override
-    public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableTableScan( getCluster(), traitSet, table, elementType );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         // Note that representation is ARRAY. This assumes that the table returns a Object[] for each record. Actually a Table<T> can return any type T. And, if it is a JdbcTable, we'd like to be
         // able to generate alternate accessors that return e.g. synthetic records {T0 f0; T1 f1; ...} and don't box every primitive value.
         final PhysType physType =
@@ -277,5 +277,6 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
         final Expression expression = getExpression( physType );
         return implementor.result( physType, Blocks.toBlock( expression ) );
     }
+
 }
 

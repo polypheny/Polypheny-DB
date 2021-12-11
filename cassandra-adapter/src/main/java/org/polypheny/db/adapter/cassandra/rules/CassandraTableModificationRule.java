@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,28 +21,28 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.CassandraTableModify;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 @Slf4j
 public class CassandraTableModificationRule extends CassandraConverterRule {
 
-    CassandraTableModificationRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( TableModify.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraTableModificationRule:" + out.getName() );
+    CassandraTableModificationRule( CassandraConvention out, AlgBuilderFactory algBuilderFactory ) {
+        super( TableModify.class, r -> true, Convention.NONE, out, algBuilderFactory, "CassandraTableModificationRule:" + out.getName() );
     }
 
 
     @Override
-    public boolean matches( RelOptRuleCall call ) {
-        final TableModify tableModify = call.rel( 0 );
+    public boolean matches( AlgOptRuleCall call ) {
+        final TableModify tableModify = call.alg( 0 );
         if ( tableModify.getTable().unwrap( CassandraTable.class ) == null ) {
             return false;
         }
@@ -55,9 +55,9 @@ public class CassandraTableModificationRule extends CassandraConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final TableModify modify = (TableModify) rel;
-        log.debug( "Converting to a {} CassandraTableModify", ((TableModify) rel).getOperation() );
+    public AlgNode convert( AlgNode alg ) {
+        final TableModify modify = (TableModify) alg;
+        log.debug( "Converting to a {} CassandraTableModify", ((TableModify) alg).getOperation() );
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
         if ( modifiableTable == null ) {
             return null;
@@ -65,17 +65,18 @@ public class CassandraTableModificationRule extends CassandraConverterRule {
         if ( modify.getTable().unwrap( CassandraTable.class ) == null ) {
             return null;
         }
-        final RelTraitSet traitSet = modify.getTraitSet().replace( out );
+        final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
         return new CassandraTableModify(
                 modify.getCluster(),
                 traitSet,
                 modify.getTable(),
                 modify.getCatalogReader(),
-                RelOptRule.convert( modify.getInput(), traitSet ),
+                AlgOptRule.convert( modify.getInput(), traitSet ),
                 modify.getOperation(),
                 modify.getUpdateColumnList(),
                 modify.getSourceExpressionList(),
                 modify.isFlattened()
         );
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,23 +41,32 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.Meta;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.AlgVisitor;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.nodes.Explain;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
+import org.polypheny.db.nodes.validate.ValidatorTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.plan.ViewExpanders;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.RelVisitor;
-import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
@@ -65,17 +74,6 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.ExtensibleTable;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.ModifiableViewTable;
-import org.polypheny.db.sql.SqlExplain;
-import org.polypheny.db.sql.SqlExplainFormat;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql.validate.SqlValidatorCatalogReader;
-import org.polypheny.db.sql.validate.SqlValidatorTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.util.Holder;
@@ -100,7 +98,7 @@ public abstract class Prepare {
     protected final Convention resultConvention;
     protected PolyphenyDbTimingTracer timingTracer;
     protected List<List<String>> fieldOrigins;
-    protected RelDataType parameterRowType;
+    protected AlgDataType parameterRowType;
 
     // temporary. for testing.
     public static final TryThreadLocal<Boolean> THREAD_TRIM = TryThreadLocal.of( false );
@@ -123,11 +121,11 @@ public abstract class Prepare {
 
 
     protected abstract PreparedResult createPreparedExplanation(
-            RelDataType resultType,
-            RelDataType parameterRowType,
-            RelRoot root,
-            SqlExplainFormat format,
-            SqlExplainLevel detailLevel );
+            AlgDataType resultType,
+            AlgDataType parameterRowType,
+            AlgRoot root,
+            ExplainFormat format,
+            ExplainLevel detailLevel );
 
 
     /**
@@ -136,39 +134,39 @@ public abstract class Prepare {
      * @param root Root of relational expression tree
      * @return an equivalent optimized relational expression
      */
-    protected RelRoot optimize( RelRoot root ) {
-        final RelOptPlanner planner = root.rel.getCluster().getPlanner();
+    protected AlgRoot optimize( AlgRoot root ) {
+        final AlgOptPlanner planner = root.alg.getCluster().getPlanner();
 
         final DataContext dataContext = context.getDataContext();
         planner.setExecutor( new RexExecutorImpl( dataContext ) );
 
-        final RelTraitSet desiredTraits = getDesiredRootTraitSet( root );
+        final AlgTraitSet desiredTraits = getDesiredRootTraitSet( root );
 
         // Work around: Allow rules to be registered during planning process by briefly creating each kind of physical table
         // to let it register its rules.
-        // The problem occurs when plans are created via RelBuilder, not the usual process
+        // The problem occurs when plans are created via AlgBuilder, not the usual process
         // (SQL and SqlToRelConverter.Config.isConvertTableAccess = true).
-        final RelVisitor visitor = new RelVisitor() {
+        final AlgVisitor visitor = new AlgVisitor() {
             @Override
-            public void visit( RelNode node, int ordinal, RelNode parent ) {
+            public void visit( AlgNode node, int ordinal, AlgNode parent ) {
                 if ( node instanceof TableScan ) {
-                    final RelOptCluster cluster = node.getCluster();
-                    final RelOptTable.ToRelContext context = ViewExpanders.simpleContext( cluster );
-                    final RelNode r = node.getTable().toRel( context );
+                    final AlgOptCluster cluster = node.getCluster();
+                    final ToAlgContext context = () -> cluster;
+                    final AlgNode r = node.getTable().toAlg( context );
                     planner.registerClass( r );
                 }
                 super.visit( node, ordinal, parent );
             }
         };
-        visitor.go( root.rel );
+        visitor.go( root.alg );
 
         final Program program = getProgram();
-        final RelNode rootRel4 = program.run( planner, root.rel, desiredTraits );
+        final AlgNode rootRel4 = program.run( planner, root.alg, desiredTraits );
         if ( LOGGER.isDebugEnabled() ) {
-            LOGGER.debug( "Plan after physical tweaks: {}", RelOptUtil.toString( rootRel4, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            LOGGER.debug( "Plan after physical tweaks: {}", AlgOptUtil.toString( rootRel4, ExplainLevel.ALL_ATTRIBUTES ) );
         }
 
-        return root.withRel( rootRel4 );
+        return root.withAlg( rootRel4 );
     }
 
 
@@ -184,9 +182,9 @@ public abstract class Prepare {
     }
 
 
-    protected RelTraitSet getDesiredRootTraitSet( RelRoot root ) {
+    protected AlgTraitSet getDesiredRootTraitSet( AlgRoot root ) {
         // Make sure non-CallingConvention traits, if any, are preserved
-        return root.rel.getTraitSet()
+        return root.alg.getTraitSet()
                 .replace( resultConvention )
                 .replace( root.collation )
                 .simplify();
@@ -199,50 +197,50 @@ public abstract class Prepare {
      * @param root Root of the relational expression tree
      * @return an executable plan
      */
-    protected abstract PreparedResult implement( RelRoot root );
+    protected abstract PreparedResult implement( AlgRoot root );
 
 
-    public PreparedResult prepareSql( SqlNode sqlQuery, Class runtimeContextClass, SqlValidator validator, boolean needsValidation ) {
+    public PreparedResult prepareSql( Node sqlQuery, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
         return prepareSql( sqlQuery, sqlQuery, runtimeContextClass, validator, needsValidation );
     }
 
 
-    public PreparedResult prepareSql( SqlNode sqlQuery, SqlNode sqlNodeOriginal, Class runtimeContextClass, SqlValidator validator, boolean needsValidation ) {
+    public PreparedResult prepareSql( Node sqlQuery, Node sqlNodeOriginal, Class runtimeContextClass, Validator validator, boolean needsValidation ) {
         init( runtimeContextClass );
 
-        final SqlToRelConverter.ConfigBuilder builder =
-                SqlToRelConverter.configBuilder()
-                        .withTrimUnusedFields( true )
-                        .withExpand( THREAD_EXPAND.get() )
-                        .withExplain( sqlQuery.getKind() == SqlKind.EXPLAIN );
-        final SqlToRelConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, builder.build() );
+        final NodeToAlgConverter.Config config =
+                NodeToAlgConverter.configBuilder()
+                        .trimUnusedFields( true )
+                        .expand( THREAD_EXPAND.get() )
+                        .explain( sqlQuery.getKind() == Kind.EXPLAIN ).build();
+        final NodeToAlgConverter sqlToRelConverter = getSqlToRelConverter( validator, catalogReader, config );
 
-        SqlExplain sqlExplain = null;
-        if ( sqlQuery.getKind() == SqlKind.EXPLAIN ) {
+        Explain Explain = null;
+        if ( sqlQuery.getKind() == Kind.EXPLAIN ) {
             // dig out the underlying SQL statement
-            sqlExplain = (SqlExplain) sqlQuery;
-            sqlQuery = sqlExplain.getExplicandum();
-            sqlToRelConverter.setDynamicParamCountInExplain( sqlExplain.getDynamicParamCount() );
+            Explain = (Explain) sqlQuery;
+            sqlQuery = Explain.getExplicandum();
+            sqlToRelConverter.setDynamicParamCountInExplain( Explain.getDynamicParamCount() );
         }
 
-        RelRoot root = sqlToRelConverter.convertQuery( sqlQuery, needsValidation, true );
-        Hook.CONVERTED.run( root.rel );
+        AlgRoot root = sqlToRelConverter.convertQuery( sqlQuery, needsValidation, true );
+        Hook.CONVERTED.run( root.alg );
 
         if ( timingTracer != null ) {
             timingTracer.traceTime( "end sql2rel" );
         }
 
-        final RelDataType resultType = validator.getValidatedNodeType( sqlQuery );
+        final AlgDataType resultType = validator.getValidatedNodeType( sqlQuery );
         fieldOrigins = validator.getFieldOrigins( sqlQuery );
         assert fieldOrigins.size() == resultType.getFieldCount();
 
         parameterRowType = validator.getParameterRowType( sqlQuery );
 
         // Display logical plans before view expansion, plugging in physical storage and decorrelation
-        if ( sqlExplain != null ) {
-            SqlExplain.Depth explainDepth = sqlExplain.getDepth();
-            SqlExplainFormat format = sqlExplain.getFormat();
-            SqlExplainLevel detailLevel = sqlExplain.getDetailLevel();
+        if ( Explain != null ) {
+            Explain.Depth explainDepth = Explain.getDepth();
+            ExplainFormat format = Explain.getFormat();
+            ExplainLevel detailLevel = Explain.getDetailLevel();
             switch ( explainDepth ) {
                 case TYPE:
                     return createPreparedExplanation( resultType, parameterRowType, null, format, detailLevel );
@@ -253,21 +251,21 @@ public abstract class Prepare {
         }
 
         // Structured type flattening, view expansion, and plugging in physical storage.
-        root = root.withRel( flattenTypes( root.rel, true ) );
+        root = root.withAlg( flattenTypes( root.alg, true ) );
 
         if ( this.context.config().forceDecorrelate() ) {
             // Sub-query decorrelation.
-            root = root.withRel( decorrelate( sqlToRelConverter, sqlQuery, root.rel ) );
+            root = root.withAlg( decorrelate( sqlToRelConverter, sqlQuery, root.alg ) );
         }
 
         // Trim unused fields.
         root = trimUnusedFields( root );
 
-        Hook.TRIMMED.run( root.rel );
+        Hook.TRIMMED.run( root.alg );
 
         // Display physical plan after decorrelation.
-        if ( sqlExplain != null ) {
-            switch ( sqlExplain.getDepth() ) {
+        if ( Explain != null ) {
+            switch ( Explain.getDepth() ) {
                 case PHYSICAL:
                 default:
                     root = optimize( root );
@@ -275,8 +273,8 @@ public abstract class Prepare {
                             null,
                             parameterRowType,
                             root,
-                            sqlExplain.getFormat(),
-                            sqlExplain.getDetailLevel() );
+                            Explain.getFormat(),
+                            Explain.getDetailLevel() );
             }
         }
 
@@ -288,18 +286,18 @@ public abstract class Prepare {
 
         // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE).  For anything else
         // (e.g. CALL -> SELECT), use original kind.
-        if ( !root.kind.belongsTo( SqlKind.DML ) ) {
+        if ( !root.kind.belongsTo( Kind.DML ) ) {
             root = root.withKind( sqlNodeOriginal.getKind() );
         }
         return implement( root );
     }
 
 
-    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, SqlKind sqlKind ) {
+    protected LogicalTableModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
         if ( !isDml ) {
             return null;
         }
-        switch ( sqlKind ) {
+        switch ( Kind ) {
             case INSERT:
                 return LogicalTableModify.Operation.INSERT;
             case DELETE:
@@ -317,48 +315,48 @@ public abstract class Prepare {
     /**
      * Protected method to allow subclasses to override construction of SqlToRelConverter.
      */
-    protected abstract SqlToRelConverter getSqlToRelConverter( SqlValidator validator, CatalogReader catalogReader, SqlToRelConverter.Config config );
+    protected abstract NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config );
 
-    public abstract RelNode flattenTypes( RelNode rootRel, boolean restructure );
+    public abstract AlgNode flattenTypes( AlgNode rootRel, boolean restructure );
 
-    protected abstract RelNode decorrelate( SqlToRelConverter sqlToRelConverter, SqlNode query, RelNode rootRel );
+    protected abstract AlgNode decorrelate( NodeToAlgConverter sqlToRelConverter, Node query, AlgNode rootRel );
 
 
     /**
-     * Walks over a tree of relational expressions, replacing each {@link RelNode} with a 'slimmed down' relational
+     * Walks over a tree of relational expressions, replacing each {@link AlgNode} with a 'slimmed down' relational
      * expression that projects only the columns required by its consumer.
      *
      * @param root Root of relational expression tree
      * @return Trimmed relational expression
      */
-    protected RelRoot trimUnusedFields( RelRoot root ) {
-        final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
-                .withTrimUnusedFields( shouldTrim( root.rel ) )
-                .withExpand( THREAD_EXPAND.get() )
+    protected AlgRoot trimUnusedFields( AlgRoot root ) {
+        final NodeToAlgConverter.Config config = NodeToAlgConverter.configBuilder()
+                .trimUnusedFields( shouldTrim( root.alg ) )
+                .expand( THREAD_EXPAND.get() )
                 .build();
-        final SqlToRelConverter converter = getSqlToRelConverter( getSqlValidator(), catalogReader, config );
+        final NodeToAlgConverter converter = getSqlToRelConverter( getSqlValidator(), catalogReader, config );
         final boolean ordered = !root.collation.getFieldCollations().isEmpty();
-        final boolean dml = SqlKind.DML.contains( root.kind );
-        return root.withRel( converter.trimUnusedFields( dml || ordered, root.rel ) );
+        final boolean dml = Kind.DML.contains( root.kind );
+        return root.withAlg( converter.trimUnusedFields( dml || ordered, root.alg ) );
     }
 
 
-    private boolean shouldTrim( RelNode rootRel ) {
+    private boolean shouldTrim( AlgNode rootRel ) {
         // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past
         // joins and seem to prevent join-reordering.
-        return THREAD_TRIM.get() || RelOptUtil.countJoins( rootRel ) < 2;
+        return THREAD_TRIM.get() || AlgOptUtil.countJoins( rootRel ) < 2;
     }
 
 
     protected abstract void init( Class runtimeContextClass );
 
-    protected abstract SqlValidator getSqlValidator();
+    protected abstract Validator getSqlValidator();
 
 
     /**
      * Interface by which validator and planner can read table metadata.
      */
-    public interface CatalogReader extends RelOptSchema, SqlValidatorCatalogReader, SqlOperatorTable {
+    public interface CatalogReader extends AlgOptSchema, ValidatorCatalogReader, OperatorTable {
 
         @Override
         PreparingTable getTableForMember( List<String> names );
@@ -372,13 +370,14 @@ public abstract class Prepare {
         PreparingTable getTable( List<String> names );
 
         ThreadLocal<CatalogReader> THREAD_LOCAL = new ThreadLocal<>();
+
     }
 
 
     /**
      * Definition of a table, for the purposes of the validator and planner.
      */
-    public interface PreparingTable extends RelOptTable, SqlValidatorTable {
+    public interface PreparingTable extends AlgOptTable, ValidatorTable {
 
     }
 
@@ -389,36 +388,33 @@ public abstract class Prepare {
     public abstract static class AbstractPreparingTable implements PreparingTable {
 
         @Override
-        public final RelOptTable extend( List<RelDataTypeField> extendedFields ) {
+        public final AlgOptTable extend( List<AlgDataTypeField> extendedFields ) {
             final Table table = unwrap( Table.class );
 
             // Get the set of extended columns that do not have the same name as a column in the base table.
-            final List<RelDataTypeField> baseColumns = getRowType().getFieldList();
-            final List<RelDataTypeField> dedupedFields = RelOptUtil.deduplicateColumns( baseColumns, extendedFields );
-            final List<RelDataTypeField> dedupedExtendedFields = dedupedFields.subList( baseColumns.size(), dedupedFields.size() );
+            final List<AlgDataTypeField> baseColumns = getRowType().getFieldList();
+            final List<AlgDataTypeField> dedupedFields = AlgOptUtil.deduplicateColumns( baseColumns, extendedFields );
+            final List<AlgDataTypeField> dedupedExtendedFields = dedupedFields.subList( baseColumns.size(), dedupedFields.size() );
 
             if ( table instanceof ExtensibleTable ) {
                 final Table extendedTable = ((ExtensibleTable) table).extend( dedupedExtendedFields );
                 return extend( extendedTable );
-            } else if ( table instanceof ModifiableViewTable ) {
-                final ModifiableViewTable modifiableViewTable = (ModifiableViewTable) table;
-                final ModifiableViewTable extendedView = modifiableViewTable.extend( dedupedExtendedFields, getRelOptSchema().getTypeFactory() );
-                return extend( extendedView );
             }
             throw new RuntimeException( "Cannot extend " + table );
         }
 
 
         /**
-         * Implementation-specific code to instantiate a new {@link RelOptTable} based on a {@link Table} that has been extended.
+         * Implementation-specific code to instantiate a new {@link AlgOptTable} based on a {@link Table} that has been extended.
          */
-        protected abstract RelOptTable extend( Table extendedTable );
+        protected abstract AlgOptTable extend( Table extendedTable );
 
 
         @Override
         public List<ColumnStrategy> getColumnStrategies() {
-            return RelOptTableImpl.columnStrategies( AbstractPreparingTable.this );
+            return AlgOptTableImpl.columnStrategies( AbstractPreparingTable.this );
         }
+
     }
 
 
@@ -427,19 +423,19 @@ public abstract class Prepare {
      */
     public abstract static class PreparedExplain implements PreparedResult {
 
-        private final RelDataType rowType;
-        private final RelDataType parameterRowType;
-        private final RelRoot root;
-        private final SqlExplainFormat format;
-        private final SqlExplainLevel detailLevel;
+        private final AlgDataType rowType;
+        private final AlgDataType parameterRowType;
+        private final AlgRoot root;
+        private final ExplainFormat format;
+        private final ExplainLevel detailLevel;
 
 
         public PreparedExplain(
-                RelDataType rowType,
-                RelDataType parameterRowType,
-                RelRoot root,
-                SqlExplainFormat format,
-                SqlExplainLevel detailLevel ) {
+                AlgDataType rowType,
+                AlgDataType parameterRowType,
+                AlgRoot root,
+                ExplainFormat format,
+                ExplainLevel detailLevel ) {
             this.rowType = rowType;
             this.parameterRowType = parameterRowType;
             this.root = root;
@@ -451,15 +447,15 @@ public abstract class Prepare {
         @Override
         public String getCode() {
             if ( root == null ) {
-                return RelOptUtil.dumpType( rowType );
+                return AlgOptUtil.dumpType( rowType );
             } else {
-                return RelOptUtil.dumpPlan( "", root.rel, format, detailLevel );
+                return AlgOptUtil.dumpPlan( "", root.alg, format, detailLevel );
             }
         }
 
 
         @Override
-        public RelDataType getParameterRowType() {
+        public AlgDataType getParameterRowType() {
             return parameterRowType;
         }
 
@@ -480,6 +476,7 @@ public abstract class Prepare {
         public List<List<String>> getFieldOrigins() {
             return Collections.singletonList( Collections.nCopies( 4, null ) );
         }
+
     }
 
 
@@ -514,7 +511,7 @@ public abstract class Prepare {
         /**
          * Returns a record type whose fields are the parameters of this statement.
          */
-        RelDataType getParameterRowType();
+        AlgDataType getParameterRowType();
 
         /**
          * Executes the prepared result.
@@ -523,6 +520,7 @@ public abstract class Prepare {
          * @return producer of rows resulting from execution
          */
         Bindable getBindable( Meta.CursorFactory cursorFactory );
+
     }
 
 
@@ -531,21 +529,21 @@ public abstract class Prepare {
      */
     public abstract static class PreparedResultImpl implements PreparedResult, Typed {
 
-        protected final RelNode rootRel;
-        protected final RelDataType parameterRowType;
-        protected final RelDataType rowType;
+        protected final AlgNode rootRel;
+        protected final AlgDataType parameterRowType;
+        protected final AlgDataType rowType;
         protected final boolean isDml;
         protected final LogicalTableModify.Operation tableModOp;
         protected final List<List<String>> fieldOrigins;
-        protected final List<RelCollation> collations;
+        protected final List<AlgCollation> collations;
 
 
         public PreparedResultImpl(
-                RelDataType rowType,
-                RelDataType parameterRowType,
+                AlgDataType rowType,
+                AlgDataType parameterRowType,
                 List<List<String>> fieldOrigins,
-                List<RelCollation> collations,
-                RelNode rootRel,
+                List<AlgCollation> collations,
+                AlgNode rootRel,
                 LogicalTableModify.Operation tableModOp,
                 boolean isDml ) {
             this.rowType = Objects.requireNonNull( rowType );
@@ -577,7 +575,7 @@ public abstract class Prepare {
 
 
         @Override
-        public RelDataType getParameterRowType() {
+        public AlgDataType getParameterRowType() {
             return parameterRowType;
         }
 
@@ -586,7 +584,7 @@ public abstract class Prepare {
          * Returns the physical row type of this prepared statement. May not be identical to the row type returned by the
          * validator; for example, the field names may have been made unique.
          */
-        public RelDataType getPhysicalRowType() {
+        public AlgDataType getPhysicalRowType() {
             return rowType;
         }
 
@@ -595,9 +593,10 @@ public abstract class Prepare {
         public abstract Type getElementType();
 
 
-        public RelNode getRootRel() {
+        public AlgNode getRootRel() {
             return rootRel;
         }
+
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,10 +43,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
-import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.metadata.RelMetadataProvider;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptListener.AlgChosenEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgDiscardedEvent;
+import org.polypheny.db.plan.AlgOptListener.AlgEquivalenceEvent;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.util.CancelFlag;
 import org.polypheny.db.util.Static;
@@ -54,9 +57,9 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Abstract base for implementations of the {@link RelOptPlanner} interface.
+ * Abstract base for implementations of the {@link AlgOptPlanner} interface.
  */
-public abstract class AbstractRelOptPlanner implements RelOptPlanner {
+public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
     /**
      * Regular expression for integer.
@@ -67,19 +70,19 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     /**
      * Maps rule description to rule, just to ensure that rules' descriptions are unique.
      */
-    private final Map<String, RelOptRule> mapDescToRule = new HashMap<>();
+    private final Map<String, AlgOptRule> mapDescToRule = new HashMap<>();
 
-    protected final RelOptCostFactory costFactory;
+    protected final AlgOptCostFactory costFactory;
 
-    private MulticastRelOptListener listener;
+    private MulticastAlgOptListener listener;
 
     private Pattern ruleDescExclusionFilter;
 
     private final AtomicBoolean cancelFlag;
 
-    private final Set<Class<? extends RelNode>> classes = new HashSet<>();
+    private final Set<Class<? extends AlgNode>> classes = new HashSet<>();
 
-    private final Set<RelTrait> traits = new HashSet<>();
+    private final Set<AlgTrait> traits = new HashSet<>();
 
     /**
      * External context. Never null.
@@ -92,7 +95,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     /**
      * Creates an AbstractRelOptPlanner.
      */
-    protected AbstractRelOptPlanner( RelOptCostFactory costFactory, Context context ) {
+    protected AbstractRelOptPlanner( AlgOptCostFactory costFactory, Context context ) {
         assert costFactory != null;
         this.costFactory = costFactory;
         if ( context == null ) {
@@ -105,9 +108,9 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
                 ? cancelFlag.atomicBoolean
                 : new AtomicBoolean();
 
-        // Add abstract RelNode classes. No RelNodes will ever be registered with these types, but some operands may use them.
-        classes.add( RelNode.class );
-        classes.add( RelSubset.class );
+        // Add abstract {@link AlgNode} classes. No RelNodes will ever be registered with these types, but some operands may use them.
+        classes.add( AlgNode.class );
+        classes.add( AlgSubset.class );
     }
 
 
@@ -123,7 +126,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
 
 
     @Override
-    public RelOptCostFactory getCostFactory() {
+    public AlgOptCostFactory getCostFactory() {
         return costFactory;
     }
 
@@ -143,7 +146,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
      *
      * @param rule Rule
      */
-    protected void mapRuleDescription( RelOptRule rule ) {
+    protected void mapRuleDescription( AlgOptRule rule ) {
         // Check that there isn't a rule with the same description, also validating description string.
 
         final String description = rule.toString();
@@ -151,7 +154,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
         assert !description.contains( "$" ) : "Rule's description should not contain '$': " + description;
         assert !INTEGER_PATTERN.matcher( description ).matches() : "Rule's description should not be an integer: " + rule.getClass().getName() + ", " + description;
 
-        RelOptRule existingRule = mapDescToRule.put( description, rule );
+        AlgOptRule existingRule = mapDescToRule.put( description, rule );
         if ( existingRule != null ) {
             if ( existingRule == rule ) {
                 throw new AssertionError( "Rule should not already be registered" );
@@ -168,7 +171,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
      *
      * @param rule Rule
      */
-    protected void unmapRuleDescription( RelOptRule rule ) {
+    protected void unmapRuleDescription( AlgOptRule rule ) {
         String description = rule.toString();
         mapDescToRule.remove( description );
     }
@@ -180,7 +183,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
      * @param description Description
      * @return Rule with given description, or null if not found
      */
-    protected RelOptRule getRuleByDescription( String description ) {
+    protected AlgOptRule getRuleByDescription( String description ) {
         return mapDescToRule.get( description );
     }
 
@@ -197,40 +200,40 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
      * @param rule rule to test
      * @return true iff rule should be excluded
      */
-    public boolean isRuleExcluded( RelOptRule rule ) {
+    public boolean isRuleExcluded( AlgOptRule rule ) {
         return ruleDescExclusionFilter != null && ruleDescExclusionFilter.matcher( rule.toString() ).matches();
     }
 
 
     @Override
-    public RelOptPlanner chooseDelegate() {
+    public AlgOptPlanner chooseDelegate() {
         return this;
     }
 
 
     @Override
-    public void registerSchema( RelOptSchema schema ) {
+    public void registerSchema( AlgOptSchema schema ) {
     }
 
 
     @Override
-    public long getRelMetadataTimestamp( RelNode rel ) {
+    public long getRelMetadataTimestamp( AlgNode alg ) {
         return 0;
     }
 
 
     @Override
-    public void setImportance( RelNode rel, double importance ) {
+    public void setImportance( AlgNode alg, double importance ) {
     }
 
 
     @Override
-    public void registerClass( RelNode node ) {
-        final Class<? extends RelNode> clazz = node.getClass();
+    public void registerClass( AlgNode node ) {
+        final Class<? extends AlgNode> clazz = node.getClass();
         if ( classes.add( clazz ) ) {
             onNewClass( node );
         }
-        for ( RelTrait trait : node.getTraitSet() ) {
+        for ( AlgTrait trait : node.getTraitSet() ) {
             if ( traits.add( trait ) ) {
                 trait.register( this );
             }
@@ -239,41 +242,41 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
 
 
     /**
-     * Called when a new class of {@link RelNode} is seen.
+     * Called when a new class of {@link AlgNode} is seen.
      */
-    protected void onNewClass( RelNode node ) {
+    protected void onNewClass( AlgNode node ) {
         node.register( this );
     }
 
 
     @Override
-    public RelTraitSet emptyTraitSet() {
-        return RelTraitSet.createEmpty();
+    public AlgTraitSet emptyTraitSet() {
+        return AlgTraitSet.createEmpty();
     }
 
 
     @Override
-    public RelOptCost getCost( RelNode rel, RelMetadataQuery mq ) {
-        return mq.getCumulativeCost( rel );
+    public AlgOptCost getCost( AlgNode alg, AlgMetadataQuery mq ) {
+        return mq.getCumulativeCost( alg );
     }
 
 
     @Override
-    public void addListener( RelOptListener newListener ) {
+    public void addListener( AlgOptListener newListener ) {
         if ( listener == null ) {
-            listener = new MulticastRelOptListener();
+            listener = new MulticastAlgOptListener();
         }
         listener.addListener( newListener );
     }
 
 
     @Override
-    public void registerMetadataProviders( List<RelMetadataProvider> list ) {
+    public void registerMetadataProviders( List<AlgMetadataProvider> list ) {
     }
 
 
     @Override
-    public boolean addRelTraitDef( RelTraitDef relTraitDef ) {
+    public boolean addAlgTraitDef( AlgTraitDef algTraitDef ) {
         return false;
     }
 
@@ -284,7 +287,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
 
 
     @Override
-    public List<RelTraitDef> getRelTraitDefs() {
+    public List<AlgTraitDef> getAlgTraitDefs() {
         return ImmutableList.of();
     }
 
@@ -302,7 +305,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
 
 
     @Override
-    public void onCopy( RelNode rel, RelNode newRel ) {
+    public void onCopy( AlgNode alg, AlgNode newRel ) {
         // do nothing
     }
 
@@ -312,7 +315,7 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
      *
      * @param ruleCall description of rule call
      */
-    protected void fireRule( RelOptRuleCall ruleCall ) {
+    protected void fireRule( AlgOptRuleCall ruleCall ) {
         checkCancel();
 
         assert ruleCall.getRule().matches( ruleCall );
@@ -323,18 +326,18 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
 
         if ( LOGGER.isDebugEnabled() ) {
             // Leave this wrapped in a conditional to prevent unnecessarily calling Arrays.toString(...)
-            LOGGER.debug( "call#{}: Apply rule [{}] to {}", ruleCall.id, ruleCall.getRule(), Arrays.toString( ruleCall.rels ) );
+            LOGGER.debug( "call#{}: Apply rule [{}] to {}", ruleCall.id, ruleCall.getRule(), Arrays.toString( ruleCall.algs ) );
         }
 
         if ( listener != null ) {
-            RelOptListener.RuleAttemptedEvent event = new RelOptListener.RuleAttemptedEvent( this, ruleCall.rel( 0 ), ruleCall, true );
+            AlgOptListener.RuleAttemptedEvent event = new AlgOptListener.RuleAttemptedEvent( this, ruleCall.alg( 0 ), ruleCall, true );
             listener.ruleAttempted( event );
         }
 
         ruleCall.getRule().onMatch( ruleCall );
 
         if ( listener != null ) {
-            RelOptListener.RuleAttemptedEvent event = new RelOptListener.RuleAttemptedEvent( this, ruleCall.rel( 0 ), ruleCall, false );
+            AlgOptListener.RuleAttemptedEvent event = new AlgOptListener.RuleAttemptedEvent( this, ruleCall.alg( 0 ), ruleCall, false );
             listener.ruleAttempted( event );
         }
     }
@@ -345,62 +348,62 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
      *
      * @param ruleCall description of rule call
      * @param newRel result of transformation
-     * @param before true before registration of new rel; false after
+     * @param before true before registration of new alg; false after
      */
-    protected void notifyTransformation( RelOptRuleCall ruleCall, RelNode newRel, boolean before ) {
+    protected void notifyTransformation( AlgOptRuleCall ruleCall, AlgNode newRel, boolean before ) {
         if ( before && LOGGER.isDebugEnabled() ) {
-            LOGGER.debug( "call#{}: Rule {} arguments {} produced {}", ruleCall.id, ruleCall.getRule(), Arrays.toString( ruleCall.rels ), newRel );
+            LOGGER.debug( "call#{}: Rule {} arguments {} produced {}", ruleCall.id, ruleCall.getRule(), Arrays.toString( ruleCall.algs ), newRel );
         }
 
         if ( listener != null ) {
-            RelOptListener.RuleProductionEvent event = new RelOptListener.RuleProductionEvent( this, newRel, ruleCall, before );
+            AlgOptListener.RuleProductionEvent event = new AlgOptListener.RuleProductionEvent( this, newRel, ruleCall, before );
             listener.ruleProductionSucceeded( event );
         }
     }
 
 
     /**
-     * Takes care of tracing and listener notification when a rel is chosen as part of the final plan.
+     * Takes care of tracing and listener notification when a alg is chosen as part of the final plan.
      *
-     * @param rel chosen rel
+     * @param alg chosen rel
      */
-    protected void notifyChosen( RelNode rel ) {
-        LOGGER.debug( "For final plan, using {}", rel );
+    protected void notifyChosen( AlgNode alg ) {
+        LOGGER.debug( "For final plan, using {}", alg );
 
         if ( listener != null ) {
-            RelOptListener.RelChosenEvent event = new RelOptListener.RelChosenEvent( this, rel );
-            listener.relChosen( event );
+            AlgChosenEvent event = new AlgChosenEvent( this, alg );
+            listener.algChosen( event );
         }
     }
 
 
     /**
-     * Takes care of tracing and listener notification when a rel equivalence is detected.
+     * Takes care of tracing and listener notification when a alg equivalence is detected.
      *
-     * @param rel chosen rel
+     * @param alg chosen rel
      */
-    protected void notifyEquivalence( RelNode rel, Object equivalenceClass, boolean physical ) {
+    protected void notifyEquivalence( AlgNode alg, Object equivalenceClass, boolean physical ) {
         if ( listener != null ) {
-            RelOptListener.RelEquivalenceEvent event = new RelOptListener.RelEquivalenceEvent( this, rel, equivalenceClass, physical );
-            listener.relEquivalenceFound( event );
+            AlgEquivalenceEvent event = new AlgEquivalenceEvent( this, alg, equivalenceClass, physical );
+            listener.algEquivalenceFound( event );
         }
     }
 
 
     /**
-     * Takes care of tracing and listener notification when a rel is discarded
+     * Takes care of tracing and listener notification when a alg is discarded
      *
-     * @param rel discarded rel
+     * @param alg discarded rel
      */
-    protected void notifyDiscard( RelNode rel ) {
+    protected void notifyDiscard( AlgNode alg ) {
         if ( listener != null ) {
-            RelOptListener.RelDiscardedEvent event = new RelOptListener.RelDiscardedEvent( this, rel );
-            listener.relDiscarded( event );
+            AlgDiscardedEvent event = new AlgDiscardedEvent( this, alg );
+            listener.algDiscarded( event );
         }
     }
 
 
-    protected MulticastRelOptListener getListener() {
+    protected MulticastAlgOptListener getListener() {
         return listener;
     }
 
@@ -408,8 +411,9 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
     /**
      * Returns sub-classes of relational expression.
      */
-    public Iterable<Class<? extends RelNode>> subClasses( final Class<? extends RelNode> clazz ) {
+    public Iterable<Class<? extends AlgNode>> subClasses( final Class<? extends AlgNode> clazz ) {
         return Util.filter( classes, clazz::isAssignableFrom );
     }
+
 }
 

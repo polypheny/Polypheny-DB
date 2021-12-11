@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 package org.polypheny.db.adapter.druid;
 
 
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AggregateCall;
 
 
 /**
@@ -97,10 +97,11 @@ public class ComplexMetric {
         switch ( type ) {
             case HYPER_UNIQUE:
             case THETA_SKETCH:
-                return call != null && call.getAggregation().getKind() == SqlKind.COUNT && call.isDistinct();
+                return call != null && call.getAggregation().getKind() == Kind.COUNT && call.isDistinct();
             default:
                 return false;
         }
     }
+
 }
 

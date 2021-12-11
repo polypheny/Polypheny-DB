@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,21 +40,21 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Uncollect;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.runtime.SqlFunctions.FlatProductInputType;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Uncollect;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.runtime.Functions.FlatProductInputType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Uncollect} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Uncollect} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableUncollect extends Uncollect implements EnumerableRel {
+public class EnumerableUncollect extends Uncollect implements EnumerableAlg {
 
 
     /**
@@ -62,7 +62,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableRel {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableUncollect( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, boolean withOrdinality ) {
+    public EnumerableUncollect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean withOrdinality ) {
         super( cluster, traitSet, child, withOrdinality );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == child.getConvention();
@@ -78,22 +78,22 @@ public class EnumerableUncollect extends Uncollect implements EnumerableRel {
      * @param input Input relational expression
      * @param withOrdinality Whether output should contain an ORDINALITY column
      */
-    public static EnumerableUncollect create( RelTraitSet traitSet, RelNode input, boolean withOrdinality ) {
-        final RelOptCluster cluster = input.getCluster();
+    public static EnumerableUncollect create( AlgTraitSet traitSet, AlgNode input, boolean withOrdinality ) {
+        final AlgOptCluster cluster = input.getCluster();
         return new EnumerableUncollect( cluster, traitSet, input, withOrdinality );
     }
 
 
     @Override
-    public EnumerableUncollect copy( RelTraitSet traitSet, RelNode newInput ) {
+    public EnumerableUncollect copy( AlgTraitSet traitSet, AlgNode newInput ) {
         return new EnumerableUncollect( getCluster(), traitSet, newInput, withOrdinality );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final EnumerableRel child = (EnumerableRel) getInput();
+        final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), JavaRowFormat.LIST );
 
@@ -104,13 +104,13 @@ public class EnumerableUncollect extends Uncollect implements EnumerableRel {
         final List<Integer> fieldCounts = new ArrayList<>();
         final List<FlatProductInputType> inputTypes = new ArrayList<>();
 
-        for ( RelDataTypeField field : child.getRowType().getFieldList() ) {
-            final RelDataType type = field.getType();
+        for ( AlgDataTypeField field : child.getRowType().getFieldList() ) {
+            final AlgDataType type = field.getType();
             if ( type instanceof MapPolyType ) {
                 fieldCounts.add( 2 );
                 inputTypes.add( FlatProductInputType.MAP );
             } else {
-                final RelDataType elementType = type.getComponentType();
+                final AlgDataType elementType = type.getComponentType();
                 if ( elementType.isStruct() ) {
                     fieldCounts.add( elementType.getFieldCount() );
                     inputTypes.add( FlatProductInputType.LIST );
@@ -122,7 +122,8 @@ public class EnumerableUncollect extends Uncollect implements EnumerableRel {
         }
 
         final Expression lambda =
-                Expressions.call( BuiltInMethod.FLAT_PRODUCT.method,
+                Expressions.call(
+                        BuiltInMethod.FLAT_PRODUCT.method,
                         Expressions.constant( Ints.toArray( fieldCounts ) ),
                         Expressions.constant( withOrdinality ),
                         Expressions.constant( inputTypes.toArray( new FlatProductInputType[0] ) ) );

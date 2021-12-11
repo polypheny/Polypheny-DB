@@ -18,30 +18,27 @@ package org.polypheny.db.exploreByExample;
 
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.ColumnMetaData;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.linq4j.Enumerable;
+import org.polypheny.db.PolyResult;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
 
@@ -51,6 +48,7 @@ public class ExploreQueryProcessor {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
+    private final static int DEFAULT_SIZE = 200;
 
 
     public ExploreQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
@@ -115,93 +113,70 @@ public class ExploreQueryProcessor {
 
 
     private ExploreQueryResult executeSqlSelect( final Statement statement, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
-        PolyphenyDbSignature signature;
-        List<List<Object>> rows;
-        Iterator<Object> iterator = null;
+        PolyResult result;
         try {
-            signature = processQuery( statement, sqlSelect );
-            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-            //noinspection unchecked
-            iterator = enumerable.iterator();
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 200 ), new ArrayList<>() );
+            result = processQuery( statement, sqlSelect );
         } catch ( Throwable t ) {
-            if ( iterator != null ) {
-                try {
-                    if ( iterator instanceof AutoCloseable ) {
-                        ((AutoCloseable) iterator).close();
-                    }
-                } catch ( Exception e ) {
-                    log.error( "Exception while closing result iterator", e );
-                }
-            }
             throw new ExploreQueryProcessor.QueryExecutionException( t );
         }
+        List<List<Object>> rows = result.getRows( statement, DEFAULT_SIZE );
 
-        try {
-            List<String> typeInfo = new ArrayList<>();
-            List<String> name = new ArrayList<>();
-            for ( ColumnMetaData metaData : signature.columns ) {
-                typeInfo.add( metaData.type.name );
-                name.add( metaData.columnName );
-            }
+        List<String> typeInfo = new ArrayList<>();
+        List<String> name = new ArrayList<>();
+        for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+            typeInfo.add( metaData.getType().getFullTypeString() );
+            name.add( metaData.getName() );
+        }
 
-            if ( rows.size() == 1 ) {
-                for ( List<Object> row : rows ) {
-                    if ( row.size() == 1 ) {
-                        for ( Object o : row ) {
-                            return new ExploreQueryResult( o.toString(), rows.size(), typeInfo, name );
-                        }
-                    }
-                }
-            }
-
-            List<String[]> data = new ArrayList<>();
+        if ( rows.size() == 1 ) {
             for ( List<Object> row : rows ) {
-                String[] temp = new String[row.size()];
-                int counter = 0;
-                for ( Object o : row ) {
-                    if ( o == null ) {
-                        temp[counter] = null;
-                    } else {
-                        temp[counter] = o.toString();
+                if ( row.size() == 1 ) {
+                    for ( Object o : row ) {
+                        return new ExploreQueryResult( o.toString(), rows.size(), typeInfo, name );
                     }
-                    counter++;
                 }
-                data.add( temp );
-            }
-
-            String[][] d = data.toArray( new String[0][] );
-
-            return new ExploreQueryResult( d, rows.size(), typeInfo, name );
-        } finally {
-            try {
-                if ( iterator instanceof AutoCloseable ) {
-                    ((AutoCloseable) iterator).close();
-                }
-            } catch ( Exception e ) {
-                log.error( "Exception while closing result iterator2", e );
             }
         }
+
+        List<String[]> data = new ArrayList<>();
+        for ( List<Object> row : rows ) {
+            String[] temp = new String[row.size()];
+            int counter = 0;
+            for ( Object o : row ) {
+                if ( o == null ) {
+                    temp[counter] = null;
+                } else {
+                    temp[counter] = o.toString();
+                }
+                counter++;
+            }
+            data.add( temp );
+        }
+
+        String[][] d = data.toArray( new String[0][] );
+
+        return new ExploreQueryResult( d, rows.size(), typeInfo, name );
+
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
-        PolyphenyDbSignature signature;
-        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
+    private PolyResult processQuery( Statement statement, String sql ) {
+        PolyResult result;
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
 
-        SqlNode parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql );
 
-        if ( parsed.isA( SqlKind.DDL ) ) {
+        if ( parsed.isA( Kind.DDL ) ) {
             // explore by example should not execute any ddls
             throw new RuntimeException( "No DDL expected here" );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
-            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
+            AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );
 
             // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            result = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
-        return signature;
+        return result;
     }
 
 

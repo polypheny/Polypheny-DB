@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,12 +60,13 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
@@ -129,7 +130,8 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
      * @param aggregations aggregation functions
      * @return Enumerator of results
      */
-    private Enumerable<Object> find( List<String> ops, List<Map.Entry<String, Class>> fields, List<Map.Entry<String, RelFieldCollation.Direction>> sort, List<String> groupBy,
+    private Enumerable<Object> find(
+            List<String> ops, List<Map.Entry<String, Class>> fields, List<Map.Entry<String, AlgFieldCollation.Direction>> sort, List<String> groupBy,
             List<Map.Entry<String, String>> aggregations, Map<String, String> mappings, Long offset, Long fetch ) throws IOException {
 
         if ( !aggregations.isEmpty() || !groupBy.isEmpty() ) {
@@ -146,7 +148,8 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
         if ( !sort.isEmpty() ) {
             ArrayNode sortNode = query.withArray( "sort" );
             sort.forEach( e -> sortNode.add(
-                    mapper.createObjectNode().put( e.getKey(),
+                    mapper.createObjectNode().put(
+                            e.getKey(),
                             e.getValue().isDescending() ? "desc" : "asc" ) ) );
         }
 
@@ -173,9 +176,10 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
     }
 
 
-    private Enumerable<Object> aggregate( List<String> ops,
+    private Enumerable<Object> aggregate(
+            List<String> ops,
             List<Map.Entry<String, Class>> fields,
-            List<Map.Entry<String, RelFieldCollation.Direction>> sort,
+            List<Map.Entry<String, AlgFieldCollation.Direction>> sort,
             List<String> groupBy,
             List<Map.Entry<String, String>> aggregations,
             Map<String, String> mapping,
@@ -307,12 +311,12 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory relDataTypeFactory ) {
-        final RelDataType mapType = relDataTypeFactory.createMapType(
-                relDataTypeFactory.createPolyType( PolyType.VARCHAR ),
-                relDataTypeFactory.createTypeWithNullability( relDataTypeFactory.createPolyType( PolyType.ANY ), true ) );
+    public AlgDataType getRowType( AlgDataTypeFactory algDataTypeFactory ) {
+        final AlgDataType mapType = algDataTypeFactory.createMapType(
+                algDataTypeFactory.createPolyType( PolyType.VARCHAR ),
+                algDataTypeFactory.createTypeWithNullability( algDataTypeFactory.createPolyType( PolyType.ANY ), true ) );
         // TODO (PCP)
-        return relDataTypeFactory.builder().add( "_MAP", null, mapType ).build();
+        return algDataTypeFactory.builder().add( "_MAP", null, mapType ).build();
     }
 
 
@@ -329,9 +333,9 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
 
 
     @Override
-    public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
-        final RelOptCluster cluster = context.getCluster();
-        return new ElasticsearchTableScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ), relOptTable, this, null );
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
+        final AlgOptCluster cluster = context.getCluster();
+        return new ElasticsearchTableScan( cluster, cluster.traitSetOf( ElasticsearchRel.CONVENTION ), algOptTable, this, null );
     }
 
 
@@ -370,7 +374,7 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
         public Enumerable<Object> find(
                 List<String> ops,
                 List<Map.Entry<String, Class>> fields,
-                List<Map.Entry<String, RelFieldCollation.Direction>> sort,
+                List<Map.Entry<String, AlgFieldCollation.Direction>> sort,
                 List<String> groupBy,
                 List<Map.Entry<String, String>> aggregations,
                 Map<String, String> mappings,
@@ -384,5 +388,6 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
         }
 
     }
+
 }
 

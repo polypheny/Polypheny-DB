@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ import org.polypheny.db.adapter.enumerable.NullPolicy;
 import org.polypheny.db.adapter.enumerable.ReflectiveCallNotNullImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.schema.ImplementableFunction;
 import org.polypheny.db.schema.QueryableTable;
@@ -119,7 +119,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory, List<Object> arguments ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory, List<Object> arguments ) {
         return apply( arguments ).getRowType( typeFactory );
     }
 
@@ -185,5 +185,6 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
             throw new RuntimeException( e );
         }
     }
+
 }
 

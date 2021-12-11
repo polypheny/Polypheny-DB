@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,9 @@ package org.polypheny.db.plan.hep;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.CommonRelSubExprRule;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
 
 
 /**
@@ -69,14 +69,14 @@ public class HepProgramBuilder {
     /**
      * Adds an instruction to attempt to match any rules of a given class. The order in which the rules within a class will be attempted is arbitrary, so if more control is needed, use addRuleInstance instead.
      *
-     * Note that when this method is used, it is also necessary to add the actual rule objects of interest to the planner via {@link RelOptPlanner#addRule}. If the planner does not have any
+     * Note that when this method is used, it is also necessary to add the actual rule objects of interest to the planner via {@link AlgOptPlanner#addRule}. If the planner does not have any
      * rules of the given class, this instruction is a nop.
      *
      * TODO: support classification via rule annotations.
      *
      * @param ruleClass class of rules to fire, e.g. ConverterRule.class
      */
-    public <R extends RelOptRule> HepProgramBuilder addRuleClass( Class<R> ruleClass ) {
+    public <R extends AlgOptRule> HepProgramBuilder addRuleClass( Class<R> ruleClass ) {
         HepInstruction.RuleClass instruction = new HepInstruction.RuleClass<R>();
         instruction.ruleClass = ruleClass;
         instructions.add( instruction );
@@ -88,12 +88,12 @@ public class HepProgramBuilder {
      * Adds an instruction to attempt to match any rules in a given collection. The order in which the rules within a collection will be attempted is arbitrary, so if more control is needed, use addRuleInstance instead. The
      * collection can be "live" in the sense that not all rule instances need to have been added to it at the time this method is called. The collection contents are reevaluated for each execution of the program.
      *
-     * Note that when this method is used, it is NOT necessary to add the rules to the planner via {@link RelOptPlanner#addRule}; the instances supplied here will be used.
+     * Note that when this method is used, it is NOT necessary to add the rules to the planner via {@link AlgOptPlanner#addRule}; the instances supplied here will be used.
      * However, adding the rules to the planner redundantly is good form since other planners may require it.
      *
      * @param rules collection of rules to fire
      */
-    public HepProgramBuilder addRuleCollection( Collection<RelOptRule> rules ) {
+    public HepProgramBuilder addRuleCollection( Collection<AlgOptRule> rules ) {
         HepInstruction.RuleCollection instruction = new HepInstruction.RuleCollection();
         instruction.rules = rules;
         instructions.add( instruction );
@@ -104,12 +104,12 @@ public class HepProgramBuilder {
     /**
      * Adds an instruction to attempt to match a specific rule object.
      *
-     * Note that when this method is used, it is NOT necessary to add the rule to the planner via {@link RelOptPlanner#addRule}; the instance supplied here will be used. However, adding the rule to the planner
+     * Note that when this method is used, it is NOT necessary to add the rule to the planner via {@link AlgOptPlanner#addRule}; the instance supplied here will be used. However, adding the rule to the planner
      * redundantly is good form since other planners may require it.
      *
      * @param rule rule to fire
      */
-    public HepProgramBuilder addRuleInstance( RelOptRule rule ) {
+    public HepProgramBuilder addRuleInstance( AlgOptRule rule ) {
         HepInstruction.RuleInstance instruction = new HepInstruction.RuleInstance();
         instruction.rule = rule;
         instructions.add( instruction );
@@ -120,7 +120,7 @@ public class HepProgramBuilder {
     /**
      * Adds an instruction to attempt to match a specific rule identified by its unique description.
      *
-     * Note that when this method is used, it is necessary to also add the rule object of interest to the planner via {@link RelOptPlanner#addRule}. This allows for some decoupling between optimizers and plugins: the
+     * Note that when this method is used, it is necessary to also add the rule object of interest to the planner via {@link AlgOptPlanner#addRule}. This allows for some decoupling between optimizers and plugins: the
      * optimizer only knows about rule descriptions, while the plugins supply the actual instances. If the planner does not have a rule matching the description, this instruction is a nop.
      *
      * @param ruleDescription description of rule to fire
@@ -160,7 +160,7 @@ public class HepProgramBuilder {
 
 
     /**
-     * Adds an instruction to attempt to match instances of {@link org.polypheny.db.rel.convert.ConverterRule}, but only where a conversion is actually required.
+     * Adds an instruction to attempt to match instances of {@link org.polypheny.db.algebra.convert.ConverterRule}, but only where a conversion is actually required.
      *
      * @param guaranteed if true, use only guaranteed converters; if false, use only non-guaranteed converters
      */
@@ -241,5 +241,6 @@ public class HepProgramBuilder {
         clear();
         return program;
     }
+
 }
 

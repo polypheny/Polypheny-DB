@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,12 +46,12 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.joda.time.chrono.ISOChronology;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimestampString;
@@ -187,7 +187,7 @@ public class DruidDateTimeUtils {
             case GREATER_THAN:
             case GREATER_THAN_OR_EQUAL: {
                 final Long value;
-                SqlKind kind = call.getKind();
+                Kind kind = call.getKind();
                 if ( call.getOperands().get( 0 ) instanceof RexInputRef && literalValue( call.getOperands().get( 1 ) ) != null ) {
                     value = literalValue( call.getOperands().get( 1 ) );
                 } else if ( call.getOperands().get( 1 ) instanceof RexInputRef && literalValue( call.getOperands().get( 0 ) ) != null ) {
@@ -280,9 +280,9 @@ public class DruidDateTimeUtils {
                 assert node instanceof RexCall;
                 final RexCall call = (RexCall) node;
                 final RexNode operand = call.getOperands().get( 0 );
-                final RelDataType callType = call.getType();
-                final RelDataType operandType = operand.getType();
-                if ( operand.getKind() == SqlKind.LITERAL
+                final AlgDataType callType = call.getType();
+                final AlgDataType operandType = operand.getType();
+                if ( operand.getKind() == Kind.LITERAL
                         && callType.getPolyType() == operandType.getPolyType()
                         && (callType.getPolyType() == PolyType.DATE
                         || callType.getPolyType() == PolyType.TIMESTAMP
@@ -322,7 +322,7 @@ public class DruidDateTimeUtils {
         final RexLiteral flag = (RexLiteral) call.operands.get( flagIndex );
         final TimeUnitRange timeUnit = (TimeUnitRange) flag.getValue();
 
-        final RelDataType valueType = value.getType();
+        final AlgDataType valueType = value.getType();
         if ( valueType.getPolyType() == PolyType.DATE || valueType.getPolyType() == PolyType.TIMESTAMP ) {
             // We use 'UTC' for date/timestamp type as Druid needs timezone information
             return Granularities.createGranularity( timeUnit, "UTC" );
@@ -395,5 +395,6 @@ public class DruidDateTimeUtils {
                 return null;
         }
     }
+
 }
 

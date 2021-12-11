@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,27 +37,27 @@ package org.polypheny.db.adapter.enumerable;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Sort} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Sort} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableSort extends Sort implements EnumerableRel {
+public class EnumerableSort extends Sort implements EnumerableAlg {
 
     /**
      * Creates an EnumerableSort.
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public EnumerableSort( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RelCollation collation, RexNode offset, RexNode fetch ) {
+    public EnumerableSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input, collation, offset, fetch );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == input.getConvention();
@@ -67,23 +67,23 @@ public class EnumerableSort extends Sort implements EnumerableRel {
     /**
      * Creates an EnumerableSort.
      */
-    public static EnumerableSort create( RelNode child, RelCollation collation, RexNode offset, RexNode fetch ) {
-        final RelOptCluster cluster = child.getCluster();
-        final RelTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( collation );
+    public static EnumerableSort create( AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
+        final AlgOptCluster cluster = child.getCluster();
+        final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( collation );
         return new EnumerableSort( cluster, traitSet, child, collation, offset, fetch );
     }
 
 
     @Override
-    public EnumerableSort copy( RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch ) {
+    public EnumerableSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
         return new EnumerableSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final EnumerableRel child = (EnumerableRel) getInput();
+        final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), result.format );
         Expression childExp = builder.append( "child", result.block );
@@ -92,12 +92,15 @@ public class EnumerableSort extends Sort implements EnumerableRel {
         final Pair<Expression, Expression> pair = inputPhysType.generateCollationKey( collation.getFieldCollations() );
 
         builder.add(
-                Expressions.return_( null,
-                        Expressions.call( childExp,
+                Expressions.return_(
+                        null,
+                        Expressions.call(
+                                childExp,
                                 BuiltInMethod.ORDER_BY.method,
                                 Expressions.list( builder.append( "keySelector", pair.left ) )
                                         .appendIfNotNull( builder.appendIfNotNull( "comparator", pair.right ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
+
 }
 

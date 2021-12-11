@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@
 package org.polypheny.db.interpreter;
 
 
-import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.algebra.SingleAlg;
 
 
 /**
@@ -42,17 +42,18 @@ import org.polypheny.db.rel.SingleRel;
  *
  * @param <T> Type of relational expression
  */
-abstract class AbstractSingleNode<T extends SingleRel> implements Node {
+abstract class AbstractSingleNode<T extends SingleAlg> implements Node {
 
     protected final Source source;
     protected final Sink sink;
-    protected final T rel;
+    protected final T alg;
 
 
-    AbstractSingleNode( Compiler compiler, T rel ) {
-        this.rel = rel;
-        this.source = compiler.source( rel, 0 );
-        this.sink = compiler.sink( rel );
+    AbstractSingleNode( Compiler compiler, T alg ) {
+        this.alg = alg;
+        this.source = compiler.source( alg, 0 );
+        this.sink = compiler.sink( alg );
     }
+
 }
 

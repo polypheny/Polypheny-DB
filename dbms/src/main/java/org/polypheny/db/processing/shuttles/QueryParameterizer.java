@@ -26,17 +26,18 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.logical.LogicalDocuments;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalModifyCollect;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -51,21 +52,20 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.sql.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 
-public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<RexNode> {
+public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<RexNode> {
 
     private final AtomicInteger index;
     @Getter
     private final Map<Integer, List<ParameterValue>> values;
     @Getter
-    private final List<RelDataType> types;
+    private final List<AlgDataType> types;
 
 
-    public QueryParameterizer( int indexStart, List<RelDataType> parameterRowType ) {
+    public QueryParameterizer( int indexStart, List<AlgDataType> parameterRowType ) {
         index = new AtomicInteger( indexStart );
         values = new HashMap<>();
         types = new ArrayList<>( parameterRowType );
@@ -73,7 +73,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public RelNode visit( LogicalFilter oFilter ) {
+    public AlgNode visit( LogicalFilter oFilter ) {
         LogicalFilter filter = (LogicalFilter) super.visit( oFilter );
         RexNode condition = filter.getCondition();
         return new LogicalFilter(
@@ -86,7 +86,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public RelNode visit( LogicalProject oProject ) {
+    public AlgNode visit( LogicalProject oProject ) {
         LogicalProject project = (LogicalProject) super.visit( oProject );
         List<RexNode> newProjects = new ArrayList<>();
         for ( RexNode node : oProject.getProjects() ) {
@@ -102,7 +102,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public RelNode visit( RelNode other ) {
+    public AlgNode visit( AlgNode other ) {
         if ( other instanceof TableModify ) {
             LogicalTableModify modify = (LogicalTableModify) super.visit( other );
             List<RexNode> newSourceExpression = null;
@@ -112,7 +112,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                     newSourceExpression.add( node.accept( this ) );
                 }
             }
-            RelNode input = modify.getInput();
+            AlgNode input = modify.getInput();
             if ( input instanceof LogicalValues && !(input instanceof LogicalDocuments) ) { //todo dl: handle documents differently
                 List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
@@ -127,7 +127,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                         } else {
                             idx = idxMapping.get( i );
                         }
-                        RelDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                        AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
                         if ( firstRow ) {
                             projects.add( new RexDynamicParam( type, idx ) );
                         }
@@ -160,8 +160,8 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                     newSourceExpression,
                     modify.isFlattened() );
         } else if ( other instanceof LogicalModifyCollect ) {
-            List<RelNode> inputs = new ArrayList<>( other.getInputs().size() );
-            for ( RelNode node : other.getInputs() ) {
+            List<AlgNode> inputs = new ArrayList<>( other.getInputs().size() );
+            for ( AlgNode node : other.getInputs() ) {
                 inputs.add( visit( node ) );
             }
             return new LogicalModifyCollect(
@@ -206,7 +206,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.getKind().belongsTo( SqlKind.DOC_KIND ) ) {
+        if ( call.getKind().belongsTo( Kind.MQL_KIND ) ) {
             return call;
         } else if ( call.op instanceof SqlArrayValueConstructor ) {
             int i = index.getAndIncrement();
@@ -284,7 +284,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
         for ( RexNode operand : subQuery.operands ) {
             newOperands.add( operand.accept( this ) );
         }
-        return subQuery.clone( subQuery.type, newOperands, subQuery.rel.accept( this ) );
+        return subQuery.clone( subQuery.type, newOperands, subQuery.alg.accept( this ) );
     }
 
 

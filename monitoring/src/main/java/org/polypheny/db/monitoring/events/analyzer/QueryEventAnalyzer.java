@@ -36,7 +36,7 @@ public class QueryEventAnalyzer {
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
-                .relCompareString( queryEvent.getRelCompareString() )
+                .algCompareString( queryEvent.getAlgCompareString() )
                 .accessedPartitions( queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
                 .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( "SELECT" )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,13 @@ import com.google.common.collect.ImmutableList;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.joda.time.Period;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 
 
@@ -53,13 +54,13 @@ import org.polypheny.db.type.PolyType;
 public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
 
     @Override
-    public SqlOperator polyphenyDbOperator() {
-        return SqlStdOperatorTable.CAST;
+    public Operator polyphenyDbOperator() {
+        return OperatorRegistry.get( OperatorName.CAST );
     }
 
 
     @Override
-    public String toDruidExpression( RexNode rexNode, RelDataType topRel, DruidQuery druidQuery ) {
+    public String toDruidExpression( RexNode rexNode, AlgDataType topRel, DruidQuery druidQuery ) {
 
         final RexNode operand = ((RexCall) rexNode).getOperands().get( 0 );
         final String operandExpression = DruidExpressions.toDruidExpression( operand, topRel, druidQuery );
@@ -153,5 +154,6 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
             return null;
         }
     }
+
 }
 

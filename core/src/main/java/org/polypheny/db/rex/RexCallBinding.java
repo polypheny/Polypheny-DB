@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,33 +37,33 @@ package org.polypheny.db.rex;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Monotonicity;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.OperatorBinding;
+import org.polypheny.db.nodes.validate.ValidatorException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources.ExInst;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.validate.SqlMonotonicity;
-import org.polypheny.db.sql.validate.SqlValidatorException;
+import org.polypheny.db.util.CoreUtil;
 
 
 /**
- * <code>RexCallBinding</code> implements {@link SqlOperatorBinding} by referring to an underlying collection of {@link RexNode} operands.
+ * <code>RexCallBinding</code> implements {@link OperatorBinding} by referring to an underlying collection of {@link RexNode} operands.
  */
-public class RexCallBinding extends SqlOperatorBinding {
+public class RexCallBinding extends OperatorBinding {
 
     @Getter
     private final List<RexNode> operands;
 
-    private final List<RelCollation> inputCollations;
+    private final List<AlgCollation> inputCollations;
 
 
-    public RexCallBinding( RelDataTypeFactory typeFactory, SqlOperator sqlOperator, List<? extends RexNode> operands, List<RelCollation> inputCollations ) {
+    public RexCallBinding( AlgDataTypeFactory typeFactory, Operator sqlOperator, List<? extends RexNode> operands, List<AlgCollation> inputCollations ) {
         super( typeFactory, sqlOperator );
         this.operands = ImmutableList.copyOf( operands );
         this.inputCollations = ImmutableList.copyOf( inputCollations );
@@ -73,8 +73,8 @@ public class RexCallBinding extends SqlOperatorBinding {
     /**
      * Creates a binding of the appropriate type.
      */
-    public static RexCallBinding create( RelDataTypeFactory typeFactory, RexCall call, List<RelCollation> inputCollations ) {
-        if ( call.getKind() == SqlKind.CAST ) {
+    public static RexCallBinding create( AlgDataTypeFactory typeFactory, RexCall call, List<AlgCollation> inputCollations ) {
+        if ( call.getKind() == Kind.CAST ) {
             return new RexCastCallBinding( typeFactory, call.getOperator(), call.getOperands(), call.getType(), inputCollations );
         }
         return new RexCallBinding( typeFactory, call.getOperator(), call.getOperands(), inputCollations );
@@ -92,16 +92,16 @@ public class RexCallBinding extends SqlOperatorBinding {
 
 
     @Override
-    public SqlMonotonicity getOperandMonotonicity( int ordinal ) {
+    public Monotonicity getOperandMonotonicity( int ordinal ) {
         RexNode operand = operands.get( ordinal );
 
         if ( operand instanceof RexInputRef ) {
-            for ( RelCollation ic : inputCollations ) {
+            for ( AlgCollation ic : inputCollations ) {
                 if ( ic.getFieldCollations().isEmpty() ) {
                     continue;
                 }
 
-                for ( RelFieldCollation rfc : ic.getFieldCollations() ) {
+                for ( AlgFieldCollation rfc : ic.getFieldCollations() ) {
                     if ( rfc.getFieldIndex() == ((RexInputRef) operand).getIndex() ) {
                         return rfc.direction.monotonicity();
                         // TODO: Is it possible to have more than one RelFieldCollation for a RexInputRef?
@@ -114,7 +114,7 @@ public class RexCallBinding extends SqlOperatorBinding {
             return ((RexCall) operand).getOperator().getMonotonicity( binding );
         }
 
-        return SqlMonotonicity.NOT_MONOTONIC;
+        return Monotonicity.NOT_MONOTONIC;
     }
 
 
@@ -139,14 +139,14 @@ public class RexCallBinding extends SqlOperatorBinding {
 
     // implement SqlOperatorBinding
     @Override
-    public RelDataType getOperandType( int ordinal ) {
+    public AlgDataType getOperandType( int ordinal ) {
         return operands.get( ordinal ).getType();
     }
 
 
     @Override
-    public PolyphenyDbException newError( ExInst<SqlValidatorException> e ) {
-        return SqlUtil.newContextException( SqlParserPos.ZERO, e );
+    public PolyphenyDbException newError( ExInst<ValidatorException> e ) {
+        return CoreUtil.newContextException( ParserPos.ZERO, e );
     }
 
 
@@ -155,22 +155,24 @@ public class RexCallBinding extends SqlOperatorBinding {
      */
     private static class RexCastCallBinding extends RexCallBinding {
 
-        private final RelDataType type;
+        private final AlgDataType type;
 
 
-        RexCastCallBinding( RelDataTypeFactory typeFactory, SqlOperator sqlOperator, List<? extends RexNode> operands, RelDataType type, List<RelCollation> inputCollations ) {
+        RexCastCallBinding( AlgDataTypeFactory typeFactory, Operator sqlOperator, List<? extends RexNode> operands, AlgDataType type, List<AlgCollation> inputCollations ) {
             super( typeFactory, sqlOperator, operands, inputCollations );
             this.type = type;
         }
 
 
         @Override
-        public RelDataType getOperandType( int ordinal ) {
+        public AlgDataType getOperandType( int ordinal ) {
             if ( ordinal == 1 ) {
                 return type;
             }
             return super.getOperandType( ordinal );
         }
+
     }
+
 }
 

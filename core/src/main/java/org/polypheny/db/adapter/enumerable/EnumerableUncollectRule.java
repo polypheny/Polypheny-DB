@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,15 +34,15 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Uncollect;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.Uncollect;
 
 
 /**
- * Rule to convert an {@link org.polypheny.db.rel.core.Uncollect} to an {@link EnumerableUncollect}.
+ * Rule to convert an {@link org.polypheny.db.algebra.core.Uncollect} to an {@link EnumerableUncollect}.
  */
 class EnumerableUncollectRule extends ConverterRule {
 
@@ -52,12 +52,13 @@ class EnumerableUncollectRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final Uncollect uncollect = (Uncollect) rel;
-        final RelTraitSet traitSet = uncollect.getTraitSet().replace( EnumerableConvention.INSTANCE );
-        final RelNode input = uncollect.getInput();
-        final RelNode newInput = convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+    public AlgNode convert( AlgNode alg ) {
+        final Uncollect uncollect = (Uncollect) alg;
+        final AlgTraitSet traitSet = uncollect.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        final AlgNode input = uncollect.getInput();
+        final AlgNode newInput = convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         return EnumerableUncollect.create( traitSet, newInput, uncollect.withOrdinality );
     }
+
 }
 

@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RoutingPlan;
@@ -38,11 +38,11 @@ public class CachedProposedRoutingPlan implements RoutingPlan {
     public Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
     protected String queryClass;
     protected String physicalQueryClass;
-    protected RelOptCost preCosts;
+    protected AlgOptCost preCosts;
     protected Class<? extends Router> router;
 
 
-    public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, RelOptCost approximatedCosts ) {
+    public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, AlgOptCost approximatedCosts ) {
         this.queryClass = routingPlan.getQueryClass();
         this.preCosts = approximatedCosts;
         this.router = routingPlan.getRouter();

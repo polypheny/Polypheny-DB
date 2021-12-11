@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,17 +45,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelWriter;
-import org.polypheny.db.rel.externalize.RelWriterImpl;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.externalize.AlgWriterImpl;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -88,9 +89,9 @@ public class RexProgram {
      */
     private final RexLocalRef condition;
 
-    private final RelDataType inputRowType;
+    private final AlgDataType inputRowType;
 
-    private final RelDataType outputRowType;
+    private final AlgDataType outputRowType;
 
     /**
      * Reference counts for each expression, computed on demand.
@@ -109,7 +110,7 @@ public class RexProgram {
      * @param condition Condition expression. If null, calculator does not filter rows
      * @param outputRowType Description of the row produced by the program
      */
-    public RexProgram( RelDataType inputRowType, List<? extends RexNode> exprs, List<RexLocalRef> projects, RexLocalRef condition, RelDataType outputRowType ) {
+    public RexProgram( AlgDataType inputRowType, List<? extends RexNode> exprs, List<RexLocalRef> projects, RexLocalRef condition, AlgDataType outputRowType ) {
         this.inputRowType = inputRowType;
         this.exprs = ImmutableList.copyOf( exprs );
         this.projects = ImmutableList.copyOf( projects );
@@ -178,7 +179,7 @@ public class RexProgram {
      * @param rexBuilder Builder of rex expressions
      * @return A program
      */
-    public static RexProgram create( RelDataType inputRowType, List<? extends RexNode> projectExprs, RexNode conditionExpr, RelDataType outputRowType, RexBuilder rexBuilder ) {
+    public static RexProgram create( AlgDataType inputRowType, List<? extends RexNode> projectExprs, RexNode conditionExpr, AlgDataType outputRowType, RexBuilder rexBuilder ) {
         return create( inputRowType, projectExprs, conditionExpr, outputRowType.getFieldNames(), rexBuilder );
     }
 
@@ -192,7 +193,7 @@ public class RexProgram {
      * @param rexBuilder Builder of rex expressions
      * @return A program
      */
-    public static RexProgram create( RelDataType inputRowType, List<? extends RexNode> projectExprs, RexNode conditionExpr, List<String> fieldNames, RexBuilder rexBuilder ) {
+    public static RexProgram create( AlgDataType inputRowType, List<? extends RexNode> projectExprs, RexNode conditionExpr, List<String> fieldNames, RexBuilder rexBuilder ) {
         if ( fieldNames == null ) {
             fieldNames = Collections.nCopies( projectExprs.size(), null );
         } else {
@@ -211,8 +212,8 @@ public class RexProgram {
 
     // description of this calc, chiefly intended for debugging
     public String toString() {
-        // Intended to produce similar output to explainCalc, but without requiring a RelNode or RelOptPlanWriter.
-        final RelWriterImpl pw = new RelWriterImpl( new PrintWriter( new StringWriter() ) );
+        // Intended to produce similar output to explainCalc, but without requiring a {@link AlgNode} or RelOptPlanWriter.
+        final AlgWriterImpl pw = new AlgWriterImpl( new PrintWriter( new StringWriter() ) );
         collectExplainTerms( "", pw );
         return pw.simple();
     }
@@ -223,13 +224,13 @@ public class RexProgram {
      *
      * @param pw Plan writer
      */
-    public RelWriter explainCalc( RelWriter pw ) {
+    public AlgWriter explainCalc( AlgWriter pw ) {
         return collectExplainTerms( "", pw, pw.getDetailLevel() );
     }
 
 
-    public RelWriter collectExplainTerms( String prefix, RelWriter pw ) {
-        return collectExplainTerms( prefix, pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES );
+    public AlgWriter collectExplainTerms( String prefix, AlgWriter pw ) {
+        return collectExplainTerms( prefix, pw, ExplainLevel.EXPPLAN_ATTRIBUTES );
     }
 
 
@@ -239,9 +240,9 @@ public class RexProgram {
      * @param prefix Prefix for term names, usually the empty string, but useful if a relational expression contains more than one program
      * @param pw Plan writer
      */
-    public RelWriter collectExplainTerms( String prefix, RelWriter pw, SqlExplainLevel level ) {
-        final List<RelDataTypeField> inFields = inputRowType.getFieldList();
-        final List<RelDataTypeField> outFields = outputRowType.getFieldList();
+    public AlgWriter collectExplainTerms( String prefix, AlgWriter pw, ExplainLevel level ) {
+        final List<AlgDataTypeField> inFields = inputRowType.getFieldList();
+        final List<AlgDataTypeField> outFields = outputRowType.getFieldList();
         assert outFields.size() == projects.size() : "outFields.length=" + outFields.size() + ", projects.length=" + projects.size();
         pw.item( prefix + "expr#0" + ((inFields.size() > 1) ? (".." + (inFields.size() - 1)) : ""), "{inputs}" );
         for ( int i = inFields.size(); i < exprs.size(); i++ ) {
@@ -252,7 +253,7 @@ public class RexProgram {
         int trivialCount = 0;
 
         // Do not use the trivialCount optimization if computing digest for the optimizer (as opposed to doing an explain plan).
-        if ( level != SqlExplainLevel.DIGEST_ATTRIBUTES ) {
+        if ( level != ExplainLevel.DIGEST_ATTRIBUTES ) {
             trivialCount = countTrivial( projects );
         }
 
@@ -307,7 +308,7 @@ public class RexProgram {
     /**
      * Creates the identity program.
      */
-    public static RexProgram createIdentity( RelDataType rowType ) {
+    public static RexProgram createIdentity( AlgDataType rowType ) {
         return createIdentity( rowType, rowType );
     }
 
@@ -315,11 +316,11 @@ public class RexProgram {
     /**
      * Creates a program that projects its input fields but with possibly different names for the output fields.
      */
-    public static RexProgram createIdentity( RelDataType rowType, RelDataType outputRowType ) {
+    public static RexProgram createIdentity( AlgDataType rowType, AlgDataType outputRowType ) {
         if ( rowType != outputRowType && !Pair.right( rowType.getFieldList() ).equals( Pair.right( outputRowType.getFieldList() ) ) ) {
             throw new IllegalArgumentException( "field type mismatch: " + rowType + " vs. " + outputRowType );
         }
-        final List<RelDataTypeField> fields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = rowType.getFieldList();
         final List<RexLocalRef> projectRefs = new ArrayList<>();
         final List<RexInputRef> refs = new ArrayList<>();
         for ( int i = 0; i < fields.size(); i++ ) {
@@ -336,7 +337,7 @@ public class RexProgram {
      *
      * @return input row type
      */
-    public RelDataType getInputRowType() {
+    public AlgDataType getInputRowType() {
         return inputRowType;
     }
 
@@ -356,7 +357,7 @@ public class RexProgram {
      *
      * @return output row type
      */
-    public RelDataType getOutputRowType() {
+    public AlgDataType getOutputRowType() {
         return outputRowType;
     }
 
@@ -368,10 +369,10 @@ public class RexProgram {
      * If <code> fail</code> is false, merely returns whether the program is valid.
      *
      * @param litmus What to do if an error is detected
-     * @param context Context of enclosing {@link RelNode}, for validity checking, or null if not known
+     * @param context Context of enclosing {@link AlgNode}, for validity checking, or null if not known
      * @return Whether the program is valid
      */
-    public boolean isValid( Litmus litmus, RelNode.Context context ) {
+    public boolean isValid( Litmus litmus, AlgNode.Context context ) {
         if ( inputRowType == null ) {
             return litmus.fail( null );
         }
@@ -479,7 +480,7 @@ public class RexProgram {
     public Pair<ImmutableList<RexNode>, ImmutableList<RexNode>> split() {
         final List<RexNode> filters = new ArrayList<>();
         if ( condition != null ) {
-            RelOptUtil.decomposeConjunction( expandLocalRef( condition ), filters );
+            AlgOptUtil.decomposeConjunction( expandLocalRef( condition ), filters );
         }
         final ImmutableList.Builder<RexNode> projects = ImmutableList.builder();
         for ( RexLocalRef project : this.projects ) {
@@ -492,8 +493,8 @@ public class RexProgram {
     /**
      * Given a list of collations which hold for the input to this program, returns a list of collations which hold for its output. The result is mutable and sorted.
      */
-    public List<RelCollation> getCollations( List<RelCollation> inputCollations ) {
-        final List<RelCollation> outputCollations = new ArrayList<>();
+    public List<AlgCollation> getCollations( List<AlgCollation> inputCollations ) {
+        final List<AlgCollation> outputCollations = new ArrayList<>();
         deduceCollations(
                 outputCollations,
                 inputRowType.getFieldCount(),
@@ -506,7 +507,7 @@ public class RexProgram {
     /**
      * Given a list of expressions and a description of which are ordered, populates a list of collations, sorted in natural order.
      */
-    public static void deduceCollations( List<RelCollation> outputCollations, final int sourceCount, List<RexLocalRef> refs, List<RelCollation> inputCollations ) {
+    public static void deduceCollations( List<AlgCollation> outputCollations, final int sourceCount, List<RexLocalRef> refs, List<AlgCollation> inputCollations ) {
         int[] targets = new int[sourceCount];
         Arrays.fill( targets, -1 );
         for ( int i = 0; i < refs.size(); i++ ) {
@@ -517,9 +518,9 @@ public class RexProgram {
             }
         }
         loop:
-        for ( RelCollation collation : inputCollations ) {
-            final List<RelFieldCollation> fieldCollations = new ArrayList<>( 0 );
-            for ( RelFieldCollation fieldCollation : collation.getFieldCollations() ) {
+        for ( AlgCollation collation : inputCollations ) {
+            final List<AlgFieldCollation> fieldCollations = new ArrayList<>( 0 );
+            for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
                 final int source = fieldCollation.getFieldIndex();
                 final int target = targets[source];
                 if ( target < 0 ) {
@@ -529,7 +530,7 @@ public class RexProgram {
             }
 
             // Success -- all of the source fields of this key are mapped to the output.
-            outputCollations.add( RelCollations.of( fieldCollations ) );
+            outputCollations.add( AlgCollations.of( fieldCollations ) );
         }
         outputCollations.sort( Ordering.natural() );
     }
@@ -629,7 +630,7 @@ public class RexProgram {
         int index = project.index;
         while ( true ) {
             RexNode expr = exprs.get( index );
-            if ( expr instanceof RexCall && ((RexCall) expr).getOperator() == SqlStdOperatorTable.IN_FENNEL ) {
+            if ( expr instanceof RexCall && ((RexCall) expr).getOperator().equals( OperatorRegistry.get( OperatorName.IN_FENNEL ) ) ) {
                 // drill through identity function
                 expr = ((RexCall) expr).getOperands().get( 0 );
             }
@@ -749,7 +750,7 @@ public class RexProgram {
      */
     static class Checker extends RexChecker {
 
-        private final List<RelDataType> internalExprTypeList;
+        private final List<AlgDataType> internalExprTypeList;
 
 
         /**
@@ -757,10 +758,10 @@ public class RexProgram {
          *
          * @param inputRowType Types of the input fields
          * @param internalExprTypeList Types of the internal expressions
-         * @param context Context of the enclosing {@link RelNode}, or null
+         * @param context Context of the enclosing {@link AlgNode}, or null
          * @param litmus Whether to fail
          */
-        Checker( RelDataType inputRowType, List<RelDataType> internalExprTypeList, RelNode.Context context, Litmus litmus ) {
+        Checker( AlgDataType inputRowType, List<AlgDataType> internalExprTypeList, AlgNode.Context context, Litmus litmus ) {
             super( inputRowType, context, litmus );
             this.internalExprTypeList = internalExprTypeList;
         }
@@ -776,7 +777,7 @@ public class RexProgram {
                 ++failCount;
                 return litmus.fail( null );
             }
-            if ( !RelOptUtil.eq(
+            if ( !AlgOptUtil.eq(
                     "type1",
                     localRef.getType(),
                     "type2",
@@ -786,6 +787,7 @@ public class RexProgram {
             }
             return litmus.succeed();
         }
+
     }
 
 
@@ -807,6 +809,7 @@ public class RexProgram {
             RexNode tree = exprs.get( localRef.getIndex() );
             return tree.accept( this );
         }
+
     }
 
 
@@ -833,6 +836,7 @@ public class RexProgram {
             // Correlating variables are constant WITHIN A RESTART, so that's good enough.
             return true;
         }
+
     }
 
 
@@ -904,6 +908,7 @@ public class RexProgram {
             final RexNode referenceExpr = fieldAccess.getReferenceExpr().accept( this );
             return new RexFieldAccess( referenceExpr, fieldAccess.getField() );
         }
+
     }
 
 
@@ -923,6 +928,8 @@ public class RexProgram {
             refCounts[index]++;
             return null;
         }
+
     }
+
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1787,9 +1787,9 @@ public class DruidAdapterIT2 {
 //                    // select product_id from foodmart.foodmart where product_id < cast(10 as varchar)
 //                    final RelDataType intType = b.getTypeFactory().createSqlType( PolyType.INTEGER );
 //                    return b.scan( "foodmart", "foodmart" )
-//                            .filter( b.call( SqlStdOperatorTable.LESS_THAN,
-//                                    b.getRexBuilder().makeCall( intType, SqlStdOperatorTable.CAST, ImmutableList.of( b.field( "product_id" ) ) ),
-//                                    b.getRexBuilder().makeCall( intType, SqlStdOperatorTable.CAST, ImmutableList.of( b.literal( "10" ) ) ) ) )
+//                            .filter( b.call( StdOperatorRegistry.get( OperatorName.LESS_THAN ),
+//                                    b.getRexBuilder().makeCall( intType, StdOperatorRegistry.get( OperatorName.CAST ), ImmutableList.of( b.field( "product_id" ) ) ),
+//                                    b.getRexBuilder().makeCall( intType, StdOperatorRegistry.get( OperatorName.CAST ), ImmutableList.of( b.literal( "10" ) ) ) ) )
 //                            .project( b.field( "product_id" ) )
 //                            .build();
 //                } )
@@ -1803,7 +1803,7 @@ public class DruidAdapterIT2 {
 //                .withRel( b -> {
 //                    // select count(*) as c from foodmart.foodmart where product_id = 'id'
 //                    return b.scan( "foodmart", "foodmart" )
-//                            .filter( b.call( SqlStdOperatorTable.EQUALS, b.field( "product_id" ), b.literal( "id" ) ) )
+//                            .filter( b.call( StdOperatorRegistry.get( OperatorName.EQUALS ), b.field( "product_id" ), b.literal( "id" ) ) )
 //                            .aggregate( b.groupKey(), b.countStar( "c" ) )
 //                            .build();
 //                } )

@@ -16,7 +16,7 @@
 
 package org.polypheny.db.routing;
 
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -28,11 +28,11 @@ public interface DmlRouter {
     /**
      * Routes DML queries and returns a RelNode.
      */
-    RelNode routeDml( RelNode node, Statement statement );
+    AlgNode routeDml( AlgNode node, Statement statement );
 
     /**
      * Routes conditional executes and directly returns a RelNode.
      */
-    RelNode handleConditionalExecute( RelNode node, Statement statement, LogicalQueryInformation queryInformation );
+    AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation );
 
 }

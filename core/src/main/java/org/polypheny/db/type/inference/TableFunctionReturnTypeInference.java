@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.rel.metadata.RelColumnMapping;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.algebra.metadata.AlgColumnMapping;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Static;
 
@@ -39,31 +39,31 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
 
     private final List<String> paramNames;
 
-    private Set<RelColumnMapping> columnMappings; // not re-entrant!
+    private Set<AlgColumnMapping> columnMappings; // not re-entrant!
 
     private final boolean isPassthrough;
 
 
-    public TableFunctionReturnTypeInference( RelProtoDataType unexpandedOutputType, List<String> paramNames, boolean isPassthrough ) {
+    public TableFunctionReturnTypeInference( AlgProtoDataType unexpandedOutputType, List<String> paramNames, boolean isPassthrough ) {
         super( unexpandedOutputType );
         this.paramNames = paramNames;
         this.isPassthrough = isPassthrough;
     }
 
 
-    public Set<RelColumnMapping> getColumnMappings() {
+    public Set<AlgColumnMapping> getColumnMappings() {
         return columnMappings;
     }
 
 
     @Override
-    public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
+    public AlgDataType inferReturnType( OperatorBinding opBinding ) {
         columnMappings = new HashSet<>();
-        RelDataType unexpandedOutputType = protoType.apply( opBinding.getTypeFactory() );
-        List<RelDataType> expandedOutputTypes = new ArrayList<>();
+        AlgDataType unexpandedOutputType = protoType.apply( opBinding.getTypeFactory() );
+        List<AlgDataType> expandedOutputTypes = new ArrayList<>();
         List<String> expandedFieldNames = new ArrayList<>();
-        for ( RelDataTypeField field : unexpandedOutputType.getFieldList() ) {
-            RelDataType fieldType = field.getType();
+        for ( AlgDataTypeField field : unexpandedOutputType.getFieldList() ) {
+            AlgDataType fieldType = field.getType();
             String fieldName = field.getName();
             if ( fieldType.getPolyType() != PolyType.CURSOR ) {
                 expandedOutputTypes.add( fieldType );
@@ -72,7 +72,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
             }
 
             // Look up position of cursor parameter with same name as output field, also counting how many cursors appear
-            // before it (need this for correspondence with RelNode child position).
+            // before it (need this for correspondence with {@link AlgNode} child position).
             int paramOrdinal = -1;
             int iCursor = 0;
             for ( int i = 0; i < paramNames.size(); ++i ) {
@@ -80,7 +80,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
                     paramOrdinal = i;
                     break;
                 }
-                RelDataType cursorType = opBinding.getCursorOperand( i );
+                AlgDataType cursorType = opBinding.getCursorOperand( i );
                 if ( cursorType != null ) {
                     ++iCursor;
                 }
@@ -90,7 +90,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
             // Translate to actual argument type.
             boolean isRowOp = false;
             List<String> columnNames = new ArrayList<>();
-            RelDataType cursorType = opBinding.getCursorOperand( paramOrdinal );
+            AlgDataType cursorType = opBinding.getCursorOperand( paramOrdinal );
             if ( cursorType == null ) {
                 isRowOp = true;
                 String parentCursorName = opBinding.getColumnListParamInfo( paramOrdinal, fieldName, columnNames );
@@ -116,8 +116,8 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
             if ( isRowOp ) {
                 for ( String columnName : columnNames ) {
                     iInputColumn = -1;
-                    RelDataTypeField cursorField = null;
-                    for ( RelDataTypeField cField : cursorType.getFieldList() ) {
+                    AlgDataTypeField cursorField = null;
+                    for ( AlgDataTypeField cField : cursorType.getFieldList() ) {
                         ++iInputColumn;
                         if ( cField.getName().equals( columnName ) ) {
                             cursorField = cField;
@@ -128,7 +128,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
                 }
             } else {
                 iInputColumn = -1;
-                for ( RelDataTypeField cursorField : cursorType.getFieldList() ) {
+                for ( AlgDataTypeField cursorField : cursorType.getFieldList() ) {
                     ++iInputColumn;
                     addOutputColumn( expandedFieldNames, expandedOutputTypes, iInputColumn, iCursor, opBinding, cursorField );
                 }
@@ -138,25 +138,25 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
     }
 
 
-    private void addOutputColumn(
+    private <T extends OperatorBinding & CallBinding> void addOutputColumn(
             List<String> expandedFieldNames,
-            List<RelDataType> expandedOutputTypes,
+            List<AlgDataType> expandedOutputTypes,
             int iInputColumn,
             int iCursor,
-            SqlOperatorBinding opBinding,
-            RelDataTypeField cursorField ) {
-        columnMappings.add( new RelColumnMapping( expandedFieldNames.size(), iCursor, iInputColumn, !isPassthrough ) );
+            OperatorBinding opBinding,
+            AlgDataTypeField cursorField ) {
+        columnMappings.add( new AlgColumnMapping( expandedFieldNames.size(), iCursor, iInputColumn, !isPassthrough ) );
 
         // As a special case, system fields are implicitly NOT NULL. A badly behaved UDX can still provide NULL values,
         // so the system must ensure that each generated system field has a reasonable value.
         boolean nullable = true;
-        if ( opBinding instanceof SqlCallBinding ) {
-            SqlCallBinding sqlCallBinding = (SqlCallBinding) opBinding;
+        if ( opBinding instanceof CallBinding ) {
+            CallBinding sqlCallBinding = (CallBinding) opBinding;
             if ( sqlCallBinding.getValidator().isSystemField( cursorField ) ) {
                 nullable = false;
             }
         }
-        RelDataType nullableType = opBinding.getTypeFactory().createTypeWithNullability( cursorField.getType(), nullable );
+        AlgDataType nullableType = opBinding.getTypeFactory().createTypeWithNullability( cursorField.getType(), nullable );
 
         // Make sure there are no duplicates in the output column names
         for ( String fieldName : expandedFieldNames ) {
@@ -167,5 +167,6 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
         expandedOutputTypes.add( nullableType );
         expandedFieldNames.add( cursorField.getName() );
     }
+
 }
 

@@ -18,8 +18,8 @@ package org.polypheny.db.routing;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.util.Pair;
 
 
@@ -28,14 +28,14 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     /**
      * @return The relRoot of the proposed routing plan.
      */
-    RelRoot getRoutedRoot();
+    AlgRoot getRoutedRoot();
 
     /**
      * Sets the routed relRoot
      *
-     * @param relRoot The routed rel root.
+     * @param algRoot The routed alg root.
      */
-    void setRoutedRoot( RelRoot relRoot );
+    void setRoutedRoot( AlgRoot algRoot );
 
     /**
      * @return The query class.
@@ -60,7 +60,7 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     void setRouter( Class<? extends Router> routerClass );
 
     /**
-     * @return The physical placements of the necessary partitions: PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+     * @return The physical placements of the necessary partitions: PartitionId {@code ->} List<AdapterId, CatalogColumnPlacementId>
      */
     @Override
     Map<Long, List<Pair<Integer, Long>>> getPhysicalPlacementsOfPartitions(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
@@ -68,14 +68,14 @@ public interface ProposedRoutingPlan extends RoutingPlan {
     /**
      * @return Optional pre costs.
      */
-    RelOptCost getPreCosts();
+    AlgOptCost getPreCosts();
 
     /**
      * Sets the pre costs.
      *
-     * @param preCosts the approximated rel costs.
+     * @param preCosts the approximated alg costs.
      */
-    void setPreCosts( RelOptCost preCosts );
+    void setPreCosts( AlgOptCost preCosts );
 
     /**
      * @return true if routing plan is cacheable. Currently, DMLs and DDLs will not be cached.

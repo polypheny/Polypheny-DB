@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import org.joda.time.Interval;
 import org.joda.time.chrono.ISOChronology;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TableFactory;
@@ -69,7 +69,7 @@ public class DruidTableFactory implements TableFactory {
 
     // name that is also the same name as a complex metric
     @Override
-    public Table create( SchemaPlus schema, String name, Map operand, RelDataType rowType ) {
+    public Table create( SchemaPlus schema, String name, Map operand, AlgDataType rowType ) {
         final DruidSchema druidSchema = schema.unwrap( DruidSchema.class );
         // If "dataSource" operand is present it overrides the table name.
         final String dataSource = (String) operand.get( "dataSource" );
@@ -179,5 +179,6 @@ public class DruidTableFactory implements TableFactory {
             return DruidTable.create( druidSchema, dataSourceName, intervals, fieldBuilder, metricNameBuilder, timestampColumnName, complexMetrics );
         }
     }
+
 }
 

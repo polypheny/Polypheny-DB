@@ -52,7 +52,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private int rowCount;
     private List<String> fieldNames;
     private List<Long> accessedPartitions;
-    protected String relCompareString;
+    protected String algCompareString;
     protected String queryClass;
     protected String physicalQueryClass;
 

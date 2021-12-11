@@ -77,7 +77,7 @@ class MonitoringQueueImplIntegrationTest {
         for ( int i = 0; i < number; i++ ) {
             QueryEvent event = new QueryEvent();
             event.setRouted( null );
-            event.setSignature( null );
+            event.setResult( null );
             event.setStatement( Mockito.mock( Statement.class ) );
             event.setDescription( UUID.randomUUID().toString() );
             event.setExecutionTime( (long) (Math.random() * 1000L) );

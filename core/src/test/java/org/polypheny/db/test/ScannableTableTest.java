@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,9 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -59,7 +60,6 @@ import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.type.PolyType;
 
 
@@ -418,7 +418,7 @@ public class ScannableTableTest {
             final RexNode node = filterIter.next();
             if ( cooperative
                     && node instanceof RexCall
-                    && ((RexCall) node).getOperator() == SqlStdOperatorTable.EQUALS
+                    && ((RexCall) node).getOperator().getOperatorName() == OperatorName.EQUALS
                     && ((RexCall) node).getOperands().get( 0 ) instanceof RexInputRef
                     && ((RexInputRef) ((RexCall) node).getOperands().get( 0 )).getIndex() == 0
                     && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ) {
@@ -437,7 +437,7 @@ public class ScannableTableTest {
     public static class SimpleTable extends AbstractTable implements ScannableTable {
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder().add( "i", null, PolyType.INTEGER ).build();
         }
 
@@ -461,7 +461,7 @@ public class ScannableTableTest {
     public static class BeatlesTable extends AbstractTable implements ScannableTable {
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", null, PolyType.INTEGER )
                     .add( "j", null, PolyType.VARCHAR )
@@ -478,6 +478,7 @@ public class ScannableTableTest {
                 }
             };
         }
+
     }
 
 
@@ -497,7 +498,7 @@ public class ScannableTableTest {
 
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", null, PolyType.INTEGER )
                     .add( "j", null, PolyType.VARCHAR )
@@ -516,6 +517,7 @@ public class ScannableTableTest {
                 }
             };
         }
+
     }
 
 
@@ -535,7 +537,7 @@ public class ScannableTableTest {
 
 
         @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
             return typeFactory.builder()
                     .add( "i", null, PolyType.INTEGER )
                     .add( "j", null, PolyType.VARCHAR )
@@ -554,6 +556,7 @@ public class ScannableTableTest {
                 }
             };
         }
+
     }
 
 
@@ -656,5 +659,6 @@ public class ScannableTableTest {
             }
         };
     }
+
 }
 

@@ -21,13 +21,13 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.tools.RoutedRelBuilder;
+import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.util.Pair;
 
 
@@ -38,41 +38,41 @@ import org.polypheny.db.util.Pair;
 @Getter
 public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
-    protected RelRoot routedRoot;
+    protected AlgRoot routedRoot;
     protected String queryClass;
     protected String physicalQueryClass;
     protected Class<? extends Router> router;
     protected Map<Long, List<Pair<Integer, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
-    protected RelOptCost preCosts;
+    protected AlgOptCost preCosts;
 
 
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryClass, Class<? extends Router> routerClass ) {
-        this.physicalPlacementsOfPartitions = routedRelBuilder.getPhysicalPlacementsOfPartitions();
+    public ProposedRoutingPlanImpl( RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, Class<? extends Router> routerClass ) {
+        this.physicalPlacementsOfPartitions = routedAlgBuilder.getPhysicalPlacementsOfPartitions();
         this.queryClass = queryClass;
         this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
         this.router = routerClass;
-        RelNode rel = routedRelBuilder.build();
-        this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        AlgNode alg = routedAlgBuilder.build();
+        this.routedRoot = new AlgRoot( alg, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-    public ProposedRoutingPlanImpl( RoutedRelBuilder routedRelBuilder, RelRoot logicalRoot, String queryClass, CachedProposedRoutingPlan cachedPlan ) {
+    public ProposedRoutingPlanImpl( RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, CachedProposedRoutingPlan cachedPlan ) {
         this.physicalPlacementsOfPartitions = cachedPlan.getPhysicalPlacementsOfPartitions();
         this.queryClass = queryClass;
         this.physicalQueryClass = queryClass + this.physicalPlacementsOfPartitions;
         this.router = cachedPlan.getRouter();
-        RelNode rel = routedRelBuilder.build();
-        this.routedRoot = new RelRoot( rel, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        AlgNode alg = routedAlgBuilder.build();
+        this.routedRoot = new AlgRoot( alg, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-    public ProposedRoutingPlanImpl( RelNode routedConditional, RelRoot logicalRoot, String queryClass ) {
+    public ProposedRoutingPlanImpl( AlgNode routedConditional, AlgRoot logicalRoot, String queryClass ) {
         this.queryClass = queryClass;
-        this.routedRoot = new RelRoot( routedConditional, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.routedRoot = new AlgRoot( routedConditional, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
     }
 
 
-    public ProposedRoutingPlanImpl( RelRoot routedRoot, String queryClass ) {
+    public ProposedRoutingPlanImpl( AlgRoot routedRoot, String queryClass ) {
         this.queryClass = queryClass;
         this.routedRoot = routedRoot;
     }
@@ -88,7 +88,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     public boolean isCacheable() {
         return this.physicalPlacementsOfPartitions != null
                 && this.getPhysicalQueryClass() != null
-                && !this.routedRoot.kind.belongsTo( SqlKind.DML );
+                && !this.routedRoot.kind.belongsTo( Kind.DML );
     }
 
 

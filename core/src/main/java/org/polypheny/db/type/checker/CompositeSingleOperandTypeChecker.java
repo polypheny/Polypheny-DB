@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package org.polypheny.db.type.checker;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.util.Util;
 
 
@@ -47,7 +47,7 @@ public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeCheck
 
 
     @Override
-    public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
+    public boolean checkSingleOperandType( CallBinding callBinding, Node node, int iFormalOperand, boolean throwOnFailure ) {
         assert allowedRules.size() >= 1;
 
         final ImmutableList<? extends PolySingleOperandTypeChecker> rules = getRules();
@@ -91,5 +91,6 @@ public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeCheck
 
         return ret;
     }
+
 }
 

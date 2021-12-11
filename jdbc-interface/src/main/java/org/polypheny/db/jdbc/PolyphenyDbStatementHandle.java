@@ -26,21 +26,19 @@ import org.polypheny.db.transaction.Statement;
 /**
  *
  */
+@Getter
 public class PolyphenyDbStatementHandle {
 
     private final PolyphenyDbConnectionHandle connection;
     private final int statementId;
     private volatile transient Iterator<Object> openResultSet;
     private volatile transient PolyphenyDbSignature signature;
-    @Getter
     @Setter
     private volatile transient String preparedQuery;
-    @Getter
     @Setter
     private volatile transient int maxRowCount;
 
     @Setter
-    @Getter
     private Statement statement;
 
     @Getter
@@ -53,16 +51,6 @@ public class PolyphenyDbStatementHandle {
     }
 
 
-    public int getStatementId() {
-        return statementId;
-    }
-
-
-    public PolyphenyDbConnectionHandle getConnection() {
-        return connection;
-    }
-
-
     public synchronized void setOpenResultSet( Iterator<Object> result ) {
         if ( this.openResultSet != null ) {
             //  this.openResultSet.close();
@@ -71,20 +59,10 @@ public class PolyphenyDbStatementHandle {
     }
 
 
-    public synchronized Iterator<Object> getOpenResultSet() {
-        return openResultSet;
-    }
-
-
     public synchronized void setSignature( PolyphenyDbSignature signature ) {
         this.signature = signature;
         this.openResultSet = null;
         executionStopWatch.reset();
-    }
-
-
-    public synchronized PolyphenyDbSignature getSignature() {
-        return signature;
     }
 
 

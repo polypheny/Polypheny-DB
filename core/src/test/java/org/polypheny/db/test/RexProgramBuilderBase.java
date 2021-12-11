@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,11 +44,13 @@ import java.util.TimeZone;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.plan.RelOptPredicateList;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -58,7 +60,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 
@@ -84,18 +85,18 @@ public abstract class RexProgramBuilderBase {
     protected RexLiteral nullInt;
     protected RexLiteral nullVarchar;
 
-    private RelDataType nullableBool;
-    private RelDataType nonNullableBool;
+    private AlgDataType nullableBool;
+    private AlgDataType nonNullableBool;
 
-    private RelDataType nullableInt;
-    private RelDataType nonNullableInt;
+    private AlgDataType nullableInt;
+    private AlgDataType nonNullableInt;
 
-    private RelDataType nullableVarchar;
-    private RelDataType nonNullableVarchar;
+    private AlgDataType nullableVarchar;
+    private AlgDataType nonNullableVarchar;
 
     // Note: JUnit 4 creates new instance for each test method, so we initialize these structures on demand
     // It maps non-nullable type to struct of (10 nullable, 10 non-nullable) fields
-    private Map<RelDataType, RexDynamicParam> dynamicParams;
+    private Map<AlgDataType, RexDynamicParam> dynamicParams;
 
 
     /**
@@ -152,13 +153,13 @@ public abstract class RexProgramBuilderBase {
 
 
         @Override
-        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
             throw new UnsupportedOperationException();
         }
 
 
         @Override
-        public RelDataType getParameterType( long index ) {
+        public AlgDataType getParameterType( long index ) {
             throw new UnsupportedOperationException();
         }
 
@@ -167,14 +168,15 @@ public abstract class RexProgramBuilderBase {
         public List<Map<Long, Object>> getParameterValues() {
             throw new UnsupportedOperationException();
         }
+
     }
 
 
     public void setUp() {
-        typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        typeFactory = new JavaTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
         executor = new RexExecutorImpl( new DummyTestDataContext() );
-        simplify = new RexSimplify( rexBuilder, RelOptPredicateList.EMPTY, executor ).withParanoid( true );
+        simplify = new RexSimplify( rexBuilder, AlgOptPredicateList.EMPTY, executor ).withParanoid( true );
         trueLiteral = rexBuilder.makeLiteral( true );
         falseLiteral = rexBuilder.makeLiteral( false );
 
@@ -192,12 +194,12 @@ public abstract class RexProgramBuilderBase {
     }
 
 
-    private RexDynamicParam getDynamicParam( RelDataType type, String fieldNamePrefix ) {
+    private RexDynamicParam getDynamicParam( AlgDataType type, String fieldNamePrefix ) {
         if ( dynamicParams == null ) {
             dynamicParams = new HashMap<>();
         }
         return dynamicParams.computeIfAbsent( type, k -> {
-            RelDataType nullableType = typeFactory.createTypeWithNullability( k, true );
+            AlgDataType nullableType = typeFactory.createTypeWithNullability( k, true );
             Builder builder = typeFactory.builder();
             for ( int i = 0; i < MAX_FIELDS; i++ ) {
                 builder.add( fieldNamePrefix + i, null, nullableType );
@@ -213,67 +215,67 @@ public abstract class RexProgramBuilderBase {
 
 
     protected RexNode isNull( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), node );
     }
 
 
     protected RexNode isUnknown( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_UNKNOWN, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_UNKNOWN ), node );
     }
 
 
     protected RexNode isNotNull( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_NULL, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), node );
     }
 
 
     protected RexNode isFalse( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_FALSE, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_FALSE ), node );
     }
 
 
     protected RexNode isNotFalse( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_FALSE, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_FALSE ), node );
     }
 
 
     protected RexNode isTrue( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_TRUE, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ), node );
     }
 
 
     protected RexNode isNotTrue( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_TRUE, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_TRUE ), node );
     }
 
 
     protected RexNode isDistinctFrom( RexNode a, RexNode b ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_DISTINCT_FROM, a, b );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_DISTINCT_FROM ), a, b );
     }
 
 
     protected RexNode isNotDistinctFrom( RexNode a, RexNode b ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_DISTINCT_FROM, a, b );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ), a, b );
     }
 
 
     protected RexNode nullIf( RexNode node1, RexNode node2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.NULLIF, node1, node2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NULLIF ), node1, node2 );
     }
 
 
     protected RexNode not( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.NOT, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT ), node );
     }
 
 
     protected RexNode unaryMinus( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.UNARY_MINUS, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.UNARY_MINUS ), node );
     }
 
 
     protected RexNode unaryPlus( RexNode node ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.UNARY_PLUS, node );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.UNARY_PLUS ), node );
     }
 
 
@@ -284,7 +286,7 @@ public abstract class RexProgramBuilderBase {
 
     protected RexNode and( Iterable<? extends RexNode> nodes ) {
         // Does not flatten nested ANDs. We want test input to contain nested ANDs.
-        return rexBuilder.makeCall( SqlStdOperatorTable.AND, ImmutableList.copyOf( nodes ) );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -295,7 +297,7 @@ public abstract class RexProgramBuilderBase {
 
     protected RexNode or( Iterable<? extends RexNode> nodes ) {
         // Does not flatten nested ORs. We want test input to contain nested ORs.
-        return rexBuilder.makeCall( SqlStdOperatorTable.OR, ImmutableList.copyOf( nodes ) );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.OR ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -305,7 +307,7 @@ public abstract class RexProgramBuilderBase {
 
 
     protected RexNode case_( Iterable<? extends RexNode> nodes ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.CASE, ImmutableList.copyOf( nodes ) );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.CASE ), ImmutableList.copyOf( nodes ) );
     }
 
 
@@ -318,7 +320,7 @@ public abstract class RexProgramBuilderBase {
      * @param type type to cast to
      * @return call to CAST operator
      */
-    protected RexNode abstractCast( RexNode e, RelDataType type ) {
+    protected RexNode abstractCast( RexNode e, AlgDataType type ) {
         return rexBuilder.makeAbstractCast( type, e );
     }
 
@@ -332,73 +334,73 @@ public abstract class RexProgramBuilderBase {
      * @param type type to cast to
      * @return input node converted to given type
      */
-    protected RexNode cast( RexNode e, RelDataType type ) {
+    protected RexNode cast( RexNode e, AlgDataType type ) {
         return rexBuilder.makeCast( type, e );
     }
 
 
     protected RexNode eq( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.EQUALS, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), n1, n2 );
     }
 
 
     protected RexNode ne( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.NOT_EQUALS, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NOT_EQUALS ), n1, n2 );
     }
 
 
     protected RexNode le( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.LESS_THAN_OR_EQUAL, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), n1, n2 );
     }
 
 
     protected RexNode lt( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.LESS_THAN, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.LESS_THAN ), n1, n2 );
     }
 
 
     protected RexNode ge( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), n1, n2 );
     }
 
 
     protected RexNode gt( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.GREATER_THAN, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.GREATER_THAN ), n1, n2 );
     }
 
 
     protected RexNode plus( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.PLUS, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), n1, n2 );
     }
 
 
     protected RexNode mul( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.MULTIPLY, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.MULTIPLY ), n1, n2 );
     }
 
 
     protected RexNode coalesce( RexNode... nodes ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.COALESCE, nodes );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.COALESCE ), nodes );
     }
 
 
     protected RexNode divInt( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.DIVIDE_INTEGER, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DIVIDE_INTEGER ), n1, n2 );
     }
 
 
     protected RexNode div( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.DIVIDE, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DIVIDE ), n1, n2 );
     }
 
 
     protected RexNode sub( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.MINUS, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.MINUS ), n1, n2 );
     }
 
 
     protected RexNode add( RexNode n1, RexNode n2 ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.PLUS, n1, n2 );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), n1, n2 );
     }
 
 
@@ -410,12 +412,12 @@ public abstract class RexProgramBuilderBase {
      * @return IN expression
      */
     protected RexNode in( RexNode node, RexNode... nodes ) {
-        return rexBuilder.makeCall( SqlStdOperatorTable.IN, ImmutableList.<RexNode>builder().add( node ).add( nodes ).build() );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IN ), ImmutableList.<RexNode>builder().add( node ).add( nodes ).build() );
     }
 
 
     // Types
-    protected RelDataType nullable( RelDataType type ) {
+    protected AlgDataType nullable( AlgDataType type ) {
         if ( type.isNullable() ) {
             return type;
         }
@@ -423,32 +425,32 @@ public abstract class RexProgramBuilderBase {
     }
 
 
-    protected RelDataType tVarchar() {
+    protected AlgDataType tVarchar() {
         return nonNullableVarchar;
     }
 
 
-    protected RelDataType tVarchar( boolean nullable ) {
+    protected AlgDataType tVarchar( boolean nullable ) {
         return nullable ? nullableVarchar : nonNullableVarchar;
     }
 
 
-    protected RelDataType tBoolean() {
+    protected AlgDataType tBoolean() {
         return nonNullableBool;
     }
 
 
-    protected RelDataType tBoolean( boolean nullable ) {
+    protected AlgDataType tBoolean( boolean nullable ) {
         return nullable ? nullableBool : nonNullableBool;
     }
 
 
-    protected RelDataType tInt() {
+    protected AlgDataType tInt() {
         return nonNullableInt;
     }
 
 
-    protected RelDataType tInt( boolean nullable ) {
+    protected AlgDataType tInt( boolean nullable ) {
         return nullable ? nullableInt : nonNullableInt;
     }
 
@@ -461,7 +463,7 @@ public abstract class RexProgramBuilderBase {
      * @param type type of required null
      * @return null literal of a given type
      */
-    protected RexLiteral null_( RelDataType type ) {
+    protected RexLiteral null_( AlgDataType type ) {
         return rexBuilder.makeNullLiteral( nullable( type ) );
     }
 
@@ -489,7 +491,7 @@ public abstract class RexProgramBuilderBase {
     }
 
 
-    protected RexNode literal( BigDecimal value, RelDataType type ) {
+    protected RexNode literal( BigDecimal value, AlgDataType type ) {
         return rexBuilder.makeExactLiteral( value, type );
     }
 
@@ -523,7 +525,7 @@ public abstract class RexProgramBuilderBase {
      * @param arg argument index (0-based)
      * @return input ref with given type and index
      */
-    protected RexNode input( RelDataType type, int arg ) {
+    protected RexNode input( AlgDataType type, int arg ) {
         return rexBuilder.makeInputRef( type, arg );
     }
 
@@ -667,4 +669,5 @@ public abstract class RexProgramBuilderBase {
         assertArgValue( arg );
         return rexBuilder.makeFieldAccess( getDynamicParam( nonNullableVarchar, "varchar" ), arg + MAX_FIELDS );
     }
+
 }

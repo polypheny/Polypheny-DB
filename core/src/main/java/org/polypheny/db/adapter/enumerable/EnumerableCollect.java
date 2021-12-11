@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,19 +37,19 @@ package org.polypheny.db.adapter.enumerable;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Collect;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Collect;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
  * Implementation of {@link Collect} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableCollect extends Collect implements EnumerableRel {
+public class EnumerableCollect extends Collect implements EnumerableAlg {
 
-    public EnumerableCollect( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, String fieldName ) {
+    public EnumerableCollect( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, String fieldName ) {
         super( cluster, traitSet, child, fieldName );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == child.getConvention();
@@ -57,15 +57,15 @@ public class EnumerableCollect extends Collect implements EnumerableRel {
 
 
     @Override
-    public EnumerableCollect copy( RelTraitSet traitSet, RelNode newInput ) {
+    public EnumerableCollect copy( AlgTraitSet traitSet, AlgNode newInput ) {
         return new EnumerableCollect( getCluster(), traitSet, newInput, fieldName );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        final EnumerableRel child = (EnumerableRel) getInput();
+        final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, Prefer.ARRAY );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), JavaRowFormat.LIST );
 
@@ -77,5 +77,6 @@ public class EnumerableCollect extends Collect implements EnumerableRel {
         builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.SINGLETON_ENUMERABLE.method, list_ ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
+
 }
 

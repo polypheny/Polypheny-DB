@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.polypheny.db.mql.fun.MqlFunctionOperator;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlSyntax;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.Syntax;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
@@ -57,28 +58,28 @@ import org.polypheny.db.util.Litmus;
  * An expression formed by a call to an operator with zero or more expressions as operands.
  *
  * Operators may be binary, unary, functions, special syntactic constructs like <code>CASE ... WHEN ... END</code>, or even internally generated constructs like implicit type conversions. The syntax of the operator is
- * really irrelevant, because row-expressions (unlike {@link org.polypheny.db.sql.SqlNode SQL expressions}) do not directly represent a piece of source code.
+ * really irrelevant, because row-expressions (unlike {@link Node SQL expressions}) do not directly represent a piece of source code.
  *
  * It's not often necessary to sub-class this class. The smarts should be in the operator, rather than the call. Any extra information about the call can often be encoded as extra arguments. (These don't need to be hidden,
  * because no one is going to be generating source code from this tree.)
  */
 public class RexCall extends RexNode {
 
-    public final SqlOperator op;
+    public final Operator op;
     public final ImmutableList<RexNode> operands;
-    public final RelDataType type;
+    public final AlgDataType type;
 
-    private static final Set<SqlKind> SIMPLE_BINARY_OPS;
+    private static final Set<Kind> SIMPLE_BINARY_OPS;
 
 
     static {
-        EnumSet<SqlKind> kinds = EnumSet.of( SqlKind.PLUS, SqlKind.MINUS, SqlKind.TIMES, SqlKind.DIVIDE );
-        kinds.addAll( SqlKind.COMPARISON );
+        EnumSet<Kind> kinds = EnumSet.of( Kind.PLUS, Kind.MINUS, Kind.TIMES, Kind.DIVIDE );
+        kinds.addAll( Kind.COMPARISON );
         SIMPLE_BINARY_OPS = Sets.immutableEnumSet( kinds );
     }
 
 
-    public RexCall( RelDataType type, SqlOperator op, List<? extends RexNode> operands ) {
+    public RexCall( AlgDataType type, Operator op, List<? extends RexNode> operands ) {
         this.type = Objects.requireNonNull( type );
         this.op = Objects.requireNonNull( op );
         this.operands = ImmutableList.copyOf( operands );
@@ -89,7 +90,7 @@ public class RexCall extends RexNode {
 
     /**
      * Appends call operands without parenthesis. {@link RexLiteral} might omit data type depending on the context.
-     * For instance, {@code null:BOOLEAN} vs {@code =(true, null)}. The idea here is to omit "obvious" types for readability purposes while still maintain {@link RelNode#getDigest()} contract.
+     * For instance, {@code null:BOOLEAN} vs {@code =(true, null)}. The idea here is to omit "obvious" types for readability purposes while still maintain {@link AlgNode#getDigest()} contract.
      *
      * @param sb destination
      * @return original StringBuilder for fluent API
@@ -109,7 +110,7 @@ public class RexCall extends RexNode {
             // For instance, AND/OR arguments should be BOOLEAN, so AND(true, null) is better than AND(true, null:BOOLEAN), and we keep the same info +($0, 2) is better than +($0, 2:BIGINT). Note: if $0 has BIGINT,
             // then 2 is expected to be of BIGINT type as well.
             RexDigestIncludeType includeType = RexDigestIncludeType.OPTIONAL;
-            if ( (isA( SqlKind.AND ) || isA( SqlKind.OR )) && operand.getType().getPolyType() == PolyType.BOOLEAN ) {
+            if ( (isA( Kind.AND ) || isA( Kind.OR )) && operand.getType().getPolyType() == PolyType.BOOLEAN ) {
                 includeType = RexDigestIncludeType.NO_TYPE;
             }
             if ( SIMPLE_BINARY_OPS.contains( getKind() ) ) {
@@ -125,14 +126,14 @@ public class RexCall extends RexNode {
 
 
     /**
-     * This is a poorman's {@link PolyTypeUtil#equalSansNullability(RelDataTypeFactory, RelDataType, RelDataType)}
-     * {@code SqlTypeUtil} requires {@link RelDataTypeFactory} which we haven't, so we assume that "not null" is represented in the type's digest as a trailing "NOT NULL" (case sensitive)
+     * This is a poorman's {@link PolyTypeUtil#equalSansNullability(AlgDataTypeFactory, AlgDataType, AlgDataType)}
+     * {@code SqlTypeUtil} requires {@link AlgDataTypeFactory} which we haven't, so we assume that "not null" is represented in the type's digest as a trailing "NOT NULL" (case sensitive)
      *
      * @param a first type
      * @param b second type
      * @return true if the types are equal or the only difference is nullability
      */
-    private static boolean equalSansNullability( RelDataType a, RelDataType b ) {
+    private static boolean equalSansNullability( AlgDataType a, AlgDataType b ) {
         String x = a.getFullTypeString();
         String y = b.getFullTypeString();
         if ( x.length() < y.length() ) {
@@ -148,7 +149,7 @@ public class RexCall extends RexNode {
     protected @Nonnull
     String computeDigest( boolean withType ) {
         final StringBuilder sb = new StringBuilder( op.getName() );
-        if ( (operands.size() == 0) && (op.getSyntax() == SqlSyntax.FUNCTION_ID) ) {
+        if ( (operands.size() == 0) && (op.getSyntax() == Syntax.FUNCTION_ID) ) {
             // Don't print params for empty arg list. For example, we want "SYSTEM_USER", not "SYSTEM_USER()".
         } else {
             sb.append( "(" );
@@ -170,7 +171,7 @@ public class RexCall extends RexNode {
         // This data race is intentional
         String localDigest = digest;
         if ( localDigest == null ) {
-            localDigest = computeDigest( isA( SqlKind.CAST ) || isA( SqlKind.NEW_SPECIFICATION ) );
+            localDigest = computeDigest( isA( Kind.CAST ) || isA( Kind.NEW_SPECIFICATION ) );
             digest = Objects.requireNonNull( localDigest );
         }
         return localDigest;
@@ -190,7 +191,7 @@ public class RexCall extends RexNode {
 
 
     @Override
-    public RelDataType getType() {
+    public AlgDataType getType() {
         return type;
     }
 
@@ -236,8 +237,8 @@ public class RexCall extends RexNode {
 
 
     @Override
-    public SqlKind getKind() {
-        return op.kind;
+    public Kind getKind() {
+        return op.getKind();
     }
 
 
@@ -246,7 +247,7 @@ public class RexCall extends RexNode {
     }
 
 
-    public SqlOperator getOperator() {
+    public Operator getOperator() {
         return op;
     }
 
@@ -258,7 +259,7 @@ public class RexCall extends RexNode {
      * @param operands Operands to call
      * @return New call
      */
-    public RexCall clone( RelDataType type, List<RexNode> operands ) {
+    public RexCall clone( AlgDataType type, List<RexNode> operands ) {
         return new RexCall( type, op, operands );
     }
 
@@ -273,7 +274,7 @@ public class RexCall extends RexNode {
 
     @Override
     public int hashCode() {
-        if ( SqlKind.DOC_KIND.contains( op.getKind() ) || op instanceof MqlFunctionOperator ) {
+        if ( Kind.MQL_KIND.contains( op.getKind() ) || OperatorName.MQL_OPERATORS.contains( this.op.getOperatorName() ) ) {
             return (op + "[" + operands.stream().map( rexNode -> Integer.toString( rexNode.hashCode() ) ).collect( Collectors.joining( "," ) ) + "]").hashCode();
         } else {
             return toString().hashCode();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@
 package org.polypheny.db.adapter.pig;
 
 
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.algebra.constant.Kind;
 
 
 /**
@@ -42,24 +42,24 @@ import org.polypheny.db.sql.SqlKind;
  */
 public enum PigAggFunction {
 
-    COUNT( SqlKind.COUNT, false ), COUNT_STAR( SqlKind.COUNT, true );
+    COUNT( Kind.COUNT, false ), COUNT_STAR( Kind.COUNT, true );
 
-    private final SqlKind polyphenyDbFunc;
+    private final Kind polyphenyDbFunc;
     private final boolean star; // as in COUNT(*)
 
 
-    PigAggFunction( SqlKind polyphenyDbFunc ) {
+    PigAggFunction( Kind polyphenyDbFunc ) {
         this( polyphenyDbFunc, false );
     }
 
 
-    PigAggFunction( SqlKind polyphenyDbFunc, boolean star ) {
+    PigAggFunction( Kind polyphenyDbFunc, boolean star ) {
         this.polyphenyDbFunc = polyphenyDbFunc;
         this.star = star;
     }
 
 
-    public static PigAggFunction valueOf( SqlKind polyphenyDb, boolean star ) {
+    public static PigAggFunction valueOf( Kind polyphenyDb, boolean star ) {
         for ( PigAggFunction pigAggFunction : values() ) {
             if ( pigAggFunction.polyphenyDbFunc == polyphenyDb && pigAggFunction.star == star ) {
                 return pigAggFunction;

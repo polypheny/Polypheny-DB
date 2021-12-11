@@ -47,7 +47,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Source;
@@ -125,7 +125,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
     /**
      * Deduces the names and types of a table's columns by reading the first line of a CSV file.
      */
-    static RelDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<CsvFieldType> fieldTypes ) {
+    static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<CsvFieldType> fieldTypes ) {
         return deduceRowType( typeFactory, source, fieldTypes, false );
     }
 
@@ -133,8 +133,8 @@ class CsvEnumerator<E> implements Enumerator<E> {
     /**
      * Deduces the names and types of a table's columns by reading the first line of a CSV file.
      */
-    static RelDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<CsvFieldType> fieldTypes, Boolean stream ) {
-        final List<RelDataType> types = new ArrayList<>();
+    static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<CsvFieldType> fieldTypes, Boolean stream ) {
+        final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
@@ -160,7 +160,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                     name = string;
                     fieldType = null;
                 }
-                final RelDataType type;
+                final AlgDataType type;
                 if ( fieldType == null ) {
                     type = typeFactory.createPolyType( PolyType.VARCHAR );
                 } else {
@@ -349,6 +349,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                     return string;
             }
         }
+
     }
 
 
@@ -406,6 +407,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
             }
             return objects;
         }
+
     }
 
 
@@ -428,6 +430,8 @@ class CsvEnumerator<E> implements Enumerator<E> {
         public Object convertRow( String[] strings ) {
             return convert( fieldType, strings[fieldIndex] );
         }
+
     }
+
 }
 

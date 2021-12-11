@@ -22,6 +22,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGraph;
@@ -34,7 +35,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
-import org.polypheny.db.rel.RelNode;
 
 public class ImplementationCache {
 
@@ -56,8 +56,8 @@ public class ImplementationCache {
     }
 
 
-    public PreparedResult getIfPresent( RelNode parameterizedNode ) {
-        PreparedResult preparedResult = implementationCache.getIfPresent( parameterizedNode.relCompareString() );
+    public PreparedResult getIfPresent( AlgNode parameterizedNode ) {
+        PreparedResult preparedResult = implementationCache.getIfPresent( parameterizedNode.algCompareString() );
         if ( preparedResult == null ) {
             missesCounter.incrementAndGet();
         } else {
@@ -67,8 +67,8 @@ public class ImplementationCache {
     }
 
 
-    public void put( RelNode parameterizedNode, PreparedResult preparedResult ) {
-        implementationCache.put( parameterizedNode.relCompareString(), preparedResult );
+    public void put( AlgNode parameterizedNode, PreparedResult preparedResult ) {
+        implementationCache.put( parameterizedNode.algCompareString(), preparedResult );
     }
 
 

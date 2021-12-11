@@ -30,7 +30,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.sql.SqlDialect;
 
 
 /**

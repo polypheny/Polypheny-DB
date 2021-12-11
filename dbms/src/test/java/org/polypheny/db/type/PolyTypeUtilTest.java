@@ -39,8 +39,8 @@ import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 
 
 /**
@@ -78,8 +78,8 @@ public class PolyTypeUtilTest {
 
     @Test
     public void testTypesIsSameFamilyWithNumberStructTypes() {
-        final RelDataType bigIntAndFloat = struct( f.sqlBigInt, f.sqlFloat );
-        final RelDataType floatAndBigInt = struct( f.sqlFloat, f.sqlBigInt );
+        final AlgDataType bigIntAndFloat = struct( f.sqlBigInt, f.sqlFloat );
+        final AlgDataType floatAndBigInt = struct( f.sqlFloat, f.sqlBigInt );
 
         assertThat( PolyTypeUtil.areSameFamily( ImmutableList.of( bigIntAndFloat, floatAndBigInt ) ), is( true ) );
         assertThat( PolyTypeUtil.areSameFamily( ImmutableList.of( bigIntAndFloat, bigIntAndFloat ) ), is( true ) );
@@ -90,8 +90,8 @@ public class PolyTypeUtilTest {
 
     @Test
     public void testTypesIsSameFamilyWithCharStructTypes() {
-        final RelDataType varCharStruct = struct( f.sqlVarchar );
-        final RelDataType charStruct = struct( f.sqlChar );
+        final AlgDataType varCharStruct = struct( f.sqlVarchar );
+        final AlgDataType charStruct = struct( f.sqlChar );
 
         assertThat( PolyTypeUtil.areSameFamily( ImmutableList.of( varCharStruct, charStruct ) ), is( true ) );
         assertThat( PolyTypeUtil.areSameFamily( ImmutableList.of( charStruct, varCharStruct ) ), is( true ) );
@@ -102,26 +102,27 @@ public class PolyTypeUtilTest {
 
     @Test
     public void testTypesIsSameFamilyWithInconvertibleStructTypes() {
-        final RelDataType dateStruct = struct( f.sqlDate );
-        final RelDataType boolStruct = struct( f.sqlBoolean );
+        final AlgDataType dateStruct = struct( f.sqlDate );
+        final AlgDataType boolStruct = struct( f.sqlBoolean );
         assertThat( PolyTypeUtil.areSameFamily( ImmutableList.of( dateStruct, boolStruct ) ), is( false ) );
 
-        final RelDataType charIntStruct = struct( f.sqlChar, f.sqlInt );
-        final RelDataType charDateStruct = struct( f.sqlChar, f.sqlDate );
+        final AlgDataType charIntStruct = struct( f.sqlChar, f.sqlInt );
+        final AlgDataType charDateStruct = struct( f.sqlChar, f.sqlDate );
         assertThat( PolyTypeUtil.areSameFamily( ImmutableList.of( charIntStruct, charDateStruct ) ), is( false ) );
 
-        final RelDataType boolDateStruct = struct( f.sqlBoolean, f.sqlDate );
-        final RelDataType floatIntStruct = struct( f.sqlInt, f.sqlFloat );
+        final AlgDataType boolDateStruct = struct( f.sqlBoolean, f.sqlDate );
+        final AlgDataType floatIntStruct = struct( f.sqlInt, f.sqlFloat );
         assertThat( PolyTypeUtil.areSameFamily( ImmutableList.of( boolDateStruct, floatIntStruct ) ), is( false ) );
     }
 
 
-    private RelDataType struct( RelDataType... relDataTypes ) {
+    private AlgDataType struct( AlgDataType... algDataTypes ) {
         final Builder builder = f.typeFactory.builder();
-        for ( int i = 0; i < relDataTypes.length; i++ ) {
-            builder.add( "field" + i, null, relDataTypes[i] );
+        for ( int i = 0; i < algDataTypes.length; i++ ) {
+            builder.add( "field" + i, null, algDataTypes[i] );
         }
         return builder.build();
     }
+
 }
 

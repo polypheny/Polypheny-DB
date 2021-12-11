@@ -59,13 +59,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
@@ -161,7 +161,7 @@ public class CassandraSchema extends AbstractSchema {
     }
 
 
-    RelProtoDataType getRelDataType( String physicalTableName, boolean view ) {
+    AlgProtoDataType getAlgDataType( String physicalTableName, boolean view ) {
         Map<CqlIdentifier, ColumnMetadata> columns;
         if ( view ) {
             throw new RuntimeException( "Views are currently broken." );
@@ -170,8 +170,8 @@ public class CassandraSchema extends AbstractSchema {
         }
 
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 //        Pattern columnIdPattern = Pattern.compile( "^col([0-9]+)(r([0-9]+))?" );
 
 //        List<Pair<Integer, Entry<CqlIdentifier, ColumnMetadata>>> preorderedList = new ArrayList<>();
@@ -196,15 +196,15 @@ public class CassandraSchema extends AbstractSchema {
             CatalogColumn logicalColumn = this.logicalColumnFromPhysicalColumn( physicalColumnName );
             String logicalColumnName = this.logicalColumnFromPhysical( physicalColumnName );
 
-            RelDataType relDataType;
+            AlgDataType algDataType;
             if ( logicalColumn.collectionsType == PolyType.ARRAY ) {
-                RelDataType innerType = typeFactory.createPolyType( logicalColumn.type );
-                relDataType = typeFactory.createArrayType( innerType, logicalColumn.cardinality, logicalColumn.dimension );
+                AlgDataType innerType = typeFactory.createPolyType( logicalColumn.type );
+                algDataType = typeFactory.createArrayType( innerType, logicalColumn.cardinality, logicalColumn.dimension );
             } else {
-                relDataType = typeFactory.createPolyType( logicalColumn.type );
+                algDataType = typeFactory.createPolyType( logicalColumn.type );
             }
 
-            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, relDataType ) ) );
+            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, algDataType ) ) );
 //            fieldInfo.add( logicalColumnName, physicalColumnName, typeFactory.createPolyType( typeName ) ).nullable( true );
         }
 
@@ -215,7 +215,7 @@ public class CassandraSchema extends AbstractSchema {
             fieldInfo.add( container.logicalName, container.physicalName, container.dataType ).nullable( true );
         }
 
-        return RelDataTypeImpl.proto( fieldInfo.build() );
+        return AlgDataTypeImpl.proto( fieldInfo.build() );
     }
 
 
@@ -294,7 +294,7 @@ public class CassandraSchema extends AbstractSchema {
      *
      * @return A RelCollations representing the collation of all clustering keys
      */
-    public List<RelFieldCollation> getClusteringOrder( String physicalTableName, boolean view ) {
+    public List<AlgFieldCollation> getClusteringOrder( String physicalTableName, boolean view ) {
         RelationMetadata relation;
 //        List<String> qualifiedNames = new LinkedList<>();
 //        qualifiedNames.add( this.name );
@@ -308,22 +308,22 @@ public class CassandraSchema extends AbstractSchema {
         }
 
         Map<ColumnMetadata, ClusteringOrder> clusteringOrder = relation.getClusteringColumns();
-        List<RelFieldCollation> keyCollations = new ArrayList<>();
+        List<AlgFieldCollation> keyCollations = new ArrayList<>();
 
         int i = 0;
         for ( Entry<ColumnMetadata, ClusteringOrder> order : clusteringOrder.entrySet() ) {
-            RelFieldCollation.Direction direction;
+            AlgFieldCollation.Direction direction;
             switch ( order.getValue() ) {
                 case DESC:
-                    direction = RelFieldCollation.Direction.DESCENDING;
+                    direction = AlgFieldCollation.Direction.DESCENDING;
                     break;
                 case ASC:
                 default:
-                    direction = RelFieldCollation.Direction.ASCENDING;
+                    direction = AlgFieldCollation.Direction.ASCENDING;
                     break;
             }
             CatalogColumn logicalColumn = this.logicalColumnFromPhysicalColumn( order.getKey().getName().asInternal() );
-            keyCollations.add( new RelFieldCollation( logicalColumn.position - 1, direction ) );
+            keyCollations.add( new AlgFieldCollation( logicalColumn.position - 1, direction ) );
             i++;
         }
 
@@ -363,7 +363,9 @@ public class CassandraSchema extends AbstractSchema {
 
         String logicalName;
         String physicalName;
-        RelDataType dataType;
+        AlgDataType dataType;
+
     }
+
 }
 

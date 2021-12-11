@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,11 @@ package org.polypheny.db.interpreter;
 
 
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.algebra.core.Filter;
 
 
 /**
- * Interpreter node that implements a {@link org.polypheny.db.rel.core.Filter}.
+ * Interpreter node that implements a {@link org.polypheny.db.algebra.core.Filter}.
  */
 public class FilterNode extends AbstractSingleNode<Filter> {
 
@@ -47,9 +47,9 @@ public class FilterNode extends AbstractSingleNode<Filter> {
     private final Context context;
 
 
-    public FilterNode( Compiler compiler, Filter rel ) {
-        super( compiler, rel );
-        this.condition = compiler.compile( ImmutableList.of( rel.getCondition() ), rel.getRowType() );
+    public FilterNode( Compiler compiler, Filter alg ) {
+        super( compiler, alg );
+        this.condition = compiler.compile( ImmutableList.of( alg.getCondition() ), alg.getRowType() );
         this.context = compiler.createContext();
     }
 
@@ -65,5 +65,6 @@ public class FilterNode extends AbstractSingleNode<Filter> {
             }
         }
     }
+
 }
 

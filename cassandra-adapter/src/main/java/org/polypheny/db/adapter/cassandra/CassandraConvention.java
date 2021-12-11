@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ package org.polypheny.db.adapter.cassandra;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.cassandra.rules.CassandraRules;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
 
 
 public class CassandraConvention extends Convention.Impl {
@@ -35,7 +35,7 @@ public class CassandraConvention extends Convention.Impl {
 
 
     public CassandraConvention( String name, Expression expression, CassandraPhysicalNameProvider physicalNameProvider, UserDefinedType arrayContainerUdt ) {
-        super( "CASSANDRA." + name, CassandraRel.class );
+        super( "CASSANDRA." + name, CassandraAlg.class );
         this.expression = expression;
         this.physicalNameProvider = physicalNameProvider;
         this.arrayContainerUdt = arrayContainerUdt;
@@ -43,9 +43,10 @@ public class CassandraConvention extends Convention.Impl {
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : CassandraRules.rules( this ) ) {
+    public void register( AlgOptPlanner planner ) {
+        for ( AlgOptRule rule : CassandraRules.rules( this ) ) {
             planner.addRule( rule );
         }
     }
+
 }

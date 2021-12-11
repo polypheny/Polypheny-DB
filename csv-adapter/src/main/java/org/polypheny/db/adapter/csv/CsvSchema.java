@@ -41,16 +41,16 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyType;
@@ -84,13 +84,13 @@ public class CsvSchema extends AbstractSchema {
 
 
     public Table createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource, CatalogPartitionPlacement partitionPlacement ) {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            RelDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
+            AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
             fieldIds.add( (int) placement.physicalPosition );
@@ -107,7 +107,7 @@ public class CsvSchema extends AbstractSchema {
             throw new RuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource );
+        CsvTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource );
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
@@ -122,7 +122,7 @@ public class CsvSchema extends AbstractSchema {
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
-    private CsvTable createTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    private CsvTable createTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         switch ( flavor ) {
             case TRANSLATABLE:
                 return new CsvTranslatableTable( source, protoRowType, fieldTypes, fields, csvSource );
@@ -136,12 +136,12 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
+    private AlgDataType sqlType( AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
         switch ( polyType ) {
             case ARRAY:
-                RelDataType component = null;
+                AlgDataType component = null;
                 if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
                     // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
                     final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
@@ -168,7 +168,7 @@ public class CsvSchema extends AbstractSchema {
      * Given "VARCHAR(10)", returns BasicSqlType(VARCHAR, 10).
      * Given "NUMERIC(10, 2)", returns BasicSqlType(NUMERIC, 10, 2).
      */
-    private RelDataType parseTypeString( RelDataTypeFactory typeFactory, String typeString ) {
+    private AlgDataType parseTypeString( AlgDataTypeFactory typeFactory, String typeString ) {
         int precision = -1;
         int scale = -1;
         int open = typeString.indexOf( "(" );

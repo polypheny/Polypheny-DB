@@ -43,9 +43,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.Pair;
@@ -56,9 +56,9 @@ import spark.utils.IOUtils;
 @Slf4j
 public class RestResult {
 
-    private final SqlKind sqlKind;
+    private final Kind Kind;
     private final Iterator<Object> iterator;
-    private final RelDataType dataType;
+    private final AlgDataType dataType;
     List<ColumnMetaData> columns;
     private List<Map<String, Object>> result;
     @Getter
@@ -70,8 +70,8 @@ public class RestResult {
     ZipOutputStream zipOut;
 
 
-    public RestResult( SqlKind sqlKind, Iterator<Object> iterator, RelDataType dataType, List<ColumnMetaData> columns ) {
-        this.sqlKind = sqlKind;
+    public RestResult( Kind Kind, Iterator<Object> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
+        this.Kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
         this.columns = columns;
@@ -79,7 +79,7 @@ public class RestResult {
 
 
     public RestResult transform() {
-        if ( sqlKind.belongsTo( SqlKind.DML ) ) {
+        if ( Kind.belongsTo( Kind.DML ) ) {
             transformDML();
         } else {
             transformNonDML();
@@ -130,7 +130,7 @@ public class RestResult {
             }
             HashMap<String, Object> temp = new HashMap<>();
             int i = 0;
-            for ( RelDataTypeField type : dataType.getFieldList() ) {
+            for ( AlgDataTypeField type : dataType.getFieldList() ) {
                 Object o = row[i];
                 if ( type.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     if ( o instanceof File ) {

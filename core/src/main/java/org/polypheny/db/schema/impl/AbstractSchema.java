@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.rel.type.RelProtoDataType;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -121,13 +121,13 @@ public class AbstractSchema implements Schema {
      *
      * @return Map of types in this schema by name
      */
-    protected Map<String, RelProtoDataType> getTypeMap() {
+    protected Map<String, AlgProtoDataType> getTypeMap() {
         return ImmutableMap.of();
     }
 
 
     @Override
-    public RelProtoDataType getType( String name ) {
+    public AlgProtoDataType getType( String name ) {
         return getTypeMap().get( name );
     }
 

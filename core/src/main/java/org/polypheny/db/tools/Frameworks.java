@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,28 +41,26 @@ import java.util.Properties;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
-import org.polypheny.db.jdbc.ContextImpl;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.RexConvertletTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCostFactory;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCostFactory;
-import org.polypheny.db.plan.RelOptSchema;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
-import org.polypheny.db.plan.RelTraitDef;
+import org.polypheny.db.prepare.ContextImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PlannerImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepareImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.AbstractPolyphenyDbSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql2rel.SqlRexConvertletTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
-import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.util.Util;
 
 
@@ -94,7 +92,8 @@ public class Frameworks {
      */
     public interface PlannerAction<R> {
 
-        R apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema );
+        R apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema );
+
     }
 
 
@@ -121,9 +120,10 @@ public class Frameworks {
 
 
         public abstract R apply(
-                RelOptCluster cluster,
-                RelOptSchema relOptSchema,
+                AlgOptCluster cluster,
+                AlgOptSchema algOptSchema,
                 SchemaPlus rootSchema );
+
     }
 
 
@@ -138,9 +138,9 @@ public class Frameworks {
         return withPrepare(
                 new Frameworks.PrepareAction<R>( config ) {
                     @Override
-                    public R apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
+                    public R apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
                         final PolyphenyDbSchema schema = PolyphenyDbSchema.from( Util.first( config.getDefaultSchema(), rootSchema ) );
-                        return action.apply( cluster, relOptSchema, schema.root().plus() );
+                        return action.apply( cluster, algOptSchema, schema.root().plus() );
                     }
                 } );
     }
@@ -182,7 +182,7 @@ public class Frameworks {
     public static <R> R withPrepare( PrepareAction<R> action ) {
         try {
             final Properties info = new Properties();
-            if ( action.config.getTypeSystem() != RelDataTypeSystem.DEFAULT ) {
+            if ( action.config.getTypeSystem() != AlgDataTypeSystem.DEFAULT ) {
                 info.setProperty(
                         PolyphenyDbConnectionProperty.TYPE_SYSTEM.camelName(),
                         action.config.getTypeSystem().getClass().getName() );
@@ -228,38 +228,37 @@ public class Frameworks {
      */
     public static class ConfigBuilder {
 
-        private SqlRexConvertletTable convertletTable;
-        private SqlOperatorTable operatorTable;
+        private RexConvertletTable convertletTable;
+        private OperatorTable operatorTable;
         private ImmutableList<Program> programs;
         private Context context;
-        private ImmutableList<RelTraitDef> traitDefs;
-        private SqlParserConfig parserConfig;
-        private SqlToRelConverter.Config sqlToRelConverterConfig;
+        private ImmutableList<AlgTraitDef> traitDefs;
+        private ParserConfig parserConfig;
+        private NodeToAlgConverter.Config sqlToRelConverterConfig;
         private SchemaPlus defaultSchema;
         private RexExecutor executor;
-        private RelOptCostFactory costFactory;
-        private RelDataTypeSystem typeSystem;
-        private ViewExpander viewExpander;
-        private org.polypheny.db.jdbc.Context prepareContext;
+        private AlgOptCostFactory costFactory;
+        private AlgDataTypeSystem typeSystem;
+        private org.polypheny.db.prepare.Context prepareContext;
 
 
         /**
          * Creates a ConfigBuilder, initializing to defaults.
          */
-        private ConfigBuilder() {
-            convertletTable = StandardConvertletTable.INSTANCE;
-            operatorTable = SqlStdOperatorTable.instance();
+        public ConfigBuilder() {
+            convertletTable = LanguageManager.getInstance().getStandardConvertlet();
+            operatorTable = LanguageManager.getInstance().getStdOperatorTable();
             programs = ImmutableList.of();
-            parserConfig = SqlParserConfig.DEFAULT;
-            sqlToRelConverterConfig = SqlToRelConverter.Config.DEFAULT;
-            typeSystem = RelDataTypeSystem.DEFAULT;
+            parserConfig = ParserConfig.DEFAULT;
+            sqlToRelConverterConfig = NodeToAlgConverter.Config.DEFAULT;
+            typeSystem = AlgDataTypeSystem.DEFAULT;
         }
 
 
         /**
          * Creates a ConfigBuilder, initializing from an existing config.
          */
-        private ConfigBuilder( FrameworkConfig config ) {
+        public ConfigBuilder( FrameworkConfig config ) {
             convertletTable = config.getConvertletTable();
             operatorTable = config.getOperatorTable();
             programs = config.getPrograms();
@@ -288,7 +287,6 @@ public class Frameworks {
                     costFactory,
                     typeSystem,
                     executor,
-                    viewExpander,
                     prepareContext );
         }
 
@@ -305,19 +303,19 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder convertletTable( SqlRexConvertletTable convertletTable ) {
+        public ConfigBuilder convertletTable( RexConvertletTable convertletTable ) {
             this.convertletTable = Objects.requireNonNull( convertletTable );
             return this;
         }
 
 
-        public ConfigBuilder operatorTable( SqlOperatorTable operatorTable ) {
+        public ConfigBuilder operatorTable( OperatorTable operatorTable ) {
             this.operatorTable = Objects.requireNonNull( operatorTable );
             return this;
         }
 
 
-        public ConfigBuilder traitDefs( List<RelTraitDef> traitDefs ) {
+        public ConfigBuilder traitDefs( List<AlgTraitDef> traitDefs ) {
             if ( traitDefs == null ) {
                 this.traitDefs = null;
             } else {
@@ -327,19 +325,19 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder traitDefs( RelTraitDef... traitDefs ) {
+        public ConfigBuilder traitDefs( AlgTraitDef... traitDefs ) {
             this.traitDefs = ImmutableList.copyOf( traitDefs );
             return this;
         }
 
 
-        public ConfigBuilder parserConfig( SqlParserConfig parserConfig ) {
+        public ConfigBuilder parserConfig( ParserConfig parserConfig ) {
             this.parserConfig = Objects.requireNonNull( parserConfig );
             return this;
         }
 
 
-        public ConfigBuilder sqlToRelConverterConfig( SqlToRelConverter.Config sqlToRelConverterConfig ) {
+        public ConfigBuilder sqlToRelConverterConfig( NodeToAlgConverter.Config sqlToRelConverterConfig ) {
             this.sqlToRelConverterConfig = Objects.requireNonNull( sqlToRelConverterConfig );
             return this;
         }
@@ -351,7 +349,7 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder costFactory( RelOptCostFactory costFactory ) {
+        public ConfigBuilder costFactory( AlgOptCostFactory costFactory ) {
             this.costFactory = costFactory;
             return this;
         }
@@ -379,83 +377,75 @@ public class Frameworks {
         }
 
 
-        public ConfigBuilder typeSystem( RelDataTypeSystem typeSystem ) {
+        public ConfigBuilder typeSystem( AlgDataTypeSystem typeSystem ) {
             this.typeSystem = Objects.requireNonNull( typeSystem );
             return this;
         }
 
 
-        public ConfigBuilder viewExpander( ViewExpander viewExpander ) {
-            this.viewExpander = viewExpander;
-            return this;
-        }
-
-
-        public ConfigBuilder prepareContext( org.polypheny.db.jdbc.Context prepareContext ) {
+        public ConfigBuilder prepareContext( org.polypheny.db.prepare.Context prepareContext ) {
             this.prepareContext = prepareContext;
             return this;
         }
+
     }
 
 
     /**
      * An implementation of {@link FrameworkConfig} that uses standard Polypheny-DB classes to provide basic planner functionality.
      */
-    static class StdFrameworkConfig implements FrameworkConfig {
+    public static class StdFrameworkConfig implements FrameworkConfig {
 
         private final Context context;
-        private final SqlRexConvertletTable convertletTable;
-        private final SqlOperatorTable operatorTable;
+        private final RexConvertletTable convertletTable;
+        private final OperatorTable operatorTable;
         private final ImmutableList<Program> programs;
-        private final ImmutableList<RelTraitDef> traitDefs;
-        private final SqlParserConfig parserConfig;
-        private final SqlToRelConverter.Config sqlToRelConverterConfig;
+        private final ImmutableList<AlgTraitDef> traitDefs;
+        private final ParserConfig parserConfig;
+        private final NodeToAlgConverter.Config sqlToRelConverterConfig;
         private final SchemaPlus defaultSchema;
-        private final RelOptCostFactory costFactory;
-        private final RelDataTypeSystem typeSystem;
+        private final AlgOptCostFactory costFactory;
+        private final AlgDataTypeSystem typeSystem;
         private final RexExecutor executor;
-        private final ViewExpander viewExpander;
-        private final org.polypheny.db.jdbc.Context prepareContext;
+        private final org.polypheny.db.prepare.Context prepareContext;
 
 
-        StdFrameworkConfig(
+        public StdFrameworkConfig(
                 Context context,
-                SqlRexConvertletTable convertletTable,
-                SqlOperatorTable operatorTable,
+                RexConvertletTable convertletTable,
+                OperatorTable operatorTable,
                 ImmutableList<Program> programs,
-                ImmutableList<RelTraitDef> traitDefs,
-                SqlParserConfig parserConfig,
-                SqlToRelConverter.Config sqlToRelConverterConfig,
+                ImmutableList<AlgTraitDef> traitDefs,
+                ParserConfig parserConfig,
+                NodeToAlgConverter.Config nodeToRelConverterConfig,
                 SchemaPlus defaultSchema,
-                RelOptCostFactory costFactory,
-                RelDataTypeSystem typeSystem,
+                AlgOptCostFactory costFactory,
+                AlgDataTypeSystem typeSystem,
                 RexExecutor executor,
-                ViewExpander viewExpander,
-                org.polypheny.db.jdbc.Context prepareContext ) {
+                org.polypheny.db.prepare.Context prepareContext ) {
             this.context = context;
             this.convertletTable = convertletTable;
             this.operatorTable = operatorTable;
             this.programs = programs;
             this.traitDefs = traitDefs;
             this.parserConfig = parserConfig;
-            this.sqlToRelConverterConfig = sqlToRelConverterConfig;
+            this.sqlToRelConverterConfig = nodeToRelConverterConfig;
             this.defaultSchema = defaultSchema;
             this.costFactory = costFactory;
             this.typeSystem = typeSystem;
             this.executor = executor;
-            this.viewExpander = viewExpander;
             this.prepareContext = prepareContext;
         }
 
 
         @Override
-        public SqlParserConfig getParserConfig() {
+        public ParserConfig getParserConfig() {
             return parserConfig;
         }
 
 
         @Override
-        public SqlToRelConverter.Config getSqlToRelConverterConfig() {
+        public NodeToAlgConverter.Config getSqlToRelConverterConfig() {
             return sqlToRelConverterConfig;
         }
 
@@ -479,19 +469,19 @@ public class Frameworks {
 
 
         @Override
-        public RelOptCostFactory getCostFactory() {
+        public AlgOptCostFactory getCostFactory() {
             return costFactory;
         }
 
 
         @Override
-        public ImmutableList<RelTraitDef> getTraitDefs() {
+        public ImmutableList<AlgTraitDef> getTraitDefs() {
             return traitDefs;
         }
 
 
         @Override
-        public SqlRexConvertletTable getConvertletTable() {
+        public RexConvertletTable getConvertletTable() {
             return convertletTable;
         }
 
@@ -503,27 +493,23 @@ public class Frameworks {
 
 
         @Override
-        public SqlOperatorTable getOperatorTable() {
+        public OperatorTable getOperatorTable() {
             return operatorTable;
         }
 
 
         @Override
-        public RelDataTypeSystem getTypeSystem() {
+        public AlgDataTypeSystem getTypeSystem() {
             return typeSystem;
         }
 
 
         @Override
-        public ViewExpander getViewExpander() {
-            return viewExpander;
-        }
-
-
-        @Override
-        public org.polypheny.db.jdbc.Context getPrepareContext() {
+        public org.polypheny.db.prepare.Context getPrepareContext() {
             return prepareContext;
         }
+
     }
+
 }
 

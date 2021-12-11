@@ -34,11 +34,6 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.CHARACTER_LENGTH;
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.CHAR_LENGTH;
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.SUBSTRING;
-import static org.polypheny.db.sql.fun.SqlStdOperatorTable.UPPER;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Method;
@@ -67,8 +62,13 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactoryImpl;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.IntervalQualifier;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -79,15 +79,10 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.runtime.SqlFunctions;
-import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.runtime.Functions;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -99,20 +94,18 @@ import org.polypheny.db.util.Util;
  */
 public class RexToLixTranslator {
 
-    public static final Map<Method, SqlOperator> JAVA_TO_SQL_METHOD_MAP =
+    public static final Map<Method, Operator> JAVA_TO_SQL_METHOD_MAP =
             Util.mapOf(
-                    findMethod( String.class, "toUpperCase" ), UPPER,
-                    findMethod( SqlFunctions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), SUBSTRING,
-                    findMethod( SqlFunctions.class, "charLength", String.class ),
-                    CHARACTER_LENGTH,
-                    findMethod( SqlFunctions.class, "charLength", String.class ),
-                    CHAR_LENGTH,
-                    findMethod( SqlFunctions.class, "translate3", String.class, String.class, String.class ), OracleSqlOperatorTable.TRANSLATE3 );
+                    findMethod( String.class, "toUpperCase" ), OperatorRegistry.get( OperatorName.UPPER ),
+                    findMethod( Functions.class, "substring", String.class, Integer.TYPE, Integer.TYPE ), OperatorRegistry.get( OperatorName.SUBSTRING ),
+                    findMethod( Functions.class, "charLength", String.class ), OperatorRegistry.get( OperatorName.CHARACTER_LENGTH ),
+                    findMethod( Functions.class, "charLength", String.class ), OperatorRegistry.get( OperatorName.CHAR_LENGTH ),
+                    findMethod( Functions.class, "translate3", String.class, String.class, String.class ), OperatorRegistry.get( OperatorName.ORACLE_TRANSLATE3 ) );
 
     final JavaTypeFactory typeFactory;
     final RexBuilder builder;
     private final RexProgram program;
-    final SqlConformance conformance;
+    final Conformance conformance;
     private final Expression root;
     private final RexToLixTranslator.InputGetter inputGetter;
     @Getter
@@ -136,7 +129,7 @@ public class RexToLixTranslator {
             BlockBuilder list,
             Map<? extends RexNode, Boolean> nullable,
             RexBuilder builder,
-            SqlConformance conformance,
+            Conformance conformance,
             RexToLixTranslator parent,
             Function1<String, InputGetter> correlates ) {
         this( program, typeFactory, root, inputGetter, list, nullable, builder, conformance, parent, correlates, new HashMap<>() );
@@ -152,8 +145,9 @@ public class RexToLixTranslator {
     }
 
 
-    private RexToLixTranslator( RexProgram program, JavaTypeFactory typeFactory, Expression root, InputGetter inputGetter, BlockBuilder list,
-            Map<? extends RexNode, Boolean> exprNullableMap, RexBuilder builder, SqlConformance conformance, RexToLixTranslator parent, Function1<String, InputGetter> correlates, Map<RexNode, Expression> replace ) {
+    private RexToLixTranslator(
+            RexProgram program, JavaTypeFactory typeFactory, Expression root, InputGetter inputGetter, BlockBuilder list,
+            Map<? extends RexNode, Boolean> exprNullableMap, RexBuilder builder, Conformance conformance, RexToLixTranslator parent, Function1<String, InputGetter> correlates, Map<RexNode, Expression> replace ) {
         this.program = program; // may be null
         this.typeFactory = Objects.requireNonNull( typeFactory );
         this.conformance = Objects.requireNonNull( conformance );
@@ -169,7 +163,8 @@ public class RexToLixTranslator {
     }
 
 
-    public static List<Expression> translateProjects( RexProgram program, JavaTypeFactory typeFactory, SqlConformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
+    public static List<Expression> translateProjects(
+            RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
             InputGetter inputGetter, Function1<String, InputGetter> correlates ) {
         return translateProjects( program, typeFactory, conformance, list, outputPhysType, root, inputGetter, correlates, new UnwindContext() );
     }
@@ -188,11 +183,12 @@ public class RexToLixTranslator {
      * @param correlates Provider of references to the values of correlated variables
      * @return Sequence of expressions, optional condition
      */
-    public static List<Expression> translateProjects( RexProgram program, JavaTypeFactory typeFactory, SqlConformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
+    public static List<Expression> translateProjects(
+            RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
             InputGetter inputGetter, Function1<String, InputGetter> correlates, UnwindContext unwindContext ) {
         List<Type> storageTypes = null;
         if ( outputPhysType != null ) {
-            final RelDataType rowType = outputPhysType.getRowType();
+            final AlgDataType rowType = outputPhysType.getRowType();
             storageTypes = new ArrayList<>( rowType.getFieldCount() );
             for ( int i = 0; i < rowType.getFieldCount(); i++ ) {
                 storageTypes.add( outputPhysType.getJavaFieldType( i ) );
@@ -208,7 +204,7 @@ public class RexToLixTranslator {
     /**
      * Creates a translator for translating aggregate functions.
      */
-    public static RexToLixTranslator forAggregation( JavaTypeFactory typeFactory, BlockBuilder list, InputGetter inputGetter, SqlConformance conformance ) {
+    public static RexToLixTranslator forAggregation( JavaTypeFactory typeFactory, BlockBuilder list, InputGetter inputGetter, Conformance conformance ) {
         final ParameterExpression root = DataContext.ROOT;
         return new RexToLixTranslator( null, typeFactory, root, inputGetter, list, Collections.emptyMap(), new RexBuilder( typeFactory ), conformance, null, null );
     }
@@ -239,7 +235,7 @@ public class RexToLixTranslator {
     }
 
 
-    Expression translateCast( RelDataType sourceType, RelDataType targetType, Expression operand ) {
+    Expression translateCast( AlgDataType sourceType, AlgDataType targetType, Expression operand ) {
         Expression convert = null;
         switch ( targetType.getPolyType() ) {
             case ANY:
@@ -433,7 +429,7 @@ public class RexToLixTranslator {
                 break;
             case CHAR:
             case VARCHAR:
-                final SqlIntervalQualifier interval = sourceType.getIntervalQualifier();
+                final IntervalQualifier interval = sourceType.getIntervalQualifier();
                 switch ( sourceType.getPolyType() ) {
                     case DATE:
                         convert = RexImpTable.optimize2(
@@ -480,7 +476,7 @@ public class RexToLixTranslator {
                                 Expressions.call(
                                         BuiltInMethod.INTERVAL_YEAR_MONTH_TO_STRING.method,
                                         operand,
-                                        Expressions.constant( interval.timeUnitRange ) ) );
+                                        Expressions.constant( interval.getTimeUnitRange() ) ) );
                         break;
                     case INTERVAL_DAY:
                     case INTERVAL_DAY_HOUR:
@@ -497,7 +493,7 @@ public class RexToLixTranslator {
                                 Expressions.call(
                                         BuiltInMethod.INTERVAL_DAY_TIME_TO_STRING.method,
                                         operand,
-                                        Expressions.constant( interval.timeUnitRange ),
+                                        Expressions.constant( interval.getTimeUnitRange() ),
                                         Expressions.constant( interval.getFractionalSecondPrecision( typeFactory.getTypeSystem() ) ) ) );
                         break;
                     case BOOLEAN:
@@ -551,7 +547,7 @@ public class RexToLixTranslator {
                 break;
             case TIMESTAMP:
                 int targetScale = targetType.getScale();
-                if ( targetScale == RelDataType.SCALE_NOT_SPECIFIED ) {
+                if ( targetScale == AlgDataType.SCALE_NOT_SPECIFIED ) {
                     targetScale = 0;
                 }
                 if ( targetScale < sourceType.getScale() ) {
@@ -677,7 +673,7 @@ public class RexToLixTranslator {
                     default:
                         RexNode rxIndex = builder.makeLiteral( fieldIndex, typeFactory.createType( int.class ), true );
                         RexNode rxName = builder.makeLiteral( fieldName, typeFactory.createType( String.class ), true );
-                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), SqlStdOperatorTable.STRUCT_ACCESS, ImmutableList.of( target, rxIndex, rxName ) );
+                        RexCall accessCall = (RexCall) builder.makeCall( fieldAccess.getType(), OperatorRegistry.get( OperatorName.STRUCT_ACCESS ), ImmutableList.of( target, rxIndex, rxName ) );
                         return translateCall( accessCall, nullAs );
                 }
             }
@@ -709,7 +705,7 @@ public class RexToLixTranslator {
      * Translates a call to an operator or function.
      */
     private Expression translateCall( RexCall call, RexImpTable.NullAs nullAs ) {
-        final SqlOperator operator = call.getOperator();
+        final Operator operator = call.getOperator();
         CallImplementor implementor = RexImpTable.INSTANCE.get( operator );
         if ( implementor == null ) {
             throw new RuntimeException( "cannot translate call " + call );
@@ -740,7 +736,7 @@ public class RexToLixTranslator {
      *
      * @throws AlwaysNull if literal is null but {@code nullAs} is {@link org.polypheny.db.adapter.enumerable.RexImpTable.NullAs#NOT_POSSIBLE}.
      */
-    public static Expression translateLiteral( RexLiteral literal, RelDataType type, JavaTypeFactory typeFactory, RexImpTable.NullAs nullAs ) {
+    public static Expression translateLiteral( RexLiteral literal, AlgDataType type, JavaTypeFactory typeFactory, RexImpTable.NullAs nullAs ) {
         if ( literal.isNull() ) {
             switch ( nullAs ) {
                 case TRUE:
@@ -880,7 +876,7 @@ public class RexToLixTranslator {
     }
 
 
-    public static Expression translateCondition( RexProgram program, JavaTypeFactory typeFactory, BlockBuilder list, InputGetter inputGetter, Function1<String, InputGetter> correlates, SqlConformance conformance ) {
+    public static Expression translateCondition( RexProgram program, JavaTypeFactory typeFactory, BlockBuilder list, InputGetter inputGetter, Function1<String, InputGetter> correlates, Conformance conformance ) {
         if ( program.getCondition() == null ) {
             return RexImpTable.TRUE_EXPR;
         }
@@ -919,14 +915,14 @@ public class RexToLixTranslator {
                     case DOUBLE:
                         // Generate "SqlFunctions.toShort(x)".
                         return Expressions.call(
-                                SqlFunctions.class,
-                                "to" + SqlFunctions.initcap( toPrimitive.primitiveName ),
+                                Functions.class,
+                                "to" + Functions.initcap( toPrimitive.primitiveName ),
                                 operand );
                     default:
                         // Generate "Short.parseShort(x)".
                         return Expressions.call(
                                 toPrimitive.boxClass,
-                                "parse" + SqlFunctions.initcap( toPrimitive.primitiveName ),
+                                "parse" + Functions.initcap( toPrimitive.primitiveName ),
                                 operand );
                 }
             }
@@ -935,8 +931,8 @@ public class RexToLixTranslator {
                     case CHAR:
                         // Generate "SqlFunctions.toCharBoxed(x)".
                         return Expressions.call(
-                                SqlFunctions.class,
-                                "to" + SqlFunctions.initcap( toBox.primitiveName ) + "Boxed",
+                                Functions.class,
+                                "to" + Functions.initcap( toBox.primitiveName ) + "Boxed",
                                 operand );
                     default:
                         // Generate "Short.valueOf(x)".
@@ -959,8 +955,8 @@ public class RexToLixTranslator {
                 // E.g. from "Object" to "short".
                 // Generate "SqlFunctions.toShort(x)"
                 return Expressions.call(
-                        SqlFunctions.class,
-                        "to" + SqlFunctions.initcap( toPrimitive.primitiveName ),
+                        Functions.class,
+                        "to" + Functions.initcap( toPrimitive.primitiveName ),
                         operand );
             }
         } else if ( fromNumber && toBox != null ) {
@@ -1030,7 +1026,7 @@ public class RexToLixTranslator {
             return Expressions.condition(
                     Expressions.equal( operand, RexImpTable.NULL_EXPR ),
                     RexImpTable.NULL_EXPR,
-                    Expressions.call( SqlFunctions.class, "toBigDecimal", operand ) );
+                    Expressions.call( Functions.class, "toBigDecimal", operand ) );
         } else if ( toType == String.class ) {
             if ( fromPrimitive != null ) {
                 switch ( fromPrimitive ) {
@@ -1039,7 +1035,7 @@ public class RexToLixTranslator {
                         // E.g. from "double" to "String"
                         // Generate "SqlFunctions.toString(x)"
                         return Expressions.call(
-                                SqlFunctions.class,
+                                Functions.class,
                                 "toString",
                                 operand );
                     default:
@@ -1057,7 +1053,7 @@ public class RexToLixTranslator {
                         Expressions.equal( operand, RexImpTable.NULL_EXPR ),
                         RexImpTable.NULL_EXPR,
                         Expressions.call(
-                                SqlFunctions.class,
+                                Functions.class,
                                 "toString",
                                 operand ) );
             } else {
@@ -1078,7 +1074,7 @@ public class RexToLixTranslator {
     }
 
 
-    public Expression translateConstructor( List<RexNode> operandList, SqlKind kind ) {
+    public Expression translateConstructor( List<RexNode> operandList, Kind kind ) {
         switch ( kind ) {
             case MAP_VALUE_CONSTRUCTOR:
                 Expression map =
@@ -1195,7 +1191,7 @@ public class RexToLixTranslator {
     }
 
 
-    private RexToLixTranslator withConformance( SqlConformance conformance ) {
+    private RexToLixTranslator withConformance( Conformance conformance ) {
         if ( conformance == this.conformance ) {
             return this;
         }
@@ -1203,7 +1199,7 @@ public class RexToLixTranslator {
     }
 
 
-    public RelDataType nullifyType( RelDataType type, boolean nullable ) {
+    public AlgDataType nullifyType( AlgDataType type, boolean nullable ) {
         if ( !nullable ) {
             final Primitive primitive = javaPrimitive( type );
             if ( primitive != null ) {
@@ -1214,9 +1210,9 @@ public class RexToLixTranslator {
     }
 
 
-    private Primitive javaPrimitive( RelDataType type ) {
-        if ( type instanceof RelDataTypeFactoryImpl.JavaType ) {
-            return Primitive.ofBox( ((RelDataTypeFactoryImpl.JavaType) type).getJavaClass() );
+    private Primitive javaPrimitive( AlgDataType type ) {
+        if ( type instanceof AlgDataTypeFactoryImpl.JavaType ) {
+            return Primitive.ofBox( ((AlgDataTypeFactoryImpl.JavaType) type).getJavaClass() );
         }
         return null;
     }
@@ -1227,7 +1223,7 @@ public class RexToLixTranslator {
     }
 
 
-    private static Expression scaleIntervalToNumber( RelDataType sourceType, RelDataType targetType, Expression operand ) {
+    private static Expression scaleIntervalToNumber( AlgDataType sourceType, AlgDataType targetType, Expression operand ) {
         switch ( targetType.getPolyType().getFamily() ) {
             case NUMERIC:
                 switch ( sourceType.getPolyType() ) {

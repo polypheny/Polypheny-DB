@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,11 @@ package org.polypheny.db.rex;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -54,7 +55,7 @@ public class RexTransformer {
     private RexNode root;
     private final RexBuilder rexBuilder;
     private int isParentsCount;
-    private final Set<SqlOperator> transformableOperators = new HashSet<>();
+    private final Set<Operator> transformableOperators = new HashSet<>();
 
 
     public RexTransformer( RexNode root, RexBuilder rexBuilder ) {
@@ -62,20 +63,20 @@ public class RexTransformer {
         this.rexBuilder = rexBuilder;
         isParentsCount = 0;
 
-        transformableOperators.add( SqlStdOperatorTable.AND );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.AND ) );
 
         // NOTE the OR operator is NOT missing. see {@link org.polypheny.db.test.RexTransformerTest}
-        transformableOperators.add( SqlStdOperatorTable.EQUALS );
-        transformableOperators.add( SqlStdOperatorTable.NOT_EQUALS );
-        transformableOperators.add( SqlStdOperatorTable.GREATER_THAN );
-        transformableOperators.add( SqlStdOperatorTable.GREATER_THAN_OR_EQUAL );
-        transformableOperators.add( SqlStdOperatorTable.LESS_THAN );
-        transformableOperators.add( SqlStdOperatorTable.LESS_THAN_OR_EQUAL );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.EQUALS ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.GREATER_THAN ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.LESS_THAN ) );
+        transformableOperators.add( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ) );
     }
 
 
     private boolean isBoolean( RexNode node ) {
-        RelDataType type = node.getType();
+        AlgDataType type = node.getType();
         return PolyTypeUtil.inBooleanFamily( type );
     }
 
@@ -111,10 +112,10 @@ public class RexTransformer {
         }
 
         Boolean directlyUnderIs = null;
-        if ( node.isA( SqlKind.IS_TRUE ) ) {
+        if ( node.isA( Kind.IS_TRUE ) ) {
             directlyUnderIs = Boolean.TRUE;
             isParentsCount++;
-        } else if ( node.isA( SqlKind.IS_FALSE ) ) {
+        } else if ( node.isA( Kind.IS_FALSE ) ) {
             directlyUnderIs = Boolean.FALSE;
             isParentsCount++;
         }
@@ -129,19 +130,19 @@ public class RexTransformer {
                 if ( isNullable( node ) ) {
                     RexNode notNullNode =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.IS_NOT_NULL,
+                                    OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                     operand );
                     RexNode boolNode =
                             rexBuilder.makeLiteral(
                                     directlyUnderIs.booleanValue() );
                     RexNode eqNode =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.EQUALS,
+                                    OperatorRegistry.get( OperatorName.EQUALS ),
                                     operand,
                                     boolNode );
                     RexNode andBoolNode =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.AND,
+                                    OperatorRegistry.get( OperatorName.AND ),
                                     notNullNode,
                                     eqNode );
 
@@ -152,7 +153,7 @@ public class RexTransformer {
                                     directlyUnderIs.booleanValue() );
                     RexNode andBoolNode =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.EQUALS,
+                                    OperatorRegistry.get( OperatorName.EQUALS ),
                                     node,
                                     boolNode );
                     return andBoolNode;
@@ -184,7 +185,7 @@ public class RexTransformer {
                 if ( isTransformable( operands.get( 0 ) ) ) {
                     isNotNullOne =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.IS_NOT_NULL,
+                                    OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                     operands.get( 0 ) );
                 } else {
                     isNotNullOne = null;
@@ -194,7 +195,7 @@ public class RexTransformer {
                 if ( isTransformable( operands.get( 1 ) ) ) {
                     isNotNullTwo =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.IS_NOT_NULL,
+                                    OperatorRegistry.get( OperatorName.IS_NOT_NULL ),
                                     operands.get( 1 ) );
                 } else {
                     isNotNullTwo = null;
@@ -204,7 +205,7 @@ public class RexTransformer {
                 if ( (null != isNotNullOne) && (null != isNotNullTwo) ) {
                     intoFinalAnd =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.AND,
+                                    OperatorRegistry.get( OperatorName.AND ),
                                     isNotNullOne,
                                     isNotNullTwo );
                 } else if ( null != isNotNullOne ) {
@@ -216,7 +217,7 @@ public class RexTransformer {
                 if ( null != intoFinalAnd ) {
                     RexNode andNullAndCheckNode =
                             rexBuilder.makeCall(
-                                    SqlStdOperatorTable.AND,
+                                    OperatorRegistry.get( OperatorName.AND ),
                                     intoFinalAnd,
                                     call.clone( call.getType(), operands ) );
                     return andNullAndCheckNode;
@@ -232,5 +233,6 @@ public class RexTransformer {
 
         return node;
     }
+
 }
 

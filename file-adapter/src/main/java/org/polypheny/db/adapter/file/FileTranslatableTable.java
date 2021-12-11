@@ -27,20 +27,20 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.file.rel.FileTableScan;
+import org.polypheny.db.adapter.file.algebra.FileTableScan;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptTable.ToRelContext;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.SchemaPlus;
@@ -69,7 +69,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     private final int adapterId;
     @Getter
     private final FileSchema fileSchema;
-    private final RelProtoDataType protoRowType;
+    private final AlgProtoDataType protoRowType;
 
 
     public FileTranslatableTable(
@@ -81,7 +81,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
             final ArrayList<PolyType> columnTypes,
             final List<String> columnNames,
             final List<Long> pkIds,
-            final RelProtoDataType protoRowType ) {
+            final AlgProtoDataType protoRowType ) {
         super( Object[].class );
         this.fileSchema = fileSchema;
         this.rootDir = fileSchema.getRootDir();
@@ -105,14 +105,14 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
 
     @Override
-    public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
+    public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
-        return new FileTableScan( context.getCluster(), relOptTable, this );
+        return new FileTableScan( context.getCluster(), algOptTable, this );
     }
 
 
     @Override
-    public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
 
@@ -125,11 +125,11 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
 
     @Override
-    public TableModify toModificationRel(
-            RelOptCluster cluster,
-            RelOptTable table,
+    public TableModify toModificationAlg(
+            AlgOptCluster cluster,
+            AlgOptTable table,
             CatalogReader catalogReader,
-            RelNode child,
+            AlgNode child,
             Operation operation,
             List<String> updateColumnList,
             List<RexNode> sourceExpressionList,

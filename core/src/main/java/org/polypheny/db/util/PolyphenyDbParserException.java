@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@
 package org.polypheny.db.util;
 
 
-import org.polypheny.db.sql.parser.SqlParseException;
+import org.polypheny.db.languages.NodeParseException;
 
 
 /**
- * Tagging interface to allow a {@link SqlParseException} to be identified without adding a dependency on it from client-side code.
+ * Tagging interface to allow a {@link NodeParseException} to be identified without adding a dependency on it from client-side code.
  */
 public interface PolyphenyDbParserException {
 

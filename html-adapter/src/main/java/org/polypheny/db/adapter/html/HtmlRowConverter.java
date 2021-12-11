@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.util.Pair;
 
 
@@ -199,17 +199,17 @@ class HtmlRowConverter {
     }
 
 
-    RelDataType getRowType( JavaTypeFactory typeFactory ) {
+    AlgDataType getRowType( JavaTypeFactory typeFactory ) {
         initialize();
         List<String> names = new ArrayList<>();
-        List<RelDataType> types = new ArrayList<>();
+        List<AlgDataType> types = new ArrayList<>();
 
         // iterate through FieldDefs, populating names and types
         for ( FieldDef f : this.fields ) {
             names.add( f.getName() );
 
             HtmlFieldType fieldType = f.getType();
-            RelDataType type;
+            AlgDataType type;
 
             if ( fieldType == null ) {
                 type = typeFactory.createJavaType( String.class );
@@ -316,6 +316,7 @@ class HtmlRowConverter {
                 }
             }
         }
+
     }
 
 
@@ -428,5 +429,7 @@ class HtmlRowConverter {
                     return new java.sql.Timestamp( parseDate( string ).getTime() );
             }
         }
+
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,20 +53,20 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.adapter.enumerable.impl.AggResultContextImpl;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl.SyntheticRecordType;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Aggregate;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -74,32 +74,32 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Aggregate} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Aggregate} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableAggregate extends Aggregate implements EnumerableRel {
+public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
-    public EnumerableAggregate( RelOptCluster cluster, RelTraitSet traitSet, RelNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidRelException {
+    public EnumerableAggregate( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) throws InvalidAlgException {
         super( cluster, traitSet, child, indicator, groupSet, groupSets, aggCalls );
         Preconditions.checkArgument( !indicator, "EnumerableAggregate no longer supports indicator fields" );
         assert getConvention() instanceof EnumerableConvention;
 
         for ( AggregateCall aggCall : aggCalls ) {
             if ( aggCall.isDistinct() ) {
-                throw new InvalidRelException( "distinct aggregation not supported" );
+                throw new InvalidAlgException( "distinct aggregation not supported" );
             }
             AggImplementor implementor2 = RexImpTable.INSTANCE.get( aggCall.getAggregation(), false );
             if ( implementor2 == null ) {
-                throw new InvalidRelException( "aggregation " + aggCall.getAggregation() + " not supported" );
+                throw new InvalidAlgException( "aggregation " + aggCall.getAggregation() + " not supported" );
             }
         }
     }
 
 
     @Override
-    public EnumerableAggregate copy( RelTraitSet traitSet, RelNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    public EnumerableAggregate copy( AlgTraitSet traitSet, AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
         try {
             return new EnumerableAggregate( getCluster(), traitSet, input, indicator, groupSet, groupSets, aggCalls );
-        } catch ( InvalidRelException e ) {
+        } catch ( InvalidAlgException e ) {
             // Semantic error not possible. Must be a bug. Convert to internal error.
             throw new AssertionError( e );
         }
@@ -107,10 +107,10 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
-        final EnumerableRel child = (EnumerableRel) getInput();
+        final EnumerableAlg child = (EnumerableAlg) getInput();
         final Result result = implementor.visitChild( this, 0, child, pref );
         Expression childExp = builder.append( "child", result.block );
 
@@ -257,7 +257,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
                     new AggAddContextImpl( builder2, accumulator ) {
                         @Override
                         public List<RexNode> rexArguments() {
-                            List<RelDataTypeField> inputTypes = inputPhysType.getRowType().getFieldList();
+                            List<AlgDataTypeField> inputTypes = inputPhysType.getRowType().getFieldList();
                             List<RexNode> args = new ArrayList<>();
                             for ( int index : agg.call.getArgList() ) {
                                 args.add( RexInputRef.of( index, inputTypes ) );
@@ -367,7 +367,8 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
                             Expressions.call(
                                     childExp,
                                     BuiltInMethod.GROUP_BY2.method,
-                                    Expressions.list( keySelector_,
+                                    Expressions.list(
+                                            keySelector_,
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_INITIALIZER.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_ADDER.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR.method, resultSelector_ ) ).appendIfNotNull( keyPhysType.comparer() ) ) ) );
@@ -378,7 +379,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
 
     private static boolean hasOrderedCall( List<AggImpState> aggs ) {
         for ( AggImpState agg : aggs ) {
-            if ( !agg.call.collation.equals( RelCollations.EMPTY ) ) {
+            if ( !agg.call.collation.equals( AlgCollations.EMPTY ) ) {
                 return true;
             }
         }
@@ -420,7 +421,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
             builder.add( Expressions.declare( 0, pe, Expressions.new_( LinkedList.class ) ) );
 
             for ( AggImpState agg : aggs ) {
-                if ( agg.call.collation.equals( RelCollations.EMPTY ) ) {
+                if ( agg.call.collation.equals( AlgCollations.EMPTY ) ) {
                     continue;
                 }
                 final Pair<Expression, Expression> pair = inputPhysType.generateCollationKey( agg.call.collation.getFieldCollations() );
@@ -456,32 +457,32 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
 
 
         @Override
-        public SqlAggFunction aggregation() {
+        public AggFunction aggregation() {
             return agg.call.getAggregation();
         }
 
 
         @Override
-        public RelDataType returnRelType() {
+        public AlgDataType returnAlgType() {
             return agg.call.type;
         }
 
 
         @Override
         public Type returnType() {
-            return EnumUtils.javaClass( typeFactory, returnRelType() );
+            return EnumUtils.javaClass( typeFactory, returnAlgType() );
         }
 
 
         @Override
-        public List<? extends RelDataType> parameterRelTypes() {
+        public List<? extends AlgDataType> parameterAlgTypes() {
             return EnumUtils.fieldRowTypes( getInput().getRowType(), null, agg.call.getArgList() );
         }
 
 
         @Override
         public List<? extends Type> parameterTypes() {
-            return EnumUtils.fieldTypes( typeFactory, parameterRelTypes() );
+            return EnumUtils.fieldTypes( typeFactory, parameterAlgTypes() );
         }
 
 
@@ -498,15 +499,17 @@ public class EnumerableAggregate extends Aggregate implements EnumerableRel {
 
 
         @Override
-        public List<? extends RelDataType> keyRelTypes() {
+        public List<? extends AlgDataType> keyAlgTypes() {
             return EnumUtils.fieldRowTypes( getInput().getRowType(), null, groupSet.asList() );
         }
 
 
         @Override
         public List<? extends Type> keyTypes() {
-            return EnumUtils.fieldTypes( typeFactory, keyRelTypes() );
+            return EnumUtils.fieldTypes( typeFactory, keyAlgTypes() );
         }
+
     }
+
 }
 

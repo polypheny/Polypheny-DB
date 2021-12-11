@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,8 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.SqlWindow;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Util;
 
@@ -64,9 +62,9 @@ public class RexOver extends RexCall {
      *
      * <ul>
      * <li>type = Integer,</li>
-     * <li>op = {@link SqlStdOperatorTable#SUM},</li>
+     * <li>op = {#@link StdOperatorRegistry.get( OperatorName.SUM )},</li>
      * <li>operands = { {@link RexFieldAccess}("x") }</li>
-     * <li>window = {@link SqlWindow}(ROWS 3 PRECEDING)</li>
+     * <li>window = {#@link SqlWindow}(ROWS 3 PRECEDING)</li>
      * </ul>
      *
      * @param type Result type
@@ -75,7 +73,7 @@ public class RexOver extends RexCall {
      * @param window Window specification
      * @param distinct Aggregate operator is applied on distinct elements
      */
-    RexOver( RelDataType type, SqlAggFunction op, List<RexNode> operands, RexWindow window, boolean distinct ) {
+    RexOver( AlgDataType type, Operator op, List<RexNode> operands, RexWindow window, boolean distinct ) {
         super( type, op, operands );
         Preconditions.checkArgument( op.isAggregator() );
         this.window = Objects.requireNonNull( window );
@@ -86,8 +84,8 @@ public class RexOver extends RexCall {
     /**
      * Returns the aggregate operator for this expression.
      */
-    public SqlAggFunction getAggOperator() {
-        return (SqlAggFunction) getOperator();
+    public Operator getAggOperator() {
+        return getOperator();
     }
 
 
@@ -177,7 +175,7 @@ public class RexOver extends RexCall {
 
 
     @Override
-    public RexCall clone( RelDataType type, List<RexNode> operands ) {
+    public RexCall clone( AlgDataType type, List<RexNode> operands ) {
         throw new UnsupportedOperationException();
     }
 
@@ -188,6 +186,7 @@ public class RexOver extends RexCall {
     private static class OverFound extends ControlFlowException {
 
         public static final OverFound INSTANCE = new OverFound();
+
     }
 
 
@@ -207,6 +206,8 @@ public class RexOver extends RexCall {
         public Void visitOver( RexOver over ) {
             throw OverFound.INSTANCE;
         }
+
     }
+
 }
 

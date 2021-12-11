@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,23 +60,23 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.TransformedEnumerator;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgVisitor;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.rules.CalcSplitRule;
+import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.ProjectTableScanRule;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelVisitor;
-import org.polypheny.db.rel.rules.CalcSplitRule;
-import org.polypheny.db.rel.rules.FilterTableScanRule;
-import org.polypheny.db.rel.rules.ProjectTableScanRule;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.ReflectUtil;
 import org.polypheny.db.util.ReflectiveVisitDispatcher;
@@ -92,25 +92,25 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public class Interpreter extends AbstractEnumerable<Object[]> implements AutoCloseable {
 
-    private final Map<RelNode, NodeInfo> nodes;
+    private final Map<AlgNode, NodeInfo> nodes;
     private final DataContext dataContext;
-    private final RelNode rootRel;
+    private final AlgNode rootRel;
 
 
     /**
      * Creates an Interpreter.
      */
-    public Interpreter( DataContext dataContext, RelNode rootRel ) {
+    public Interpreter( DataContext dataContext, AlgNode rootRel ) {
         this.dataContext = Objects.requireNonNull( dataContext );
-        final RelNode rel = optimize( rootRel );
+        final AlgNode alg = optimize( rootRel );
         final CompilerImpl compiler = new Nodes.CoreCompiler( this, rootRel.getCluster() );
-        Pair<RelNode, Map<RelNode, NodeInfo>> pair = compiler.visitRoot( rel );
+        Pair<AlgNode, Map<AlgNode, NodeInfo>> pair = compiler.visitRoot( alg );
         this.rootRel = pair.left;
         this.nodes = ImmutableMap.copyOf( pair.right );
     }
 
 
-    private RelNode optimize( RelNode rootRel ) {
+    private AlgNode optimize( AlgNode rootRel ) {
         final HepProgram hepProgram =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )
@@ -149,7 +149,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
 
     private void start() {
         // We rely on the nodes being ordered leaves first.
-        for ( Map.Entry<RelNode, NodeInfo> entry : nodes.entrySet() ) {
+        for ( Map.Entry<AlgNode, NodeInfo> entry : nodes.entrySet() ) {
             final NodeInfo nodeInfo = entry.getValue();
             try {
                 nodeInfo.node.run();
@@ -171,7 +171,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
     private class FooCompiler implements ScalarCompiler {
 
         @Override
-        public Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext ) {
+        public Scalar compile( List<RexNode> nodes, AlgDataType inputRowType, DataContext dataContext ) {
             final RexNode node = nodes.get( 0 );
             if ( node instanceof RexCall ) {
                 final RexCall call = (RexCall) node;
@@ -238,7 +238,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                                         throw new AssertionError( "unknown expression " + call );
                                 }
                             default:
-                                if ( call.getOperator() == SqlStdOperatorTable.UPPER ) {
+                                if ( call.getOperator().getOperatorName() == OperatorName.UPPER ) {
                                     argScalar.execute( context, args );
                                     String s0 = (String) args[0];
                                     if ( s0 == null ) {
@@ -246,7 +246,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                                     }
                                     return s0.toUpperCase( Locale.ROOT );
                                 }
-                                if ( call.getOperator() == SqlStdOperatorTable.SUBSTRING ) {
+                                if ( call.getOperator().getOperatorName() == OperatorName.SUBSTRING ) {
                                     argScalar.execute( context, args );
                                     String s0 = (String) args[0];
                                     Number i1 = (Number) args[1];
@@ -281,6 +281,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
                 }
             };
         }
+
     }
 
 
@@ -289,16 +290,17 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
      */
     private static class NodeInfo {
 
-        final RelNode rel;
+        final AlgNode alg;
         final Map<Edge, ListSink> sinks = new LinkedHashMap<>();
         final Enumerable<Row> rowEnumerable;
         Node node;
 
 
-        NodeInfo( RelNode rel, Enumerable<Row> rowEnumerable ) {
-            this.rel = rel;
+        NodeInfo( AlgNode alg, Enumerable<Row> rowEnumerable ) {
+            this.alg = alg;
             this.rowEnumerable = rowEnumerable;
         }
+
     }
 
 
@@ -330,6 +332,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         public void close() {
             enumerator.close();
         }
+
     }
 
 
@@ -391,6 +394,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         public void close() {
             // noop
         }
+
     }
 
 
@@ -423,29 +427,29 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
 
 
     /**
-     * Walks over a tree of {@link RelNode} and, for each, creates a {@link Node} that can be executed in the interpreter.
+     * Walks over a tree of {@link AlgNode} and, for each, creates a {@link Node} that can be executed in the interpreter.
      *
      * The compiler looks for methods of the form "visit(XxxRel)". A "visit" method must create an appropriate {@link Node} and put it into the {@link #node} field.
      *
      * If you wish to handle more kinds of relational expressions, add extra "visit" methods in this or a sub-class, and they will be found and called via reflection.
      */
-    static class CompilerImpl extends RelVisitor implements Compiler, ReflectiveVisitor {
+    static class CompilerImpl extends AlgVisitor implements Compiler, ReflectiveVisitor {
 
         final ScalarCompiler scalarCompiler;
-        private final ReflectiveVisitDispatcher<CompilerImpl, RelNode> dispatcher = ReflectUtil.createDispatcher( CompilerImpl.class, RelNode.class );
+        private final ReflectiveVisitDispatcher<CompilerImpl, AlgNode> dispatcher = ReflectUtil.createDispatcher( CompilerImpl.class, AlgNode.class );
         protected final Interpreter interpreter;
-        protected RelNode rootRel;
-        protected RelNode rel;
+        protected AlgNode rootRel;
+        protected AlgNode alg;
         protected Node node;
-        final Map<RelNode, NodeInfo> nodes = new LinkedHashMap<>();
-        final Map<RelNode, List<RelNode>> relInputs = new HashMap<>();
-        final Multimap<RelNode, Edge> outEdges = LinkedHashMultimap.create();
+        final Map<AlgNode, NodeInfo> nodes = new LinkedHashMap<>();
+        final Map<AlgNode, List<AlgNode>> algInputs = new HashMap<>();
+        final Multimap<AlgNode, Edge> outEdges = LinkedHashMultimap.create();
 
         private static final String REWRITE_METHOD_NAME = "rewrite";
         private static final String VISIT_METHOD_NAME = "visit";
 
 
-        CompilerImpl( Interpreter interpreter, RelOptCluster cluster ) {
+        CompilerImpl( Interpreter interpreter, AlgOptCluster cluster ) {
             this.interpreter = interpreter;
             this.scalarCompiler = new JaninoRexCompiler( cluster.getRexBuilder() );
         }
@@ -454,7 +458,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         /**
          * Visits the tree, starting from the root {@code p}.
          */
-        Pair<RelNode, Map<RelNode, NodeInfo>> visitRoot( RelNode p ) {
+        Pair<AlgNode, Map<AlgNode, NodeInfo>> visitRoot( AlgNode p ) {
             rootRel = p;
             visit( p, 0, null );
             return Pair.of( rootRel, nodes );
@@ -462,25 +466,25 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
 
 
         @Override
-        public void visit( RelNode p, int ordinal, RelNode parent ) {
+        public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             for ( ; ; ) {
-                rel = null;
+                alg = null;
                 boolean found = dispatcher.invokeVisitor( this, p, REWRITE_METHOD_NAME );
                 if ( !found ) {
                     throw new AssertionError( "interpreter: no implementation for rewrite" );
                 }
-                if ( rel == null ) {
+                if ( alg == null ) {
                     break;
                 }
                 if ( RuntimeConfig.DEBUG.getBoolean() ) {
-                    System.out.println( "Interpreter: rewrite " + p + " to " + rel );
+                    System.out.println( "Interpreter: rewrite " + p + " to " + alg );
                 }
-                p = rel;
+                p = alg;
                 if ( parent != null ) {
-                    List<RelNode> inputs = relInputs.get( parent );
+                    List<AlgNode> inputs = algInputs.get( parent );
                     if ( inputs == null ) {
                         inputs = Lists.newArrayList( parent.getInputs() );
-                        relInputs.put( parent, inputs );
+                        algInputs.put( parent, inputs );
                     }
                     inputs.set( ordinal, p );
                 } else {
@@ -489,13 +493,13 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             }
 
             // rewrite children first (from left to right)
-            final List<RelNode> inputs = relInputs.get( p );
-            for ( Ord<RelNode> input : Ord.zip( Util.first( inputs, p.getInputs() ) ) ) {
+            final List<AlgNode> inputs = algInputs.get( p );
+            for ( Ord<AlgNode> input : Ord.zip( Util.first( inputs, p.getInputs() ) ) ) {
                 outEdges.put( input.e, new Edge( p, input.i ) );
             }
             if ( inputs != null ) {
                 for ( int i = 0; i < inputs.size(); i++ ) {
-                    RelNode input = inputs.get( i );
+                    AlgNode input = inputs.get( i );
                     visit( input, i, p );
                 }
             } else {
@@ -518,7 +522,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             nodeInfo.node = node;
             if ( inputs != null ) {
                 for ( int i = 0; i < inputs.size(); i++ ) {
-                    final RelNode input = inputs.get( i );
+                    final AlgNode input = inputs.get( i );
                     visit( input, i, p );
                 }
             }
@@ -528,14 +532,14 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         /**
          * Fallback rewrite method.
          *
-         * Overriding methods (each with a different sub-class of {@link RelNode} as its argument type) sets the {@link #rel} field if intends to rewrite.
+         * Overriding methods (each with a different sub-class of {@link AlgNode} as its argument type) sets the {@link #alg} field if intends to rewrite.
          */
-        public void rewrite( RelNode r ) {
+        public void rewrite( AlgNode r ) {
         }
 
 
         @Override
-        public Scalar compile( List<RexNode> nodes, RelDataType inputRowType ) {
+        public Scalar compile( List<RexNode> nodes, AlgDataType inputRowType ) {
             if ( inputRowType == null ) {
                 inputRowType = interpreter.dataContext.getTypeFactory().builder().build();
             }
@@ -544,9 +548,9 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
 
 
         @Override
-        public RelDataType combinedRowType( List<RelNode> inputs ) {
+        public AlgDataType combinedRowType( List<AlgNode> inputs ) {
             final Builder builder = interpreter.dataContext.getTypeFactory().builder();
-            for ( RelNode input : inputs ) {
+            for ( AlgNode input : inputs ) {
                 builder.addAll( input.getRowType().getFieldList() );
             }
             return builder.build();
@@ -554,13 +558,13 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
 
 
         @Override
-        public Source source( RelNode rel, int ordinal ) {
-            final RelNode input = getInput( rel, ordinal );
-            final Edge edge = new Edge( rel, ordinal );
+        public Source source( AlgNode alg, int ordinal ) {
+            final AlgNode input = getInput( alg, ordinal );
+            final Edge edge = new Edge( alg, ordinal );
             final Collection<Edge> edges = outEdges.get( input );
             final NodeInfo nodeInfo = nodes.get( input );
             if ( nodeInfo == null ) {
-                throw new AssertionError( "should be registered: " + rel );
+                throw new AssertionError( "should be registered: " + alg );
             }
             if ( nodeInfo.rowEnumerable != null ) {
                 return new EnumeratorSource( nodeInfo.rowEnumerable.enumerator() );
@@ -574,26 +578,26 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         }
 
 
-        private RelNode getInput( RelNode rel, int ordinal ) {
-            final List<RelNode> inputs = relInputs.get( rel );
+        private AlgNode getInput( AlgNode alg, int ordinal ) {
+            final List<AlgNode> inputs = algInputs.get( alg );
             if ( inputs != null ) {
                 return inputs.get( ordinal );
             }
-            return rel.getInput( ordinal );
+            return alg.getInput( ordinal );
         }
 
 
         @Override
-        public Sink sink( RelNode rel ) {
-            final Collection<Edge> edges = outEdges.get( rel );
+        public Sink sink( AlgNode alg ) {
+            final Collection<Edge> edges = outEdges.get( alg );
             final Collection<Edge> edges2 =
                     edges.isEmpty()
                             ? ImmutableList.of( new Edge( null, 0 ) )
                             : edges;
-            NodeInfo nodeInfo = nodes.get( rel );
+            NodeInfo nodeInfo = nodes.get( alg );
             if ( nodeInfo == null ) {
-                nodeInfo = new NodeInfo( rel, null );
-                nodes.put( rel, nodeInfo );
+                nodeInfo = new NodeInfo( alg, null );
+                nodes.put( alg, nodeInfo );
                 for ( Edge edge : edges2 ) {
                     nodeInfo.sinks.put( edge, new ListSink( new ArrayDeque<>() ) );
                 }
@@ -611,9 +615,9 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
 
 
         @Override
-        public void enumerable( RelNode rel, Enumerable<Row> rowEnumerable ) {
-            NodeInfo nodeInfo = new NodeInfo( rel, rowEnumerable );
-            nodes.put( rel, nodeInfo );
+        public void enumerable( AlgNode alg, Enumerable<Row> rowEnumerable ) {
+            NodeInfo nodeInfo = new NodeInfo( alg, rowEnumerable );
+            nodes.put( alg, nodeInfo );
         }
 
 
@@ -627,17 +631,19 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
         public DataContext getDataContext() {
             return interpreter.dataContext;
         }
+
     }
 
 
     /**
-     * Edge between a {@link RelNode} and one of its inputs.
+     * Edge between a {@link AlgNode} and one of its inputs.
      */
-    static class Edge extends Pair<RelNode, Integer> {
+    static class Edge extends Pair<AlgNode, Integer> {
 
-        Edge( RelNode parent, int ordinal ) {
+        Edge( AlgNode parent, int ordinal ) {
             super( parent, ordinal );
         }
+
     }
 
 
@@ -646,7 +652,9 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
      */
     interface ScalarCompiler {
 
-        Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext );
+        Scalar compile( List<RexNode> nodes, AlgDataType inputRowType, DataContext dataContext );
+
     }
+
 }
 

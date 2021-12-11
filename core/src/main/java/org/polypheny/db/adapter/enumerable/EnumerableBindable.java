@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,22 +41,22 @@ import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
+import org.polypheny.db.adapter.enumerable.EnumerableAlg.Prefer;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.interpreter.BindableAlg;
 import org.polypheny.db.interpreter.BindableConvention;
-import org.polypheny.db.interpreter.BindableRel;
 import org.polypheny.db.interpreter.Node;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Sink;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterImpl;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
@@ -65,22 +65,22 @@ import org.polypheny.db.tools.RelBuilderFactory;
  * @see org.polypheny.db.adapter.enumerable.EnumerableConvention
  * @see org.polypheny.db.interpreter.BindableConvention
  */
-public class EnumerableBindable extends ConverterImpl implements BindableRel {
+public class EnumerableBindable extends ConverterImpl implements BindableAlg {
 
-    protected EnumerableBindable( RelOptCluster cluster, RelNode input ) {
+    protected EnumerableBindable( AlgOptCluster cluster, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, cluster.traitSetOf( BindableConvention.INSTANCE ), input );
     }
 
 
     @Override
-    public EnumerableBindable copy( RelTraitSet traitSet, List<RelNode> inputs ) {
+    public EnumerableBindable copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new EnumerableBindable( getCluster(), sole( inputs ) );
     }
 
 
     @Override
-    public String relCompareString() {
-        return "EnumerableBindable$" + input.relCompareString() + "&";
+    public String algCompareString() {
+        return "EnumerableBindable$" + input.algCompareString() + "&";
     }
 
 
@@ -93,7 +93,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
     @Override
     public Enumerable<Object[]> bind( DataContext dataContext ) {
         final Map<String, Object> map = new HashMap<>();
-        final Bindable bindable = EnumerableInterpretable.toBindable( map, null, (EnumerableRel) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
+        final Bindable bindable = EnumerableInterpretable.toBindable( map, null, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
         final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
         dataContext.addAll( map );
         return arrayBindable.bind( dataContext );
@@ -103,7 +103,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
     @Override
     public Node implement( final InterpreterImplementor implementor ) {
         return () -> {
-            final Sink sink = implementor.relSinks.get( EnumerableBindable.this ).get( 0 );
+            final Sink sink = implementor.algSinks.get( EnumerableBindable.this ).get( 0 );
             final Enumerable<Object[]> enumerable = bind( implementor.dataContext );
             final Enumerator<Object[]> enumerator = enumerable.enumerator();
             while ( enumerator.moveNext() ) {
@@ -118,23 +118,25 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
      */
     public static class EnumerableToBindableConverterRule extends ConverterRule {
 
-        public static final EnumerableToBindableConverterRule INSTANCE = new EnumerableToBindableConverterRule( RelFactories.LOGICAL_BUILDER );
+        public static final EnumerableToBindableConverterRule INSTANCE = new EnumerableToBindableConverterRule( AlgFactories.LOGICAL_BUILDER );
 
 
         /**
          * Creates an EnumerableToBindableConverterRule.
          *
-         * @param relBuilderFactory Builder for relational expressions
+         * @param algBuilderFactory Builder for relational expressions
          */
-        public EnumerableToBindableConverterRule( RelBuilderFactory relBuilderFactory ) {
-            super( EnumerableRel.class, (Predicate<RelNode>) r -> true, EnumerableConvention.INSTANCE, BindableConvention.INSTANCE, relBuilderFactory, "EnumerableToBindableConverterRule" );
+        public EnumerableToBindableConverterRule( AlgBuilderFactory algBuilderFactory ) {
+            super( EnumerableAlg.class, (Predicate<AlgNode>) r -> true, EnumerableConvention.INSTANCE, BindableConvention.INSTANCE, algBuilderFactory, "EnumerableToBindableConverterRule" );
         }
 
 
         @Override
-        public RelNode convert( RelNode rel ) {
-            return new EnumerableBindable( rel.getCluster(), rel );
+        public AlgNode convert( AlgNode alg ) {
+            return new EnumerableBindable( alg.getCluster(), alg );
         }
+
     }
+
 }
 

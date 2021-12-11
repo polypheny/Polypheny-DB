@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,15 +52,15 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelFieldCollation;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
-import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -71,7 +71,7 @@ import org.polypheny.db.util.Util;
 public class PhysTypeImpl implements PhysType {
 
     private final JavaTypeFactory typeFactory;
-    private final RelDataType rowType;
+    private final AlgDataType rowType;
     private final Type javaRowClass;
     private final List<Class> fieldClasses = new ArrayList<>();
     final JavaRowFormat format;
@@ -80,23 +80,23 @@ public class PhysTypeImpl implements PhysType {
     /**
      * Creates a PhysTypeImpl.
      */
-    PhysTypeImpl( JavaTypeFactory typeFactory, RelDataType rowType, Type javaRowClass, JavaRowFormat format ) {
+    PhysTypeImpl( JavaTypeFactory typeFactory, AlgDataType rowType, Type javaRowClass, JavaRowFormat format ) {
         this.typeFactory = typeFactory;
         this.rowType = rowType;
         this.javaRowClass = javaRowClass;
         this.format = format;
-        for ( RelDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
             fieldClasses.add( EnumUtils.javaRowClass( typeFactory, field.getType() ) );
         }
     }
 
 
-    public static PhysType of( JavaTypeFactory typeFactory, RelDataType rowType, JavaRowFormat format ) {
+    public static PhysType of( JavaTypeFactory typeFactory, AlgDataType rowType, JavaRowFormat format ) {
         return of( typeFactory, rowType, format, true );
     }
 
 
-    public static PhysType of( JavaTypeFactory typeFactory, RelDataType rowType, JavaRowFormat format, boolean optimize ) {
+    public static PhysType of( JavaTypeFactory typeFactory, AlgDataType rowType, JavaRowFormat format, boolean optimize ) {
         if ( optimize ) {
             format = format.optimize( rowType );
         }
@@ -113,7 +113,7 @@ public class PhysTypeImpl implements PhysType {
                 builder.add( field.getName(), null, typeFactory.createType( field.getType() ) );
             }
         }
-        RelDataType rowType = builder.build();
+        AlgDataType rowType = builder.build();
         // Do not optimize if there are 0 or 1 fields.
         return new PhysTypeImpl( typeFactory, rowType, javaRowClass, JavaRowFormat.CUSTOM );
     }
@@ -138,12 +138,12 @@ public class PhysTypeImpl implements PhysType {
             builder.add( rowType.getFieldList().get( index ) );
         }
         if ( indicator ) {
-            final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
+            final AlgDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
             for ( int index : integers ) {
                 builder.add( "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
             }
         }
-        RelDataType projectedRowType = builder.build();
+        AlgDataType projectedRowType = builder.build();
         return of( typeFactory, projectedRowType, format.optimize( projectedRowType ) );
     }
 
@@ -252,21 +252,22 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public Pair<Expression, Expression> generateCollationKey( final List<RelFieldCollation> collations ) {
+    public Pair<Expression, Expression> generateCollationKey( final List<AlgFieldCollation> collations ) {
         final Expression selector;
         if ( collations.size() == 1 ) {
-            RelFieldCollation collation = collations.get( 0 );
+            AlgFieldCollation collation = collations.get( 0 );
             ParameterExpression parameter = Expressions.parameter( javaRowClass, "v" );
             selector =
                     Expressions.lambda(
                             Function1.class,
                             fieldReference( parameter, collation.getFieldIndex() ),
                             parameter );
-            return Pair.of( selector,
+            return Pair.of(
+                    selector,
                     Expressions.call(
                             BuiltInMethod.NULLS_COMPARATOR.method,
-                            Expressions.constant( collation.nullDirection == RelFieldCollation.NullDirection.FIRST ),
-                            Expressions.constant( collation.getDirection() == RelFieldCollation.Direction.DESCENDING ) ) );
+                            Expressions.constant( collation.nullDirection == AlgFieldCollation.NullDirection.FIRST ),
+                            Expressions.constant( collation.getDirection() == AlgFieldCollation.Direction.DESCENDING ) ) );
         }
         selector = Expressions.call( BuiltInMethod.IDENTITY_SELECTOR.method );
 
@@ -281,7 +282,7 @@ public class PhysTypeImpl implements PhysType {
         final ParameterExpression parameterC = Expressions.parameter( int.class, "c" );
         final int mod = collations.size() == 1 ? Modifier.FINAL : 0;
         body.add( Expressions.declare( mod, parameterC, null ) );
-        for ( RelFieldCollation collation : collations ) {
+        for ( AlgFieldCollation collation : collations ) {
             final int index = collation.getFieldIndex();
             Expression arg0 = fieldReference( parameterV0, index );
             Expression arg1 = fieldReference( parameterV1, index );
@@ -290,8 +291,8 @@ public class PhysTypeImpl implements PhysType {
                     arg0 = Types.castIfNecessary( Comparable.class, arg0 );
                     arg1 = Types.castIfNecessary( Comparable.class, arg1 );
             }
-            final boolean nullsFirst = collation.nullDirection == RelFieldCollation.NullDirection.FIRST;
-            final boolean descending = collation.getDirection() == RelFieldCollation.Direction.DESCENDING;
+            final boolean nullsFirst = collation.nullDirection == AlgFieldCollation.NullDirection.FIRST;
+            final boolean descending = collation.getDirection() == AlgFieldCollation.Direction.DESCENDING;
             final Method method =
                     (fieldNullable( index )
                             ? (nullsFirst ^ descending
@@ -346,7 +347,7 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public Expression generateComparator( RelCollation collation ) {
+    public Expression generateComparator( AlgCollation collation ) {
         // int c;
         // c = Utilities.compare(v0, v1);
         // if (c != 0) return c; // or -c if descending
@@ -359,7 +360,7 @@ public class PhysTypeImpl implements PhysType {
         final ParameterExpression parameterC = Expressions.parameter( int.class, "c" );
         final int mod = collation.getFieldCollations().size() == 1 ? Modifier.FINAL : 0;
         body.add( Expressions.declare( mod, parameterC, null ) );
-        for ( RelFieldCollation fieldCollation : collation.getFieldCollations() ) {
+        for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
             final int index = fieldCollation.getFieldIndex();
             Expression arg0 = fieldReference( parameterV0, index );
             Expression arg1 = fieldReference( parameterV1, index );
@@ -368,8 +369,8 @@ public class PhysTypeImpl implements PhysType {
                     arg0 = Types.castIfNecessary( Comparable.class, arg0 );
                     arg1 = Types.castIfNecessary( Comparable.class, arg1 );
             }
-            final boolean nullsFirst = fieldCollation.nullDirection == RelFieldCollation.NullDirection.FIRST;
-            final boolean descending = fieldCollation.getDirection() == RelFieldCollation.Direction.DESCENDING;
+            final boolean nullsFirst = fieldCollation.nullDirection == AlgFieldCollation.NullDirection.FIRST;
+            final boolean descending = fieldCollation.getDirection() == AlgFieldCollation.Direction.DESCENDING;
             body.add(
                     Expressions.statement(
                             Expressions.assign(
@@ -429,7 +430,7 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public RelDataType getRowType() {
+    public AlgDataType getRowType() {
         return rowType;
     }
 
@@ -454,25 +455,25 @@ public class PhysTypeImpl implements PhysType {
 
     @Override
     public PhysType component( int fieldOrdinal ) {
-        final RelDataTypeField field = rowType.getFieldList().get( fieldOrdinal );
+        final AlgDataTypeField field = rowType.getFieldList().get( fieldOrdinal );
         return PhysTypeImpl.of( typeFactory, toStruct( field.getType().getComponentType() ), format, false );
     }
 
 
     @Override
     public PhysType field( int ordinal ) {
-        final RelDataTypeField field = rowType.getFieldList().get( ordinal );
-        final RelDataType type = field.getType();
+        final AlgDataTypeField field = rowType.getFieldList().get( ordinal );
+        final AlgDataType type = field.getType();
         return PhysTypeImpl.of( typeFactory, toStruct( type ), format, false );
     }
 
 
-    private RelDataType toStruct( RelDataType type ) {
+    private AlgDataType toStruct( AlgDataType type ) {
         if ( type.isStruct() ) {
             return type;
         }
         return typeFactory.builder()
-                .add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, type )
+                .add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, type )
                 .build();
     }
 
@@ -622,5 +623,6 @@ public class PhysTypeImpl implements PhysType {
         }
         return format.field( expression, field, fieldType, storageType );
     }
+
 }
 

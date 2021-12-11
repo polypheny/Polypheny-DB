@@ -26,8 +26,8 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -44,7 +44,7 @@ public interface PolyphenyDbSchema {
 
     TableEntry add( String tableName, Table table, ImmutableList<String> sqls );
 
-    TypeEntry add( String name, RelProtoDataType type );
+    TypeEntry add( String name, AlgProtoDataType type );
 
     PolyphenyDbSchema root();
 
@@ -161,7 +161,7 @@ public interface PolyphenyDbSchema {
         }
 
 
-        public abstract RelProtoDataType getType();
+        public abstract AlgProtoDataType getType();
 
     }
 
@@ -211,20 +211,20 @@ public interface PolyphenyDbSchema {
      */
     class TypeEntryImpl extends TypeEntry {
 
-        private final RelProtoDataType protoDataType;
+        private final AlgProtoDataType protoDataType;
 
 
         /**
          * Creates a TypeEntryImpl.
          */
-        public TypeEntryImpl( PolyphenyDbSchema schema, String name, RelProtoDataType protoDataType ) {
+        public TypeEntryImpl( PolyphenyDbSchema schema, String name, AlgProtoDataType protoDataType ) {
             super( schema, name );
             this.protoDataType = protoDataType;
         }
 
 
         @Override
-        public RelProtoDataType getType() {
+        public AlgProtoDataType getType() {
             return protoDataType;
         }
 

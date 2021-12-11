@@ -37,18 +37,18 @@ package org.polypheny.db.adapter.jdbc;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.adapter.jdbc.rel2sql.RelToSqlConverter;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.adapter.jdbc.rel2sql.AlgToSqlConverter;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.sql.sql.SqlDialect;
+import org.polypheny.db.sql.sql.SqlIdentifier;
 import org.polypheny.db.util.Util;
 
 
 /**
  * State for generating a SQL statement.
  */
-public class JdbcImplementor extends RelToSqlConverter {
+public class JdbcImplementor extends AlgToSqlConverter {
 
     private final JdbcSchema schema;
 
@@ -68,7 +68,7 @@ public class JdbcImplementor extends RelToSqlConverter {
     }
 
 
-    public Result implement( RelNode node ) {
+    public Result implement( AlgNode node ) {
         return dispatch( node );
     }
 
@@ -106,7 +106,7 @@ public class JdbcImplementor extends RelToSqlConverter {
             if ( table.hasPhysicalColumnName( columnName ) ) {
                 return schema.getTableMap().get( tableNames.get( 1 ) ).physicalColumnName( columnName );
             } else {
-                return new SqlIdentifier( "_" + columnName, SqlParserPos.ZERO );
+                return new SqlIdentifier( "_" + columnName, ParserPos.ZERO );
             }
         } else {
             throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );

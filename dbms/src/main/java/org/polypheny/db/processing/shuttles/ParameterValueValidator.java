@@ -30,11 +30,11 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -42,13 +42,13 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.FileInputHandle;
 
 
-public class ParameterValueValidator extends RelShuttleImpl {
+public class ParameterValueValidator extends AlgShuttleImpl {
 
-    final RelDataType rowType;
+    final AlgDataType rowType;
     final DataContext dataContext;
 
 
-    public ParameterValueValidator( final RelDataType rowType, DataContext dataContext ) {
+    public ParameterValueValidator( final AlgDataType rowType, DataContext dataContext ) {
         this.rowType = rowType;
         this.dataContext = dataContext;
     }
@@ -58,7 +58,7 @@ public class ParameterValueValidator extends RelShuttleImpl {
      * Visits a particular child of a parent, without copying a child
      */
     @Override
-    protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
+    protected <T extends AlgNode> T visitChild( T parent, int i, AlgNode child ) {
         stack.push( parent );
         try {
             child.accept( this );
@@ -70,7 +70,7 @@ public class ParameterValueValidator extends RelShuttleImpl {
 
 
     @Override
-    public RelNode visit( LogicalProject project ) {
+    public AlgNode visit( LogicalProject project ) {
         ParameterValueValidator2 validator2 = new ParameterValueValidator2();
         validator2.apply( project.getChildExps() );
         return super.visit( project );

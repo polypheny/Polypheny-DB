@@ -30,20 +30,21 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.logical.LogicalDocuments;
-import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.tools.RoutedRelBuilder;
+import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -53,17 +54,17 @@ import org.polypheny.db.transaction.Statement;
 @Slf4j
 public abstract class BaseRouter {
 
-    public static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
+    public static final Cache<Integer, AlgNode> joinedTableScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
 
     final static Catalog catalog = Catalog.getInstance();
 
 
-    public RelNode recursiveCopy( RelNode node ) {
-        List<RelNode> inputs = new LinkedList<>();
+    public AlgNode recursiveCopy( AlgNode node ) {
+        List<AlgNode> inputs = new LinkedList<>();
         if ( node.getInputs() != null && node.getInputs().size() > 0 ) {
-            for ( RelNode input : node.getInputs() ) {
+            for ( AlgNode input : node.getInputs() ) {
                 inputs.add( recursiveCopy( input ) );
             }
         }
@@ -71,8 +72,8 @@ public abstract class BaseRouter {
     }
 
 
-    public RoutedRelBuilder handleTableScan(
-            RoutedRelBuilder builder,
+    public RoutedAlgBuilder handleTableScan(
+            RoutedAlgBuilder builder,
             long tableId,
             String storeUniqueName,
             String logicalSchemaName,
@@ -86,23 +87,23 @@ public abstract class BaseRouter {
     }
 
 
-    public RoutedRelBuilder handleValues( LogicalValues node, RoutedRelBuilder builder ) {
+    public RoutedAlgBuilder handleValues( LogicalValues node, RoutedAlgBuilder builder ) {
         return builder.values( node.tuples, node.getRowType() );
     }
 
 
-    protected List<RoutedRelBuilder> handleValues( LogicalValues node, List<RoutedRelBuilder> builders ) {
+    protected List<RoutedAlgBuilder> handleValues( LogicalValues node, List<RoutedAlgBuilder> builders ) {
         return builders.stream().map( builder -> builder.values( node.tuples, node.getRowType() ) ).collect( Collectors.toList() );
     }
 
 
-    protected RoutedRelBuilder handleDocuments( LogicalDocuments node, RoutedRelBuilder builder ) {
+    protected RoutedAlgBuilder handleDocuments( LogicalDocuments node, RoutedAlgBuilder builder ) {
         return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
     }
 
 
-    public RoutedRelBuilder handleGeneric( RelNode node, RoutedRelBuilder builder ) {
-        final List<RoutedRelBuilder> result = handleGeneric( node, Lists.newArrayList( builder ) );
+    public RoutedAlgBuilder handleGeneric( AlgNode node, RoutedAlgBuilder builder ) {
+        final List<RoutedAlgBuilder> result = handleGeneric( node, Lists.newArrayList( builder ) );
         if ( result.size() > 1 ) {
             log.error( "Single handle generic with multiple results " );
         }
@@ -110,7 +111,7 @@ public abstract class BaseRouter {
     }
 
 
-    protected List<RoutedRelBuilder> handleGeneric( RelNode node, List<RoutedRelBuilder> builders ) {
+    protected List<RoutedAlgBuilder> handleGeneric( AlgNode node, List<RoutedAlgBuilder> builders ) {
         if ( node.getInputs().size() == 1 ) {
             builders.forEach(
                     builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) )
@@ -126,11 +127,11 @@ public abstract class BaseRouter {
     }
 
 
-    public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
-        RoutedRelBuilder builder = RoutedRelBuilder.create( statement, cluster );
+    public AlgNode buildJoinedTableScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
+        RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            RelNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
+            AlgNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
             if ( cachedNode != null ) {
                 return cachedNode;
             }
@@ -227,11 +228,11 @@ public abstract class BaseRouter {
                         List<RexNode> joinConditions = new LinkedList<>();
                         for ( int i = 0; i < pkColumnIds.size(); i++ ) {
                             joinConditions.add( builder.call(
-                                    SqlStdOperatorTable.EQUALS,
+                                    OperatorRegistry.get( OperatorName.EQUALS ),
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ),
                                     builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ) ) );
                         }
-                        builder.join( JoinRelType.INNER, joinConditions );
+                        builder.join( JoinAlgType.INNER, joinConditions );
                     }
                 }
                 // Final project
@@ -251,7 +252,7 @@ public abstract class BaseRouter {
 
         builder.union( true, placements.size() );
 
-        RelNode node = builder.build();
+        AlgNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
             joinedTableScanCache.put( placements.hashCode(), node );
         }

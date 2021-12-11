@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,10 +43,10 @@ import java.util.TimeZone;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyType;
 
 
@@ -86,7 +86,8 @@ public class TimeExtractionFunction implements ExtractionFunction {
     private final String local;
 
 
-    public TimeExtractionFunction( String format, Granularity granularity, String timeZone,
+    public TimeExtractionFunction(
+            String format, Granularity granularity, String timeZone,
             String local ) {
         this.format = format;
         this.granularity = granularity;
@@ -176,7 +177,7 @@ public class TimeExtractionFunction implements ExtractionFunction {
 
     public static boolean isValidTimeExtract( RexNode rexNode ) {
         final RexCall call = (RexCall) rexNode;
-        if ( call.getKind() != SqlKind.EXTRACT || call.getOperands().size() != 2 ) {
+        if ( call.getKind() != Kind.EXTRACT || call.getOperands().size() != 2 ) {
             return false;
         }
         final RexLiteral flag = (RexLiteral) call.operands.get( 0 );
@@ -192,7 +193,7 @@ public class TimeExtractionFunction implements ExtractionFunction {
      * @return true if the extract unit is valid
      */
     public static boolean isValidTimeFloor( RexNode rexNode ) {
-        if ( rexNode.getKind() != SqlKind.FLOOR ) {
+        if ( rexNode.getKind() != Kind.FLOOR ) {
             return false;
         }
         final RexCall call = (RexCall) rexNode;
@@ -212,7 +213,7 @@ public class TimeExtractionFunction implements ExtractionFunction {
      */
     @Nullable
     public static TimeExtractionFunction translateCastToTimeExtract( RexNode rexNode, TimeZone timeZone ) {
-        assert rexNode.getKind() == SqlKind.CAST;
+        assert rexNode.getKind() == Kind.CAST;
         final RexCall rexCall = (RexCall) rexNode;
         final String castFormat = DruidSqlCastConverter.dateTimeFormatString( rexCall.getType().getPolyType() );
         final String timeZoneId = timeZone == null ? null : timeZone.getID();

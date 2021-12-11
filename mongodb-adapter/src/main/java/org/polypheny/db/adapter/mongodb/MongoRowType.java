@@ -18,19 +18,19 @@ package org.polypheny.db.adapter.mongodb;
 
 import java.util.HashMap;
 import java.util.List;
-import org.polypheny.db.adapter.mongodb.MongoRel.Implementor;
+import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rel.type.RelRecordType;
-import org.polypheny.db.rel.type.StructKind;
 
-public class MongoRowType extends RelRecordType {
+public class MongoRowType extends AlgRecordType {
 
     private final HashMap<Long, String> idToName = new HashMap<>();
     private final HashMap<String, Long> nameToId = new HashMap<>();
 
 
-    public MongoRowType( StructKind kind, List<RelDataTypeField> fields, MongoTable mongoTable ) {
+    public MongoRowType( StructKind kind, List<AlgDataTypeField> fields, MongoTable mongoTable ) {
         super( kind, fields );
         Catalog.getInstance().getColumns( mongoTable.getCatalogTable().id ).forEach( column -> {
             idToName.put( column.id, column.name );
@@ -61,7 +61,7 @@ public class MongoRowType extends RelRecordType {
     }
 
 
-    public static RelRecordType fromRecordType( RelRecordType rowType, MongoTable mongoTable ) {
+    public static AlgRecordType fromRecordType( AlgRecordType rowType, MongoTable mongoTable ) {
         return new MongoRowType( rowType.getStructKind(), rowType.getFieldList(), mongoTable );
     }
 

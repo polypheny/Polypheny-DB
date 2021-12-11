@@ -30,7 +30,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.jdbc.ContextImpl;
+import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;

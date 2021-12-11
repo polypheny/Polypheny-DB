@@ -29,6 +29,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalFilter;
+import org.polypheny.db.algebra.logical.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -38,25 +53,11 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
-import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.WhereClauseVisitor;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelShuttleImpl;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
-import org.polypheny.db.rel.logical.LogicalDocuments;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalModifyCollect;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
@@ -69,9 +70,8 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.tools.RoutedRelBuilder;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 
 @Slf4j
@@ -81,11 +81,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
      * Default implementation: Execute DML on all placements
      */
     @Override
-    public RelNode routeDml( RelNode node, Statement statement ) {
-        RelOptCluster cluster = node.getCluster();
+    public AlgNode routeDml( AlgNode node, Statement statement ) {
+        AlgOptCluster cluster = node.getCluster();
 
         if ( node.getTable() != null ) {
-            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 // Get placements of this table
@@ -113,7 +113,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
                     log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
                     for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
-                        log.debug( "\t\t -> '{}' {}\t{}",
+                        log.debug(
+                                "\t\t -> '{}' {}\t{}",
                                 dataPlacement.adapterUniqueName,
                                 catalog.getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
                                 catalog.getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
@@ -121,7 +122,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
 
                 // Execute on all primary key placements
-                List<RelNode> modifies = new ArrayList<>();
+                List<AlgNode> modifies = new ArrayList<>();
 
                 // Needed for partitioned updates when source partition and target partition are not equal
                 // SET Value is the new partition, where clause is the source
@@ -177,9 +178,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
 
                         WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
-                        node.accept( new RelShuttleImpl() {
+                        node.accept( new AlgShuttleImpl() {
                             @Override
-                            public RelNode visit( LogicalFilter filter ) {
+                            public AlgNode visit( LogicalFilter filter ) {
                                 super.visit( filter );
                                 filter.accept( whereClauseVisitor );
                                 return filter;
@@ -224,7 +225,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         // Routing/Locking can now be executed on certain partitions
                                         partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
                                         if ( log.isDebugEnabled() ) {
-                                            log.debug( "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
+                                            log.debug(
+                                                    "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
                                                     partitionValue,
                                                     partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
                                         }
@@ -278,9 +280,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                             RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
-                                            RelNode input = buildDml(
+                                            {@link AlgNode} input = buildDml(
                                                     recursiveCopy( node.getInput( 0 ) ),
-                                                    RoutedRelBuilder.create( statement, cluster ),
+                                                    AlgBuilder.create( statement, cluster ),
                                                     catalogTable,
                                                     placementsOnAdapter,
                                                     catalog.getPartitionPlacement( pkPlacement.adapterId, currentPart ),
@@ -315,9 +317,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                             RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
-                                            RelNode input = buildDml(
+                                            {@link AlgNode} input = buildDml(
                                                     recursiveCopy( node.getInput( 0 ) ),
-                                                    RoutedRelBuilder.create( statement, cluster ),
+                                                    AlgBuilder.create( statement, cluster ),
                                                     catalogTable,
                                                     placementsOnAdapter,
                                                     catalog.getPartitionPlacement( pkPlacement.adapterId, identifiedPartitionForSetValue ),
@@ -425,9 +427,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 (((LogicalTableModify) node).getInput()).getRowType(),
                                                 ImmutableList.copyOf( ImmutableList.of( row ) ) );
 
-                                        RelNode input = buildDml(
+                                        AlgNode input = buildDml(
                                                 newLogicalValues,
-                                                RoutedRelBuilder.create( statement, cluster ),
+                                                RoutedAlgBuilder.create( statement, cluster ),
                                                 catalogTable,
                                                 placementsOnAdapter,
                                                 catalog.getPartitionPlacement( pkPlacement.adapterId, currentPartitionId ),
@@ -443,13 +445,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                         pkPlacement.physicalSchemaName
                                                 ),
                                                 t.getLogicalTableName() + "_" + currentPartitionId );
-                                        RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                                        AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                                         // Build DML
                                         TableModify modify;
 
-                                        modify = modifiableTable.toModificationRel(
+                                        modify = modifiableTable.toModificationAlg(
                                                 cluster,
                                                 physical,
                                                 catalogReader,
@@ -481,7 +483,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                                     if ( partitionColumnName.equals( columnName ) ) {
 
-                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).getKind().equals( SqlKind.DYNAMIC_PARAM ) ) {
+                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).getKind().equals( Kind.DYNAMIC_PARAM ) ) {
 
                                             // Needed to identify the column which contains the partition value
                                             long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
@@ -502,9 +504,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 parameterValues.add( new HashMap<>( newParameterValues ) );
                                                 parameterValues.get( 0 ).putAll( currentRow );
 
-                                                RelNode input = buildDml(
+                                                AlgNode input = buildDml(
                                                         super.recursiveCopy( node.getInput( 0 ) ),
-                                                        RoutedRelBuilder.create( statement, cluster ),
+                                                        RoutedAlgBuilder.create( statement, cluster ),
                                                         catalogTable,
                                                         placementsOnAdapter,
                                                         catalog.getPartitionPlacement( pkPlacement.adapterId, tempPartitionId ),
@@ -522,13 +524,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                                 pkPlacement.physicalSchemaName
                                                         ),
                                                         t.getLogicalTableName() + "_" + tempPartitionId );
-                                                RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                                                AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                                                 ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                                                 // Build DML
                                                 TableModify modify;
 
-                                                modify = modifiableTable.toModificationRel(
+                                                modify = modifiableTable.toModificationAlg(
                                                         cluster,
                                                         physical,
                                                         catalogReader,
@@ -616,14 +618,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                             pkPlacement.physicalSchemaName
                                     ),
                                     t.getLogicalTableName() + "_" + partitionId );
-                            RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
+                            AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                             ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                             // Build DML
                             TableModify modify;
-                            RelNode input = buildDml(
+                            AlgNode input = buildDml(
                                     super.recursiveCopy( node.getInput( 0 ) ),
-                                    RoutedRelBuilder.create( statement, cluster ),
+                                    RoutedAlgBuilder.create( statement, cluster ),
                                     catalogTable,
                                     placementsOnAdapter,
                                     catalog.getPartitionPlacement( pkPlacement.adapterId, partitionId ),
@@ -632,7 +634,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     false,
                                     statement.getDataContext().getParameterValues() ).build();
                             if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
-                                modify = modifiableTable.toModificationRel(
+                                modify = modifiableTable.toModificationAlg(
                                         cluster,
                                         physical,
                                         catalogReader,
@@ -673,7 +675,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( modifies.size() == 1 ) {
                     return modifies.get( 0 );
                 } else {
-                    RoutedRelBuilder builder = RoutedRelBuilder.create( statement, cluster );
+                    RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
                     for ( int i = 0; i < modifies.size(); i++ ) {
                         if ( i == 0 ) {
                             builder.push( modifies.get( i ) );
@@ -695,11 +697,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public RelNode handleConditionalExecute( RelNode node, Statement statement, LogicalQueryInformation queryInformation ) {
+    public AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
         LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
-        RoutedRelBuilder builder = RoutedRelBuilder.create( statement, node.getCluster() );
+        RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, node.getCluster() );
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( lce.getLeft(), builder, statement, node.getCluster(), queryInformation );
-        RelNode action;
+        AlgNode action;
         if ( lce.getRight() instanceof LogicalConditionalExecute ) {
             action = handleConditionalExecute( lce.getRight(), statement, queryInformation );
         } else if ( lce.getRight() instanceof TableModify ) {
@@ -712,14 +714,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private RelBuilder buildDml(
-            RelNode node,
-            RoutedRelBuilder builder,
+    private AlgBuilder buildDml(
+            AlgNode node,
+            RoutedAlgBuilder builder,
             CatalogTable catalogTable,
             List<CatalogColumnPlacement> placements,
             CatalogPartitionPlacement partitionPlacement,
             Statement statement,
-            RelOptCluster cluster,
+            AlgOptCluster cluster,
             boolean remapParameterValues,
             List<Map<Long, Object>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
@@ -734,7 +736,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
-            RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+            AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
 
             if ( table.getTable() instanceof LogicalTable ) {
                 // Special handling for INSERT INTO foo SELECT * FROM foo2
@@ -824,7 +826,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private void dmlConditionCheck( LogicalFilter node, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, RexNode operand ) {
         if ( operand instanceof RexInputRef ) {
             int index = ((RexInputRef) operand).getIndex();
-            RelDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
+            AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
             CatalogColumn column;
             try {
                 String columnName;
@@ -864,7 +866,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private RoutedRelBuilder remapParameterizedDml( RelNode node, RoutedRelBuilder builder, Statement statement, List<Map<Long, Object>> parameterValues ) {
+    private RoutedAlgBuilder remapParameterizedDml( AlgNode node, RoutedAlgBuilder builder, Statement statement, List<Map<Long, Object>> parameterValues ) {
         if ( parameterValues.size() != 1 ) {
             throw new RuntimeException( "The parameter values is expected to have a size of one in this case!" );
         }
@@ -874,7 +876,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             if ( project instanceof RexDynamicParam ) {
                 long newIndex = parameterValues.get( 0 ).size();
                 long oldIndex = ((RexDynamicParam) project).getIndex();
-                RelDataType type = statement.getDataContext().getParameterType( oldIndex );
+                AlgDataType type = statement.getDataContext().getParameterType( oldIndex );
                 if ( type == null ) {
                     type = project.getType();
                 }

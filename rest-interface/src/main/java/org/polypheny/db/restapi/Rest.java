@@ -27,28 +27,33 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalValues;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparingTable;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
@@ -59,11 +64,8 @@ import org.polypheny.db.restapi.models.requests.ResourceValuesRequest;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.tools.RelBuilder.GroupKey;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.tools.AlgBuilder.GroupKey;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -102,54 +104,54 @@ public class Rest {
         }
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
-        RelBuilder relBuilder = RelBuilder.create( statement );
+        AlgBuilder algBuilder = AlgBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         // Table Scans
-        relBuilder = this.tableScans( relBuilder, rexBuilder, resourceGetRequest.tables );
+        algBuilder = this.tableScans( algBuilder, rexBuilder, resourceGetRequest.tables );
 
         // Initial projection
-        relBuilder = this.initialProjection( relBuilder, rexBuilder, resourceGetRequest.requestColumns );
+        algBuilder = this.initialProjection( algBuilder, rexBuilder, resourceGetRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, relBuilder, rexBuilder, resourceGetRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceGetRequest.filters, req );
         if ( filters != null ) {
-            relBuilder = relBuilder.filter( filters );
+            algBuilder = algBuilder.filter( filters );
         }
 
         // Aggregates
-        relBuilder = this.aggregates( relBuilder, rexBuilder, resourceGetRequest.requestColumns, resourceGetRequest.groupings );
+        algBuilder = this.aggregates( algBuilder, rexBuilder, resourceGetRequest.requestColumns, resourceGetRequest.groupings );
 
         // Final projection
-        relBuilder = this.finalProjection( relBuilder, rexBuilder, resourceGetRequest.requestColumns );
+        algBuilder = this.finalProjection( algBuilder, rexBuilder, resourceGetRequest.requestColumns );
 
         // Sorts, limit, offset
-        relBuilder = this.sort( relBuilder, rexBuilder, resourceGetRequest.sorting, resourceGetRequest.limit, resourceGetRequest.offset );
+        algBuilder = this.sort( algBuilder, rexBuilder, resourceGetRequest.sorting, resourceGetRequest.limit, resourceGetRequest.offset );
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
+            log.debug( "AlgNodeBuilder: {}", algBuilder.toString() );
         }
-        RelNode relNode = relBuilder.build();
-        log.debug( "RelNode was built." );
+        AlgNode algNode = algBuilder.build();
+        log.debug( "AlgNode was built." );
 
-        // Wrap RelNode into a RelRoot
-        final RelDataType rowType = relNode.getRowType();
+        // Wrap {@link AlgNode} into a RelRoot
+        final AlgDataType rowType = algNode.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        final RelCollation collation =
-                relNode instanceof Sort
-                        ? ((Sort) relNode).collation
-                        : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
-        log.debug( "RelRoot was built." );
+        final AlgCollation collation =
+                algNode instanceof Sort
+                        ? ((Sort) algNode).collation
+                        : AlgCollations.EMPTY;
+        AlgRoot root = new AlgRoot( algNode, algNode.getRowType(), Kind.SELECT, fields, collation );
+        log.debug( "AlgRoot was built." );
 
-        return executeAndTransformRelAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, res );
     }
 
 
     String processPatchResource( final ResourcePatchRequest resourcePatchRequest, final Request req, final Response res, Map<String, InputStream> inputStreams ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
-        RelBuilder relBuilder = RelBuilder.create( statement );
+        AlgBuilder algBuilder = AlgBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
@@ -157,58 +159,58 @@ public class Rest {
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getSchemaName(), resourcePatchRequest.tables.get( 0 ).name ) );
 
         // Table Scans
-        relBuilder = this.tableScans( relBuilder, rexBuilder, resourcePatchRequest.tables );
+        algBuilder = this.tableScans( algBuilder, rexBuilder, resourcePatchRequest.tables );
 
         // Initial projection
-        relBuilder = this.initialProjection( relBuilder, rexBuilder, resourcePatchRequest.requestColumns );
+        algBuilder = this.initialProjection( algBuilder, rexBuilder, resourcePatchRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, relBuilder, rexBuilder, resourcePatchRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourcePatchRequest.filters, req );
         if ( filters != null ) {
-            relBuilder = relBuilder.filter( filters );
+            algBuilder = algBuilder.filter( filters );
         }
 
         // Table Modify
 
-        RelOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
+        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
 
         // Values
-        RelDataType tableRowType = table.getRowType();
-        List<RelDataTypeField> tableRows = tableRowType.getFieldList();
+        AlgDataType tableRowType = table.getRowType();
+        List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
         List<String> valueColumnNames = this.valuesColumnNames( resourcePatchRequest.values );
-        List<RexNode> rexValues = this.valuesNode( statement, relBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
+        List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
 
-        RelNode relNode = relBuilder.build();
+        AlgNode algNode = algBuilder.build();
         TableModify tableModify = new LogicalTableModify(
                 cluster,
-                relNode.getTraitSet(),
+                algNode.getTraitSet(),
                 table,
                 catalogReader,
-                relNode,
+                algNode,
                 LogicalTableModify.Operation.UPDATE,
                 valueColumnNames,
                 rexValues,
                 false
         );
 
-        // Wrap RelNode into a RelRoot
-        final RelDataType rowType = tableModify.getRowType();
+        // Wrap {@link AlgNode} into a RelRoot
+        final AlgDataType rowType = tableModify.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        final RelCollation collation =
-                relNode instanceof Sort
-                        ? ((Sort) relNode).collation
-                        : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.UPDATE, fields, collation );
-        log.debug( "RelRoot was built." );
+        final AlgCollation collation =
+                algNode instanceof Sort
+                        ? ((Sort) algNode).collation
+                        : AlgCollations.EMPTY;
+        AlgRoot root = new AlgRoot( tableModify, rowType, Kind.UPDATE, fields, collation );
+        log.debug( "AlgRoot was built." );
 
-        return executeAndTransformRelAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, res );
     }
 
 
     String processDeleteResource( final ResourceDeleteRequest resourceDeleteRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
-        RelBuilder relBuilder = RelBuilder.create( statement );
+        AlgBuilder algBuilder = AlgBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
@@ -216,52 +218,52 @@ public class Rest {
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getSchemaName(), resourceDeleteRequest.tables.get( 0 ).name ) );
 
         // Table Scans
-        relBuilder = this.tableScans( relBuilder, rexBuilder, resourceDeleteRequest.tables );
+        algBuilder = this.tableScans( algBuilder, rexBuilder, resourceDeleteRequest.tables );
 
 //         Initial projection
-        relBuilder = this.initialProjection( relBuilder, rexBuilder, resourceDeleteRequest.requestColumns );
+        algBuilder = this.initialProjection( algBuilder, rexBuilder, resourceDeleteRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, relBuilder, rexBuilder, resourceDeleteRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceDeleteRequest.filters, req );
         if ( filters != null ) {
-            relBuilder = relBuilder.filter( filters );
+            algBuilder = algBuilder.filter( filters );
         }
 
         // Table Modify
 
-        RelOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
+        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
 
-        RelNode relNode = relBuilder.build();
+        AlgNode algNode = algBuilder.build();
         TableModify tableModify = new LogicalTableModify(
                 cluster,
-                relNode.getTraitSet(),
+                algNode.getTraitSet(),
                 table,
                 catalogReader,
-                relNode,
+                algNode,
                 LogicalTableModify.Operation.DELETE,
                 null,
                 null,
                 false
         );
 
-        // Wrap RelNode into a RelRoot
-        final RelDataType rowType = tableModify.getRowType();
+        // Wrap {@link AlgNode} into a RelRoot
+        final AlgDataType rowType = tableModify.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        final RelCollation collation =
-                relNode instanceof Sort
-                        ? ((Sort) relNode).collation
-                        : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.DELETE, fields, collation );
-        log.debug( "RelRoot was built." );
+        final AlgCollation collation =
+                algNode instanceof Sort
+                        ? ((Sort) algNode).collation
+                        : AlgCollations.EMPTY;
+        AlgRoot root = new AlgRoot( tableModify, rowType, Kind.DELETE, fields, collation );
+        log.debug( "AlgRoot was built." );
 
-        return executeAndTransformRelAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, res );
     }
 
 
     String processPostResource( final ResourcePostRequest insertValueRequest, final Request req, final Response res, Map<String, InputStream> inputStreams ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
-        RelBuilder relBuilder = RelBuilder.create( statement );
+        AlgBuilder algBuilder = AlgBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
@@ -269,80 +271,80 @@ public class Rest {
         PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getSchemaName(), insertValueRequest.tables.get( 0 ).name ) );
 
         // Values
-        RelDataType tableRowType = table.getRowType();
-        List<RelDataTypeField> tableRows = tableRowType.getFieldList();
+        AlgDataType tableRowType = table.getRowType();
+        List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
 
 //        List<String> valueColumnNames = this.valuesColumnNames( updateResourceRequest.values );
 
-        RelOptPlanner planner = statement.getQueryProcessor().getPlanner();
-        RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
+        AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
+        AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
 
         List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
-        List<RexNode> rexValues = this.valuesNode( statement, relBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );
-        relBuilder.push( LogicalValues.createOneRow( cluster ) );
-        relBuilder.project( rexValues, valueColumnNames );
+        List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );
+        algBuilder.push( LogicalValues.createOneRow( cluster ) );
+        algBuilder.project( rexValues, valueColumnNames );
 
         // Table Modify
-        RelNode relNode = relBuilder.build();
+        AlgNode algNode = algBuilder.build();
         TableModify tableModify = new LogicalTableModify(
                 cluster,
-                relNode.getTraitSet(),
+                algNode.getTraitSet(),
                 table,
                 catalogReader,
-                relNode,
+                algNode,
                 LogicalTableModify.Operation.INSERT,
                 null,
                 null,
                 false
         );
 
-        // Wrap RelNode into a RelRoot
-        final RelDataType rowType = tableModify.getRowType();
+        // Wrap {@link AlgNode} into a RelRoot
+        final AlgDataType rowType = tableModify.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        final RelCollation collation =
-                relNode instanceof Sort
-                        ? ((Sort) relNode).collation
-                        : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
-        log.debug( "RelRoot was built." );
+        final AlgCollation collation =
+                algNode instanceof Sort
+                        ? ((Sort) algNode).collation
+                        : AlgCollations.EMPTY;
+        AlgRoot root = new AlgRoot( tableModify, rowType, Kind.INSERT, fields, collation );
+        log.debug( "AlgRoot was built." );
 
-        return executeAndTransformRelAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, res );
     }
 
 
     @VisibleForTesting
-    RelBuilder tableScans( RelBuilder relBuilder, RexBuilder rexBuilder, List<CatalogTable> tables ) {
+    AlgBuilder tableScans( AlgBuilder algBuilder, RexBuilder rexBuilder, List<CatalogTable> tables ) {
         boolean firstTable = true;
         for ( CatalogTable catalogTable : tables ) {
             if ( firstTable ) {
-                relBuilder = relBuilder.scan( catalogTable.getSchemaName(), catalogTable.name );
+                algBuilder = algBuilder.scan( catalogTable.getSchemaName(), catalogTable.name );
                 firstTable = false;
             } else {
-                relBuilder = relBuilder
+                algBuilder = algBuilder
                         .scan( catalogTable.getSchemaName(), catalogTable.name )
-                        .join( JoinRelType.INNER, rexBuilder.makeLiteral( true ) );
+                        .join( JoinAlgType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }
-        return relBuilder;
+        return algBuilder;
     }
 
 
     @VisibleForTesting
-    List<RexNode> filters( Statement statement, RelBuilder relBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
+    List<RexNode> filters( Statement statement, AlgBuilder algBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
         if ( filters.literalFilters != null ) {
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
             }
             List<RexNode> filterNodes = new ArrayList<>();
-            RelNode baseNodeForFilters = relBuilder.peek();
-            RelDataType filtersRowType = baseNodeForFilters.getRowType();
-            List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
-            Map<String, RelDataTypeField> filterMap = new HashMap<>();
+            AlgNode baseNodeForFilters = algBuilder.peek();
+            AlgDataType filtersRowType = baseNodeForFilters.getRowType();
+            List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
+            Map<String, AlgDataTypeField> filterMap = new HashMap<>();
             filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
             int index = 0;
             for ( RequestColumn column : filters.literalFilters.keySet() ) {
-                for ( Pair<SqlOperator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
-                    RelDataTypeField typeField = filterMap.get( column.getFullyQualifiedName() );
+                for ( Pair<Operator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
+                    AlgDataTypeField typeField = filterMap.get( column.getFullyQualifiedName() );
                     RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
                     Object param = filterOperationPair.right;
                     if ( param instanceof TimestampString ) {
@@ -363,7 +365,7 @@ public class Rest {
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
             }
-//            relBuilder = relBuilder.filter( filterNodes );
+//            algBuilder = algBuilder.filter( filterNodes );
             if ( req != null && log.isDebugEnabled() ) {
                 log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
             }
@@ -388,7 +390,7 @@ public class Rest {
     }
 
 
-    List<List<RexNode>> valuesNode( Statement statement, RelBuilder relBuilder, RexBuilder rexBuilder, ResourceValuesRequest request, List<RelDataTypeField> tableRows, Map<String, InputStream> inputStreams ) {
+    List<List<RexNode>> valuesNode( Statement statement, AlgBuilder algBuilder, RexBuilder rexBuilder, ResourceValuesRequest request, List<AlgDataTypeField> tableRows, Map<String, InputStream> inputStreams ) {
         List<List<Pair<RequestColumn, Object>>> values = request.values;
         List<List<RexNode>> wrapperList = new ArrayList<>();
         int index = 0;
@@ -396,7 +398,7 @@ public class Rest {
             List<RexNode> rexValues = new ArrayList<>();
             for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
                 int columnPosition = insertValue.left.getLogicalIndex();
-                RelDataTypeField typeField = tableRows.get( columnPosition );
+                AlgDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     FileInputHandle fih = new FileInputHandle( statement, inputStreams.get( insertValue.left.getColumn().name ) );
                     statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( fih ) );
@@ -413,13 +415,13 @@ public class Rest {
     }
 
 
-    List<List<RexLiteral>> valuesLiteral( RelBuilder relBuilder, RexBuilder rexBuilder, List<List<Pair<RequestColumn, Object>>> values, List<RelDataTypeField> tableRows ) {
+    List<List<RexLiteral>> valuesLiteral( AlgBuilder algBuilder, RexBuilder rexBuilder, List<List<Pair<RequestColumn, Object>>> values, List<AlgDataTypeField> tableRows ) {
         List<List<RexLiteral>> wrapperList = new ArrayList<>();
         for ( List<Pair<RequestColumn, Object>> rowsToInsert : values ) {
             List<RexLiteral> rexValues = new ArrayList<>();
             for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
                 int columnPosition = insertValue.left.getLogicalIndex();
-                RelDataTypeField typeField = tableRows.get( columnPosition );
+                AlgDataTypeField typeField = tableRows.get( columnPosition );
                 rexValues.add( (RexLiteral) rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
             }
             wrapperList.add( rexValues );
@@ -429,8 +431,8 @@ public class Rest {
     }
 
 
-    RelBuilder initialProjection( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
-        RelNode baseNode = relBuilder.peek();
+    AlgBuilder initialProjection( AlgBuilder algBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
+        AlgNode baseNode = algBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> aliases = new ArrayList<>();
 
@@ -440,13 +442,13 @@ public class Rest {
             aliases.add( column.getAlias() );
         }
 
-        relBuilder = relBuilder.project( inputRefs, aliases, true );
-        return relBuilder;
+        algBuilder = algBuilder.project( inputRefs, aliases, true );
+        return algBuilder;
     }
 
 
-    RelBuilder finalProjection( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
-        RelNode baseNode = relBuilder.peek();
+    AlgBuilder finalProjection( AlgBuilder algBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
+        AlgNode baseNode = algBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
         List<String> aliases = new ArrayList<>();
 
@@ -458,13 +460,13 @@ public class Rest {
             }
         }
 
-        relBuilder = relBuilder.project( inputRefs, aliases, true );
-        return relBuilder;
+        algBuilder = algBuilder.project( inputRefs, aliases, true );
+        return algBuilder;
     }
 
 
-    RelBuilder aggregates( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> requestColumns, List<RequestColumn> groupings ) {
-        RelNode baseNodeForAggregation = relBuilder.peek();
+    AlgBuilder aggregates( AlgBuilder algBuilder, RexBuilder rexBuilder, List<RequestColumn> requestColumns, List<RequestColumn> groupings ) {
+        AlgNode baseNodeForAggregation = algBuilder.peek();
 
         List<AggregateCall> aggregateCalls = new ArrayList<>();
         for ( RequestColumn column : requestColumns ) {
@@ -473,12 +475,12 @@ public class Rest {
                 inputFields.add( column.getLogicalIndex() );
                 String fieldName = column.getAlias();
                 AggregateCall aggregateCall = AggregateCall.create(
-                        column.getAggregate(),
+                        (Operator & AggFunction) column.getAggregate(),
                         false,
                         false,
                         inputFields,
                         -1,
-                        RelCollations.EMPTY,
+                        AlgCollations.EMPTY,
                         groupings.size(),
                         baseNodeForAggregation,
                         null,
@@ -494,9 +496,9 @@ public class Rest {
                 groupByOrdinals.add( column.getLogicalIndex() );
             }
 
-            GroupKey groupKey = relBuilder.groupKey( ImmutableBitSet.of( groupByOrdinals ) );
+            GroupKey groupKey = algBuilder.groupKey( ImmutableBitSet.of( groupByOrdinals ) );
 
-            relBuilder = relBuilder.aggregate( groupKey, aggregateCalls );
+            algBuilder = algBuilder.aggregate( groupKey, aggregateCalls );
         }
 
         int groupingsLogicalIndex = 0;
@@ -512,36 +514,36 @@ public class Rest {
             }
         }
 
-        return relBuilder;
+        return algBuilder;
     }
 
 
-    RelBuilder sort( RelBuilder relBuilder, RexBuilder rexBuilder, List<Pair<RequestColumn, Boolean>> sorts, int limit, int offset ) {
+    AlgBuilder sort( AlgBuilder algBuilder, RexBuilder rexBuilder, List<Pair<RequestColumn, Boolean>> sorts, int limit, int offset ) {
         if ( (sorts == null || sorts.size() == 0) && (limit >= 0 || offset >= 0) ) {
-            relBuilder = relBuilder.limit( offset, limit );
+            algBuilder = algBuilder.limit( offset, limit );
 //            log.debug( "Added limit and offset to relation. Session ID: {}.", req.session().id() );
         } else if ( sorts != null && sorts.size() != 0 ) {
             List<RexNode> sortingNodes = new ArrayList<>();
-            RelNode baseNodeForSorts = relBuilder.peek();
+            AlgNode baseNodeForSorts = algBuilder.peek();
             for ( Pair<RequestColumn, Boolean> sort : sorts ) {
                 int inputField = sort.left.getLogicalIndex();
                 RexNode inputRef = rexBuilder.makeInputRef( baseNodeForSorts, inputField );
                 RexNode sortingNode;
                 if ( sort.right ) {
-                    RexNode innerNode = rexBuilder.makeCall( SqlStdOperatorTable.DESC, inputRef );
-                    sortingNode = rexBuilder.makeCall( SqlStdOperatorTable.NULLS_FIRST, innerNode );
+                    RexNode innerNode = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.DESC ), inputRef );
+                    sortingNode = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NULLS_FIRST ), innerNode );
                 } else {
-                    sortingNode = rexBuilder.makeCall( SqlStdOperatorTable.NULLS_FIRST, inputRef );
+                    sortingNode = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.NULLS_FIRST ), inputRef );
                 }
 
                 sortingNodes.add( sortingNode );
             }
 
-            relBuilder = relBuilder.sortLimit( offset, limit, sortingNodes );
+            algBuilder = algBuilder.sortLimit( offset, limit, sortingNodes );
 //            log.debug( "Added sort, limit and offset to relation. Session ID: {}.", req.session().id() );
         }
 
-        return relBuilder;
+        return algBuilder;
     }
 
 
@@ -554,20 +556,20 @@ public class Rest {
     }
 
 
-    String executeAndTransformRelAlg( RelRoot relRoot, final Statement statement, final Response res ) {
+    String executeAndTransformPolyAlg( AlgRoot algRoot, final Statement statement, final Response res ) {
         RestResult restResult;
         try {
             // Prepare
-            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot, true );
-            log.debug( "RelRoot was prepared." );
+            PolyResult result = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            log.debug( "AlgRoot was prepared." );
 
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
+            final Iterable<Object> iterable = result.enumerable( statement.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();
-            restResult = new RestResult( relRoot.kind, iterator, signature.rowType, signature.columns );
+            restResult = new RestResult( algRoot.kind, iterator, result.rowType, result.getColumns() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();
-            if ( !relRoot.kind.belongsTo( SqlKind.DML ) ) {
-                signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
+            if ( !algRoot.kind.belongsTo( Kind.DML ) ) {
+                result.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 
             statement.getTransaction().commit();

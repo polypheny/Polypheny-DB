@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,11 @@ package org.polypheny.db.adapter.jdbc;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.algebra.rules.FilterSetOpTransposeRule;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.rel.rules.FilterSetOpTransposeRule;
-import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.sql.SqlDialect;
 
 
 /**
@@ -74,7 +74,7 @@ public class JdbcConvention extends Convention.Impl {
 
 
     public JdbcConvention( SqlDialect dialect, Expression expression, String name ) {
-        super( "JDBC." + name, JdbcRel.class );
+        super( "JDBC." + name, JdbcAlg.class );
         this.dialect = dialect;
         this.expression = expression;
     }
@@ -86,8 +86,8 @@ public class JdbcConvention extends Convention.Impl {
 
 
     @Override
-    public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : JdbcRules.rules( this ) ) {
+    public void register( AlgOptPlanner planner ) {
+        for ( AlgOptRule rule : JdbcRules.rules( this ) ) {
             planner.addRule( rule );
         }
         planner.addRule( FilterSetOpTransposeRule.INSTANCE );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,16 +34,16 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.logical.LogicalAggregate;
 
 
 /**
- * Rule to convert a {@link org.polypheny.db.rel.logical.LogicalAggregate} to an {@link EnumerableAggregate}.
+ * Rule to convert a {@link org.polypheny.db.algebra.logical.LogicalAggregate} to an {@link EnumerableAggregate}.
  */
 class EnumerableAggregateRule extends ConverterRule {
 
@@ -53,15 +53,16 @@ class EnumerableAggregateRule extends ConverterRule {
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final LogicalAggregate agg = (LogicalAggregate) rel;
-        final RelTraitSet traitSet = agg.getTraitSet().replace( EnumerableConvention.INSTANCE );
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalAggregate agg = (LogicalAggregate) alg;
+        final AlgTraitSet traitSet = agg.getTraitSet().replace( EnumerableConvention.INSTANCE );
         try {
-            return new EnumerableAggregate( rel.getCluster(), traitSet, convert( agg.getInput(), EnumerableConvention.INSTANCE ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
-        } catch ( InvalidRelException e ) {
+            return new EnumerableAggregate( alg.getCluster(), traitSet, convert( agg.getInput(), EnumerableConvention.INSTANCE ), agg.indicator, agg.getGroupSet(), agg.getGroupSets(), agg.getAggCallList() );
+        } catch ( InvalidAlgException e ) {
             EnumerableRules.LOGGER.debug( e.toString() );
             return null;
         }
     }
+
 }
 

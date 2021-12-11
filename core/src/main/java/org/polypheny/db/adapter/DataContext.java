@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.advise.SqlAdvisor;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Advisor;
 
 
 /**
@@ -74,9 +74,9 @@ public interface DataContext {
     Statement getStatement();
 
 
-    void addParameterValues( long index, RelDataType type, List<Object> data );
+    void addParameterValues( long index, AlgDataType type, List<Object> data );
 
-    RelDataType getParameterType( long index );
+    AlgDataType getParameterType( long index );
 
     List<Map<Long, Object>> getParameterValues();
 
@@ -96,8 +96,9 @@ public interface DataContext {
     class ParameterValue {
 
         private final long index;
-        private final RelDataType type;
+        private final AlgDataType type;
         private final Object value;
+
     }
 
 
@@ -137,7 +138,7 @@ public interface DataContext {
         /**
          * Advisor that suggests completion hints for SQL statements.
          */
-        SQL_ADVISOR( "sqlAdvisor", SqlAdvisor.class ),
+        SQL_ADVISOR( "sqlAdvisor", Advisor.class ),
 
         /**
          * Writer to the standard error (stderr).
@@ -222,13 +223,13 @@ public interface DataContext {
 
 
         @Override
-        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+        public void addParameterValues( long index, AlgDataType type, List<Object> data ) {
 
         }
 
 
         @Override
-        public RelDataType getParameterType( long index ) {
+        public AlgDataType getParameterType( long index ) {
             return null;
         }
 
@@ -237,6 +238,8 @@ public interface DataContext {
         public List<Map<Long, Object>> getParameterValues() {
             return null;
         }
+
     }
+
 }
 

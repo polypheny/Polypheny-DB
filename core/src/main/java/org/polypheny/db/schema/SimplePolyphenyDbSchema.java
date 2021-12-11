@@ -22,8 +22,8 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Collection;
 import java.util.List;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.util.NameMap;
 import org.polypheny.db.util.NameMultimap;
 import org.polypheny.db.util.NameSet;
@@ -110,7 +110,7 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
     @Override
     protected TypeEntry getImplicitType( String name, boolean caseSensitive ) {
         // Check implicit types.
-        RelProtoDataType type = schema.getType( name );
+        AlgProtoDataType type = schema.getType( name );
         if ( type != null ) {
             return typeEntry( name, type );
         }

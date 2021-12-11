@@ -49,6 +49,13 @@ import org.mapdb.serializer.SerializerArrayTuple;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -95,22 +102,14 @@ import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.mql.MqlNode;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.languages.mql.MqlQueryParameters;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
-import org.polypheny.db.processing.JsonRelProcessor;
-import org.polypheny.db.processing.MqlProcessor;
-import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollations;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -195,12 +194,12 @@ public class CatalogImpl extends Catalog {
 
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
 
-    // RelNode used to create view and materialized view
+    // {@link AlgNode} used to create view and materialized view
     @Getter
-    private final Map<Long, RelNode> nodeInfo = new HashMap<>();
-    // RelDataTypes used to create view and materialized view
+    private final Map<Long, AlgNode> nodeInfo = new HashMap<>();
+    // AlgDataTypes used to create view and materialized view
     @Getter
-    private final Map<Long, RelDataType> relTypeInfo = new HashMap<>();
+    private final Map<Long, AlgDataType> algTypeInfo = new HashMap<>();
 
 
     public CatalogImpl() {
@@ -432,7 +431,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * On restart, all RelNodes used in views and materialized views need to be recreated.
+     * On restart, all AlgNodes used in views and materialized views need to be recreated.
      * Depending on the query language, different methods are used.
      */
     @Override
@@ -453,41 +452,42 @@ public class CatalogImpl extends Catalog {
 
                 switch ( language ) {
                     case SQL:
-                        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
-                        SqlNode sqlNode = sqlProcessor.parse( query );
-                        RelRoot relRoot = sqlProcessor.translate(
+                        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
+                        Node sqlNode = sqlProcessor.parse( query );
+                        AlgRoot algRoot = sqlProcessor.translate(
                                 statement,
-                                sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left );
-                        nodeInfo.put( c.id, relRoot.rel );
-                        relTypeInfo.put( c.id, relRoot.validatedRowType );
+                                sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
+                                new QueryParameters( query, c.getSchemaType() ) );
+                        nodeInfo.put( c.id, algRoot.alg );
+                        algTypeInfo.put( c.id, algRoot.validatedRowType );
                         break;
 
-                    case RELALG:
-                        JsonRelProcessor jsonRelProcessor = statement.getTransaction().getJsonRelProcessor();
-                        RelNode result = jsonRelProcessor.parseJsonRel( statement, query );
+                    case REL_ALG:
+                        Processor jsonRelProcessor = statement.getTransaction().getProcessor( QueryLanguage.REL_ALG );
+                        AlgNode result = jsonRelProcessor.translate( statement, null, new QueryParameters( query, c.getSchemaType() ) ).alg;
 
-                        final RelDataType rowType = result.getRowType();
+                        final AlgDataType rowType = result.getRowType();
                         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-                        final RelCollation collation =
+                        final AlgCollation collation =
                                 result instanceof Sort
                                         ? ((Sort) result).collation
-                                        : RelCollations.EMPTY;
-                        RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
+                                        : AlgCollations.EMPTY;
+                        AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
-                        nodeInfo.put( c.id, root.rel );
-                        relTypeInfo.put( c.id, root.validatedRowType );
+                        nodeInfo.put( c.id, root.alg );
+                        algTypeInfo.put( c.id, root.validatedRowType );
                         break;
 
-                    case MONGOQL:
-                        MqlProcessor mqlProcessor = statement.getTransaction().getMqlProcessor();
-                        MqlNode mqlNode = mqlProcessor.parse( query );
+                    case MONGO_QL:
+                        Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
+                        Node mqlNode = mqlProcessor.parse( query );
 
-                        RelRoot mqlRel = mqlProcessor.translate(
+                        AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,
                                 mqlNode,
-                                getSchema( defaultDatabaseId ).name );
-                        nodeInfo.put( c.id, mqlRel.rel );
-                        relTypeInfo.put( c.id, mqlRel.validatedRowType );
+                                new MqlQueryParameters( query, getSchema( defaultDatabaseId ).name, SchemaType.DOCUMENT ) );
+                        nodeInfo.put( c.id, mqlRel.alg );
+                        algTypeInfo.put( c.id, mqlRel.validatedRowType );
                         break;
                 }
                 if ( c.tableType == TableType.MATERIALIZED_VIEW ) {
@@ -553,8 +553,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Initiates all needed maps for adapters
      *
-     * adapters: adapterId -> CatalogAdapter
-     * adapterName: adapterName -> CatalogAdapter
+     * adapters: adapterId {@code ->} CatalogAdapter
+     * adapterName: adapterName {@code ->}  CatalogAdapter
      */
     private void initAdapterInfo( DB db ) {
         adapters = db.hashMap( "adapters", Serializer.INTEGER, new GenericSerializer<CatalogAdapter>() ).createOrOpen();
@@ -565,8 +565,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Initiates all needed maps for query interfaces
      *
-     * queryInterfaces: ifaceId -> CatalogQueryInterface
-     * queryInterfaceNames: ifaceName -> CatalogQueryInterface
+     * queryInterfaces: ifaceId  CatalogQueryInterface
+     * queryInterfaceNames: ifaceName  CatalogQueryInterface
      */
     private void initQueryInterfaceInfo( DB db ) {
         queryInterfaces = db.hashMap( "queryInterfaces", Serializer.INTEGER, new GenericSerializer<CatalogQueryInterface>() ).createOrOpen();
@@ -577,12 +577,12 @@ public class CatalogImpl extends Catalog {
     /**
      * creates all needed maps for keys and constraints
      *
-     * keyColumns: [columnId1, columnId2,...] -> keyId
-     * keys: keyId -> CatalogKey
-     * primaryKeys: keyId -> CatalogPrimaryKey
-     * foreignKeys: keyId -> CatalogForeignKey
-     * constraints: constraintId -> CatalogConstraint
-     * indexes: indexId -> CatalogIndex
+     * keyColumns: [columnId1, columnId2,...]  keyId
+     * keys: keyId  CatalogKey
+     * primaryKeys: keyId  CatalogPrimaryKey
+     * foreignKeys: keyId  CatalogForeignKey
+     * constraints: constraintId  CatalogConstraint
+     * indexes: indexId {@code ->} CatalogIndex
      */
     private void initKeysAndConstraintsInfo( DB db ) {
         keyColumns = db.hashMap( "keyColumns", Serializer.LONG_ARRAY, Serializer.LONG ).createOrOpen();
@@ -597,8 +597,8 @@ public class CatalogImpl extends Catalog {
     /**
      * creates all needed maps for users
      *
-     * users: userId -> CatalogUser
-     * userNames: name -> CatalogUser
+     * users: userId {@code ->} CatalogUser
+     * userNames: name {@code ->} CatalogUser
      */
     private void initUserInfo( DB db ) {
         users = db.hashMap( "users", Serializer.INTEGER, new GenericSerializer<CatalogUser>() ).createOrOpen();
@@ -609,9 +609,9 @@ public class CatalogImpl extends Catalog {
     /**
      * initialize the column maps
      *
-     * columns: columnId -> CatalogColumn
-     * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} -> CatalogColumn
-     * columnPlacements: new Object[]{adapterId, columnId} -> CatalogPlacement
+     * columns: columnId {@code ->} CatalogColumn
+     * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} {@code ->} CatalogColumn
+     * columnPlacements: new Object[]{adapterId, columnId} {@code ->} CatalogPlacement
      */
     private void initColumnInfo( DB db ) {
         //noinspection unchecked
@@ -626,9 +626,9 @@ public class CatalogImpl extends Catalog {
     /**
      * Creates all maps needed for tables
      *
-     * tables: tableId -> CatalogTable
-     * tableChildren: tableId -> [columnId, columnId,..]
-     * tableNames: new Object[]{databaseId, schemaId, tableName} -> CatalogTable
+     * tables: tableId {@code ->} CatalogTable
+     * tableChildren: tableId {@code ->} [columnId, columnId,..]
+     * tableNames: new Object[]{databaseId, schemaId, tableName} {@code ->} CatalogTable
      */
     private void initTableInfo( DB db ) {
         //noinspection unchecked
@@ -656,9 +656,9 @@ public class CatalogImpl extends Catalog {
     /**
      * creates all needed maps for schemas
      *
-     * schemas: schemaId -> CatalogSchema
-     * schemaChildren: schemaId -> [tableId, tableId, etc]
-     * schemaNames: new Object[]{databaseId, schemaName} -> CatalogSchema
+     * schemas: schemaId {@code ->} CatalogSchema
+     * schemaChildren: schemaId {@code ->} [tableId, tableId, etc]
+     * schemaNames: new Object[]{databaseId, schemaName} {@code ->} CatalogSchema
      */
     private void initSchemaInfo( DB db ) {
         //noinspection unchecked
@@ -672,9 +672,9 @@ public class CatalogImpl extends Catalog {
     /**
      * creates maps for databases
      *
-     * databases: databaseId -> CatalogDatabase
-     * databaseNames: databaseName -> CatalogDatabase
-     * databaseChildren: databaseId -> [tableId, tableId,...]
+     * databases: databaseId {@code ->} CatalogDatabase
+     * databaseNames: databaseName {@code ->} CatalogDatabase
+     * databaseChildren: databaseId {@code ->} [tableId, tableId,...]
      */
     private void initDatabaseInfo( DB db ) {
         //noinspection unchecked
@@ -702,7 +702,7 @@ public class CatalogImpl extends Catalog {
         if ( !userNames.containsKey( "pa" ) ) {
             addUser( "pa", "" );
         }
-        Catalog.defaultUser = systemId;
+        Catalog.defaultUserId = systemId;
 
         //////////////
         // init database
@@ -767,11 +767,11 @@ public class CatalogImpl extends Catalog {
             restSettings.put( "maxUploadSizeMb", "10000" );
             addQueryInterface( "rest", "org.polypheny.db.restapi.HttpRestServer", restSettings );
 
-            // Add REST interface
-            Map<String, String> mongoSettings = new HashMap<>();
-            mongoSettings.put( "port", "2717" );
-            mongoSettings.put( "maxUploadSizeMb", "10000" );
-            addQueryInterface( "mongo", "org.polypheny.db.mongoql.MongoQlServer", mongoSettings );
+            // Add HTTP interface
+            Map<String, String> httpSettings = new HashMap<>();
+            httpSettings.put( "port", "1337" );
+            httpSettings.put( "maxUploadSizeMb", "10000" );
+            addQueryInterface( "http", "org.polypheny.db.http.HttpInterface", httpSettings );
         }
 
         try {
@@ -1465,13 +1465,13 @@ public class CatalogImpl extends Catalog {
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views
+     * @param definition {@link AlgNode} used to create Views
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @return The id of the inserted table
      */
     @Override
-    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, String query, QueryLanguage language ) {
+    public long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1497,7 +1497,7 @@ public class CatalogImpl extends Catalog {
                     null,
                     ImmutableMap.of(),
                     modifiable,
-                    relCollation,
+                    algCollation,
                     ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
                             Entry::getKey,
                             e -> ImmutableList.copyOf( e.getValue() )
@@ -1507,7 +1507,7 @@ public class CatalogImpl extends Catalog {
             );
             addConnectedViews( underlyingTables, viewTable.id );
             updateTableLogistics( name, schemaId, id, schema, viewTable );
-            relTypeInfo.put( id, fieldList );
+            algTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
             // Should not happen, addViewTable is only called with TableType.View
@@ -1525,8 +1525,8 @@ public class CatalogImpl extends Catalog {
      * @param ownerId id of the owner
      * @param tableType type of table
      * @param modifiable Whether the content of the table can be modified
-     * @param definition RelNode used to create Views
-     * @param relCollation relCollation used for materialized view
+     * @param definition {@link AlgNode} used to create Views
+     * @param algCollation relCollation used for materialized view
      * @param underlyingTables all tables and columns used within the view
      * @param fieldList all columns used within the View
      * @param materializedCriteria Information like freshness and last updated
@@ -1536,7 +1536,7 @@ public class CatalogImpl extends Catalog {
      * @return id of the inserted materialized view
      */
     @Override
-    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, RelCollation relCollation, Map<Long, List<Long>> underlyingTables, RelDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
+    public long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1569,7 +1569,7 @@ public class CatalogImpl extends Catalog {
                     null,
                     ImmutableMap.of(),
                     modifiable,
-                    relCollation,
+                    algCollation,
                     ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
                             Entry::getKey,
                             e -> ImmutableList.copyOf( e.getValue() )
@@ -1582,7 +1582,7 @@ public class CatalogImpl extends Catalog {
             addConnectedViews( underlyingTables, materializedViewTable.id );
             updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
 
-            relTypeInfo.put( id, fieldList );
+            algTypeInfo.put( id, fieldList );
             nodeInfo.put( id, definition );
         } else {
             // Should not happen, addViewTable is only called with TableType.View
@@ -1751,7 +1751,8 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table;
         if ( old.isPartitioned ) {
-            table = new CatalogTable( old.id,
+            table = new CatalogTable(
+                    old.id,
                     old.name,
                     old.columnIds,
                     old.schemaId,
@@ -1819,14 +1820,15 @@ public class CatalogImpl extends Catalog {
                         old.partitionColumnId,
                         old.isPartitioned,
                         old.partitionProperty,
-                        ((CatalogMaterializedView) old).getRelCollation(),
+                        ((CatalogMaterializedView) old).getAlgCollation(),
                         old.connectedViews,
                         ((CatalogMaterializedView) old).getUnderlyingTables(),
                         ((CatalogMaterializedView) old).getLanguage(),
                         ((CatalogMaterializedView) old).getMaterializedCriteria(),
                         ((CatalogMaterializedView) old).isOrdered() );
             } else {
-                table = new CatalogTable( old.id,
+                table = new CatalogTable(
+                        old.id,
                         old.name,
                         old.columnIds,
                         old.schemaId,
@@ -1858,7 +1860,7 @@ public class CatalogImpl extends Catalog {
                         keyId,
                         old.placementsByAdapter,
                         old.modifiable,
-                        ((CatalogMaterializedView) old).getRelCollation(),
+                        ((CatalogMaterializedView) old).getAlgCollation(),
                         ((CatalogMaterializedView) old).getUnderlyingTables(),
                         ((CatalogMaterializedView) old).getLanguage(),
                         ((CatalogMaterializedView) old).getMaterializedCriteria(),
@@ -1961,7 +1963,7 @@ public class CatalogImpl extends Catalog {
                             old.partitionColumnId,
                             old.isPartitioned,
                             old.partitionProperty,
-                            ((CatalogMaterializedView) old).getRelCollation(),
+                            ((CatalogMaterializedView) old).getAlgCollation(),
                             old.connectedViews,
                             ((CatalogMaterializedView) old).getUnderlyingTables(),
                             ((CatalogMaterializedView) old).getLanguage(),
@@ -2005,7 +2007,7 @@ public class CatalogImpl extends Catalog {
                             old.partitionColumnId,
                             old.isPartitioned,
                             old.partitionProperty,
-                            ((CatalogMaterializedView) old).getRelCollation(),
+                            ((CatalogMaterializedView) old).getAlgCollation(),
                             old.connectedViews,
                             ((CatalogMaterializedView) old).getUnderlyingTables(),
                             ((CatalogMaterializedView) old).getLanguage(),
@@ -2045,7 +2047,8 @@ public class CatalogImpl extends Catalog {
                 updatePartitionGroupsOnDataPlacement( adapterId, column.tableId, partitionGroupIds );
             } else {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "Table '{}.{}' already exists in DataPartitionPlacement, keeping assigned partitions {}",
+                    log.debug(
+                            "Table '{}.{}' already exists in DataPartitionPlacement, keeping assigned partitions {}",
                             store.uniqueName,
                             old.name,
                             getPartitionGroupsOnDataPlacement( adapterId, old.id ) );
@@ -2122,7 +2125,7 @@ public class CatalogImpl extends Catalog {
                 old.partitionColumnId,
                 old.isPartitioned,
                 old.partitionProperty,
-                old.getRelCollation(),
+                old.getAlgCollation(),
                 old.connectedViews,
                 old.getUnderlyingTables(),
                 old.getLanguage(),
@@ -2199,7 +2202,8 @@ public class CatalogImpl extends Catalog {
                 if ( lastPlacementOnStore ) {
                     dataPartitionGroupPlacement.remove( new Object[]{ adapterId, oldTable.id } );
                     if ( log.isDebugEnabled() ) {
-                        log.debug( "Column '{}' was the last placement on store: '{}.{}' ",
+                        log.debug(
+                                "Column '{}' was the last placement on store: '{}.{}' ",
                                 getColumn( columnId ).name,
                                 getAdapter( adapterId ).uniqueName,
                                 table.name );

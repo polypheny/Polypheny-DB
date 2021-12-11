@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,34 +34,35 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.RelOptRuleCall;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Variant of {@link org.polypheny.db.rel.rules.ProjectToCalcRule} for {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Variant of {@link org.polypheny.db.algebra.rules.ProjectToCalcRule} for {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableProjectToCalcRule extends RelOptRule {
+public class EnumerableProjectToCalcRule extends AlgOptRule {
 
     /**
      * Creates an EnumerableProjectToCalcRule.
      *
-     * @param relBuilderFactory Builder for relational expressions
+     * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableProjectToCalcRule( RelBuilderFactory relBuilderFactory ) {
-        super( operand( EnumerableProject.class, any() ), relBuilderFactory, null );
+    public EnumerableProjectToCalcRule( AlgBuilderFactory algBuilderFactory ) {
+        super( operand( EnumerableProject.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
-    public void onMatch( RelOptRuleCall call ) {
-        final EnumerableProject project = call.rel( 0 );
-        final RelNode input = project.getInput();
+    public void onMatch( AlgOptRuleCall call ) {
+        final EnumerableProject project = call.alg( 0 );
+        final AlgNode input = project.getInput();
         final RexProgram program = RexProgram.create( input.getRowType(), project.getProjects(), null, project.getRowType(), project.getCluster().getRexBuilder() );
         final EnumerableCalc calc = EnumerableCalc.create( input, program );
         call.transformTo( calc );
     }
+
 }

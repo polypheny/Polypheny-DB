@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,20 +39,20 @@ import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.InvalidRelException;
-import org.polypheny.db.rel.RelCollationTraitDef;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelNodes;
-import org.polypheny.db.rel.core.CorrelationId;
-import org.polypheny.db.rel.core.EquiJoin;
-import org.polypheny.db.rel.core.JoinInfo;
-import org.polypheny.db.rel.core.JoinRelType;
-import org.polypheny.db.rel.metadata.RelMdCollation;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgNodes;
+import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.EquiJoin;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.JoinInfo;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableIntList;
@@ -60,16 +60,16 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Join} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Join} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableJoin extends EquiJoin implements EnumerableRel {
+public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
 
     /**
      * Creates an EnumerableJoin.
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    protected EnumerableJoin( RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinRelType joinType ) throws InvalidRelException {
+    protected EnumerableJoin( AlgOptCluster cluster, AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
         super( cluster, traits, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
     }
 
@@ -77,21 +77,21 @@ public class EnumerableJoin extends EquiJoin implements EnumerableRel {
     /**
      * Creates an EnumerableJoin.
      */
-    public static EnumerableJoin create( RelNode left, RelNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinRelType joinType ) throws InvalidRelException {
-        final RelOptCluster cluster = left.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableJoin( mq, left, right, joinType ) );
+    public static EnumerableJoin create( AlgNode left, AlgNode right, RexNode condition, ImmutableIntList leftKeys, ImmutableIntList rightKeys, Set<CorrelationId> variablesSet, JoinAlgType joinType ) throws InvalidAlgException {
+        final AlgOptCluster cluster = left.getCluster();
+        final AlgMetadataQuery mq = cluster.getMetadataQuery();
+        final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableJoin( mq, left, right, joinType ) );
         return new EnumerableJoin( cluster, traitSet, left, right, condition, leftKeys, rightKeys, variablesSet, joinType );
     }
 
 
     @Override
-    public EnumerableJoin copy( RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone ) {
+    public EnumerableJoin copy( AlgTraitSet traitSet, RexNode condition, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         final JoinInfo joinInfo = JoinInfo.of( left, right, condition );
         assert joinInfo.isEqui();
         try {
             return new EnumerableJoin( getCluster(), traitSet, left, right, condition, joinInfo.leftKeys, joinInfo.rightKeys, variablesSet, joinType );
-        } catch ( InvalidRelException e ) {
+        } catch ( InvalidAlgException e ) {
             // Semantic error not possible. Must be a bug. Convert to internal error.
             throw new AssertionError( e );
         }
@@ -99,7 +99,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableRel {
 
 
     @Override
-    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         double rowCount = mq.getRowCount( this );
 
         // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost.
@@ -109,7 +109,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableRel {
                 rowCount = addEpsilon( rowCount );
                 break;
             default:
-                if ( RelNodes.COMPARATOR.compare( left, right ) > 0 ) {
+                if ( AlgNodes.COMPARATOR.compare( left, right ) > 0 ) {
                     rowCount = addEpsilon( rowCount );
                 }
         }
@@ -154,29 +154,30 @@ public class EnumerableJoin extends EquiJoin implements EnumerableRel {
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
-        final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );
+        final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
         Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
-        final Result rightResult = implementor.visitChild( this, 1, (EnumerableRel) right, pref );
+        final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
         Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
         final PhysType keyPhysType = leftResult.physType.project( leftKeys, JavaRowFormat.LIST );
         return implementor.result(
                 physType,
                 builder.append(
-                        Expressions.call(
-                                leftExpression,
-                                BuiltInMethod.JOIN.method,
-                                Expressions.list(
-                                        rightExpression,
-                                        leftResult.physType.generateAccessor( leftKeys ),
-                                        rightResult.physType.generateAccessor( rightKeys ),
-                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ) )
-                                        .append( Util.first( keyPhysType.comparer(), Expressions.constant( null ) ) )
-                                        .append( Expressions.constant( joinType.generatesNullsOnLeft() ) )
-                                        .append( Expressions.constant( joinType.generatesNullsOnRight() ) ) ) )
+                                Expressions.call(
+                                        leftExpression,
+                                        BuiltInMethod.JOIN.method,
+                                        Expressions.list(
+                                                        rightExpression,
+                                                        leftResult.physType.generateAccessor( leftKeys ),
+                                                        rightResult.physType.generateAccessor( rightKeys ),
+                                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ) )
+                                                .append( Util.first( keyPhysType.comparer(), Expressions.constant( null ) ) )
+                                                .append( Expressions.constant( joinType.generatesNullsOnLeft() ) )
+                                                .append( Expressions.constant( joinType.generatesNullsOnRight() ) ) ) )
                         .toBlock() );
     }
+
 }
 

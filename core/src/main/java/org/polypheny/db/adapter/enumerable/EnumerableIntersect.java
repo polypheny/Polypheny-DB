@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,36 +39,36 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.Intersect;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Intersect;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Implementation of {@link org.polypheny.db.rel.core.Intersect} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link org.polypheny.db.algebra.core.Intersect} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableIntersect extends Intersect implements EnumerableRel {
+public class EnumerableIntersect extends Intersect implements EnumerableAlg {
 
-    public EnumerableIntersect( RelOptCluster cluster, RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
+    public EnumerableIntersect( AlgOptCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
         assert !all;
     }
 
 
     @Override
-    public EnumerableIntersect copy( RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
+    public EnumerableIntersect copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         return new EnumerableIntersect( getCluster(), traitSet, inputs, all );
     }
 
 
     @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
+    public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
         Expression intersectExp = null;
-        for ( Ord<RelNode> ord : Ord.zip( inputs ) ) {
-            EnumerableRel input = (EnumerableRel) ord.e;
+        for ( Ord<AlgNode> ord : Ord.zip( inputs ) ) {
+            EnumerableAlg input = (EnumerableAlg) ord.e;
             final Result result = implementor.visitChild( this, ord.i, input, pref );
             Expression childExp = builder.append( "child" + ord.i, result.block );
 
@@ -90,4 +90,5 @@ public class EnumerableIntersect extends Intersect implements EnumerableRel {
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.prefer( JavaRowFormat.CUSTOM ) );
         return implementor.result( physType, builder.toBlock() );
     }
+
 }

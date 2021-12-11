@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.enumerable.AggImplementor;
 import org.polypheny.db.adapter.enumerable.RexImpTable.UserDefinedAggReflectiveImplementor;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.schema.AggregateFunction;
 import org.polypheny.db.schema.FunctionParameter;
 import org.polypheny.db.schema.ImplementableAggFunction;
@@ -142,7 +142,7 @@ public class AggregateFunctionImpl implements AggregateFunction, ImplementableAg
 
 
     @Override
-    public RelDataType getReturnType( RelDataTypeFactory typeFactory ) {
+    public AlgDataType getReturnType( AlgDataTypeFactory typeFactory ) {
         return typeFactory.createJavaType( resultType );
     }
 
@@ -151,5 +151,6 @@ public class AggregateFunctionImpl implements AggregateFunction, ImplementableAg
     public AggImplementor getImplementor( boolean windowContext ) {
         return new UserDefinedAggReflectiveImplementor( this );
     }
+
 }
 

@@ -42,48 +42,48 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 import org.polypheny.db.adapter.jdbc.JdbcRules;
-import org.polypheny.db.rel.AbstractRelNode;
-import org.polypheny.db.rel.externalize.RelJson;
-import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.externalize.AlgJson;
+import org.polypheny.db.algebra.logical.LogicalProject;
 
 
 /**
- * Unit test for {@link org.polypheny.db.rel.externalize.RelJson}.
+ * Unit test for {@link AlgJson}.
  */
 public class RelOptPlanReaderTest {
 
     @Test
     public void testTypeToClass() {
-        RelJson relJson = new RelJson( null );
+        AlgJson algJson = new AlgJson( null );
 
-        // in org.polypheny.db.rel package
-        assertThat( relJson.classToTypeName( LogicalProject.class ), is( "LogicalProject" ) );
-        assertThat( relJson.typeNameToClass( "LogicalProject" ), sameInstance( LogicalProject.class ) );
+        // in org.polypheny.db.alg package
+        assertThat( algJson.classToTypeName( LogicalProject.class ), is( "LogicalProject" ) );
+        assertThat( algJson.typeNameToClass( "LogicalProject" ), sameInstance( LogicalProject.class ) );
 
         // in org.polypheny.db.adapter.jdbc.JdbcRules outer class
-        assertThat( relJson.classToTypeName( JdbcRules.JdbcProject.class ), is( "JdbcProject" ) );
-        assertThat( relJson.typeNameToClass( "JdbcProject" ), equalTo( JdbcRules.JdbcProject.class ) );
+        assertThat( algJson.classToTypeName( JdbcRules.JdbcProject.class ), is( "JdbcProject" ) );
+        assertThat( algJson.typeNameToClass( "JdbcProject" ), equalTo( JdbcRules.JdbcProject.class ) );
 
         try {
-            Class clazz = relJson.typeNameToClass( "NonExistentRel" );
+            Class clazz = algJson.typeNameToClass( "NonExistentRel" );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
             assertThat( e.getMessage(), is( "unknown type NonExistentRel" ) );
         }
         try {
-            Class clazz = relJson.typeNameToClass( "org.polypheny.db.rel.NonExistentRel" );
+            Class clazz = algJson.typeNameToClass( "org.polypheny.db.alg.NonExistentRel" );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
-            assertThat( e.getMessage(), is( "unknown type org.polypheny.db.rel.NonExistentRel" ) );
+            assertThat( e.getMessage(), is( "unknown type org.polypheny.db.alg.NonExistentRel" ) );
         }
 
         // In this class; no special treatment. Note: '$MyRel' not '.MyRel'.
-        assertThat( relJson.classToTypeName( MyRel.class ), is( "org.polypheny.db.plan.RelOptPlanReaderTest$MyRel" ) );
-        assertThat( relJson.typeNameToClass( MyRel.class.getName() ), equalTo( MyRel.class ) );
+        assertThat( algJson.classToTypeName( MyRel.class ), is( "org.polypheny.db.plan.RelOptPlanReaderTest$MyRel" ) );
+        assertThat( algJson.typeNameToClass( MyRel.class.getName() ), equalTo( MyRel.class ) );
 
         // Using canonical name (with '$'), not found
         try {
-            Class clazz = relJson.typeNameToClass( MyRel.class.getCanonicalName() );
+            Class clazz = algJson.typeNameToClass( MyRel.class.getCanonicalName() );
             fail( "expected exception, got " + clazz );
         } catch ( RuntimeException e ) {
             assertThat( e.getMessage(), is( "unknown type org.polypheny.db.plan.RelOptPlanReaderTest.MyRel" ) );
@@ -94,18 +94,20 @@ public class RelOptPlanReaderTest {
     /**
      * Dummy relational expression.
      */
-    public static class MyRel extends AbstractRelNode {
+    public static class MyRel extends AbstractAlgNode {
 
-        public MyRel( RelOptCluster cluster, RelTraitSet traitSet ) {
+        public MyRel( AlgOptCluster cluster, AlgTraitSet traitSet ) {
             super( cluster, traitSet );
         }
 
 
         @Override
-        public String relCompareString() {
+        public String algCompareString() {
             // Compare makes no sense here. Use hashCode() to avoid errors.
             return this.getClass().getSimpleName() + "$" + hashCode() + "&";
         }
+
     }
+
 }
 

@@ -32,21 +32,21 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.piglet.PigProcessorImpl;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
-import org.polypheny.db.processing.JsonRelProcessor;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
-import org.polypheny.db.processing.MqlProcessor;
 import org.polypheny.db.processing.MqlProcessorImpl;
-import org.polypheny.db.processing.SqlProcessor;
+import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -55,7 +55,7 @@ import org.polypheny.db.view.MaterializedViewManager;
 
 
 @Slf4j
-public class TransactionImpl implements Transaction, Comparable {
+public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private static final AtomicLong TRANSACTION_COUNTER = new AtomicLong();
 
@@ -227,21 +227,22 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public SqlProcessor getSqlProcessor() {
-        // TODO: This should be cached
-        return new SqlProcessorImpl();
-    }
-
-
-    @Override
-    public MqlProcessor getMqlProcessor() {
-        return new MqlProcessorImpl();
-    }
-
-
-    @Override
-    public JsonRelProcessor getJsonRelProcessor() {
-        return new JsonRelProcessorImpl();
+    public Processor getProcessor( QueryLanguage language ) {
+        // note dl, while caching the processors works in most cases,
+        // it can lead to validator bleed when using multiple simultaneous insert for example
+        // caching therefore is not possible atm
+        switch ( language ) {
+            case SQL:
+                return new SqlProcessorImpl();
+            case REL_ALG:
+                return new JsonRelProcessorImpl();
+            case MONGO_QL:
+                return new MqlProcessorImpl();
+            case PIG:
+                return new PigProcessorImpl();
+            default:
+                throw new RuntimeException( "This language seems to not be supported!" );
+        }
     }
 
 

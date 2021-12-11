@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import org.polypheny.db.plan.RelOptUtil.Logic;
+import org.polypheny.db.plan.AlgOptUtil.Logic;
 
 
 /**
@@ -211,5 +211,6 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
     public Logic visitPatternFieldRef( RexPatternFieldRef ref, Logic arg ) {
         return end( ref, arg );
     }
+
 }
 

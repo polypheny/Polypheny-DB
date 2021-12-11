@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,40 +36,40 @@ package org.polypheny.db.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
-import java.util.List;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgDecorrelator;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
+import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.languages.Parser;
+import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.RexConvertletTable;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.validate.Validator;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitDef;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
-import org.polypheny.db.plan.RelTraitDef;
-import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.metadata.CachingRelMetadataProvider;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.parser.SqlParseException;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlValidator;
-import org.polypheny.db.sql2rel.RelDecorrelator;
-import org.polypheny.db.sql2rel.SqlRexConvertletTable;
-import org.polypheny.db.sql2rel.SqlToRelConverter;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.tools.AlgConversionException;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.tools.RelConversionException;
 import org.polypheny.db.tools.ValidationException;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -77,20 +77,20 @@ import org.polypheny.db.util.Util;
 /**
  * Implementation of {@link Planner}.
  */
-public class PlannerImpl implements Planner, ViewExpander {
+public class PlannerImpl implements Planner {
 
-    private final SqlOperatorTable operatorTable;
+    private final OperatorTable operatorTable;
     private final ImmutableList<Program> programs;
     private final FrameworkConfig config;
 
     /**
      * Holds the trait definitions to be registered with planner. May be null.
      */
-    private final ImmutableList<RelTraitDef> traitDefs;
+    private final ImmutableList<AlgTraitDef> traitDefs;
 
-    private final SqlParserConfig parserConfig;
-    private final SqlToRelConverter.Config sqlToRelConverterConfig;
-    private final SqlRexConvertletTable convertletTable;
+    private final ParserConfig parserConfig;
+    private final NodeToAlgConverter.Config sqlToRelConverterConfig;
+    private final RexConvertletTable convertletTable;
 
     private State state;
 
@@ -100,15 +100,15 @@ public class PlannerImpl implements Planner, ViewExpander {
     // set in STATE_2_READY
     private SchemaPlus defaultSchema;
     private JavaTypeFactory typeFactory;
-    private RelOptPlanner planner;
+    private AlgOptPlanner planner;
     private RexExecutor executor;
 
     // set in STATE_4_VALIDATE
-    private PolyphenyDbSqlValidator validator;
-    private SqlNode validatedSqlNode;
+    private Validator validator;
+    private Node validatedSqlNode;
 
     // set in STATE_5_CONVERT
-    private RelRoot root;
+    private AlgRoot root;
 
 
     /**
@@ -145,7 +145,7 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public RelTraitSet getEmptyTraitSet() {
+    public AlgTraitSet getEmptyTraitSet() {
         return planner.emptyTraitSet();
     }
 
@@ -173,7 +173,7 @@ public class PlannerImpl implements Planner, ViewExpander {
         }
         ensure( State.STATE_1_RESET );
         Frameworks.withPlanner(
-                ( cluster, relOptSchema, rootSchema ) -> {
+                ( cluster, algOptSchema, rootSchema ) -> {
                     Util.discard( rootSchema ); // use our own defaultSchema
                     typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
                     planner = cluster.getPlanner();
@@ -188,34 +188,34 @@ public class PlannerImpl implements Planner, ViewExpander {
         // register the trait def specified in traitDefs.
         if ( this.traitDefs != null ) {
             planner.clearRelTraitDefs();
-            for ( RelTraitDef def : this.traitDefs ) {
-                planner.addRelTraitDef( def );
+            for ( AlgTraitDef def : this.traitDefs ) {
+                planner.addAlgTraitDef( def );
             }
         }
     }
 
 
     @Override
-    public SqlNode parse( final Reader reader ) throws SqlParseException {
+    public Node parse( final Reader reader ) throws NodeParseException {
         switch ( state ) {
             case STATE_0_CLOSED:
             case STATE_1_RESET:
                 ready();
         }
         ensure( State.STATE_2_READY );
-        SqlParser parser = SqlParser.create( reader, parserConfig );
-        SqlNode sqlNode = parser.parseStmt();
+        Parser parser = Parser.create( reader, parserConfig );
+        Node sqlNode = parser.parseStmt();
         state = State.STATE_3_PARSED;
         return sqlNode;
     }
 
 
     @Override
-    public SqlNode validate( SqlNode sqlNode ) throws ValidationException {
+    public Node validate( Node sqlNode ) throws ValidationException {
         ensure( State.STATE_3_PARSED );
-        final SqlConformance conformance = conformance();
+        final Conformance conformance = conformance();
         final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
-        this.validator = new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
+        this.validator = LanguageManager.getInstance().createPolyphenyValidator( QueryLanguage.SQL, operatorTable, catalogReader, typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
         try {
             validatedSqlNode = validator.validate( sqlNode );
@@ -227,7 +227,7 @@ public class PlannerImpl implements Planner, ViewExpander {
     }
 
 
-    private SqlConformance conformance() {
+    private Conformance conformance() {
         final Context context = config.getContext();
         if ( context != null ) {
             final PolyphenyDbConnectionConfig connectionConfig = context.unwrap( PolyphenyDbConnectionConfig.class );
@@ -240,68 +240,32 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public Pair<SqlNode, RelDataType> validateAndGetType( SqlNode sqlNode ) throws ValidationException {
-        final SqlNode validatedNode = this.validate( sqlNode );
-        final RelDataType type = this.validator.getValidatedNodeType( validatedNode );
+    public Pair<Node, AlgDataType> validateAndGetType( Node sqlNode ) throws ValidationException {
+        final Node validatedNode = this.validate( sqlNode );
+        final AlgDataType type = this.validator.getValidatedNodeType( validatedNode );
         return Pair.of( validatedNode, type );
     }
 
 
     @Override
-    public RelRoot rel( SqlNode sql ) throws RelConversionException {
+    public AlgRoot alg( Node sql ) throws AlgConversionException {
         ensure( State.STATE_4_VALIDATED );
         assert validatedSqlNode != null;
         final RexBuilder rexBuilder = createRexBuilder();
-        final RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
-        final SqlToRelConverter.Config config =
-                SqlToRelConverter.configBuilder()
-                        .withConfig( sqlToRelConverterConfig )
-                        .withTrimUnusedFields( false )
-                        .withConvertTableAccess( false )
+        final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
+        final NodeToAlgConverter.Config config =
+                new NodeToAlgConverter.ConfigBuilder()
+                        .config( sqlToRelConverterConfig )
+                        .trimUnusedFields( false )
+                        .convertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, createCatalogReader(), cluster, convertletTable, config );
+        final NodeToAlgConverter sqlToRelConverter = LanguageManager.getInstance().createToRelConverter( QueryLanguage.SQL, validator, createCatalogReader(), cluster, convertletTable, config );
         root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
-        root = root.withRel( sqlToRelConverter.flattenTypes( root.rel, true ) );
-        final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
-        root = root.withRel( RelDecorrelator.decorrelateQuery( root.rel, relBuilder ) );
+        root = root.withAlg( sqlToRelConverter.flattenTypes( root.alg, true ) );
+        final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
+        root = root.withAlg( AlgDecorrelator.decorrelateQuery( root.alg, algBuilder ) );
         state = State.STATE_5_CONVERTED;
         return root;
-    }
-
-
-    @Override
-    public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
-        if ( planner == null ) {
-            ready();
-        }
-        SqlParser parser = SqlParser.create( queryString, parserConfig );
-        SqlNode sqlNode;
-        try {
-            sqlNode = parser.parseQuery();
-        } catch ( SqlParseException e ) {
-            throw new RuntimeException( "parse failed", e );
-        }
-
-        final SqlConformance conformance = conformance();
-        final PolyphenyDbCatalogReader catalogReader = createCatalogReader().withSchemaPath( schemaPath );
-        final SqlValidator validator = new PolyphenyDbSqlValidator( operatorTable, catalogReader, typeFactory, conformance );
-        validator.setIdentifierExpansion( true );
-
-        final RexBuilder rexBuilder = createRexBuilder();
-        final RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
-        final SqlToRelConverter.Config config =
-                SqlToRelConverter
-                        .configBuilder()
-                        .withConfig( sqlToRelConverterConfig )
-                        .withTrimUnusedFields( false )
-                        .withConvertTableAccess( false )
-                        .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, catalogReader, cluster, convertletTable, config );
-
-        final RelRoot root = sqlToRelConverter.convertQuery( sqlNode, true, false );
-        final RelRoot root2 = root.withRel( sqlToRelConverter.flattenTypes( root.rel, true ) );
-        final RelBuilder relBuilder = config.getRelBuilderFactory().create( cluster, null );
-        return root2.withRel( RelDecorrelator.decorrelateQuery( root.rel, relBuilder ) );
     }
 
 
@@ -338,14 +302,14 @@ public class PlannerImpl implements Planner, ViewExpander {
 
 
     @Override
-    public RelNode transform( int ruleSetIndex, RelTraitSet requiredOutputTraits, RelNode rel ) throws RelConversionException {
+    public AlgNode transform( int ruleSetIndex, AlgTraitSet requiredOutputTraits, AlgNode alg ) throws AlgConversionException {
         ensure( State.STATE_5_CONVERTED );
-        rel.getCluster().setMetadataProvider(
-                new CachingRelMetadataProvider(
-                        rel.getCluster().getMetadataProvider(),
-                        rel.getCluster().getPlanner() ) );
+        alg.getCluster().setMetadataProvider(
+                new CachingAlgMetadataProvider(
+                        alg.getCluster().getMetadataProvider(),
+                        alg.getCluster().getPlanner() ) );
         Program program = programs.get( ruleSetIndex );
-        return program.run( planner, rel, requiredOutputTraits );
+        return program.run( planner, alg, requiredOutputTraits );
     }
 
 
@@ -385,5 +349,6 @@ public class PlannerImpl implements Planner, ViewExpander {
             throw new IllegalArgumentException( "cannot move from " + planner.state + " to " + this );
         }
     }
+
 }
 

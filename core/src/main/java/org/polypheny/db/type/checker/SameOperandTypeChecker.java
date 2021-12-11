@@ -22,15 +22,15 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlCallBinding;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Util;
 
 
@@ -60,8 +60,11 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        return checkOperandTypesImpl( callBinding, throwOnFailure, callBinding );
+    public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
+        if ( !(callBinding instanceof OperatorBinding) ) {
+            throw new RuntimeException( "OperatorBinding and CallBinding do need to inherit differently" );
+        }
+        return checkOperandTypesImpl( (OperatorBinding) callBinding, throwOnFailure, callBinding );
     }
 
 
@@ -72,13 +75,13 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
     }
 
 
-    protected boolean checkOperandTypesImpl( SqlOperatorBinding operatorBinding, boolean throwOnFailure, SqlCallBinding callBinding ) {
+    protected boolean checkOperandTypesImpl( OperatorBinding operatorBinding, boolean throwOnFailure, CallBinding callBinding ) {
         int nOperandsActual = nOperands;
         if ( nOperandsActual == -1 ) {
             nOperandsActual = operatorBinding.getOperandCount();
         }
         assert !(throwOnFailure && (callBinding == null));
-        RelDataType[] types = new RelDataType[nOperandsActual];
+        AlgDataType[] types = new AlgDataType[nOperandsActual];
         final List<Integer> operandList = getOperandList( operatorBinding.getOperandCount() );
         for ( int i : operandList ) {
             types[i] = operatorBinding.getOperandType( i );
@@ -102,10 +105,10 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     /**
-     * Similar functionality to {@link #checkOperandTypes(SqlCallBinding, boolean)}, but not part of the interface, and
+     * Similar functionality to {@link PolyOperandTypeChecker#checkOperandTypes(CallBinding, boolean)}, but not part of the interface, and
      * cannot throw an error.
      */
-    public boolean checkOperandTypes( SqlOperatorBinding operatorBinding ) {
+    public boolean checkOperandTypes( OperatorBinding operatorBinding ) {
         return checkOperandTypesImpl( operatorBinding, false, null );
     }
 
@@ -122,9 +125,9 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public String getAllowedSignatures( SqlOperator op, String opName ) {
+    public String getAllowedSignatures( Operator op, String opName ) {
         final String typeName = getTypeName();
-        return SqlUtil.getAliasedSignature(
+        return CoreUtil.getAliasedSignature(
                 op,
                 opName,
                 nOperands == -1
@@ -134,7 +137,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     /**
-     * Override to change the behavior of {@link #getAllowedSignatures(SqlOperator, String)}.
+     * Override to change the behavior of {@link PolyOperandTypeChecker#getAllowedSignatures(Operator, String)}.
      */
     protected String getTypeName() {
         return "EQUIVALENT_TYPE";
@@ -142,7 +145,7 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     @Override
-    public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode operand, int iFormalOperand, boolean throwOnFailure ) {
+    public boolean checkSingleOperandType( CallBinding callBinding, Node operand, int iFormalOperand, boolean throwOnFailure ) {
         throw new UnsupportedOperationException(); // TODO:
     }
 

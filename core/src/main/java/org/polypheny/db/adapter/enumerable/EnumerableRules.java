@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.rel.core.RelFactories;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -49,17 +49,18 @@ public class EnumerableRules {
 
     public static final boolean BRIDGE_METHODS = true;
 
-    public static final RelOptRule ENUMERABLE_JOIN_RULE = new EnumerableJoinRule();
+    public static final AlgOptRule ENUMERABLE_JOIN_RULE = new EnumerableJoinRule();
 
-    public static final RelOptRule ENUMERABLE_MERGE_JOIN_RULE = new EnumerableMergeJoinRule();
+    public static final AlgOptRule ENUMERABLE_MERGE_JOIN_RULE = new EnumerableMergeJoinRule();
 
-    public static final RelOptRule ENUMERABLE_SEMI_JOIN_RULE = new EnumerableSemiJoinRule();
+    public static final AlgOptRule ENUMERABLE_SEMI_JOIN_RULE = new EnumerableSemiJoinRule();
 
-    public static final RelOptRule ENUMERABLE_CORRELATE_RULE = new EnumerableCorrelateRule( RelFactories.LOGICAL_BUILDER );
+    public static final AlgOptRule ENUMERABLE_CORRELATE_RULE = new EnumerableCorrelateRule( AlgFactories.LOGICAL_BUILDER );
 
 
     private EnumerableRules() {
     }
+
 
     public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
 
@@ -87,9 +88,9 @@ public class EnumerableRules {
 
     public static final EnumerableMinusRule ENUMERABLE_MINUS_RULE = new EnumerableMinusRule();
 
-    public static final EnumerableTableModifyRule ENUMERABLE_TABLE_MODIFICATION_RULE = new EnumerableTableModifyRule( RelFactories.LOGICAL_BUILDER );
+    public static final EnumerableTableModifyRule ENUMERABLE_TABLE_MODIFICATION_RULE = new EnumerableTableModifyRule( AlgFactories.LOGICAL_BUILDER );
 
-    public static final EnumerableValuesRule ENUMERABLE_VALUES_RULE = new EnumerableValuesRule( RelFactories.LOGICAL_BUILDER );
+    public static final EnumerableValuesRule ENUMERABLE_VALUES_RULE = new EnumerableValuesRule( AlgFactories.LOGICAL_BUILDER );
 
     public static final EnumerableWindowRule ENUMERABLE_WINDOW_RULE = new EnumerableWindowRule();
 
@@ -97,12 +98,13 @@ public class EnumerableRules {
 
     public static final EnumerableUncollectRule ENUMERABLE_UNCOLLECT_RULE = new EnumerableUncollectRule();
 
-    public static final EnumerableFilterToCalcRule ENUMERABLE_FILTER_TO_CALC_RULE = new EnumerableFilterToCalcRule( RelFactories.LOGICAL_BUILDER );
+    public static final EnumerableFilterToCalcRule ENUMERABLE_FILTER_TO_CALC_RULE = new EnumerableFilterToCalcRule( AlgFactories.LOGICAL_BUILDER );
 
-    public static final EnumerableProjectToCalcRule ENUMERABLE_PROJECT_TO_CALC_RULE = new EnumerableProjectToCalcRule( RelFactories.LOGICAL_BUILDER );
+    public static final EnumerableProjectToCalcRule ENUMERABLE_PROJECT_TO_CALC_RULE = new EnumerableProjectToCalcRule( AlgFactories.LOGICAL_BUILDER );
 
-    public static final EnumerableTableScanRule ENUMERABLE_TABLE_SCAN_RULE = new EnumerableTableScanRule( RelFactories.LOGICAL_BUILDER );
+    public static final EnumerableTableScanRule ENUMERABLE_TABLE_SCAN_RULE = new EnumerableTableScanRule( AlgFactories.LOGICAL_BUILDER );
 
-    public static final EnumerableTableFunctionScanRule ENUMERABLE_TABLE_FUNCTION_SCAN_RULE = new EnumerableTableFunctionScanRule( RelFactories.LOGICAL_BUILDER );
+    public static final EnumerableTableFunctionScanRule ENUMERABLE_TABLE_FUNCTION_SCAN_RULE = new EnumerableTableFunctionScanRule( AlgFactories.LOGICAL_BUILDER );
+
 }
 

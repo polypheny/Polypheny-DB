@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 package org.polypheny.db.type;
 
 
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFamily;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 
 
 /**
@@ -43,14 +43,14 @@ import org.polypheny.db.rel.type.RelDataTypeFamily;
  */
 public class MapPolyType extends AbstractPolyType {
 
-    private final RelDataType keyType;
-    private final RelDataType valueType;
+    private final AlgDataType keyType;
+    private final AlgDataType valueType;
 
 
     /**
      * Creates a MapSqlType. This constructor should only be called from a factory method.
      */
-    public MapPolyType( RelDataType keyType, RelDataType valueType, boolean isNullable ) {
+    public MapPolyType( AlgDataType keyType, AlgDataType valueType, boolean isNullable ) {
         super( PolyType.MAP, isNullable, null );
         assert keyType != null;
         assert valueType != null;
@@ -61,13 +61,13 @@ public class MapPolyType extends AbstractPolyType {
 
 
     @Override
-    public RelDataType getValueType() {
+    public AlgDataType getValueType() {
         return valueType;
     }
 
 
     @Override
-    public RelDataType getKeyType() {
+    public AlgDataType getKeyType() {
         return keyType;
     }
 
@@ -85,8 +85,9 @@ public class MapPolyType extends AbstractPolyType {
 
     // implement RelDataType
     @Override
-    public RelDataTypeFamily getFamily() {
+    public AlgDataTypeFamily getFamily() {
         return this;
     }
+
 }
 

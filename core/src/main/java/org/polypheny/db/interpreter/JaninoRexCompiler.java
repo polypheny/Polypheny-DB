@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,20 +58,20 @@ import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetter;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
+import org.polypheny.db.algebra.constant.ConformanceEnum;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
-import org.polypheny.db.sql.validate.SqlConformance;
-import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -90,7 +90,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
 
 
     @Override
-    public Scalar compile( List<RexNode> nodes, RelDataType inputRowType, DataContext dataContext ) {
+    public Scalar compile( List<RexNode> nodes, AlgDataType inputRowType, DataContext dataContext ) {
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
         for ( RexNode node : nodes ) {
             programBuilder.addProject( node, null );
@@ -113,7 +113,7 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
             throw new UnsupportedOperationException();
         };
         final Expression root = Expressions.field( context_, BuiltInMethod.CONTEXT_ROOT.field );
-        final SqlConformance conformance = SqlConformanceEnum.DEFAULT; // TODO: get this from implementor
+        final Conformance conformance = ConformanceEnum.DEFAULT; // TODO: get this from implementor
         final List<Expression> list = RexToLixTranslator.translateProjects( program, javaTypeFactory, conformance, builder, null, root, inputGetter, correlates );
         for ( int i = 0; i < list.size(); i++ ) {
             builder.add(
@@ -185,5 +185,6 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
         }
         return (Scalar) cbe.createInstance( new StringReader( s ) );
     }
+
 }
 
