@@ -18,7 +18,6 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import lombok.Getter;
-import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -36,17 +35,10 @@ public class StatisticQueryColumn extends QueryColumn {
     /**
      * Builds a StatColumn with the individual statistics of a column
      *
-     * @param type db type of the column
      * @param data map consisting of different values to a given statistic
      */
-    public StatisticQueryColumn( String schemaTableName, final PolyType type, final String[] data ) {
-        super( schemaTableName, type );
-        this.data = data;
-    }
-
-
-    public StatisticQueryColumn( String schema, String table, String name, final PolyType type, final String[] data ) {
-        super( schema, table, name, type );
+    public StatisticQueryColumn( QueryColumn queryColumn, final String[] data ) {
+        super( queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), queryColumn.getType() );
         this.data = data;
     }
 

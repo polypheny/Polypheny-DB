@@ -18,11 +18,12 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
+import java.util.List;
+import java.util.TreeSet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -31,9 +32,6 @@ import org.polypheny.db.type.PolyType;
  */
 @Slf4j
 public class NumericalStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
-
-    @Expose
-    private final String columnType = "numeric";
 
     @Expose
     @Getter
@@ -45,14 +43,23 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     @Setter
     private T max;
 
+    @Getter
+    public TreeSet<T> minCache = new TreeSet<>();
+    @Getter
+    public TreeSet<T> maxCache = new TreeSet<>();
 
-    public NumericalStatisticColumn( String schema, String table, String column, PolyType type ) {
-        super( schema, table, column, type );
+
+    public NumericalStatisticColumn( QueryColumn column ) {
+        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
     }
 
 
-    public NumericalStatisticColumn( String[] splitColumn, PolyType type ) {
-        super( splitColumn, type );
+    @Override
+    public void insert( List<T> values ) {
+        for ( T val : values ) {
+            insert( val );
+        }
+
     }
 
 
@@ -61,6 +68,8 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
+                minCache.add( val );
+                maxCache.add( val );
             }
         } else {
             isFull = true;
@@ -73,6 +82,21 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
         } else if ( val.compareTo( max ) > 0 ) {
             this.max = val;
         }
+
+        if ( minCache.last().compareTo( val ) > 0 ) {
+            if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
+                minCache.remove( minCache.last() );
+            }
+            minCache.add( val );
+        }
+
+        if ( maxCache.first().compareTo( val ) < 0 ) {
+            if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
+                maxCache.remove( maxCache.first() );
+            }
+            maxCache.add( val );
+        }
+
     }
 
 

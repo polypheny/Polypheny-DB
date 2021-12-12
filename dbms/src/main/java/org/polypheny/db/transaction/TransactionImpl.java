@@ -161,7 +161,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             }
 
             if ( changedTables.size() > 0 ) {
-                StatisticsManager.getInstance().apply( changedTables );
+                //StatisticsManager.getInstance().apply( changedTables );
             }
 
             IndexManager.getInstance().commit( this.xid );

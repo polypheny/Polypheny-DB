@@ -17,16 +17,40 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -36,9 +60,21 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.prepare.Prepare.CatalogReader;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateTimeStringUtils;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -49,12 +85,12 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
  * DELETEs and UPDATEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsManager<T extends Comparable<T>> {
+public class StatisticsManager<T extends Comparable<T>> implements PropertyChangeListener {
 
     private static volatile StatisticsManager<?> instance = null;
 
     @Getter
-    public volatile ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn<T>>>> statisticSchemaMap;
+    public volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
 
     private StatisticQueryProcessor sqlQueryInterface;
 
@@ -66,12 +102,87 @@ public class StatisticsManager<T extends Comparable<T>> {
     @Getter
     private String revalId = null;
 
+    //new Additions for additional Information
+    Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
+    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+    @Getter
+    public ConcurrentHashMap<Long, Integer> rowCountPerTable = new ConcurrentHashMap<>();
+
+    private List<Long> deletedTable = new ArrayList<>();
+
 
     private StatisticsManager() {
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
         registerTaskTracking();
         registerIsFullTracking();
+
+        this.listeners.addPropertyChangeListener( this );
+    }
+
+
+    //use relNode to update
+    public void tablesToUpdate( Long tableId ) {
+        if ( !tablesToUpdate.contains( tableId ) ) {
+            tablesToUpdate.add( tableId );
+            listeners.firePropertyChange( "tablesToUpdate", null, tableId );
+        }
+    }
+
+
+    //use cache if possible
+    public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type ) {
+        Catalog catalog = Catalog.getInstance();
+        CatalogTable catalogTable = catalog.getTable( tableId );
+        List<Long> columns = catalogTable.columnIds;
+        if ( type.equals( "INSERT" ) ) {
+            if ( this.statisticSchemaMap.get( catalogTable.schemaId ) != null ) {
+                if ( this.statisticSchemaMap.get( catalogTable.schemaId ).get( tableId ) != null ) {
+                    for ( int i = 0; i < columns.size(); i++ ) {
+                        PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
+                        QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
+                        if ( this.statisticSchemaMap.get( catalogTable.schemaId ).get( tableId ).get( columns.get( i ) ) != null ) {
+                            StatisticColumn<T> statisticColumn = this.statisticSchemaMap.get( catalogTable.schemaId ).get( tableId ).get( columns.get( i ) );
+
+                            if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                                ((NumericalStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
+                                put( queryColumn, statisticColumn );
+                            } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                                ((AlphabeticStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
+                                put( queryColumn, statisticColumn );
+                            } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                                ((TemporalStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
+                                put( queryColumn, statisticColumn );
+                            }
+                        }
+                    }
+
+                } else {
+                    for ( int i = 0; i < columns.size(); i++ ) {
+                        PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
+                        QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
+
+                        if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                            NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
+                            numericalStatisticColumn.insert( changedValues.get( (long) i ) );
+                            put( queryColumn, numericalStatisticColumn );
+                        } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                            AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
+                            alphabeticStatisticColumn.insert( changedValues.get( (long) i ) );
+                            put( queryColumn, alphabeticStatisticColumn );
+                        } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                            TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
+                            temporalStatisticColumn.insert( changedValues.get( (long) i ) );
+                            put( queryColumn, temporalStatisticColumn );
+                        }
+
+
+                    }
+                }
+            }
+
+        }
     }
 
 
@@ -119,42 +230,6 @@ public class StatisticsManager<T extends Comparable<T>> {
 
 
     /**
-     * Gets the specific statisticColumn if it exists in the tracked columns
-     * else null
-     *
-     * @return the statisticColumn which matches the criteria
-     */
-    private StatisticColumn<T> getColumn( String schema, String table, String column ) {
-        if ( this.statisticSchemaMap.containsKey( schema ) ) {
-            if ( this.statisticSchemaMap.get( schema ).containsKey( table ) ) {
-                if ( this.statisticSchemaMap.get( schema ).get( table ).containsKey( column ) ) {
-                    return this.statisticSchemaMap.get( schema ).get( table ).get( column );
-                }
-            }
-        }
-        return null;
-    }
-
-
-    /**
-     * Adds a new column to the tracked columns and sorts it correctly
-     *
-     * @param qualifiedColumn column name
-     * @param type the type of the new column
-     */
-    private void addColumn( String qualifiedColumn, PolyType type ) {
-        String[] splits = QueryColumn.getSplitColumn( qualifiedColumn );
-        if ( type.getFamily() == PolyTypeFamily.NUMERIC ) {
-            put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
-        } else if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
-            put( splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>( splits, type ) );
-        } else if ( PolyType.DATETIME_TYPES.contains( type ) ) {
-            put( splits[0], splits[1], splits[2], new TemporalStatisticColumn<>( splits, type ) );
-        }
-    }
-
-
-    /**
      * Reset all statistics and reevaluate them
      */
     private void reevaluateAllStatistics() {
@@ -162,12 +237,12 @@ public class StatisticsManager<T extends Comparable<T>> {
             return;
         }
         log.debug( "Resetting StatisticManager." );
-        ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
 
         for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
             StatisticColumn<T> col = reevaluateColumn( column );
             if ( col != null ) {
-                put( statisticSchemaMapCopy, column.getSchema(), column.getTable(), column.getName(), col );
+                put( statisticSchemaMapCopy, column, col );
             }
 
         }
@@ -178,7 +253,7 @@ public class StatisticsManager<T extends Comparable<T>> {
 
     private void resetAllIsFull() {
         this.statisticSchemaMap.values().forEach( s -> s.values().forEach( t -> t.values().forEach( c -> {
-            assignUnique( c, this.getUniqueValues( c.getQualifiedTableName(), c.getQualifiedColumnName() ) );
+            assignUnique( c, this.getUniqueValues( new QueryColumn( c.getSchemaId(), c.getTableId(), c.getColumnId(), c.getType() ) ) );
         } ) ) );
     }
 
@@ -186,34 +261,32 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * Gets a columns of a table and reevaluates them
      *
-     * @param qualifiedTable table name
+     * @param tableId id of table
      */
-    private void reevaluateTable( String qualifiedTable ) {
+    public void reevaluateTable( Long tableId ) {
         if ( this.sqlQueryInterface == null ) {
             return;
         }
+        if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
+            deleteTable( Catalog.getInstance().getTable( tableId ).schemaId, tableId );
 
-        String[] splits = qualifiedTable.replace( "\"", "" ).split( "\\." );
-        if ( splits.length != 2 ) {
-            return;
-        }
-        deleteTable( splits[0], splits[1] );
-        List<QueryColumn> res = this.sqlQueryInterface.getAllColumns( splits[0], splits[1] );
+            List<QueryColumn> res = this.sqlQueryInterface.getAllColumns( tableId );
 
-        for ( QueryColumn column : res ) {
-            StatisticColumn<T> col = reevaluateColumn( column );
-            if ( col != null ) {
-                put( column.getSchema(), column.getTable(), column.getName(), col );
+            for ( QueryColumn column : res ) {
+                StatisticColumn<T> col = reevaluateColumn( column );
+                if ( col != null ) {
+                    put( column, col );
+                }
+
             }
-
         }
 
     }
 
 
-    private void deleteTable( String schema, String table ) {
-        if ( this.statisticSchemaMap.get( schema ) != null ) {
-            this.statisticSchemaMap.get( schema ).remove( table );
+    private void deleteTable( Long schemaId, Long tableId ) {
+        if ( this.statisticSchemaMap.get( schemaId ) != null ) {
+            this.statisticSchemaMap.get( schemaId ).remove( tableId );
         }
     }
 
@@ -221,7 +294,7 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * replace the the tracked statistics with other statistics
      */
-    private synchronized void replaceStatistics( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn<T>>>> map ) {
+    private synchronized void replaceStatistics( ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map ) {
         this.statisticSchemaMap = new ConcurrentHashMap<>( map );
     }
 
@@ -230,9 +303,11 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn<T> reevaluateColumn( QueryColumn column ) {
+        /*
         if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
+         */
         if ( column.getType().getFamily() == PolyTypeFamily.NUMERIC ) {
             return this.reevaluateNumericalColumn( column );
         } else if ( column.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
@@ -251,7 +326,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
         Integer count = this.getCount( column );
-        NumericalStatisticColumn<T> statisticColumn = new NumericalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
+        NumericalStatisticColumn<T> statisticColumn = new NumericalStatisticColumn<>( column );
         if ( min != null ) {
             //noinspection unchecked
             statisticColumn.setMin( (T) min.getData()[0] );
@@ -275,7 +350,7 @@ public class StatisticsManager<T extends Comparable<T>> {
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
         Integer count = this.getCount( column );
 
-        TemporalStatisticColumn<T> statisticColumn = new TemporalStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
+        TemporalStatisticColumn<T> statisticColumn = new TemporalStatisticColumn<>( column );
         if ( min != null ) {
             if ( NumberUtils.isParsable( min.getData()[0] ) ) {
                 //noinspection unchecked
@@ -335,12 +410,22 @@ public class StatisticsManager<T extends Comparable<T>> {
         StatisticQueryColumn unique = this.getUniqueValues( column );
         Integer count = this.getCount( column );
 
-        AlphabeticStatisticColumn<T> statisticColumn = new AlphabeticStatisticColumn<>( QueryColumn.getSplitColumn( column.getQualifiedColumnName() ), column.getType() );
+        AlphabeticStatisticColumn<T> statisticColumn = new AlphabeticStatisticColumn<>( column );
         assignUnique( statisticColumn, unique );
         statisticColumn.setCount( count );
 
         return statisticColumn;
 
+    }
+
+
+    private void put( QueryColumn queryColumn, StatisticColumn<T> statisticColumn ) {
+        put( this.statisticSchemaMap, queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), statisticColumn );
+    }
+
+
+    private void put( ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy, QueryColumn queryColumn, StatisticColumn<T> statisticColumn ) {
+        put( statisticSchemaMapCopy, queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), statisticColumn );
     }
 
 
@@ -350,33 +435,16 @@ public class StatisticsManager<T extends Comparable<T>> {
      * @param map which schemaMap should be used
      * @param statisticColumn the Column with its statistics
      */
-    private void put( ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn<T>>>> map, String schema, String table, String column, StatisticColumn<T> statisticColumn ) {
-        if ( !map.containsKey( schema ) ) {
-            map.put( schema, new HashMap<>() );
+    private void put( ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map, Long schemaId, Long tableId, Long columnId, StatisticColumn<T> statisticColumn ) {
+        if ( !map.containsKey( schemaId ) ) {
+            map.put( schemaId, new HashMap<>() );
         }
 
-        if ( !map.get( schema ).containsKey( table ) ) {
-            map.get( schema ).put( table, new HashMap<>() );
+        if ( !map.get( schemaId ).containsKey( tableId ) ) {
+            map.get( schemaId ).put( tableId, new HashMap<>() );
         }
-        map.get( schema ).get( table ).put( column, statisticColumn );
+        map.get( schemaId ).get( tableId ).put( columnId, statisticColumn );
 
-    }
-
-
-    private void put( String schema, String table, String column, StatisticColumn<T> statisticColumn ) {
-        put( this.statisticSchemaMap, schema, table, column, statisticColumn );
-
-    }
-
-
-    /**
-     * Method to get a generic Aggregate Stat
-     * null if no result is available
-     *
-     * @return a StatQueryColumn which contains the requested value
-     */
-    private StatisticQueryColumn getAggregateColumn( QueryColumn column, String aggregate ) {
-        return getAggregateColumn( column.getSchema(), column.getTable(), column.getName(), aggregate );
     }
 
 
@@ -385,66 +453,190 @@ public class StatisticsManager<T extends Comparable<T>> {
      *
      * @param aggregate the aggregate function to us
      */
-    private StatisticQueryColumn getAggregateColumn( String schema, String table, String column, String aggregate ) {
-        String query = "SELECT " + aggregate + " (" + StatisticQueryProcessor.buildQualifiedName( schema, table, column ) + ") FROM " + StatisticQueryProcessor.buildQualifiedName( schema, table ) + getStatQueryLimit();
-        return this.sqlQueryInterface.selectOneStat( query );
+    private StatisticQueryColumn getAggregateColumn( QueryColumn queryColumn, String aggregate ) {
+
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        AlgBuilder relBuilder = AlgBuilder.create( statement );
+        final RexBuilder rexBuilder = relBuilder.getRexBuilder();
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+
+        LogicalTableScan tableScan = getLogicalTableScan( queryColumn.getSchema(), queryColumn.getTable(), reader, cluster );
+
+        for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
+            if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryColumn.getColumn() ) ) {
+                LogicalProject logicalProject = LogicalProject.create(
+                        tableScan,
+                        Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
+                        Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
+
+                AggFunction operator = null;
+                if ( aggregate.equals( "MAX" ) ) {
+                    operator = OperatorRegistry.getAgg( OperatorName.MAX );
+                } else if ( aggregate.equals( "MIN" ) ) {
+                    operator = OperatorRegistry.getAgg( OperatorName.MIN );
+                } else {
+                    throw new RuntimeException( "Unknown aggregate is used in Statistic Manager." );
+                }
+
+                AlgDataType relDataType = logicalProject.getRowType().getFieldList().get( 0 ).getType();
+                AlgDataType dataType;
+                if ( relDataType.getPolyType() == PolyType.DECIMAL ) {
+                    dataType = cluster.getTypeFactory().createTypeWithNullability(
+                            cluster.getTypeFactory().createPolyType(
+                                    relDataType.getPolyType(), relDataType.getPrecision(), relDataType.getScale() ),
+                            true );
+                } else {
+                    dataType = cluster.getTypeFactory().createTypeWithNullability(
+                            cluster.getTypeFactory().createPolyType(
+                                    relDataType.getPolyType() ), true );
+                }
+
+                AggregateCall aggregateCall = AggregateCall.create(
+                        operator,
+                        false,
+                        false,
+                        Collections.singletonList( 0 ),
+                        -1,
+                        AlgCollations.EMPTY,
+                        dataType,
+                        "min-max" );
+
+                AlgNode relNode = LogicalAggregate.create(
+                        logicalProject,
+                        ImmutableBitSet.of(),
+                        Collections.singletonList( ImmutableBitSet.of() ),
+                        Collections.singletonList( aggregateCall ) );
+
+                return this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+
+            }
+        }
+        return null;
     }
 
 
-    /**
-     * Gets the configured amount + 1 of unique values per column
-     *
-     * @return the unique values
-     */
-    private StatisticQueryColumn getUniqueValues( QueryColumn column ) {
-        String qualifiedTableName = StatisticQueryProcessor.buildQualifiedName( column.getSchema(), column.getTable() );
-        String qualifiedColumnName = StatisticQueryProcessor.buildQualifiedName( column.getSchema(), column.getTable(), column.getName() );
-        return getUniqueValues( qualifiedTableName, qualifiedColumnName );
+    private StatisticQueryColumn getUniqueValues( QueryColumn queryColumn ) {
+
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        AlgBuilder relBuilder = AlgBuilder.create( statement );
+        final RexBuilder rexBuilder = relBuilder.getRexBuilder();
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+
+        LogicalTableScan tableScan = getLogicalTableScan( queryColumn.getSchema(), queryColumn.getTable(), reader, cluster );
+
+        AlgNode relNode;
+        for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
+            if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryColumn.getColumn() ) ) {
+                LogicalProject logicalProject = LogicalProject.create(
+                        tableScan,
+                        Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
+                        Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
+
+                LogicalAggregate logicalAggregate = LogicalAggregate.create(
+                        logicalProject, ImmutableBitSet.of( 0 ),
+                        Collections.singletonList( ImmutableBitSet.of( 0 ) ),
+                        Collections.emptyList() );
+
+                Pair<BigDecimal, PolyType> valuePair = new Pair<>( new BigDecimal( (int) 6 ), PolyType.DECIMAL );
+
+                relNode = LogicalSort.create(
+                        logicalAggregate,
+                        AlgCollations.of(),
+                        null,
+                        new RexLiteral( valuePair.left, rexBuilder.makeInputRef( tableScan, i ).getType(), valuePair.right ) );
+
+                return this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+            }
+        }
+        return null;
     }
 
 
-    private StatisticQueryColumn getUniqueValues( String qualifiedTableName, String qualifiedColumnName ) {
-        String query = "SELECT " + qualifiedColumnName + " FROM " + qualifiedTableName + " GROUP BY " + qualifiedColumnName + getStatQueryLimit( 1 );
-        return this.sqlQueryInterface.selectOneStat( query );
+    private Transaction getTransaction() {
+        Transaction transaction = null;
+        try {
+            transaction = sqlQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+            e.printStackTrace();
+        }
+        return transaction;
+    }
+
+
+    private LogicalTableScan getLogicalTableScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
+
+        AlgOptTable relOptTable = reader.getTable( Arrays.asList( schema, table ) );
+        return LogicalTableScan.create( cluster, relOptTable );
     }
 
 
     /**
      * Gets the amount of entries for a column
      */
-    private Integer getCount( QueryColumn column ) {
-        String tableName = StatisticQueryProcessor.buildQualifiedName( column.getSchema(), column.getTable() );
-        String columnName = StatisticQueryProcessor.buildQualifiedName( column.getSchema(), column.getTable(), column.getName() );
-        String query = "SELECT COUNT(" + columnName + ") FROM " + tableName;
-        StatisticQueryColumn res = this.sqlQueryInterface.selectOneStat( query );
+    private Integer getCount( QueryColumn queryColumn ) {
 
-        if ( res != null && res.getData() != null && res.getData().length != 0 ) {
-            try {
-                return Integer.parseInt( res.getData()[0] );
-            } catch ( NumberFormatException e ) {
-                log.error( "Count could not be parsed for column {}.", column.getQualifiedColumnName(), e );
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        AlgBuilder relBuilder = AlgBuilder.create( statement );
+        final RexBuilder rexBuilder = relBuilder.getRexBuilder();
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+
+        LogicalTableScan tableScan = getLogicalTableScan( queryColumn.getSchema(), queryColumn.getTable(), reader, cluster );
+
+        for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
+            if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryColumn.getColumn() ) ) {
+                LogicalProject logicalProject = LogicalProject.create(
+                        tableScan,
+                        Collections.singletonList( rexBuilder.makeInputRef( tableScan, i ) ),
+                        Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
+
+                AggregateCall aggregateCall = AggregateCall.create(
+                        OperatorRegistry.getAgg( OperatorName.COUNT ),
+                        false,
+                        false,
+                        Collections.singletonList( 0 ),
+                        -1,
+                        AlgCollations.EMPTY,
+                        cluster.getTypeFactory().createTypeWithNullability(
+                                cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
+                                false ),
+                        "min-max" );
+
+                AlgNode relNode = LogicalAggregate.create(
+                        logicalProject,
+                        ImmutableBitSet.of(),
+                        Collections.singletonList( ImmutableBitSet.of() ),
+                        Collections.singletonList( aggregateCall ) );
+
+                StatisticQueryColumn res = this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+
+                if ( res != null && res.getData() != null && res.getData().length != 0 ) {
+                    try {
+                        return Integer.parseInt( res.getData()[0] );
+                    } catch ( NumberFormatException e ) {
+                        log.error( "Count could not be parsed for column {}.", queryColumn.getColumn(), e );
+                    }
+                }
+
             }
         }
         return 0;
     }
 
 
-    private String getStatQueryLimit() {
-        return getStatQueryLimit( 0 );
-    }
-
-
-    private String getStatQueryLimit( int add ) {
-        return " LIMIT " + (RuntimeConfig.STATISTIC_BUFFER.getInteger() + add);
-    }
-
-
     public void setSqlQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
         this.sqlQueryInterface = statisticQueryProcessor;
 
+        /*
         if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
             this.asyncReevaluateAllStatistics();
         }
+         */
     }
 
 
@@ -482,13 +674,25 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         InformationTable temporalInformation = new InformationTable( temporalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
 
-        InformationTable numericalInformation = new InformationTable( numericalGroup, Arrays.asList( "Column Name", "Min", "Max", "Count" ) );
+        InformationTable numericalInformation = new InformationTable( numericalGroup, Arrays.asList( "Column Name", "Min", "Max" ) );
 
         InformationTable alphabeticalInformation = new InformationTable( alphabeticalGroup, Arrays.asList( "Column Name", "Unique Values" ) );
 
         im.registerInformation( temporalInformation );
         im.registerInformation( numericalInformation );
         im.registerInformation( alphabeticalInformation );
+
+        InformationGroup tableGroup = new InformationGroup( page, "Table Statistic" );
+        im.addGroup( tableGroup );
+
+        InformationTable tableInformation = new InformationTable( tableGroup, Arrays.asList( "Table Name", "Row Count" ) );
+        im.registerInformation( tableInformation );
+
+        InformationGroup cacheGroup = new InformationGroup( page, "Cache Information" );
+        im.addGroup( cacheGroup );
+
+        InformationTable cacheInformation = new InformationTable( cacheGroup, Arrays.asList( "Column Name", "Cache Values Min", "Cache Values Max" ) );
+        im.registerInformation( cacheInformation );
 
         InformationGroup actionGroup = new InformationGroup( page, "Action" );
         im.addGroup( actionGroup );
@@ -504,23 +708,26 @@ public class StatisticsManager<T extends Comparable<T>> {
             numericalInformation.reset();
             alphabeticalInformation.reset();
             temporalInformation.reset();
+            tableInformation.reset();
+            cacheInformation.reset();
             statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                 if ( v instanceof NumericalStatisticColumn ) {
 
                     if ( ((NumericalStatisticColumn<T>) v).getMin() != null && ((NumericalStatisticColumn<T>) v).getMax() != null ) {
-                        numericalInformation.addRow(
-                                v.getQualifiedColumnName(),
-                                ((NumericalStatisticColumn<T>) v).getMin().toString(),
-                                ((NumericalStatisticColumn<T>) v).getMax().toString(),
-                                v.getCount() );
+                        numericalInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn<T>) v).getMin().toString(), ((NumericalStatisticColumn<T>) v).getMax().toString() );
+                        if ( !((NumericalStatisticColumn<T>) v).getMinCache().isEmpty() || !((NumericalStatisticColumn<T>) v).getMaxCache().isEmpty() ) {
+                            cacheInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn<T>) v).getMinCache().toString(), ((NumericalStatisticColumn<T>) v).getMaxCache().toString() );
+                        }
                     } else {
                         numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                     }
-
                 }
                 if ( v instanceof TemporalStatisticColumn ) {
                     if ( ((TemporalStatisticColumn<T>) v).getMin() != null && ((TemporalStatisticColumn<T>) v).getMax() != null ) {
                         temporalInformation.addRow( v.getQualifiedColumnName(), ((TemporalStatisticColumn<T>) v).getMin().toString(), ((TemporalStatisticColumn<T>) v).getMax().toString() );
+                        if ( !((TemporalStatisticColumn<T>) v).getMinCache().isEmpty() || !((TemporalStatisticColumn<T>) v).getMaxCache().isEmpty() ) {
+                            cacheInformation.addRow( v.getQualifiedColumnName(), ((TemporalStatisticColumn<T>) v).getMinCache().toString(), ((TemporalStatisticColumn<T>) v).getMaxCache().toString() );
+                        }
                     } else {
                         temporalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                     }
@@ -535,6 +742,10 @@ public class StatisticsManager<T extends Comparable<T>> {
                 }
 
             } ) ) );
+            rowCountPerTable.forEach( ( k, v ) -> {
+                tableInformation.addRow( Catalog.getInstance().getTable( k ).name, v );
+            } );
+
         } );
 
     }
@@ -548,15 +759,86 @@ public class StatisticsManager<T extends Comparable<T>> {
     /**
      * Reevaluates all tables which received changes impacting their statistic data
      *
-     * @param changedTables all tables which got changed in a transaction
+     * all tables which got changed in a transaction
      */
+     /*
     public void apply( List<String> changedTables ) {
         threadPool.execute( () -> changedTables.forEach( this::reevaluateTable ) );
     }
-
-
     public void applyTable( String changedQualifiedTable ) {
         this.reevaluateTable( changedQualifiedTable );
+    }
+      */
+    @Override
+    public void propertyChange( PropertyChangeEvent evt ) {
+        threadPool.execute( this::workQueue );
+    }
+
+
+    public void deleteTableToUpdate( Long tableId ) {
+        deletedTable.add( tableId );
+        this.tablesToUpdate.remove( tableId );
+        rowCountPerTable.remove( tableId );
+    }
+
+
+    private void workQueue() {
+        while ( !this.tablesToUpdate.isEmpty() ) {
+            Long tableId = this.tablesToUpdate.poll();
+            if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
+                reevaluateTable( tableId );
+            }
+            rowCountPerTable.remove( tableId );
+        }
+    }
+
+/*
+    public void rowCounts( HashMap<String, Integer> rowCountTable ) {
+        rowCountTable.forEach( ( k, v ) -> {
+            if ( !rowCountPerTable.containsKey( k ) ) {
+                rowCountPerTable.put( k.replaceAll( "\"", "" ), v );
+            }
+        } );
+    }
+ */
+
+
+    public void updateRowCountPerTable( Long tableId, int number, boolean isAdding ) {
+        if ( isAdding ) {
+            if ( rowCountPerTable.containsKey( tableId ) ) {
+                int totalRows = rowCountPerTable.remove( tableId ) + number;
+                rowCountPerTable.put( tableId, totalRows );
+                //StatisticsHelper.getInstance().tableRowCount.put( tableId, totalRows );
+            } else {
+                rowCountPerTable.put( tableId, number );
+                //StatisticsHelper.getInstance().tableRowCount.put( tableId, number );
+            }
+        } else {
+            if ( rowCountPerTable.containsKey( tableId ) ) {
+                int totalRows = rowCountPerTable.remove( tableId ) - number;
+                rowCountPerTable.put( tableId, totalRows );
+                //StatisticsHelper.getInstance().tableRowCount.put( tableId, number );
+            } else {
+                rowCountPerTable.put( tableId, 0 );
+                //StatisticsHelper.getInstance().tableRowCount.put( tableId, 0 );
+            }
+        }
+
+    }
+
+
+    public void setIndexSize( Long tableId, int indexSize ) {
+        if ( rowCountPerTable.containsKey( tableId ) ) {
+            int numberOfRows = rowCountPerTable.remove( tableId );
+            if ( numberOfRows == indexSize ) {
+                //empty on purpos
+            } else {
+                //avg of the two rowcounts
+                rowCountPerTable.put( tableId, ((numberOfRows + indexSize) / 2) );
+            }
+        } else {
+            rowCountPerTable.put( tableId, indexSize );
+        }
     }
 
 

@@ -18,10 +18,8 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import lombok.Getter;
-import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -49,7 +47,7 @@ public class StatisticResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatisticResult( List<String> names, List<PolyType> type, String[][] data ) {
+    public StatisticResult( QueryColumn queryColumn, String[][] data ) {
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatisticQueryColumn[0];
         } else {
@@ -58,7 +56,7 @@ public class StatisticResult {
             String[][] rotated = rotate2dArray( data );
 
             for ( int i = 0; i < rotated.length; i++ ) {
-                this.columns[i] = new StatisticQueryColumn( names.get( i ), type.get( i ), rotated[i] );
+                this.columns[i] = new StatisticQueryColumn( queryColumn, rotated[i] );
             }
         }
 
