@@ -38,7 +38,6 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -85,9 +84,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Getter
     private final boolean analyze;
-
-
-    private StatementEvent statementEvent;
 
     private final List<Statement> statements = new ArrayList<>();
 
@@ -288,18 +284,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
         Transaction that = (Transaction) o;
         return xid.equals( that.getXid() );
-    }
-
-
-    @Override
-    public StatementEvent getMonitoringEvent() {
-        return this.statementEvent;
-    }
-
-
-    @Override
-    public void setMonitoringEvent( StatementEvent event ) {
-        this.statementEvent = event;
     }
 
 

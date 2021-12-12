@@ -38,7 +38,7 @@ class MonitoringQueueImplIntegrationTest {
     public void queuedEventsAreProcessed() {
         //  -- Arrange --
         // Set background task timer
-        RuntimeConfig.QUEUE_PROCESSING_INTERVAL.setEnum( TaskSchedulingType.EVERY_SECOND_FIXED );
+        RuntimeConfig.QUEUE_PROCESSING_INTERVAL.setEnum( TaskSchedulingType.EVERY_SECOND );
 
         // Initialize mock repository
         TestMapDbRepository repo = new TestMapDbRepository();
