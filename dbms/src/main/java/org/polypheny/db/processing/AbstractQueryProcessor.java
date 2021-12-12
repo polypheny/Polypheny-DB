@@ -1374,7 +1374,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private void monitorResult( ProposedRoutingPlan selectedPlan ) {
         if ( statement.getMonitoringEvent() != null ) {
-            StatementEvent eventData = statement.getTransaction().getMonitoringEvent();
+            StatementEvent eventData = statement.getMonitoringEvent();
             eventData.setAlgCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
             if ( selectedPlan.getPhysicalQueryClass() != null ) {
                 eventData.setPhysicalQueryClass( selectedPlan.getPhysicalQueryClass() );
