@@ -50,7 +50,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.statistic.StatisticsManager;
+import org.polypheny.db.monitoring.statistics.StatisticsManager;
 import org.polypheny.db.view.MaterializedViewManager;
 
 

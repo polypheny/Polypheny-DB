@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.statistic;
+package org.polypheny.db.monitoring.statistics;
 
 
 import java.util.Arrays;
