@@ -16,25 +16,16 @@
 
 package org.polypheny.db.monitoring.core;
 
-import lombok.extern.slf4j.Slf4j;
 
+public class MonitoringQueueExecutorService {
 
-/**
- * Provider for the MonitoringService singleton instance.
- */
-@Slf4j
-public class MonitoringServiceProvider {
+    private final int CORE_POOL_SIZE = 1;
+    private final int MAXIMUM_POOL_SIZE = 8;
+    private final int KEEP_ALIVE_TIME_SECONDS = 10;
+    //public BlockingQueue<Runnable> workQueue = new ConcurrentLinkedQueue<>();
 
-    private static MonitoringService INSTANCE = null;
-    public static boolean resetRepository = false;
-
-    public static MonitoringService getInstance() {
-        MonitoringWorker test = new MonitoringWorker();
-        //test.processStuff();
-        if ( INSTANCE == null ) {
-            INSTANCE = MonitoringServiceFactory.createMonitoringService( resetRepository );
-        }
-        return INSTANCE;
-    }
+    /*public MonitoringQueueExecutorService(){
+        ThreadPoolExecutor tp = new ThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME_SECONDS, TimeUnit.SECONDS,  );
+    }*/
 
 }

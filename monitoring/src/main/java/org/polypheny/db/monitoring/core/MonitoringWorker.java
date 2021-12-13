@@ -16,25 +16,12 @@
 
 package org.polypheny.db.monitoring.core;
 
-import lombok.extern.slf4j.Slf4j;
 
+public class MonitoringWorker {
 
-/**
- * Provider for the MonitoringService singleton instance.
- */
-@Slf4j
-public class MonitoringServiceProvider {
-
-    private static MonitoringService INSTANCE = null;
-    public static boolean resetRepository = false;
-
-    public static MonitoringService getInstance() {
-        MonitoringWorker test = new MonitoringWorker();
-        //test.processStuff();
-        if ( INSTANCE == null ) {
-            INSTANCE = MonitoringServiceFactory.createMonitoringService( resetRepository );
-        }
-        return INSTANCE;
+    public void processStuff() {
+        Runtime runtime = Runtime.getRuntime();
+        System.out.println( "number of available HW threads " + runtime.availableProcessors() );
     }
 
 }

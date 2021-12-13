@@ -1052,10 +1052,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getRoutingDuration().start( "Route Cached Plan" );
         }
 
+        long start = System.nanoTime();
         RoutedRelBuilder builder = RoutingManager.getInstance().getCachedPlanRouter().routeCached(
                 logicalRoot,
                 selectedCachedPlan,
                 statement );
+        long end = System.nanoTime();
+        System.out.println( end - start );
 
         if ( isAnalyze ) {
             statement.getRoutingDuration().stop( "Route Cached Plan" );
