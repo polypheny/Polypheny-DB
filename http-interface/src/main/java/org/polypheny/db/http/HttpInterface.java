@@ -51,12 +51,12 @@ import spark.Service;
 public class HttpInterface extends QueryInterface {
 
     @SuppressWarnings("WeakerAccess")
-    public static final String INTERFACE_NAME = "MongoQL Interface";
+    public static final String INTERFACE_NAME = "HTTP Interface";
     @SuppressWarnings("WeakerAccess")
-    public static final String INTERFACE_DESCRIPTION = "MongoQL-based query interface.";
+    public static final String INTERFACE_DESCRIPTION = "HTTP-based query interface, which supports all available languages via specific routes.";
     @SuppressWarnings("WeakerAccess")
     public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new QueryInterfaceSettingInteger( "port", false, true, false, 1337 ),
+            new QueryInterfaceSettingInteger( "port", false, true, false, 13137 ),
             new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 )
     );
 
@@ -135,7 +135,7 @@ public class HttpInterface extends QueryInterface {
 
     @Override
     public String getInterfaceType() {
-        return "HttpInterface";
+        return "Http Interface";
     }
 
 
