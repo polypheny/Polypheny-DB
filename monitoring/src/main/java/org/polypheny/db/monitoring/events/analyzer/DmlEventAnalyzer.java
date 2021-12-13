@@ -40,6 +40,7 @@ public class DmlEventAnalyzer {
                 .queryClass( dmlEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( "DML" )
                 .physicalQueryClass( dmlEvent.getPhysicalQueryClass() )
+                .availableColumnsWithTable(dmlEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
                 .build();
         metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );
 

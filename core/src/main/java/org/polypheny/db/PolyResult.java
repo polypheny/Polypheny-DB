@@ -20,8 +20,10 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -37,6 +39,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
@@ -260,6 +263,70 @@ public class PolyResult {
 
     public StatementType getStatementType() {
         return toStatementType( this.kind );
+    }
+
+
+    public int getRowsChanged( Statement statement ) throws Exception {
+        if ( Kind.DDL.contains( getKind() ) ) {
+            return 1;
+        } else if ( Kind.DML.contains( getKind() ) ) {
+            int rowsChanged = -1;
+            try {
+                Iterator<?> iterator = enumerable( statement.getDataContext() ).iterator();
+                Object object;
+                while ( iterator.hasNext() ) {
+                    object = iterator.next();
+                    int num;
+                    if ( object != null && object.getClass().isArray() ) {
+                        Object[] o = (Object[]) object;
+                        num = ((Number) o[0]).intValue();
+                    } else if ( object != null ) {
+                        num = ((Number) object).intValue();
+                    } else {
+                        throw new Exception( "Result is null" );
+                    }
+                    // Check if num is equal for all adapters
+                    if ( rowsChanged != -1 && rowsChanged != num ) {
+                        //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+                    }
+                    rowsChanged = num;
+                }
+            } catch ( RuntimeException e ) {
+                if ( e.getCause() != null ) {
+                    throw new Exception( e.getCause().getMessage(), e );
+                } else {
+                    throw new Exception( e.getMessage(), e );
+                }
+            }
+            StatementEvent eventData = statement.getMonitoringEvent();
+            if ( Kind.INSERT == getKind() ) {
+                rowsChanged = statement.getDataContext().getParameterValues().size();
+
+                HashMap<Long, List<Object>> ordered = new HashMap<>();
+
+                List<Map<Long, Object>> values = statement.getDataContext().getParameterValues();
+                if ( values.size() > 0 ) {
+                    for ( long i = 0; i < statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
+                        ordered.put( i, new ArrayList<>() );
+                    }
+                }
+
+                for ( Map<Long, Object> longObjectMap : statement.getDataContext().getParameterValues() ) {
+                    longObjectMap.forEach( ( k, v ) -> {
+                        ordered.get( k ).add( v );
+                    } );
+                }
+
+                eventData.setChangedValues( ordered );
+            }
+
+            eventData.setRowCount( rowsChanged );
+
+
+            return rowsChanged;
+        } else {
+            throw new Exception( "Unknown result type: " + getKind() );
+        }
     }
 
 }

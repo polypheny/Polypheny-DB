@@ -31,18 +31,18 @@ import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
-import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 
 
 @Slf4j
 public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
-    private final MonitoringRepository repo;
+    private final PersistentMonitoringRepository repo;
     private final MonitoringQueue queue;
     private InformationPage informationPage;
 
 
-    public MonitoringServiceUiImpl( @NonNull MonitoringRepository repo, @NonNull MonitoringQueue queue ) {
+    public MonitoringServiceUiImpl( @NonNull PersistentMonitoringRepository repo, @NonNull MonitoringQueue queue ) {
         this.repo = repo;
         this.queue = queue;
 

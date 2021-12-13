@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryPostCost;
-import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
 
@@ -31,13 +31,13 @@ import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 public class MonitoringServiceImpl implements MonitoringService {
 
     private final MonitoringQueue monitoringQueue;
-    private final MonitoringRepository repository;
+    private final PersistentMonitoringRepository repository;
     private final MonitoringServiceUi monitoringServiceUi;
 
 
     public MonitoringServiceImpl(
             @NonNull MonitoringQueue monitoringQueue,
-            @NonNull MonitoringRepository repository,
+            @NonNull PersistentMonitoringRepository repository,
             @NonNull MonitoringServiceUi monitoringServiceUi ) {
 
         this.monitoringQueue = monitoringQueue;

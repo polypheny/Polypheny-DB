@@ -61,7 +61,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -261,7 +260,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Ensures that changes in the ConfigManger toggle the statistics correctly
+     * Ensures that changes in the ConfigManger toggle the correctly
      */
     private void registerStatisticObserver() {
         this.isActiveTracking = RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
@@ -3978,42 +3977,10 @@ public class Crud implements InformationObserver {
             }
 
         }
-
-        if ( Kind.DDL.contains( result.getKind() ) ) {
-            return 1;
-        } else if ( Kind.DML.contains( result.getKind() ) ) {
-            int rowsChanged = -1;
-            try {
-                Iterator<?> iterator = result.enumerable( statement.getDataContext() ).iterator();
-                Object object;
-                while ( iterator.hasNext() ) {
-                    object = iterator.next();
-                    int num;
-                    if ( object != null && object.getClass().isArray() ) {
-                        Object[] o = (Object[]) object;
-                        num = ((Number) o[0]).intValue();
-                    } else if ( object != null ) {
-                        num = ((Number) object).intValue();
-                    } else {
-                        throw new QueryExecutionException( "Result is null" );
-                    }
-                    // Check if num is equal for all adapters
-                    if ( rowsChanged != -1 && rowsChanged != num ) {
-                        //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
-                    }
-                    rowsChanged = num;
-                }
-            } catch ( RuntimeException e ) {
-                if ( e.getCause() != null ) {
-                    throw new QueryExecutionException( e.getCause().getMessage(), e );
-                } else {
-                    throw new QueryExecutionException( e.getMessage(), e );
-                }
-            }
-
-            return rowsChanged;
-        } else {
-            throw new QueryExecutionException( "Unknown result type: " + result.getKind() );
+        try {
+            return result.getRowsChanged( statement );
+        } catch ( Exception e ) {
+            throw new QueryExecutionException( e );
         }
     }
 

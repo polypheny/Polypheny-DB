@@ -41,17 +41,18 @@ class MonitoringQueueImplIntegrationTest {
         RuntimeConfig.QUEUE_PROCESSING_INTERVAL.setEnum( TaskSchedulingType.EVERY_SECOND );
 
         // Initialize mock repository
-        TestMapDbRepository repo = new TestMapDbRepository();
-        repo.initialize( true ); // will delete the file
+        TestMapDbRepository persistentRepo = new TestMapDbRepository();
+        TestMapDbRepository statisticRepo = new TestMapDbRepository();
+        persistentRepo.initialize( true ); // will delete the file
 
         // Mock ui service, not really needed for testing
         MonitoringServiceUi uiService = Mockito.mock( MonitoringServiceUi.class );
 
         // Create monitoring service with dependencies
-        MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( repo );
+        MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo );
 
         // Initialize the monitoringService
-        MonitoringService sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
+        MonitoringService sut = new MonitoringServiceImpl( queueWriteService, persistentRepo, uiService );
 
         Assertions.assertNotNull( sut );
 

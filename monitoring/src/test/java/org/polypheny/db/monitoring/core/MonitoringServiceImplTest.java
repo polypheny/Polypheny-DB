@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
-import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
 
@@ -34,7 +34,7 @@ class MonitoringServiceImplTest {
     public void ctor_invalidParameters_ThrowsException() {
         // arrange
         MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        PersistentMonitoringRepository repository = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
 
         // act - assert
@@ -48,7 +48,7 @@ class MonitoringServiceImplTest {
     void ctor_validParameters_instanceNotNull() {
         // arrange
         MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        PersistentMonitoringRepository repository = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
 
         // act
@@ -63,7 +63,7 @@ class MonitoringServiceImplTest {
     void monitorEvent_provideNullEvent_throwsException() {
         // arrange
         MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        PersistentMonitoringRepository repository = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
         MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
@@ -76,7 +76,7 @@ class MonitoringServiceImplTest {
     void monitorEvent_provideEvent_queueCalled() {
         // arrange
         MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        PersistentMonitoringRepository repository = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
         MonitoringEvent event = Mockito.mock( MonitoringEvent.class );
         MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
@@ -93,7 +93,7 @@ class MonitoringServiceImplTest {
     void getAllDataPoints_providePointClass_repositoryCalled() {
         // arrange
         MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        PersistentMonitoringRepository repository = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
         MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
@@ -109,7 +109,7 @@ class MonitoringServiceImplTest {
     void getDataPointsBefore_providePointClass_repositoryCalled() {
         // arrange
         MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        PersistentMonitoringRepository repository = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
         MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 
@@ -126,7 +126,7 @@ class MonitoringServiceImplTest {
     void getDataPointsAfter_providePointClass_repositoryCalled() {
         // arrange
         MonitoringQueue monitoringQueue = Mockito.mock( MonitoringQueue.class );
-        MonitoringRepository repository = Mockito.mock( MonitoringRepository.class );
+        PersistentMonitoringRepository repository = Mockito.mock( PersistentMonitoringRepository.class );
         MonitoringServiceUi monitoringServiceUi = Mockito.mock( MonitoringServiceUi.class );
         MonitoringService sut = new MonitoringServiceImpl( monitoringQueue, repository, monitoringServiceUi );
 

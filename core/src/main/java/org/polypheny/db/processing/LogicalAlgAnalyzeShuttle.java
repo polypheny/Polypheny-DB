@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
@@ -39,6 +41,7 @@ import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
@@ -211,6 +214,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalExchange exchange ) {
         hashBasis.add( "LogicalExchange#" + exchange.distribution.getType().shortName );
+
         return visitChildren( exchange );
     }
 
@@ -218,6 +222,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( AlgNode other ) {
         hashBasis.add( "other#" + other.getClass().getSimpleName() );
+
+        if ( other instanceof LogicalTableModify ) {
+            if ( (other.getTable().getTable() instanceof LogicalTable) ) {
+                LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
+                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable. put( v, logicalTable.getTableId()) );
+            }
+        }
         return visitChildren( other );
     }
 

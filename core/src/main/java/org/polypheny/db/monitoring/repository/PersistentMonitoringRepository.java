@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.persistence;
+package org.polypheny.db.monitoring.repository;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -26,19 +26,12 @@ import org.polypheny.db.monitoring.events.QueryPostCost;
 /**
  * Interface for writing monitoring jobs to repository.
  */
-public interface MonitoringRepository {
+public interface PersistentMonitoringRepository extends MonitoringRepository {
 
     /**
      * Initialized the repository, might need some configuration beforehand.
      */
     void initialize( boolean resetRepository );
-
-    /**
-     * Persist given monitoring metric.
-     *
-     * @param dataPoint to be persisted in repository backend
-     */
-    void persistDataPoint( MonitoringDataPoint dataPoint );
 
     /**
      * Get all data for given monitoring persistent type.

@@ -59,6 +59,7 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;

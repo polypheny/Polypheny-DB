@@ -68,4 +68,10 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
         return this.recordedTimestamp;
     }
 
+
+    @Override
+    public DataPointType getDataPointType() {
+        return DataPointType.QueryDataPointImpl;
+    }
+
 }
