@@ -334,7 +334,7 @@ public class TestHelper {
             request.basicAuth( "pa", "" );
             request.routeParam( "protocol", "http" );
             request.routeParam( "host", "127.0.0.1" );
-            request.routeParam( "port", "1337" );
+            request.routeParam( "port", "13137" );
             return request.asString();
         }
 
