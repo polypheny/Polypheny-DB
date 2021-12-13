@@ -769,7 +769,7 @@ public class CatalogImpl extends Catalog {
 
             // Add HTTP interface
             Map<String, String> httpSettings = new HashMap<>();
-            httpSettings.put( "port", "1337" );
+            httpSettings.put( "port", "13137" );
             httpSettings.put( "maxUploadSizeMb", "10000" );
             addQueryInterface( "http", "org.polypheny.db.http.HttpInterface", httpSettings );
         }

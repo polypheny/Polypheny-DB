@@ -86,9 +86,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final boolean analyze;
 
-
-    private StatementEvent statementEvent;
-
     private final List<Statement> statements = new ArrayList<>();
 
     private final List<String> changedTables = new ArrayList<>();
@@ -288,18 +285,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         }
         Transaction that = (Transaction) o;
         return xid.equals( that.getXid() );
-    }
-
-
-    @Override
-    public StatementEvent getMonitoringEvent() {
-        return this.statementEvent;
-    }
-
-
-    @Override
-    public void setMonitoringEvent( StatementEvent event ) {
-        this.statementEvent = event;
     }
 
 

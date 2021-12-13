@@ -139,6 +139,19 @@ public class RoutingManager {
         PLAN_SELECTION_STRATEGY.withUi( routingGroup.getId(), 2 );
 
         configManager.registerConfig( POST_COST_AGGREGATION_ACTIVE );
+        POST_COST_AGGREGATION_ACTIVE.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                String status = c.getBoolean() ? "Enabled" : "Disabled";
+                log.warn( "{} post cost aggregation", status );
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+
+            }
+        } );
         POST_COST_AGGREGATION_ACTIVE.withUi( routingGroup.getId(), 3 );
     }
 
