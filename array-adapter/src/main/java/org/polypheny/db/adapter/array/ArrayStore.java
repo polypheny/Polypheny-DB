@@ -25,28 +25,28 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
+@AdapterProperties(
+        name = "Array",
+        description = "An simple in-memory adapter storing the data as lists of arrays.",
+        usedModes = { DeployMode.EMBEDDED })
 public class ArrayStore extends DataStore {
-
-    @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "Array";
-    @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "An simple in-memory adapter storing the data as lists of arrays.";
-    @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-    );
 
     private ArraySchema currentSchema;
 
@@ -65,8 +65,8 @@ public class ArrayStore extends DataStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
-        return currentSchema.createTable( catalogTable, columnPlacementsOnStore, this );
+    public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+        return currentSchema.createTable( combinedTable, columnPlacementsOnStore, partitionPlacement, this );
     }
 
 
@@ -86,25 +86,26 @@ public class ArrayStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable ) {
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.getSchemaName() );
-        qualifiedNames.add( catalogTable.name );
-        String physicalTableName = getPhysicalTableName( catalogTable.id );
-        if ( log.isDebugEnabled() ) {
-            log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
+    public void createTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
+        for ( long partitionId : partitionIds ) {
+            List<String> qualifiedNames = new LinkedList<>();
+            qualifiedNames.add( combinedTable.getSchemaName() );
+            qualifiedNames.add( combinedTable.name );
+            String physicalTableName = getPhysicalTableName( combinedTable.id, partitionId );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
+            }
+            if ( data.containsKey( physicalTableName ) ) {
+                throw new RuntimeException( "Table already exists! This should not happen..." );
+            }
+            data.put( physicalTableName, new LinkedHashSet<>() );
         }
-        if ( data.containsKey( physicalTableName ) ) {
-            throw new RuntimeException( "Table already exists! This should not happen..." );
-        }
-        data.put( physicalTableName, new LinkedHashSet<>() );
         // Add physical names to placements
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), combinedTable.id ) ) {
             catalog.updateColumnPlacementPhysicalNames(
                     getAdapterId(),
                     placement.columnId,
                     "public",
-                    physicalTableName,
                     getPhysicalColumnName( placement.columnId ),
                     true );
         }
@@ -112,12 +113,14 @@ public class ArrayStore extends DataStore {
 
 
     @Override
-    public void dropTable( Context context, CatalogTable catalogTable ) {
-        String physicalTableName = getPhysicalTableName( catalogTable.id );
-        if ( !data.containsKey( physicalTableName ) ) {
-            throw new RuntimeException( "Table does not exist! This should not happen..." );
+    public void dropTable( Context context, CatalogTable combinedTable, List<Long> partitionIds ) {
+        for ( long partitionId : partitionIds ) {
+            String physicalTableName = getPhysicalTableName( combinedTable.id, partitionId );
+            if ( !data.containsKey( physicalTableName ) ) {
+                throw new RuntimeException( "Table does not exist! This should not happen..." );
+            }
+            data.remove( physicalTableName );
         }
-        data.remove( physicalTableName );
     }
 
 
@@ -134,14 +137,20 @@ public class ArrayStore extends DataStore {
 
 
     @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         throw new RuntimeException( "Array adapter does not support adding indexes" );
     }
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
         throw new RuntimeException( "Array adapter does not support dropping indexes" );
+    }
+
+
+    @Override
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
+        throw new RuntimeException( "Array adapter does not support updating column types!" );
     }
 
 
@@ -166,29 +175,13 @@ public class ArrayStore extends DataStore {
 
     @Override
     public void truncate( Context context, CatalogTable catalogTable ) {
-        String physicalTableName = getPhysicalTableName( catalogTable.id );
-        if ( !data.containsKey( physicalTableName ) ) {
-            throw new RuntimeException( "Table does not exist! This should not happen..." );
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), catalogTable.id ) ) {
+            String physicalTableName = getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
+            if ( !data.containsKey( physicalTableName ) ) {
+                throw new RuntimeException( "Table does not exist! This should not happen..." );
+            }
+            data.get( physicalTableName ).clear();
         }
-        data.get( physicalTableName ).clear();
-    }
-
-
-    @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
-        throw new RuntimeException( "Array adapter does not support updating column types!" );
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 
@@ -222,8 +215,12 @@ public class ArrayStore extends DataStore {
     }
 
 
-    protected String getPhysicalTableName( long tableId ) {
-        return "tab" + tableId;
+    protected String getPhysicalTableName( long tableId, long partitionId ) {
+        String physicalTableName = "tab" + tableId;
+        if ( partitionId >= 0 ) {
+            physicalTableName += "_part" + partitionId;
+        }
+        return physicalTableName;
     }
 
 

@@ -21,7 +21,7 @@ targetCompatibility = 1.8
 
 dependencies {
     implementation project(":core")
-
+    implementation project(":sql-language")
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")

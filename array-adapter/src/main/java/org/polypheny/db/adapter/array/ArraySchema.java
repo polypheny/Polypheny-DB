@@ -37,25 +37,24 @@ package org.polypheny.db.adapter.array;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelDataTypeImpl;
-import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.util.NullInitializerExpressionFactory;
 import org.polypheny.db.util.Util;
 
 
 public class ArraySchema extends AbstractSchema {
-
-    private final Map<String, ArrayTable> tableMap = new HashMap<>();
 
 
     /**
@@ -66,34 +65,41 @@ public class ArraySchema extends AbstractSchema {
     }
 
 
-    public Table createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, ArrayStore arrayStore ) {
-        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+    public Table createTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement, ArrayStore arrayStore ) {
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+
+        String physicalTableName = partitionPlacement.physicalTableName != null
+                ? partitionPlacement.physicalTableName
+                : arrayStore.getPhysicalTableName( catalogTable.id, partitionPlacement.partitionId );
+
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            RelDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
+            AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
         }
 
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapter( arrayStore.getAdapterId(), catalogTable.id ).iterator().next().physicalTableName;
-        ArrayTable table = new ArrayTable( physicalTableName, RelDataTypeImpl.proto( fieldInfo.build() ), new NullInitializerExpressionFactory(), arrayStore );
-        tableMap.put( catalogTable.name, table );
+        ArrayTable table = new ArrayTable(
+                physicalTableName,
+                AlgDataTypeImpl.proto( fieldInfo.build() ),
+                new NullInitializerExpressionFactory(),
+                arrayStore );
         return table;
     }
 
 
     @Override
     public Map<String, Table> getTableMap() {
-        return new HashMap<>( tableMap );
+        return new HashMap<>();
     }
 
 
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
+    private AlgDataType sqlType( AlgDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
         final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
         switch ( polyType ) {
             case ARRAY:
-                RelDataType component = null;
+                AlgDataType component = null;
                 if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
                     // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
                     final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
@@ -120,7 +126,7 @@ public class ArraySchema extends AbstractSchema {
      * Given "VARCHAR(10)", returns BasicSqlType(VARCHAR, 10).
      * Given "NUMERIC(10, 2)", returns BasicSqlType(NUMERIC, 10, 2).
      */
-    private RelDataType parseTypeString( RelDataTypeFactory typeFactory, String typeString ) {
+    private AlgDataType parseTypeString( AlgDataTypeFactory typeFactory, String typeString ) {
         int precision = -1;
         int scale = -1;
         int open = typeString.indexOf( "(" );
