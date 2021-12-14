@@ -24,7 +24,7 @@ dependencies {
     implementation project(":sql-language")
 
     // --- Test Compile ---
-    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 }
