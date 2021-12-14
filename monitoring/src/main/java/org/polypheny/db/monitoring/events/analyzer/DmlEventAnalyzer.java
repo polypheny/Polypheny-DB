@@ -38,9 +38,10 @@ public class DmlEventAnalyzer {
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
                 .accessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
                 .queryClass( dmlEvent.getLogicalQueryInformation().getQueryClass() )
-                .monitoringType( "DML" )
+                .monitoringType( dmlEvent.getMonitoringType() )
                 .physicalQueryClass( dmlEvent.getPhysicalQueryClass() )
                 .availableColumnsWithTable(dmlEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
+                .changedValues( dmlEvent.getChangedValues() )
                 .build();
         metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );
 

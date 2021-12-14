@@ -16,12 +16,14 @@
 
 package org.polypheny.db.monitoring.statistics;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
 
 public class StatisticRepository implements MonitoringRepository {
@@ -31,15 +33,39 @@ public class StatisticRepository implements MonitoringRepository {
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
         if ( dataPoint.getDataPointType() == DataPointType.DML ) {
             DmlDataPoint dmlDataPoint = ((DmlDataPoint) dataPoint);
-            if (dmlDataPoint.getChangedValues() != null ) {
-                Set<Long> values = new HashSet<>(dmlDataPoint.getAvailableColumnsWithTable().values());
+            if ( dmlDataPoint.getChangedValues() != null ) {
+                Set<Long> values = new HashSet<>( dmlDataPoint.getAvailableColumnsWithTable().values() );
                 boolean isOneTable = values.size() == 1;
-                if(isOneTable){
-                    statisticsManager.tablesToUpdate( values.stream().findFirst().get(), dmlDataPoint.getChangedValues(), dmlDataPoint.getMonitoringType() );
-                }
+                if ( isOneTable ) {
+                    Long tableId = values.stream().findFirst().get();
+                    Catalog catalog = Catalog.getInstance();
+                    if(catalog.checkIfExistsTable( tableId)){
+                        statisticsManager.tablesToUpdate( tableId, dmlDataPoint.getChangedValues(), dmlDataPoint.getMonitoringType() );
 
+                        if ( dmlDataPoint.getMonitoringType().equals( "INSERT" ) ) {
+                            int added = dmlDataPoint.getRowCount();
+                            statisticsManager.updateRowCountPerTable( tableId, added, true );
+                        } else if ( dmlDataPoint.getMonitoringType().equals( "DELETE" ) ) {
+                            int deleted = dmlDataPoint.getRowCount();
+                            statisticsManager.updateRowCountPerTable( tableId, deleted, false );
+                        }
+
+                    }
+                }
             }
 
+
+        }else if(dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl){
+            QueryDataPointImpl dqlDataPoint= ((QueryDataPointImpl) dataPoint);
+            if ( dqlDataPoint.getIndexSize() != null ) {
+                /*Set<Long> values = new HashSet<>( dqlDataPoint.getAvailableColumnsWithTable().values() );
+                boolean isOneTable = values.size() == 1;
+                if ( isOneTable ) {
+                    statisticsManager.setIndexSize( values.stream().findFirst().get(), dqlDataPoint.getIndexSize() );
+                }
+
+                 */
+            }
         }
 
 

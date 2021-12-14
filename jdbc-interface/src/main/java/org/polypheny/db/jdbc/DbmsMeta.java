@@ -1260,24 +1260,11 @@ public class DbmsMeta implements ProtobufMeta {
             commit( connection.getHandle() );
         } else if ( statementHandle.getSignature().statementType == StatementType.IS_DML ) {
             Iterator<?> iterator = statementHandle.getSignature().enumerable( statementHandle.getStatement().getDataContext() ).iterator();
-            Object object = null;
             int rowsChanged = -1;
-            while ( iterator.hasNext() ) {
-                object = iterator.next();
-                int num;
-                if ( object == null ) {
-                    throw new NullPointerException();
-                } else if ( object.getClass().isArray() ) {
-                    num = ((Number) ((Object[]) object)[0]).intValue();
-                } else {
-                    num = ((Number) object).intValue();
-                }
-                rowsChanged = num;
-            }
-
-            // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
-            if ( rowsChanged < 0 ) {
-                rowsChanged = 0;
+            try {
+                rowsChanged = PolyResult.getRowsChanged(statementHandle.getStatement(), iterator, statementHandle.getStatement().getMonitoringEvent().getMonitoringType() );
+            } catch ( Exception e ) {
+                e.printStackTrace();
             }
 
             MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, rowsChanged );

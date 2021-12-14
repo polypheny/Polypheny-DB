@@ -58,6 +58,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected String algCompareString;
     protected String physicalQueryClass;
     protected HashMap<Long, List<Object>> changedValues;
+    protected Integer indexSize = null;
 
 
     @Override

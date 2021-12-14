@@ -50,6 +50,7 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     private boolean isSubQuery;
     private int rowCount;
     private List<String> fieldNames;
+    protected Integer indexSize;
 
 
     @Override

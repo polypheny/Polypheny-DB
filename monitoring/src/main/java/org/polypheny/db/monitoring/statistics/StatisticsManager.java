@@ -157,7 +157,6 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
                             }
                         }
                     }
-
                 } else {
                     for ( int i = 0; i < columns.size(); i++ ) {
                         PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
@@ -176,8 +175,26 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
                             temporalStatisticColumn.insert( changedValues.get( (long) i ) );
                             put( queryColumn, temporalStatisticColumn );
                         }
+                    }
+                }
+            } else {
 
+                for ( int i = 0; i < columns.size(); i++ ) {
+                    PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
+                    QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
 
+                    if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                        NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
+                        numericalStatisticColumn.insert( changedValues.get( (long) i ) );
+                        put( queryColumn, numericalStatisticColumn );
+                    } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                        AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
+                        alphabeticStatisticColumn.insert( changedValues.get( (long) i ) );
+                        put( queryColumn, alphabeticStatisticColumn );
+                    } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                        TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
+                        temporalStatisticColumn.insert( changedValues.get( (long) i ) );
+                        put( queryColumn, temporalStatisticColumn );
                     }
                 }
             }
@@ -708,8 +725,6 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
             numericalInformation.reset();
             alphabeticalInformation.reset();
             temporalInformation.reset();
-            tableInformation.reset();
-            cacheInformation.reset();
             statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                 if ( v instanceof NumericalStatisticColumn ) {
 
@@ -828,6 +843,7 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
 
 
     public void setIndexSize( Long tableId, int indexSize ) {
+        System.out.println("setIndexSize");
         if ( rowCountPerTable.containsKey( tableId ) ) {
             int numberOfRows = rowCountPerTable.remove( tableId );
             if ( numberOfRows == indexSize ) {

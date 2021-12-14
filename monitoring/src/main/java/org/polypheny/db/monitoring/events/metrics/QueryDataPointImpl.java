@@ -55,6 +55,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     protected String algCompareString;
     protected String queryClass;
     protected String physicalQueryClass;
+    protected Integer indexSize;
 
 
     @Override

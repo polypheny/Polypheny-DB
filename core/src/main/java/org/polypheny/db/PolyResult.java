@@ -20,10 +20,14 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -115,11 +119,6 @@ public class PolyResult {
     }
 
 
-    public List<List<Object>> getRows( Statement statement, int size ) {
-        return getRows( statement, size, false, false );
-    }
-
-
     public Class<?> getResultClass() {
         Class<?> resultClazz = null;
         if ( preparedResult instanceof Typed ) {
@@ -186,8 +185,15 @@ public class PolyResult {
 
     }
 
+    public List<List<Object>> getRows( Statement statement, int size ) {
+        return getRows( statement, size, false, false, null );
+    }
 
     public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed ) {
+        return getRows( statement, size, isTimed, isAnalyzed, null);
+    }
+
+    public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent ) {
         Iterator<Object> iterator = null;
         StopWatch stopWatch = null;
         try {
@@ -208,6 +214,11 @@ public class PolyResult {
                 stopWatch.stop();
                 executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
             }
+
+            if(statementEvent != null){
+                statementEvent.setIndexSize( res.size() );
+            }
+
             return res;
 
         } catch ( Throwable t ) {
@@ -270,27 +281,10 @@ public class PolyResult {
         if ( Kind.DDL.contains( getKind() ) ) {
             return 1;
         } else if ( Kind.DML.contains( getKind() ) ) {
-            int rowsChanged = -1;
+            int rowsChanged;
             try {
                 Iterator<?> iterator = enumerable( statement.getDataContext() ).iterator();
-                Object object;
-                while ( iterator.hasNext() ) {
-                    object = iterator.next();
-                    int num;
-                    if ( object != null && object.getClass().isArray() ) {
-                        Object[] o = (Object[]) object;
-                        num = ((Number) o[0]).intValue();
-                    } else if ( object != null ) {
-                        num = ((Number) object).intValue();
-                    } else {
-                        throw new Exception( "Result is null" );
-                    }
-                    // Check if num is equal for all adapters
-                    if ( rowsChanged != -1 && rowsChanged != num ) {
-                        //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
-                    }
-                    rowsChanged = num;
-                }
+                rowsChanged = getRowsChanged( statement, iterator, getKind().name() );
             } catch ( RuntimeException e ) {
                 if ( e.getCause() != null ) {
                     throw new Exception( e.getCause().getMessage(), e );
@@ -298,35 +292,58 @@ public class PolyResult {
                     throw new Exception( e.getMessage(), e );
                 }
             }
-            StatementEvent eventData = statement.getMonitoringEvent();
-            if ( Kind.INSERT == getKind() ) {
-                rowsChanged = statement.getDataContext().getParameterValues().size();
-
-                HashMap<Long, List<Object>> ordered = new HashMap<>();
-
-                List<Map<Long, Object>> values = statement.getDataContext().getParameterValues();
-                if ( values.size() > 0 ) {
-                    for ( long i = 0; i < statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
-                        ordered.put( i, new ArrayList<>() );
-                    }
-                }
-
-                for ( Map<Long, Object> longObjectMap : statement.getDataContext().getParameterValues() ) {
-                    longObjectMap.forEach( ( k, v ) -> {
-                        ordered.get( k ).add( v );
-                    } );
-                }
-
-                eventData.setChangedValues( ordered );
-            }
-
-            eventData.setRowCount( rowsChanged );
-
-
             return rowsChanged;
         } else {
             throw new Exception( "Unknown result type: " + getKind() );
         }
+    }
+
+
+    public static int getRowsChanged( Statement statement, Iterator<?> iterator, String kind ) throws Exception {
+        int rowsChanged = -1;
+        Object object;
+        while ( iterator.hasNext() ) {
+            object = iterator.next();
+            int num;
+            if ( object != null && object.getClass().isArray() ) {
+                Object[] o = (Object[]) object;
+                num = ((Number) o[0]).intValue();
+            } else if ( object != null ) {
+                num = ((Number) object).intValue();
+            } else {
+                throw new Exception( "Result is null" );
+            }
+            // Check if num is equal for all adapters
+            if ( rowsChanged != -1 && rowsChanged != num ) {
+                //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+            }
+            rowsChanged = num;
+        }
+
+        StatementEvent eventData = statement.getMonitoringEvent();
+        if ( Kind.INSERT.name() == kind ) {
+            rowsChanged = statement.getDataContext().getParameterValues().size();
+
+            HashMap<Long, List<Object>> ordered = new HashMap<>();
+
+            List<Map<Long, Object>> values = statement.getDataContext().getParameterValues();
+            if ( values.size() > 0 ) {
+                for ( long i = 0; i < statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
+                    ordered.put( i, new ArrayList<>() );
+                }
+            }
+
+            for ( Map<Long, Object> longObjectMap : statement.getDataContext().getParameterValues() ) {
+                longObjectMap.forEach( ( k, v ) -> {
+                    ordered.get( k ).add( v );
+                } );
+            }
+
+            eventData.setChangedValues( ordered );
+        }
+
+        eventData.setRowCount( rowsChanged );
+        return rowsChanged;
     }
 
 }

@@ -282,6 +282,7 @@ public class PolyphenyDb {
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
         statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
+        //statisticsManager.asyncReevaluateAllStatistics();
 
         // Initialize index manager
         try {

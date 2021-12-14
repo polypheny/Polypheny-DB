@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -85,7 +86,7 @@ public abstract class Index {
     /**
      * Trigger an index rebuild, e.g. at crash recovery.
      */
-    public void rebuild( final Transaction transaction ) {
+    public void rebuild( final Transaction transaction, StatementEvent statementEvent ) {
         Statement statement = transaction.createStatement();
 
         // Prepare query
@@ -101,9 +102,8 @@ public abstract class Index {
         final QueryProcessor processor = statement.getQueryProcessor();
         final PolyResult result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
-        final Iterable<Object> enumerable = result.enumerable( statement.getDataContext() );
-        final Iterator<Object> iterator = enumerable.iterator();
-        final List<List<Object>> rows = MetaImpl.collect( result.getCursorFactory(), iterator, new ArrayList<>() );
+
+        final List<List<Object>> rows = result.getRows(statement, 1, false, false, statementEvent );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
         for ( final List<Object> row : rows ) {
             if ( row.size() > columns.size() ) {

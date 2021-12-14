@@ -88,7 +88,7 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
         }
 
         if ( maxCache.first().compareTo( val ) < 0 ) {
-            if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
+            if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
                 maxCache.remove( maxCache.first() );
             }
             maxCache.add( val );
