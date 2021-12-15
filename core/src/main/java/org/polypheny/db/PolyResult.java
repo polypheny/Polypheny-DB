@@ -20,14 +20,10 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -185,13 +181,16 @@ public class PolyResult {
 
     }
 
+
     public List<List<Object>> getRows( Statement statement, int size ) {
         return getRows( statement, size, false, false, null );
     }
 
+
     public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed ) {
-        return getRows( statement, size, isTimed, isAnalyzed, null);
+        return getRows( statement, size, isTimed, isAnalyzed, null );
     }
+
 
     public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent ) {
         Iterator<Object> iterator = null;
@@ -215,7 +214,7 @@ public class PolyResult {
                 executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
             }
 
-            if(statementEvent != null){
+            if ( statementEvent != null ) {
                 statementEvent.setIndexSize( res.size() );
             }
 
@@ -321,8 +320,8 @@ public class PolyResult {
         }
 
         StatementEvent eventData = statement.getMonitoringEvent();
+        eventData.setRowCount( rowsChanged );
         if ( Kind.INSERT.name() == kind ) {
-            rowsChanged = statement.getDataContext().getParameterValues().size();
 
             HashMap<Long, List<Object>> ordered = new HashMap<>();
 
@@ -340,9 +339,14 @@ public class PolyResult {
             }
 
             eventData.setChangedValues( ordered );
+            eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
+
+        }
+        // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
+        if ( rowsChanged < 0 ) {
+            rowsChanged = 0;
         }
 
-        eventData.setRowCount( rowsChanged );
         return rowsChanged;
     }
 
