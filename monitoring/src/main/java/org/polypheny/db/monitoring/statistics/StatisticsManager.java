@@ -109,6 +109,8 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
 
     @Getter
     public ConcurrentHashMap<Long, Integer> rowCountPerTable = new ConcurrentHashMap<>();
+    @Getter
+    public ConcurrentHashMap<Long, TableCalls> tableCalls = new ConcurrentHashMap<>();
 
     private List<Long> deletedTable = new ArrayList<>();
 
@@ -700,11 +702,17 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
         im.registerInformation( numericalInformation );
         im.registerInformation( alphabeticalInformation );
 
-        InformationGroup tableGroup = new InformationGroup( page, "Table Statistic" );
-        im.addGroup( tableGroup );
+        InformationGroup rowCountGroup = new InformationGroup( page, "Row Count" );
+        im.addGroup( rowCountGroup );
 
-        InformationTable tableInformation = new InformationTable( tableGroup, Arrays.asList( "Table Name", "Row Count" ) );
-        im.registerInformation( tableInformation );
+        InformationTable rowCountInformation = new InformationTable( rowCountGroup, Arrays.asList( "Table Name", "Row Count" ) );
+        im.registerInformation( rowCountInformation );
+
+        InformationGroup tableSelectGroup = new InformationGroup( page, "Calls per Table" );
+        im.addGroup( tableSelectGroup );
+
+        InformationTable tableSelectInformation = new InformationTable( tableSelectGroup, Arrays.asList( "Table Name", "#SELECTS", "#INSERT", "#DELETE", "#UPDATE" ) );
+        im.registerInformation( tableSelectInformation );
 
         InformationGroup cacheGroup = new InformationGroup( page, "Cache Information" );
         im.addGroup( cacheGroup );
@@ -726,6 +734,9 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
             numericalInformation.reset();
             alphabeticalInformation.reset();
             temporalInformation.reset();
+            cacheInformation.reset();
+            tableSelectInformation.reset();
+            rowCountInformation.reset();
             statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                 if ( v instanceof NumericalStatisticColumn ) {
 
@@ -759,7 +770,11 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
 
             } ) ) );
             rowCountPerTable.forEach( ( k, v ) -> {
-                tableInformation.addRow( Catalog.getInstance().getTable( k ).name, v );
+                rowCountInformation.addRow( Catalog.getInstance().getTable( k ).name, v );
+            } );
+
+            tableCalls.forEach( ( k, v ) -> {
+                tableSelectInformation.addRow( Catalog.getInstance().getTable( k ).name, v.numberOfSelects, v.numberOfInserts, v.numberOfDeletes, v.numberOfUpdates );
             } );
 
         } );
@@ -844,7 +859,7 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
 
 
     public void setIndexSize( Long tableId, int indexSize ) {
-        System.out.println("setIndexSize");
+        System.out.println( "setIndexSize" );
         if ( rowCountPerTable.containsKey( tableId ) ) {
             int numberOfRows = rowCountPerTable.remove( tableId );
             if ( numberOfRows == indexSize ) {
@@ -855,6 +870,39 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
             }
         } else {
             rowCountPerTable.put( tableId, indexSize );
+        }
+    }
+
+
+    public void setTableCalls( Long tableId, String kind ) {
+
+        TableCalls calls;
+        if ( tableCalls.containsKey( tableId ) ) {
+            calls = tableCalls.remove( tableId );
+
+        } else {
+            calls = new TableCalls( tableId, 0, 0, 0, 0 );
+        }
+        updateCalls( tableId, kind, calls );
+    }
+
+
+    private void updateCalls( Long tableId, String kind, TableCalls calls ) {
+        switch ( kind ) {
+            case "SELECT":
+                tableCalls.put( tableId, new TableCalls( calls.tableId, calls.numberOfSelects + 1, calls.numberOfInserts, calls.numberOfDeletes, calls.numberOfUpdates ) );
+                break;
+            case "INSERT":
+                tableCalls.put( tableId, new TableCalls( calls.tableId, calls.numberOfSelects, calls.numberOfInserts + 1, calls.numberOfDeletes, calls.numberOfUpdates ) );
+                break;
+            case "DELETE":
+                tableCalls.put( tableId, new TableCalls( calls.tableId, calls.numberOfSelects, calls.numberOfInserts, calls.numberOfDeletes + 1, calls.numberOfUpdates ) );
+                break;
+            case "UPDATE":
+                tableCalls.put( tableId, new TableCalls( calls.tableId, calls.numberOfSelects + 1, calls.numberOfInserts, calls.numberOfDeletes, calls.numberOfUpdates + 1 ) );
+                break;
+            default:
+                System.out.println( "at the time only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
         }
     }
 

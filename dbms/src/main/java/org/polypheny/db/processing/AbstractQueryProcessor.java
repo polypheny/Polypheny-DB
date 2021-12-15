@@ -1389,8 +1389,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
             finalizeAccessedPartitions( eventData );
-            //TODO IG: only start monitoring after commit maybe
-            //MonitoringServiceProvider.getInstance().monitorEvent( eventData );
         }
     }
 

@@ -22,7 +22,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
 
@@ -36,10 +35,12 @@ public class StatisticRepository implements MonitoringRepository {
             if ( dmlDataPoint.getChangedValues() != null ) {
                 Set<Long> values = new HashSet<>( dmlDataPoint.getAvailableColumnsWithTable().values() );
                 boolean isOneTable = values.size() == 1;
+                Long tableId = values.stream().findFirst().get();
+                Catalog catalog = Catalog.getInstance();
                 if ( isOneTable ) {
-                    Long tableId = values.stream().findFirst().get();
-                    Catalog catalog = Catalog.getInstance();
-                    if(catalog.checkIfExistsTable( tableId)){
+                    statisticsManager.setTableCalls( tableId, dmlDataPoint.getMonitoringType() );
+
+                    if ( catalog.checkIfExistsTable( tableId ) ) {
                         statisticsManager.tablesToUpdate( tableId, dmlDataPoint.getChangedValues(), dmlDataPoint.getMonitoringType() );
 
                         if ( dmlDataPoint.getMonitoringType().equals( "INSERT" ) ) {
@@ -55,13 +56,29 @@ public class StatisticRepository implements MonitoringRepository {
             }
 
 
-        }else if(dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl){
-            QueryDataPointImpl dqlDataPoint= ((QueryDataPointImpl) dataPoint);
-            if ( dqlDataPoint.getIndexSize() != null ) {
+        } else if ( dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl ) {
+            QueryDataPointImpl dqlDataPoint = ((QueryDataPointImpl) dataPoint);
+            if ( !dqlDataPoint.getAvailableColumnsWithTable().isEmpty() ) {
                 Set<Long> values = new HashSet<>( dqlDataPoint.getAvailableColumnsWithTable().values() );
                 boolean isOneTable = values.size() == 1;
+                Catalog catalog = Catalog.getInstance();
+
                 if ( isOneTable ) {
-                    statisticsManager.setIndexSize( values.stream().findFirst().get(), dqlDataPoint.getIndexSize() );
+                    Long tableId = values.stream().findFirst().get();
+                    if ( catalog.checkIfExistsTable( tableId ) ) {
+                        statisticsManager.setTableCalls( tableId, dqlDataPoint.getMonitoringType() );
+
+                        if ( dqlDataPoint.getIndexSize() != null ) {
+                            statisticsManager.setIndexSize( tableId, dqlDataPoint.getIndexSize() );
+                        }
+                    }
+                } else{
+                    for ( Long id : values ) {
+                        if ( catalog.checkIfExistsTable( id ) ) {
+                            statisticsManager.setTableCalls( id, dqlDataPoint.getMonitoringType() );
+                        }
+
+                    }
                 }
             }
         }
