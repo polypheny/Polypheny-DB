@@ -45,6 +45,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.monitoring.StatisticsHelper;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -52,6 +53,7 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
@@ -87,6 +89,12 @@ public abstract class TableScan extends AbstractAlgNode {
 
     @Override
     public double estimateRowCount( AlgMetadataQuery mq ) {
+        if ( table.getTable() instanceof LogicalTable ) {
+            if ( StatisticsHelper.getInstance().tableRowCount.get( ((LogicalTable) table.getTable()).getTableId() ) > 0 ) {
+                double rowCount = StatisticsHelper.getInstance().tableRowCount.get( ((LogicalTable) table.getTable()).getTableId() );
+                return rowCount;
+            }
+        }
         return table.getRowCount();
     }
 

@@ -58,13 +58,11 @@ public class StatisticRepository implements MonitoringRepository {
         }else if(dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl){
             QueryDataPointImpl dqlDataPoint= ((QueryDataPointImpl) dataPoint);
             if ( dqlDataPoint.getIndexSize() != null ) {
-                /*Set<Long> values = new HashSet<>( dqlDataPoint.getAvailableColumnsWithTable().values() );
+                Set<Long> values = new HashSet<>( dqlDataPoint.getAvailableColumnsWithTable().values() );
                 boolean isOneTable = values.size() == 1;
                 if ( isOneTable ) {
                     statisticsManager.setIndexSize( values.stream().findFirst().get(), dqlDataPoint.getIndexSize() );
                 }
-
-                 */
             }
         }
 

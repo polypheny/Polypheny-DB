@@ -190,7 +190,7 @@ public class IndexManager {
                 ? statement.getTransaction()
                 : transactionManager.startTransaction( "pa", "APP", false, "Index Manager" );
         try {
-            index.rebuild( tx, statement.getMonitoringEvent() );
+            index.rebuild( tx );
             if ( statement == null ) {
                 tx.commit();
             }

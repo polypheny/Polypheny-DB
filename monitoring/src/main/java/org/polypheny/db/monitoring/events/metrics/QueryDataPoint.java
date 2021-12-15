@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -51,6 +52,7 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     private int rowCount;
     private List<String> fieldNames;
     protected Integer indexSize;
+    protected Map<Long, Long> availableColumnsWithTable;
 
 
     @Override

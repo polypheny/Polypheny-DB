@@ -61,6 +61,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.monitoring.StatisticsHelper;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -823,19 +824,19 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
             if ( rowCountPerTable.containsKey( tableId ) ) {
                 int totalRows = rowCountPerTable.remove( tableId ) + number;
                 rowCountPerTable.put( tableId, totalRows );
-                //StatisticsHelper.getInstance().tableRowCount.put( tableId, totalRows );
+                StatisticsHelper.getInstance().tableRowCount.put( tableId, totalRows );
             } else {
                 rowCountPerTable.put( tableId, number );
-                //StatisticsHelper.getInstance().tableRowCount.put( tableId, number );
+                StatisticsHelper.getInstance().tableRowCount.put( tableId, number );
             }
         } else {
             if ( rowCountPerTable.containsKey( tableId ) ) {
                 int totalRows = rowCountPerTable.remove( tableId ) - number;
                 rowCountPerTable.put( tableId, totalRows );
-                //StatisticsHelper.getInstance().tableRowCount.put( tableId, number );
+                StatisticsHelper.getInstance().tableRowCount.put( tableId, number );
             } else {
                 rowCountPerTable.put( tableId, 0 );
-                //StatisticsHelper.getInstance().tableRowCount.put( tableId, 0 );
+                StatisticsHelper.getInstance().tableRowCount.put( tableId, 0 );
             }
         }
 

@@ -41,6 +41,7 @@ public class QueryEventAnalyzer {
                 .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( queryEvent.getMonitoringType() )
                 .physicalQueryClass( queryEvent.getPhysicalQueryClass() )
+                .availableColumnsWithTable(queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
                 .indexSize(queryEvent.getIndexSize())
                 .build();
         metric.getTables().addAll( queryEvent.getLogicalQueryInformation().getTables() );
