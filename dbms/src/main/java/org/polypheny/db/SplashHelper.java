@@ -84,7 +84,7 @@ public class SplashHelper implements Runnable {
             panel.setBorder( new EtchedBorder() );
             frame.add( panel, BorderLayout.CENTER );
 
-            JPanel middle = new JPanel();
+            JPanel middle = new JPanel( new BorderLayout() );
             //middle.setBorder( BorderFactory.createEmptyBorder( 0, 12, 0, 12 ) );
 
             JLabel label = new JLabel( "Polypheny" );
@@ -106,9 +106,10 @@ public class SplashHelper implements Runnable {
             bottom.add( version, BorderLayout.EAST );
 
             this.picLabel = new JLabel( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "loading-32.gif" ) ) ) );
+            picLabel.setBorder( BorderFactory.createEmptyBorder( 0, 12, 0, 12 ) );
 
             middle.add( picLabel, BorderLayout.WEST );
-            middle.add( status, BorderLayout.EAST );
+            middle.add( status );
 
             panel.add( label, BorderLayout.NORTH );
             panel.add( middle, BorderLayout.CENTER );
