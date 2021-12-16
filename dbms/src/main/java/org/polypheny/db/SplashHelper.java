@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Objects;
+import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -49,7 +50,6 @@ public class SplashHelper implements Runnable {
 
 
     public void setComplete() {
-        screen.setComplete();
         try {
             Desktop.getDesktop().browse( new URL( "http://localhost:8080" ).toURI() );
         } catch ( IOException | URISyntaxException e ) {
@@ -58,18 +58,23 @@ public class SplashHelper implements Runnable {
     }
 
 
+    public void setStatus( String status ) {
+        screen.setStatus( status );
+    }
+
+
     public static class SplashScreen extends JWindow {
 
 
-        private final JLabel text;
         private final JLabel picLabel;
         private final JFrame frame;
+        private final JLabel status;
 
 
         public SplashScreen() {
             this.frame = new JFrame( "Polypheny" );
             frame.setIconImage( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "logo-600.png" ) ) ).getImage() );
-            frame.setSize( 350, 250 );
+            frame.setSize( 400, 250 );
             frame.setUndecorated( true );
             frame.setResizable( false );
             frame.setDefaultCloseOperation( WindowConstants.HIDE_ON_CLOSE );
@@ -79,25 +84,35 @@ public class SplashHelper implements Runnable {
             panel.setBorder( new EtchedBorder() );
             frame.add( panel, BorderLayout.CENTER );
 
-            JPanel textP = new JPanel();
+            JPanel middle = new JPanel();
+            //middle.setBorder( BorderFactory.createEmptyBorder( 0, 12, 0, 12 ) );
 
             JLabel label = new JLabel( "Polypheny" );
-            label.setFont( new Font( "Verdana", Font.BOLD, 16 ) );
+            label.setFont( new Font( "Verdana", Font.BOLD, 24 ) );
+            label.setBorder( BorderFactory.createEmptyBorder( 12, 12, 0, 12 ) );
 
-            this.text = new JLabel( "is starting..." );
-            text.setFont( new Font( "Verdana", Font.PLAIN, 14 ) );
+            this.status = new JLabel( "loading..." );
+            status.setFont( new Font( "Verdana", Font.PLAIN, 12 ) );
 
-            JLabel copy = new JLabel( String.format( "%s ©Polypheny 2021", getControlVersion() ) );
+            JLabel version = new JLabel( getControlVersion() );
+            version.setFont( new Font( "Verdana", Font.PLAIN, 10 ) );
+
+            JLabel copy = new JLabel( "©2019-present The Polypheny Project" );
             copy.setFont( new Font( "Verdana", Font.PLAIN, 10 ) );
 
-            this.picLabel = new JLabel( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "loading.gif" ) ) ) );
+            JPanel bottom = new JPanel( new BorderLayout() );
+            bottom.setBorder( BorderFactory.createEmptyBorder( 0, 12, 0, 12 ) );
+            bottom.add( copy, BorderLayout.WEST );
+            bottom.add( version, BorderLayout.EAST );
 
-            textP.add( label );
-            textP.add( text );
+            this.picLabel = new JLabel( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "loading-32.gif" ) ) ) );
 
-            panel.add( textP, BorderLayout.NORTH );
-            panel.add( picLabel, BorderLayout.CENTER );
-            panel.add( copy, BorderLayout.SOUTH );
+            middle.add( picLabel, BorderLayout.WEST );
+            middle.add( status, BorderLayout.EAST );
+
+            panel.add( label, BorderLayout.NORTH );
+            panel.add( middle, BorderLayout.CENTER );
+            panel.add( bottom, BorderLayout.SOUTH );
 
             Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
             int x = (int) ((dimension.getWidth() - frame.getWidth()) / 2);
@@ -119,9 +134,8 @@ public class SplashHelper implements Runnable {
         }
 
 
-        public void setComplete() {
-            this.frame.setVisible( false );
-            dispose();
+        public void setStatus( String status ) {
+            this.status.setText( status );
         }
 
     }

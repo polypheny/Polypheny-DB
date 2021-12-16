@@ -129,6 +129,8 @@ public class PolyphenyDb {
         Thread splashT = new Thread( splashScreen );
         splashT.start();
 
+        StatusService.addSubscriber( splashScreen::setStatus );
+
         // Move data folder
         if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
             FileSystemManager.getInstance().recursiveDeleteFolder( "data" );

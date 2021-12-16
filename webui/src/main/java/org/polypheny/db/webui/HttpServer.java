@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.net.SocketException;
 import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -83,6 +84,7 @@ public class HttpServer implements Runnable {
 
         crudRoutes( server, crud );
 
+        StatusService.print( String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
         log.info( "Polypheny-UI started and is listening on port {}.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     }
 
