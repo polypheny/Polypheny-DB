@@ -124,6 +124,11 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        SplashHelper splashScreen = new SplashHelper();
+
+        Thread splashT = new Thread( splashScreen );
+        splashT.start();
+
         // Move data folder
         if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
             FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
@@ -313,6 +318,7 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
+        splashScreen.setComplete();
 
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );
