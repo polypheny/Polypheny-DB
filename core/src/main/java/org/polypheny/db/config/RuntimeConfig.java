@@ -267,7 +267,7 @@ public enum RuntimeConfig {
     QUERY_PLAN_CACHING_DML(
             "runtime/queryPlanCachingDml",
             "Cache DML query plans.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "queryPlanCachingGroup" ),
 
@@ -288,7 +288,7 @@ public enum RuntimeConfig {
     IMPLEMENTATION_CACHING_DML(
             "runtime/implementationCachingDml",
             "Cache implementation for DML queries.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "implementationCachingGroup" ),
 
