@@ -46,6 +46,7 @@ public class QueryPlanCache {
 
 
     public QueryPlanCache() {
+        RuntimeConfig.QUERY_PLAN_CACHING_SIZE.setRequiresRestart( true );
         planCache = CacheBuilder.newBuilder()
                 .maximumSize( RuntimeConfig.QUERY_PLAN_CACHING_SIZE.getInteger() )
                 //  .expireAfterWrite(10, TimeUnit.MINUTES)

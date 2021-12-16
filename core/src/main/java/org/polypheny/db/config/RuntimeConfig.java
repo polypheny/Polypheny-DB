@@ -704,6 +704,11 @@ public enum RuntimeConfig {
     }
 
 
+    public void setRequiresRestart( boolean requiresRestart ) {
+        configManager.getConfig( key ).setRequiresRestart( requiresRestart );
+    }
+
+
     public void addObserver( final ConfigListener listener ) {
         configManager.getConfig( key ).addObserver( listener );
     }

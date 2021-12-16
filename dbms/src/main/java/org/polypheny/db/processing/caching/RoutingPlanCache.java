@@ -54,6 +54,7 @@ public class RoutingPlanCache {
 
 
     public RoutingPlanCache() {
+        RuntimeConfig.ROUTING_PLAN_CACHING_SIZE.setRequiresRestart( true );
         planCache = CacheBuilder.newBuilder()
                 .maximumSize( RuntimeConfig.ROUTING_PLAN_CACHING_SIZE.getInteger() )
                 .build();
