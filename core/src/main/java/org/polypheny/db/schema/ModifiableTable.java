@@ -46,8 +46,6 @@ import org.polypheny.db.rex.RexNode;
 
 /**
  * A table that can be modified.
- *
- * @see ModifiableView
  */
 public interface ModifiableTable extends QueryableTable {
 

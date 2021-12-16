@@ -41,7 +41,7 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Table that can be scanned, optionally applying supplied filter expressions, without creating an intermediate relational expression.
+ * Table that can be scanned, optionally applying supplied filter expressions, without creating an intermediate expression.
  *
  * @see ScannableTable
  */

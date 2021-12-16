@@ -1155,7 +1155,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
                 Pair<Bindable<Object[]>, String> implementationPair = EnumerableInterpretable.toBindable(
                         internalParameters,
-                        statement.getPrepareContext().spark(),
                         enumerable,
                         prefer,
                         statement );

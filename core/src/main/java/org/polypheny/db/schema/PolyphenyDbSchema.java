@@ -105,8 +105,9 @@ public interface PolyphenyDbSchema {
     /**
      * Entry in a schema, such as a table or sub-schema.
      *
-     * Each object's name is a property of its membership in a schema; therefore in principle it could belong to several schemas, or even the same schema several times, with different names. In this
-     * respect, it is like an inode in a Unix file system.
+     * Each object's name is a property of its membership in a schema; therefore in principle it could belong to several
+     * schemas, or even the same schema several times, with different names. In this respect, it is like an inode in a
+     * Unix file system.
      *
      * The members of a schema must have unique names.
      */

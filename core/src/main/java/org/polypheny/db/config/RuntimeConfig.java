@@ -63,13 +63,6 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN
     ),
 
-    SPARK_ENGINE(
-            "runtime/sparkEngine",
-            "Specifies whether Spark should be used as the engine for processing that cannot be pushed to the source system. If false, Polypheny-DB generates code that implements the Enumerable interface.",
-            false,
-            ConfigType.BOOLEAN
-    ),
-
     CONFIG_SERVER_PORT(
             "runtime/configServerPort",
             "The port on which the config server should listen.",
@@ -155,8 +148,8 @@ public enum RuntimeConfig {
             "runtime/twoPcMode",
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
-            ConfigType.BOOLEAN,
-            "processingExecutionGroup" ),
+            ConfigType.BOOLEAN ),
+    // "processingExecutionGroup" ),
 
     DYNAMIC_QUERYING(
             "statistics/useDynamicQuerying",
@@ -247,7 +240,7 @@ public enum RuntimeConfig {
     HUB_IMPORT_BATCH_SIZE(
             "hub/hubImportBatchSize",
             "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
-            100,
+            1000,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 

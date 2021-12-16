@@ -56,8 +56,6 @@ import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.transaction.Statement;
 
@@ -172,23 +170,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
             for ( AlgOptRule rule : CONSTANT_REDUCTION_RULES ) {
                 planner.addRule( rule );
             }
-        }
-
-        final SparkHandler spark = statement.getPrepareContext().spark();
-        if ( spark.enabled() ) {
-            spark.registerRules(
-                    new RuleSetBuilder() {
-                        @Override
-                        public void addRule( AlgOptRule rule ) {
-                            // TODO:
-                        }
-
-
-                        @Override
-                        public void removeRule( AlgOptRule rule ) {
-                            // TODO:
-                        }
-                    } );
         }
 
         final DataContext dataContext = statement.getPrepareContext().getDataContext();

@@ -70,8 +70,9 @@ public interface FunctionParameter {
     /**
      * Returns whether this parameter is optional.
      *
-     * If true, the value of the parameter can be supplied using the DEFAULT SQL keyword, or it can be omitted from a function called using argument assignment,
-     * or the function can be called with fewer parameters (if all parameters after it are optional too).
+     * If true, the value of the parameter can be supplied using the DEFAULT SQL keyword, or it can be omitted from a function
+     * called using argument assignment, or the function can be called with fewer parameters (if all parameters after it
+     * are optional too).
      *
      * If a parameter is optional its default value is NULL. We may in future allow functions to specify other default values.
      */

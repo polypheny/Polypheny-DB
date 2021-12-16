@@ -26,7 +26,6 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.ModifiableView;
 import org.polypheny.db.schema.impl.AbstractTable;
 
 
@@ -55,22 +54,16 @@ public class JdbcTest {
                 List<String> updateColumnList,
                 List<RexNode> sourceExpressionList,
                 boolean flattened ) {
-            return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+            return LogicalTableModify.create(
+                    table,
+                    catalogReader,
+                    child,
+                    operation,
+                    updateColumnList,
+                    sourceExpressionList,
+                    flattened );
         }
 
     }
-
-
-    /**
-     * Abstract base class for implementations of {@link ModifiableView}.
-     */
-    public abstract static class AbstractModifiableView extends AbstractTable implements ModifiableView {
-
-        protected AbstractModifiableView() {
-            super();
-        }
-
-    }
-
 
 }

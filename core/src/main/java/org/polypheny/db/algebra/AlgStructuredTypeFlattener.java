@@ -579,7 +579,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             if ( exp instanceof RexInputRef ) {
                 RexInputRef inputRef = (RexInputRef) exp;
 
-                // expand to range
+                // Expand to range
                 AlgDataType flattenedType = PolyTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), exp.getType(), null );
                 List<AlgDataTypeField> fieldList = flattenedType.getFieldList();
                 int n = fieldList.size();
@@ -726,7 +726,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
         @Override
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
-            // rewrite children first
+            // Rewrite children first
             super.visit( p, ordinal, parent );
 
             currentRel = p;
@@ -739,7 +739,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             currentRel = null;
             if ( !found ) {
                 if ( p.getInputs().size() == 0 ) {
-                    // for leaves, it's usually safe to assume that no transformation is required
+                    // For leaves, it's usually safe to assume that no transformation is required
                     rewriteGeneric( p );
                 } else {
                     throw new AssertionError( "no '" + visitMethodName + "' method found for class " + p.getClass().getName() );

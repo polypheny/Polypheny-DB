@@ -41,8 +41,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 /**
  * Table whose row type can be extended to include extra fields.
  *
- * In some storage systems, especially those with "late schema", there may exist columns that have values in the table but which are not declared in the table schema.
- * However, a particular query may wish to reference these columns as if they were defined in the schema. Calling the {@link #extend} method creates a temporarily extended table schema.
+ * In some storage systems, especially those with "late schema", there may exist columns that have values in the table but
+ * which are not declared in the table schema. However, a particular query may wish to reference these columns as if they were
+ * defined in the schema. Calling the {@link #extend} method creates a temporarily extended table schema.
  *
  * If the table implements extended interfaces such as
  * {@link ScannableTable},
@@ -58,7 +59,8 @@ public interface ExtensibleTable extends Table {
     Table extend( List<AlgDataTypeField> fields );
 
     /**
-     * Returns the starting offset of the first extended column, which may differ from the field count when the table stores metadata columns that are not counted in the row-type field count.
+     * Returns the starting offset of the first extended column, which may differ from the field count when the table stores
+     * metadata columns that are not counted in the row-type field count.
      */
     int getExtendedColumnOffset();
 

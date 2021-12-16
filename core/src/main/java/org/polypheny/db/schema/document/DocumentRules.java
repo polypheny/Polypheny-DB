@@ -28,8 +28,7 @@ import org.polypheny.db.rex.RexVisitorImpl;
 
 
 /**
- * Helper functions, which can be used to exclude document logics during planing from stores,
- * which are not able to support it
+ * Helper functions, which can be used to exclude document logics during planing from stores, which are not able to support it.
  */
 public class DocumentRules {
 

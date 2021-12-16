@@ -21,7 +21,6 @@ import java.util.List;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 
@@ -44,23 +43,17 @@ public interface Context {
 
     PolyphenyDbConnectionConfig config();
 
-    /**
-     * Returns the spark handler. Never null.
-     */
-    SparkHandler spark();
-
     DataContext getDataContext();
 
     /**
      * Returns the path of the object being analyzed, or null.
      *
-     * The object is being analyzed is typically a view. If it is already being analyzed further up the stack, the view definition can be deduced to be cyclic.
+     * The object is being analyzed is typically a view. If it is already being analyzed further up the stack,
+     * the view definition can be deduced to be cyclic.
      */
     List<String> getObjectPath();
 
-
     Statement getStatement();
-
 
     long getDatabaseId();
 

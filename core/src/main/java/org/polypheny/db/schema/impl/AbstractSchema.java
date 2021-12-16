@@ -140,7 +140,8 @@ public class AbstractSchema implements Schema {
 
     /**
      * Returns a multi-map of functions in this schema by name.
-     * It is a multi-map because functions are overloaded; there may be more than one function in a schema with a given name (as long as they have different parameter lists).
+     * It is a multi-map because functions are overloaded; there may be more than one function in a schema with a given
+     * name (as long as they have different parameter lists).
      *
      * The implementations of {@link #getFunctionNames()} and {@link Schema#getFunctions(String)} depend on this map.
      * The default implementation of this method returns the empty multi-map.

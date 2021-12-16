@@ -48,7 +48,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 public interface TableFunction extends Function {
 
     /**
-     * Returns the record type of the table yielded by this function when applied to given arguments. Only literal arguments are passed, non-literal are replaced with default values (null, 0, false, etc).
+     * Returns the record type of the table yielded by this function when applied to given arguments. Only literal arguments
+     * are passed, non-literal are replaced with default values (null, 0, false, etc).
      *
      * @param typeFactory Type factory
      * @param arguments arguments of a function call (only literal arguments are passed, nulls for non-literal ones)
@@ -57,7 +58,8 @@ public interface TableFunction extends Function {
     AlgDataType getRowType( AlgDataTypeFactory typeFactory, List<Object> arguments );
 
     /**
-     * Returns the row type of the table yielded by this function when applied to given arguments. Only literal arguments are passed, non-literal are replaced with default values (null, 0, false, etc).
+     * Returns the row type of the table yielded by this function when applied to given arguments. Only literal arguments are
+     * passed, non-literal are replaced with default values (null, 0, false, etc).
      *
      * @param arguments arguments of a function call (only literal arguments are passed, nulls for non-literal ones)
      * @return element type of the table (e.g. {@code Object[].class})

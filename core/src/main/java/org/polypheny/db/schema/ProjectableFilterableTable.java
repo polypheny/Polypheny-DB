@@ -41,7 +41,8 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Table that can be scanned, optionally applying supplied filter expressions, and projecting a given list of columns, without creating an intermediate relational expression.
+ * Table that can be scanned, optionally applying supplied filter expressions, and projecting a given list of columns,
+ * without creating an intermediate relational expression.
  *
  * If you wish to write a table that can apply projects but not filters, simply decline all filters.
  *

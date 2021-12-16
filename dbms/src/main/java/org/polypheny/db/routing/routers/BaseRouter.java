@@ -61,6 +61,11 @@ public abstract class BaseRouter {
     final static Catalog catalog = Catalog.getInstance();
 
 
+    static {
+        RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.setRequiresRestart( true );
+    }
+
+
     public AlgNode recursiveCopy( AlgNode node ) {
         List<AlgNode> inputs = new LinkedList<>();
         if ( node.getInputs() != null && node.getInputs().size() > 0 ) {

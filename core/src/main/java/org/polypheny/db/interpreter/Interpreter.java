@@ -511,7 +511,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             if ( !found ) {
                 if ( p instanceof InterpretableRel ) {
                     InterpretableRel interpretableRel = (InterpretableRel) p;
-                    node = interpretableRel.implement( new InterpretableRel.InterpreterImplementor( this, null, null ) );
+                    node = interpretableRel.implement( new InterpretableRel.InterpreterImplementor( this, null ) );
                 } else {
                     // Probably need to add a visit(XxxRel) method to CoreCompiler.
                     throw new AssertionError( "interpreter: no implementation for " + p.getClass() );

@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 
+
 public class LogicalSchema implements Schema {
 
     private final String schemaName;
