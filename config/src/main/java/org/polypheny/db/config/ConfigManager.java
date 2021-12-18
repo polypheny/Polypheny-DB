@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,19 @@ package org.polypheny.db.config;
 
 import com.google.gson.Gson;
 import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigRenderOptions;
+import com.typesafe.config.ConfigValueFactory;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
@@ -32,15 +40,22 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
  * ConfigManager allows to add and retrieve configuration objects.
  * If the configuration element has a Web UI Group and Web UI Page defined, it can be requested from the Web UI and the value of the configuration can be changed there.
  */
+@Slf4j
 public class ConfigManager {
 
     private static ConfigManager instance = new ConfigManager();
+
+    private static final String CONFIGURATION_FILE = "polypheny.conf";
+    private static final String CONFIGURATION_DIRECTORY = "poly-config"; // Configuration directory shall always be placed next to executable
 
     private final ConcurrentMap<String, Config> configs;
     private final ConcurrentMap<String, WebUiGroup> uiGroups;
     private final ConcurrentMap<String, WebUiPage> uiPages;
 
-    private com.typesafe.config.Config configFile;
+
+    private static com.typesafe.config.Config configFile;
+
+    private static File applicationConfFile = null;
 
 
     private ConfigManager() {
@@ -48,7 +63,7 @@ public class ConfigManager {
         this.uiGroups = new ConcurrentHashMap<>();
         this.uiPages = new ConcurrentHashMap<>();
 
-        configFile = ConfigFactory.load();
+        // configFile = ConfigFactory.load();
     }
 
 
@@ -60,8 +75,71 @@ public class ConfigManager {
     }
 
 
+    private static void createConfigFolders( String workingDir, File configDir ) {
+        if ( !new File( workingDir ).exists() ) {
+            if ( !new File( workingDir ).mkdirs() ) {
+                throw new RuntimeException( "Could not create the folders for " + new File( workingDir ).getAbsolutePath() );
+            }
+        }
+        if ( !configDir.exists() ) {
+            if ( !configDir.mkdirs() ) {
+                throw new RuntimeException( "Could not create the config folder: " + configDir.getAbsolutePath() );
+            }
+        }
+    }
+
+
+    public static void loadConfigFile() {
+
+        // No custom location has been specified
+        // Assume Default
+        if ( applicationConfFile == null ) {
+            // Determine workingDirectory elsewhere. Maybe during installation or absolute path?!
+            String workingDir = "./";
+            File configDir = new File( new File( workingDir ), CONFIGURATION_DIRECTORY );
+            createConfigFolders( workingDir, configDir );
+            applicationConfFile = new File( configDir, CONFIGURATION_FILE );
+        }
+
+        if ( configFile == null ) {
+            configFile = ConfigFactory.parseFile( applicationConfFile );
+        } else {
+            configFile = ConfigFactory.parseFile( applicationConfFile ).withFallback( configFile );
+        }
+    }
+
+
+    public static void writeConfiguration( final com.typesafe.config.Config configuration ) {
+        ConfigRenderOptions configRenderOptions = ConfigRenderOptions.defaults();
+        configRenderOptions = configRenderOptions.setComments( false );
+        configRenderOptions = configRenderOptions.setFormatted( true );
+        configRenderOptions = configRenderOptions.setJson( false );
+        configRenderOptions = configRenderOptions.setOriginComments( false );
+
+        String workingDir = "./";
+        File configDir = new File( new File( workingDir ), "poly-config" );
+        createConfigFolders( workingDir, configDir );
+        try (
+                FileOutputStream fos = new FileOutputStream( applicationConfFile, false );
+                BufferedWriter bw = new BufferedWriter( new OutputStreamWriter( fos ) )
+        ) {
+            bw.write( configuration.root().render( configRenderOptions ) );
+        } catch ( IOException e ) {
+            log.error( "Exception while writing configuration file", e );
+        }
+        loadConfigFile();
+    }
+
+
+    public static void setApplicationConfFile( File applicationConfFile ) {
+        ConfigManager.applicationConfFile = applicationConfFile;
+    }
+
+
     /**
      * Register a configuration element in the ConfigManager.
+     * Either the default value is used. Or if the key is present within the configuration file, this
+     * value will be used instead.
      *
      * @param config Configuration element to register.
      * @throws ConfigRuntimeException If a Config is already registered.
@@ -95,6 +173,17 @@ public class ConfigManager {
         for ( Config c : configs.values() ) {
             c.addObserver( listener );
         }
+    }
+
+
+    /**
+     * Updates Config to file
+     */
+    public void persistConfigValue( String configKey, Object updatedValue ) {
+
+        com.typesafe.config.Config newConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
+        writeConfiguration( newConfig );
+
     }
 
 

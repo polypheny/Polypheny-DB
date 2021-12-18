@@ -20,6 +20,8 @@ package org.polypheny.db;
 import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
+import com.github.rvesse.airline.annotations.OptionType;
+import java.io.File;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
@@ -94,6 +97,9 @@ public class PolyphenyDb {
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public String defaultSourceName = "csv";
 
+    @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)
+    protected String applicationConfPath;
+
     // required for unit tests to determine when the system is ready to process queries
     @Getter
     private volatile boolean isReady = false;
@@ -143,6 +149,12 @@ public class PolyphenyDb {
             if ( !FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
                 throw new RuntimeException( "Unable to create the backup folder." );
             }
+        }
+
+        ConfigManager.getInstance().loadConfigFile();
+        // Enables Polypheny to be started with a different config.
+        if ( applicationConfPath != null ) {
+            ConfigManager.getInstance().setApplicationConfFile( new File( applicationConfPath ) );
         }
 
         class ShutdownHelper implements Runnable {
