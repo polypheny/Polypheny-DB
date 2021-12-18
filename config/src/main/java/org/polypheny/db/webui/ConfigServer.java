@@ -78,7 +78,7 @@ public class ConfigServer implements ConfigListener {
             }
         } );
 
-        // save changes from WebUi
+        // Save changes from WebUi
         http.post( "/updateConfigs", ( req, res ) -> {
             log.trace( req.body() );
             Type clazzType = new TypeToken<Map<String, Object>>() {
@@ -87,7 +87,7 @@ public class ConfigServer implements ConfigListener {
             StringBuilder feedback = new StringBuilder();
             boolean allValid = true;
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {
-                //cm.setConfigValue( entry.getKey(), entry.getValue() );
+
                 Config c = cm.getConfig( entry.getKey() );
                 switch ( c.getConfigType() ) {
                     case "ConfigInteger":
@@ -95,35 +95,47 @@ public class ConfigServer implements ConfigListener {
                         if ( !c.setInt( d.intValue() ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                         break;
                     case "ConfigDouble":
                         if ( !c.setDouble( (double) entry.getValue() ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                         break;
                     case "ConfigDecimal":
                         if ( !c.setDecimal( (BigDecimal) entry.getValue() ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                         break;
                     case "ConfigLong":
                         if ( !c.setLong( (long) entry.getValue() ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                     case "ConfigString":
                         if ( !c.setString( (String) entry.getValue() ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                         break;
                     case "ConfigBoolean":
                         if ( !c.setBoolean( (boolean) entry.getValue() ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                         break;
                     case "ConfigClazz":
@@ -131,6 +143,8 @@ public class ConfigServer implements ConfigListener {
                         if ( !c.parseStringAndSetValue( (String) entry.getValue() ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                         break;
                     case "ConfigClazzList":
@@ -138,12 +152,16 @@ public class ConfigServer implements ConfigListener {
                         if ( !c.parseStringAndSetValue( gson.toJson( entry.getValue(), ArrayList.class ) ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                         break;
                     case "ConfigList":
                         if ( !c.setConfigObjectList( (List<Object>) entry.getValue(), c.getTemplateClass() ) ) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        } else {
+                            cm.persistConfigValue( entry.getKey(), entry.getValue() );
                         }
                         break;
                     default:
@@ -151,13 +169,12 @@ public class ConfigServer implements ConfigListener {
                         feedback.append( "Config with type " ).append( c.getConfigType() ).append( " is not supported yet." );
                         log.error( "Config with type {} is not supported yet.", c.getConfigType() );
                 }
-                //cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }
             if ( allValid ) {
                 return "{\"success\":1}";
             } else {
                 feedback.append( "All other values were saved." );
-                return "{\"warning\": \"" + feedback.toString() + "\"}";
+                return "{\"warning\": \"" + feedback + "\"}";
             }
         } );
     }
