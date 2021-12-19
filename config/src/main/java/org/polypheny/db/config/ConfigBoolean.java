@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,15 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 public class ConfigBoolean extends ConfigScalar {
 
-    boolean value;
+    private boolean value;
+    private boolean defaultValue;
 
 
     public ConfigBoolean( final String key, final boolean value ) {
         super( key );
         this.webUiFormType = WebUiFormType.BOOLEAN;
         this.value = value;
+        this.defaultValue = value;
     }
 
 
@@ -38,12 +40,19 @@ public class ConfigBoolean extends ConfigScalar {
         super( key, description );
         this.webUiFormType = WebUiFormType.BOOLEAN;
         this.value = value;
+        this.defaultValue = value;
     }
 
 
     @Override
     public boolean getBoolean() {
         return this.value;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 
 

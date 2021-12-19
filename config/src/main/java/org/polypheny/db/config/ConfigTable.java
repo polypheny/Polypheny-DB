@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigTable extends Config {
 
     private ConfigScalar[][] table;
+    private ConfigScalar[][] defaultTable;
 
 
     public ConfigTable( final String key, final int[][] array ) {
@@ -35,6 +36,7 @@ public class ConfigTable extends Config {
             }
         }
         this.table = fill;
+        this.defaultTable = this.table;
     }
 
 
@@ -47,6 +49,7 @@ public class ConfigTable extends Config {
             }
         }
         this.table = fill;
+        this.defaultTable = this.table;
     }
 
 
@@ -59,6 +62,7 @@ public class ConfigTable extends Config {
             }
         }
         this.table = fill;
+        this.defaultTable = this.table;
     }
 
 
@@ -71,6 +75,7 @@ public class ConfigTable extends Config {
             }
         }
         this.table = fill;
+        this.defaultTable = this.table;
     }
 
 
@@ -83,6 +88,7 @@ public class ConfigTable extends Config {
             }
         }
         this.table = fill;
+        this.defaultTable = this.table;
     }
 
 
@@ -95,6 +101,13 @@ public class ConfigTable extends Config {
             }
         }
         this.table = fill;
+        this.defaultTable = this.table;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultTable;
     }
 
 

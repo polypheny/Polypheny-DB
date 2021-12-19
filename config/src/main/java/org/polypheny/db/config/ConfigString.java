@@ -26,12 +26,13 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigString extends ConfigScalar {
 
     private String value;
-
+    private String defaultValue;
 
     public ConfigString( final String key, final String value ) {
         super( key );
         this.webUiFormType = WebUiFormType.TEXT;
         this.value = value;
+        this.defaultValue = value;
     }
 
 
@@ -39,6 +40,7 @@ public class ConfigString extends ConfigScalar {
         super( key, description );
         this.webUiFormType = WebUiFormType.TEXT;
         this.value = value;
+        this.defaultValue = value;
     }
 
 
@@ -57,6 +59,12 @@ public class ConfigString extends ConfigScalar {
         } else {
             return false;
         }
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 
 

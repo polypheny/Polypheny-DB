@@ -34,6 +34,7 @@ public class ConfigEnumList extends Config {
     @SerializedName("values")
     private final Set<Enum> enumValues;
     private final List<Enum> value;
+    private List<Enum> defaultValue;
 
 
     public ConfigEnumList( final String key, final String description, final Class enumClass ) {
@@ -41,6 +42,7 @@ public class ConfigEnumList extends Config {
         //noinspection unchecked
         enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
         this.value = new ArrayList<>();
+        this.defaultValue = this.value;
         this.webUiFormType = WebUiFormType.CHECKBOXES;
     }
 
@@ -48,6 +50,13 @@ public class ConfigEnumList extends Config {
     public ConfigEnumList( final String key, final String description, final Class superClass, final List<Enum> defaultValue ) {
         this( key, description, superClass );
         setEnumList( defaultValue );
+        this.defaultValue = defaultValue;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 
 

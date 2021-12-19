@@ -16,6 +16,7 @@
 
 package org.polypheny.db.config;
 
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +25,8 @@ import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
+
 
 @Accessors(chain = true)
 public class ConfigDocker extends ConfigObject {
@@ -105,6 +108,12 @@ public class ConfigDocker extends ConfigObject {
         Map<String, String> settings = new HashMap<>();
         settings.put( "host", host );
         return settings;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        throw new ConfigRuntimeException( "Not supported for Docker Configs" );
     }
 
 
