@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigArray extends Config {
 
     private ConfigScalar[] array;
+    private ConfigScalar[] defaultArray;
 
 
     public ConfigArray( final String key, final int[] array ) {
@@ -36,6 +37,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigInteger( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
+        this.defaultArray = this.array;
     }
 
 
@@ -46,6 +48,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigDouble( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
+        this.defaultArray = this.array;
     }
 
 
@@ -56,6 +59,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigLong( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
+        this.defaultArray = this.array;
     }
 
 
@@ -66,6 +70,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigDecimal( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
+        this.defaultArray = this.array;
     }
 
 
@@ -76,6 +81,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigString( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
+        this.defaultArray = this.array;
     }
 
 
@@ -86,6 +92,13 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigBoolean( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
+        this.defaultArray = this.array;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultArray;
     }
 
 

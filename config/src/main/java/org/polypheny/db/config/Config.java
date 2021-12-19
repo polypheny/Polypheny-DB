@@ -218,6 +218,9 @@ public abstract class Config {
     }
 
 
+    public abstract Object getDefaultValue();
+
+
     /**
      * Set the value of this config.
      *

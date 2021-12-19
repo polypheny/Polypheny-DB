@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ public class ConfigEnum extends Config {
     @SerializedName("values")
     private final Set<Enum> enumValues;
     private Enum value;
+    private Enum defaultValue;
 
 
     public ConfigEnum( final String key, final String description, final Class enumClass, final Enum defaultValue ) {
@@ -37,7 +38,14 @@ public class ConfigEnum extends Config {
         //noinspection unchecked
         enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
         setEnum( defaultValue );
+        this.defaultValue = defaultValue;
         this.webUiFormType = WebUiFormType.SELECT;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 
 

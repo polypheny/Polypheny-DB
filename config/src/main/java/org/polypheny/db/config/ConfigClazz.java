@@ -40,6 +40,7 @@ public class ConfigClazz extends Config {
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private Class value;
+    private Class defaultValue;
 
 
     public ConfigClazz( final String key, final Class superClass, final Class defaultValue ) {
@@ -48,7 +49,14 @@ public class ConfigClazz extends Config {
         //noinspection unchecked
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
         setClazz( defaultValue );
+        this.defaultValue = defaultValue;
         this.webUiFormType = WebUiFormType.SELECT;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 
 

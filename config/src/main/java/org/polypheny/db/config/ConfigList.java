@@ -32,9 +32,10 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigList extends Config {
 
     @SerializedName("values")
-    List<ConfigScalar> list;
+    private List<ConfigScalar> list;
+    private List<ConfigScalar> defaultList;
 
-    ConfigScalar template;
+    private ConfigScalar template;
 
     /**
      * listener which propagates the changes to underlying configs to
@@ -54,8 +55,8 @@ public class ConfigList extends Config {
     };
 
 
-    // while java does not known if our cast are correct
-    // we know, so we can suppress here
+    // While java does not know if our casts are correct
+    // we know, so we can suppress them here
     @SuppressWarnings("unchecked")
     public ConfigList( String key, final List<?> list, Class<?> clazz ) {
         super( key );
@@ -80,7 +81,7 @@ public class ConfigList extends Config {
     }
 
 
-    public void integerList( String key, final List<Integer> list ) {
+    private void integerList( String key, final List<Integer> list ) {
         List<ConfigScalar> fill = new ArrayList<>();
         for ( int i = 0; i < list.size(); i++ ) {
             fill.add( (ConfigScalar) new ConfigInteger( key + "." + i, list.get( i ) ).isObservable( false ) );
@@ -88,10 +89,11 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigInteger( key + ".", 0 ).isObservable( false );
         this.list = fill;
+        this.defaultList = this.list;
     }
 
 
-    public void doubleList( String key, final List<Double> list ) {
+    private void doubleList( String key, final List<Double> list ) {
         List<ConfigScalar> fill = new ArrayList<>();
         for ( int i = 0; i < list.size(); i++ ) {
             fill.add( (ConfigScalar) new ConfigDouble( key + "." + i, list.get( i ) ).isObservable( false ) );
@@ -99,10 +101,11 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigDouble( key + ".", 0 ).isObservable( false );
         this.list = fill;
+        this.defaultList = this.list;
     }
 
 
-    public void longList( String key, final List<Long> list ) {
+    private void longList( String key, final List<Long> list ) {
         List<ConfigScalar> fill = new ArrayList<>();
         for ( int i = 0; i < list.size(); i++ ) {
             fill.add( (ConfigScalar) new ConfigLong( key + "." + i, list.get( i ) ).isObservable( false ) );
@@ -110,10 +113,11 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigLong( key + ".", 0 ).isObservable( false );
         this.list = fill;
+        this.defaultList = this.list;
     }
 
 
-    public void decimalList( String key, final List<BigDecimal> list ) {
+    private void decimalList( String key, final List<BigDecimal> list ) {
         List<ConfigScalar> fill = new ArrayList<>();
         for ( int i = 0; i < list.size(); i++ ) {
             fill.add( (ConfigScalar) new ConfigDecimal( key + "." + i, list.get( i ) ).isObservable( false ) );
@@ -121,10 +125,11 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigDecimal( key + ".", BigDecimal.ONE ).isObservable( false );
         this.list = fill;
+        this.defaultList = this.list;
     }
 
 
-    public void stringList( String key, final List<String> list ) {
+    private void stringList( String key, final List<String> list ) {
         List<ConfigScalar> fill = new ArrayList<>();
         for ( int i = 0; i < list.size(); i++ ) {
             fill.add( (ConfigScalar) new ConfigString( key + "." + i, list.get( i ) ).isObservable( false ) );
@@ -132,10 +137,11 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigString( key + ".", "" ).isObservable( false );
         this.list = fill;
+        this.defaultList = this.list;
     }
 
 
-    public void booleanList( String key, final List<Boolean> list ) {
+    private void booleanList( String key, final List<Boolean> list ) {
         List<ConfigScalar> fill = new ArrayList<>();
         for ( int i = 0; i < list.size(); i++ ) {
             fill.add( (ConfigScalar) new ConfigBoolean( key + "." + i, list.get( i ) ).isObservable( false ) );
@@ -143,18 +149,26 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigBoolean( key + ".", false ).isObservable( false );
         this.list = fill;
+        this.defaultList = this.list;
     }
 
 
-    public void dockerList( String key, final List<ConfigDocker> list ) {
+    private void dockerList( String key, final List<ConfigDocker> list ) {
         this.template = new ConfigDocker( "localhost", null, null );
         this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
+        this.defaultList = this.list;
     }
 
 
     @Override
     public <T> List<T> getList( Class<T> type ) {
         return list.stream().map( type::cast ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultList;
     }
 
 

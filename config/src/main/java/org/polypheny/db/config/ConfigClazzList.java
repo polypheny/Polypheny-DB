@@ -44,6 +44,7 @@ public class ConfigClazzList extends Config {
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private final List<Class> value;
+    private List<Class> defaultValue;
 
 
     public ConfigClazzList( final String key, final Class superClass ) {
@@ -52,6 +53,7 @@ public class ConfigClazzList extends Config {
         //noinspection unchecked
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
         this.value = new ArrayList<>();
+        this.defaultValue = this.value;
         this.webUiFormType = WebUiFormType.CHECKBOXES;
     }
 
@@ -67,6 +69,13 @@ public class ConfigClazzList extends Config {
     public ConfigClazzList( final String key, final Class superClass, final List<Class> defaultValue ) {
         this( key, superClass );
         setClazzList( defaultValue );
+        this.defaultValue = defaultValue;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 
 

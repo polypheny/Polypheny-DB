@@ -116,7 +116,6 @@ public class WebUiGroup {
      */
     public void addConfig( final Config c ) {
         this.configs.put( c.getKey(), c );
-
     }
 
 

@@ -46,7 +46,7 @@ public class ConfigManager {
     private static ConfigManager instance = new ConfigManager();
 
     private static final String CONFIGURATION_FILE = "polypheny.conf";
-    private static final String CONFIGURATION_DIRECTORY = "poly-config"; // Configuration directory shall always be placed next to executable
+    private static final String CONFIGURATION_DIRECTORY = "config"; // Configuration directory shall always be placed next to executable
 
     private final ConcurrentMap<String, Config> configs;
     private final ConcurrentMap<String, WebUiGroup> uiGroups;
@@ -62,8 +62,6 @@ public class ConfigManager {
         this.configs = new ConcurrentHashMap<>();
         this.uiGroups = new ConcurrentHashMap<>();
         this.uiPages = new ConcurrentHashMap<>();
-
-        // configFile = ConfigFactory.load();
     }
 
 
@@ -109,7 +107,7 @@ public class ConfigManager {
     }
 
 
-    public static void writeConfiguration( final com.typesafe.config.Config configuration ) {
+    private static void writeConfiguration( final com.typesafe.config.Config configuration ) {
         ConfigRenderOptions configRenderOptions = ConfigRenderOptions.defaults();
         configRenderOptions = configRenderOptions.setComments( false );
         configRenderOptions = configRenderOptions.setFormatted( true );
@@ -117,7 +115,7 @@ public class ConfigManager {
         configRenderOptions = configRenderOptions.setOriginComments( false );
 
         String workingDir = "./";
-        File configDir = new File( new File( workingDir ), "poly-config" );
+        File configDir = new File( new File( workingDir ), CONFIGURATION_DIRECTORY );
         createConfigFolders( workingDir, configDir );
         try (
                 FileOutputStream fos = new FileOutputStream( applicationConfFile, false );
@@ -181,7 +179,16 @@ public class ConfigManager {
      */
     public void persistConfigValue( String configKey, Object updatedValue ) {
 
-        com.typesafe.config.Config newConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
+        com.typesafe.config.Config newConfig;
+
+        // Check if the new value is default value.
+        // If so, the value will be omitted since there is no need to write it to file
+        if ( updatedValue.toString().equals( configs.get( configKey ).getDefaultValue().toString() ) ) {
+            log.warn( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
+            newConfig = configFile.withoutPath( configKey );
+        } else {
+            newConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
+        }
         writeConfiguration( newConfig );
 
     }
