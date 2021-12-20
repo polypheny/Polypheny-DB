@@ -45,8 +45,8 @@ public class ConfigManager {
 
     private static ConfigManager instance = new ConfigManager();
 
-    private static final String CONFIGURATION_FILE = "polypheny.conf";
-    private static final String CONFIGURATION_DIRECTORY = "config"; // Configuration directory shall always be placed next to executable
+    private static String configurationFile = "polypheny.conf";
+    private static String configurationDirectory = "config"; // Configuration directory shall always be placed next to executable
 
     private final ConcurrentMap<String, Config> configs;
     private final ConcurrentMap<String, WebUiGroup> uiGroups;
@@ -69,6 +69,10 @@ public class ConfigManager {
      * Singleton
      */
     public static ConfigManager getInstance() {
+
+        if ( configFile == null ) {
+            loadConfigFile();
+        }
         return instance;
     }
 
@@ -94,9 +98,9 @@ public class ConfigManager {
         if ( applicationConfFile == null ) {
             // Determine workingDirectory elsewhere. Maybe during installation or absolute path?!
             String workingDir = "./";
-            File configDir = new File( new File( workingDir ), CONFIGURATION_DIRECTORY );
+            File configDir = new File( new File( workingDir ), configurationDirectory );
             createConfigFolders( workingDir, configDir );
-            applicationConfFile = new File( configDir, CONFIGURATION_FILE );
+            applicationConfFile = new File( configDir, configurationFile );
         }
 
         if ( configFile == null ) {
@@ -115,7 +119,7 @@ public class ConfigManager {
         configRenderOptions = configRenderOptions.setOriginComments( false );
 
         String workingDir = "./";
-        File configDir = new File( new File( workingDir ), CONFIGURATION_DIRECTORY );
+        File configDir = new File( new File( workingDir ), configurationDirectory );
         createConfigFolders( workingDir, configDir );
         try (
                 FileOutputStream fos = new FileOutputStream( applicationConfFile, false );
@@ -131,6 +135,9 @@ public class ConfigManager {
 
     public static void setApplicationConfFile( File applicationConfFile ) {
         ConfigManager.applicationConfFile = applicationConfFile;
+
+        configurationFile = applicationConfFile.getName();
+        configurationDirectory = applicationConfFile.getAbsolutePath();
     }
 
 
@@ -179,11 +186,14 @@ public class ConfigManager {
      */
     public void persistConfigValue( String configKey, Object updatedValue ) {
 
+        // TODO Extend with deviations from default Value, the actual defaultValue, description and link to website
+
         com.typesafe.config.Config newConfig;
 
         // Check if the new value is default value.
         // If so, the value will be omitted since there is no need to write it to file
-        if ( updatedValue.toString().equals( configs.get( configKey ).getDefaultValue().toString() ) ) {
+        if ( configs.get( configKey ).isDefault() ) {
+            //if ( updatedValue.toString().equals( configs.get( configKey ).getDefaultValue().toString() ) ) {
             log.warn( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
             newConfig = configFile.withoutPath( configKey );
         } else {

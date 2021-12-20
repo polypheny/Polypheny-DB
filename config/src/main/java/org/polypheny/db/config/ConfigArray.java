@@ -18,6 +18,7 @@ package org.polypheny.db.config;
 
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
@@ -37,7 +38,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigInteger( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
-        this.defaultArray = this.array;
+        this.defaultArray = this.array.clone();
     }
 
 
@@ -48,7 +49,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigDouble( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
-        this.defaultArray = this.array;
+        this.defaultArray = this.array.clone();
     }
 
 
@@ -59,7 +60,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigLong( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
-        this.defaultArray = this.array;
+        this.defaultArray = this.array.clone();
     }
 
 
@@ -70,7 +71,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigDecimal( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
-        this.defaultArray = this.array;
+        this.defaultArray = this.array.clone();
     }
 
 
@@ -81,7 +82,7 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigString( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
-        this.defaultArray = this.array;
+        this.defaultArray = this.array.clone();
     }
 
 
@@ -92,13 +93,38 @@ public class ConfigArray extends Config {
             fill[i] = (ConfigScalar) new ConfigBoolean( key + "." + i, array[i] ).isObservable( false );
         }
         this.array = fill;
-        this.defaultArray = this.array;
+        this.defaultArray = this.array.clone();
     }
 
 
     @Override
     public Object getDefaultValue() {
         return defaultArray;
+    }
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        return Arrays.equals( defaultArray, array );
+    }
+
+
+    /**
+     * Restores the current value to the system configured default vlaue.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}
+     * If you want to check if the current value deviates from default use:  {@link #isDefault()}.
+     */
+    @Override
+    public void resetToDefault() {
+        array = defaultArray.clone();
     }
 
 

@@ -153,7 +153,6 @@ public class PolyphenyDb {
             }
         }
 
-        ConfigManager.getInstance().loadConfigFile();
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
         if ( applicationConfPath != null && FileSystemManager.getInstance().checkIfExists( applicationConfPath ) ) {
