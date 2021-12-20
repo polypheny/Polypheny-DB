@@ -117,6 +117,31 @@ public class ConfigDocker extends ConfigObject {
     }
 
 
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        throw new ConfigRuntimeException( "Not supported for Docker Configs" );
+    }
+
+
+    /**
+     * Restores the current value to the system configured default vlaue.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}
+     * If you want to check if the current value deviates from default use:  {@link #isDefault()}.
+     */
+    @Override
+    public void resetToDefault() {
+        throw new ConfigRuntimeException( "Not supported for Docker Configs" );
+    }
+
+
     @Override
     void setValueFromFile( com.typesafe.config.Config conf ) {
         throw new UnsupportedOperationException( "" );

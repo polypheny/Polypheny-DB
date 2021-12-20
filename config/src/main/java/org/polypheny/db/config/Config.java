@@ -218,7 +218,42 @@ public abstract class Config {
     }
 
 
+    /**
+     * Retrieves the defaultValue that it is internally configured by the system
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
+     *
+     * @return defaultValue of config object
+     */
     public abstract Object getDefaultValue();
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    public abstract boolean isDefault();
+
+
+    /**
+     * Restores the current value to the system configured default vlaue.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}
+     * If you want to check if the current value deviates from default use:  {@link #isDefault()}.
+     */
+    public abstract void resetToDefault();
+
+
+    /**
+     * Lets you change the internally configured system default Value to a new value.
+     *
+     * If you simply want to reset the current value to the default use: {@link #resetToDefault()}
+     */
+    public void changeDefaultValue( Object newDefaultValue ) {
+        throw new ConfigRuntimeException( "Change of defaultValue is not yet supported for type: " + this.getClass() );
+    }
 
 
     /**

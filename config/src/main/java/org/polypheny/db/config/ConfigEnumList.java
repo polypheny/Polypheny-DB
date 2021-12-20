@@ -42,7 +42,7 @@ public class ConfigEnumList extends Config {
         //noinspection unchecked
         enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
         this.value = new ArrayList<>();
-        this.defaultValue = this.value;
+        this.defaultValue = new ArrayList<>();
         this.webUiFormType = WebUiFormType.CHECKBOXES;
     }
 
@@ -50,13 +50,38 @@ public class ConfigEnumList extends Config {
     public ConfigEnumList( final String key, final String description, final Class superClass, final List<Enum> defaultValue ) {
         this( key, description, superClass );
         setEnumList( defaultValue );
-        this.defaultValue = defaultValue;
+        this.defaultValue = ImmutableList.copyOf( defaultValue );
     }
 
 
     @Override
     public Object getDefaultValue() {
         return defaultValue;
+    }
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        return defaultValue.containsAll( value ) && value.containsAll( defaultValue );
+    }
+
+
+    /**
+     * Restores the current value to the system configured default vlaue.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}
+     * If you want to check if the current value deviates from default use:  {@link #isDefault()}.
+     */
+    @Override
+    public void resetToDefault() {
+        setEnumList( ImmutableList.copyOf( defaultValue ) );
     }
 
 

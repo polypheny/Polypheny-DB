@@ -16,6 +16,7 @@
 
 package org.polypheny.db.config;
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.SerializedName;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -89,7 +90,7 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigInteger( key + ".", 0 ).isObservable( false );
         this.list = fill;
-        this.defaultList = this.list;
+        this.defaultList = ImmutableList.copyOf( this.list );
     }
 
 
@@ -101,7 +102,7 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigDouble( key + ".", 0 ).isObservable( false );
         this.list = fill;
-        this.defaultList = this.list;
+        this.defaultList = ImmutableList.copyOf( this.list );
     }
 
 
@@ -113,7 +114,7 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigLong( key + ".", 0 ).isObservable( false );
         this.list = fill;
-        this.defaultList = this.list;
+        this.defaultList = ImmutableList.copyOf( this.list );
     }
 
 
@@ -125,7 +126,7 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigDecimal( key + ".", BigDecimal.ONE ).isObservable( false );
         this.list = fill;
-        this.defaultList = this.list;
+        this.defaultList = ImmutableList.copyOf( this.list );
     }
 
 
@@ -137,7 +138,7 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigString( key + ".", "" ).isObservable( false );
         this.list = fill;
-        this.defaultList = this.list;
+        this.defaultList = ImmutableList.copyOf( this.list );
     }
 
 
@@ -149,14 +150,14 @@ public class ConfigList extends Config {
 
         this.template = (ConfigScalar) new ConfigBoolean( key + ".", false ).isObservable( false );
         this.list = fill;
-        this.defaultList = this.list;
+        this.defaultList = ImmutableList.copyOf( this.list );
     }
 
 
     private void dockerList( String key, final List<ConfigDocker> list ) {
         this.template = new ConfigDocker( "localhost", null, null );
         this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
-        this.defaultList = this.list;
+        this.defaultList = ImmutableList.copyOf( this.list );
     }
 
 
@@ -169,6 +170,31 @@ public class ConfigList extends Config {
     @Override
     public Object getDefaultValue() {
         return defaultList;
+    }
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        return defaultList.containsAll( list ) && list.containsAll( defaultList );
+    }
+
+
+    /**
+     * Restores the current value to the system configured default vlaue.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}
+     * If you want to check if the current value deviates from default use:  {@link #isDefault()}.
+     */
+    @Override
+    public void resetToDefault() {
+        setList( ImmutableList.copyOf( defaultList ) );
     }
 
 
