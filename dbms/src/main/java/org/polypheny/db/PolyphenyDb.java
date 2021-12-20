@@ -90,6 +90,9 @@ public class PolyphenyDb {
     @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
     public boolean testMode = false;
 
+    @Option(name = { "-gui" }, description = "Show graphical user interface on startup")
+    public boolean useUi = false;
+
     @Option(name = { "-defaultStore" }, description = "Type of default store")
     public String defaultStoreName = "hsqldb";
 
@@ -99,6 +102,7 @@ public class PolyphenyDb {
     // required for unit tests to determine when the system is ready to process queries
     @Getter
     private volatile boolean isReady = false;
+    private SplashHelper splashScreen;
 
 
     public static void main( final String[] args ) {
@@ -124,13 +128,9 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
-        SplashHelper splashScreen = new SplashHelper();
-
-        Thread splashT = new Thread( splashScreen );
-        splashT.start();
-
-        StatusService.addSubscriber( splashScreen::setStatus );
-
+        if ( useUi ) {
+            attachUi();
+        }
         // Move data folder
         if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
             FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
@@ -320,7 +320,9 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
-        splashScreen.setComplete();
+        if ( useUi ) {
+            splashScreen.setComplete();
+        }
 
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );
@@ -333,6 +335,15 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
+    }
+
+
+    private void attachUi() {
+        this.splashScreen = new SplashHelper();
+        Thread splashT = new Thread( splashScreen );
+        splashT.start();
+        int statusId = StatusService.addSubscriber( splashScreen::setStatus );
+        this.splashScreen.setStatusId( statusId );
     }
 
 }

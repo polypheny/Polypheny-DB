@@ -16,22 +16,32 @@
 
 package org.polypheny.db;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class StatusService {
 
-    private static final List<Consumer<String>> subscribers = new ArrayList<>();
+    private static AtomicInteger idBuilder = new AtomicInteger();
+
+    private static final Map<Integer, Consumer<String>> subscribers = new HashMap<>();
 
 
-    public static void addSubscriber( Consumer<String> printer ) {
-        subscribers.add( printer );
+    public static synchronized int addSubscriber( Consumer<String> printer ) {
+        int id = idBuilder.getAndIncrement();
+        subscribers.put( id, printer );
+        return id;
     }
 
 
     public static void print( String status ) {
-        subscribers.forEach( c -> c.accept( status ) );
+        subscribers.values().forEach( c -> c.accept( status ) );
+    }
+
+
+    public static void removeSubscriber( int id ) {
+        subscribers.remove( id );
     }
 
 }

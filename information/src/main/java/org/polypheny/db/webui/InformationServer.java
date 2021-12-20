@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationManager;
@@ -51,7 +52,7 @@ public class InformationServer implements InformationObserver {
 
         informationRoutes( http );
 
-        //StatusService.print( "InformationServer started." );
+        StatusService.print( "InformationServer started." );
         log.info( "InformationServer started." );
     }
 

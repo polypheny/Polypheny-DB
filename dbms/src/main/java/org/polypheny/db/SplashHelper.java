@@ -35,12 +35,15 @@ import javax.swing.JPanel;
 import javax.swing.JWindow;
 import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class SplashHelper implements Runnable {
 
     private SplashScreen screen;
+    @Setter
+    private int statusId;
 
 
     @Override
@@ -55,11 +58,16 @@ public class SplashHelper implements Runnable {
         } catch ( IOException | URISyntaxException e ) {
             log.warn( "Polypheny was not able to open the browser for the user!" );
         }
+        this.screen.setComplete();
+        StatusService.removeSubscriber( statusId );
     }
 
 
     public void setStatus( String status ) {
-        screen.setStatus( status );
+        // the gui thread might not have set the screen yet, so we only print if the screen is up
+        if ( screen != null ) {
+            screen.setStatus( status );
+        }
     }
 
 
@@ -132,6 +140,12 @@ public class SplashHelper implements Runnable {
             } else {
                 return v;
             }
+        }
+
+
+        public void setComplete() {
+            frame.setVisible( false );
+            dispose();
         }
 
 
