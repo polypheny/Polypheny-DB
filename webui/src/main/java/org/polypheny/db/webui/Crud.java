@@ -215,6 +215,7 @@ import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
+import org.polypheny.db.webui.models.requests.EditTableColumnRequest;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
@@ -1808,6 +1809,38 @@ public class Crud implements InformationObserver {
         return result;
     }
 
+    /**
+     * Reorder columns of a table
+     */
+    Result reorderColumn(final Request req, final Response res) {
+        EditTableColumnRequest request = this.gson.fromJson(req.body(), EditTableColumnRequest.class);
+        Transaction transaction = getTransaction();
+        Result result;
+        String query;
+
+        if (request.isRequestColumnAboveTarget) {
+             query = String.format("ALTER TABLE \"%s\".\"%s\" MODIFY COLUMN %s SET POSITION BEFORE %s ",
+                    request.schema, request.table, request.requestColumn, request.targetColumn);
+        } else {
+             query = String.format("ALTER TABLE \"%s\".\"%s\" MODIFY COLUMN %s SET POSITION AFTER %s ",
+                    request.schema, request.table, request.requestColumn, request.targetColumn);
+        }
+
+        try {
+            int rows = executeSqlUpdate(transaction, query);
+            result = new Result(rows).setGeneratedQuery(query);
+            transaction.commit();
+        } catch (QueryExecutionException | TransactionException e) {
+            log.error("Caught exception while reordering column position", e);
+            result = new Result(e).setGeneratedQuery(query);
+            try {
+                transaction.rollback();
+            } catch (TransactionException ex) {
+                log.error("Could not rollback", ex);
+            }
+        }
+        return result;
+    }
 
     /**
      * Get artificially generated index/foreign key/constraint names for placeholders in the UI
