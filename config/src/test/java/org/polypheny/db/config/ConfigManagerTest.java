@@ -18,6 +18,7 @@ package org.polypheny.db.config;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.File;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -312,8 +313,14 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
+    /**
+     * Read from test configuration file and check if the values specified in configuration are used instead of default one
+     */
     @Test
     public void configFiles() {
+
+        cm.setApplicationConfFile( new File( "src/test/resources/application.conf" ) );
+
         // Check if it works for integer values
         Config c = new ConfigInteger( "test.junit.int", 18 );
         Assert.assertEquals( c.getInt(), 18 );

@@ -138,6 +138,8 @@ public class ConfigManager {
 
         configurationFile = applicationConfFile.getName();
         configurationDirectory = applicationConfFile.getAbsolutePath();
+
+        loadConfigFile();
     }
 
 
