@@ -18,7 +18,7 @@ package org.polypheny.db.monitoring.core;
 
 import java.io.File;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyFileSystemManager;
 
 
 public class TestMapDbRepository extends MapDbRepository {
@@ -35,7 +35,7 @@ public class TestMapDbRepository extends MapDbRepository {
 
 
     private void reset() {
-        File folder = FileSystemManager.getInstance().registerNewFolder( FOLDER_NAME );
+        File folder = PolyphenyFileSystemManager.getInstance().registerNewFolder( FOLDER_NAME );
         new File( folder, FILE_PATH ).delete();
     }
 

@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyFileSystemManager;
 
 
 @Slf4j
@@ -186,7 +186,7 @@ public class MapDbRepository implements MonitoringRepository {
         }
 
         synchronized ( this ) {
-            File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
+            File folder = PolyphenyFileSystemManager.getInstance().registerNewFolder( folderName );
 
             if ( Catalog.resetCatalog ) {
                 log.info( "Resetting monitoring repository on startup." );

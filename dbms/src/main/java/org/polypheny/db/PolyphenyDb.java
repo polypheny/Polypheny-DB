@@ -63,7 +63,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyFileSystemManager;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigServer;
@@ -131,9 +131,9 @@ public class PolyphenyDb {
         }
 
         // Move data folder
-        if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
-            FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
-            if ( !FileSystemManager.getInstance().moveFolder( "data.backup", "data" ) ) {
+        if ( PolyphenyFileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
+            PolyphenyFileSystemManager.getInstance().recursiveDeleteFolder( "data" );
+            if ( !PolyphenyFileSystemManager.getInstance().moveFolder( "data.backup", "data" ) ) {
                 throw new RuntimeException( "Unable to restore data folder." );
             }
             log.info( "Restoring the data folder." );
@@ -141,21 +141,21 @@ public class PolyphenyDb {
 
         // Reset data folder
         if ( resetCatalog ) {
-            if ( !FileSystemManager.getInstance().recursiveDeleteFolder( "data" ) ) {
+            if ( !PolyphenyFileSystemManager.getInstance().recursiveDeleteFolder( "data" ) ) {
                 log.error( "Unable to delete the data folder." );
             }
         }
 
         // Backup data folder (running in test mode / memory mode)
-        if ( (testMode || memoryCatalog) && FileSystemManager.getInstance().checkIfExists( "data" ) ) {
-            if ( !FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
+        if ( (testMode || memoryCatalog) && PolyphenyFileSystemManager.getInstance().checkIfExists( "data" ) ) {
+            if ( !PolyphenyFileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
                 throw new RuntimeException( "Unable to create the backup folder." );
             }
         }
 
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
-        if ( applicationConfPath != null && FileSystemManager.getInstance().checkIfExists( applicationConfPath ) ) {
+        if ( applicationConfPath != null && PolyphenyFileSystemManager.getInstance().checkIfExists( applicationConfPath ) ) {
             ConfigManager.getInstance().setApplicationConfFile( new File( applicationConfPath ) );
         }
 

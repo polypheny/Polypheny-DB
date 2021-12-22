@@ -53,7 +53,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyFileSystemManager;
 import org.vitrivr.cottontail.CottontailKt;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 import org.vitrivr.cottontail.config.CacheConfig;
@@ -127,7 +127,7 @@ public class CottontailStore extends DataStore {
         }
 
         if ( this.isEmbedded ) {
-            FileSystemManager fileSystemManager = FileSystemManager.getInstance();
+            PolyphenyFileSystemManager fileSystemManager = PolyphenyFileSystemManager.getInstance();
             File adapterRoot = fileSystemManager.registerNewFolder( "data/cottontaildb-store" );
 
             File embeddedDir = fileSystemManager.registerNewFile( adapterRoot, "store" + getAdapterId() );

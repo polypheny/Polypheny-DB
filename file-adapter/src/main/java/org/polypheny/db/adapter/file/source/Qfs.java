@@ -49,7 +49,7 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyFileSystemManager;
 
 
 /**
@@ -150,7 +150,7 @@ public class Qfs extends DataSource {
         boolean allowed = false;
         StringJoiner allowedPaths = new StringJoiner( "\n" );
         int numberOfWhitelistEntries = 0;
-        File whitelistFolder = FileSystemManager.getInstance().registerNewFolder( "config" );
+        File whitelistFolder = PolyphenyFileSystemManager.getInstance().registerNewFolder( "config" );
         File whitelist = new File( whitelistFolder, "whitelist.config" );
         String path = whitelist.getAbsolutePath();
         if ( !whitelist.exists() ) {

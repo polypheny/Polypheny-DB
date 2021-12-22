@@ -24,25 +24,28 @@ import java.util.List;
 
 
 /**
- * The FileSystemManager should handle all dynamically needed resources and sort them
+ * The PolyphenyFileSystemManager should handle all dynamically needed resources and sort them accordingly.
+ * It is the central component to create and maintain all dependent FS structures after installation.
+ *
+ * All file system related operations that are specific to the PolyDBMS should be handled with this manager.
  */
-public class FileSystemManager {
+public class PolyphenyFileSystemManager {
 
-    static FileSystemManager fileSystemManager = null;
+    static PolyphenyFileSystemManager polyphenyFileSystemManager = null;
     File root;
     final List<File> dirs = new ArrayList<>();
     final List<File> deleteOnExit = new ArrayList<>();
 
 
-    public static FileSystemManager getInstance() {
-        if ( fileSystemManager == null ) {
-            fileSystemManager = new FileSystemManager();
+    public static PolyphenyFileSystemManager getInstance() {
+        if ( polyphenyFileSystemManager == null ) {
+            polyphenyFileSystemManager = new PolyphenyFileSystemManager();
         }
-        return fileSystemManager;
+        return polyphenyFileSystemManager;
     }
 
 
-    private FileSystemManager() {
+    private PolyphenyFileSystemManager() {
         String pathVar;
         if ( System.getenv( "POLYPHENY_HOME" ) != null ) {
             pathVar = System.getenv( "POLYPHENY_HOME" );
@@ -186,6 +189,11 @@ public class FileSystemManager {
 
     public File registerNewFolder( String folder ) {
         return registerNewFolder( this.root, folder );
+    }
+
+
+    public boolean isAccessible( File file ) {
+        return file.canWrite() && file.canRead();
     }
 
 }

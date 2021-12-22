@@ -34,6 +34,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
+import org.polypheny.db.util.PolyphenyFileSystemManager;
 
 
 /**
@@ -45,17 +46,21 @@ public class ConfigManager {
 
     private static ConfigManager instance = new ConfigManager();
 
-    private static String configurationFile = "polypheny.conf";
-    private static String configurationDirectory = "config"; // Configuration directory shall always be placed next to executable
+    private static String configurationFileName = "polypheny.conf";
+    private static String configurationDirectoryName = "config"; // Configuration directory shall always be placed next to executable
 
     private final ConcurrentMap<String, Config> configs;
     private final ConcurrentMap<String, WebUiGroup> uiGroups;
     private final ConcurrentMap<String, WebUiPage> uiPages;
 
+    private static PolyphenyFileSystemManager fm = PolyphenyFileSystemManager.getInstance();
 
+    // Typesafe version of configuration file to be processed in code
     private static com.typesafe.config.Config configFile;
 
+    // Actual File on disk
     private static File applicationConfFile = null;
+    private static File applicationConfDir = null;
 
 
     private ConfigManager() {
@@ -77,30 +82,12 @@ public class ConfigManager {
     }
 
 
-    private static void createConfigFolders( String workingDir, File configDir ) {
-        if ( !new File( workingDir ).exists() ) {
-            if ( !new File( workingDir ).mkdirs() ) {
-                throw new RuntimeException( "Could not create the folders for " + new File( workingDir ).getAbsolutePath() );
-            }
-        }
-        if ( !configDir.exists() ) {
-            if ( !configDir.mkdirs() ) {
-                throw new RuntimeException( "Could not create the config folder: " + configDir.getAbsolutePath() );
-            }
-        }
-    }
-
-
     public static void loadConfigFile() {
 
         // No custom location has been specified
         // Assume Default
         if ( applicationConfFile == null ) {
-            // Determine workingDirectory elsewhere. Maybe during installation or absolute path?!
-            String workingDir = "./";
-            File configDir = new File( new File( workingDir ), configurationDirectory );
-            createConfigFolders( workingDir, configDir );
-            applicationConfFile = new File( configDir, configurationFile );
+            initializeFileLocation();
         }
 
         if ( configFile == null ) {
@@ -111,6 +98,34 @@ public class ConfigManager {
     }
 
 
+    private static void initializeFileLocation() {
+        // Create config directory and file if they do not already exist
+        applicationConfDir = fm.registerNewFolder( configurationDirectoryName );
+        applicationConfFile = new File( applicationConfDir, configurationFileName );
+    }
+
+
+    // Validates if configuration directory is still accessible
+    private static boolean validateConfiguredFileLocation() {
+
+        if ( applicationConfFile.exists() && applicationConfDir.exists() ) {
+
+            // Although not beneficial for the system. It should not crash.
+            // However, it should log an error to application log.
+            if ( !fm.isAccessible( applicationConfFile ) ) {
+                log.error( "Configuration Directory: {} or file: {} is not accessible. Config couldn't be updated."
+                        , applicationConfDir.getAbsolutePath()
+                        , applicationConfFile.getName() );
+
+                return false;
+            }
+        } else {
+            initializeFileLocation();
+        }
+        return true;
+    }
+
+
     private static void writeConfiguration( final com.typesafe.config.Config configuration ) {
         ConfigRenderOptions configRenderOptions = ConfigRenderOptions.defaults();
         configRenderOptions = configRenderOptions.setComments( false );
@@ -118,26 +133,27 @@ public class ConfigManager {
         configRenderOptions = configRenderOptions.setJson( false );
         configRenderOptions = configRenderOptions.setOriginComments( false );
 
-        String workingDir = "./";
-        File configDir = new File( new File( workingDir ), configurationDirectory );
-        createConfigFolders( workingDir, configDir );
-        try (
-                FileOutputStream fos = new FileOutputStream( applicationConfFile, false );
-                BufferedWriter bw = new BufferedWriter( new OutputStreamWriter( fos ) )
-        ) {
-            bw.write( configuration.root().render( configRenderOptions ) );
-        } catch ( IOException e ) {
-            log.error( "Exception while writing configuration file", e );
+        // Check if file is still accessible and writable
+        if ( validateConfiguredFileLocation() ) {
+
+            try (
+                    FileOutputStream fos = new FileOutputStream( applicationConfFile, false );
+                    BufferedWriter bw = new BufferedWriter( new OutputStreamWriter( fos ) )
+            ) {
+                bw.write( configuration.root().render( configRenderOptions ) );
+            } catch ( IOException e ) {
+                log.error( "Exception while writing configuration file", e );
+            }
+            loadConfigFile();
         }
-        loadConfigFile();
     }
 
 
-    public static void setApplicationConfFile( File applicationConfFile ) {
-        ConfigManager.applicationConfFile = applicationConfFile;
+    public static void setApplicationConfFile( File customConfFile ) {
+        applicationConfFile = customConfFile;
 
-        configurationFile = applicationConfFile.getName();
-        configurationDirectory = applicationConfFile.getAbsolutePath();
+        configurationFileName = customConfFile.getName();
+        configurationDirectoryName = customConfFile.getParentFile().getParent();
 
         loadConfigFile();
     }
