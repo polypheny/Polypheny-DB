@@ -167,7 +167,10 @@ public class JdbcSchema implements Schema {
                 AlgDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
                 partitionPlacement.physicalTableName,
-                physicalColumnNames );
+                physicalColumnNames,
+                catalogTable.id
+
+        );
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogTable.name );
         return table;

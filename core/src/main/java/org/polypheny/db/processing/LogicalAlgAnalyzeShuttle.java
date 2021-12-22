@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,10 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
@@ -44,9 +44,11 @@ import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
+import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.Statement;
@@ -69,6 +71,12 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Getter
     protected final List<String> tables = new ArrayList<>();
     private final Statement statement;
+
+    @Getter
+    protected HashMap<Long, List<Object>> ordered;
+
+    @Getter
+    public int rowCount;
 
 
     public LogicalAlgAnalyzeShuttle( Statement statement ) {
@@ -224,9 +232,39 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         hashBasis.add( "other#" + other.getClass().getSimpleName() );
 
         if ( other instanceof LogicalTableModify ) {
+
             if ( (other.getTable().getTable() instanceof LogicalTable) ) {
                 LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
-                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable. put( v, logicalTable.getTableId()) );
+                Long tableId = logicalTable.getTableId();
+                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable. put( v, tableId) );
+
+                if(((LogicalTableModify) other).getOperation().name().equals( "INSERT" )){
+                    if(((LogicalTableModify) other).getInput() instanceof LogicalValues){
+                        List<ImmutableList<RexLiteral>> values = ((LogicalValues) ((LogicalTableModify) other).getInput()).tuples;
+
+                        //not good rowcount, rowcount from polyresult is better, check how to use differently
+                        rowCount = values.size();
+
+                        if ( StatisticsManager.getInstance().getRowCountPerTable().containsKey( tableId ) ) {
+                            logicalTable.setRowCount( StatisticsManager.getInstance().getRowCountPerTable().get( tableId ) + values.size() );
+                        } else {
+                            logicalTable.setRowCount( values.size() );
+                        }
+
+                    }if(((LogicalTableModify) other).getInput() instanceof LogicalProject){
+                        if(((LogicalProject)((LogicalTableModify) other).getInput()).getInput() instanceof LogicalValues){
+                            List<ImmutableList<RexLiteral>> values = ((LogicalValues) ((LogicalProject)((LogicalTableModify) other).getInput()).getInput()).tuples;
+
+                            rowCount = values.size();
+
+                            if ( StatisticsManager.getInstance().getRowCountPerTable().containsKey( tableId ) ) {
+                                logicalTable.setRowCount( StatisticsManager.getInstance().getRowCountPerTable().get( tableId ) + values.size() );
+                            } else {
+                                logicalTable.setRowCount( values.size() );
+                            }
+                        }
+                    }
+                }
             }
         }
         return visitChildren( other );

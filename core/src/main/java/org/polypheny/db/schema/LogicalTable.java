@@ -16,11 +16,13 @@
 
 package org.polypheny.db.schema;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.algebra.AlgNode;
@@ -57,6 +59,8 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     @Getter
     private final List<String> logicalColumnNames;
 
+    private Statistic statistic;
+
 
     protected LogicalTable(
             long tableId,
@@ -74,11 +78,28 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
         this.logicalColumnNames = logicalColumnNames;
         this.protoRowType = protoRowType;
         this.schemaType = schemaType;
+
+        this.statistic = Statistics.UNKNOWN;
+
     }
 
 
     public String toString() {
         return "LogicTable {" + logicalSchemaName + "." + logicalTableName + "}";
+    }
+
+
+    public void setRowCount( int rowCount ) {
+        this.statistic = Statistics.of( rowCount, ImmutableList.of() );
+    }
+
+    public Statistic getStatistic(  ) {
+        int rowCount = 0;
+        if( StatisticsManager.getInstance().rowCountPerTable.containsKey(  tableId )){
+            rowCount = StatisticsManager.getInstance().rowCountPerTable.get( tableId );
+        }
+
+        return Statistics.of( rowCount, ImmutableList.of() );
     }
 
 
@@ -133,5 +154,6 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         throw new RuntimeException( "toAlg() is not implemented for Logical Tables!" );
     }
+
 
 }

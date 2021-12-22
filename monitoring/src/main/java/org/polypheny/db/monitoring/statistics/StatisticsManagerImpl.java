@@ -18,7 +18,6 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -35,6 +34,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -61,7 +61,6 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.monitoring.StatisticsHelper;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -86,14 +85,13 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
  * DELETEs and UPDATEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsManager<T extends Comparable<T>> implements PropertyChangeListener {
+public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsManager<T> {
 
-    private static volatile StatisticsManager<?> instance = null;
 
     @Getter
     public volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
 
-    private StatisticQueryProcessor sqlQueryInterface;
+    private static StatisticQueryProcessor sqlQueryInterface;
 
     private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
 
@@ -108,14 +106,13 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
     @Getter
-    public ConcurrentHashMap<Long, Integer> rowCountPerTable = new ConcurrentHashMap<>();
-    @Getter
     public ConcurrentHashMap<Long, TableCalls> tableCalls = new ConcurrentHashMap<>();
 
     private List<Long> deletedTable = new ArrayList<>();
 
 
-    private StatisticsManager() {
+    public StatisticsManagerImpl( StatisticQueryProcessor statisticQueryProcessor ) {
+        this.setQueryInterface(statisticQueryProcessor);
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         displayInformation();
         registerTaskTracking();
@@ -126,6 +123,7 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
 
 
     //use relNode to update
+    @Override
     public void tablesToUpdate( Long tableId ) {
         if ( !tablesToUpdate.contains( tableId ) ) {
             tablesToUpdate.add( tableId );
@@ -135,6 +133,7 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
 
 
     //use cache if possible
+    @Override
     public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type ) {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = catalog.getTable( tableId );
@@ -238,17 +237,6 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
     }
 
 
-    public static StatisticsManager<?> getInstance() {
-        // To ensure only one instance is created
-        synchronized ( StatisticsManager.class ) {
-            if ( instance == null ) {
-                instance = new StatisticsManager<>();
-            }
-        }
-        return instance;
-    }
-
-
     /**
      * Reset all statistics and reevaluate them
      */
@@ -283,6 +271,7 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
      *
      * @param tableId id of table
      */
+    @Override
     public void reevaluateTable( Long tableId ) {
         if ( this.sqlQueryInterface == null ) {
             return;
@@ -649,8 +638,8 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
     }
 
 
-    public void setSqlQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
-        this.sqlQueryInterface = statisticQueryProcessor;
+    public void setQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
+        sqlQueryInterface = statisticQueryProcessor;
 
         /*
         if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
@@ -782,6 +771,7 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
     }
 
 
+    @Override
     public void asyncReevaluateAllStatistics() {
         threadPool.execute( this::reevaluateAllStatistics );
     }
@@ -806,6 +796,7 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
     }
 
 
+    @Override
     public void deleteTableToUpdate( Long tableId ) {
         deletedTable.add( tableId );
         this.tablesToUpdate.remove( tableId );
@@ -834,39 +825,36 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
  */
 
 
+    @Override
     public void updateRowCountPerTable( Long tableId, int number, boolean isAdding ) {
         if ( isAdding ) {
             if ( rowCountPerTable.containsKey( tableId ) ) {
                 int totalRows = rowCountPerTable.remove( tableId ) + number;
                 rowCountPerTable.put( tableId, totalRows );
-                StatisticsHelper.getInstance().tableRowCount.put( tableId, totalRows );
             } else {
                 rowCountPerTable.put( tableId, number );
-                StatisticsHelper.getInstance().tableRowCount.put( tableId, number );
             }
         } else {
             if ( rowCountPerTable.containsKey( tableId ) ) {
                 int totalRows = rowCountPerTable.remove( tableId ) - number;
                 rowCountPerTable.put( tableId, totalRows );
-                StatisticsHelper.getInstance().tableRowCount.put( tableId, number );
             } else {
                 rowCountPerTable.put( tableId, 0 );
-                StatisticsHelper.getInstance().tableRowCount.put( tableId, 0 );
             }
         }
 
     }
 
 
+    @Override
     public void setIndexSize( Long tableId, int indexSize ) {
-        System.out.println( "setIndexSize" );
         if ( rowCountPerTable.containsKey( tableId ) ) {
             int numberOfRows = rowCountPerTable.remove( tableId );
             if ( numberOfRows == indexSize ) {
-                //empty on purpos
+                //empty on purpose
             } else {
-                //avg of the two rowcounts
-                rowCountPerTable.put( tableId, ((numberOfRows + indexSize) / 2) );
+                // use indexSize because it should be correct
+                rowCountPerTable.put( tableId,  indexSize );
             }
         } else {
             rowCountPerTable.put( tableId, indexSize );
@@ -874,6 +862,7 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
     }
 
 
+    @Override
     public void setTableCalls( Long tableId, String kind ) {
 
         TableCalls calls;
@@ -925,10 +914,10 @@ public class StatisticsManager<T extends Comparable<T>> implements PropertyChang
 
 
         private void registerTrackingToggle() {
-            String id = StatisticsManager.getInstance().getRevalId();
+            String id = getRevalId();
             if ( id == null && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() && RuntimeConfig.PASSIVE_TRACKING.getBoolean() ) {
                 String revalId = BackgroundTaskManager.INSTANCE.registerTask(
-                        StatisticsManager.this::asyncReevaluateAllStatistics,
+                        StatisticsManagerImpl.this::asyncReevaluateAllStatistics,
                         "Reevaluate StatisticsManager.",
                         TaskPriority.LOW,
                         (TaskSchedulingType) RuntimeConfig.STATISTIC_RATE.getEnum() );

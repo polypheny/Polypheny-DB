@@ -48,13 +48,13 @@ import org.polypheny.db.language.LanguageManagerImpl;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.monitoring.core.MonitoringService;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.statistics.StatisticsManagerImpl;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
-import org.polypheny.db.monitoring.statistics.StatisticsManager;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -280,8 +280,7 @@ public class PolyphenyDb {
 
         // Create internal query interfaces
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
-        StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-        statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
+        StatisticsManager.setAndGetInstance(new StatisticsManagerImpl( statisticQueryProcessor));
         //statisticsManager.asyncReevaluateAllStatistics();
 
         // Initialize index manager

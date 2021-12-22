@@ -140,8 +140,15 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
-    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, Double rowCount ) {
+    public static AlgOptTableImpl create( AlgOptSchema schema, AlgDataType rowType, final PolyphenyDbSchema.TableEntry tableEntry, Double count ) {
         final Table table = tableEntry.getTable();
+        Double rowCount;
+        if(count == null){
+            rowCount = table.getStatistic().getRowCount();
+        }else{
+            rowCount = count;
+        }
+
         return new AlgOptTableImpl( schema, rowType, tableEntry.path(), table, getClassExpressionFunction( tableEntry, table ), rowCount );
     }
 

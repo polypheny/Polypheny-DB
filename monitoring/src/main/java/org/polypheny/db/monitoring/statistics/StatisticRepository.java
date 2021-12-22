@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.statistics;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
@@ -35,9 +36,10 @@ public class StatisticRepository implements MonitoringRepository {
             if ( dmlDataPoint.getChangedValues() != null ) {
                 Set<Long> values = new HashSet<>( dmlDataPoint.getAvailableColumnsWithTable().values() );
                 boolean isOneTable = values.size() == 1;
-                Long tableId = values.stream().findFirst().get();
+
                 Catalog catalog = Catalog.getInstance();
                 if ( isOneTable ) {
+                    Long tableId = values.stream().findFirst().get();
                     statisticsManager.setTableCalls( tableId, dmlDataPoint.getMonitoringType() );
 
                     if ( catalog.checkIfExistsTable( tableId ) ) {
@@ -49,6 +51,13 @@ public class StatisticRepository implements MonitoringRepository {
                         } else if ( dmlDataPoint.getMonitoringType().equals( "DELETE" ) ) {
                             int deleted = dmlDataPoint.getRowCount();
                             statisticsManager.updateRowCountPerTable( tableId, deleted, false );
+                        }
+
+                    }
+                }else{
+                    for ( Long id : values ) {
+                        if ( catalog.checkIfExistsTable( id ) ) {
+                            statisticsManager.setTableCalls( id, dmlDataPoint.getMonitoringType() );
                         }
 
                     }
