@@ -36,6 +36,7 @@ public class QueryEventAnalyzer {
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
+                .isCommitted( queryEvent.isCommitted() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .algCompareString( queryEvent.getAlgCompareString() )
                 .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.routing.LogicalQueryInformation;
@@ -52,6 +53,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected int rowCount;
     protected boolean isAnalyze;
     protected boolean isSubQuery;
+    protected boolean isCommitted;
     protected String durations;
     protected Map<Long, Set<Long>> accessedPartitions;
     protected LogicalQueryInformation logicalQueryInformation;

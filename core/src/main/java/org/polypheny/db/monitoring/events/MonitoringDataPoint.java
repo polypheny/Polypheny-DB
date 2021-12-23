@@ -33,6 +33,8 @@ public interface MonitoringDataPoint extends Serializable {
 
     DataPointType getDataPointType();
 
+    boolean isCommitted();
+
     enum DataPointType {
         DML,
         DQL,

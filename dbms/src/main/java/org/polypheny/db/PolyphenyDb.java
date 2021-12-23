@@ -268,6 +268,11 @@ public class PolyphenyDb {
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
+        // Create internal query interfaces
+        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
+        StatisticsManager.setAndGetInstance(new StatisticsManagerImpl( statisticQueryProcessor));
+        //statisticsManager.asyncReevaluateAllStatistics();
+
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
         Thread polyphenyUiThread = new Thread( httpServer );
@@ -277,11 +282,6 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
-
-        // Create internal query interfaces
-        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
-        StatisticsManager.setAndGetInstance(new StatisticsManagerImpl( statisticQueryProcessor));
-        //statisticsManager.asyncReevaluateAllStatistics();
 
         // Initialize index manager
         try {

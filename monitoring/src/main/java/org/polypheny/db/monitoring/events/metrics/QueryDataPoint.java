@@ -49,6 +49,7 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     private String description;
     private long executionTime;
     private boolean isSubQuery;
+    protected boolean isCommitted;
     private int rowCount;
     private List<String> fieldNames;
     protected Integer indexSize;

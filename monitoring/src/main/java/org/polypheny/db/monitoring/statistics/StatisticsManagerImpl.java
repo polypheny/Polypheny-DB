@@ -110,6 +110,14 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     private List<Long> deletedTable = new ArrayList<>();
 
+    @Setter
+    @Getter
+    public int numberOfCommits;
+
+    @Setter
+    @Getter
+    public int numberOfRollbacks;
+
 
     public StatisticsManagerImpl( StatisticQueryProcessor statisticQueryProcessor ) {
         this.setQueryInterface(statisticQueryProcessor);

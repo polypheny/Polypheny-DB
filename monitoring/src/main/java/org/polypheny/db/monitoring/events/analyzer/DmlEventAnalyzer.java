@@ -35,6 +35,7 @@ public class DmlEventAnalyzer {
                 .executionTime( dmlEvent.getExecutionTime() )
                 .rowCount( dmlEvent.getRowCount() )
                 .isSubQuery( dmlEvent.isSubQuery() )
+                .isCommitted( dmlEvent.isCommitted() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
                 .accessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
                 .queryClass( dmlEvent.getLogicalQueryInformation().getQueryClass() )

@@ -31,6 +31,11 @@ public class StatisticRepository implements MonitoringRepository {
     @Override
     public void dataPoint( MonitoringDataPoint dataPoint ) {
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
+        if(dataPoint.isCommitted()){
+            statisticsManager.setNumberOfCommits(statisticsManager.getNumberOfCommits());
+        }else{
+            statisticsManager.setNumberOfRollbacks(statisticsManager.getNumberOfRollbacks());
+        }
         if ( dataPoint.getDataPointType() == DataPointType.DML ) {
             DmlDataPoint dmlDataPoint = ((DmlDataPoint) dataPoint);
             if ( dmlDataPoint.getChangedValues() != null ) {

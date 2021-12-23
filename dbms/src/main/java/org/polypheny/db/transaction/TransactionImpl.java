@@ -164,6 +164,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             this.statements.forEach( statement -> {
                 if ( statement.getMonitoringEvent() != null ) {
                     StatementEvent eventData = statement.getMonitoringEvent();
+                    eventData.setCommitted( true );
                     MonitoringServiceProvider.getInstance().monitorEvent( eventData );
                 }
             } );
@@ -201,7 +202,14 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             IndexManager.getInstance().rollback( this.xid );
             Catalog.getInstance().rollback();
             // Free resources hold by statements
-            statements.forEach( Statement::close );
+            statements.forEach( statement ->{
+                if ( statement.getMonitoringEvent() != null ) {
+                    StatementEvent eventData = statement.getMonitoringEvent();
+                    eventData.setCommitted( false );
+                    MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+                }
+                statement.close();
+            } );
         } finally {
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );
