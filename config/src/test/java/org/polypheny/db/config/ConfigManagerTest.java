@@ -25,6 +25,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 public class ConfigManagerTest implements ConfigListener {
@@ -319,7 +320,10 @@ public class ConfigManagerTest implements ConfigListener {
     @Test
     public void configFiles() {
 
-        cm.setApplicationConfFile( new File( "src/test/resources/application.conf" ) );
+        // Check if the correct file will be accessed
+        File customConfFile = new File( "src/test/resources/application.conf" );
+        cm.setApplicationConfFile( customConfFile );
+        Assert.assertEquals( customConfFile.getAbsolutePath(), cm.getActiveConfFile() );
 
         // Check if it works for integer values
         Config c = new ConfigInteger( "test.junit.int", 18 );
@@ -388,6 +392,40 @@ public class ConfigManagerTest implements ConfigListener {
         Assert.assertEquals( c.getString(), "Polystore" );
         cm.registerConfig( c );
         Assert.assertEquals( c.getString(), "Polystore" );
+
+    }
+
+
+    /**
+     * Read and write to test configuration file and check if the values specified in configuration are used and can be dynamically changed
+     */
+    @Test
+    public void configFilePersistence() {
+
+        // Specify an unknown file location
+        boolean failed = false;
+        try {
+            cm.setApplicationConfFile( new File( "src/false/location/application.conf" ) );
+        } catch ( ConfigRuntimeException e ) {
+            failed = true;
+        }
+        Assert.assertTrue( failed );
+
+        // Check if the correct file will be accessed
+        File customConfFile = new File( "src/test/resources/application.conf" );
+        cm.setApplicationConfFile( customConfFile );
+        Assert.assertEquals( customConfFile.getAbsolutePath(), cm.getActiveConfFile() );
+
+        // Check if file will be re-created after config change
+
+        // Check if CUSTOM file will be re-created after config change
+
+        // Check if config changes are correctly written to file
+
+        // After several config changes back and forth, verify that indeed only the config
+        // Valid config changes exist in config file
+
+        // Verify that default values are not written to config
 
     }
 

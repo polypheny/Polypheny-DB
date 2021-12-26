@@ -150,12 +150,17 @@ public class ConfigManager {
 
 
     public static void setApplicationConfFile( File customConfFile ) {
-        applicationConfFile = customConfFile;
 
-        configurationFileName = customConfFile.getName();
-        configurationDirectoryName = customConfFile.getParentFile().getParent();
+        if ( customConfFile.exists() && fm.isAccessible( customConfFile ) ) {
+            applicationConfFile = customConfFile;
 
-        loadConfigFile();
+            configurationFileName = customConfFile.getName();
+            configurationDirectoryName = customConfFile.getParentFile().getParent();
+
+            loadConfigFile();
+        } else {
+            throw new ConfigRuntimeException( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
+        }
     }
 
 
@@ -308,6 +313,11 @@ public class ConfigManager {
             }
         }
         return uiPages.get( id ).toString();
+    }
+
+
+    public String getActiveConfFile() {
+        return applicationConfFile.getAbsolutePath();
     }
 
 
