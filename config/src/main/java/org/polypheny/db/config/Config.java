@@ -219,6 +219,17 @@ public abstract class Config {
 
 
     /**
+     * Retrieves the current value as a plain object to be compared to other Objects
+     * NOTE: This method shall only be used for comparison reasons
+     *
+     * If you want to retrieve the actual value use the respective get{DataType} functions.
+     *
+     * @return plain object value of config object
+     */
+    public abstract Object getPlainValueObject();
+
+
+    /**
      * Retrieves the defaultValue that it is internally configured by the system
      * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
      *

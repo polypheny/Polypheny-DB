@@ -168,6 +168,12 @@ public class ConfigList extends Config {
 
 
     @Override
+    public Object getPlainValueObject() {
+        return list;
+    }
+
+
+    @Override
     public Object getDefaultValue() {
         return defaultList;
     }

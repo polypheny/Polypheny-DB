@@ -63,6 +63,12 @@ public class ConfigString extends ConfigScalar {
 
 
     @Override
+    public Object getPlainValueObject() {
+        return value;
+    }
+
+
+    @Override
     public Object getDefaultValue() {
         return defaultValue;
     }

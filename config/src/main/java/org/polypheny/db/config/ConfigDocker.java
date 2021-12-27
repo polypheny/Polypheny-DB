@@ -112,6 +112,12 @@ public class ConfigDocker extends ConfigObject {
 
 
     @Override
+    public Object getPlainValueObject() {
+        throw new ConfigRuntimeException( "Not supported for Docker Configs" );
+    }
+
+
+    @Override
     public Object getDefaultValue() {
         throw new ConfigRuntimeException( "Not supported for Docker Configs" );
     }

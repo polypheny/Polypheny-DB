@@ -107,6 +107,12 @@ public class ConfigTable extends Config {
 
 
     @Override
+    public Object getPlainValueObject() {
+        return table;
+    }
+
+
+    @Override
     public Object getDefaultValue() {
         return defaultTable;
     }

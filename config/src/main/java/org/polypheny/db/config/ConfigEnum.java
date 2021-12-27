@@ -44,6 +44,12 @@ public class ConfigEnum extends Config {
 
 
     @Override
+    public Object getPlainValueObject() {
+        return value;
+    }
+
+
+    @Override
     public Object getDefaultValue() {
         return defaultValue;
     }

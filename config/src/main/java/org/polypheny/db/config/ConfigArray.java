@@ -98,6 +98,12 @@ public class ConfigArray extends Config {
 
 
     @Override
+    public Object getPlainValueObject() {
+        return array;
+    }
+
+
+    @Override
     public Object getDefaultValue() {
         return defaultArray;
     }

@@ -149,6 +149,28 @@ public class ConfigManager {
     }
 
 
+    /**
+     * Updates Config to file
+     */
+    public void persistConfigValue( String configKey, Object updatedValue ) {
+
+        // TODO Extend with deviations from default Value, the actual defaultValue, description and link to website
+
+        com.typesafe.config.Config newConfig;
+
+        // Check if the new value is default value.
+        // If so, the value will be omitted since there is no need to write it to file
+        if ( configs.get( configKey ).isDefault() ) {
+            //if ( updatedValue.toString().equals( configs.get( configKey ).getDefaultValue().toString() ) ) {
+            log.warn( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
+            newConfig = configFile.withoutPath( configKey );
+        } else {
+            newConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
+        }
+        writeConfiguration( newConfig );
+
+    }
+
     public static void setApplicationConfFile( File customConfFile ) {
 
         if ( customConfFile.exists() && fm.isAccessible( customConfFile ) ) {
@@ -159,6 +181,7 @@ public class ConfigManager {
 
             loadConfigFile();
         } else {
+            log.error( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist."  );
             throw new ConfigRuntimeException( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
         }
     }
@@ -181,6 +204,9 @@ public class ConfigManager {
                 config.setValueFromFile( configFile );
             }
             this.configs.put( config.getKey(), config );
+
+            // Observe every registered config that if config is changed Manager gets notified and can persist the changed config
+            config.addObserver( new ConfigManagerListener() );
         }
     }
 
@@ -203,28 +229,6 @@ public class ConfigManager {
         }
     }
 
-
-    /**
-     * Updates Config to file
-     */
-    public void persistConfigValue( String configKey, Object updatedValue ) {
-
-        // TODO Extend with deviations from default Value, the actual defaultValue, description and link to website
-
-        com.typesafe.config.Config newConfig;
-
-        // Check if the new value is default value.
-        // If so, the value will be omitted since there is no need to write it to file
-        if ( configs.get( configKey ).isDefault() ) {
-            //if ( updatedValue.toString().equals( configs.get( configKey ).getDefaultValue().toString() ) ) {
-            log.warn( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
-            newConfig = configFile.withoutPath( configKey );
-        } else {
-            newConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
-        }
-        writeConfiguration( newConfig );
-
-    }
 
 
     /**
@@ -318,6 +322,22 @@ public class ConfigManager {
 
     public String getActiveConfFile() {
         return applicationConfFile.getAbsolutePath();
+    }
+
+
+    static class ConfigManagerListener implements ConfigListener{
+
+        @Override
+        public void onConfigChange( Config c ) {
+            System.out.println( "Manager: Config has changed: " + c.getKey() + " wit: " +c.getPlainValueObject() );
+            instance.persistConfigValue( c.getKey(), c.getPlainValueObject() );        }
+
+
+        @Override
+        public void restart( Config c ) {
+
+        }
+
     }
 
 
