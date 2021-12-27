@@ -27,7 +27,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.Getter;
@@ -76,13 +79,13 @@ public class ConfigManager {
     public static ConfigManager getInstance() {
 
         if ( configFile == null ) {
-            loadConfigFile();
+            loadConfigFile( false );
         }
         return instance;
     }
 
 
-    public static void loadConfigFile() {
+    public static void loadConfigFile( boolean override) {
 
         // No custom location has been specified
         // Assume Default
@@ -90,7 +93,7 @@ public class ConfigManager {
             initializeFileLocation();
         }
 
-        if ( configFile == null ) {
+        if ( configFile == null || override) {
             configFile = ConfigFactory.parseFile( applicationConfFile );
         } else {
             configFile = ConfigFactory.parseFile( applicationConfFile ).withFallback( configFile );
@@ -100,8 +103,12 @@ public class ConfigManager {
 
     private static void initializeFileLocation() {
         // Create config directory and file if they do not already exist
-        applicationConfDir = fm.registerNewFolder( configurationDirectoryName );
-        applicationConfFile = new File( applicationConfDir, configurationFileName );
+        if ( applicationConfDir == null ){
+            applicationConfDir = fm.registerNewFolder( configurationDirectoryName );
+        }else {
+            applicationConfDir = fm.registerNewFolder( applicationConfDir.getParentFile(), configurationDirectoryName );
+        }
+        applicationConfFile = fm.registerNewFile(applicationConfDir, configurationFileName);
     }
 
 
@@ -125,6 +132,8 @@ public class ConfigManager {
         return true;
     }
 
+    // TODO @HENNLO add method that recreated the entire conf file after deletion with all values that are not default
+    // shall be triggered by arbitrary config change
 
     private static void writeConfiguration( final com.typesafe.config.Config configuration ) {
         ConfigRenderOptions configRenderOptions = ConfigRenderOptions.defaults();
@@ -144,7 +153,7 @@ public class ConfigManager {
             } catch ( IOException e ) {
                 log.error( "Exception while writing configuration file", e );
             }
-            loadConfigFile();
+            loadConfigFile( false );
         }
     }
 
@@ -158,28 +167,37 @@ public class ConfigManager {
 
         com.typesafe.config.Config newConfig;
 
-        // Check if the new value is default value.
-        // If so, the value will be omitted since there is no need to write it to file
-        if ( configs.get( configKey ).isDefault() ) {
-            //if ( updatedValue.toString().equals( configs.get( configKey ).getDefaultValue().toString() ) ) {
-            log.warn( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
-            newConfig = configFile.withoutPath( configKey );
-        } else {
-            newConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
-        }
-        writeConfiguration( newConfig );
+        // Because size 0 lists can't be written to config -- Error in typeconfig: CnfigImpl:269
+        if ( !(updatedValue instanceof Collection && ((Collection<?>) updatedValue).size() == 0 )) {
 
+            // Check if the new value is default value.
+            // If so, the value will be omitted since there is no need to write it to file
+            if ( configs.get( configKey ).isDefault() ) {
+                //if ( updatedValue.toString().equals( configs.get( configKey ).getDefaultValue().toString() ) ) {
+                log.warn( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
+                newConfig = configFile.withoutPath( configKey );
+            } else {
+                newConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue.toString() ) );
+            }
+            writeConfiguration( newConfig );
+        }
     }
 
+
+    /**
+     * Used to specify custom configuration Files
+     * @param customConfFile
+     */
     public static void setApplicationConfFile( File customConfFile ) {
 
         if ( customConfFile.exists() && fm.isAccessible( customConfFile ) ) {
-            applicationConfFile = customConfFile;
+            applicationConfFile = customConfFile.getAbsoluteFile();
 
             configurationFileName = customConfFile.getName();
-            configurationDirectoryName = customConfFile.getParentFile().getParent();
+            configurationDirectoryName = customConfFile.getParentFile().getName();
+            applicationConfDir = fm.registerNewFolder( applicationConfFile.getParentFile().getParentFile(), configurationDirectoryName );
 
-            loadConfigFile();
+            loadConfigFile( true );
         } else {
             log.error( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist."  );
             throw new ConfigRuntimeException( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
@@ -329,8 +347,8 @@ public class ConfigManager {
 
         @Override
         public void onConfigChange( Config c ) {
-            System.out.println( "Manager: Config has changed: " + c.getKey() + " wit: " +c.getPlainValueObject() );
-            instance.persistConfigValue( c.getKey(), c.getPlainValueObject() );        }
+            instance.persistConfigValue( c.getKey(), c.getPlainValueObject() );
+        }
 
 
         @Override

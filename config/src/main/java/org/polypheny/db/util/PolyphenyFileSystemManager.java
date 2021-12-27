@@ -177,7 +177,7 @@ public class PolyphenyFileSystemManager {
                 .replace( "//", "\\" ) );
         if ( !file.exists() ) {
             try {
-                file.mkdirs();
+                file.getParentFile().mkdirs();
                 file.createNewFile();
             } catch ( IOException e ) {
                 throw new RuntimeException( e );

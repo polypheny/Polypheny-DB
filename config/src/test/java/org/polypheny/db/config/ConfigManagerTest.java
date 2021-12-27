@@ -18,11 +18,16 @@ package org.polypheny.db.config;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
@@ -36,6 +41,12 @@ public class ConfigManagerTest implements ConfigListener {
 
     static {
         ConfigManager cm = ConfigManager.getInstance();
+
+        // Check if the correct file will be accessed
+        Path sourceFile = Paths.get( "src/test/resources/application.conf" );
+        File customConfFile = new File( sourceFile.toString() );
+        cm.setApplicationConfFile( customConfFile );
+
         WebUiPage p = new WebUiPage( "p", "page1", "page1descr" );
         WebUiGroup g1 = new WebUiGroup( "g1", "p", 2 ).withTitle( "group1" );
         WebUiGroup g2 = new WebUiGroup( "g2", "p", 1 ).withDescription( "group2" );
@@ -168,7 +179,6 @@ public class ConfigManagerTest implements ConfigListener {
 
         Assert.assertTrue( c.removeEnum( testEnum.BAR ) );
         Assert.assertFalse( c.removeEnum( testEnum.FOO ) );
-        c.addEnum( testEnum.FOO );
         c.addEnum( testEnum.FOO_BAR );
         Assert.assertFalse( c.getEnumList().contains( testEnum.BAR ) );
         Assert.assertTrue( c.getEnumList().contains( testEnum.FOO ) );
@@ -399,8 +409,10 @@ public class ConfigManagerTest implements ConfigListener {
     /**
      * Read and write to test configuration file and check if the values specified in configuration are used and can be dynamically changed
      */
+
     @Test
-    public void configFilePersistence() {
+    @Ignore
+    public void configFilePersistence() throws IOException {
 
         // Specify an unknown file location
         boolean failed = false;
@@ -410,15 +422,52 @@ public class ConfigManagerTest implements ConfigListener {
             failed = true;
         }
         Assert.assertTrue( failed );
+        failed = false;
+
 
         // Check if the correct file will be accessed
-        File customConfFile = new File( "src/test/resources/application.conf" );
+        Path sourceFile = Paths.get( "src/test/resources/application.conf" );
+        Path backupFile = Paths.get( "src/test/resources/application.conf.bkp" );
+
+
+
+        File customConfFile = new File( sourceFile.toString() );
         cm.setApplicationConfFile( customConfFile );
         Assert.assertEquals( customConfFile.getAbsolutePath(), cm.getActiveConfFile() );
 
+
         // Check if file will be re-created after config change
 
+
+
         // Check if CUSTOM file will be re-created after config change
+
+
+        // Rename file to simulate "delete"
+        Files.move( sourceFile.toFile(), backupFile.toFile() );
+        Config c = new ConfigInteger( "test.my.dummy", 5000 );
+
+
+        Assert.assertEquals( c.getInt(), 5000 );
+        try {
+
+            // Check if file is still present after registration
+            cm.registerConfig( c );
+            Assert.assertEquals( cm.getConfig( "test.my.dummy" ).getInt(), 5000 );
+
+            // Modify config value in CUSTOM value
+            c.setInt( 5001 );
+            Assert.assertEquals( c.getInt(), 5001 );
+
+            // Check if file was recreated
+            // with new updated value as well as old values that were in the file before
+
+        }finally {
+
+            // Remove file that has been created in the meantime
+            sourceFile.toFile().delete();
+            Files.move( backupFile.toFile(), sourceFile.toFile() );
+        }
 
         // Check if config changes are correctly written to file
 
@@ -426,6 +475,11 @@ public class ConfigManagerTest implements ConfigListener {
         // Valid config changes exist in config file
 
         // Verify that default values are not written to config
+
+            // Change config to non-default
+            // Verify that it is present in file
+
+            // Change entry back to default and verify that it is not present anymore
 
     }
 
