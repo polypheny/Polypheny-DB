@@ -231,13 +231,11 @@ public class CatalogImpl extends Catalog {
             }
 
             if ( isPersistent ) {
-                log.info( "Making the catalog persistent." );
                 StatusService.print( "Making the catalog persistent." );
                 File folder = FileSystemManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
                     StatusService.print( "Resetting catalog on startup." );
-                    log.info( "Resetting catalog on startup." );
                     if ( new File( folder, fileName ).exists() ) {
                         //noinspection ResultOfMethodCallIgnored
                         new File( folder, fileName ).delete();
@@ -265,8 +263,8 @@ public class CatalogImpl extends Catalog {
                 db.getStore().fileLoad();
 
             } else {
-                log.info( "Making the catalog in-memory." );
                 StatusService.print( "Making the catalog in-memory." );
+
                 db = DBMaker
                         .memoryDB()
                         .transactionEnable()

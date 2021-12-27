@@ -53,7 +53,6 @@ public class InformationServer implements InformationObserver {
         informationRoutes( http );
 
         StatusService.print( "InformationServer started." );
-        log.info( "InformationServer started." );
     }
 
 

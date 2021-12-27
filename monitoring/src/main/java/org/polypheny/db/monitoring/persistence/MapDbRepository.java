@@ -190,8 +190,8 @@ public class MapDbRepository implements MonitoringRepository {
             File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
 
             if ( Catalog.resetCatalog ) {
-                log.info( "Resetting monitoring repository on startup." );
                 StatusService.print( "Resetting monitoring repository on startup." );
+
                 if ( new File( folder, filePath ).exists() ) {
                     new File( folder, filePath ).delete();
                 }

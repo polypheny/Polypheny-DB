@@ -85,7 +85,6 @@ public class HttpServer implements Runnable {
         crudRoutes( server, crud );
 
         StatusService.print( String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
-        log.info( "Polypheny-UI started and is listening on port {}.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     }
 
 

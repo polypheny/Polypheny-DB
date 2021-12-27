@@ -91,7 +91,6 @@ public class JdbcInterface extends QueryInterface {
         }
 
         StatusService.print( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
-        log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
     }
 
 
