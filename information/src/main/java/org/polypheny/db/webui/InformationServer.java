@@ -21,6 +21,8 @@ import static spark.Service.ignite;
 
 import com.google.gson.Gson;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.information.Information;
@@ -29,6 +31,8 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationResponse;
+import spark.Request;
+import spark.Response;
 import spark.Service;
 
 
@@ -117,6 +121,14 @@ public class InformationServer implements InformationObserver {
         http.post( "/testDockerInstance/:dockerId", ( req, res ) -> {
             return true;
         } );
+
+        http.get( "/getEnabledPlugins", this::getEnabledPlugins, gson::toJson );
+
+    }
+
+
+    public List<String> getEnabledPlugins( Request req, Response res ) {
+        return Collections.singletonList( "Explore-By-Example" );
     }
 
 
