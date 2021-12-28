@@ -19,6 +19,9 @@ package org.polypheny.db.restapi;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
+import io.javalin.plugin.json.JsonMapper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +40,7 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -56,8 +60,6 @@ import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
-import spark.Request;
-import spark.Response;
 import spark.Service;
 
 
@@ -108,8 +110,24 @@ public class HttpRestServer extends QueryInterface {
 
     @Override
     public void run() {
-        restServer = Service.ignite();
-        restServer.port( port );
+        JsonMapper gsonMapper = new JsonMapper() {
+            @NotNull
+            @Override
+            public String toJsonString( @NotNull Object obj ) {
+                return gson.toJson( obj );
+            }
+
+
+            @NotNull
+            @Override
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
+                return gson.fromJson( json, targetClass );
+            }
+        };
+        Javalin restServer = Javalin.create( config -> {
+            config.jsonMapper( gsonMapper );
+            config.enableCorsForAllOrigins();
+        } ).start( port );
 
         Rest rest = new Rest( transactionManager, "pa", databaseName );
         restRoutes( restServer, rest );
@@ -118,48 +136,48 @@ public class HttpRestServer extends QueryInterface {
     }
 
 
-    private void restRoutes( Service restServer, Rest rest ) {
-        restServer.path( "/restapi/v1", () -> {
-            restServer.before( "/*", ( q, a ) -> {
-                log.debug( "Checking authentication of request with id: {}.", q.session().id() );
+    private void restRoutes( Javalin restServer, Rest rest ) {
+        restServer.routes( "/restapi/v1", () -> {
+            restServer.before( "/*", ctx -> {
+                log.debug( "Checking authentication of request with id: {}.", (Object) ctx.sessionAttribute( "id" ) );
                 try {
-                    CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( q );
+                    CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( ctx );
                 } catch ( UnauthorizedAccessException e ) {
-                    restServer.halt( 401, e.getMessage() );
+                    restServer.stop();
                 }
             } );
-            restServer.get( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.GET, q, a, q.params( ":resName" ) ) );
-            restServer.post( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.POST, q, a, q.params( ":resName" ) ) );
-            restServer.delete( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName" ) ) );
-            restServer.patch( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName" ) ) );
-            restServer.post( "/multipart", "multipart/form-data", ( q, a ) -> this.processMultipart( rest, RequestType.POST, q, a ), gson::toJson );
+            restServer.get( "/res/{resName}", ctx -> this.processResourceRequest( rest, RequestType.GET, ctx, ctx.req.getParameter( "resName" ) ) );
+            restServer.post( "/res/{resName}", ctx -> this.processResourceRequest( rest, RequestType.POST, ctx, ctx.req.getParameter( "resName" ) ) );
+            restServer.delete( "/res/{resName}", ctx -> this.processResourceRequest( rest, RequestType.DELETE, ctx, ctx.req.getParameter( "resName" ) ) );
+            restServer.patch( "/res/{resName}", ctx -> this.processResourceRequest( rest, RequestType.PATCH, ctx, ctx.req.getParameter( "resName" ) ) );
+            restServer.post( "/multipart", ctx -> this.processMultipart( rest, RequestType.POST, ctx ) );
         } );
     }
 
 
-    String processResourceRequest( Rest rest, RequestType type, Request request, Response response, String resourceName ) {
+    String processResourceRequest( Rest rest, RequestType type, Context ctx, String resourceName ) {
         try {
             switch ( type ) {
                 case DELETE:
                     deleteCounter.incrementAndGet();
-                    ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest( request, resourceName );
-                    return rest.processDeleteResource( resourceDeleteRequest, request, response );
+                    ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest( ctx, resourceName );
+                    return rest.processDeleteResource( resourceDeleteRequest, ctx );
                 case GET:
                     getCounter.incrementAndGet();
-                    ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( request, resourceName );
-                    return rest.processGetResource( resourceGetRequest, request, response );
+                    ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( ctx, resourceName );
+                    return rest.processGetResource( resourceGetRequest, ctx );
                 case PATCH:
                     patchCounter.incrementAndGet();
-                    ResourcePatchRequest resourcePatchRequest = requestParser.parsePatchResourceRequest( request, resourceName, gson );
-                    return rest.processPatchResource( resourcePatchRequest, request, response, null );
+                    ResourcePatchRequest resourcePatchRequest = requestParser.parsePatchResourceRequest( ctx, resourceName, gson );
+                    return rest.processPatchResource( resourcePatchRequest, ctx, null );
                 case POST:
                     postCounter.incrementAndGet();
-                    ResourcePostRequest resourcePostRequest = requestParser.parsePostResourceRequest( request, resourceName, gson );
-                    return rest.processPostResource( resourcePostRequest, request, response, null );
+                    ResourcePostRequest resourcePostRequest = requestParser.parsePostResourceRequest( ctx, resourceName, gson );
+                    return rest.processPostResource( resourcePostRequest, ctx, null );
             }
         } catch ( ParserException e ) {
             log.error( "ParserException", e );
-            response.status( 400 );
+            ctx.status( 400 );
             Map<String, Object> bodyReturn = new HashMap<>();
             bodyReturn.put( "system", "parser" );
             bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
@@ -170,7 +188,7 @@ public class HttpRestServer extends QueryInterface {
             return gson.toJson( bodyReturn );
         } catch ( RestException e ) {
             log.error( "RestException", e );
-            response.status( 400 );
+            ctx.status( 400 );
             Map<String, Object> bodyReturn = new HashMap<>();
             bodyReturn.put( "system", "rest" );
             bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
@@ -190,10 +208,8 @@ public class HttpRestServer extends QueryInterface {
 
     /**
      * Initialize a multipart request, so that the values can be fetched with request.raw().getPart( name )
-     *
-     * @param req Spark request
      */
-    private void initMultipart( Request req ) {
+    private void initMultipart( Context ctx ) {
         //see https://stackoverflow.com/questions/34746900/sparkjava-upload-file-didt-work-in-spark-java-framework
         String location = System.getProperty( "java.io.tmpdir" + File.separator + "Polypheny-DB" );
         long maxSizeMB = Long.parseLong( settings.get( "maxUploadSizeMb" ) );
@@ -201,7 +217,7 @@ public class HttpRestServer extends QueryInterface {
         long maxRequestSize = 1_000_000L * maxSizeMB;
         int fileSizeThreshold = 1024;
         MultipartConfigElement multipartConfigElement = new MultipartConfigElement( location, maxFileSize, maxRequestSize, fileSizeThreshold );
-        req.raw().setAttribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
+        ctx.attribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
     }
 
 
@@ -210,15 +226,15 @@ public class HttpRestServer extends QueryInterface {
     }
 
 
-    String processMultipart( Rest rest, RequestType type, Request req, Response res ) {
+    String processMultipart( Rest rest, RequestType type, Context ctx ) {
         Gson gson = new Gson();
-        initMultipart( req );
+        initMultipart( ctx );
 
         Map<String, String> params = new HashMap<>();
         Map<String, InputStream> inputStreams = new HashMap<>();
         try {
 
-            for ( Part part : req.raw().getParts() ) {
+            for ( Part part : ctx.req.getParts() ) {
                 if ( part.getSubmittedFileName() != null ) {
                     inputStreams.put( part.getName(), part.getInputStream() );
                 } else {
@@ -253,7 +269,7 @@ public class HttpRestServer extends QueryInterface {
                     return rest.processPostResource( resourcePatchRequest, null, null, inputStreams );
                 } catch ( ParserException e ) {
                     log.error( "ParserException", e );
-                    res.status( 400 );
+                    ctx.status( 400 );
                     Map<String, Object> bodyReturn = new HashMap<>();
                     bodyReturn.put( "system", "parser" );
                     bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
@@ -264,7 +280,7 @@ public class HttpRestServer extends QueryInterface {
                     return gson.toJson( bodyReturn );
                 } catch ( RestException e ) {
                     log.error( "RestException", e );
-                    res.status( 400 );
+                    ctx.status( 400 );
                     Map<String, Object> bodyReturn = new HashMap<>();
                     bodyReturn.put( "system", "rest" );
                     bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
@@ -278,7 +294,7 @@ public class HttpRestServer extends QueryInterface {
                 } finally {
                     try {
                         inputStreams.clear();
-                        for ( Part part : req.raw().getParts() ) {
+                        for ( Part part : ctx.req.getParts() ) {
                             part.delete();
                         }
                     } catch ( ServletException | IOException e ) {

@@ -28,7 +28,7 @@ dependencies {
 
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version  // Apache 2.0
+    implementation group: 'io.javalin', name: 'javalin', version: javalin_version // Apache 2.0
 
     implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version  // Apache 2.0
 

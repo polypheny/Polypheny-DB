@@ -19,6 +19,7 @@ package org.polypheny.db.restapi;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import io.javalin.http.Context;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +81,6 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import spark.Request;
-import spark.Response;
 
 
 @Slf4j
@@ -98,7 +98,7 @@ public class Rest {
     }
 
 
-    String processGetResource( final ResourceGetRequest resourceGetRequest, final Request req, final Response res ) throws RestException {
+    String processGetResource( final ResourceGetRequest resourceGetRequest, final Context ctx ) throws RestException {
         if ( log.isDebugEnabled() ) {
             log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
         }
@@ -148,7 +148,7 @@ public class Rest {
     }
 
 
-    String processPatchResource( final ResourcePatchRequest resourcePatchRequest, final Request req, final Response res, Map<String, InputStream> inputStreams ) throws RestException {
+    String processPatchResource( final ResourcePatchRequest resourcePatchRequest, final Context ctx, Map<String, InputStream> inputStreams ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         AlgBuilder algBuilder = AlgBuilder.create( statement );
@@ -207,7 +207,7 @@ public class Rest {
     }
 
 
-    String processDeleteResource( final ResourceDeleteRequest resourceDeleteRequest, final Request req, final Response res ) throws RestException {
+    String processDeleteResource( final ResourceDeleteRequest resourceDeleteRequest, final Context ctx ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         AlgBuilder algBuilder = AlgBuilder.create( statement );
@@ -256,11 +256,11 @@ public class Rest {
         AlgRoot root = new AlgRoot( tableModify, rowType, Kind.DELETE, fields, collation );
         log.debug( "AlgRoot was built." );
 
-        return executeAndTransformPolyAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, ctx );
     }
 
 
-    String processPostResource( final ResourcePostRequest insertValueRequest, final Request req, final Response res, Map<String, InputStream> inputStreams ) throws RestException {
+    String processPostResource( final ResourcePostRequest insertValueRequest, final Context ctx, Map<String, InputStream> inputStreams ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         AlgBuilder algBuilder = AlgBuilder.create( statement );
@@ -556,7 +556,7 @@ public class Rest {
     }
 
 
-    String executeAndTransformPolyAlg( AlgRoot algRoot, final Statement statement, final Response res ) {
+    String executeAndTransformPolyAlg( AlgRoot algRoot, final Statement statement, final Context ctx ) {
         RestResult restResult;
         try {
             // Prepare
@@ -582,7 +582,7 @@ public class Rest {
             }
             return null;
         }
-        Pair<String, Integer> result = restResult.getResult( res );
+        Pair<String, Integer> result = restResult.getResult( ctx );
 
         return result.left;
     }
