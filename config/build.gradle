@@ -4,7 +4,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 
 dependencies {
-    implementation group: 'io.javalin', name: 'javalin', version: javalin_version // Apache 2.0
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
     implementation group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
     
     implementation group: "com.typesafe", name: "config", version: typesafe_config_version  // Apache 2.0
