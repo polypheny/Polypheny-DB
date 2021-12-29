@@ -17,6 +17,13 @@
 package org.polypheny.db.restapi;
 
 
+import static io.javalin.apibuilder.ApiBuilder.before;
+import static io.javalin.apibuilder.ApiBuilder.delete;
+import static io.javalin.apibuilder.ApiBuilder.get;
+import static io.javalin.apibuilder.ApiBuilder.patch;
+import static io.javalin.apibuilder.ApiBuilder.path;
+import static io.javalin.apibuilder.ApiBuilder.post;
+
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import io.javalin.Javalin;
@@ -60,7 +67,6 @@ import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
-import spark.Service;
 
 
 @Slf4j
@@ -91,7 +97,7 @@ public class HttpRestServer extends QueryInterface {
 
     private final MonitoringPage monitoringPage;
 
-    private Service restServer;
+    private Javalin restServer;
 
 
     public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
@@ -137,43 +143,57 @@ public class HttpRestServer extends QueryInterface {
 
 
     private void restRoutes( Javalin restServer, Rest rest ) {
-        restServer.routes( "/restapi/v1", () -> {
-            restServer.before( "/*", ctx -> {
-                log.debug( "Checking authentication of request with id: {}.", (Object) ctx.sessionAttribute( "id" ) );
-                try {
-                    CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( ctx );
-                } catch ( UnauthorizedAccessException e ) {
-                    restServer.stop();
-                }
+        restServer.routes( () -> {
+            path( "/restapi/v1", () -> {
+                before( "/*", ctx -> {
+                    log.debug( "Checking authentication of request with id: {}.", (Object) ctx.sessionAttribute( "id" ) );
+                    try {
+                        CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( ctx );
+                    } catch ( UnauthorizedAccessException e ) {
+                        restServer.stop();
+                    }
+                } );
+                get( "/res/{resName}",
+                        ctx -> this.processResourceRequest( rest, RequestType.GET, ctx, ctx.pathParam( "resName" ) ) );
+                post( "/res/{resName}",
+                        ctx -> this.processResourceRequest( rest, RequestType.POST, ctx, ctx.pathParam( "resName" ) ) );
+                delete( "/res/{resName}",
+                        ctx -> this.processResourceRequest( rest, RequestType.DELETE, ctx, ctx.pathParam( "resName" ) ) );
+                patch( "/res/{resName}",
+                        ctx -> this.processResourceRequest( rest, RequestType.PATCH, ctx, ctx.pathParam( "resName" ) ) );
+                post( "/multipart",
+                        ctx -> this.processMultipart( rest, RequestType.POST, ctx ) );
             } );
-            restServer.get( "/res/{resName}", ctx -> this.processResourceRequest( rest, RequestType.GET, ctx, ctx.req.getParameter( "resName" ) ) );
-            restServer.post( "/res/{resName}", ctx -> this.processResourceRequest( rest, RequestType.POST, ctx, ctx.req.getParameter( "resName" ) ) );
-            restServer.delete( "/res/{resName}", ctx -> this.processResourceRequest( rest, RequestType.DELETE, ctx, ctx.req.getParameter( "resName" ) ) );
-            restServer.patch( "/res/{resName}", ctx -> this.processResourceRequest( rest, RequestType.PATCH, ctx, ctx.req.getParameter( "resName" ) ) );
-            restServer.post( "/multipart", ctx -> this.processMultipart( rest, RequestType.POST, ctx ) );
         } );
     }
 
 
-    String processResourceRequest( Rest rest, RequestType type, Context ctx, String resourceName ) {
+    void processResourceRequest( Rest rest, RequestType type, Context ctx, String resourceName ) {
         try {
             switch ( type ) {
                 case DELETE:
                     deleteCounter.incrementAndGet();
-                    ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest( ctx, resourceName );
-                    return rest.processDeleteResource( resourceDeleteRequest, ctx );
+                    ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest( ctx.req, resourceName );
+                    ctx.result( rest.processDeleteResource( resourceDeleteRequest, ctx ) );
+                    break;
                 case GET:
                     getCounter.incrementAndGet();
-                    ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( ctx, resourceName );
-                    return rest.processGetResource( resourceGetRequest, ctx );
+                    ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( ctx.req, resourceName );
+                    ctx.result( rest.processGetResource( resourceGetRequest, ctx ) );
+                    break;
                 case PATCH:
                     patchCounter.incrementAndGet();
                     ResourcePatchRequest resourcePatchRequest = requestParser.parsePatchResourceRequest( ctx, resourceName, gson );
-                    return rest.processPatchResource( resourcePatchRequest, ctx, null );
+                    ctx.result( rest.processPatchResource( resourcePatchRequest, ctx, null ) );
+                    break;
                 case POST:
                     postCounter.incrementAndGet();
                     ResourcePostRequest resourcePostRequest = requestParser.parsePostResourceRequest( ctx, resourceName, gson );
-                    return rest.processPostResource( resourcePostRequest, ctx, null );
+                    ctx.result( rest.processPostResource( resourcePostRequest, ctx, null ) );
+                    break;
+                default:
+                    log.error( "processResourceRequest should never reach this point in the code!" );
+                    throw new RuntimeException( "processResourceRequest should never reach this point in the code!" );
             }
         } catch ( ParserException e ) {
             log.error( "ParserException", e );
@@ -185,7 +205,8 @@ public class HttpRestServer extends QueryInterface {
             bodyReturn.put( "error", e.getErrorCode().name );
             bodyReturn.put( "error_description", e.getErrorCode().description );
             bodyReturn.put( "violating_input", e.getViolatingInput() );
-            return gson.toJson( bodyReturn );
+            ctx.json( bodyReturn );
+
         } catch ( RestException e ) {
             log.error( "RestException", e );
             ctx.status( 400 );
@@ -195,14 +216,12 @@ public class HttpRestServer extends QueryInterface {
             bodyReturn.put( "error_code", e.getErrorCode().code );
             bodyReturn.put( "error", e.getErrorCode().name );
             bodyReturn.put( "error_description", e.getErrorCode().description );
-            return gson.toJson( bodyReturn );
+            ctx.json( bodyReturn );
+
         } catch ( Throwable t ) {
             log.error( "Rest error", t );
             throw t;
         }
-
-        log.error( "processResourceRequest should never reach this point in the code!" );
-        throw new RuntimeException( "processResourceRequest should never reach this point in the code!" );
     }
 
 
@@ -266,7 +285,7 @@ public class HttpRestServer extends QueryInterface {
                 try {
                     ResourcePostRequest resourcePatchRequest = requestParser.parsePostMultipartRequest( resName, projections, insertValues );
                     resourcePatchRequest.useDynamicParams = true;
-                    return rest.processPostResource( resourcePatchRequest, null, null, inputStreams );
+                    return rest.processPostResource( resourcePatchRequest, null, inputStreams );
                 } catch ( ParserException e ) {
                     log.error( "ParserException", e );
                     ctx.status( 400 );

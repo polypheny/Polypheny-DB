@@ -20,6 +20,7 @@ package org.polypheny.db.restapi;
 import com.google.gson.Gson;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
+import io.javalin.http.Context;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -42,6 +43,7 @@ import java.util.zip.ZipOutputStream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -49,8 +51,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.Pair;
-import spark.Response;
-import spark.utils.IOUtils;
 
 
 @Slf4j
@@ -231,7 +231,7 @@ public class RestResult {
     }
 
 
-    public Pair<String, Integer> getResult( final Response res ) {
+    public Pair<String, Integer> getResult( final Context ctx ) {
         Gson gson = new Gson();
         Map<String, Object> finalResult = new HashMap<>();
         finalResult.put( "result", result );
@@ -246,10 +246,10 @@ public class RestResult {
                 zipOut.write( gson.toJson( finalResult ).getBytes( StandardCharsets.UTF_8 ) );
                 zipOut.close();
                 fos.close();
-                res.header( "Content-Type", "application/octet-stream" );
-                res.type( "application/octet-stream" );
-                res.header( "Content-Disposition", "attachment; filename=result.zip" );
-                os = res.raw().getOutputStream();
+                ctx.contentType( "application/octet-stream" );
+                //ctx.res.setContentType( "application/octet-stream" );
+                ctx.res.setHeader( "Content-Disposition", "attachment; filename=result.zip" );
+                os = ctx.res.getOutputStream();
                 FileInputStream fis = new FileInputStream( zipFile );
                 byte[] buf = new byte[2048];
                 int len;
@@ -261,7 +261,7 @@ public class RestResult {
                 }
             } catch ( IOException e ) {
                 zipFile.delete();
-                res.status( 500 );
+                ctx.status( 500 );
             }
             return new Pair( "", finalResult.size() );
         }

@@ -21,6 +21,5 @@ public enum RequestType {
     DELETE,
     GET,
     PATCH,
-    POST,
-    ;
+    POST;
 }

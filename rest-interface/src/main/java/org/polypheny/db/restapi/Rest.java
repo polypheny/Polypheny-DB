@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -80,7 +81,6 @@ import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
-import spark.Request;
 
 
 @Slf4j
@@ -100,7 +100,7 @@ public class Rest {
 
     String processGetResource( final ResourceGetRequest resourceGetRequest, final Context ctx ) throws RestException {
         if ( log.isDebugEnabled() ) {
-            log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
+            log.debug( "Starting to process get resource request. Session ID: {}.", ctx.req.getSession().getId() );
         }
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
@@ -114,7 +114,7 @@ public class Rest {
         // Initial projection
         algBuilder = this.initialProjection( algBuilder, rexBuilder, resourceGetRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceGetRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceGetRequest.filters, ctx.req );
         if ( filters != null ) {
             algBuilder = algBuilder.filter( filters );
         }
@@ -144,7 +144,7 @@ public class Rest {
         AlgRoot root = new AlgRoot( algNode, algNode.getRowType(), Kind.SELECT, fields, collation );
         log.debug( "AlgRoot was built." );
 
-        return executeAndTransformPolyAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, ctx );
     }
 
 
@@ -164,7 +164,7 @@ public class Rest {
         // Initial projection
         algBuilder = this.initialProjection( algBuilder, rexBuilder, resourcePatchRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourcePatchRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourcePatchRequest.filters, ctx.req );
         if ( filters != null ) {
             algBuilder = algBuilder.filter( filters );
         }
@@ -203,7 +203,7 @@ public class Rest {
         AlgRoot root = new AlgRoot( tableModify, rowType, Kind.UPDATE, fields, collation );
         log.debug( "AlgRoot was built." );
 
-        return executeAndTransformPolyAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, ctx );
     }
 
 
@@ -223,7 +223,7 @@ public class Rest {
 //         Initial projection
         algBuilder = this.initialProjection( algBuilder, rexBuilder, resourceDeleteRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceDeleteRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceDeleteRequest.filters, ctx.req );
         if ( filters != null ) {
             algBuilder = algBuilder.filter( filters );
         }
@@ -308,7 +308,7 @@ public class Rest {
         AlgRoot root = new AlgRoot( tableModify, rowType, Kind.INSERT, fields, collation );
         log.debug( "AlgRoot was built." );
 
-        return executeAndTransformPolyAlg( root, statement, res );
+        return executeAndTransformPolyAlg( root, statement, ctx );
     }
 
 
@@ -330,10 +330,10 @@ public class Rest {
 
 
     @VisibleForTesting
-    List<RexNode> filters( Statement statement, AlgBuilder algBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
+    List<RexNode> filters( Statement statement, AlgBuilder algBuilder, RexBuilder rexBuilder, Filters filters, HttpServletRequest req ) {
         if ( filters.literalFilters != null ) {
             if ( req != null && log.isDebugEnabled() ) {
-                log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
+                log.debug( "Starting to process filters. Session ID: {}.", req.getSession().getId() );
             }
             List<RexNode> filterNodes = new ArrayList<>();
             AlgNode baseNodeForFilters = algBuilder.peek();
@@ -363,16 +363,16 @@ public class Rest {
             }
 
             if ( req != null && log.isDebugEnabled() ) {
-                log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
+                log.debug( "Finished processing filters. Session ID: {}.", req.getSession().getId() );
             }
 //            algBuilder = algBuilder.filter( filterNodes );
             if ( req != null && log.isDebugEnabled() ) {
-                log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
+                log.debug( "Added filters to relation. Session ID: {}.", req.getSession().getId() );
             }
             return filterNodes;
         } else {
             if ( req != null && log.isDebugEnabled() ) {
-                log.debug( "No filters to add. Session ID: {}.", req.session().id() );
+                log.debug( "No filters to add. Session ID: {}.", req.getSession().getId() );
             }
             return null;
         }

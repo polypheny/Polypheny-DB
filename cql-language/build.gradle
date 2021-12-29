@@ -24,7 +24,6 @@ dependencies {
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // // Apache 2.0
     implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version  // ISC
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version  // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
