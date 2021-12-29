@@ -49,11 +49,12 @@ public class WebSocket implements Consumer<WsConfig> {
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final Crud crud;
     private final HashMap<Session, Set<String>> queryAnalyzers = new HashMap<>();
-    private static final Gson gson = new Gson();
+    private static Gson gson;
 
 
-    WebSocket( Crud crud ) {
+    WebSocket( Crud crud, Gson gson ) {
         this.crud = crud;
+        gson = gson;
     }
 
 
@@ -89,11 +90,6 @@ public class WebSocket implements Consumer<WsConfig> {
     }
 
 
-    public static void sendMessage( final Session session, final Object message ) {
-        sendMessage( session, gson.toJson( message ) );
-    }
-
-
     @OnWebSocketMessage
     public void onMessage( final WsMessageContext ctx ) {
         if ( ctx.message().equals( "\"keepalive\"" ) ) {
@@ -124,7 +120,7 @@ public class WebSocket implements Consumer<WsConfig> {
                         xIds.add( result.getXid() );
                     }
                 }
-                sendMessage( ctx.session, results );
+                ctx.send( results );
                 break;
 
             case "RelAlgRequest":
@@ -135,7 +131,7 @@ public class WebSocket implements Consumer<WsConfig> {
                     try {
                         result = crud.executeRelAlg( relAlgRequest, ctx.session );
                     } catch ( Throwable t ) {
-                        sendMessage( ctx.session, new Result( t ) );
+                        ctx.send( new Result( t ) );
                         return;
                     }
                 } else {//TableRequest, is equal to UIRequest
@@ -143,14 +139,14 @@ public class WebSocket implements Consumer<WsConfig> {
                     try {
                         result = crud.getTable( uiRequest );
                     } catch ( Throwable t ) {
-                        sendMessage( ctx.session, new Result( t ) );
+                        ctx.send( new Result( t ) );
                         return;
                     }
                 }
                 if ( result.getXid() != null ) {
                     xIds.add( result.getXid() );
                 }
-                sendMessage( ctx.session, result );
+                ctx.send( result );
                 break;
             default:
                 throw new RuntimeException( "Unexpected WebSocket request: " + request.requestType );

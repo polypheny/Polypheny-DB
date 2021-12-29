@@ -21,6 +21,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
 import io.javalin.plugin.json.JsonMapper;
 import io.javalin.websocket.WsConfig;
@@ -107,12 +110,32 @@ public class HttpServer implements Runnable {
             jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
             return jsonStore;
         };
+        TypeAdapter<Throwable> throwableTypeAdapter = new TypeAdapter<Throwable>() {
+            @Override
+            public void write( JsonWriter out, Throwable value ) throws IOException {
+                if ( value != null ) {
+                    out.beginObject();
+                    out.name( "message" );
+                    out.value( value.getMessage() );
+                    out.endObject();
+                } else {
+                    out.nullValue();
+                }
+            }
+
+
+            @Override
+            public Throwable read( JsonReader in ) throws IOException {
+                return new Throwable( in.nextString() );
+            }
+        };
         gson = new GsonBuilder()
                 .registerTypeAdapter( DataSource.class, sourceSerializer )
                 .registerTypeAdapter( DataStore.class, storeSerializer )
                 .registerTypeAdapter( PolyType.class, PolyType.serializer )
                 .registerTypeAdapter( AdapterInformation.class, adapterSerializer )
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
+                .registerTypeAdapter( Throwable.class, throwableTypeAdapter )
                 .create();
     }
 
@@ -149,7 +172,7 @@ public class HttpServer implements Runnable {
 
         Crud crud = new Crud( transactionManager, Catalog.getInstance().getUser( Catalog.defaultUserId ).name, Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name );
 
-        WebSocket webSocketHandler = new WebSocket( crud );
+        WebSocket webSocketHandler = new WebSocket( crud, gson );
         webSockets( server, webSocketHandler );
 
         // get modified index.html
