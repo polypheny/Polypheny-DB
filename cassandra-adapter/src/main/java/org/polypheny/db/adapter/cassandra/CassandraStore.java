@@ -211,7 +211,7 @@ public class CassandraStore extends DataStore {
     @Override
     public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
         String cassandraphysicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( catalogTable.id );
-        return new CassandraTable( this.currentSchema, catalogTable.name, cassandraphysicalTableName, false );
+        return new CassandraTable( this.currentSchema, catalogTable.name, cassandraphysicalTableName, false, catalogTable.id );
     }
 
 

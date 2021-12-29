@@ -51,19 +51,14 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private final String logicalSchemaName;
     @Getter
     private final String logicalTableName;
-    @Getter
-    private final long tableId;
 
     @Getter
     private final List<Long> columnIds;
     @Getter
     private final List<String> logicalColumnNames;
 
-    private Statistic statistic;
-
-
     protected LogicalTable(
-            long tableId,
+            Long tableId,
             String logicalSchemaName,
             String logicalTableName,
             List<Long> columnIds,
@@ -78,28 +73,11 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
         this.logicalColumnNames = logicalColumnNames;
         this.protoRowType = protoRowType;
         this.schemaType = schemaType;
-
-        this.statistic = Statistics.UNKNOWN;
-
     }
 
 
     public String toString() {
         return "LogicTable {" + logicalSchemaName + "." + logicalTableName + "}";
-    }
-
-
-    public void setRowCount( int rowCount ) {
-        this.statistic = Statistics.of( rowCount, ImmutableList.of() );
-    }
-
-    public Statistic getStatistic(  ) {
-        int rowCount = 0;
-        if( StatisticsManager.getInstance().rowCountPerTable.containsKey(  tableId )){
-            rowCount = StatisticsManager.getInstance().rowCountPerTable.get( tableId );
-        }
-
-        return Statistics.of( rowCount, ImmutableList.of() );
     }
 
 

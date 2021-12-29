@@ -79,7 +79,8 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
             AlgProtoDataType protoRowType,
             String physicalSchemaName,
             String physicalTableName,
-            List<String> physicalColumnNames ) {
+            List<String> physicalColumnNames,
+            Long tableId) {
         super( Object[].class );
 
         this.cottontailSchema = cottontailSchema;
@@ -91,6 +92,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
         this.physicalColumnNames = physicalColumnNames;
+        this.tableId = tableId;
 
         this.entity = EntityName.newBuilder()
                 .setName( this.physicalTableName )

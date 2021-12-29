@@ -106,11 +106,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     private final String logicalTableName;
     private final List<String> logicalColumnNames;
 
-    private final long tableId;
-
     private final TableType jdbcTableType;
-
-    private Statistic statistic;
 
 
     public JdbcTable(
@@ -123,7 +119,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             String physicalSchemaName,
             String physicalTableName,
             List<String> physicalColumnNames,
-            long tableId) {
+            Long tableId) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
         this.logicalSchemaName = logicalSchemaName;
@@ -136,18 +132,6 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         this.protoRowType = protoRowType;
         this.tableId = tableId;
 
-        this.statistic = Statistics.UNKNOWN;
-
-    }
-
-
-    public Statistic getStatistic(  ) {
-        int rowCount = 0;
-        if(StatisticsManager.getInstance().rowCountPerTable.containsKey(  tableId )){
-            rowCount = StatisticsManager.getInstance().rowCountPerTable.get( tableId );
-        }
-
-        return Statistics.of( rowCount, ImmutableList.of() );
     }
 
 

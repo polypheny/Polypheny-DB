@@ -49,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
@@ -62,6 +63,10 @@ import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptTable.ToAlgContext;
@@ -104,15 +109,18 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         qualifiedNames.add( cassandraSchema.name );
         qualifiedNames.add( columnFamily );
         this.physicalName = cassandraSchema.getConvention().physicalNameProvider.getPhysicalTableName( qualifiedNames );
+        this.tableId = getCatalogTableId();
     }
 
 
-    public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, String physicalName, boolean view ) {
+
+    public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, String physicalName, boolean view, Long tableId ) {
         super( Object[].class );
         this.cassandraSchema = cassandraSchema;
         this.columnFamily = columnFamily;
         this.view = view;
         this.physicalName = physicalName;
+        this.tableId = tableId;
     }
 
 
@@ -120,6 +128,16 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         this( cassandraSchema, columnFamily, false );
     }
 
+
+
+    private Long getCatalogTableId() {
+        try {
+            return Catalog.getInstance().getTable(cassandraSchema.name, columnFamily, physicalName).id;
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     public String toString() {
         return "CassandraTable {" + columnFamily + "}";

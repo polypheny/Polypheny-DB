@@ -128,6 +128,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = storeId;
+        this.tableId = catalogTable.id;
+
     }
 
 

@@ -237,34 +237,6 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
                 LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
                 Long tableId = logicalTable.getTableId();
                 logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable. put( v, tableId) );
-
-                if(((LogicalTableModify) other).getOperation().name().equals( "INSERT" )){
-                    if(((LogicalTableModify) other).getInput() instanceof LogicalValues){
-                        List<ImmutableList<RexLiteral>> values = ((LogicalValues) ((LogicalTableModify) other).getInput()).tuples;
-
-                        //not good rowcount, rowcount from polyresult is better, check how to use differently
-                        rowCount = values.size();
-
-                        if ( StatisticsManager.getInstance().getRowCountPerTable().containsKey( tableId ) ) {
-                            logicalTable.setRowCount( StatisticsManager.getInstance().getRowCountPerTable().get( tableId ) + values.size() );
-                        } else {
-                            logicalTable.setRowCount( values.size() );
-                        }
-
-                    }if(((LogicalTableModify) other).getInput() instanceof LogicalProject){
-                        if(((LogicalProject)((LogicalTableModify) other).getInput()).getInput() instanceof LogicalValues){
-                            List<ImmutableList<RexLiteral>> values = ((LogicalValues) ((LogicalProject)((LogicalTableModify) other).getInput()).getInput()).tuples;
-
-                            rowCount = values.size();
-
-                            if ( StatisticsManager.getInstance().getRowCountPerTable().containsKey( tableId ) ) {
-                                logicalTable.setRowCount( StatisticsManager.getInstance().getRowCountPerTable().get( tableId ) + values.size() );
-                            } else {
-                                logicalTable.setRowCount( values.size() );
-                            }
-                        }
-                    }
-                }
             }
         }
         return visitChildren( other );

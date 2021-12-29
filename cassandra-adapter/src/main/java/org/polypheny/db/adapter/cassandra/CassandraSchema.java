@@ -336,7 +336,7 @@ public class CassandraSchema extends AbstractSchema {
     protected Map<String, Table> getTableMap() {
         final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
         for ( Entry<CqlIdentifier, TableMetadata> table : getKeyspace().getTables().entrySet() ) {
-            builder.put( table.getKey().toString(), new CassandraTable( this, table.getKey().toString() ) );
+            builder.put( table.getKey().toString(), new CassandraTable( this, table.getKey().toString()) );
 
             // TODO JS: Fix the view situation!
             /*for ( MaterializedViewMetadata view : table.getValue().getViews() ) {

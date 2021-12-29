@@ -284,6 +284,12 @@ public class Smalls {
 
 
             @Override
+            public Long getTableId() {
+                return null;
+            }
+
+
+            @Override
             public Schema.TableType getJdbcTableType() {
                 return Schema.TableType.TABLE;
             }

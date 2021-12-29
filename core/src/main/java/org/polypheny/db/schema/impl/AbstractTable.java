@@ -34,6 +34,9 @@
 package org.polypheny.db.schema.impl;
 
 
+import com.google.common.collect.ImmutableList;
+import lombok.Getter;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.schema.Schema;
@@ -52,14 +55,12 @@ import org.polypheny.db.schema.Wrapper;
  */
 public abstract class AbstractTable implements Table, Wrapper {
 
+    @Getter
+    protected Long tableId;
+    protected Statistic statistic = Statistics.UNKNOWN;
+
+
     protected AbstractTable() {
-    }
-
-
-    // Default implementation. Override if you have statistics.
-    @Override
-    public Statistic getStatistic() {
-        return Statistics.UNKNOWN;
     }
 
 
@@ -87,6 +88,20 @@ public abstract class AbstractTable implements Table, Wrapper {
     @Override
     public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
         return true;
+    }
+
+
+    public Statistic getStatistic(  ) {
+        if(tableId == null){
+            throw new RuntimeException("D isi isch e fisi");
+        }
+        int rowCount = 0;
+        if( StatisticsManager.getInstance().rowCountPerTable.containsKey(  tableId )){
+            rowCount = StatisticsManager.getInstance().rowCountPerTable.get( tableId );
+        }
+
+       // return Statistics.UNKNOWN;
+        return Statistics.of( rowCount, ImmutableList.of() );
     }
 
 }
