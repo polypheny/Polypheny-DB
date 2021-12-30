@@ -26,10 +26,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
+import io.javalin.http.Context;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -87,6 +87,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.eclipse.jetty.websocket.api.Session;
@@ -94,7 +95,6 @@ import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
-import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.DataSource;
@@ -225,9 +225,6 @@ import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
-import spark.Request;
-import spark.Response;
-import spark.utils.IOUtils;
 
 
 @Slf4j
@@ -400,13 +397,13 @@ public class Crud implements InformationObserver {
     }
 
 
-    ArrayList<SidebarElement> getSchemaTree( final Request req, final Response res ) {
-        SchemaTreeRequest request = this.gson.fromJson( req.body(), SchemaTreeRequest.class );
+    void getSchemaTree( final Context ctx ) {
+        SchemaTreeRequest request = ctx.bodyAsClass( SchemaTreeRequest.class );
         ArrayList<SidebarElement> result = new ArrayList<>();
 
         if ( request.depth < 1 ) {
             log.error( "Trying to fetch a schemaTree with depth < 1" );
-            return new ArrayList<>();
+            ctx.json( new ArrayList<>() );
         }
 
         List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
@@ -459,16 +456,16 @@ public class Crud implements InformationObserver {
             result.add( schemaTree );
         }
 
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Get all tables of a schema
      */
-    List<DbTable> getTables( final Request req, final Response res ) {
+    void getTables( final Context ctx ) {
         Transaction transaction = getTransaction();
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+        EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         long schemaId = transaction.getDefaultSchema().id;
         String requestedSchema;
         if ( request.schema != null ) {
@@ -492,12 +489,12 @@ public class Crud implements InformationObserver {
         for ( CatalogTable t : tables ) {
             result.add( new DbTable( t.name, t.getSchemaName(), t.modifiable, t.tableType ) );
         }
-        return result;
+        ctx.json( result );
     }
 
 
-    Result renameTable( final Request req, final Response res ) {
-        Index table = this.gson.fromJson( req.body(), Index.class );
+    void renameTable( final Context ctx ) {
+        Index table = ctx.bodyAsClass( Index.class );
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getSchema(), table.getTable(), table.getName() );
         Transaction transaction = getTransaction();
         Result result;
@@ -513,15 +510,15 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Drop or truncate a table
      */
-    Result dropTruncateTable( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+    void dropTruncateTable( final Context ctx ) {
+        EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder query = new StringBuilder();
@@ -547,15 +544,15 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Create a new table
      */
-    Result createTable( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+    void createTable( final Context ctx ) {
+        EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         Transaction transaction = getTransaction();
         StringBuilder query = new StringBuilder();
         StringJoiner colJoiner = new StringJoiner( "," );
@@ -632,16 +629,16 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Initialize a multipart request, so that the values can be fetched with request.raw().getPart( name )
      *
-     * @param req Spark request
+     * @param ctx Spark request
      */
-    private void initMultipart( final Request req ) {
+    private void initMultipart( final Context ctx ) {
         //see https://stackoverflow.com/questions/34746900/sparkjava-upload-file-didt-work-in-spark-java-framework
         String location = System.getProperty( "java.io.tmpdir" + File.separator + "Polypheny-DB" );
         long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
@@ -649,20 +646,21 @@ public class Crud implements InformationObserver {
         long maxRequestSize = 1_000_000L * maxSizeMB;
         int fileSizeThreshold = 1024;
         MultipartConfigElement multipartConfigElement = new MultipartConfigElement( location, maxFileSize, maxRequestSize, fileSizeThreshold );
-        req.raw().setAttribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
+        ctx.attribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
     }
 
 
     /**
      * Insert data into a table
      */
-    Result insertRow( final Request req, final Response res ) {
-        initMultipart( req );
-        String tableId;
+    void insertRow( final Context ctx ) {
+        ctx.contentType( "multipart/form-data" );
+        initMultipart( ctx );
+        String tableId = null;
         try {
-            tableId = new BufferedReader( new InputStreamReader( req.raw().getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            tableId = new BufferedReader( new InputStreamReader( ctx.req.getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
         } catch ( IOException | ServletException e ) {
-            return new Result( e );
+            ctx.json( new Result( e ) );
         }
         String[] split = tableId.split( "\\." );
         tableId = String.format( "\"%s\".\"%s\"", split[0], split[1] );
@@ -677,7 +675,7 @@ public class Crud implements InformationObserver {
             int i = 0;
             for ( CatalogColumn catalogColumn : catalogColumns ) {
                 //part is null if it does not exist
-                Part part = req.raw().getPart( catalogColumn.name );
+                Part part = ctx.req.getPart( catalogColumn.name );
                 if ( part == null ) {
                     //don't add if default value is set
                     if ( catalogColumn.defaultValue == null ) {
@@ -703,14 +701,15 @@ public class Crud implements InformationObserver {
             }
         } catch ( IOException | ServletException e ) {
             log.error( "Could not generate INSERT statement", e );
-            return new Result( e );
+            ctx.status( 500 );
+            ctx.json( new Result( e ) );
         }
 
         String query = String.format( "INSERT INTO %s %s VALUES %s", tableId, columns.toString(), values.toString() );
         try {
             int numRows = executeSqlUpdate( statement, transaction, query );
             transaction.commit();
-            return new Result( numRows ).setGeneratedQuery( query );
+            ctx.json( new Result( numRows ).setGeneratedQuery( query ) );
         } catch ( Exception | TransactionException e ) {
             log.info( "Generated query: {}", query );
             log.error( "Could not insert row", e );
@@ -719,7 +718,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException e2 ) {
                 log.error( "Caught error while rolling back transaction", e2 );
             }
-            return new Result( e ).setGeneratedQuery( query );
+            ctx.json( new Result( e ).setGeneratedQuery( query ) );
         }
     }
 
@@ -928,13 +927,12 @@ public class Crud implements InformationObserver {
     /**
      * Return all available statistics to the client
      */
-    ConcurrentHashMap<?, ?> getStatistics( final Request req, final Response res ) {
+    void getStatistics( final Context ctx, Gson gsonExpose ) {
         if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-            return statisticsManager.getStatisticSchemaMap();
+            ctx.result( gsonExpose.toJson( statisticsManager.getStatisticSchemaMap() ) );
         } else {
-            return new ConcurrentHashMap<>();
+            ctx.json( new ConcurrentHashMap<>() );
         }
-
     }
 
 
@@ -942,8 +940,8 @@ public class Crud implements InformationObserver {
      * Gets the classified Data from User
      * return possibly interesting Data to User
      */
-    public Result classifyData( Request req, Response res ) {
-        ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
+    public void classifyData( final Context ctx ) {
+        ClassifyAllData classifyAllData = ctx.bodyAsClass( ClassifyAllData.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
 
         boolean isConvertedToSql = isClassificationToSql();
@@ -975,7 +973,7 @@ public class Crud implements InformationObserver {
             result.setClassificationInfo( "NoClassificationPossible" );
             result.setConvertedToSql( isConvertedToSql );
 
-            return result;
+            ctx.json( result );
         } else {
             Result result = new Result( classifyAllData.header, Arrays.copyOfRange( explore.getData(), 0, 10 ) );
 
@@ -985,7 +983,7 @@ public class Crud implements InformationObserver {
             result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
             result.setHighestPage( (int) Math.ceil( (double) explore.getData().length / getPageSize() ) );
             result.setConvertedToSql( isConvertedToSql );
-            return result;
+            ctx.json( result );
         }
 
     }
@@ -994,8 +992,8 @@ public class Crud implements InformationObserver {
     /**
      * For pagination within the Explore-by-Example table
      */
-    public Object getExploreTables( Request request, Response response ) {
-        ExploreTables exploreTables = this.gson.fromJson( request.body(), ExploreTables.class );
+    public void getExploreTables( final Context ctx ) {
+        ExploreTables exploreTables = ctx.bodyAsClass( ExploreTables.class );
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
@@ -1021,7 +1019,7 @@ public class Crud implements InformationObserver {
             result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
             result.setHighestPage( (int) Math.ceil( (double) tablesize / getPageSize() ) );
 
-            return result;
+            ctx.json( result );
         }
 
         try {
@@ -1031,7 +1029,7 @@ public class Crud implements InformationObserver {
             result = new Result( "Could not fetch table " + exploreTables.tableId );
             try {
                 transaction.rollback();
-                return result;
+                ctx.status( 500 ).json( result );
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
@@ -1071,7 +1069,7 @@ public class Crud implements InformationObserver {
 
             result.setClassifiedData( paginationData );
         }
-        return result;
+        ctx.json( result );
 
     }
 
@@ -1079,8 +1077,8 @@ public class Crud implements InformationObserver {
     /**
      * Creates the initial query for the Explore-by-Example process
      */
-    public Result createInitialExploreQuery( Request req, Response res ) {
-        QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
+    public void createInitialExploreQuery( final Context ctx ) {
+        QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
         Transaction transaction = getTransaction( queryExplorationRequest.analyze, true );
         Statement statement = transaction.createStatement();
@@ -1089,7 +1087,8 @@ public class Crud implements InformationObserver {
 
         Explore explore = exploreManager.createSqlQuery( null, queryExplorationRequest.query );
         if ( explore.getDataType() == null ) {
-            return new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" );
+            ctx.status( 400 ).json( new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" ) );
+            return;
         }
 
         String query = explore.getSqlStatement();
@@ -1116,15 +1115,15 @@ public class Crud implements InformationObserver {
         result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
         result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
 
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Start Classification, classifies the initial dataset, to show what would be within the final result set
      */
-    public ExploreResult exploration( Request req, Response res ) {
-        ExploreData exploreData = this.gson.fromJson( req.body(), ExploreData.class );
+    public void exploration( final Context ctx ) {
+        ExploreData exploreData = ctx.bodyAsClass( ExploreData.class );
 
         String[] dataType = new String[exploreData.header.length + 1];
         for ( int i = 0; i < exploreData.header.length; i++ ) {
@@ -1135,7 +1134,7 @@ public class Crud implements InformationObserver {
         ExploreManager e = ExploreManager.getInstance();
         Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType );
 
-        return new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() );
+        ctx.json( new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() ) );
     }
 
 
@@ -1200,8 +1199,8 @@ public class Crud implements InformationObserver {
     /**
      * Delete a row from a table. The row is determined by the value of every PK column in that row (conjunction).
      */
-    Result deleteRow( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+    void deleteRow( final Context ctx ) {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder builder = new StringBuilder();
@@ -1226,23 +1225,24 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Update a row from a table. The row is determined by the value of every PK column in that row (conjunction).
      */
-    Result updateRow( final Request req, final Response res ) {
-        initMultipart( req );
-        String tableId;
-        Map<String, String> oldValues;
+    void updateRow( final Context ctx ) throws ServletException, IOException {
+        ctx.contentType( "multipart/form-data" );
+        initMultipart( ctx );
+        String tableId = null;
+        Map<String, String> oldValues = null;
         try {
-            tableId = new BufferedReader( new InputStreamReader( req.raw().getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-            String _oldValues = new BufferedReader( new InputStreamReader( req.raw().getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            tableId = new BufferedReader( new InputStreamReader( ctx.req.getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            String _oldValues = new BufferedReader( new InputStreamReader( ctx.req.getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
             oldValues = gson.fromJson( _oldValues, Map.class );
         } catch ( IOException | ServletException e ) {
-            return new Result( e );
+            ctx.json( new Result( e ) );
         }
 
         String[] split = tableId.split( "\\." );
@@ -1253,29 +1253,26 @@ public class Crud implements InformationObserver {
         StringJoiner setStatements = new StringJoiner( ",", "", "" );
 
         List<CatalogColumn> catalogColumns = catalog.getColumns( new Catalog.Pattern( "APP" ), new Catalog.Pattern( split[0] ), new Catalog.Pattern( split[1] ), null );
-        try {
-            int i = 0;
-            for ( CatalogColumn catalogColumn : catalogColumns ) {
-                Part part = req.raw().getPart( catalogColumn.name );
-                if ( part == null ) {
-                    continue;
-                }
-                if ( part.getSubmittedFileName() == null ) {
-                    String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-                    String parsed = gson.fromJson( value, String.class );
-                    if ( parsed == null ) {
-                        setStatements.add( String.format( "\"%s\" = NULL", catalogColumn.name ) );
-                    } else {
-                        setStatements.add( String.format( "\"%s\" = %s", catalogColumn.name, uiValueToSql( parsed, catalogColumn.type, catalogColumn.collectionsType ) ) );
-                    }
-                } else {
-                    setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
-                    FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( fih ) );
-                }
+
+        int i = 0;
+        for ( CatalogColumn catalogColumn : catalogColumns ) {
+            Part part = ctx.req.getPart( catalogColumn.name );
+            if ( part == null ) {
+                continue;
             }
-        } catch ( IOException | ServletException e ) {
-            return new Result( e );
+            if ( part.getSubmittedFileName() == null ) {
+                String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                String parsed = gson.fromJson( value, String.class );
+                if ( parsed == null ) {
+                    setStatements.add( String.format( "\"%s\" = NULL", catalogColumn.name ) );
+                } else {
+                    setStatements.add( String.format( "\"%s\" = %s", catalogColumn.name, uiValueToSql( parsed, catalogColumn.type, catalogColumn.collectionsType ) ) );
+                }
+            } else {
+                setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
+                FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
+                statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( fih ) );
+            }
         }
 
         StringBuilder builder = new StringBuilder();
@@ -1305,40 +1302,38 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
-    Result batchUpdate( final Request req, final Response res ) {
-        initMultipart( req );
+    void batchUpdate( final Context ctx ) throws ServletException, IOException {
+        ctx.contentType( "multipart/form-data" );
+        initMultipart( ctx );
         BatchUpdateRequest request;
-        try {
-            String jsonRequest = new BufferedReader( new InputStreamReader( req.raw().getPart( "request" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-            request = gson.fromJson( jsonRequest, BatchUpdateRequest.class );
-        } catch ( IOException | ServletException e ) {
-            log.error( "Could not parse batch update request", e );
-            return new Result( e );
-        }
+
+        String jsonRequest = new BufferedReader( new InputStreamReader( ctx.req.getPart( "request" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+        request = gson.fromJson( jsonRequest, BatchUpdateRequest.class );
+
         Transaction transaction = getTransaction();
         Statement statement;
         int totalRows = 0;
         try {
             for ( Update update : request.updates ) {
                 statement = transaction.createStatement();
-                String query = update.getQuery( request.tableId, statement, req.raw() );
+                String query = update.getQuery( request.tableId, statement, ctx.req );
                 totalRows += executeSqlUpdate( statement, transaction, query );
             }
             transaction.commit();
-            return new Result( totalRows );
+            ctx.json( new Result( totalRows ) );
         } catch ( ServletException | IOException | QueryExecutionException | TransactionException e ) {
             try {
                 transaction.rollback();
             } catch ( TransactionException transactionException ) {
                 log.error( "Could not rollback", e );
-                return new Result( e );
+                ctx.status( 500 ).json( new Result( e ) );
             }
             log.error( "The batch update failed", e );
-            return new Result( e );
+            ctx.status( 500 ).json( new Result( e ) );
         }
     }
 
@@ -1346,8 +1341,8 @@ public class Crud implements InformationObserver {
     /**
      * Get the columns of a table
      */
-    Result getColumns( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+    void getColumns( final Context ctx ) {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Result result;
 
         String[] t = request.tableId.split( "\\." );
@@ -1388,67 +1383,65 @@ public class Crud implements InformationObserver {
             }
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting a column", e );
-            result = new Result( e );
+            ctx.status( 400 ).json( new Result( e ) );
+            return;
         }
 
-        return result;
+        ctx.json( result );
     }
 
 
-    Result getDataSourceColumns( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        try {
-            CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+    void getDataSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-            if ( catalogTable.tableType == TableType.VIEW ) {
-                ImmutableMap<Long, ImmutableList<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
+        CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
 
-                List<DbColumn> columns = new ArrayList<>();
-                for ( Long columnIds : catalogTable.columnIds ) {
-                    CatalogColumn col = catalog.getColumn( columnIds );
-                    columns.add( new DbColumn(
-                            col.name,
-                            col.type.getName(),
-                            col.collectionsType == null ? "" : col.collectionsType.getName(),
-                            col.nullable,
-                            col.length,
-                            col.scale,
-                            col.dimension,
-                            col.cardinality,
-                            false,
-                            col.defaultValue == null ? null : col.defaultValue.value
-                    ).setPhysicalName( col.name ) );
+        if ( catalogTable.tableType == TableType.VIEW ) {
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTable = ((CatalogView) catalogTable).getUnderlyingTables();
 
-                }
-                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
-            } else {
-                if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
-                    throw new RuntimeException( "The table has an unexpected number of placements!" );
-                }
+            List<DbColumn> columns = new ArrayList<>();
+            for ( Long columnIds : catalogTable.columnIds ) {
+                CatalogColumn col = catalog.getColumn( columnIds );
+                columns.add( new DbColumn(
+                        col.name,
+                        col.type.getName(),
+                        col.collectionsType == null ? "" : col.collectionsType.getName(),
+                        col.nullable,
+                        col.length,
+                        col.scale,
+                        col.dimension,
+                        col.cardinality,
+                        false,
+                        col.defaultValue == null ? null : col.defaultValue.value
+                ).setPhysicalName( col.name ) );
 
-                int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
-                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                List<String> pkColumnNames = primaryKey.getColumnNames();
-                List<DbColumn> columns = new ArrayList<>();
-                for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
-                    CatalogColumn col = catalog.getColumn( ccp.columnId );
-                    columns.add( new DbColumn(
-                            col.name,
-                            col.type.getName(),
-                            col.collectionsType == null ? "" : col.collectionsType.getName(),
-                            col.nullable,
-                            col.length,
-                            col.scale,
-                            col.dimension,
-                            col.cardinality,
-                            pkColumnNames.contains( col.name ),
-                            col.defaultValue == null ? null : col.defaultValue.value
-                    ).setPhysicalName( ccp.physicalColumnName ) );
-                }
-                return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.TABLE );
             }
-        } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
-            return new Result( e );
+            ctx.json( new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW ) );
+        } else {
+            if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+                throw new RuntimeException( "The table has an unexpected number of placements!" );
+            }
+
+            int adapterId = catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+            List<String> pkColumnNames = primaryKey.getColumnNames();
+            List<DbColumn> columns = new ArrayList<>();
+            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
+                CatalogColumn col = catalog.getColumn( ccp.columnId );
+                columns.add( new DbColumn(
+                        col.name,
+                        col.type.getName(),
+                        col.collectionsType == null ? "" : col.collectionsType.getName(),
+                        col.nullable,
+                        col.length,
+                        col.scale,
+                        col.dimension,
+                        col.cardinality,
+                        pkColumnNames.contains( col.name ),
+                        col.defaultValue == null ? null : col.defaultValue.value
+                ).setPhysicalName( ccp.physicalColumnName ) );
+            }
+            ctx.json( new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.TABLE ) );
         }
     }
 
@@ -1456,89 +1449,81 @@ public class Crud implements InformationObserver {
     /**
      * Get the exported tables of a DataSource that a table originates from
      */
-    Result[] getExportedColumns( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        try {
-            ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() ).placementsByAdapter;
-            Set<Integer> adapterIds = placements.keySet();
-            if ( adapterIds.size() > 1 ) {
-                log.warn( String.format( "The number of DataSources of a Table should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
-            }
-            List<Result> exportedColumns = new ArrayList<>();
-            for ( int adapterId : adapterIds ) {
-                Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
-                if ( adapter instanceof DataSource ) {
-                    DataSource dataSource = (DataSource) adapter;
-                    for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
-                        List<DbColumn> columnList = new ArrayList<>();
-                        for ( ExportedColumn col : entry.getValue() ) {
-                            DbColumn dbCol = new DbColumn(
-                                    col.name,
-                                    col.type.getName(),
-                                    col.collectionsType == null ? "" : col.collectionsType.getName(),
-                                    col.nullable,
-                                    col.length,
-                                    col.scale,
-                                    col.dimension,
-                                    col.cardinality,
-                                    col.primary,
-                                    null ).setPhysicalName( col.physicalColumnName );
-                            columnList.add( dbCol );
-                        }
-                        exportedColumns.add( new Result( columnList.toArray( new DbColumn[0] ), null ).setTable( entry.getKey() ) );
-                        columnList.clear();
+    void getExportedColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
+
+        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() ).placementsByAdapter;
+        Set<Integer> adapterIds = placements.keySet();
+        if ( adapterIds.size() > 1 ) {
+            log.warn( String.format( "The number of DataSources of a Table should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
+        }
+        List<Result> exportedColumns = new ArrayList<>();
+        for ( int adapterId : adapterIds ) {
+            Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
+            if ( adapter instanceof DataSource ) {
+                DataSource dataSource = (DataSource) adapter;
+                for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
+                    List<DbColumn> columnList = new ArrayList<>();
+                    for ( ExportedColumn col : entry.getValue() ) {
+                        DbColumn dbCol = new DbColumn(
+                                col.name,
+                                col.type.getName(),
+                                col.collectionsType == null ? "" : col.collectionsType.getName(),
+                                col.nullable,
+                                col.length,
+                                col.scale,
+                                col.dimension,
+                                col.cardinality,
+                                col.primary,
+                                null ).setPhysicalName( col.physicalColumnName );
+                        columnList.add( dbCol );
                     }
-                    return exportedColumns.toArray( new Result[0] );
-                } else {
-                    //log.warn( "This method should only be called for tables that originate from a DataSource" );
+                    exportedColumns.add( new Result( columnList.toArray( new DbColumn[0] ), null ).setTable( entry.getKey() ) );
+                    columnList.clear();
                 }
+                ctx.json( exportedColumns.toArray( new Result[0] ) );
+                return;
             }
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-            return new Result[]{ new Result( e ) };
+
         }
-        return new Result[]{ new Result( "Could not retrieve exported Columns." ) };
+
+        ctx.json( new Result( "Could not retrieve exported Columns." ) );
     }
 
 
-    MaterializedInfos getMaterializedInfo( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+    void getMaterializedInfo( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
+        EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
 
-        try {
-            CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
+        CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
 
-            if ( catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
-                CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogTable;
+        if ( catalogTable.tableType == TableType.MATERIALIZED_VIEW ) {
+            CatalogMaterializedView catalogMaterializedView = (CatalogMaterializedView) catalogTable;
 
-                MaterializedCriteria materializedCriteria = catalogMaterializedView.getMaterializedCriteria();
+            MaterializedCriteria materializedCriteria = catalogMaterializedView.getMaterializedCriteria();
 
-                ArrayList<String> materializedInfo = new ArrayList<>();
-                materializedInfo.add( materializedCriteria.getCriteriaType().toString() );
-                materializedInfo.add( materializedCriteria.getLastUpdate().toString() );
-                if ( materializedCriteria.getCriteriaType() == CriteriaType.INTERVAL ) {
-                    materializedInfo.add( materializedCriteria.getInterval().toString() );
-                    materializedInfo.add( materializedCriteria.getTimeUnit().name() );
-                } else if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
-                    materializedInfo.add( materializedCriteria.getInterval().toString() );
-                    materializedInfo.add( "" );
-                } else {
-                    materializedInfo.add( "" );
-                    materializedInfo.add( "" );
-                }
-
-                return new MaterializedInfos( materializedInfo );
+            ArrayList<String> materializedInfo = new ArrayList<>();
+            materializedInfo.add( materializedCriteria.getCriteriaType().toString() );
+            materializedInfo.add( materializedCriteria.getLastUpdate().toString() );
+            if ( materializedCriteria.getCriteriaType() == CriteriaType.INTERVAL ) {
+                materializedInfo.add( materializedCriteria.getInterval().toString() );
+                materializedInfo.add( materializedCriteria.getTimeUnit().name() );
+            } else if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
+                materializedInfo.add( materializedCriteria.getInterval().toString() );
+                materializedInfo.add( "" );
             } else {
-                throw new RuntimeException( "only possible with materialized views" );
+                materializedInfo.add( "" );
+                materializedInfo.add( "" );
             }
 
-        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-            log.error( "Caught exception while fetching information about the materialized view", e );
-            return new MaterializedInfos( e );
+            ctx.json( new MaterializedInfos( materializedInfo ) );
+        } else {
+            throw new RuntimeException( "only possible with materialized views" );
         }
     }
 
 
-    Result updateMaterialized( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+    void updateMaterialized( final Context ctx ) {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Transaction transaction = getTransaction();
         Result result;
         ArrayList<String> queries = new ArrayList<>();
@@ -1568,12 +1553,12 @@ public class Crud implements InformationObserver {
             }
         }
 
-        return result;
+        ctx.json( result );
     }
 
 
-    Result updateColumn( final Request req, final Response res ) {
-        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+    void updateColumn( final Context ctx ) {
+        ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
         Transaction transaction = getTransaction();
 
         DbColumn oldColumn = request.oldColumn;
@@ -1692,15 +1677,15 @@ public class Crud implements InformationObserver {
             }
         }
 
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Add a column to an existing table
      */
-    Result addColumn( final Request req, final Response res ) {
-        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+    void addColumn( final Context ctx ) {
+        ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
         Transaction transaction = getTransaction();
 
         String[] t = request.tableId.split( "\\." );
@@ -1776,15 +1761,15 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Delete a column of a table
      */
-    Result dropColumn( final Request req, final Response res ) {
-        ColumnRequest request = this.gson.fromJson( req.body(), ColumnRequest.class );
+    void dropColumn( final Context ctx ) {
+        ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
         Transaction transaction = getTransaction();
 
         String[] t = request.tableId.split( "\\." );
@@ -1805,14 +1790,14 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Get artificially generated index/foreign key/constraint names for placeholders in the UI
      */
-    Result getGeneratedNames( final Request req, final Response res ) {
+    Result getGeneratedNames( final Context ctx ) {
         String[] data = new String[3];
         data[0] = NameGenerator.generateConstraintName();
         data[1] = NameGenerator.generateForeignKeyName();
@@ -1824,8 +1809,8 @@ public class Crud implements InformationObserver {
     /**
      * Get constraints of a table
      */
-    Result getConstraints( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+    void getConstraints( final Context ctx ) {
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Result result;
 
         String[] t = request.tableId.split( "\\." );
@@ -1873,12 +1858,12 @@ public class Crud implements InformationObserver {
             result = new Result( e );
         }
 
-        return result;
+        ctx.json( result );
     }
 
 
-    Result dropConstraint( final Request req, final Response res ) {
-        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+    void dropConstraint( final Context ctx ) {
+        ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
         Transaction transaction = getTransaction();
 
         String[] t = request.table.split( "\\." );
@@ -1906,15 +1891,15 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Add a primary key to a table
      */
-    Result addPrimaryKey( final Request req, final Response res ) {
-        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+    void addPrimaryKey( final Context ctx ) {
+        ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
         Transaction transaction = getTransaction();
 
         String[] t = request.table.split( "\\." );
@@ -1943,15 +1928,15 @@ public class Crud implements InformationObserver {
         } else {
             result = new Result( "Cannot add primary key if no columns are provided." );
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Add a primary key to a table
      */
-    Result addUniqueConstraint( final Request req, final Response res ) {
-        ConstraintRequest request = this.gson.fromJson( req.body(), ConstraintRequest.class );
+    void addUniqueConstraint( final Context ctx ) {
+        ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
         Transaction transaction = getTransaction();
 
         String[] t = request.table.split( "\\." );
@@ -1980,15 +1965,15 @@ public class Crud implements InformationObserver {
         } else {
             result = new Result( "Cannot add unique constraint if no columns are provided." );
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Get indexes of a table
      */
-    Result getIndexes( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+    void getIndexes( final Context ctx ) {
+        EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         Result result;
         try {
             CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
@@ -2047,15 +2032,15 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Drop an index of a table
      */
-    Result dropIndex( final Request req, final Response res ) {
-        Index index = gson.fromJson( req.body(), Index.class );
+    void dropIndex( final Context ctx ) {
+        Index index = ctx.bodyAsClass( Index.class );
         Transaction transaction = getTransaction();
 
         String tableId = String.format( "\"%s\".\"%s\"", index.getSchema(), index.getTable() );
@@ -2074,15 +2059,15 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
     /**
      * Create an index for a table
      */
-    Result createIndex( final Request req, final Response res ) {
-        Index index = this.gson.fromJson( req.body(), Index.class );
+    void createIndex( final Context ctx ) {
+        Index index = ctx.bodyAsClass( Index.class );
         Transaction transaction = getTransaction();
 
         String tableId = String.format( "\"%s\".\"%s\"", index.getSchema(), index.getTable() );
@@ -2111,33 +2096,29 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
-    UnderlyingTables getUnderlyingTable( final Request req, final Response res ) {
+    void getUnderlyingTable( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
 
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        try {
-            CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-            if ( catalogTable.tableType == TableType.VIEW ) {
-                ImmutableMap<Long, ImmutableList<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
-                Map<String, List<String>> underlyingTable = new HashMap<>();
-                for ( Entry<Long, ImmutableList<Long>> entry : underlyingTableOriginal.entrySet() ) {
-                    List<String> columns = new ArrayList<>();
-                    for ( Long ids : entry.getValue() ) {
-                        columns.add( catalog.getColumn( ids ).name );
-                    }
-                    underlyingTable.put( catalog.getTable( entry.getKey() ).name, columns );
+        CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+
+        if ( catalogTable.tableType == TableType.VIEW ) {
+            ImmutableMap<Long, ImmutableList<Long>> underlyingTableOriginal = ((CatalogView) catalogTable).getUnderlyingTables();
+            Map<String, List<String>> underlyingTable = new HashMap<>();
+            for ( Entry<Long, ImmutableList<Long>> entry : underlyingTableOriginal.entrySet() ) {
+                List<String> columns = new ArrayList<>();
+                for ( Long ids : entry.getValue() ) {
+                    columns.add( catalog.getColumn( ids ).name );
                 }
-                return new UnderlyingTables( underlyingTable );
-            } else {
-                throw new RuntimeException( "Only possible with Views" );
+                underlyingTable.put( catalog.getTable( entry.getKey() ).name, columns );
             }
-
-        } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
-            return new UnderlyingTables( e );
+            ctx.json( new UnderlyingTables( underlyingTable ) );
+        } else {
+            throw new RuntimeException( "Only possible with Views" );
         }
     }
 
@@ -2145,9 +2126,9 @@ public class Crud implements InformationObserver {
     /**
      * Get placements of a table
      */
-    Placement getPlacements( final Request req, final Response res ) {
-        Index index = gson.fromJson( req.body(), Index.class );
-        return getPlacements( index );
+    void getPlacements( final Context ctx ) {
+        Index index = ctx.bodyAsClass( Index.class );
+        ctx.json( getPlacements( index ) );
     }
 
 
@@ -2189,10 +2170,11 @@ public class Crud implements InformationObserver {
      * Parameter of type models.Index: index name corresponds to storeUniqueName
      * Index method: either 'ADD' or 'DROP'
      */
-    Result addDropPlacement( final Request req, final Response res ) {
-        Index index = gson.fromJson( req.body(), Index.class );
+    void addDropPlacement( final Context ctx ) {
+        Index index = ctx.bodyAsClass( Index.class );
         if ( !index.getMethod().equalsIgnoreCase( "ADD" ) && !index.getMethod().equalsIgnoreCase( "DROP" ) && !index.getMethod().equalsIgnoreCase( "MODIFY" ) ) {
-            return new Result( "Invalid request" );
+            ctx.json( new Result( "Invalid request" ) );
+            return;
         }
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         int counter = 0;
@@ -2211,7 +2193,7 @@ public class Crud implements InformationObserver {
                 columnListStr,
                 index.getStoreUniqueName() );
         Transaction transaction = getTransaction();
-        int affectedRows;
+        int affectedRows = 0;
         try {
             affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -2221,14 +2203,14 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            return new Result( e );
+            ctx.json( new Result( e ) );
         }
-        return new Result( affectedRows ).setGeneratedQuery( query );
+        ctx.json( new Result( affectedRows ).setGeneratedQuery( query ) );
     }
 
 
-    String getPartitionTypes( final Request req, final Response res ) {
-        return gson.toJson( Arrays.stream( PartitionType.values() ).filter( t -> t != PartitionType.NONE ).toArray( PartitionType[]::new ), PartitionType[].class );
+    void getPartitionTypes( final Context ctx ) {
+        ctx.json( Arrays.stream( PartitionType.values() ).filter( t -> t != PartitionType.NONE ).toArray( PartitionType[]::new ) );
     }
 
 
@@ -2285,8 +2267,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    PartitionFunctionModel getPartitionFunctionModel( final Request req, final Response res ) {
-        PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
+    void getPartitionFunctionModel( final Context ctx ) throws UnknownDatabaseException, UnknownColumnException, UnknownTableException, UnknownSchemaException {
+        PartitioningRequest request = ctx.bodyAsClass( PartitioningRequest.class );
 
         // Get correct partition function
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -2294,14 +2276,12 @@ public class Crud implements InformationObserver {
 
         // Check whether the selected partition function supports the selected partition column
         CatalogColumn partitionColumn;
-        try {
-            partitionColumn = Catalog.getInstance().getColumn( "APP", request.schemaName, request.tableName, request.column );
-        } catch ( UnknownColumnException | UnknownSchemaException | UnknownDatabaseException | UnknownTableException e ) { // This should not happen
-            log.error( "Unknown column", e );
-            throw new RuntimeException( e );
-        }
+
+        partitionColumn = Catalog.getInstance().getColumn( "APP", request.schemaName, request.tableName, request.column );
+
         if ( !partitionManager.supportsColumnOfType( partitionColumn.type ) ) {
-            return new PartitionFunctionModel( "The partition function " + request.method + " does not support columns of type " + partitionColumn.type );
+            ctx.json( new PartitionFunctionModel( "The partition function " + request.method + " does not support columns of type " + partitionColumn.type ) );
+            return;
         }
 
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
@@ -2313,8 +2293,8 @@ public class Crud implements InformationObserver {
         if ( infoJson.has( "rowsBefore" ) ) {
             // Insert Rows Before
             List<List<PartitionFunctionInfoColumn>> rowsBefore = functionInfo.getRowsBefore();
-            for ( int i = 0; i < rowsBefore.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( request, rowsBefore.get( i ) ) );
+            for ( List<PartitionFunctionInfoColumn> partitionFunctionInfoColumns : rowsBefore ) {
+                rows.add( buildPartitionFunctionRow( request, partitionFunctionInfoColumns ) );
             }
         }
 
@@ -2328,8 +2308,8 @@ public class Crud implements InformationObserver {
         if ( infoJson.has( "rowsAfter" ) ) {
             // Insert Rows After
             List<List<PartitionFunctionInfoColumn>> rowsAfter = functionInfo.getRowsAfter();
-            for ( int i = 0; i < rowsAfter.size(); i++ ) {
-                rows.add( buildPartitionFunctionRow( request, rowsAfter.get( i ) ) );
+            for ( List<PartitionFunctionInfoColumn> partitionFunctionInfoColumns : rowsAfter ) {
+                rows.add( buildPartitionFunctionRow( request, partitionFunctionInfoColumns ) );
             }
         }
 
@@ -2339,12 +2319,12 @@ public class Crud implements InformationObserver {
         model.setPartitionColumnName( request.column );
         model.setSchemaName( request.schemaName );
 
-        return model;
+        ctx.json( model );
     }
 
 
-    Result partitionTable( final Request req, final Response res ) {
-        PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
+    void partitionTable( final Context ctx ) {
+        PartitionFunctionModel request = ctx.bodyAsClass( PartitionFunctionModel.class );
 
         // Get correct partition function
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -2388,7 +2368,7 @@ public class Crud implements InformationObserver {
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            return new Result( i ).setGeneratedQuery( query );
+            ctx.json( new Result( i ).setGeneratedQuery( query ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not partition table", e );
             try {
@@ -2396,19 +2376,19 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            return new Result( e ).setGeneratedQuery( query );
+            ctx.json( new Result( e ).setGeneratedQuery( query ) );
         }
     }
 
 
-    Result mergePartitions( final Request req, final Response res ) {
-        PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
+    void mergePartitions( final Context ctx ) {
+        PartitioningRequest request = ctx.bodyAsClass( PartitioningRequest.class );
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" MERGE PARTITIONS", request.schemaName, request.tableName );
         Transaction trx = getTransaction();
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            return new Result( i ).setGeneratedQuery( query );
+            ctx.json( new Result( i ).setGeneratedQuery( query ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not merge partitions", e );
             try {
@@ -2416,13 +2396,13 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            return new Result( e ).setGeneratedQuery( query );
+            ctx.json( new Result( e ).setGeneratedQuery( query ) );
         }
     }
 
 
-    Result modifyPartitions( final Request req, final Response res ) {
-        ModifyPartitionRequest request = gson.fromJson( req.body(), ModifyPartitionRequest.class );
+    void modifyPartitions( final Context ctx ) {
+        ModifyPartitionRequest request = ctx.bodyAsClass( ModifyPartitionRequest.class );
         StringJoiner partitions = new StringJoiner( "," );
         for ( String partition : request.partitions ) {
             partitions.add( "\"" + partition + "\"" );
@@ -2432,7 +2412,7 @@ public class Crud implements InformationObserver {
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            return new Result( i ).setGeneratedQuery( query );
+            ctx.json( new Result( i ).setGeneratedQuery( query ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not modify partitions", e );
             try {
@@ -2440,7 +2420,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            return new Result( e ).setGeneratedQuery( query );
+            ctx.json( new Result( e ).setGeneratedQuery( query ) );
         }
     }
 
@@ -2448,90 +2428,41 @@ public class Crud implements InformationObserver {
     /**
      * Get deployed data stores
      */
-    String getStores( final Request req, final Response res ) {
+    void getStores( final Context ctx ) {
         ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
         DataStore[] out = stores.values().toArray( new DataStore[0] );
-        return adapterSerializer().toJson( out, DataStore[].class );
-    }
-
-
-    private Gson adapterSerializer() {
-        //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
-        JsonSerializer<DataStore> storeSerializer = ( src, typeOfSrc, context ) -> {
-
-            JsonObject jsonStore = new JsonObject();
-            jsonStore.addProperty( "adapterId", src.getAdapterId() );
-            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
-            jsonStore.add( "adapterSettings", context.serialize( serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
-            jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
-            jsonStore.addProperty( "adapterName", src.getAdapterName() );
-            jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
-            jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
-            jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
-            return jsonStore;
-        };
-        JsonSerializer<DataSource> sourceSerializer = ( src, typeOfSrc, context ) -> {
-
-            JsonObject jsonSource = new JsonObject();
-            jsonSource.addProperty( "adapterId", src.getAdapterId() );
-            jsonSource.addProperty( "uniqueName", src.getUniqueName() );
-            jsonSource.addProperty( "adapterName", src.getAdapterName() );
-            jsonSource.add( "adapterSettings", context.serialize( serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
-            jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
-            jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
-            jsonSource.addProperty( "type", src.getClass().getCanonicalName() );
-            return jsonSource;
-        };
-        return new GsonBuilder().registerTypeAdapter( DataStore.class, storeSerializer ).registerTypeAdapter( DataSource.class, sourceSerializer ).create();
-    }
-
-
-    private List<AbstractAdapterSetting> serializeSettings( List<AbstractAdapterSetting> availableSettings, Map<String, String> currentSettings ) {
-        ArrayList<AbstractAdapterSetting> abstractAdapterSettings = new ArrayList<>();
-        for ( AbstractAdapterSetting s : availableSettings ) {
-            for ( String current : currentSettings.keySet() ) {
-                if ( s.name.equals( current ) ) {
-                    abstractAdapterSettings.add( s );
-                }
-            }
-        }
-        return abstractAdapterSettings;
+        ctx.json( out );
     }
 
 
     /**
      * Get the available stores on which a new index can be placed. 'Polypheny-DB' is part of the list, if polystore-indexes are enabled
      */
-    String getAvailableStoresForIndexes( final Request req, final Response res ) {
-        Index index = gson.fromJson( req.body(), Index.class );
+    void getAvailableStoresForIndexes( final Context ctx, Gson gson ) {
+        Index index = ctx.bodyAsClass( Index.class );
         Placement dataPlacements = getPlacements( index );
         ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
-        List<DataStore> filteredStores = stores.values().stream().filter( ( s ) -> {
+        //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
+        JsonArray jsonArray = gson.toJsonTree( stores.values().stream().filter( ( s ) -> {
             if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
                 return false;
             }
-            if ( dataPlacements.stores.stream().noneMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) ) ) {
-                return false;
-            }
-            return true;
-        } ).collect( Collectors.toList() );
-        //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
-        Gson storeSerializer = adapterSerializer();
-        JsonArray jsonArray = storeSerializer.toJsonTree( filteredStores.toArray( new DataStore[0] ) ).getAsJsonArray();
+            return dataPlacements.stores.stream().anyMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) );
+        } ).toArray( DataStore[]::new ) ).getAsJsonArray();
         if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
             JsonObject pdbFakeStore = new JsonObject();
             pdbFakeStore.addProperty( "uniqueName", "Polypheny-DB" );
-            pdbFakeStore.add( "availableIndexMethods", storeSerializer.toJsonTree( IndexManager.getAvailableIndexMethods() ) );
+            pdbFakeStore.add( "availableIndexMethods", gson.toJsonTree( IndexManager.getAvailableIndexMethods() ) );
             jsonArray.add( pdbFakeStore );
         }
-        return storeSerializer.toJson( jsonArray );
+        ctx.json( jsonArray );
     }
 
 
     /**
      * Update the settings of an adapter
      */
-    Result updateAdapterSettings( final Request req, final Response res ) {
+    void updateAdapterSettings( final Context ctx ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
         JsonDeserializer<Adapter> storeDeserializer = ( json, typeOfT, context ) -> {
             JsonObject jsonObject = json.getAsJsonObject();
@@ -2543,7 +2474,7 @@ public class Crud implements InformationObserver {
             }
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( Adapter.class, storeDeserializer ).create();
-        Adapter adapter = adapterGson.fromJson( req.body(), Adapter.class );
+        Adapter adapter = adapterGson.fromJson( ctx.body(), Adapter.class );
         try {
             if ( adapter instanceof DataStore ) {
                 AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
@@ -2552,7 +2483,8 @@ public class Crud implements InformationObserver {
             }
             Catalog.getInstance().commit();
         } catch ( Throwable t ) {
-            return new Result( "Could not update AdapterSettings", t );
+            ctx.json( new Result( "Could not update AdapterSettings", t ) );
+            return;
         }
 
         // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this but it
@@ -2570,74 +2502,59 @@ public class Crud implements InformationObserver {
                     log.error( "Exception while rollback", transactionException );
                 }
             }
-            return new Result( "Error while resetting caches", e );
+            ctx.json( new Result( "Error while resetting caches", e ) );
+            return;
         }
 
-        return new Result( 1 );
+        ctx.json( new Result( 1 ) );
     }
 
 
     /**
      * Get available adapters
      */
-    private String getAvailableAdapters( AdapterType adapterType ) {
-        JsonSerializer<AdapterInformation> adapterSerializer = ( src, typeOfSrc, context ) -> {
-            JsonObject jsonStore = new JsonObject();
-            jsonStore.addProperty( "name", src.name );
-            jsonStore.addProperty( "description", src.description );
-            jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
-            jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
-            return jsonStore;
-        };
-        Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
-
+    private void getAvailableAdapters( Context ctx, AdapterType adapterType ) {
         List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableAdapters( adapterType );
-        AdapterInformation[] out = adapters.toArray( new AdapterInformation[0] );
-        return adapterGson.toJson( out, AdapterInformation[].class );
+        ctx.json( adapters.toArray( new AdapterInformation[0] ) );
     }
 
 
-    String getAvailableStores( final Request req, final Response res ) {
-        return getAvailableAdapters( AdapterType.STORE );
+    void getAvailableStores( final Context ctx ) {
+        getAvailableAdapters( ctx, AdapterType.STORE );
     }
 
 
-    String getAvailableSources( final Request req, final Response res ) {
-        return getAvailableAdapters( AdapterType.SOURCE );
+    void getAvailableSources( final Context ctx ) {
+        getAvailableAdapters( ctx, AdapterType.SOURCE );
     }
 
 
     /**
      * Get deployed data sources
      */
-    String getSources( final Request req, final Response res ) {
+    void getSources( final Context ctx ) {
         ImmutableMap<String, DataSource> sources = AdapterManager.getInstance().getSources();
-        DataSource[] out = sources.values().toArray( new DataSource[0] );
-        return adapterSerializer().toJson( out, DataSource[].class );
+        ctx.json( sources.values().toArray( new DataSource[0] ) );
     }
 
 
     /**
      * Deploy a new adapter
      */
-    Result addAdapter( final Request req, final Response res ) {
-        initMultipart( req );
+    void addAdapter( final Context ctx, Gson gson ) throws ServletException, IOException {
+        initMultipart( ctx );
         String body = "";
         Map<String, InputStream> inputStreams = new HashMap<>();
-        try {
-            for ( Part part : req.raw().getParts() ) {
-                if ( part.getName().equals( "body" ) ) {
-                    body = new BufferedReader( new InputStreamReader( req.raw().getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-                } else {
-                    inputStreams.put( part.getName(), part.getInputStream() );
-                }
+
+        for ( Part part : ctx.req.getParts() ) {
+            if ( part.getName().equals( "body" ) ) {
+                body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
+            } else {
+                inputStreams.put( part.getName(), part.getInputStream() );
             }
-        } catch ( ServletException | IOException e ) {
-            log.error( "Could not get form data to add a new Adapter", e );
-            return new Result( e );
         }
-        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() );
-        AdapterModel a = gsonBuilder.create().fromJson( body, AdapterModel.class );
+
+        AdapterModel a = gson.fromJson( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
         for ( Entry<String, AbstractAdapterSetting> entry : a.settings.entrySet() ) {
             if ( entry.getValue() instanceof AbstractAdapterSettingDirectory ) {
@@ -2661,12 +2578,12 @@ public class Crud implements InformationObserver {
             }
         }
 
-        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, gson.toJson( settings ) );
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, Crud.gson.toJson( settings ) );
         Transaction transaction = getTransaction();
         try {
             int numRows = executeSqlUpdate( transaction, query );
             transaction.commit();
-            return new Result( numRows ).setGeneratedQuery( query );
+            ctx.json( new Result( numRows ).setGeneratedQuery( query ) );
         } catch ( Throwable e ) {
             log.error( "Could not deploy data store", e );
             try {
@@ -2674,7 +2591,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException transactionException ) {
                 log.error( "Exception while rollback", transactionException );
             }
-            return new Result( e ).setGeneratedQuery( query );
+            ctx.json( new Result( e ).setGeneratedQuery( query ) );
         }
     }
 
@@ -2682,80 +2599,80 @@ public class Crud implements InformationObserver {
     /**
      * Remove an existing store or source
      */
-    Result removeAdapter( final Request req, final Response res ) {
-        String uniqueName = req.body();
+    void removeAdapter( final Context ctx ) {
+        String uniqueName = ctx.body();
         String query = String.format( "ALTER ADAPTERS DROP \"%s\"", uniqueName );
         Transaction transaction = getTransaction();
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
-            return new Result( a ).setGeneratedQuery( query );
+            ctx.json( new Result( a ).setGeneratedQuery( query ) );
         } catch ( TransactionException | QueryExecutionException e ) {
-            log.error( "Could not remove store {}", req.body(), e );
+            log.error( "Could not remove store {}", ctx.body(), e );
             try {
                 transaction.rollback();
             } catch ( TransactionException transactionException ) {
                 log.error( "Exception while rollback", transactionException );
             }
-            return new Result( e ).setGeneratedQuery( query );
+            ctx.json( new Result( e ).setGeneratedQuery( query ) );
         }
     }
 
 
-    String getQueryInterfaces( final Request req, final Response res ) {
+    void getQueryInterfaces( final Context ctx ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         ImmutableMap<String, QueryInterface> queryInterfaces = qim.getQueryInterfaces();
         List<QueryInterfaceModel> qIs = new ArrayList<>();
         for ( QueryInterface i : queryInterfaces.values() ) {
             qIs.add( new QueryInterfaceModel( i ) );
         }
-        return gson.toJson( qIs.toArray( new QueryInterfaceModel[0] ), QueryInterfaceModel[].class );
+        ctx.json( qIs.toArray( new QueryInterfaceModel[0] ) );
     }
 
 
-    String getAvailableQueryInterfaces( final Request req, final Response res ) {
+    void getAvailableQueryInterfaces( final Context ctx ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         List<QueryInterfaceInformation> interfaces = qim.getAvailableQueryInterfaceTypes();
-        return QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ) );
+        ctx.result( QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ) ) );
     }
 
 
-    Result addQueryInterface( final Request req, final Response res ) {
+    void addQueryInterface( final Context ctx ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
-        QueryInterfaceInformationRequest request = gson.fromJson( req.body(), QueryInterfaceInformationRequest.class );
+        QueryInterfaceInformationRequest request = ctx.bodyAsClass( QueryInterfaceInformationRequest.class );
         String generatedQuery = String.format( "ALTER INTERFACES ADD \"%s\" USING '%s' WITH '%s'", request.uniqueName, request.clazzName, gson.toJson( request.currentSettings ) );
         try {
             qim.addQueryInterface( catalog, request.clazzName, request.uniqueName, request.currentSettings );
-            return new Result( 1 ).setGeneratedQuery( generatedQuery );
+            ctx.json( new Result( 1 ).setGeneratedQuery( generatedQuery ) );
         } catch ( RuntimeException e ) {
             log.error( "Exception while deploying query interface", e );
-            return new Result( e ).setGeneratedQuery( generatedQuery );
+            ctx.json( new Result( e ).setGeneratedQuery( generatedQuery ) );
         }
     }
 
 
-    Result updateQueryInterfaceSettings( final Request req, final Response res ) {
-        QueryInterfaceModel request = gson.fromJson( req.body(), QueryInterfaceModel.class );
+    void updateQueryInterfaceSettings( final Context ctx ) {
+        QueryInterfaceModel request = ctx.bodyAsClass( QueryInterfaceModel.class );
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         try {
             qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
-            return new Result( 1 );
+            ctx.json( new Result( 1 ) );
         } catch ( Exception e ) {
-            return new Result( e );
+            ctx.json( new Result( e ) );
         }
     }
 
 
-    Result removeQueryInterface( final Request req, final Response res ) {
-        String uniqueName = req.body();
+    void removeQueryInterface( final Context ctx ) {
+        String uniqueName = ctx.body();
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         String generatedQuery = String.format( "ALTER INTERFACES DROP \"%s\"", uniqueName );
         try {
             qim.removeQueryInterface( catalog, uniqueName );
-            return new Result( 1 ).setGeneratedQuery( generatedQuery );
+            ctx.json( new Result( 1 ).setGeneratedQuery( generatedQuery ) );
         } catch ( RuntimeException | UnknownQueryInterfaceException e ) {
-            log.error( "Could not remove query interface {}", req.body(), e );
-            return new Result( e ).setGeneratedQuery( generatedQuery );
+            log.error( "Could not remove query interface {}", ctx.body(), e );
+            ctx.json( new Result( e ).setGeneratedQuery( generatedQuery ) );
         }
     }
 
@@ -2763,8 +2680,8 @@ public class Crud implements InformationObserver {
     /**
      * Get the required information for the uml view: Foreign keys, Tables with its columns
      */
-    Uml getUml( final Request req, final Response res ) {
-        EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
+    void getUml( final Context ctx ) {
+        EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
@@ -2833,15 +2750,15 @@ public class Crud implements InformationObserver {
             }
         }
 
-        return new Uml( tables, fKeys );
+        ctx.json( new Uml( tables, fKeys ) );
     }
 
 
     /**
      * Add foreign key
      */
-    Result addForeignKey( final Request req, final Response res ) {
-        ForeignKey fk = this.gson.fromJson( req.body(), ForeignKey.class );
+    void addForeignKey( final Context ctx ) {
+        ForeignKey fk = ctx.bodyAsClass( ForeignKey.class );
         Transaction transaction = getTransaction();
 
         String[] t = fk.getSourceTable().split( "\\." );
@@ -2865,7 +2782,7 @@ public class Crud implements InformationObserver {
                 log.error( "Could not rollback", ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
@@ -3109,8 +3026,8 @@ public class Crud implements InformationObserver {
     /**
      * Create or drop a schema
      */
-    Result schemaRequest( final Request req, final Response res ) {
-        Schema schema = this.gson.fromJson( req.body(), Schema.class );
+    void schemaRequest( final Context ctx ) {
+        Schema schema = ctx.bodyAsClass( Schema.class );
         Transaction transaction = getTransaction();
 
         // create schema
@@ -3128,7 +3045,7 @@ public class Crud implements InformationObserver {
             try {
                 int rows = executeSqlUpdate( transaction, query.toString() );
                 transaction.commit();
-                return new Result( rows );
+                ctx.json( new Result( rows ) );
             } catch ( QueryExecutionException | TransactionException e ) {
                 log.error( "Caught exception while creating a schema", e );
                 try {
@@ -3136,7 +3053,7 @@ public class Crud implements InformationObserver {
                 } catch ( TransactionException ex ) {
                     log.error( "Could not rollback", ex );
                 }
-                return new Result( e );
+                ctx.json( new Result( e ) );
             }
         }
         // drop schema
@@ -3149,7 +3066,7 @@ public class Crud implements InformationObserver {
             try {
                 int rows = executeSqlUpdate( transaction, query.toString() );
                 transaction.commit();
-                return new Result( rows );
+                ctx.json( new Result( rows ) );
             } catch ( TransactionException | QueryExecutionException e ) {
                 log.error( "Caught exception while dropping a schema", e );
                 try {
@@ -3157,10 +3074,10 @@ public class Crud implements InformationObserver {
                 } catch ( TransactionException ex ) {
                     log.error( "Could not rollback", ex );
                 }
-                return new Result( e );
+                ctx.json( new Result( e ) );
             }
         } else {
-            return new Result( "Neither the field 'create' nor the field 'drop' was set." );
+            ctx.json( new Result( "Neither the field 'create' nor the field 'drop' was set." ) );
         }
     }
 
@@ -3168,23 +3085,21 @@ public class Crud implements InformationObserver {
     /**
      * Get all supported data types of the DBMS.
      */
-    public String getTypeInfo( final Request req, final Response res ) {
-        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( PolyType.class, PolyType.serializer );
-        Gson gson = gsonBuilder.create();
-        return gson.toJson( PolyType.availableTypes().toArray( new PolyType[0] ), PolyType[].class );
+    public void getTypeInfo( final Context ctx ) {
+        ctx.json( PolyType.availableTypes().toArray( new PolyType[0] ) );
     }
 
 
     /**
      * Get available actions for foreign key constraints
      */
-    String[] getForeignKeyActions( Request req, Response res ) {
+    void getForeignKeyActions( final Context ctx ) {
         ForeignKeyOption[] options = Catalog.ForeignKeyOption.values();
         String[] arr = new String[options.length];
         for ( int i = 0; i < options.length; i++ ) {
             arr[i] = options[i].name();
         }
-        return arr;
+        ctx.json( arr );
     }
 
 
@@ -3213,17 +3128,17 @@ public class Crud implements InformationObserver {
     /**
      * Get the content of an InformationPage of a query analyzer.
      */
-    public String getAnalyzerPage( final Request req, final Response res ) {
-        String[] params = this.gson.fromJson( req.body(), String[].class );
-        return InformationManager.getInstance( params[0] ).getPage( params[1] ).asJson();
+    public void getAnalyzerPage( final Context ctx ) {
+        String[] params = ctx.bodyAsClass( String[].class );
+        ctx.result( InformationManager.getInstance( params[0] ).getPage( params[1] ).asJson() );
     }
 
 
     /**
      * Import a dataset from Polypheny-Hub into Polypheny-DB
      */
-    HubResult importDataset( final spark.Request req, final spark.Response res ) {
-        HubRequest request = this.gson.fromJson( req.body(), HubRequest.class );
+    void importDataset( final Context ctx ) {
+        HubRequest request = ctx.bodyAsClass( HubRequest.class );
         String error = null;
 
         String randomFileName = UUID.randomUUID().toString();
@@ -3231,7 +3146,8 @@ public class Crud implements InformationObserver {
         final File tempDir = new File( sysTempDir + File.separator + "hub" + File.separator + randomFileName + File.separator );
         if ( !tempDir.mkdirs() ) { // create folder
             log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
-            return new HubResult( "Unable to create temp folder" );
+            ctx.json( new HubResult( "Unable to create temp folder" ) );
+            return;
         }
 
         // see: https://www.baeldung.com/java-download-file
@@ -3252,7 +3168,8 @@ public class Crud implements InformationObserver {
             final File extractedFolder = new File( tempDir, "import" );
             if ( !extractedFolder.mkdirs() ) {
                 log.error( "Unable to create folder for extracting files: {}", tempDir.getAbsolutePath() );
-                return new HubResult( "Unable to create folder for extracting files" );
+                ctx.json( new HubResult( "Unable to create folder for extracting files" ) );
+                return;
             }
             try ( ZipInputStream zis = new ZipInputStream( new FileInputStream( zipFile ) ) ) {
                 ZipEntry zipEntry = zis.getNextEntry();
@@ -3273,8 +3190,6 @@ public class Crud implements InformationObserver {
                 log.error( "Unable to delete zip file: {}", zipFile.getAbsolutePath() );
             }
 
-            transaction = getTransaction();
-
             Status status = new Status( "tableImport", request.tables.size() );
             int ithTable = 0;
             for ( TableMapping m : request.tables.values() ) {
@@ -3284,18 +3199,22 @@ public class Crud implements InformationObserver {
                 JsonTable table = gson.fromJson( json, JsonTable.class );
                 String newName = m.newName != null ? m.newName : table.tableName;
                 assert (table.tableName.equals( m.initialName ));
+
+                transaction = getTransaction();
                 HubResult createdTableError = createTableFromJson( json, newName, request, transaction );
+                transaction.commit();
                 if ( createdTableError != null ) {
                     transaction.rollback();
-                    return createdTableError;
+                    ctx.json( createdTableError );
+                    return;
                     //todo check
                 }
-                // import data from .csv file
+
+                // Import data from .csv file
+                transaction = getTransaction();
                 importCsvFile( m.initialName + ".csv", table, transaction, extractedFolder, request, newName, status, ithTable++ );
+                transaction.commit();
             }
-
-            transaction.commit();
-
         } catch ( IOException | TransactionException e ) {
             log.error( "Could not import dataset", e );
             error = "Could not import dataset" + e.getMessage();
@@ -3318,16 +3237,16 @@ public class Crud implements InformationObserver {
             }
             //} catch ( CsvValidationException | GenericCatalogException e ) {
         } finally {
-            // delete temp folder
+            // Delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
                 log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
             }
         }
 
         if ( error != null ) {
-            return new HubResult( error );
+            ctx.json( new HubResult( error ) );
         } else {
-            return new HubResult().setMessage( String.format( "Imported dataset into table %s on store %s", request.schema, request.store ) );
+            ctx.json( new HubResult().setMessage( String.format( "Imported dataset into entity %s on store %s", request.schema, request.store ) ) );
         }
     }
 
@@ -3337,7 +3256,7 @@ public class Crud implements InformationObserver {
         List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
         int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
         if ( tableAlreadyExists > 0 ) {
-            return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a table with the name '%s'", request.schema, newName ) );
+            return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a entity with the name '%s'", request.schema, newName ) );
         }
 
         String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, newName, request.store );
@@ -3403,8 +3322,8 @@ public class Crud implements InformationObserver {
     /**
      * Export a table into a .zip consisting of a json file containing information of the table and columns and a csv files with the data
      */
-    Result exportTable( final Request req, final Response res ) {
-        HubRequest request = gson.fromJson( req.body(), HubRequest.class );
+    void exportTable( final Context ctx ) {
+        HubRequest request = ctx.bodyAsClass( HubRequest.class );
         Transaction transaction = getTransaction( false, true );
         Statement statement = transaction.createStatement();
         HubMeta metaData = new HubMeta( request.schema );
@@ -3415,7 +3334,8 @@ public class Crud implements InformationObserver {
         final File tempDir = new File( sysTempDir + File.separator + "hub" + File.separator + randomFileName + File.separator );
         if ( !tempDir.mkdirs() ) { // create folder
             log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
-            return new Result( "Unable to create temp folder" );
+            ctx.json( new Result( "Unable to create temp folder" ) );
+            return;
         }
         File tableFile;
         File catalogFile;
@@ -3521,16 +3441,16 @@ public class Crud implements InformationObserver {
             log.info( String.format( "Exported %s.[%s]", request.schema, request.tables.values().stream().map( n -> n.initialName ).collect( Collectors.joining( "," ) ) ) );
 
             try {
-                return gson.fromJson( resultString, Result.class );
+                ctx.result( resultString );
             } catch ( JsonSyntaxException e ) {
-                return new Result( resultString );
+                ctx.json( new Result( resultString ) );
             }
         } catch ( IOException e ) {
             log.error( "Failed to write temporary file", e );
-            return new Result( "Failed to write temporary file" );
+            ctx.status( 400 ).json( "Failed to write temporary file" );
         } catch ( Exception e ) {
             log.error( "Error while exporting table", e );
-            return new Result( "Error while exporting table" );
+            ctx.status( 400 ).json( new Result( "Error while exporting table" ) );
         } finally {
             // delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
@@ -3550,14 +3470,15 @@ public class Crud implements InformationObserver {
     }
 
 
-    String getFile( final Request req, final Response res ) {
-        String fileName = req.params( "file" );
+    void getFile( final Context ctx ) {
+        String fileName = ctx.req.getParameter( "file" );
         File f = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + fileName );
         if ( !f.exists() ) {
-            res.status( 404 );
-            return "";
+            ctx.status( 404 );
+            ctx.result( "" );
+            return;
         } else if ( f.isDirectory() ) {
-            return getDirectory( f, res );
+            getDirectory( f, ctx );
         }
         ContentInfoUtil util = new ContentInfoUtil();
         ContentInfo info = null;
@@ -3566,20 +3487,20 @@ public class Crud implements InformationObserver {
         } catch ( IOException ignored ) {
         }
         if ( info != null && info.getMimeType() != null ) {
-            res.header( "Content-Type", info.getMimeType() );
+            ctx.contentType( info.getMimeType() );
         } else {
-            res.header( "Content-Type", "application/octet-stream" );
+            ctx.contentType( "application/octet-stream" );
         }
         if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
-            res.header( "Content-Disposition", "attachment; filename=" + "file." + info.getFileExtensions()[0] );
+            ctx.header( "Content-Disposition", "attachment; filename=" + "file." + info.getFileExtensions()[0] );
         } else {
-            res.header( "Content-Disposition", "attachment; filename=" + "file" );
+            ctx.header( "Content-Disposition", "attachment; filename=" + "file" );
         }
         long fileLength = f.length();
-        String range = req.headers( "Range" );
+        String range = ctx.req.getHeader( "Range" );
         if ( range != null ) {
-            long rangeStart;
-            long rangeEnd;
+            long rangeStart = 0;
+            long rangeEnd = 0;
             Pattern pattern = Pattern.compile( "bytes=(\\d*)-(\\d*)" );
             Matcher m = pattern.matcher( range );
             if ( m.find() && m.groupCount() == 2 ) {
@@ -3593,23 +3514,25 @@ public class Crud implements InformationObserver {
                     rangeEnd = Math.min( rangeStart + 10_000_000L, fileLength - 1 );
                 }
                 if ( rangeEnd >= fileLength ) {
-                    res.status( 416 );//range not satisfiable
-                    return "";
+                    ctx
+                            .status( 416 )//range not satisfiable
+                            .result( "" );
                 }
             } else {
-                res.status( 416 );//range not satisfiable
-                return "";
+                ctx
+                        .status( 416 )//range not satisfiable
+                        .json( "" );
             }
             try {
                 //see https://github.com/dessalines/torrenttunes-client/blob/master/src/main/java/com/torrenttunes/client/webservice/Platform.java
-                res.header( "Accept-Ranges", "bytes" );
-                res.status( 206 );//partial content
+                ctx.res.setHeader( "Accept-Ranges", "bytes" );
+                ctx.status( 206 );//partial content
                 int len = Long.valueOf( rangeEnd - rangeStart ).intValue() + 1;
-                res.header( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
+                ctx.res.setHeader( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
 
                 RandomAccessFile raf = new RandomAccessFile( f, "r" );
                 raf.seek( rangeStart );
-                ServletOutputStream os = res.raw().getOutputStream();
+                ServletOutputStream os = ctx.res.getOutputStream();
                 byte[] buf = new byte[256];
                 while ( len > 0 ) {
                     int read = raf.read( buf, 0, Math.min( buf.length, len ) );
@@ -3620,41 +3543,41 @@ public class Crud implements InformationObserver {
                 os.close();
                 raf.close();
             } catch ( IOException ignored ) {
-                res.status( 500 );
+                ctx.status( 500 );
             }
         } else {
-            res.header( "Content-Length", String.valueOf( fileLength ) );
-            try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = res.raw().getOutputStream() ) {
+            ctx.res.setContentLengthLong( (int) fileLength );
+            try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res.getOutputStream() ) {
                 IOUtils.copyLarge( fis, os );
                 os.flush();
             } catch ( IOException ignored ) {
-                res.status( 500 );
+                ctx.status( 500 );
             }
         }
-        return "";
+        ctx.result( "" );
     }
 
 
-    String getDirectory( File dir, Response res ) {
-        res.header( "Content-Type", "application/zip" );
-        res.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
+    void getDirectory( File dir, Context ctx ) {
+        ctx.header( "Content-Type", "application/zip" );
+        ctx.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
         String zipFileName = UUID.randomUUID().toString() + ".zip";
         File zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + zipFileName );
         try ( ZipOutputStream zipOut = new ZipOutputStream( Files.newOutputStream( zipFile.toPath() ) ) ) {
             zipDirectory( "", dir, zipOut );
         } catch ( IOException e ) {
-            res.status( 500 );
+            ctx.status( 500 );
             log.error( "Could not zip directory", e );
         }
-        res.header( "Content-Length", String.valueOf( zipFile.length() ) );
-        try ( OutputStream os = res.raw().getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
+        ctx.res.setContentLengthLong( zipFile.length() );
+        try ( OutputStream os = ctx.res.getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
             IOUtils.copy( is, os );
         } catch ( IOException e ) {
             log.error( "Could not write zipOutputStream to response", e );
-            res.status( 500 );
+            ctx.status( 500 );
         }
         zipFile.delete();
-        return "";
+        ctx.result( "" );
     }
 
     // -----------------------------------------------------------------------
@@ -4152,28 +4075,29 @@ public class Crud implements InformationObserver {
     }
 
 
-    public Map<String, SchemaType> getTypeSchemas( Request request, Response response ) {
-        return catalog.getSchemas( 1, null ).stream().collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getSchemaType ) );
+    void getTypeSchemas( final Context ctx ) {
+        ctx.json( catalog
+                .getSchemas( 1, null )
+                .stream()
+                .collect( Collectors.toMap( CatalogSchema::getName, CatalogSchema::getSchemaType ) ) );
     }
 
 
     /**
      * This method can be used to retrieve the status of a specific Docker instance and if
      * it is running correctly when using the provided settings
-     *
-     * @return if the Docker instance is correctly configured and can be accessed by Polypheny
      */
-    public boolean testDockerInstance( Request req, Response res ) {
-        String dockerId = req.params( "dockerId" );
-        return DockerManager.getInstance().testDockerRunning( Integer.parseInt( dockerId ) );
+    public void testDockerInstance( final Context ctx ) {
+        String dockerId = ctx.req.getParameter( "dockerId" );
+        ctx.result( String.valueOf( DockerManager.getInstance().testDockerRunning( Integer.parseInt( dockerId ) ) ) );
     }
 
 
     /**
      * Retrieve a collection which maps the dockerInstance ids to the corresponding used ports
      */
-    public Map<Integer, List<Integer>> getUsedDockerPorts( Request req, Response res ) {
-        return DockerManager.getInstance().getUsedPortsSorted();
+    public void getUsedDockerPorts( final Context ctx ) {
+        ctx.json( DockerManager.getInstance().getUsedPortsSorted() );
     }
 
 

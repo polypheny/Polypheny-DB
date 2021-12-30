@@ -16,7 +16,7 @@
 
 package org.polypheny.db.webui.crud;
 
-import com.google.gson.Gson;
+import io.javalin.http.Context;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,8 +70,6 @@ import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.requests.EditCollectionRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
-import spark.Request;
-import spark.Response;
 
 @Slf4j
 public class LanguageCrud {
@@ -465,14 +463,10 @@ public class LanguageCrud {
 
     /**
      * Creates a new document collection
-     *
-     * @param req the request, which contains the definition of the collection creation
-     * @param res the response for the creation
-     * @return a Result object, which contains if the creation was successful
      */
-    public Result createCollection( final Request req, final Response res ) {
-        EditCollectionRequest request = new Gson().fromJson( req.body(), EditCollectionRequest.class );
-        Transaction transaction = this.crud.getTransaction();
+    public void createCollection( final Context ctx ) {
+        EditCollectionRequest request = ctx.bodyAsClass( EditCollectionRequest.class );
+        Transaction transaction = crud.getTransaction();
         StringBuilder query = new StringBuilder();
         StringJoiner colBuilder = new StringJoiner( "," );
         String tableId = String.format( "\"%s\".\"%s\"", request.database, request.collection );
@@ -490,7 +484,7 @@ public class LanguageCrud {
         }
 
         try {
-            int a = this.crud.executeSqlUpdate( transaction, query.toString() );
+            int a = crud.executeSqlUpdate( transaction, query.toString() );
             result = new Result( a ).setGeneratedQuery( query.toString() );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
@@ -502,7 +496,7 @@ public class LanguageCrud {
                 log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
             }
         }
-        return result;
+        ctx.json( result );
     }
 
 
@@ -510,14 +504,14 @@ public class LanguageCrud {
      * This query returns a list of all available document databases (Polypheny schema),
      * as a query result
      */
-    public Result getDocumentDatabases( Request request, Response response ) {
+    public void getDocumentDatabases( final Context ctx ) {
         Map<String, String> names = Catalog.getInstance()
                 .getSchemas( Catalog.defaultDatabaseId, null )
                 .stream()
                 .collect( Collectors.toMap( CatalogSchema::getName, s -> s.schemaType.name() ) );
 
         String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
-        return new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data );
+        ctx.json( new Result( new DbColumn[]{ new DbColumn( "Database/Schema" ), new DbColumn( "Type" ) }, data ) );
     }
 
 }

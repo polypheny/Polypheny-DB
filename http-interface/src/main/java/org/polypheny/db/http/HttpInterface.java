@@ -17,8 +17,13 @@
 package org.polypheny.db.http;
 
 
+import static io.javalin.apibuilder.ApiBuilder.post;
+
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
+import io.javalin.plugin.json.JsonMapper;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -26,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.iface.Authenticator;
@@ -42,9 +48,6 @@ import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
-import spark.Request;
-import spark.Response;
-import spark.Service;
 
 
 @Slf4j
@@ -73,7 +76,7 @@ public class HttpInterface extends QueryInterface {
 
     private final MonitoringPage monitoringPage;
 
-    private Service restServer;
+    private Javalin restServer;
 
 
     public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
@@ -91,26 +94,44 @@ public class HttpInterface extends QueryInterface {
 
     @Override
     public void run() {
-        restServer = Service.ignite();
-        restServer.port( port );
+        JsonMapper gsonMapper = new JsonMapper() {
+            @NotNull
+            @Override
+            public String toJsonString( @NotNull Object obj ) {
+                return gson.toJson( obj );
+            }
 
-        restServer.post( "/mongo", ( req, res ) -> anyQuery( QueryLanguage.MONGO_QL, req, res ) );
-        restServer.post( "/mql", ( req, res ) -> anyQuery( QueryLanguage.MONGO_QL, req, res ) );
 
-        restServer.post( "/sql", ( req, res ) -> anyQuery( QueryLanguage.SQL, req, res ) );
+            @NotNull
+            @Override
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
+                return gson.fromJson( json, targetClass );
+            }
+        };
+        restServer = Javalin.create( config -> {
+            config.jsonMapper( gsonMapper );
+            config.enableCorsForAllOrigins();
+        } ).start( port );
 
-        restServer.post( "/piglet", ( req, res ) -> anyQuery( QueryLanguage.PIG, req, res ) );
-        restServer.post( "/pig", ( req, res ) -> anyQuery( QueryLanguage.PIG, req, res ) );
+        restServer.routes( () -> {
+            post( "/mongo", ctx -> anyQuery( QueryLanguage.MONGO_QL, ctx ) );
+            post( "/mql", ctx -> anyQuery( QueryLanguage.MONGO_QL, ctx ) );
 
-        restServer.post( "/cql", ( req, res ) -> anyQuery( QueryLanguage.CQL, req, res ) );
-        log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
+            post( "/sql", ctx -> anyQuery( QueryLanguage.SQL, ctx ) );
+
+            post( "/piglet", ctx -> anyQuery( QueryLanguage.PIG, ctx ) );
+            post( "/pig", ctx -> anyQuery( QueryLanguage.PIG, ctx ) );
+
+            post( "/cql", ctx -> anyQuery( QueryLanguage.CQL, ctx ) );
+            log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
+        } );
     }
 
 
-    public String anyQuery( QueryLanguage language, final Request request, final Response res ) {
-        QueryRequest query = gson.fromJson( request.body(), QueryRequest.class );
+    public void anyQuery( QueryLanguage language, final Context ctx ) {
+        QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
 
-        return gson.toJson( LanguageCrud.anyQuery(
+        ctx.json( LanguageCrud.anyQuery(
                 language,
                 null,
                 query,

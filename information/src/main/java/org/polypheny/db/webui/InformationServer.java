@@ -17,19 +17,21 @@
 package org.polypheny.db.webui;
 
 
-import static spark.Service.ignite;
-
 import com.google.gson.Gson;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
+import io.javalin.plugin.json.JsonMapper;
 import java.io.IOException;
+import java.util.Collections;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationResponse;
-import spark.Service;
 
 
 /**
@@ -42,12 +44,29 @@ public class InformationServer implements InformationObserver {
 
 
     public InformationServer( final int port ) {
-        Service http = ignite().port( port );
+        JsonMapper gsonMapper = new JsonMapper() {
+            @NotNull
+            @Override
+            public String toJsonString( @NotNull Object obj ) {
+                return gson.toJson( obj );
+            }
+
+
+            @NotNull
+            @Override
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
+                return gson.fromJson( json, targetClass );
+            }
+        };
+        Javalin http = Javalin.create( config -> {
+            config.jsonMapper( gsonMapper );
+            config.enableCorsForAllOrigins();
+        } ).start( port );
 
         // Needs to be called before defining routes!
         webSockets( http );
 
-        enableCORS( http );
+        //enableCORS( http );
 
         informationRoutes( http );
 
@@ -55,68 +74,73 @@ public class InformationServer implements InformationObserver {
     }
 
 
-    private void webSockets( final Service http ) {
+    private void webSockets( final Javalin http ) {
         // Websockets need to be defined before the post/get requests
-        http.webSocket( "/informationWebSocket", InformationWebSocket.class );
+        http.ws( "/informationWebSocket", new InformationWebSocket() );
     }
 
 
-    private void informationRoutes( final Service http ) {
+    private void informationRoutes( final Javalin http ) {
         InformationManager im = InformationManager.getInstance();
         im.observe( this );
 
-        http.get( "/getPageList", ( req, res ) -> im.getPageList() );
+        http.get( "/getPageList", ctx -> ctx.result( im.getPageList() ) );
 
-        http.post( "/getPage", ( req, res ) -> {
+        http.post( "/getPage", ctx -> {
             //input: req: {pageId: "page1"}
             try {
-                InformationPage page = im.getPage( req.body() );
+                InformationPage page = im.getPage( ctx.body() );
                 if ( page == null ) {
-                    log.error( "Request for unknown page: {}", req.body() );
-                    return "";
+                    log.error( "Request for unknown page: {}", ctx.body() );
+                    ctx.result( "" );
+                    return;
                 }
-                return page.asJson();
+                ctx.result( page.asJson() );
             } catch ( Exception e ) {
                 // if input not number or page does not exist
                 log.error( "Caught exception!", e );
-                return "";
+                ctx.result( "" );
             }
         } );
 
-        http.post( "/executeAction", ( res, req ) -> {
+        http.post( "/executeAction", ctx -> {
             try {
-                InformationAction action = gson.fromJson( res.body(), InformationAction.class );
+                InformationAction action = ctx.bodyAsClass( InformationAction.class );
                 String msg = im.getInformation( action.getId() ).unwrap( InformationAction.class ).executeAction( action.getParameters() );
-                return new InformationResponse().message( msg );
+                ctx.json( new InformationResponse().message( msg ) );
             } catch ( Exception e ) {
                 String errorMsg = "Could not execute InformationAction";
                 log.error( errorMsg, e );
-                return new InformationResponse().error( errorMsg );
+                ctx.json( new InformationResponse().error( errorMsg ) );
             }
-        }, gson::toJson );
+        } );
 
-        http.post( "/refreshPage", ( req, res ) -> {
+        http.post( "/refreshPage", ctx -> {
             //refresh not necessary, since getPage already triggers a refresh
             try {
-                im.getPage( req.body() );
+                im.getPage( ctx.body() );
             } catch ( Exception e ) {
                 log.error( "Caught exception!", e );
             }
-            return "";
+            ctx.result( "" );
         } );
 
-        http.post( "/refreshGroup", ( req, res ) -> {
+        http.post( "/refreshGroup", ctx -> {
             try {
-                im.getGroup( req.body() ).refresh();
+                im.getGroup( ctx.body() ).refresh();
             } catch ( Exception e ) {
                 log.error( "Caught exception!", e );
             }
-            return "";
+            ctx.result( "" );
         } );
 
-        http.post( "/testDockerInstance/:dockerId", ( req, res ) -> {
-            return true;
-        } );
+        http.get( "/getEnabledPlugins", this::getEnabledPlugins );
+
+    }
+
+
+    public void getEnabledPlugins( final Context ctx ) {
+        ctx.json( Collections.singletonList( "Explore-By-Example" ) );
     }
 
 
@@ -139,34 +163,6 @@ public class InformationServer implements InformationObserver {
     @Override
     public void observePageList( final InformationPage[] pages, final String debugId, final Session session ) {
         // TODO: can be implemented if needed
-    }
-
-
-    /**
-     * To avoid the CORS problem, when the ConfigServer receives requests from the WebUi
-     */
-    private static void enableCORS( final Service http ) {
-        http.options( "/*", ( req, res ) -> {
-            String accessControlRequestHeaders = req.headers( "Access-Control-Request-Headers" );
-            if ( accessControlRequestHeaders != null ) {
-                res.header( "Access-Control-Allow-Headers", accessControlRequestHeaders );
-            }
-
-            String accessControlRequestMethod = req.headers( "Access-Control-Request-Method" );
-            if ( accessControlRequestMethod != null ) {
-                res.header( "Access-Control-Allow-Methods", accessControlRequestMethod );
-            }
-
-            return "OK";
-        } );
-
-        http.before( ( req, res ) -> {
-            //res.header("Access-Control-Allow-Origin", "*");
-            res.header( "Access-Control-Allow-Origin", "*" );
-            res.header( "Access-Control-Allow-Credentials", "true" );
-            res.header( "Access-Control-Allow-Headers", "*" );
-            res.type( "application/json" );
-        } );
     }
 
 }
