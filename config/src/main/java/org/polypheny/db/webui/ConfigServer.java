@@ -17,10 +17,10 @@
 package org.polypheny.db.webui;
 
 
-import static spark.Service.ignite;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.javalin.Javalin;
+import io.javalin.plugin.json.JsonMapper;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -28,10 +28,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigManager;
-import spark.Service;
 
 
 /**
@@ -40,50 +40,67 @@ import spark.Service;
 @Slf4j
 public class ConfigServer implements ConfigListener {
 
+    private static final Gson gson = new Gson();
+
+
     public ConfigServer( final int port ) {
-        Service http = ignite().port( port );
+
+        JsonMapper gsonMapper = new JsonMapper() {
+            @NotNull
+            @Override
+            public String toJsonString( @NotNull Object obj ) {
+                return gson.toJson( obj );
+            }
+
+
+            @NotNull
+            @Override
+            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
+                return gson.fromJson( json, targetClass );
+            }
+        };
+        Javalin http = Javalin.create( config -> {
+            config.jsonMapper( gsonMapper );
+            config.enableCorsForAllOrigins();
+        } ).start( port );
 
         // Needs to be called before route mapping!
-        webSockets( http );
-        enableCORS( http );
+        //enableCORS( http );
+        http.ws( "/configWebSocket", new ConfigWebsocket() );
         configRoutes( http );
-    }
-
-
-    private void webSockets( final Service http ) {
-        // Websockets need to be defined before the post/get requests
-        http.webSocket( "/configWebSocket", ConfigWebsocket.class );
     }
 
 
     /**
      * Many routes just for testing.
      * Route getPage: get a WebUiPage as JSON (with all its groups and configs).
+     *
+     * @param http
      */
-    private void configRoutes( final Service http ) {
+    private void configRoutes( final Javalin http ) {
         String type = "application/json";
         Gson gson = new Gson();
         ConfigManager cm = ConfigManager.getInstance();
 
-        http.get( "/getPageList", ( req, res ) -> cm.getWebUiPageList() );
+        http.get( "/getPageList", ctx -> ctx.result( cm.getWebUiPageList() ) );
 
         // get Ui of certain page
-        http.post( "/getPage", ( req, res ) -> {
+        http.post( "/getPage", ctx -> {
             //input: req: {pageId: 123}
             try {
-                return cm.getPage( req.body() );
+                ctx.result( cm.getPage( ctx.body() ) );
             } catch ( Exception e ) {
                 //if input not number or page does not exist
-                return "";
+                ctx.result( "" );
             }
         } );
 
         // save changes from WebUi
-        http.post( "/updateConfigs", ( req, res ) -> {
-            log.trace( req.body() );
+        http.post( "/updateConfigs", ctx -> {
+            log.trace( ctx.body() );
             Type clazzType = new TypeToken<Map<String, Object>>() {
             }.getType();
-            Map<String, Object> changes = gson.fromJson( req.body(), clazzType );
+            Map<String, Object> changes = gson.fromJson( ctx.body(), clazzType );
             StringBuilder feedback = new StringBuilder();
             boolean allValid = true;
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {
@@ -154,42 +171,11 @@ public class ConfigServer implements ConfigListener {
                 //cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }
             if ( allValid ) {
-                return "{\"success\":1}";
+                ctx.result( "{\"success\":1}" );
             } else {
                 feedback.append( "All other values were saved." );
-                return "{\"warning\": \"" + feedback.toString() + "\"}";
+                ctx.result( "{\"warning\": \"" + feedback.toString() + "\"}" );
             }
-        } );
-    }
-
-
-    /**
-     * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
-     * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
-     */
-    private static void enableCORS( final Service http ) {
-        //staticFiles.header("Access-Control-Allow-Origin", "*");
-
-        http.options( "/*", ( req, res ) -> {
-            String accessControlRequestHeaders = req.headers( "Access-Control-Request-Headers" );
-            if ( accessControlRequestHeaders != null ) {
-                res.header( "Access-Control-Allow-Headers", accessControlRequestHeaders );
-            }
-
-            String accessControlRequestMethod = req.headers( "Access-Control-Request-Method" );
-            if ( accessControlRequestMethod != null ) {
-                res.header( "Access-Control-Allow-Methods", accessControlRequestMethod );
-            }
-
-            return "OK";
-        } );
-
-        http.before( ( req, res ) -> {
-            //res.header("Access-Control-Allow-Origin", "*");
-            res.header( "Access-Control-Allow-Origin", "*" );
-            res.header( "Access-Control-Allow-Credentials", "true" );
-            res.header( "Access-Control-Allow-Headers", "*" );
-            res.type( "application/json" );
         } );
     }
 
