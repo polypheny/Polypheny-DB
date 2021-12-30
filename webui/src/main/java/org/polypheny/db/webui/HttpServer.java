@@ -52,6 +52,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.information.InformationDuration;
+import org.polypheny.db.information.InformationDuration.Duration;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.models.Result;
@@ -136,6 +138,8 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( AdapterInformation.class, adapterSerializer )
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
                 .registerTypeAdapter( Throwable.class, throwableTypeAdapter )
+                .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
+                .registerTypeAdapter( Duration.class, Duration.getSerializer() )
                 .create();
     }
 

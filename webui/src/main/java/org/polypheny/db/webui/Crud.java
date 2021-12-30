@@ -3130,7 +3130,7 @@ public class Crud implements InformationObserver {
      */
     public void getAnalyzerPage( final Context ctx ) {
         String[] params = ctx.bodyAsClass( String[].class );
-        ctx.json( InformationManager.getInstance( params[0] ).getPage( params[1] ).asJson() );
+        ctx.result( InformationManager.getInstance( params[0] ).getPage( params[1] ).asJson() );
     }
 
 

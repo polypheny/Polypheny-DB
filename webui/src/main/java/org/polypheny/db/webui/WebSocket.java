@@ -98,7 +98,6 @@ public class WebSocket implements Consumer<WsConfig> {
         //close analyzers of a previous query that was sent over the same socket.
         cleanup( ctx.session );
 
-        Gson gson = new Gson();
         UIRequest request = ctx.messageAsClass( UIRequest.class );
         Set<String> xIds = new HashSet<>();
         switch ( request.requestType ) {
@@ -130,6 +129,7 @@ public class WebSocket implements Consumer<WsConfig> {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {
                         result = crud.executeRelAlg( relAlgRequest, ctx.session );
+
                     } catch ( Throwable t ) {
                         ctx.send( new Result( t ) );
                         return;

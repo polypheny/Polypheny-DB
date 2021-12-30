@@ -18,6 +18,7 @@ package org.polypheny.db.config;
 
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.typesafe.config.ConfigFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -150,7 +151,10 @@ public class ConfigManager {
             out.add( new PageListItem( p.getId(), p.getTitle(), p.getIcon(), p.getLabel() ) );
         }
         out.sort( Comparator.comparing( PageListItem::getName ) );
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder()
+                .enableComplexMapKeySerialization()
+                .serializeNulls()
+                .create();
         return gson.toJson( out );
     }
 
@@ -219,6 +223,7 @@ public class ConfigManager {
             Gson gson = new Gson();
             return gson.toJson( this );
         }
+
     }
 
 }
