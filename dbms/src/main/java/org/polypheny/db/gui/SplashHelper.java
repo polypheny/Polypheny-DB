@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -37,6 +37,8 @@ import javax.swing.WindowConstants;
 import javax.swing.border.EtchedBorder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.StatusService;
+
 
 @Slf4j
 public class SplashHelper implements Runnable {
@@ -56,7 +58,7 @@ public class SplashHelper implements Runnable {
         try {
             Desktop.getDesktop().browse( new URL( "http://localhost:8080" ).toURI() );
         } catch ( IOException | URISyntaxException e ) {
-            log.warn( "Polypheny was not able to open the browser for the user!" );
+            log.warn( "Polypheny-DB was not able to open the browser for the user!" );
         }
         this.screen.setComplete();
         StatusService.removeSubscriber( statusId );
@@ -72,7 +74,6 @@ public class SplashHelper implements Runnable {
 
 
     public static class SplashScreen extends JWindow {
-
 
         private final JLabel picLabel;
         private final JFrame frame;
@@ -156,6 +157,3 @@ public class SplashHelper implements Runnable {
     }
 
 }
-
-
-

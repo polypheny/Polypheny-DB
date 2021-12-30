@@ -40,6 +40,7 @@ import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
+import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
@@ -90,8 +91,8 @@ public class PolyphenyDb {
     @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
     public boolean testMode = false;
 
-    @Option(name = { "-gui" }, description = "Show graphical user interface on startup")
-    public boolean useUi = false;
+    @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
+    public boolean desktopMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default store")
     public String defaultStoreName = "hsqldb";
@@ -113,6 +114,9 @@ public class PolyphenyDb {
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
             final PolyphenyDb polyphenyDb = parser.parse( args );
 
+            // Hide dock icon on macOS systems
+            System.setProperty( "apple.awt.UIElement", "true" );
+
             polyphenyDb.runPolyphenyDb();
 
         } catch ( Throwable uncaught ) {
@@ -129,8 +133,8 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
-        if ( useUi ) {
-            attachUi();
+        if ( desktopMode ) {
+            showSplashScreen();
         }
         // Move data folder
         if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
@@ -321,7 +325,7 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
-        if ( useUi ) {
+        if ( desktopMode ) {
             splashScreen.setComplete();
         }
 
@@ -339,7 +343,7 @@ public class PolyphenyDb {
     }
 
 
-    private void attachUi() {
+    private void showSplashScreen() {
         this.splashScreen = new SplashHelper();
         Thread splashT = new Thread( splashScreen );
         splashT.start();
