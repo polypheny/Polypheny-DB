@@ -3190,8 +3190,6 @@ public class Crud implements InformationObserver {
                 log.error( "Unable to delete zip file: {}", zipFile.getAbsolutePath() );
             }
 
-            transaction = getTransaction();
-
             Status status = new Status( "tableImport", request.tables.size() );
             int ithTable = 0;
             for ( TableMapping m : request.tables.values() ) {
@@ -3201,19 +3199,22 @@ public class Crud implements InformationObserver {
                 JsonTable table = gson.fromJson( json, JsonTable.class );
                 String newName = m.newName != null ? m.newName : table.tableName;
                 assert (table.tableName.equals( m.initialName ));
+
+                transaction = getTransaction();
                 HubResult createdTableError = createTableFromJson( json, newName, request, transaction );
+                transaction.commit();
                 if ( createdTableError != null ) {
                     transaction.rollback();
                     ctx.json( createdTableError );
                     return;
                     //todo check
                 }
-                // import data from .csv file
+
+                // Import data from .csv file
+                transaction = getTransaction();
                 importCsvFile( m.initialName + ".csv", table, transaction, extractedFolder, request, newName, status, ithTable++ );
+                transaction.commit();
             }
-
-            transaction.commit();
-
         } catch ( IOException | TransactionException e ) {
             log.error( "Could not import dataset", e );
             error = "Could not import dataset" + e.getMessage();
@@ -3236,7 +3237,7 @@ public class Crud implements InformationObserver {
             }
             //} catch ( CsvValidationException | GenericCatalogException e ) {
         } finally {
-            // delete temp folder
+            // Delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
                 log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
             }
@@ -3245,7 +3246,7 @@ public class Crud implements InformationObserver {
         if ( error != null ) {
             ctx.json( new HubResult( error ) );
         } else {
-            ctx.json( new HubResult().setMessage( String.format( "Imported dataset into table %s on store %s", request.schema, request.store ) ) );
+            ctx.json( new HubResult().setMessage( String.format( "Imported dataset into entity %s on store %s", request.schema, request.store ) ) );
         }
     }
 
@@ -3255,7 +3256,7 @@ public class Crud implements InformationObserver {
         List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
         int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
         if ( tableAlreadyExists > 0 ) {
-            return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a table with the name '%s'", request.schema, newName ) );
+            return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a entity with the name '%s'", request.schema, newName ) );
         }
 
         String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, newName, request.store );
@@ -4085,8 +4086,6 @@ public class Crud implements InformationObserver {
     /**
      * This method can be used to retrieve the status of a specific Docker instance and if
      * it is running correctly when using the provided settings
-     *
-     * @return if the Docker instance is correctly configured and can be accessed by Polypheny
      */
     public void testDockerInstance( final Context ctx ) {
         String dockerId = ctx.req.getParameter( "dockerId" );

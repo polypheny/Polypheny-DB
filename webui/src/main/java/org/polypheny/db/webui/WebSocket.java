@@ -49,12 +49,12 @@ public class WebSocket implements Consumer<WsConfig> {
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final Crud crud;
     private final HashMap<Session, Set<String>> queryAnalyzers = new HashMap<>();
-    private static Gson gson;
+    private final Gson gson;
 
 
     WebSocket( Crud crud, Gson gson ) {
         this.crud = crud;
-        gson = gson;
+        this.gson = gson;
     }
 
 
@@ -129,7 +129,6 @@ public class WebSocket implements Consumer<WsConfig> {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {
                         result = crud.executeRelAlg( relAlgRequest, ctx.session );
-
                     } catch ( Throwable t ) {
                         ctx.send( new Result( t ) );
                         return;

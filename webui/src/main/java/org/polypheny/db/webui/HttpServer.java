@@ -174,19 +174,22 @@ public class HttpServer implements Runnable {
             } );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
-        Crud crud = new Crud( transactionManager, Catalog.getInstance().getUser( Catalog.defaultUserId ).name, Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name );
+        Crud crud = new Crud(
+                transactionManager,
+                Catalog.getInstance().getUser( Catalog.defaultUserId ).name,
+                Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name );
 
         WebSocket webSocketHandler = new WebSocket( crud, gson );
         webSockets( server, webSocketHandler );
 
-        // get modified index.html
+        // Get modified index.html
         server.get( "/", ctx -> {
             ctx.contentType( "text/html" );
 
             try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream() ) {
                 ctx.result( streamToString( stream ) );
             } catch ( NullPointerException e ) {
-                ctx.result( "Error: Spark server could not find index.html" );
+                ctx.result( "Error: Could not find index.html" );
             }
         } );
 
@@ -200,7 +203,7 @@ public class HttpServer implements Runnable {
 
     private void attachExceptions( Javalin server ) {
         server.exception( SocketException.class, ( e, ctx ) -> {
-            ctx.status( 400 ).result( "Error: Spark server could not determine its ip address." );
+            ctx.status( 400 ).result( "Error: Could not determine IP address." );
         } );
 
         defaultException( IOException.class, server );

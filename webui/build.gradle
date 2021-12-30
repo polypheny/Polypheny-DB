@@ -97,6 +97,6 @@ jar {
     from("$buildDir/webapp") // include webapp files
 }
 java {
-    withJavadocJar()
-    withSourcesJar()
+    //withJavadocJar()
+    //withSourcesJar()
 }
