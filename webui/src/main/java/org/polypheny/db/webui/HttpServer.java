@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 import javax.servlet.ServletException;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
@@ -197,7 +198,7 @@ public class HttpServer implements Runnable {
 
         crudRoutes( server, crud );
 
-        log.info( "Polypheny-UI started and is listening on port {}.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        StatusService.print( String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
     }
 
 

@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.iface.Authenticator;
@@ -123,7 +124,8 @@ public class HttpInterface extends QueryInterface {
             post( "/pig", ctx -> anyQuery( QueryLanguage.PIG, ctx ) );
 
             post( "/cql", ctx -> anyQuery( QueryLanguage.CQL, ctx ) );
-            log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
+
+            StatusService.print( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
         } );
     }
 

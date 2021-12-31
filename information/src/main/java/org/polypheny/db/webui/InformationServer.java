@@ -26,6 +26,7 @@ import java.util.Collections;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationManager;
@@ -70,7 +71,7 @@ public class InformationServer implements InformationObserver {
 
         informationRoutes( http );
 
-        log.info( "InformationServer started." );
+        StatusService.print( "InformationServer started." );
     }
 
 
