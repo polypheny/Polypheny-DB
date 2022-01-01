@@ -40,6 +40,7 @@ import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
+import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
@@ -90,6 +91,9 @@ public class PolyphenyDb {
     @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
     public boolean testMode = false;
 
+    @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
+    public boolean desktopMode = false;
+
     @Option(name = { "-defaultStore" }, description = "Type of default store")
     public String defaultStoreName = "hsqldb";
 
@@ -99,6 +103,7 @@ public class PolyphenyDb {
     // required for unit tests to determine when the system is ready to process queries
     @Getter
     private volatile boolean isReady = false;
+    private SplashHelper splashScreen;
 
 
     public static void main( final String[] args ) {
@@ -108,6 +113,9 @@ public class PolyphenyDb {
             }
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
             final PolyphenyDb polyphenyDb = parser.parse( args );
+
+            // Hide dock icon on macOS systems
+            System.setProperty( "apple.awt.UIElement", "true" );
 
             polyphenyDb.runPolyphenyDb();
 
@@ -120,10 +128,14 @@ public class PolyphenyDb {
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
+        StatusService.addSubscriber( log::info );
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        if ( desktopMode ) {
+            showSplashScreen();
+        }
         // Move data folder
         if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
             FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
@@ -313,6 +325,9 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
+        if ( desktopMode ) {
+            splashScreen.setComplete();
+        }
 
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );
@@ -325,6 +340,15 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
+    }
+
+
+    private void showSplashScreen() {
+        this.splashScreen = new SplashHelper();
+        Thread splashT = new Thread( splashScreen );
+        splashT.start();
+        int statusId = StatusService.addSubscriber( splashScreen::setStatus );
+        this.splashScreen.setStatusId( statusId );
     }
 
 }

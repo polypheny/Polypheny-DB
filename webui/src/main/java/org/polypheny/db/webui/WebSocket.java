@@ -18,6 +18,10 @@ package org.polypheny.db.webui;
 
 
 import com.google.gson.Gson;
+import io.javalin.websocket.WsCloseContext;
+import io.javalin.websocket.WsConfig;
+import io.javalin.websocket.WsConnectContext;
+import io.javalin.websocket.WsMessageContext;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,10 +29,9 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.information.InformationManager;
@@ -41,31 +44,30 @@ import org.polypheny.db.webui.models.requests.UIRequest;
 
 @org.eclipse.jetty.websocket.api.annotations.WebSocket
 @Slf4j
-public class WebSocket {
+public class WebSocket implements Consumer<WsConfig> {
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final Crud crud;
     private final HashMap<Session, Set<String>> queryAnalyzers = new HashMap<>();
-    private static final Gson gson = new Gson();
+    private final Gson gson;
 
 
-    WebSocket( Crud crud ) {
+    WebSocket( Crud crud, Gson gson ) {
         this.crud = crud;
+        this.gson = gson;
     }
 
 
-    @OnWebSocketConnect
-    public void connected( final Session session ) {
+    public void connected( final WsConnectContext ctx ) {
         log.debug( "UI connected to WebSocket" );
-        sessions.add( session );
+        sessions.add( ctx.session );
     }
 
 
-    @OnWebSocketClose
-    public void closed( final Session session, final int statusCode, final String reason ) {
+    public void closed( WsCloseContext ctx ) {
         log.debug( "UI disconnected from WebSocket" );
-        sessions.remove( session );
-        cleanup( session );
+        sessions.remove( ctx.session );
+        cleanup( ctx.session );
     }
 
 
@@ -88,30 +90,24 @@ public class WebSocket {
     }
 
 
-    public static void sendMessage( final Session session, final Object message ) {
-        sendMessage( session, gson.toJson( message ) );
-    }
-
-
     @OnWebSocketMessage
-    public void onMessage( Session session, String message ) {
-        if ( message.equals( "\"keepalive\"" ) ) {
+    public void onMessage( final WsMessageContext ctx ) {
+        if ( ctx.message().equals( "\"keepalive\"" ) ) {
             return;
         }
         //close analyzers of a previous query that was sent over the same socket.
-        cleanup( session );
+        cleanup( ctx.session );
 
-        Gson gson = new Gson();
-        UIRequest request = gson.fromJson( message, UIRequest.class );
+        UIRequest request = ctx.messageAsClass( UIRequest.class );
         Set<String> xIds = new HashSet<>();
         switch ( request.requestType ) {
             case "QueryRequest":
-                QueryRequest queryRequest = gson.fromJson( message, QueryRequest.class );
+                QueryRequest queryRequest = ctx.messageAsClass( QueryRequest.class );
                 QueryLanguage language = QueryLanguage.from( queryRequest.language );
 
                 List<Result> results = LanguageCrud.anyQuery(
                         language,
-                        session,
+                        ctx.session,
                         queryRequest,
                         crud.getTransactionManager(),
                         crud.getUserName(),
@@ -123,38 +119,38 @@ public class WebSocket {
                         xIds.add( result.getXid() );
                     }
                 }
-                sendMessage( session, results );
+                ctx.send( results );
                 break;
 
             case "RelAlgRequest":
             case "TableRequest":
                 Result result;
                 if ( request.requestType.equals( "RelAlgRequest" ) ) {
-                    RelAlgRequest relAlgRequest = gson.fromJson( message, RelAlgRequest.class );
+                    RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {
-                        result = crud.executeRelAlg( relAlgRequest, session );
+                        result = crud.executeRelAlg( relAlgRequest, ctx.session );
                     } catch ( Throwable t ) {
-                        sendMessage( session, new Result( t ) );
+                        ctx.send( new Result( t ) );
                         return;
                     }
                 } else {//TableRequest, is equal to UIRequest
-                    UIRequest uiRequest = gson.fromJson( message, UIRequest.class );
+                    UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
                         result = crud.getTable( uiRequest );
                     } catch ( Throwable t ) {
-                        sendMessage( session, new Result( t ) );
+                        ctx.send( new Result( t ) );
                         return;
                     }
                 }
                 if ( result.getXid() != null ) {
                     xIds.add( result.getXid() );
                 }
-                sendMessage( session, result );
+                ctx.send( result );
                 break;
             default:
                 throw new RuntimeException( "Unexpected WebSocket request: " + request.requestType );
         }
-        queryAnalyzers.put( session, xIds );
+        queryAnalyzers.put( ctx.session, xIds );
     }
 
 
@@ -170,6 +166,15 @@ public class WebSocket {
             InformationManager.close( xId );
             TemporalFileManager.deleteFilesOfTransaction( xId );
         }
+    }
+
+
+    @Override
+    public void accept( WsConfig wsConfig ) {
+        wsConfig.onConnect( this::connected );
+        wsConfig.onMessage( this::onMessage );
+
+        wsConfig.onClose( this::closed );
     }
 
 }

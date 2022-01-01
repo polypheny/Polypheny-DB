@@ -19,6 +19,7 @@ package org.polypheny.db.restapi;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
+import io.javalin.http.Context;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
@@ -64,8 +66,6 @@ import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
-import spark.QueryParamsMap;
-import spark.Request;
 
 
 @Slf4j
@@ -103,24 +103,23 @@ public class RequestParser {
     /**
      * Parses and authenticates the Basic Authorization for a request.
      *
-     * @param request the request
      * @return the authorized user
      * @throws UnauthorizedAccessException thrown if no authorization provided or invalid credentials
      */
-    public CatalogUser parseBasicAuthentication( Request request ) throws UnauthorizedAccessException {
-        if ( request.headers( "Authorization" ) == null ) {
-            log.debug( "No Authorization header for request id: {}.", request.session().id() );
+    public CatalogUser parseBasicAuthentication( Context ctx ) throws UnauthorizedAccessException {
+        if ( ctx.req.getHeader( "Authorization" ) == null ) {
+            log.debug( "No Authorization header for request id: {}.", ctx.req.getSession().getId() );
             throw new UnauthorizedAccessException( "No Basic Authorization sent by user." );
         }
 
-        final String basicAuthHeader = request.headers( "Authorization" );
+        final String basicAuthHeader = ctx.req.getHeader( "Authorization" );
 
         final Pair<String, String> decoded = decodeBasicAuthorization( basicAuthHeader );
 
         try {
             return this.authenticator.authenticate( decoded.left, decoded.right );
         } catch ( AuthenticationException e ) {
-            log.info( "Unable to authenticate user for request id: {}.", request.session().id(), e );
+            log.info( "Unable to authenticate user for request id: {}.", ctx.sessionAttribute( "id" ), e );
             throw new UnauthorizedAccessException( "Not authorized." );
         }
     }
@@ -138,31 +137,31 @@ public class RequestParser {
     }
 
 
-    public ResourceGetRequest parseGetResourceRequest( Request request, String resourceName ) throws ParserException {
+    public ResourceGetRequest parseGetResourceRequest( HttpServletRequest req, String resourceName ) throws ParserException {
 
         List<CatalogTable> tables = this.parseTables( resourceName );
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( req ), tables );
 
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
-        List<RequestColumn> groupings = this.parseGroupings( request, nameMapping );
+        List<RequestColumn> groupings = this.parseGroupings( req, nameMapping );
 
-        int limit = this.parseLimit( request );
-        int offset = this.parseOffset( request );
+        int limit = this.parseLimit( req );
+        int offset = this.parseOffset( req );
 
-        List<Pair<RequestColumn, Boolean>> sorting = this.parseSorting( request, nameMapping );
+        List<Pair<RequestColumn, Boolean>> sorting = this.parseSorting( req, nameMapping );
 
-        Filters filters = this.parseFilters( getFilterMap( request ), nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( req ), nameMapping );
 
         return new ResourceGetRequest( tables, requestColumns, nameMapping, groupings, limit, offset, sorting, filters );
     }
 
 
-    public ResourcePostRequest parsePostResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
+    public ResourcePostRequest parsePostResourceRequest( Context ctx, String resourceName, Gson gson ) throws ParserException {
         List<CatalogTable> tables = this.parseTables( resourceName );
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
-        List<List<Pair<RequestColumn, Object>>> values = this.parseValues( request, gson, nameMapping );
+        List<List<Pair<RequestColumn, Object>>> values = this.parseValues( ctx, gson, nameMapping );
 
         return new ResourcePostRequest( tables, requestColumns, nameMapping, values, false );
     }
@@ -178,16 +177,16 @@ public class RequestParser {
     }
 
 
-    public ResourcePatchRequest parsePatchResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
+    public ResourcePatchRequest parsePatchResourceRequest( Context ctx, String resourceName, Gson gson ) throws ParserException {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
         // TODO js: make sure there are no actual projections
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
-        Filters filters = this.parseFilters( getFilterMap( request ), nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( ctx.req ), nameMapping );
 
-        List<List<Pair<RequestColumn, Object>>> values = this.parseValues( request, gson, nameMapping );
+        List<List<Pair<RequestColumn, Object>>> values = this.parseValues( ctx, gson, nameMapping );
 
         return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters, false );
     }
@@ -203,7 +202,7 @@ public class RequestParser {
     }
 
 
-    public ResourceDeleteRequest parseDeleteResourceRequest( Request request, String resourceName ) throws ParserException {
+    public ResourceDeleteRequest parseDeleteResourceRequest( HttpServletRequest request, String resourceName ) throws ParserException {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
 
@@ -296,12 +295,11 @@ public class RequestParser {
     }
 
 
-    private String[] getProjectionsValues( Request request ) {
-        if ( !request.queryMap().hasKey( "_project" ) ) {
+    private String[] getProjectionsValues( HttpServletRequest request ) {
+        if ( !request.getParameterMap().containsKey( "_project" ) ) {
             return null;
         }
-        QueryParamsMap projectionMap = request.queryMap().get( "_project" );
-        return projectionMap.values();
+        return request.getParameterMap().get( "_project" );
     }
 
 
@@ -427,14 +425,13 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<Pair<RequestColumn, Boolean>> parseSorting( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
-        if ( !request.queryMap().hasKey( "_sort" ) ) {
+    List<Pair<RequestColumn, Boolean>> parseSorting( HttpServletRequest request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
+        if ( !request.getParameterMap().containsKey( "_sort" ) ) {
             log.debug( "Request does not contain a sort. Returning null." );
             return null;
         }
 
-        QueryParamsMap sortMap = request.queryMap().get( "_sort" );
-        String[] possibleSortValues = sortMap.values();
+        String[] possibleSortValues = request.getParameterMap().get( "_sort" );
         String possibleSortString = possibleSortValues[0];
         log.debug( "Starting to parse sort: {}", possibleSortString );
 
@@ -471,14 +468,13 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<RequestColumn> parseGroupings( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
-        if ( !request.queryMap().hasKey( "_groupby" ) ) {
+    List<RequestColumn> parseGroupings( HttpServletRequest request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
+        if ( !request.getParameterMap().containsKey( "_groupby" ) ) {
             log.debug( "Request does not contain a grouping. Returning null." );
             return new ArrayList<>();
         }
 
-        QueryParamsMap groupbyMap = request.queryMap().get( "_groupby" );
-        String[] possibleGroupbyValues = groupbyMap.values();
+        String[] possibleGroupbyValues = request.getParameterMap().get( "_groupby" );
         String possibleGroupbyString = possibleGroupbyValues[0];
         log.debug( "Starting to parse grouping: {}", possibleGroupbyString );
 
@@ -497,13 +493,12 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    Integer parseLimit( Request request ) throws ParserException {
-        if ( !request.queryMap().hasKey( "_limit" ) ) {
+    Integer parseLimit( HttpServletRequest request ) throws ParserException {
+        if ( !request.getParameterMap().containsKey( "_limit" ) ) {
             log.debug( "Request does not contain a limit. Returning -1." );
             return -1;
         }
-        QueryParamsMap limitMap = request.queryMap().get( "_limit" );
-        String[] possibleLimitValues = limitMap.values();
+        String[] possibleLimitValues = request.getParameterMap().get( "_limit" );
 
         try {
             log.debug( "Parsed limit value: {}.", possibleLimitValues[0] );
@@ -516,13 +511,12 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    Integer parseOffset( Request request ) throws ParserException {
-        if ( !request.queryMap().hasKey( "_offset" ) ) {
+    Integer parseOffset( HttpServletRequest request ) throws ParserException {
+        if ( !request.getParameterMap().containsKey( "_offset" ) ) {
             log.debug( "Request does not contain an offset. Returning -1." );
             return -1;
         }
-        QueryParamsMap offsetMap = request.queryMap().get( "_offset" );
-        String[] possibleOffsetValues = offsetMap.values();
+        String[] possibleOffsetValues = request.getParameterMap().get( "_offset" );
 
         return this.parseOffset( possibleOffsetValues[0] );
     }
@@ -588,10 +582,10 @@ public class RequestParser {
     }
 
 
-    private Map<String, String[]> getFilterMap( Request request ) {
+    private Map<String, String[]> getFilterMap( HttpServletRequest request ) {
         HashMap<String, String[]> filterMap = new HashMap<>();
-        for ( String filterKey : request.queryMap().toMap().keySet() ) {
-            filterMap.put( filterKey, request.queryMap().get( filterKey ).values() );
+        for ( String filterKey : request.getParameterMap().keySet() ) {
+            filterMap.put( filterKey, request.getParameterMap().get( filterKey ) );
         }
         return filterMap;
     }
@@ -693,9 +687,9 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<List<Pair<RequestColumn, Object>>> parseValues( Request request, Gson gson, Map<String, RequestColumn> nameMapping ) throws ParserException {
+    List<List<Pair<RequestColumn, Object>>> parseValues( Context ctx, Gson gson, Map<String, RequestColumn> nameMapping ) throws ParserException {
         // FIXME: Verify stuff like applications/json, so on, so forth
-        Object bodyObject = gson.fromJson( request.body(), Object.class );
+        Object bodyObject = ctx.bodyAsClass( Object.class );
         Map bodyMap = (Map) bodyObject;
         List valuesList = (List) bodyMap.get( "data" );
         if ( valuesList == null ) {

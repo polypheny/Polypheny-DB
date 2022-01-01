@@ -17,35 +17,21 @@
 package org.polypheny.db.webui;
 
 
+import io.javalin.websocket.WsConfig;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 
 @WebSocket
 @Slf4j
-public class InformationWebSocket {
+public class InformationWebSocket implements Consumer<WsConfig> {
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-
-
-    @OnWebSocketConnect
-    public void connected( final Session session ) {
-        log.debug( "UI connected to WebSocket" );
-        sessions.add( session );
-    }
-
-
-    @OnWebSocketClose
-    public void closed( final Session session, final int statusCode, final String reason ) {
-        log.debug( "UI disconnected from WebSocket" );
-        sessions.remove( session );
-    }
 
 
     /**
@@ -56,6 +42,13 @@ public class InformationWebSocket {
         for ( Session s : sessions ) {
             s.getRemote().sendString( msg );
         }
+    }
+
+
+    @Override
+    public void accept( WsConfig wsConfig ) {
+        wsConfig.onConnect( context -> sessions.add( context.session ) );
+        wsConfig.onClose( context -> sessions.remove( context.session ) );
     }
 
 }

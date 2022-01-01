@@ -32,6 +32,7 @@ import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCost;
@@ -190,7 +191,8 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
 
             if ( Catalog.resetCatalog ) {
-                log.info( "Resetting monitoring repository on startup." );
+                StatusService.print( "Resetting monitoring repository on startup." );
+
                 if ( new File( folder, filePath ).exists() ) {
                     new File( folder, filePath ).delete();
                 }

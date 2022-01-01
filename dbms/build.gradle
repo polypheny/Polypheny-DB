@@ -42,14 +42,11 @@ dependencies {
     implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
 
-    ////// CLI PARSING
+
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
-
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
-
-    implementation group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version  // Apache 2.0
-
-    implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
+    implementation group: "org.apache.commons", name: "commons-math3", version: commons_math_version  // Apache 2.0
+    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
 
 
     // --- Test Compile ---
@@ -125,7 +122,7 @@ shadowJar {
     zip64 true
     classifier ""
     mergeServiceFiles {
-        setPath("META-INF/services")
+        path = 'META-INF/services' // default
         include("io.grpc.*")
     }
 }
