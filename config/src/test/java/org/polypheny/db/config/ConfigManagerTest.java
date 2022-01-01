@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,7 +44,7 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/base_test.conf" );
 
         try {
             Files.copy( originFile.toFile(), testFile.toFile() );
@@ -70,11 +71,17 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
+    @AfterClass
+    public static void resetTestEnvironment(){
+        ConfigManager.getInstance().useDefaultApplicationConfFile();
+    }
+
+
     @Test
     public void javaValidation() {
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/java_validation_test.conf" );
 
         try {
             try {
@@ -112,7 +119,7 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/config_types_test.conf" );
 
         try {
             try {
@@ -154,7 +161,7 @@ public class ConfigManagerTest implements ConfigListener {
     public void isNotified() {
 // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/notification_test.conf" );
 
         try {
             try {
@@ -184,7 +191,7 @@ public class ConfigManagerTest implements ConfigListener {
     public void isRestarted() {
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/restarted_test.conf" );
 
         try {
             try {
@@ -211,7 +218,7 @@ public class ConfigManagerTest implements ConfigListener {
     public void configEnum() {
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/enum_test.conf" );
 
         try {
             try {
@@ -253,7 +260,7 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/enum_list_test.conf" );
 
         try {
             try {
@@ -326,7 +333,7 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/clazz_test.conf" );
 
         try {
             try {
@@ -369,7 +376,7 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/clazz_list_test.conf" );
 
         try {
             try {
@@ -425,7 +432,7 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/array_test.conf" );
 
         try {
             try {
@@ -459,7 +466,7 @@ public class ConfigManagerTest implements ConfigListener {
     public void configTable() {
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/table_test.conf" );
 
         try {
             try {
@@ -502,7 +509,7 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/base_test.conf" );
 
         try {
             try {
@@ -606,12 +613,19 @@ public class ConfigManagerTest implements ConfigListener {
 
 
         // Check if the correct file will be accessed
-        Path sourceFile = Paths.get( "src/test/resources/application.conf" );
-        Path backupFile = Paths.get( "src/test/resources/application.conf.bkp" );
+        Path originFile = Paths.get( "src/test/resources/application.conf" );
+        Path testFile = Paths.get( "src/test/resources/base_application.conf" );
+
+        Path backupFile = Paths.get( "src/test/resources/base_application.conf.bkp" );
+        try {
+            try {
+                Files.copy( originFile.toFile(), testFile.toFile() );
+            } catch ( IOException e ) {
+                e.printStackTrace();
+            }
 
 
-
-        File customConfFile = new File( sourceFile.toString() );
+        File customConfFile = new File( testFile.toString() );
         cm.setApplicationConfFile( customConfFile );
         Assert.assertEquals( customConfFile.getAbsolutePath(), cm.getActiveConfFile() );
 
@@ -624,29 +638,30 @@ public class ConfigManagerTest implements ConfigListener {
 
 
         // Rename file to simulate "delete"
-        Files.move( sourceFile.toFile(), backupFile.toFile() );
+        Files.move( testFile.toFile(), backupFile.toFile() );
         Config c = new ConfigInteger( "test.my.dummy", 5000 );
 
 
         Assert.assertEquals( c.getInt(), 5000 );
-        try {
 
-            // Check if file is still present after registration
-            cm.registerConfig( c );
-            Assert.assertEquals( cm.getConfig( "test.my.dummy" ).getInt(), 5000 );
 
-            // Modify config value in CUSTOM value
-            c.setInt( 5001 );
-            Assert.assertEquals( c.getInt(), 5001 );
+        // Check if file is still present after registration
+        cm.registerConfig( c );
+        Assert.assertEquals( cm.getConfig( "test.my.dummy" ).getInt(), 5000 );
 
-            // Check if file was recreated
-            // with new updated value as well as old values that were in the file before
+        // Modify config value in CUSTOM value
+        c.setInt( 5001 );
+        Assert.assertEquals( c.getInt(), 5001 );
+
+        // Check if file was recreated
+        // with new updated value as well as old values that were in the file before
 
         }finally {
 
             // Remove file that has been created in the meantime
-            sourceFile.toFile().delete();
-            Files.move( backupFile.toFile(), sourceFile.toFile() );
+            testFile.toFile().delete();
+            backupFile.toFile().delete();
+            //Files.move( backupFile.toFile(), testFile.toFile() );
         }
 
         // Check if config changes are correctly written to file
@@ -668,7 +683,7 @@ public class ConfigManagerTest implements ConfigListener {
     public void configDocker() {
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
-        Path testFile = Paths.get( "src/test/resources/test.conf" );
+        Path testFile = Paths.get( "src/test/resources/docker_test.conf" );
 
         try {
             try {

@@ -47,6 +47,8 @@ import org.polypheny.db.util.PolyphenyFileSystemManager;
 @Slf4j
 public class ConfigManager {
 
+    public static boolean persistConfiguration = true; // If false, then changes are saved in-memory only and will be lost after restart.
+
     private static ConfigManager instance = new ConfigManager();
 
     private static String configurationFileName = "polypheny.conf";
@@ -181,6 +183,19 @@ public class ConfigManager {
             }
             writeConfiguration( newConfig );
         }
+    }
+
+
+    /**
+     * Resets the config file back to the systems default.
+     * This is mainly needed for testing purposes. To have no cross-site effects.
+     */
+    public void useDefaultApplicationConfFile(){
+        //Resets applicationConfFile to null, in order to automatically reinitializes the config.
+        applicationConfFile = null;
+        applicationConfDir = null;
+
+        loadConfigFile( true );
     }
 
 
@@ -347,7 +362,9 @@ public class ConfigManager {
 
         @Override
         public void onConfigChange( Config c ) {
-            instance.persistConfigValue( c.getKey(), c.getPlainValueObject() );
+            if ( persistConfiguration ) {
+                instance.persistConfigValue( c.getKey(), c.getPlainValueObject() );
+            }
         }
 
 

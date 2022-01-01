@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
@@ -152,6 +153,9 @@ public class PolyphenyDb {
                 throw new RuntimeException( "Unable to create the backup folder." );
             }
         }
+
+        // Configuration shall not be persisted, if the catalog will be reseted
+        ConfigManager.persistConfiguration = resetCatalog;
 
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
