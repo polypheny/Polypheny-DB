@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ public class ConfigEnum extends Config {
     @SerializedName("values")
     private final Set<Enum> enumValues;
     private Enum value;
+    private Enum defaultValue;
 
 
     public ConfigEnum( final String key, final String description, final Class enumClass, final Enum defaultValue ) {
@@ -37,7 +38,45 @@ public class ConfigEnum extends Config {
         //noinspection unchecked
         enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
         setEnum( defaultValue );
+        this.defaultValue = defaultValue;
         this.webUiFormType = WebUiFormType.SELECT;
+    }
+
+
+    @Override
+    public Object getPlainValueObject() {
+        return value;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
+    }
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}.
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}.
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        return value.equals( defaultValue );
+    }
+
+
+    /**
+     * Restores the current value to the system configured default value.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}.
+     * If you want to check if the current value deviates from default use: {@link #isDefault()}.
+     */
+    @Override
+    public void resetToDefault() {
+        setEnum( defaultValue );
     }
 
 
@@ -97,4 +136,5 @@ public class ConfigEnum extends Config {
         }
         throw new ConfigRuntimeException( "No enum with name \"" + str + "\" found in the set of valid enums." );
     }
+
 }

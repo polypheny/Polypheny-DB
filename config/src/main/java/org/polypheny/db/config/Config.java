@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,43 +28,44 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 /**
- * Configuration object that can be accessed and altered via the ConfigManager
+ * Configuration object that can be accessed and altered via the ConfigManager.
  */
 public abstract class Config {
 
     /**
-     * Unique key of this config
+     * Unique key of this config.
      */
     private final String key;
 
     /**
-     * Description of this configuration element
+     * Description of this configuration element.
      */
     private String description;
 
     /**
-     * Indicated weather applying changes to this configuration element requires a restart of Polypheny-DB
+     * Indicated weather applying changes to this configuration element requires a restart of Polypheny-DB.
      */
     private boolean requiresRestart = false;
 
     /**
-     * When you change a Config with a method like setInt() and the field validationMethod is set, new value will only be set if the validation (ConfigValidator.validate()) returns true.
+     * When you change a Config with a method like setInt() and the field validationMethod is set, new value will only be set
+     * if the validation (ConfigValidator.validate()) returns true.
      */
     private ConfigValidator validationMethod;
 
     /**
-     * Name of the validation method to use in the web ui this field is parsed to Json by Gson
+     * Name of the validation method to use in the web ui this field is parsed to Json by Gson.
      */
     @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private WebUiValidator[] webUiValidators;
 
     /**
-     * Form type to use in the web ui for this config element
+     * Form type to use in the web ui for this config element.
      */
     WebUiFormType webUiFormType;
 
     /**
-     * ID of the WebUiGroup it should be displayed in
+     * ID of the WebUiGroup it should be displayed in.
      */
     private String webUiGroup;
 
@@ -88,8 +89,8 @@ public abstract class Config {
     private boolean isObservable = true;
 
     /**
-     * List of observers
-     * field is transient, so it will not be (de)serialized by Gson and produce a "Unable to invoke no-args constructor" error
+     * List of observers.
+     * Field is transient, so it will not be (de)serialized by Gson and produce a "Unable to invoke no-args constructor" error.
      */
     private transient final Map<Integer, ConfigListener> listeners = new HashMap<>();
 
@@ -97,7 +98,7 @@ public abstract class Config {
     /**
      * Constructor
      *
-     * @param key Unique name for the configuration element
+     * @param key Unique name for the configuration element.
      */
     protected Config( final String key ) {
         this( key, "" );
@@ -107,8 +108,8 @@ public abstract class Config {
     /**
      * Constructor
      *
-     * @param key Unique name for the configuration element
-     * @param description Description of the configuration element
+     * @param key Unique name for the configuration element.
+     * @param description Description of the configuration element.
      */
     protected Config( final String key, final String description ) {
         this.key = key;
@@ -132,7 +133,7 @@ public abstract class Config {
 
 
     /**
-     * Set Web UI information
+     * Set Web UI information.
      *
      * @param webUiGroup ID of Web UI Group this Config should be placed in.
      */
@@ -146,10 +147,11 @@ public abstract class Config {
 
 
     /**
-     * Set Web UI information
+     * Set Web UI information.
+     * The ordering is happening in the Web UI.
      *
      * @param webUiGroup ID of Web UI Group this Config should be placed in.
-     * @param order Placement of this config within the Web UI group. Configs with lower order will be rendered first. The ordering is happening in the Web UI.
+     * @param order Placement of this config within the Web UI group. Configs with lower order will be rendered first.
      */
     public Config withUi( final String webUiGroup, final int order ) {
         if ( this.webUiFormType == null ) {
@@ -171,7 +173,7 @@ public abstract class Config {
 
 
     /**
-     * Get JSON representation of this configuration element
+     * Get JSON representation of this configuration element.
      *
      * @return Config as JSON
      */
@@ -188,7 +190,7 @@ public abstract class Config {
     /**
      * Get the String representation of the configuration value.
      *
-     * @return Configuration value as String
+     * @return Configuration value as String.
      * @throws ConfigRuntimeException If config value can not be converted into a String representation.
      */
     public String getString() {
@@ -199,7 +201,7 @@ public abstract class Config {
     /**
      * Set the value of this config.
      *
-     * @param value New value for this config
+     * @param value New value for this config.
      * @throws ConfigRuntimeException If this type of config is incompatible with a value represented as String.
      */
     public boolean setString( final String value ) {
@@ -210,11 +212,60 @@ public abstract class Config {
     /**
      * Get the Boolean representation of the configuration value.
      *
-     * @return Configuration value as boolean
+     * @return Configuration value as boolean.
      * @throws ConfigRuntimeException If config value can not be converted into a String representation.
      */
     public boolean getBoolean() {
         throw new ConfigRuntimeException( "Configuration of type " + this.getClass().getSimpleName() + " cannot be converted into a boolean!" );
+    }
+
+
+    /**
+     * Retrieves the current value as a plain object to be compared to other Objects.
+     * NOTE: This method shall only be used for comparison reasons.
+     *
+     * If you want to retrieve the actual value use the respective get{DataType} functions.
+     *
+     * @return plain object value of config object
+     */
+    public abstract Object getPlainValueObject();
+
+
+    /**
+     * Retrieves the defaultValue that it is internally configured by the system.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}.
+     *
+     * @return defaultValue of config object
+     */
+    public abstract Object getDefaultValue();
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}.
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}.
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    public abstract boolean isDefault();
+
+
+    /**
+     * Restores the current value to the system configured default value.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}.
+     * If you want to check if the current value deviates from default use: {@link #isDefault()}.
+     */
+    public abstract void resetToDefault();
+
+
+    /**
+     * Lets you change the internally configured system default Value to a new value.
+     *
+     * If you simply want to reset the current value to the default use: {@link #resetToDefault()}.
+     */
+    public void changeDefaultValue( Object newDefaultValue ) {
+        throw new ConfigRuntimeException( "Change of defaultValue is not yet supported for type: " + this.getClass() );
     }
 
 
@@ -353,7 +404,7 @@ public abstract class Config {
     /**
      * Get the current value of this config
      *
-     * @return List of enum values
+     * @return List of enum values.
      * @throws ConfigRuntimeException If config value can not be converted into a list of enums.
      */
     public List<Enum> getEnumList() {
@@ -466,7 +517,7 @@ public abstract class Config {
 
 
     /**
-     * Sets the value of a config list which holds ConfigObjects
+     * Sets the value of a config list which holds ConfigObjects.
      *
      * @param values the raw values ( object type )
      * @param clazz the class, which the raw values belong to
@@ -494,7 +545,7 @@ public abstract class Config {
 
 
     /**
-     * Get the current value of this config
+     * Get the current value of this config.
      *
      * @return The current class
      * @throws ConfigRuntimeException If config value can not be converted into a class.
@@ -516,7 +567,7 @@ public abstract class Config {
 
 
     /**
-     * Get the current value of this config
+     * Get the current value of this config.
      *
      * @return List of enum values
      * @throws ConfigRuntimeException If config value can not be converted into a list of classes.

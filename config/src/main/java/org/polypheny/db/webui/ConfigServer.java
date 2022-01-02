@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ public class ConfigServer implements ConfigListener {
 
 
     public ConfigServer( final int port ) {
-
         JsonMapper gsonMapper = new JsonMapper() {
             @NotNull
             @Override
@@ -74,8 +73,6 @@ public class ConfigServer implements ConfigListener {
     /**
      * Many routes just for testing.
      * Route getPage: get a WebUiPage as JSON (with all its groups and configs).
-     *
-     * @param http
      */
     private void configRoutes( final Javalin http ) {
         String type = "application/json";
@@ -95,7 +92,7 @@ public class ConfigServer implements ConfigListener {
             }
         } );
 
-        // save changes from WebUi
+        // Save changes from WebUi
         http.post( "/updateConfigs", ctx -> {
             log.trace( ctx.body() );
             Type clazzType = new TypeToken<Map<String, Object>>() {
@@ -104,7 +101,6 @@ public class ConfigServer implements ConfigListener {
             StringBuilder feedback = new StringBuilder();
             boolean allValid = true;
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {
-                //cm.setConfigValue( entry.getKey(), entry.getValue() );
                 Config c = cm.getConfig( entry.getKey() );
                 switch ( c.getConfigType() ) {
                     case "ConfigInteger":
@@ -168,13 +164,12 @@ public class ConfigServer implements ConfigListener {
                         feedback.append( "Config with type " ).append( c.getConfigType() ).append( " is not supported yet." );
                         log.error( "Config with type {} is not supported yet.", c.getConfigType() );
                 }
-                //cm.getConfig( entry.getKey() ).setObject( entry.getValue() );
             }
             if ( allValid ) {
                 ctx.result( "{\"success\":1}" );
             } else {
                 feedback.append( "All other values were saved." );
-                ctx.result( "{\"warning\": \"" + feedback.toString() + "\"}" );
+                ctx.result( "{\"warning\": \"" + feedback + "\"}" );
             }
         } );
     }

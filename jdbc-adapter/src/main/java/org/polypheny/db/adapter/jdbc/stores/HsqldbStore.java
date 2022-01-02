@@ -31,7 +31,7 @@ import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 @Slf4j
@@ -68,7 +68,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             if ( settings.get( "type" ).equals( "Memory" ) ) {
                 dataSource.setUrl( "jdbc:hsqldb:mem:" + getUniqueName() + trxSettings );
             } else {
-                File path = FileSystemManager.getInstance().registerNewFolder( "data/hsqldb/" + getAdapterId() );
+                File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/hsqldb/" + getAdapterId() );
                 dataSource.setUrl( "jdbc:hsqldb:file:" + path + trxSettings );
             }
             dataSource.setUsername( "sa" );

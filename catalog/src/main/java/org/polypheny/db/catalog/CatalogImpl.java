@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,9 +115,9 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -232,7 +232,7 @@ public class CatalogImpl extends Catalog {
 
             if ( isPersistent ) {
                 StatusService.print( "Making the catalog persistent." );
-                File folder = FileSystemManager.getInstance().registerNewFolder( "catalog" );
+                File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
                     StatusService.print( "Resetting catalog on startup." );
@@ -264,7 +264,6 @@ public class CatalogImpl extends Catalog {
 
             } else {
                 StatusService.print( "Making the catalog in-memory." );
-
                 db = DBMaker
                         .memoryDB()
                         .transactionEnable()

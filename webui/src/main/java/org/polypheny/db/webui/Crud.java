@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,9 +179,9 @@ import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.FileInputHandle;
-import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -2562,7 +2562,7 @@ public class Crud implements InformationObserver {
                 for ( String fileName : setting.fileNames ) {
                     setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
                 }
-                File path = FileSystemManager.getInstance().registerNewFolder( "data/csv/" + a.uniqueName );
+                File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.uniqueName );
                 for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
                     try {
                         File file = new File( path, is.getKey() );

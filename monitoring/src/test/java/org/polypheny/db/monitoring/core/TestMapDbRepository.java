@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.polypheny.db.monitoring.core;
 
 import java.io.File;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 public class TestMapDbRepository extends MapDbRepository {
@@ -35,7 +35,7 @@ public class TestMapDbRepository extends MapDbRepository {
 
 
     private void reset() {
-        File folder = FileSystemManager.getInstance().registerNewFolder( FOLDER_NAME );
+        File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( FOLDER_NAME );
         new File( folder, FILE_PATH ).delete();
     }
 
