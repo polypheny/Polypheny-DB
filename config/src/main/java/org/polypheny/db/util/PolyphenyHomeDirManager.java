@@ -120,8 +120,12 @@ public class PolyphenyHomeDirManager {
 
 
     public boolean checkIfExists( String path ) {
+        return getFileIfExists(path).exists();
+    }
+
+    public File getFileIfExists( String path ) {
         File file = new File( this.root, path );
-        return file.exists();
+        return file;
     }
 
 

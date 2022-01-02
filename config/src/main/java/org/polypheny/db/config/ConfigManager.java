@@ -46,12 +46,15 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 public class ConfigManager {
 
-    public static boolean persistConfiguration = true; // If false, then changes are saved in-memory only and will be lost after restart.
+    public static boolean memoryMode = true; // If false, then changes are saved in-memory only and will be lost after restart.
 
     private static ConfigManager instance = new ConfigManager();
 
-    private static String configurationFileName = "polypheny.conf";
-    private static String configurationDirectoryName = "config"; // Configuration directory shall always be placed next to executable
+    private static String defaultConfigurationFileName = "polypheny.conf";
+    private static String defaultConfigurationDirectoryName = "config"; // Configuration directory shall always be placed next to executable
+
+    private static String currentConfigurationFileName;
+    private static String currentConfigurationDirectoryName;
 
     private final ConcurrentMap<String, Config> configs;
     private final ConcurrentMap<String, WebUiGroup> uiGroups;
@@ -65,6 +68,8 @@ public class ConfigManager {
     // Actual File on disk
     private static File applicationConfFile = null;
     private static File applicationConfDir = null;
+
+    private static boolean isDefaultConfigActive = true;
 
 
     private ConfigManager() {
@@ -80,36 +85,33 @@ public class ConfigManager {
     public static ConfigManager getInstance() {
 
         if ( configFile == null ) {
-            loadConfigFile( false );
+            currentConfigurationFileName = defaultConfigurationFileName;
+            currentConfigurationDirectoryName = defaultConfigurationDirectoryName;
+            loadConfigFile();
         }
         return instance;
     }
 
 
-    public static void loadConfigFile( boolean override ) {
+    public static void loadConfigFile() {
 
         // No custom location has been specified
         // Assume Default
         if ( applicationConfFile == null ) {
             initializeFileLocation();
         }
-
-        if ( configFile == null || override ) {
-            configFile = ConfigFactory.parseFile( applicationConfFile );
-        } else {
-            configFile = ConfigFactory.parseFile( applicationConfFile ).withFallback( configFile );
-        }
+        configFile = ConfigFactory.parseFile( applicationConfFile );
     }
 
 
     private static void initializeFileLocation() {
         // Create config directory and file if they do not already exist
         if ( applicationConfDir == null ) {
-            applicationConfDir = fm.registerNewFolder( configurationDirectoryName );
+            applicationConfDir = fm.registerNewFolder( currentConfigurationDirectoryName );
         } else {
-            applicationConfDir = fm.registerNewFolder( applicationConfDir.getParentFile(), configurationDirectoryName );
+            applicationConfDir = fm.registerNewFolder( applicationConfDir.getParentFile(), currentConfigurationDirectoryName );
         }
-        applicationConfFile = fm.registerNewFile( applicationConfDir, configurationFileName );
+        applicationConfFile = fm.registerNewFile( applicationConfDir, currentConfigurationFileName );
     }
 
 
@@ -155,7 +157,7 @@ public class ConfigManager {
             } catch ( IOException e ) {
                 log.error( "Exception while writing configuration file", e );
             }
-            loadConfigFile( false );
+            loadConfigFile();
         }
     }
 
@@ -167,9 +169,10 @@ public class ConfigManager {
 
         // TODO Extend with deviations from default Value, the actual defaultValue, description and link to website
 
+        // Updated config that will be written to disk
         com.typesafe.config.Config newConfig;
 
-        // Because size 0 lists can't be written to config -- Error in typeconfig: CnfigImpl:269
+        // Because size 0 lists can't be written to config -- Error in typeconfig: ConfigImpl:269
         if ( !(updatedValue instanceof Collection && ((Collection<?>) updatedValue).size() == 0) ) {
 
             // Check if the new value is default value.
@@ -191,13 +194,36 @@ public class ConfigManager {
      * This is mainly needed for testing purposes. To have no cross-site effects.
      */
     public void useDefaultApplicationConfFile() {
-        //Resets applicationConfFile to null, in order to automatically reinitializes the config.
+        // Resets applicationConfFile to null, in order to automatically reinitializes the config.
         applicationConfFile = null;
         applicationConfDir = null;
 
-        loadConfigFile( true );
+        currentConfigurationFileName = defaultConfigurationFileName;
+        currentConfigurationDirectoryName = defaultConfigurationDirectoryName;
+
+        isDefaultConfigActive = true;
+        loadConfigFile();
     }
 
+
+    /**
+     * Resets all persisted configurations in file back to default
+     */
+    public void resetDefaultConfiguration(){
+        useDefaultApplicationConfFile();
+        if ( validateConfiguredFileLocation() ) {
+            try (
+                    FileOutputStream fos = new FileOutputStream( applicationConfFile, false );
+                    BufferedWriter bw = new BufferedWriter( new OutputStreamWriter( fos ) )
+            ) {
+                // Empty file contents
+                bw.write( "" );
+            } catch ( IOException e ) {
+                log.error( "Exception while writing configuration file", e );
+            }
+        }
+        loadConfigFile();
+    }
 
     /**
      * Used to specify custom configuration Files
@@ -206,17 +232,27 @@ public class ConfigManager {
      */
     public static void setApplicationConfFile( File customConfFile ) {
 
-        if ( customConfFile.exists() && fm.isAccessible( customConfFile ) ) {
-            applicationConfFile = customConfFile.getAbsoluteFile();
+        // If specified custom File is equal to the system default. Omit further processing and return to default
+        if ( ! customConfFile.equals( fm.getFileIfExists(
+                defaultConfigurationDirectoryName + "/" + defaultConfigurationFileName
+                ))
+        ) {
 
-            configurationFileName = customConfFile.getName();
-            configurationDirectoryName = customConfFile.getParentFile().getName();
-            applicationConfDir = fm.registerNewFolder( applicationConfFile.getParentFile().getParentFile(), configurationDirectoryName );
+            if ( customConfFile.exists() && fm.isAccessible( customConfFile ) ) {
+                applicationConfFile = customConfFile.getAbsoluteFile();
 
-            loadConfigFile( true );
-        } else {
-            log.error( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
-            throw new ConfigRuntimeException( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
+                currentConfigurationFileName = customConfFile.getName();
+                currentConfigurationDirectoryName = customConfFile.getParentFile().getName();
+                applicationConfDir = fm.registerNewFolder( applicationConfFile.getParentFile().getParentFile(), currentConfigurationDirectoryName );
+
+                loadConfigFile();
+                isDefaultConfigActive = false;
+            } else {
+                log.error( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
+                throw new ConfigRuntimeException( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
+            }
+        }else {
+            log.warn( "The specified configuration file " + customConfFile.getAbsolutePath() + " is the default. No need to specify specifically" );
         }
     }
 
@@ -233,9 +269,11 @@ public class ConfigManager {
         if ( this.configs.containsKey( config.getKey() ) ) {
             throw new ConfigRuntimeException( "Cannot register two configuration elements with the same key: " + config.getKey() );
         } else {
-            // Check if the config file contains this key and if so set the value to the one defined in the config file
-            if ( configFile.hasPath( config.getKey() ) ) {
-                config.setValueFromFile( configFile );
+            if ( !( memoryMode && isDefaultConfigActive() ) ) {
+                // Check if the config file contains this key and if so set the value to the one defined in the config file
+                if ( configFile.hasPath( config.getKey() ) ) {
+                    config.setValueFromFile( configFile );
+                }
             }
             this.configs.put( config.getKey(), config );
 
@@ -361,11 +399,16 @@ public class ConfigManager {
     }
 
 
+    private boolean isDefaultConfigActive(){
+        return isDefaultConfigActive;
+    }
+
+
     static class ConfigManagerListener implements ConfigListener {
 
         @Override
         public void onConfigChange( Config c ) {
-            if ( persistConfiguration ) {
+            if ( !memoryMode ) {
                 instance.persistConfigValue( c.getKey(), c.getPlainValueObject() );
             }
         }

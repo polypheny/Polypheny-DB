@@ -593,7 +593,6 @@ public class ConfigManagerTest implements ConfigListener {
      */
 
     @Test
-    @Ignore
     public void configFilePersistence() throws IOException {
 
         // Specify an unknown file location
