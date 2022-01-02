@@ -28,6 +28,7 @@ import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystemConfiguration;
 import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.transaction.TransactionManager;
@@ -88,7 +89,8 @@ public class JdbcInterface extends QueryInterface {
         } catch ( Exception e ) {
             log.error( "Exception while starting JDBC interface", e );
         }
-        log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
+
+        StatusService.print( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
     }
 
 

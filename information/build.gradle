@@ -4,14 +4,13 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 
 dependencies {
-
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
 
     implementation group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
 
     implementation group: "org.apache.commons", name: "commons-text", version: commons_text_version  // Apache 2.0
     implementation group: "org.apache.commons", name: "commons-collections4", version: commons_collections_version  // Apache 2.0
-    
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

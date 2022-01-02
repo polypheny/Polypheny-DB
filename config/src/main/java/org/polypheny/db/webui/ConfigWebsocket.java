@@ -17,41 +17,21 @@
 package org.polypheny.db.webui;
 
 
+import io.javalin.websocket.WsConfig;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 
 @WebSocket
 @Slf4j
-public class ConfigWebsocket {
+public class ConfigWebsocket implements Consumer<WsConfig> {
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-
-
-    @OnWebSocketConnect
-    public void connected( final Session session ) {
-        sessions.add( session );
-    }
-
-
-    @OnWebSocketClose
-    public void closed( final Session session, final int statusCode, final String reason ) {
-        sessions.remove( session );
-    }
-
-
-    @OnWebSocketMessage
-    public void configWebSocket( final Session session, final String message ) throws IOException {
-        log.trace( "Got: {}", message );
-        session.getRemote().sendString( message ); // and send it back
-    }
 
 
     public static void broadcast( final String msg ) throws IOException {
@@ -59,6 +39,14 @@ public class ConfigWebsocket {
         for ( Session s : sessions ) {
             s.getRemote().sendString( msg );
         }
+    }
+
+
+    @Override
+    public void accept( WsConfig wsConfig ) {
+        wsConfig.onConnect( wsConnectContext -> sessions.add( wsConnectContext.session ) );
+        wsConfig.onMessage( wsMessageContext -> wsMessageContext.session.getRemote().sendString( wsMessageContext.message() ) );
+        wsConfig.onClose( wsCloseContext -> sessions.remove( wsCloseContext.session ) );
     }
 
 }

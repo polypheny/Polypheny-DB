@@ -19,6 +19,7 @@ package org.polypheny.db.webui.models.requests;
 
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ import java.util.StringJoiner;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -36,7 +38,6 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.webui.Crud;
-import spark.utils.IOUtils;
 
 
 @Slf4j
@@ -78,7 +79,7 @@ public class BatchUpdateRequest {
                         setClauses.add( String.format( "\"%s\"=?", entry.getKey() ) );
                         statement.getDataContext().addParameterValues( counter++, null, ImmutableList.of( httpRequest.getPart( fileName ).getInputStream() ) );
                     } else {
-                        String data = IOUtils.toString( httpRequest.getPart( fileName ).getInputStream() );
+                        String data = IOUtils.toString( httpRequest.getPart( fileName ).getInputStream(), StandardCharsets.UTF_8 );
                         setClauses.add( String.format( "\"%s\"=%s", entry.getKey(), Crud.uiValueToSql( data, catalogColumn.type, catalogColumn.collectionsType ) ) );
                     }
                 } else {

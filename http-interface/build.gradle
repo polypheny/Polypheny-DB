@@ -9,11 +9,10 @@ dependencies {
     implementation project(":mql-language")
     implementation project(":webui")
 
-
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
-    implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
-    implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
+    implementation group: "commons-codec", name: "commons-codec", version: commons_codec_version
+    implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version // ISC
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 

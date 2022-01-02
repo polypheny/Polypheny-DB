@@ -48,7 +48,7 @@ public class InformationDuration extends Information {
     }
 
 
-    static JsonSerializer<InformationDuration> getSerializer() {
+    public static JsonSerializer<InformationDuration> getSerializer() {
         return ( src, typeOfSrc, context ) -> {
             JsonObject jsonObj = new JsonObject();
             jsonObj.addProperty( "type", src.type );
@@ -130,7 +130,7 @@ public class InformationDuration extends Information {
     /**
      * Helper class for Durations
      */
-    static class Duration implements Comparable<Duration> {
+    public static class Duration implements Comparable<Duration> {
 
         static long counter = 0;
         private final String type = InformationDuration.class.getSimpleName();//for the UI
@@ -220,7 +220,7 @@ public class InformationDuration extends Information {
         }
 
 
-        static JsonSerializer<Duration> getSerializer() {
+        public static JsonSerializer<Duration> getSerializer() {
             return ( src, typeOfSrc, context ) -> {
                 JsonObject jsonObj = new JsonObject();
                 jsonObj.addProperty( "type", src.type );

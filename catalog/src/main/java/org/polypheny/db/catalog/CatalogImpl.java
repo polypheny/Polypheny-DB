@@ -46,6 +46,7 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
+import org.polypheny.db.StatusService;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -230,11 +231,11 @@ public class CatalogImpl extends Catalog {
             }
 
             if ( isPersistent ) {
-                log.info( "Making the catalog persistent." );
+                StatusService.print( "Making the catalog persistent." );
                 File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
-                    log.info( "Resetting catalog on startup." );
+                    StatusService.print( "Resetting catalog on startup." );
                     if ( new File( folder, fileName ).exists() ) {
                         //noinspection ResultOfMethodCallIgnored
                         new File( folder, fileName ).delete();
@@ -262,7 +263,7 @@ public class CatalogImpl extends Catalog {
                 db.getStore().fileLoad();
 
             } else {
-                log.info( "Making the catalog in-memory." );
+                StatusService.print( "Making the catalog in-memory." );
                 db = DBMaker
                         .memoryDB()
                         .transactionEnable()

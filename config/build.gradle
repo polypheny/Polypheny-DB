@@ -4,15 +4,17 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 
 dependencies {
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version  // Apache 2.0
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
     implementation group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
-    
+    implementation group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
+    implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
+
     implementation group: "com.typesafe", name: "config", version: typesafe_config_version  // Apache 2.0
 
     implementation group: "org.reflections", name: "reflections", version: reflections_version  // BSD 2-clause
 
     implementation group: "com.google.guava", name: "guava", version: guava_version  // Apache 2.0
-    
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
