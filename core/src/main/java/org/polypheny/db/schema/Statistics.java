@@ -99,7 +99,7 @@ public class Statistics {
     /**
      * Returns a statistic with a given row count and set of unique keys.
      */
-    public static Statistic of( final double rowCount, final List<ImmutableBitSet> keys ) {
+    public static Statistic of( final Double rowCount, final List<ImmutableBitSet> keys ) {
         return of( rowCount, keys, ImmutableList.of(), ImmutableList.of() );
     }
 
@@ -107,7 +107,7 @@ public class Statistics {
     /**
      * Returns a statistic with a given row count, set of unique keys, and collations.
      */
-    public static Statistic of( final double rowCount, final List<ImmutableBitSet> keys, final List<AlgCollation> collations ) {
+    public static Statistic of( final Double rowCount, final List<ImmutableBitSet> keys, final List<AlgCollation> collations ) {
         return of( rowCount, keys, ImmutableList.of(), collations );
     }
 

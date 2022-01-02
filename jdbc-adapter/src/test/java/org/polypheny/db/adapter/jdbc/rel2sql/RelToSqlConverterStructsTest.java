@@ -162,6 +162,12 @@ public class RelToSqlConverterStructsTest extends SqlLanguagelDependant {
 
 
         @Override
+        public Long getTableId() {
+            return null;
+        }
+
+
+        @Override
         public Schema.TableType getJdbcTableType() {
             return null;
         }

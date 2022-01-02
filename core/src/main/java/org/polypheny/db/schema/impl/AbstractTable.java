@@ -91,17 +91,23 @@ public abstract class AbstractTable implements Table, Wrapper {
     }
 
 
-    public Statistic getStatistic(  ) {
-        if(tableId == null){
-            throw new RuntimeException("D isi isch e fisi");
+    public Statistic getStatistic() {
+
+        if ( tableId == null ) {
+            return Statistics.UNKNOWN;
         }
         int rowCount = 0;
-        if( StatisticsManager.getInstance().rowCountPerTable.containsKey(  tableId )){
+        if ( StatisticsManager.getInstance().rowCountPerTable.containsKey( tableId ) ) {
             rowCount = StatisticsManager.getInstance().rowCountPerTable.get( tableId );
         }
 
-       // return Statistics.UNKNOWN;
-        return Statistics.of( rowCount, ImmutableList.of() );
+        if ( rowCount == 0 ) {
+            return Statistics.of( null, ImmutableList.of() );
+        } else {
+            return Statistics.of( Double.valueOf( rowCount ), ImmutableList.of() );
+        }
+
+
     }
 
 }

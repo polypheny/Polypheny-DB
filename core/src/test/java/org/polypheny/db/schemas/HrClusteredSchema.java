@@ -132,7 +132,7 @@ public final class HrClusteredSchema extends AbstractSchema {
             for ( Integer key : pkColumns ) {
                 collationFields.add( new AlgFieldCollation( key, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.LAST ) );
             }
-            return Statistics.of( data.size(), ImmutableList.of( pkColumns ), ImmutableList.of( AlgCollations.of( collationFields ) ) );
+            return Statistics.of( Double.valueOf( data.size() ), ImmutableList.of( pkColumns ), ImmutableList.of( AlgCollations.of( collationFields ) ) );
         }
 
 
