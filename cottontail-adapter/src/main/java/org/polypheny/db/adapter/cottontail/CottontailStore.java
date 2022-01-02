@@ -130,7 +130,7 @@ public class CottontailStore extends DataStore {
             PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
             File adapterRoot = fileSystemManager.registerNewFolder( "data/cottontaildb-store" );
 
-            File embeddedDir = fileSystemManager.registerNewFile( adapterRoot, "store" + getAdapterId() );
+            File embeddedDir = fileSystemManager.registerNewFolder( adapterRoot, "store" + getAdapterId() );
 
             final File dataFolder = fileSystemManager.registerNewFolder( embeddedDir, "data" );
 
@@ -150,7 +150,6 @@ public class CottontailStore extends DataStore {
         } else {
             this.embeddedServer = null;
             this.dbHostname = settings.get( "host" );
-
         }
 
         addInformationPhysicalNames();

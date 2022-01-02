@@ -86,7 +86,7 @@ public class PolyphenyHomeDirManager {
 
 
     /**
-     * Registers a new folder
+     * Registers a new folder.
      *
      * @param path the path of the new folder
      * @return the file object for the directory
@@ -104,7 +104,6 @@ public class PolyphenyHomeDirManager {
         }
 
         if ( !file.exists() ) {
-
             if ( !file.mkdirs() ) {
                 throw new RuntimeException( "Could not create directory: " + path + " in parent folder: " + root.getAbsolutePath() );
             }
@@ -165,7 +164,7 @@ public class PolyphenyHomeDirManager {
 
 
     /**
-     * places a new file in a specific path, if no path is specified, it is places in the root path
+     * Places a new file in a specific path. If no path is specified, it is places in the root path.
      *
      * @param path path to the folder in which the file should be placed
      * @param pathToFile the file and its parent paths
