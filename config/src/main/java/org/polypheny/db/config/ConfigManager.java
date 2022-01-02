@@ -46,12 +46,14 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 public class ConfigManager {
 
-    public static boolean memoryMode = true; // If false, then changes are saved in-memory only and will be lost after restart.
+    private static final ConfigManager INSTANCE = new ConfigManager();
 
-    private static ConfigManager instance = new ConfigManager();
+    private static final String DEFAULT_CONFIGURATION_FILE_NAME = "polypheny.conf";
+    private static final String DEFAULT_CONFIGURATION_DIRECTORY_NAME = "config";
 
-    private static String defaultConfigurationFileName = "polypheny.conf";
-    private static String defaultConfigurationDirectoryName = "config"; // Configuration directory shall always be placed next to executable
+    public static boolean memoryMode = true; // If true, then changes are saved in-memory only and will be lost after restart.
+
+    private static boolean usesExternalConfigFile = false;
 
     private static String currentConfigurationFileName;
     private static String currentConfigurationDirectoryName;
@@ -60,16 +62,12 @@ public class ConfigManager {
     private final ConcurrentMap<String, WebUiGroup> uiGroups;
     private final ConcurrentMap<String, WebUiPage> uiPages;
 
-    private static PolyphenyHomeDirManager fm = PolyphenyHomeDirManager.getInstance();
-
     // Typesafe version of configuration file to be processed in code
     private static com.typesafe.config.Config configFile;
 
     // Actual File on disk
     private static File applicationConfFile = null;
     private static File applicationConfDir = null;
-
-    private static boolean isDefaultConfigActive = true;
 
 
     private ConfigManager() {
@@ -83,18 +81,16 @@ public class ConfigManager {
      * Singleton
      */
     public static ConfigManager getInstance() {
-
         if ( configFile == null ) {
-            currentConfigurationFileName = defaultConfigurationFileName;
-            currentConfigurationDirectoryName = defaultConfigurationDirectoryName;
+            currentConfigurationFileName = DEFAULT_CONFIGURATION_FILE_NAME;
+            currentConfigurationDirectoryName = DEFAULT_CONFIGURATION_DIRECTORY_NAME;
             loadConfigFile();
         }
-        return instance;
+        return INSTANCE;
     }
 
 
     public static void loadConfigFile() {
-
         // No custom location has been specified
         // Assume Default
         if ( applicationConfFile == null ) {
@@ -106,27 +102,26 @@ public class ConfigManager {
 
     private static void initializeFileLocation() {
         // Create config directory and file if they do not already exist
+        PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
         if ( applicationConfDir == null ) {
-            applicationConfDir = fm.registerNewFolder( currentConfigurationDirectoryName );
+            applicationConfDir = homeDirManager.registerNewFolder( currentConfigurationDirectoryName );
         } else {
-            applicationConfDir = fm.registerNewFolder( applicationConfDir.getParentFile(), currentConfigurationDirectoryName );
+            applicationConfDir = homeDirManager.registerNewFolder( applicationConfDir.getParentFile(), currentConfigurationDirectoryName );
         }
-        applicationConfFile = fm.registerNewFile( applicationConfDir, currentConfigurationFileName );
+        applicationConfFile = homeDirManager.registerNewFile( applicationConfDir, currentConfigurationFileName );
     }
 
 
     // Validates if configuration directory is still accessible
     private static boolean validateConfiguredFileLocation() {
-
         if ( applicationConfFile.exists() && applicationConfDir.exists() ) {
-
             // Although not beneficial for the system. It should not crash.
             // However, it should log an error to application log.
-            if ( !fm.isAccessible( applicationConfFile ) ) {
-                log.error( "Configuration Directory: {} or file: {} is not accessible. Config couldn't be updated."
-                        , applicationConfDir.getAbsolutePath()
-                        , applicationConfFile.getName() );
-
+            PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
+            if ( !homeDirManager.isAccessible( applicationConfFile ) ) {
+                log.error( "Configuration Directory: {} or file: {} is not accessible. Config couldn't be updated.",
+                        applicationConfDir.getAbsolutePath(),
+                        applicationConfFile.getName() );
                 return false;
             }
         } else {
@@ -136,7 +131,7 @@ public class ConfigManager {
     }
 
     // TODO @HENNLO add method that recreated the entire conf file after deletion with all values that are not default
-    // shall be triggered by arbitrary config change
+    //  shall be triggered by arbitrary config change
 
 
     private static void writeConfiguration( final com.typesafe.config.Config configuration ) {
@@ -148,7 +143,6 @@ public class ConfigManager {
 
         // Check if file is still accessible and writable
         if ( validateConfiguredFileLocation() ) {
-
             try (
                     FileOutputStream fos = new FileOutputStream( applicationConfFile, false );
                     BufferedWriter bw = new BufferedWriter( new OutputStreamWriter( fos ) )
@@ -166,15 +160,13 @@ public class ConfigManager {
      * Updates Config to file
      */
     public void persistConfigValue( String configKey, Object updatedValue ) {
-
         // TODO Extend with deviations from default Value, the actual defaultValue, description and link to website
 
         // Updated config that will be written to disk
         com.typesafe.config.Config newConfig;
 
-        // Because size 0 lists can't be written to config -- Error in typeconfig: ConfigImpl:269
+        // Because lists with a size of 0 can't be written to config -- Error in typeconfig: ConfigImpl:269
         if ( !(updatedValue instanceof Collection && ((Collection<?>) updatedValue).size() == 0) ) {
-
             // Check if the new value is default value.
             // If so, the value will be omitted since there is no need to write it to file
             if ( configs.get( configKey ).isDefault() ) {
@@ -198,18 +190,18 @@ public class ConfigManager {
         applicationConfFile = null;
         applicationConfDir = null;
 
-        currentConfigurationFileName = defaultConfigurationFileName;
-        currentConfigurationDirectoryName = defaultConfigurationDirectoryName;
+        currentConfigurationFileName = DEFAULT_CONFIGURATION_FILE_NAME;
+        currentConfigurationDirectoryName = DEFAULT_CONFIGURATION_DIRECTORY_NAME;
 
-        isDefaultConfigActive = true;
+        usesExternalConfigFile = false;
         loadConfigFile();
     }
 
 
     /**
-     * Resets all persisted configurations in file back to default
+     * Resets all persisted configurations in file back to default.
      */
-    public void resetDefaultConfiguration(){
+    public void resetDefaultConfiguration() {
         useDefaultApplicationConfFile();
         if ( validateConfiguredFileLocation() ) {
             try (
@@ -225,42 +217,40 @@ public class ConfigManager {
         loadConfigFile();
     }
 
+
     /**
-     * Used to specify custom configuration Files
+     * Used to specify custom configuration files.
      *
-     * @param customConfFile
+     * @param customConfFile Configuration file
      */
     public static void setApplicationConfFile( File customConfFile ) {
-
+        PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
         // If specified custom File is equal to the system default. Omit further processing and return to default
-        if ( ! customConfFile.equals( fm.getFileIfExists(
-                defaultConfigurationDirectoryName + "/" + defaultConfigurationFileName
-                ))
-        ) {
-
-            if ( customConfFile.exists() && fm.isAccessible( customConfFile ) ) {
+        if ( !customConfFile.equals( homeDirManager.getFileIfExists( DEFAULT_CONFIGURATION_DIRECTORY_NAME + "/" + DEFAULT_CONFIGURATION_FILE_NAME ) ) ) {
+            if ( customConfFile.exists() && homeDirManager.isAccessible( customConfFile ) ) {
                 applicationConfFile = customConfFile.getAbsoluteFile();
 
                 currentConfigurationFileName = customConfFile.getName();
                 currentConfigurationDirectoryName = customConfFile.getParentFile().getName();
-                applicationConfDir = fm.registerNewFolder( applicationConfFile.getParentFile().getParentFile(), currentConfigurationDirectoryName );
+                applicationConfDir = homeDirManager.registerNewFolder(
+                        applicationConfFile.getParentFile().getParentFile(),
+                        currentConfigurationDirectoryName );
 
                 loadConfigFile();
-                isDefaultConfigActive = false;
+                usesExternalConfigFile = true;
             } else {
-                log.error( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
+                log.error( "The specified configuration file {} cannot be accessed or does not exist.", customConfFile.getAbsolutePath() );
                 throw new ConfigRuntimeException( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
             }
-        }else {
-            log.warn( "The specified configuration file " + customConfFile.getAbsolutePath() + " is the default. No need to specify specifically" );
+        } else {
+            log.warn( "The specified configuration file {} is the default. No need to specify specifically", customConfFile.getAbsolutePath() );
         }
     }
 
 
     /**
      * Register a configuration element in the ConfigManager.
-     * Either the default value is used. Or if the key is present within the configuration file, this
-     * value will be used instead.
+     * Either the default value is used. Or if the key is present within the configuration file, this value will be used instead.
      *
      * @param config Configuration element to register.
      * @throws ConfigRuntimeException If a Config is already registered.
@@ -269,7 +259,7 @@ public class ConfigManager {
         if ( this.configs.containsKey( config.getKey() ) ) {
             throw new ConfigRuntimeException( "Cannot register two configuration elements with the same key: " + config.getKey() );
         } else {
-            if ( !( memoryMode && isDefaultConfigActive() ) ) {
+            if ( !(memoryMode && !usesExternalConfigFile) ) {
                 // Check if the config file contains this key and if so set the value to the one defined in the config file
                 if ( configFile.hasPath( config.getKey() ) ) {
                     config.setValueFromFile( configFile );
@@ -303,7 +293,7 @@ public class ConfigManager {
 
 
     /**
-     * Get configuration as Configuration object
+     * Get configuration as Configuration object.
      */
     public Config getConfig( final String s ) {
         return configs.get( s );
@@ -343,8 +333,8 @@ public class ConfigManager {
 
 
     /**
-     * Generates a Json of all the Web UI Pages in the ConfigManager (for the sidebar in the Web UI)
-     * The Json does not contain the groups and configs of the Web UI Pages
+     * Generates a Json of all the Web UI Pages in the ConfigManager (for the sidebar in the Web UI).
+     * The Json does not contain the groups and configs of the Web UI Pages.
      */
     public String getWebUiPageList() {
         //todo recursion with parentPage field
@@ -369,7 +359,7 @@ public class ConfigManager {
      * @param id The id of the page
      */
     public String getPage( final String id ) {
-        // fill WebUiGroups with Configs
+        // Fill WebUiGroups with Configs
         for ( ConcurrentMap.Entry<String, Config> c : configs.entrySet() ) {
             try {
                 String i = c.getValue().getWebUiGroup();
@@ -380,7 +370,7 @@ public class ConfigManager {
             }
         }
 
-        // fill WebUiPages with WebUiGroups
+        // Fill WebUiPages with WebUiGroups
         for ( ConcurrentMap.Entry<String, WebUiGroup> g : uiGroups.entrySet() ) {
             try {
                 String i = g.getValue().getPageId();
@@ -399,17 +389,12 @@ public class ConfigManager {
     }
 
 
-    private boolean isDefaultConfigActive(){
-        return isDefaultConfigActive;
-    }
-
-
     static class ConfigManagerListener implements ConfigListener {
 
         @Override
         public void onConfigChange( Config c ) {
             if ( !memoryMode ) {
-                instance.persistConfigValue( c.getKey(), c.getPlainValueObject() );
+                INSTANCE.persistConfigValue( c.getKey(), c.getPlainValueObject() );
             }
         }
 
@@ -425,7 +410,7 @@ public class ConfigManager {
     /**
      * The class PageListItem will be converted into a Json String by Gson.
      * The Web UI requires a Json Object with the fields id, name, icon, children[] for the Sidebar.
-     * This class is required to convert a WebUiPage object into the format needed by the Angular WebUi
+     * This class is required to convert a WebUiPage object into the format needed by the Angular WebUi.
      */
     static class PageListItem {
 

@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;

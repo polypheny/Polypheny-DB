@@ -152,7 +152,7 @@ public class PolyphenyDb {
             log.info( "Restoring the data folder." );
         }
 
-        // Reset data folder
+        // Reset catalog, data and configuration
         if ( resetCatalog ) {
             if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" ) ) {
                 log.error( "Unable to delete the data folder." );
@@ -168,7 +168,7 @@ public class PolyphenyDb {
         }
 
         // Configuration shall not be persisted
-        ConfigManager.memoryMode = (testMode || memoryCatalog );
+        ConfigManager.memoryMode = (testMode || memoryCatalog);
 
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
