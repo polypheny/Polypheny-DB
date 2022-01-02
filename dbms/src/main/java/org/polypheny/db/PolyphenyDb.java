@@ -98,7 +98,7 @@ public class PolyphenyDb {
     public boolean desktopMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default store")
-    public String defaultStoreName = "cottontail";
+    public String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public String defaultSourceName = "csv";
