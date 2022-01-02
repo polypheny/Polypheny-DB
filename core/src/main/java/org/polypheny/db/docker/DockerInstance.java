@@ -438,13 +438,10 @@ public class DockerInstance extends DockerManager {
     @Override
     public void destroy( Container container ) {
 
-        // while testing the container status itself is possible, in error cases there might be no status set
-        // so we have to test by retrieving the container again from the client
-        if ( Objects.requireNonNull(
-                client.inspectContainerCmd( container.getContainerId() ).exec()
-                        .getState()
-                        .getStatus() )
-                .equalsIgnoreCase( "running" ) ) {
+        // While testing the container status itself is possible, in error cases, there might be no status set.
+        // Therefore, we have to test by retrieving the container again from the client.
+        String status = client.inspectContainerCmd( container.getContainerId() ).exec().getState().getStatus();
+        if ( Objects.requireNonNull( status ).equalsIgnoreCase( "running" ) ) {
             stop( container );
         }
 

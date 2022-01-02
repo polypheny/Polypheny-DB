@@ -39,6 +39,7 @@ public class ConfigManagerTest implements ConfigListener {
     private ConfigManager cm;
     private boolean wasRestarted = false;
 
+
     static {
         ConfigManager cm = ConfigManager.getInstance();
 
@@ -72,7 +73,7 @@ public class ConfigManagerTest implements ConfigListener {
 
 
     @AfterClass
-    public static void resetTestEnvironment(){
+    public static void resetTestEnvironment() {
         ConfigManager.getInstance().useDefaultApplicationConfFile();
     }
 
@@ -91,7 +92,6 @@ public class ConfigManagerTest implements ConfigListener {
             }
             cm.setApplicationConfFile( testFile.toFile() );
 
-
             Config c5 = new ConfigInteger( "java.int.validation", 10 ).withJavaValidation( a -> (int) a < 10 ).withUi( "g2" );
             Config c6 = new ConfigDouble( "java.double.validation", 3 ).withJavaValidation( a -> (double) a < 5.5 ).withUi( "g2" );
 
@@ -108,7 +108,7 @@ public class ConfigManagerTest implements ConfigListener {
 
             System.out.println( cm.getPage( "p" ) );
 
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -151,7 +151,7 @@ public class ConfigManagerTest implements ConfigListener {
             Assert.assertEquals( 11, (long) cm.getConfig( "type.long" ).getLong() );
             Assert.assertEquals( 10.1, cm.getConfig( "type.double" ).getDouble(), 0.0001 );
             Assert.assertEquals( new BigDecimal( "3.14" ), cm.getConfig( "type.decimal" ).getDecimal() );
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -181,7 +181,7 @@ public class ConfigManagerTest implements ConfigListener {
             cm.getConfig( "will.change" ).setBoolean( true );
             Assert.assertTrue( o2.wasNotified() );
             Assert.assertFalse( o1.wasNotified() );
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -205,7 +205,7 @@ public class ConfigManagerTest implements ConfigListener {
             cm.registerConfig( c );
             cm.getConfig( c.getKey() ).setString( "someValue" );
             Assert.assertTrue( this.wasRestarted );
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -228,7 +228,6 @@ public class ConfigManagerTest implements ConfigListener {
             }
             cm.setApplicationConfFile( testFile.toFile() );
 
-
             Config c = new ConfigEnum( "enum", "Test description", testEnum.class, testEnum.FOO );
             cm.registerConfig( c );
             ConfigObserver o = new ConfigObserver();
@@ -249,7 +248,7 @@ public class ConfigManagerTest implements ConfigListener {
             Assert.assertTrue( o.wasNotified() );
             Assert.assertEquals( 2, o.n );
 
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -294,7 +293,7 @@ public class ConfigManagerTest implements ConfigListener {
             Assert.assertTrue( o.wasNotified() );
             Assert.assertEquals( 4, o.n );
 
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -343,7 +342,6 @@ public class ConfigManagerTest implements ConfigListener {
             }
             cm.setApplicationConfFile( testFile.toFile() );
 
-
             Config c = new ConfigClazz( "clazz", TestClass.class, FooImplementation.class );
             cm.registerConfig( c );
             ConfigObserver o = new ConfigObserver();
@@ -365,7 +363,7 @@ public class ConfigManagerTest implements ConfigListener {
             Gson gson = new Gson();
             ConfigClazz z = gson.fromJson( json, ConfigClazz.class );
             Assert.assertEquals( json, z.toJson() );*/
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -385,8 +383,6 @@ public class ConfigManagerTest implements ConfigListener {
                 e.printStackTrace();
             }
             cm.setApplicationConfFile( testFile.toFile() );
-
-
 
             List<Class> l = new ArrayList<>();
             l.add( FooImplementation.class );
@@ -421,7 +417,7 @@ public class ConfigManagerTest implements ConfigListener {
             ConfigClazzList z = gson.fromJson( json, ConfigClazzList.class );
             Assert.assertEquals( json, z.toJson() );*/
 
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -442,7 +438,6 @@ public class ConfigManagerTest implements ConfigListener {
             }
             cm.setApplicationConfFile( testFile.toFile() );
 
-
             int[] array = { 1, 2, 3, 4, 5 };
             Config c = new ConfigArray( "array", array );
             cm.registerConfig( c );
@@ -456,7 +451,7 @@ public class ConfigManagerTest implements ConfigListener {
             Assert.assertTrue( o.wasNotified() );
             Assert.assertEquals( 1, o.n );
 
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -477,8 +472,8 @@ public class ConfigManagerTest implements ConfigListener {
             cm.setApplicationConfFile( testFile.toFile() );
 
             int[][] table = new int[][]{
-                { 1, 2, 3 },
-                { 4, 5, 6 }
+                    { 1, 2, 3 },
+                    { 4, 5, 6 }
             };
             Config c = new ConfigTable( "table", table );
             cm.registerConfig( c );
@@ -495,7 +490,7 @@ public class ConfigManagerTest implements ConfigListener {
             Assert.assertTrue( o.wasNotified() );
             Assert.assertEquals( 1, o.n );
 
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -587,7 +582,7 @@ public class ConfigManagerTest implements ConfigListener {
             Assert.assertEquals( c.getString(), "Polystore" );
             cm.registerConfig( c );
             Assert.assertEquals( c.getString(), "Polystore" );
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }
@@ -611,7 +606,6 @@ public class ConfigManagerTest implements ConfigListener {
         Assert.assertTrue( failed );
         failed = false;
 
-
         // Check if the correct file will be accessed
         Path originFile = Paths.get( "src/test/resources/application.conf" );
         Path testFile = Paths.get( "src/test/resources/base_application.conf" );
@@ -624,39 +618,32 @@ public class ConfigManagerTest implements ConfigListener {
                 e.printStackTrace();
             }
 
+            File customConfFile = new File( testFile.toString() );
+            cm.setApplicationConfFile( customConfFile );
+            Assert.assertEquals( customConfFile.getAbsolutePath(), cm.getActiveConfFile() );
 
-        File customConfFile = new File( testFile.toString() );
-        cm.setApplicationConfFile( customConfFile );
-        Assert.assertEquals( customConfFile.getAbsolutePath(), cm.getActiveConfFile() );
+            // Check if file will be re-created after config change
 
+            // Check if CUSTOM file will be re-created after config change
 
-        // Check if file will be re-created after config change
+            // Rename file to simulate "delete"
+            Files.move( testFile.toFile(), backupFile.toFile() );
+            Config c = new ConfigInteger( "test.my.dummy", 5000 );
 
+            Assert.assertEquals( c.getInt(), 5000 );
 
+            // Check if file is still present after registration
+            cm.registerConfig( c );
+            Assert.assertEquals( cm.getConfig( "test.my.dummy" ).getInt(), 5000 );
 
-        // Check if CUSTOM file will be re-created after config change
+            // Modify config value in CUSTOM value
+            c.setInt( 5001 );
+            Assert.assertEquals( c.getInt(), 5001 );
 
+            // Check if file was recreated
+            // with new updated value as well as old values that were in the file before
 
-        // Rename file to simulate "delete"
-        Files.move( testFile.toFile(), backupFile.toFile() );
-        Config c = new ConfigInteger( "test.my.dummy", 5000 );
-
-
-        Assert.assertEquals( c.getInt(), 5000 );
-
-
-        // Check if file is still present after registration
-        cm.registerConfig( c );
-        Assert.assertEquals( cm.getConfig( "test.my.dummy" ).getInt(), 5000 );
-
-        // Modify config value in CUSTOM value
-        c.setInt( 5001 );
-        Assert.assertEquals( c.getInt(), 5001 );
-
-        // Check if file was recreated
-        // with new updated value as well as old values that were in the file before
-
-        }finally {
+        } finally {
 
             // Remove file that has been created in the meantime
             testFile.toFile().delete();
@@ -671,10 +658,10 @@ public class ConfigManagerTest implements ConfigListener {
 
         // Verify that default values are not written to config
 
-            // Change config to non-default
-            // Verify that it is present in file
+        // Change config to non-default
+        // Verify that it is present in file
 
-            // Change entry back to default and verify that it is not present anymore
+        // Change entry back to default and verify that it is not present anymore
 
     }
 
@@ -702,7 +689,7 @@ public class ConfigManagerTest implements ConfigListener {
             cm.registerConfig( c );
             Assert.assertEquals( cm.getConfig( c.getKey() ), c );
 
-        }finally {
+        } finally {
             testFile.toFile().delete();
         }
     }

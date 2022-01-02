@@ -28,6 +28,7 @@ public class ConfigString extends ConfigScalar {
     private String value;
     private String defaultValue;
 
+
     public ConfigString( final String key, final String value ) {
         super( key );
         this.webUiFormType = WebUiFormType.TEXT;

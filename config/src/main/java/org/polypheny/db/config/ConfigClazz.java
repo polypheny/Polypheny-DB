@@ -36,7 +36,7 @@ import org.reflections.Reflections;
 public class ConfigClazz extends Config {
 
     @JsonAdapter(ClassesAdapter.class)
-    @SerializedName( "values" )
+    @SerializedName("values")
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private Class value;
@@ -158,6 +158,7 @@ public class ConfigClazz extends Config {
             out.endArray();
         }
 
+
         @Override
         public Set<Class> read( final JsonReader in ) throws IOException {
             Set<Class> set = new HashSet<>();
@@ -174,6 +175,7 @@ public class ConfigClazz extends Config {
             in.endArray();
             return ImmutableSet.copyOf( set );
         }
+
     }
 
 
@@ -188,6 +190,7 @@ public class ConfigClazz extends Config {
             out.value( value.getName() );
         }
 
+
         @Override
         public Class read( final JsonReader in ) throws IOException {
             try {
@@ -197,6 +200,7 @@ public class ConfigClazz extends Config {
                 return null;
             }
         }
+
     }
 
 }

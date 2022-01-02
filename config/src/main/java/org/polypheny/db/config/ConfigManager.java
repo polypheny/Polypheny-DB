@@ -86,7 +86,7 @@ public class ConfigManager {
     }
 
 
-    public static void loadConfigFile( boolean override) {
+    public static void loadConfigFile( boolean override ) {
 
         // No custom location has been specified
         // Assume Default
@@ -94,7 +94,7 @@ public class ConfigManager {
             initializeFileLocation();
         }
 
-        if ( configFile == null || override) {
+        if ( configFile == null || override ) {
             configFile = ConfigFactory.parseFile( applicationConfFile );
         } else {
             configFile = ConfigFactory.parseFile( applicationConfFile ).withFallback( configFile );
@@ -104,12 +104,12 @@ public class ConfigManager {
 
     private static void initializeFileLocation() {
         // Create config directory and file if they do not already exist
-        if ( applicationConfDir == null ){
+        if ( applicationConfDir == null ) {
             applicationConfDir = fm.registerNewFolder( configurationDirectoryName );
-        }else {
+        } else {
             applicationConfDir = fm.registerNewFolder( applicationConfDir.getParentFile(), configurationDirectoryName );
         }
-        applicationConfFile = fm.registerNewFile(applicationConfDir, configurationFileName);
+        applicationConfFile = fm.registerNewFile( applicationConfDir, configurationFileName );
     }
 
 
@@ -135,6 +135,7 @@ public class ConfigManager {
 
     // TODO @HENNLO add method that recreated the entire conf file after deletion with all values that are not default
     // shall be triggered by arbitrary config change
+
 
     private static void writeConfiguration( final com.typesafe.config.Config configuration ) {
         ConfigRenderOptions configRenderOptions = ConfigRenderOptions.defaults();
@@ -169,7 +170,7 @@ public class ConfigManager {
         com.typesafe.config.Config newConfig;
 
         // Because size 0 lists can't be written to config -- Error in typeconfig: CnfigImpl:269
-        if ( !(updatedValue instanceof Collection && ((Collection<?>) updatedValue).size() == 0 )) {
+        if ( !(updatedValue instanceof Collection && ((Collection<?>) updatedValue).size() == 0) ) {
 
             // Check if the new value is default value.
             // If so, the value will be omitted since there is no need to write it to file
@@ -189,7 +190,7 @@ public class ConfigManager {
      * Resets the config file back to the systems default.
      * This is mainly needed for testing purposes. To have no cross-site effects.
      */
-    public void useDefaultApplicationConfFile(){
+    public void useDefaultApplicationConfFile() {
         //Resets applicationConfFile to null, in order to automatically reinitializes the config.
         applicationConfFile = null;
         applicationConfDir = null;
@@ -200,6 +201,7 @@ public class ConfigManager {
 
     /**
      * Used to specify custom configuration Files
+     *
      * @param customConfFile
      */
     public static void setApplicationConfFile( File customConfFile ) {
@@ -213,7 +215,7 @@ public class ConfigManager {
 
             loadConfigFile( true );
         } else {
-            log.error( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist."  );
+            log.error( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
             throw new ConfigRuntimeException( "The specified configuration file " + customConfFile.getAbsolutePath() + " cannot be accessed or does not exist." );
         }
     }
@@ -260,7 +262,6 @@ public class ConfigManager {
             c.addObserver( listener );
         }
     }
-
 
 
     /**
@@ -360,7 +361,7 @@ public class ConfigManager {
     }
 
 
-    static class ConfigManagerListener implements ConfigListener{
+    static class ConfigManagerListener implements ConfigListener {
 
         @Override
         public void onConfigChange( Config c ) {

@@ -168,9 +168,9 @@ public class ConfigEnumList extends Config {
         Gson gson = new Gson();
         ArrayList<String> val = gson.fromJson( value, ArrayList.class );
         List<Enum> toAdd = new ArrayList<>();
-        for( Enum e: enumValues ) {
-            if( val.contains( e.name() )){
-                toAdd.add(e);
+        for ( Enum e : enumValues ) {
+            if ( val.contains( e.name() ) ) {
+                toAdd.add( e );
             }
         }
         return this.setEnumList( toAdd );

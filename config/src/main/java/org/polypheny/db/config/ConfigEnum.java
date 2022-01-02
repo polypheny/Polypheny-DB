@@ -136,4 +136,5 @@ public class ConfigEnum extends Config {
         }
         throw new ConfigRuntimeException( "No enum with name \"" + str + "\" found in the set of valid enums." );
     }
+
 }

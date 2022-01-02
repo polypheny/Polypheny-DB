@@ -118,4 +118,5 @@ public class ConfigLong extends ConfigScalar {
     public boolean parseStringAndSetValue( String value ) {
         return setLong( Long.parseLong( value ) );
     }
+
 }
