@@ -59,10 +59,10 @@ public class ConfigDecimal extends ConfigScalar {
 
     /**
      * Checks if the currently set config value, is equal to the system configured default.
-     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
-     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}.
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}.
      *
-     * @return true if it is set to default, false if it deviates
+     * @return true if it is set to default, false if it deviates.
      */
     @Override
     public boolean isDefault() {
@@ -71,10 +71,10 @@ public class ConfigDecimal extends ConfigScalar {
 
 
     /**
-     * Restores the current value to the system configured default vlaue.
+     * Restores the current value to the system configured default value.
      *
-     * To obtain the system configured defaultValue use {@link #getDefaultValue()}
-     * If you want to check if the current value deviates from default use:  {@link #isDefault()}.
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}.
+     * If you want to check if the current value deviates from default use: {@link #isDefault()}.
      */
     @Override
     public void resetToDefault() {

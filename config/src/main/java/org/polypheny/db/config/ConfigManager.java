@@ -41,7 +41,8 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 /**
  * ConfigManager allows to add and retrieve configuration objects.
- * If the configuration element has a Web UI Group and Web UI Page defined, it can be requested from the Web UI and the value of the configuration can be changed there.
+ * If the configuration element has a Web UI Group and Web UI Page defined, it can be requested from the Web UI and the value
+ * of the configuration can be changed there.
  */
 @Slf4j
 public class ConfigManager {

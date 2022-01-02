@@ -40,7 +40,7 @@ public class ConfigClazz extends Config {
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private Class value;
-    private String defaultValue;    // Purposely set to string because clone() is not available for class. String is okay since only link to class is necessary. Selection of classes is restricted anyway thanks to {@limk #classes}
+    private String defaultValue;  // Purposely set to string because clone() is not available for class. String is okay since only link to class is necessary. Selection of classes is restricted anyway thanks to {@limk #classes}
 
 
     public ConfigClazz( final String key, final Class superClass, final Class defaultValue ) {
@@ -68,8 +68,8 @@ public class ConfigClazz extends Config {
 
     /**
      * Checks if the currently set config value, is equal to the system configured default.
-     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
-     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}.
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}.
      *
      * @return true if it is set to default, false if it deviates
      */

@@ -34,9 +34,8 @@ public class ConfigDocker extends ConfigObject {
     public static final String DEFAULT_PROTOCOL = "tcp";
     public static final int DEFAULT_PORT = 2376;
 
-    // ssh was introduced as a possible transport protocol for connecting to remote
-    // docker hosts recently, it is not yet supported in java-docker but can be enabled as
-    // soon as this happens
+    // SSH was introduced as a possible transport protocol for connecting to remote Docker hosts recently, it is not yet
+    // supported in java-docker but can be enabled as soon as this happens
     public final List<String> protocols = Collections.singletonList( "tcp" );
 
     @Getter
@@ -137,10 +136,10 @@ public class ConfigDocker extends ConfigObject {
 
 
     /**
-     * Restores the current value to the system configured default vlaue.
+     * Restores the current value to the system configured default value.
      *
-     * To obtain the system configured defaultValue use {@link #getDefaultValue()}
-     * If you want to check if the current value deviates from default use:  {@link #isDefault()}.
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}.
+     * If you want to check if the current value deviates from default use: {@link #isDefault()}.
      */
     @Override
     public void resetToDefault() {
