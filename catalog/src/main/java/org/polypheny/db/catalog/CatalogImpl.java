@@ -116,7 +116,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.PolyphenyFileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -231,7 +231,7 @@ public class CatalogImpl extends Catalog {
 
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
-                File folder = PolyphenyFileSystemManager.getInstance().registerNewFolder( "catalog" );
+                File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
                     log.info( "Resetting catalog on startup." );

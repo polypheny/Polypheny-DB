@@ -55,7 +55,7 @@ public class FileInputHandle {
 
 
     static {
-        folder = PolyphenyFileSystemManager.getInstance().registerNewFolder( "tmp/" + "fileInput" );
+        folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "tmp/" + "fileInput" );
     }
 
 

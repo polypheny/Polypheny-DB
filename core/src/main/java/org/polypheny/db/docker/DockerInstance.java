@@ -50,7 +50,7 @@ import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.exceptions.NameExistsRuntimeException;
 import org.polypheny.db.docker.exceptions.PortInUseRuntimeException;
-import org.polypheny.db.util.PolyphenyFileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 /**
@@ -178,7 +178,7 @@ public class DockerInstance extends DockerManager {
         if ( !settings.isUsingInsecure() ) {
             builder
                     .withDockerTlsVerify( true )
-                    .withDockerCertPath( PolyphenyFileSystemManager.getInstance().registerNewFolder( "certs/" + settings.getHost() + "/client" ).getPath() );
+                    .withDockerCertPath( PolyphenyHomeDirManager.getInstance().registerNewFolder( "certs/" + settings.getHost() + "/client" ).getPath() );
         }
 
         DockerClientConfig config = builder.build();

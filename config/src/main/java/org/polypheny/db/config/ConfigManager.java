@@ -29,15 +29,13 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
-import org.polypheny.db.util.PolyphenyFileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 /**
@@ -58,7 +56,7 @@ public class ConfigManager {
     private final ConcurrentMap<String, WebUiGroup> uiGroups;
     private final ConcurrentMap<String, WebUiPage> uiPages;
 
-    private static PolyphenyFileSystemManager fm = PolyphenyFileSystemManager.getInstance();
+    private static PolyphenyHomeDirManager fm = PolyphenyHomeDirManager.getInstance();
 
     // Typesafe version of configuration file to be processed in code
     private static com.typesafe.config.Config configFile;

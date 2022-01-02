@@ -44,7 +44,7 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.PolyphenyFileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 @Slf4j
@@ -73,7 +73,7 @@ public class FileStore extends DataStore {
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
-        PolyphenyFileSystemManager fileManager = PolyphenyFileSystemManager.getInstance();
+        PolyphenyHomeDirManager fileManager = PolyphenyHomeDirManager.getInstance();
         File adapterRoot = fileManager.registerNewFolder( "data/file-store" );
 
         rootDir = fileManager.registerNewFolder( adapterRoot, "store" + getAdapterId() );

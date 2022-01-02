@@ -24,28 +24,29 @@ import java.util.List;
 
 
 /**
- * The PolyphenyFileSystemManager should handle all dynamically needed resources and sort them accordingly.
+ * The PolyphenyHomeDirManager handles all folders created in the HOME dir.
  * It is the central component to create and maintain all dependent FS structures after installation.
  *
  * All file system related operations that are specific to the PolyDBMS should be handled with this manager.
  */
-public class PolyphenyFileSystemManager {
+public class PolyphenyHomeDirManager {
 
-    static PolyphenyFileSystemManager polyphenyFileSystemManager = null;
-    File root;
-    final List<File> dirs = new ArrayList<>();
-    final List<File> deleteOnExit = new ArrayList<>();
+    private static PolyphenyHomeDirManager INSTANCE = null;
+
+    private File root;
+    private final List<File> dirs = new ArrayList<>();
+    private final List<File> deleteOnExit = new ArrayList<>();
 
 
-    public static PolyphenyFileSystemManager getInstance() {
-        if ( polyphenyFileSystemManager == null ) {
-            polyphenyFileSystemManager = new PolyphenyFileSystemManager();
+    public static PolyphenyHomeDirManager getInstance() {
+        if ( INSTANCE == null ) {
+            INSTANCE = new PolyphenyHomeDirManager();
         }
-        return polyphenyFileSystemManager;
+        return INSTANCE;
     }
 
 
-    private PolyphenyFileSystemManager() {
+    private PolyphenyHomeDirManager() {
         String pathVar;
         if ( System.getenv( "POLYPHENY_HOME" ) != null ) {
             pathVar = System.getenv( "POLYPHENY_HOME" );
