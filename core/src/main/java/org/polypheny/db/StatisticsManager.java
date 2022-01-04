@@ -16,20 +16,14 @@
 
 package org.polypheny.db;
 
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
-import org.polypheny.db.view.MaterializedViewManager;
 
 public abstract class StatisticsManager<T extends Comparable<T>> implements PropertyChangeListener {
 
     public static StatisticsManager<?> INSTANCE = null;
-    @Getter
-    public HashMap<Long, Integer> rowCountPerTable = new HashMap<>();
-
 
     public static StatisticsManager<?> setAndGetInstance( StatisticsManager transaction ) {
         if ( INSTANCE != null ) {
@@ -75,6 +69,8 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract ConcurrentHashMap<?,?> getStatisticSchemaMap();
 
+    public abstract Object getTableStatistic(Long schemaId, Long tableId);
+
     public abstract int getNumberOfCommits();
 
     public abstract int getNumberOfRollbacks();
@@ -82,4 +78,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
     public abstract void setNumberOfCommits( int numberOfCommits );
 
     public abstract void setNumberOfRollbacks(int numberOfRollbacks);
+
+    public abstract Integer rowCountPerTable( Long tableId );
+
 }

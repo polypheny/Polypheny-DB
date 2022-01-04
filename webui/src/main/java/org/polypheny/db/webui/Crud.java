@@ -184,6 +184,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
@@ -236,9 +237,9 @@ public class Crud implements InformationObserver {
     private final String databaseName;
     @Getter
     private final String userName;
-    private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
+
     public final LanguageCrud languageCrud;
-    private boolean isActiveTracking = false;
+    public final StatisticCrud statisticCrud;
     private final Catalog catalog = Catalog.getInstance();
 
 
@@ -252,34 +253,7 @@ public class Crud implements InformationObserver {
         this.databaseName = databaseName;
         this.userName = userName;
         this.languageCrud = new LanguageCrud( this );
-        registerStatisticObserver();
-    }
-
-
-    /**
-     * Ensures that changes in the ConfigManger toggle the correctly
-     */
-    private void registerStatisticObserver() {
-        this.isActiveTracking = RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
-        ConfigListener observer = new ConfigListener() {
-            @Override
-            public void onConfigChange( Config c ) {
-                setConfig( c );
-            }
-
-
-            @Override
-            public void restart( Config c ) {
-                setConfig( c );
-            }
-
-
-            private void setConfig( Config c ) {
-                isActiveTracking = c.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
-            }
-        };
-        RuntimeConfig.ACTIVE_TRACKING.addObserver( observer );
-        RuntimeConfig.DYNAMIC_QUERYING.addObserver( observer );
+        this.statisticCrud = new StatisticCrud( this );
     }
 
 
@@ -922,19 +896,6 @@ public class Crud implements InformationObserver {
         queryAnalyzer.registerInformation( text3 );
     }
 
-
-    /**
-     * Return all available statistics to the client
-     */
-    void getStatistics( final Context ctx, Gson gsonExpose ) {
-        if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-            ctx.result( gsonExpose.toJson( statisticsManager.getStatisticSchemaMap() ) );
-        } else {
-            ctx.json( new ConcurrentHashMap<>() );
-        }
-    }
-
-
     /**
      * Gets the classified Data from User
      * return possibly interesting Data to User
@@ -1209,7 +1170,7 @@ public class Crud implements InformationObserver {
         builder.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( t[0], t[1], request.data ) );
         try {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
-            if ( isActiveTracking ) {
+            if ( statisticCrud.isActiveTracking ) {
                 transaction.addChangedTable( tableId );
             }
 
@@ -1282,7 +1243,7 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( statement, transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
-                if ( isActiveTracking ) {
+                if ( statisticCrud.isActiveTracking ) {
                     transaction.addChangedTable( tableId );
                 }
                 transaction.commit();

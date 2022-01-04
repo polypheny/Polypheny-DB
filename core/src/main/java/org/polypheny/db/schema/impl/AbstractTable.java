@@ -96,18 +96,13 @@ public abstract class AbstractTable implements Table, Wrapper {
         if ( tableId == null ) {
             return Statistics.UNKNOWN;
         }
-        int rowCount = 0;
-        if ( StatisticsManager.getInstance().rowCountPerTable.containsKey( tableId ) ) {
-            rowCount = StatisticsManager.getInstance().rowCountPerTable.get( tableId );
-        }
+        Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( tableId );
 
-        if ( rowCount == 0 ) {
+        if ( rowCount == null) {
             return Statistics.of( null, ImmutableList.of() );
         } else {
             return Statistics.of( Double.valueOf( rowCount ), ImmutableList.of() );
         }
-
-
     }
 
 }
