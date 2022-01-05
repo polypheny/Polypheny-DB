@@ -28,6 +28,7 @@ import org.polypheny.db.monitoring.events.MonitoringEvent;
  */
 public interface MonitoringQueue {
 
+
     /**
      * Monitoring events objects implementing MonitoringEventData will be queued.
      * If the MonitoringEventData Class is registered,

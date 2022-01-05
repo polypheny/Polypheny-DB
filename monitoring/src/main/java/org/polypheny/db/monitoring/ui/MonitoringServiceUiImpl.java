@@ -85,6 +85,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
+        initializeQueueInformationTable();
         //updateWorkloadInformationTable(informationTable);
     }
 

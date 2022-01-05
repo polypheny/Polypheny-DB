@@ -59,7 +59,9 @@ public class StatisticTable <T extends Comparable<T>>{
         this.tableId = tableId;
 
         Catalog catalog = Catalog.getInstance();
-        this.table = catalog.getTable( tableId ).name;
+        if(catalog.checkIfExistsTable( tableId )){
+            this.table = catalog.getTable( tableId ).name;
+        }
 
         this.numberOfRows = 0;
         alphabeticColumn = new ArrayList<>();

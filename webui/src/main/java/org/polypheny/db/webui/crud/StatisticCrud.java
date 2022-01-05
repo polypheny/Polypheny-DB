@@ -18,7 +18,14 @@ package org.polypheny.db.webui.crud;
 
 import com.google.gson.Gson;
 import io.javalin.http.Context;
+import java.sql.Timestamp;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
@@ -27,6 +34,9 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
 import org.polypheny.db.monitoring.statistics.StatisticTable;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.requests.UIRequest;
@@ -85,7 +95,7 @@ public class StatisticCrud {
             tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
 
             StatisticTable test = (StatisticTable) statisticsManager.getTableStatistic( schemaId, tableId );
-            ctx.json(test);
+            ctx.json( test );
 
         } catch ( UnknownTableException | UnknownSchemaException e ) {
             e.printStackTrace();
@@ -103,6 +113,40 @@ public class StatisticCrud {
         } else {
             ctx.json( new ConcurrentHashMap<>() );
         }
+    }
+
+
+    public void getMonitoringInformation( final Context ctx ) {
+
+        ctx.json( "result" );
+        List<QueryDataPoint> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class );
+        List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
+
+
+    }
+
+
+    public void getDmlInformation( final Context ctx ) {
+        List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
+        TreeMap<Timestamp, Integer> infoRow = new TreeMap<>();
+        Timestamp lastTimestamp = null;
+        for ( DmlDataPoint dmlDataPoint : dmlData ) {
+            Timestamp time = dmlDataPoint.getRecordedTimestamp();
+            if ( infoRow.isEmpty() ) {
+                infoRow.put( time, 1 );
+                lastTimestamp = time;
+            } else {
+                if ( (lastTimestamp.getTime() - time.getTime()) < TimeUnit.SECONDS.toMillis( 30 ) ) {
+                    int num = infoRow.remove( lastTimestamp );
+                    infoRow.put( lastTimestamp, num + 1 );
+                } else {
+                    infoRow.put( time, 1 );
+                    lastTimestamp = time;
+                }
+            }
+
+        }
+        ctx.json( infoRow );
     }
 
 }
