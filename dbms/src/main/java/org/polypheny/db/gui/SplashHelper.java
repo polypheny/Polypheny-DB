@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class SplashHelper implements Runnable {
             this.status = new JLabel( "loading..." );
             status.setFont( new Font( "Verdana", Font.PLAIN, 12 ) );
 
-            JLabel version = new JLabel( getControlVersion() );
+            JLabel version = new JLabel( GuiUtils.getPolyphenyVersion() );
             version.setFont( new Font( "Verdana", Font.PLAIN, 10 ) );
 
             JLabel copy = new JLabel( "©2019-present The Polypheny Project" );
@@ -131,16 +131,6 @@ public class SplashHelper implements Runnable {
 
             panel.setAlignmentX( Component.CENTER_ALIGNMENT );
             frame.setVisible( true );
-        }
-
-
-        public String getControlVersion() {
-            String v = getClass().getPackage().getImplementationVersion();
-            if ( v == null ) {
-                return "Unknown";
-            } else {
-                return v;
-            }
         }
 
 

@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 group "org.polypheny"
 
 
@@ -107,6 +109,8 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$project.version"
+        attributes "Implementation-Version": project.version
+        attributes "Build-Date": "${buildTime()}"
         attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
     }
 }
@@ -132,4 +136,10 @@ artifacts {
     archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
+}
+
+static def buildTime() {
+    def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'")
+    df.setTimeZone(TimeZone.getTimeZone("UTC"))
+    return df.format(new Date())
 }

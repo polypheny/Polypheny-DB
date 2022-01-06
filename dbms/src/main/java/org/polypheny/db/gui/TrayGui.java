@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.gui;
 
 import java.awt.AWTException;
 import java.awt.Desktop;
+import java.awt.EventQueue;
 import java.awt.Image;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
@@ -87,6 +88,20 @@ public class TrayGui {
             }
         } );
         trayPopupMenu.add( puiItem );
+
+        // Show about window
+        MenuItem aboutItem = new MenuItem( "About" );
+        aboutItem.addActionListener( e -> {
+            EventQueue.invokeLater( () -> {
+                try {
+                    AboutWindow window = new AboutWindow();
+                    window.frame.setVisible( true );
+                } catch ( Exception ex ) {
+                    log.error( "Caught exception in about window", ex );
+                }
+            } );
+        } );
+        trayPopupMenu.add( aboutItem );
 
         // Add separator
         trayPopupMenu.addSeparator();
