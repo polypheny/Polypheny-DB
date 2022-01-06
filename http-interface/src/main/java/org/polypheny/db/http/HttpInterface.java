@@ -21,12 +21,14 @@ import static io.javalin.apibuilder.ApiBuilder.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.plugin.json.JsonMapper;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,9 +39,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
-import org.polypheny.db.information.InformationGraph;
-import org.polypheny.db.information.InformationGraph.GraphData;
-import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -69,11 +68,8 @@ public class HttpInterface extends QueryInterface {
     private final int port;
     private final String uniqueName;
 
-    // Counter
-    private final AtomicLong deleteCounter = new AtomicLong();
-    private final AtomicLong getCounter = new AtomicLong();
-    private final AtomicLong patchCounter = new AtomicLong();
-    private final AtomicLong postCounter = new AtomicLong();
+    // Counters
+    private final Map<QueryLanguage, AtomicLong> statementCounters = new HashMap<>();
 
     private final MonitoringPage monitoringPage;
 
@@ -113,6 +109,14 @@ public class HttpInterface extends QueryInterface {
             config.jsonMapper( gsonMapper );
             config.enableCorsForAllOrigins();
         } ).start( port );
+        restServer.exception( Exception.class, ( e, ctx ) -> {
+            log.warn( "Caught exception in the HTTP interface", e );
+            if ( e instanceof JsonSyntaxException ) {
+                ctx.result( "Malformed request: " + e.getCause().getMessage() );
+            } else {
+                ctx.result( "Error: " + e.getMessage() );
+            }
+        } );
 
         restServer.routes( () -> {
             post( "/mongo", ctx -> anyQuery( QueryLanguage.MONGO_QL, ctx ) );
@@ -133,14 +137,19 @@ public class HttpInterface extends QueryInterface {
     public void anyQuery( QueryLanguage language, final Context ctx ) {
         QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
 
-        ctx.json( LanguageCrud.anyQuery(
+        List<Result> results = LanguageCrud.anyQuery(
                 language,
                 null,
                 query,
                 transactionManager,
                 Catalog.getInstance().getUser( Catalog.defaultUserId ).name,
-                Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name,
-                null ).toArray( new Result[0] ) );
+                Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name, null );
+        ctx.json( results.toArray( new Result[0] ) );
+
+        if ( !statementCounters.containsKey( language ) ) {
+            statementCounters.put( language, new AtomicLong() );
+        }
+        statementCounters.get( language ).incrementAndGet();
     }
 
 
@@ -172,8 +181,7 @@ public class HttpInterface extends QueryInterface {
 
         private final InformationPage informationPage;
         private final InformationGroup informationGroupRequests;
-        private final InformationGraph counterGraph;
-        private final InformationTable counterTable;
+        private final InformationTable statementsTable;
 
 
         public MonitoringPage() {
@@ -185,51 +193,36 @@ public class HttpInterface extends QueryInterface {
             im.addPage( informationPage );
             im.addGroup( informationGroupRequests );
 
-            counterGraph = new InformationGraph(
+            statementsTable = new InformationTable(
                     informationGroupRequests,
-                    GraphType.DOUGHNUT,
-                    new String[]{ "DELETE", "GET", "PATCH", "POST" }
+                    Arrays.asList( "Language", "Percent", "Absolute" )
             );
-            counterGraph.setOrder( 1 );
-            im.registerInformation( counterGraph );
-
-            counterTable = new InformationTable(
-                    informationGroupRequests,
-                    Arrays.asList( "Type", "Percent", "Absolute" )
-            );
-            counterTable.setOrder( 2 );
-            im.registerInformation( counterTable );
+            statementsTable.setOrder( 2 );
+            im.registerInformation( statementsTable );
 
             informationGroupRequests.setRefreshFunction( this::update );
         }
 
 
         public void update() {
-            long deleteCount = deleteCounter.get();
-            long getCount = getCounter.get();
-            long patchCount = patchCounter.get();
-            long postCount = postCounter.get();
-            double total = deleteCount + getCount + patchCount + postCount;
-
-            counterGraph.updateGraph(
-                    new String[]{ "DELETE", "GET", "PATCH", "POST" },
-                    new GraphData<>( "requests", new Long[]{ deleteCount, getCount, patchCount, postCount } )
-            );
+            double total = 0;
+            for ( AtomicLong counter : statementCounters.values() ) {
+                total += counter.get();
+            }
 
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
             symbols.setDecimalSeparator( '.' );
             DecimalFormat df = new DecimalFormat( "0.0", symbols );
-            counterTable.reset();
-            counterTable.addRow( "DELETE", df.format( total == 0 ? 0 : (deleteCount / total) * 100 ) + " %", deleteCount );
-            counterTable.addRow( "GET", df.format( total == 0 ? 0 : (getCount / total) * 100 ) + " %", getCount );
-            counterTable.addRow( "PATCH", df.format( total == 0 ? 0 : (patchCount / total) * 100 ) + " %", patchCount );
-            counterTable.addRow( "POST", df.format( total == 0 ? 0 : (postCount / total) * 100 ) + " %", postCount );
+            statementsTable.reset();
+            for ( Map.Entry<QueryLanguage, AtomicLong> entry : statementCounters.entrySet() ) {
+                statementsTable.addRow( entry.getKey().name(), df.format( total == 0 ? 0 : (entry.getValue().longValue() / total) * 100 ) + " %", entry.getValue().longValue() );
+            }
         }
 
 
         public void remove() {
             InformationManager im = InformationManager.getInstance();
-            im.removeInformation( counterGraph, counterTable );
+            im.removeInformation( statementsTable );
             im.removeGroup( informationGroupRequests );
             im.removePage( informationPage );
         }
