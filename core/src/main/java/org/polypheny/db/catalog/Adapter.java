@@ -43,7 +43,7 @@ public enum Adapter {
         try {
             this.clazz = Class.forName( path );
         } catch ( ClassNotFoundException e ) {
-            throw new RuntimeException( "The supplied store name was not recognized." );
+            throw new RuntimeException( "The supplied store name was not recognized: " + path );
         }
     }
 

@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.Getter;
 
 public enum DeployMode {
+
     REMOTE( "remote" ),
     DOCKER( "docker" ),
     EMBEDDED( "embedded" );
@@ -71,8 +72,8 @@ public enum DeployMode {
          * DeploySettings can wrap multiple underlying DeployModes
          * this method returns them
          *
-         * @param availableModes all available modes, to which this setting could belong
-         * @return the modes for which this setting is available
+         * @param availableModes All available modes, to which this setting could belong
+         * @return The modes for which this setting is available
          */
         List<DeployMode> getModes( List<DeployMode> availableModes ) {
             if ( usedByAll ) {
