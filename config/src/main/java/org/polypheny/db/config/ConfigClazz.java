@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,11 @@ import org.reflections.Reflections;
 public class ConfigClazz extends Config {
 
     @JsonAdapter(ClassesAdapter.class)
-    @SerializedName( "values" )
+    @SerializedName("values")
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private Class value;
+    private String defaultValue;  // Purposely set to string because clone() is not available for class. String is okay since only link to class is necessary. Selection of classes is restricted anyway thanks to {@limk #classes}
 
 
     public ConfigClazz( final String key, final Class superClass, final Class defaultValue ) {
@@ -48,7 +49,39 @@ public class ConfigClazz extends Config {
         //noinspection unchecked
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
         setClazz( defaultValue );
+        this.defaultValue = defaultValue.toString();
         this.webUiFormType = WebUiFormType.SELECT;
+    }
+
+
+    @Override
+    public Object getPlainValueObject() {
+        return value;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
+    }
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}.
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}.
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        return defaultValue.equals( value.toString() );
+    }
+
+
+    @Override
+    public void resetToDefault() {
+        parseStringAndSetValue( defaultValue );
     }
 
 
@@ -125,6 +158,7 @@ public class ConfigClazz extends Config {
             out.endArray();
         }
 
+
         @Override
         public Set<Class> read( final JsonReader in ) throws IOException {
             Set<Class> set = new HashSet<>();
@@ -141,6 +175,7 @@ public class ConfigClazz extends Config {
             in.endArray();
             return ImmutableSet.copyOf( set );
         }
+
     }
 
 
@@ -155,6 +190,7 @@ public class ConfigClazz extends Config {
             out.value( value.getName() );
         }
 
+
         @Override
         public Class read( final JsonReader in ) throws IOException {
             try {
@@ -164,6 +200,7 @@ public class ConfigClazz extends Config {
                 return null;
             }
         }
+
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.vitrivr.cottontail.CottontailKt;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 import org.vitrivr.cottontail.config.CacheConfig;
@@ -127,10 +127,10 @@ public class CottontailStore extends DataStore {
         }
 
         if ( this.isEmbedded ) {
-            FileSystemManager fileSystemManager = FileSystemManager.getInstance();
+            PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
             File adapterRoot = fileSystemManager.registerNewFolder( "data/cottontaildb-store" );
 
-            File embeddedDir = fileSystemManager.registerNewFile( adapterRoot, "store" + getAdapterId() );
+            File embeddedDir = fileSystemManager.registerNewFolder( adapterRoot, "store" + getAdapterId() );
 
             final File dataFolder = fileSystemManager.registerNewFolder( embeddedDir, "data" );
 
@@ -150,7 +150,6 @@ public class CottontailStore extends DataStore {
         } else {
             this.embeddedServer = null;
             this.dbHostname = settings.get( "host" );
-
         }
 
         addInformationPhysicalNames();

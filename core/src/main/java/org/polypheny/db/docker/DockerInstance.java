@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.exceptions.NameExistsRuntimeException;
 import org.polypheny.db.docker.exceptions.PortInUseRuntimeException;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 /**
@@ -178,7 +178,7 @@ public class DockerInstance extends DockerManager {
         if ( !settings.isUsingInsecure() ) {
             builder
                     .withDockerTlsVerify( true )
-                    .withDockerCertPath( FileSystemManager.getInstance().registerNewFolder( "certs/" + settings.getHost() + "/client" ).getPath() );
+                    .withDockerCertPath( PolyphenyHomeDirManager.getInstance().registerNewFolder( "certs/" + settings.getHost() + "/client" ).getPath() );
         }
 
         DockerClientConfig config = builder.build();
@@ -438,13 +438,10 @@ public class DockerInstance extends DockerManager {
     @Override
     public void destroy( Container container ) {
 
-        // while testing the container status itself is possible, in error cases there might be no status set
-        // so we have to test by retrieving the container again from the client
-        if ( Objects.requireNonNull(
-                client.inspectContainerCmd( container.getContainerId() ).exec()
-                        .getState()
-                        .getStatus() )
-                .equalsIgnoreCase( "running" ) ) {
+        // While testing the container status itself is possible, in error cases, there might be no status set.
+        // Therefore, we have to test by retrieving the container again from the client.
+        String status = client.inspectContainerCmd( container.getContainerId() ).exec().getState().getStatus();
+        if ( Objects.requireNonNull( status ).equalsIgnoreCase( "running" ) ) {
             stop( container );
         }
 

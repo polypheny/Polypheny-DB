@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public class ConfigClazzList extends Config {
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private final List<Class> value;
+    private List<Class> defaultValue;
 
 
     public ConfigClazzList( final String key, final Class superClass ) {
@@ -52,6 +53,7 @@ public class ConfigClazzList extends Config {
         //noinspection unchecked
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
         this.value = new ArrayList<>();
+        this.defaultValue = new ArrayList<>();
         this.webUiFormType = WebUiFormType.CHECKBOXES;
     }
 
@@ -67,6 +69,44 @@ public class ConfigClazzList extends Config {
     public ConfigClazzList( final String key, final Class superClass, final List<Class> defaultValue ) {
         this( key, superClass );
         setClazzList( defaultValue );
+        this.defaultValue = ImmutableList.copyOf( defaultValue );
+    }
+
+
+    @Override
+    public Object getPlainValueObject() {
+        return value;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
+    }
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}.
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}.
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        return defaultValue.containsAll( value ) && value.containsAll( defaultValue );
+    }
+
+
+    /**
+     * Restores the current value to the system configured default value.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}.
+     * If you want to check if the current value deviates from default use:  {@link #isDefault()}.
+     */
+    @Override
+    public void resetToDefault() {
+        setClazzList( ImmutableList.copyOf( defaultValue ) );
     }
 
 

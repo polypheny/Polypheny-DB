@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,25 +24,29 @@ import java.util.List;
 
 
 /**
- * The FileSystemManager should handle all dynamically needed resources and sort them
+ * The PolyphenyHomeDirManager handles all folders created in the HOME dir.
+ * It is the central component to create and maintain all dependent FS structures after installation.
+ *
+ * All file system related operations that are specific to the PolyDBMS should be handled with this manager.
  */
-public class FileSystemManager {
+public class PolyphenyHomeDirManager {
 
-    static FileSystemManager fileSystemManager = null;
-    File root;
-    final List<File> dirs = new ArrayList<>();
-    final List<File> deleteOnExit = new ArrayList<>();
+    private static PolyphenyHomeDirManager INSTANCE = null;
+
+    private File root;
+    private final List<File> dirs = new ArrayList<>();
+    private final List<File> deleteOnExit = new ArrayList<>();
 
 
-    public static FileSystemManager getInstance() {
-        if ( fileSystemManager == null ) {
-            fileSystemManager = new FileSystemManager();
+    public static PolyphenyHomeDirManager getInstance() {
+        if ( INSTANCE == null ) {
+            INSTANCE = new PolyphenyHomeDirManager();
         }
-        return fileSystemManager;
+        return INSTANCE;
     }
 
 
-    private FileSystemManager() {
+    private PolyphenyHomeDirManager() {
         String pathVar;
         if ( System.getenv( "POLYPHENY_HOME" ) != null ) {
             pathVar = System.getenv( "POLYPHENY_HOME" );
@@ -82,7 +86,7 @@ public class FileSystemManager {
 
 
     /**
-     * Registers a new folder
+     * Registers a new folder.
      *
      * @param path the path of the new folder
      * @return the file object for the directory
@@ -100,7 +104,6 @@ public class FileSystemManager {
         }
 
         if ( !file.exists() ) {
-
             if ( !file.mkdirs() ) {
                 throw new RuntimeException( "Could not create directory: " + path + " in parent folder: " + root.getAbsolutePath() );
             }
@@ -117,8 +120,13 @@ public class FileSystemManager {
 
 
     public boolean checkIfExists( String path ) {
+        return getFileIfExists( path ).exists();
+    }
+
+
+    public File getFileIfExists( String path ) {
         File file = new File( this.root, path );
-        return file.exists();
+        return file;
     }
 
 
@@ -161,7 +169,7 @@ public class FileSystemManager {
 
 
     /**
-     * places a new file in a specific path, if no path is specified, it is places in the root path
+     * Places a new file in a specific path. If no path is specified, it is places in the root path.
      *
      * @param path path to the folder in which the file should be placed
      * @param pathToFile the file and its parent paths
@@ -174,7 +182,7 @@ public class FileSystemManager {
                 .replace( "//", "\\" ) );
         if ( !file.exists() ) {
             try {
-                file.mkdirs();
+                file.getParentFile().mkdirs();
                 file.createNewFile();
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
@@ -186,6 +194,11 @@ public class FileSystemManager {
 
     public File registerNewFolder( String folder ) {
         return registerNewFolder( this.root, folder );
+    }
+
+
+    public boolean isAccessible( File file ) {
+        return file.canWrite() && file.canRead();
     }
 
 }

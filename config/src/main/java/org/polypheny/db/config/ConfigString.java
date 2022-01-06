@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,14 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigString extends ConfigScalar {
 
     private String value;
+    private String defaultValue;
 
 
     public ConfigString( final String key, final String value ) {
         super( key );
         this.webUiFormType = WebUiFormType.TEXT;
         this.value = value;
+        this.defaultValue = value;
     }
 
 
@@ -39,6 +41,7 @@ public class ConfigString extends ConfigScalar {
         super( key, description );
         this.webUiFormType = WebUiFormType.TEXT;
         this.value = value;
+        this.defaultValue = value;
     }
 
 
@@ -57,6 +60,43 @@ public class ConfigString extends ConfigScalar {
         } else {
             return false;
         }
+    }
+
+
+    @Override
+    public Object getPlainValueObject() {
+        return value;
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        return defaultValue;
+    }
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}.
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}.
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        return value.equals( defaultValue );
+    }
+
+
+    /**
+     * Restores the current value to the system configured default value.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}.
+     * If you want to check if the current value deviates from default use: {@link #isDefault()}.
+     */
+    @Override
+    public void resetToDefault() {
+        setString( defaultValue );
     }
 
 

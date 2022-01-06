@@ -37,9 +37,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
-import org.polypheny.db.util.FileSystemManager;
-
 
 @Slf4j
 public class MapDbRepository implements PersistentMonitoringRepository {
@@ -188,7 +187,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
         }
 
         synchronized ( this ) {
-            File folder = FileSystemManager.getInstance().registerNewFolder( folderName );
+            File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( folderName );
 
             if ( Catalog.resetCatalog ) {
                 StatusService.print( "Resetting monitoring repository on startup." );

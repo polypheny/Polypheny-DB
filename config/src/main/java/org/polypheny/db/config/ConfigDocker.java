@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.polypheny.db.config;
 
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +25,8 @@ import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.config.exception.ConfigRuntimeException;
+
 
 @Accessors(chain = true)
 public class ConfigDocker extends ConfigObject {
@@ -31,9 +34,8 @@ public class ConfigDocker extends ConfigObject {
     public static final String DEFAULT_PROTOCOL = "tcp";
     public static final int DEFAULT_PORT = 2376;
 
-    // ssh was introduced as a possible transport protocol for connecting to remote
-    // docker hosts recently, it is not yet supported in java-docker but can be enabled as
-    // soon as this happens
+    // SSH was introduced as a possible transport protocol for connecting to remote Docker hosts recently, it is not yet
+    // supported in java-docker but can be enabled as soon as this happens
     public final List<String> protocols = Collections.singletonList( "tcp" );
 
     @Getter
@@ -105,6 +107,43 @@ public class ConfigDocker extends ConfigObject {
         Map<String, String> settings = new HashMap<>();
         settings.put( "host", host );
         return settings;
+    }
+
+
+    @Override
+    public Object getPlainValueObject() {
+        throw new ConfigRuntimeException( "Not supported for Docker Configs" );
+    }
+
+
+    @Override
+    public Object getDefaultValue() {
+        throw new ConfigRuntimeException( "Not supported for Docker Configs" );
+    }
+
+
+    /**
+     * Checks if the currently set config value, is equal to the system configured default.
+     * If you want to reset it to the configured defaultValue use {@link #resetToDefault()}
+     * To change the systems default value you can use: {@link #changeDefaultValue(Object)}
+     *
+     * @return true if it is set to default, false if it deviates
+     */
+    @Override
+    public boolean isDefault() {
+        throw new ConfigRuntimeException( "Not supported for Docker Configs" );
+    }
+
+
+    /**
+     * Restores the current value to the system configured default value.
+     *
+     * To obtain the system configured defaultValue use {@link #getDefaultValue()}.
+     * If you want to check if the current value deviates from default use: {@link #isDefault()}.
+     */
+    @Override
+    public void resetToDefault() {
+        throw new ConfigRuntimeException( "Not supported for Docker Configs" );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ package org.polypheny.db;
 import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
+import com.github.rvesse.airline.annotations.OptionType;
+import java.io.File;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
@@ -61,7 +64,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
-import org.polypheny.db.util.FileSystemManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigServer;
@@ -95,10 +98,13 @@ public class PolyphenyDb {
     public boolean desktopMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default store")
-    public String defaultStoreName = "cottontail";
+    public String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public String defaultSourceName = "csv";
+
+    @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)
+    protected String applicationConfPath;
 
     // required for unit tests to determine when the system is ready to process queries
     @Getter
@@ -136,27 +142,38 @@ public class PolyphenyDb {
         if ( desktopMode ) {
             showSplashScreen();
         }
+
         // Move data folder
-        if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
-            FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
-            if ( !FileSystemManager.getInstance().moveFolder( "data.backup", "data" ) ) {
+        if ( PolyphenyHomeDirManager.getInstance().checkIfExists( "data.backup" ) ) {
+            PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" );
+            if ( !PolyphenyHomeDirManager.getInstance().moveFolder( "data.backup", "data" ) ) {
                 throw new RuntimeException( "Unable to restore data folder." );
             }
             log.info( "Restoring the data folder." );
         }
 
-        // Reset data folder
+        // Reset catalog, data and configuration
         if ( resetCatalog ) {
-            if ( !FileSystemManager.getInstance().recursiveDeleteFolder( "data" ) ) {
+            if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" ) ) {
                 log.error( "Unable to delete the data folder." );
             }
+            ConfigManager.getInstance().resetDefaultConfiguration();
         }
 
         // Backup data folder (running in test mode / memory mode)
-        if ( (testMode || memoryCatalog) && FileSystemManager.getInstance().checkIfExists( "data" ) ) {
-            if ( !FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
+        if ( (testMode || memoryCatalog) && PolyphenyHomeDirManager.getInstance().checkIfExists( "data" ) ) {
+            if ( !PolyphenyHomeDirManager.getInstance().moveFolder( "data", "data.backup" ) ) {
                 throw new RuntimeException( "Unable to create the backup folder." );
             }
+        }
+
+        // Configuration shall not be persisted
+        ConfigManager.memoryMode = (testMode || memoryCatalog);
+
+        // Enables Polypheny to be started with a different config.
+        // Otherwise, Config at default location is used.
+        if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().checkIfExists( applicationConfPath ) ) {
+            ConfigManager.getInstance().setApplicationConfFile( new File( applicationConfPath ) );
         }
 
         class ShutdownHelper implements Runnable {
