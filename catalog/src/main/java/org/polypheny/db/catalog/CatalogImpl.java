@@ -314,7 +314,7 @@ public class CatalogImpl extends Catalog {
      * @return if it was possible
      */
     private boolean isPersistent() {
-        File file = new File( "testfile" );
+        File file = PolyphenyHomeDirManager.getInstance().registerNewFile( "testfile" );
         try {
             if ( !file.exists() ) {
                 boolean res = file.createNewFile();
