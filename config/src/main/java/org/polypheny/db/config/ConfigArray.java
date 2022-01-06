@@ -28,6 +28,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigArray extends Config {
 
     private ConfigScalar[] array;
+    private ConfigScalar[] oldArray;
     private ConfigScalar[] defaultArray;
 
 
@@ -147,10 +148,18 @@ public class ConfigArray extends Config {
     @Override
     public boolean setIntArray( int[] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldArray == null ) {
+                    this.oldArray = array;
+                }
+            }
             int counter = 0;
             for ( ConfigScalar c : array ) {
                 c.setInt( value[counter] );
                 counter++;
+            }
+            if ( this.oldArray != null && Arrays.equals( this.oldArray, array ) ) {
+                this.oldArray = null;
             }
             notifyConfigListeners();
             return true;
@@ -173,10 +182,18 @@ public class ConfigArray extends Config {
     @Override
     public boolean setDoubleArray( double[] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldArray == null ) {
+                    this.oldArray = array;
+                }
+            }
             int counter = 0;
             for ( ConfigScalar c : array ) {
                 c.setDouble( value[counter] );
                 counter++;
+            }
+            if ( this.oldArray != null && Arrays.equals( this.oldArray, array ) ) {
+                this.oldArray = null;
             }
             notifyConfigListeners();
             return true;
@@ -199,10 +216,18 @@ public class ConfigArray extends Config {
     @Override
     public boolean setLongArray( long[] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldArray == null ) {
+                    this.oldArray = array;
+                }
+            }
             int counter = 0;
             for ( ConfigScalar c : array ) {
                 c.setLong( value[counter] );
                 counter++;
+            }
+            if ( this.oldArray != null && Arrays.equals( this.oldArray, array ) ) {
+                this.oldArray = null;
             }
             notifyConfigListeners();
             return true;
@@ -225,10 +250,18 @@ public class ConfigArray extends Config {
     @Override
     public boolean setDecimalArray( BigDecimal[] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldArray == null ) {
+                    this.oldArray = array;
+                }
+            }
             int counter = 0;
             for ( ConfigScalar c : array ) {
                 c.setDecimal( value[counter] );
                 counter++;
+            }
+            if ( this.oldArray != null && Arrays.equals( this.oldArray, array ) ) {
+                this.oldArray = null;
             }
             notifyConfigListeners();
             return true;
@@ -252,10 +285,18 @@ public class ConfigArray extends Config {
     @Override
     public boolean setStringArray( String[] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldArray == null ) {
+                    this.oldArray = array;
+                }
+            }
             int counter = 0;
             for ( ConfigScalar c : array ) {
                 c.setString( value[counter] );
                 counter++;
+            }
+            if ( this.oldArray != null && Arrays.equals( this.oldArray, array ) ) {
+                this.oldArray = null;
             }
             notifyConfigListeners();
             return true;
@@ -279,10 +320,18 @@ public class ConfigArray extends Config {
     @Override
     public boolean setBooleanArray( boolean[] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldArray == null ) {
+                    this.oldArray = array;
+                }
+            }
             int counter = 0;
             for ( ConfigScalar c : array ) {
                 c.setBoolean( value[counter] );
                 counter++;
+            }
+            if ( this.oldArray != null && Arrays.equals( this.oldArray, array ) ) {
+                this.oldArray = null;
             }
             notifyConfigListeners();
             return true;

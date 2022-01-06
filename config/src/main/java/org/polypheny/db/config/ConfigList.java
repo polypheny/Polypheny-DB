@@ -34,6 +34,7 @@ public class ConfigList extends Config {
 
     @SerializedName("values")
     private List<ConfigScalar> list;
+    private List<ConfigScalar> oldList;
     private List<ConfigScalar> defaultList;
 
     private ConfigScalar template;
@@ -271,14 +272,29 @@ public class ConfigList extends Config {
 
     @Override
     public void setList( List<ConfigScalar> values ) {
+        if ( requiresRestart() ) {
+            if ( this.oldList == null ) {
+                this.oldList = this.list;
+            }
+        }
         this.list = values;
         values.forEach( val -> val.addObserver( listener ) );
+        if ( this.oldList != null && this.oldList.equals( this.list ) ) {
+            this.oldList = null;
+        }
         notifyConfigListeners();
     }
 
 
     private boolean setConfigObjectList( List<Object> values, BiFunction<String, Object, ? extends ConfigScalar> scalarGetter ) {
         List<ConfigScalar> temp = new ArrayList<>();
+
+        if ( requiresRestart() ) {
+            if ( this.oldList == null ) {
+                this.oldList = this.list;
+            }
+        }
+
         for ( int i = 0; i < values.size(); i++ ) {
             if ( validate( values.get( i ) ) ) {
                 Map<String, Object> value = (Map<String, Object>) values.get( i );
@@ -293,6 +309,10 @@ public class ConfigList extends Config {
         this.list = temp;
 
         this.list.forEach( val -> val.addObserver( listener ) );
+
+        if ( this.oldList != null && this.oldList.equals( this.list ) ) {
+            this.oldList = null;
+        }
         notifyConfigListeners();
         return true;
     }

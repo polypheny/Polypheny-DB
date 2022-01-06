@@ -40,6 +40,7 @@ public class ConfigClazz extends Config {
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private Class value;
+    private Class oldValue;
     private String defaultValue;  // Purposely set to string because clone() is not available for class. String is okay since only link to class is necessary. Selection of classes is restricted anyway thanks to {@limk #classes}
 
 
@@ -101,7 +102,15 @@ public class ConfigClazz extends Config {
     public boolean setClazz( final Class value ) {
         if ( classes.contains( value ) ) {
             if ( validate( value ) ) {
+                if ( requiresRestart() ) {
+                    if ( this.oldValue == null ) {
+                        this.oldValue = this.value;
+                    }
+                }
                 this.value = value;
+                if ( this.oldValue != null && this.oldValue.equals( this.value ) ) {
+                    this.oldValue = null;
+                }
                 notifyConfigListeners();
                 return true;
             } else {

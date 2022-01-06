@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
@@ -31,7 +34,6 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
  * Configuration object that can be accessed and altered via the ConfigManager.
  */
 public abstract class Config {
-
     /**
      * Unique key of this config.
      */
@@ -45,6 +47,9 @@ public abstract class Config {
     /**
      * Indicated weather applying changes to this configuration element requires a restart of Polypheny-DB.
      */
+    @Setter
+    @Getter
+    @Accessors(fluent = true)
     private boolean requiresRestart = false;
 
     /**
@@ -118,16 +123,7 @@ public abstract class Config {
     }
 
 
-    /**
-     * Allows to set requiresRestart. Is false by default.
-     */
-    public Config setRequiresRestart( final boolean requiresRestart ) {
-        this.requiresRestart = requiresRestart;
-        return this;
-    }
-
-
-    public boolean getRequiresRestart() {
+    public boolean getrequiresRestart() {
         return this.requiresRestart;
     }
 
@@ -952,7 +948,7 @@ public abstract class Config {
     protected void notifyConfigListeners() {
         for ( ConfigListener listener : listeners.values() ) {
             listener.onConfigChange( this );
-            if ( getRequiresRestart() ) {
+            if ( getrequiresRestart() ) {
                 listener.restart( this );
             }
         }
