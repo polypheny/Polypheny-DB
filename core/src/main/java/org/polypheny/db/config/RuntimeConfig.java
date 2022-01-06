@@ -705,7 +705,7 @@ public enum RuntimeConfig {
 
 
     public void setRequiresRestart( boolean requiresRestart ) {
-        configManager.getConfig( key ).setRequiresRestart( requiresRestart );
+        configManager.getConfig( key ).requiresRestart( requiresRestart );
     }
 
 
