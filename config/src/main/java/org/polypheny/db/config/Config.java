@@ -34,6 +34,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
  * Configuration object that can be accessed and altered via the ConfigManager.
  */
 public abstract class Config {
+
     /**
      * Unique key of this config.
      */
