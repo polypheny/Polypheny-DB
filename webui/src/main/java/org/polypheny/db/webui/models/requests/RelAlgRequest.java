@@ -24,6 +24,10 @@ public class RelAlgRequest extends UIRequest {
 
     public UIAlgNode topNode;
     public boolean useCache;
+    /**
+     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
+     */
+    public boolean analyze;
     public boolean createView;
     public String viewName;
     public String store;

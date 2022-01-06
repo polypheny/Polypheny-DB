@@ -2821,7 +2821,7 @@ public class Crud implements InformationObserver {
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
-        Transaction transaction = getTransaction( true, request.useCache );
+        Transaction transaction = getTransaction( request.analyze, request.useCache );
         transaction.getQueryAnalyzer().setSession( session );
 
         Statement statement = transaction.createStatement();
