@@ -21,6 +21,7 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.OptionType;
+import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
 import lombok.Getter;
@@ -44,6 +45,7 @@ import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.gui.SplashHelper;
+import org.polypheny.db.gui.TrayGui;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
@@ -124,7 +126,6 @@ public class PolyphenyDb {
             System.setProperty( "apple.awt.UIElement", "true" );
 
             polyphenyDb.runPolyphenyDb();
-
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
@@ -336,12 +337,19 @@ public class PolyphenyDb {
         MonitoringServiceProvider.resetRepository = resetCatalog;
         MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
 
+        // Add icon to system tray
+        if ( desktopMode && SystemTray.isSupported() ) {
+            // Init TrayGUI
+            TrayGui.getInstance();
+        }
+
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
         log.info( "                              The UI is waiting for you on port {}:", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
+
         if ( desktopMode ) {
             splashScreen.setComplete();
         }
@@ -349,13 +357,17 @@ public class PolyphenyDb {
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );
             sh.join( 0 ); // "forever"
-            if ( sh.hasFinished() == false ) {
+            if ( !sh.hasFinished() ) {
                 log.warn( "The Shutdown-Hook has not finished execution, but join() returned ..." );
             } else {
                 log.info( "Waiting for the Shutdown-Hook to finish ... done." );
             }
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
+        }
+
+        if ( desktopMode && SystemTray.isSupported() ) {
+            TrayGui.getInstance().shutdown();
         }
     }
 
