@@ -22,13 +22,16 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Objects;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -38,50 +41,57 @@ import javax.swing.border.EtchedBorder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusService.StatusType;
 
 
+/**
+ * SplashHelper is responsible for generating the SplashScreen and allows
+ * interacting with it.
+ */
 @Slf4j
-public class SplashHelper implements Runnable {
+public class SplashHelper {
 
-    private SplashScreen screen;
+    private final SplashScreen screen;
+    private static final String POLY_URL = "http://localhost:8080";
     @Setter
     private int statusId;
+    @Setter
+    private int errorId;
 
 
-    @Override
-    public void run() {
-        this.screen = new SplashScreen();
+    public SplashHelper() {
+        screen = new SplashScreen();
+        Thread splashT = new Thread( screen );
+        splashT.start();
+        statusId = StatusService.addSubscriber( ( m, n ) -> screen.setStatus( m ), StatusType.INFO );
+        errorId = StatusService.addSubscriber( ( m, n ) -> screen.setError( m, (Boolean) n ), StatusType.ERROR );
     }
 
 
     public void setComplete() {
         try {
-            Desktop.getDesktop().browse( new URL( "http://localhost:8080" ).toURI() );
+            Desktop.getDesktop().browse( new URL( POLY_URL ).toURI() );
         } catch ( IOException | URISyntaxException e ) {
             log.warn( "Polypheny-DB was not able to open the browser for the user!" );
         }
         this.screen.setComplete();
         StatusService.removeSubscriber( statusId );
+        StatusService.removeSubscriber( errorId );
     }
 
 
-    public void setStatus( String status ) {
-        // the gui thread might not have set the screen yet, so we only print if the screen is up
-        if ( screen != null ) {
-            screen.setStatus( status );
-        }
-    }
-
-
-    public static class SplashScreen extends JWindow {
+    public static class SplashScreen extends JWindow implements Runnable {
 
         private final JLabel picLabel;
         private final JFrame frame;
         private final JLabel status;
+        private final JButton openButton;
+        private boolean inErrorState = false;
 
 
         public SplashScreen() {
             this.frame = new JFrame( "Polypheny" );
+            frame.setAlwaysOnTop( true );
             frame.setIconImage( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "logo-600.png" ) ) ).getImage() );
             frame.setSize( 400, 250 );
             frame.setUndecorated( true );
@@ -93,15 +103,23 @@ public class SplashHelper implements Runnable {
             panel.setBorder( new EtchedBorder() );
             frame.add( panel, BorderLayout.CENTER );
 
+            // top
+            JPanel top = new JPanel( new BorderLayout() );
+            top.setBorder( BorderFactory.createEmptyBorder( 12, 12, 0, 0 ) );
+
+            ImageIcon writing = new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "logo-landscape-70.png" ) ) );
+            JLabel label = new JLabel( writing );
+            top.add( label, BorderLayout.WEST );
+
+            // middle
+
             JPanel middle = new JPanel( new BorderLayout() );
-            //middle.setBorder( BorderFactory.createEmptyBorder( 0, 12, 0, 12 ) );
-
-            JLabel label = new JLabel( "Polypheny" );
-            label.setFont( new Font( "Verdana", Font.BOLD, 24 ) );
-            label.setBorder( BorderFactory.createEmptyBorder( 12, 12, 0, 12 ) );
-
             this.status = new JLabel( "loading..." );
             status.setFont( new Font( "Verdana", Font.PLAIN, 12 ) );
+
+            // bottom
+            JPanel bottom = new JPanel( new BorderLayout() );
+            bottom.setBorder( BorderFactory.createEmptyBorder( 0, 12, 0, 12 ) );
 
             JLabel version = new JLabel( GuiUtils.getPolyphenyVersion() );
             version.setFont( new Font( "Verdana", Font.PLAIN, 10 ) );
@@ -109,18 +127,34 @@ public class SplashHelper implements Runnable {
             JLabel copy = new JLabel( "©2019-present The Polypheny Project" );
             copy.setFont( new Font( "Verdana", Font.PLAIN, 10 ) );
 
-            JPanel bottom = new JPanel( new BorderLayout() );
-            bottom.setBorder( BorderFactory.createEmptyBorder( 0, 12, 0, 12 ) );
             bottom.add( copy, BorderLayout.WEST );
             bottom.add( version, BorderLayout.EAST );
 
             this.picLabel = new JLabel( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "loading-32.gif" ) ) ) );
             picLabel.setBorder( BorderFactory.createEmptyBorder( 0, 12, 0, 12 ) );
+            this.openButton = new JButton( "Open Polypheny" );
+            this.openButton.setOpaque( false );
+            this.openButton.setVisible( false );
+            this.openButton.addActionListener( new AbstractAction() {
+                @Override
+                public void actionPerformed( ActionEvent e ) {
+                    try {
+                        Desktop.getDesktop().browse( new URL( POLY_URL ).toURI() );
+                    } catch ( IOException | URISyntaxException ex ) {
+                        log.warn( "Polypheny-DB was not able to open the browser for the user!" );
+                    }
+                    System.exit( -1 );
+                }
+            } );
+            JPanel buttonPanel = new JPanel();
+            buttonPanel.setBorder( BorderFactory.createEmptyBorder( 6, 24, 24, 24 ) );
+            buttonPanel.add( openButton );
 
             middle.add( picLabel, BorderLayout.WEST );
             middle.add( status );
+            middle.add( buttonPanel, BorderLayout.SOUTH );
 
-            panel.add( label, BorderLayout.NORTH );
+            panel.add( top, BorderLayout.NORTH );
             panel.add( middle, BorderLayout.CENTER );
             panel.add( bottom, BorderLayout.SOUTH );
 
@@ -141,7 +175,25 @@ public class SplashHelper implements Runnable {
 
 
         public void setStatus( String status ) {
-            this.status.setText( status );
+            if ( !inErrorState ) {
+                this.status.setText( status );
+            }
+        }
+
+
+        public void setError( String errorMsg, boolean enableButton ) {
+            inErrorState = true;
+            if ( enableButton ) {
+                this.openButton.setVisible( true );
+            }
+            this.picLabel.setIcon( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "warning.png" ) ) ) );
+            this.status.setText( errorMsg );
+        }
+
+
+        @Override
+        public void run() {
+
         }
 
     }

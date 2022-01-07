@@ -231,11 +231,11 @@ public class CatalogImpl extends Catalog {
             }
 
             if ( isPersistent ) {
-                StatusService.print( "Making the catalog persistent." );
+                StatusService.printInfo( "Making the catalog persistent." );
                 File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
-                    StatusService.print( "Resetting catalog on startup." );
+                    StatusService.printInfo( "Resetting catalog on startup." );
                     if ( new File( folder, fileName ).exists() ) {
                         //noinspection ResultOfMethodCallIgnored
                         new File( folder, fileName ).delete();
@@ -263,7 +263,7 @@ public class CatalogImpl extends Catalog {
                 db.getStore().fileLoad();
 
             } else {
-                StatusService.print( "Making the catalog in-memory." );
+                StatusService.printInfo( "Making the catalog in-memory." );
                 db = DBMaker
                         .memoryDB()
                         .transactionEnable()

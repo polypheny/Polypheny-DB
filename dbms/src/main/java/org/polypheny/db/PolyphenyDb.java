@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Adapter;
@@ -135,13 +136,14 @@ public class PolyphenyDb {
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
-        StatusService.addSubscriber( log::info );
+        StatusService.addSubscriber( log::info, StatusType.INFO );
+        StatusService.addSubscriber( log::info, StatusType.ERROR );
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
         if ( desktopMode ) {
-            showSplashScreen();
+            this.splashScreen = new SplashHelper();
         }
 
         // Move data folder
@@ -231,8 +233,12 @@ public class PolyphenyDb {
         final LanguageManagerImpl languageManager = new LanguageManagerImpl();
         LanguageManager.setAndGetInstance( languageManager );
 
-        final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
-        final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
+        try {
+            final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
+            final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
+        } catch ( Exception e ) {
+            StatusService.printError( e.getMessage(), true );
+        }
 
         try {
             new JavaInformation();
@@ -369,15 +375,6 @@ public class PolyphenyDb {
         if ( desktopMode && SystemTray.isSupported() ) {
             TrayGui.getInstance().shutdown();
         }
-    }
-
-
-    private void showSplashScreen() {
-        this.splashScreen = new SplashHelper();
-        Thread splashT = new Thread( splashScreen );
-        splashT.start();
-        int statusId = StatusService.addSubscriber( splashScreen::setStatus );
-        this.splashScreen.setStatusId( statusId );
     }
 
 }

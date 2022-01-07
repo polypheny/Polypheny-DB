@@ -19,29 +19,62 @@ package org.polypheny.db;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public class StatusService {
 
-    private static AtomicInteger idBuilder = new AtomicInteger();
+    private static final AtomicInteger idBuilder = new AtomicInteger();
 
-    private static final Map<Integer, Consumer<String>> subscribers = new HashMap<>();
+    private static final Map<Integer, BiConsumer<String, Object>> infoSubs = new HashMap<>();
+    private static final Map<Integer, BiConsumer<String, Object>> errorSubs = new HashMap<>();
 
 
-    public static synchronized int addSubscriber( Consumer<String> printer ) {
+    public static synchronized int addInfoSubscriber( BiConsumer<String, Object> printer ) {
+        return StatusService.addSubscriber( printer, StatusType.INFO );
+    }
+
+
+    public static synchronized int addSubscriber( BiConsumer<String, Object> printer, StatusType type ) {
         int id = idBuilder.getAndIncrement();
-        subscribers.put( id, printer );
+        if ( type == StatusType.INFO ) {
+            infoSubs.put( id, printer );
+        } else {
+            errorSubs.put( id, printer );
+        }
+
         return id;
     }
 
 
-    public static void print( String status ) {
-        subscribers.values().forEach( c -> c.accept( status ) );
+    public static void printInfo( String status, Object arg ) {
+        fireOnSubs( infoSubs, status, arg );
+    }
+
+
+    public static void printInfo( String status ) {
+        printInfo( status, null );
+    }
+
+
+    public static void printError( String status, Object arg ) {
+        fireOnSubs( errorSubs, status, arg );
+    }
+
+
+    private static void fireOnSubs( Map<Integer, BiConsumer<String, Object>> subs, String status, Object arg ) {
+        subs.values().forEach( c -> c.accept( status, arg ) );
     }
 
 
     public static void removeSubscriber( int id ) {
-        subscribers.remove( id );
+        infoSubs.remove( id );
+        errorSubs.remove( id );
+    }
+
+
+    public enum StatusType {
+        INFO,
+        ERROR
     }
 
 }

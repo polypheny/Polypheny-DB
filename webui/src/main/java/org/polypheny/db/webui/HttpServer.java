@@ -50,6 +50,9 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationDuration.Duration;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.models.Result;
@@ -105,6 +108,9 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
                 .registerTypeAdapter( Duration.class, Duration.getSerializer() )
                 .registerTypeAdapter( Result.class, Result.getSerializer() )
+                .registerTypeAdapter( InformationPage.class, InformationPage.getSerializer() )
+                .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
+                .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
                 .create();
     }
 
@@ -162,7 +168,7 @@ public class HttpServer implements Runnable {
 
         crudRoutes( server, crud );
 
-        StatusService.print( String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
+        StatusService.printInfo( String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
     }
 
 

@@ -132,7 +132,7 @@ public class HttpInterface extends QueryInterface {
 
             post( "/cql", ctx -> anyQuery( QueryLanguage.CQL, ctx ) );
 
-            StatusService.print( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
+            StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
         } );
     }
 
