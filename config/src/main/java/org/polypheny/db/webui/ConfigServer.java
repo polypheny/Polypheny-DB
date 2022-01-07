@@ -20,7 +20,6 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.javalin.Javalin;
-import io.javalin.core.util.JavalinBindException;
 import io.javalin.plugin.json.JsonMapper;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -44,7 +43,7 @@ public class ConfigServer implements ConfigListener {
     private static final Gson gson = new Gson();
 
 
-    public ConfigServer( final int port ) throws JavalinBindException {
+    public ConfigServer( final int port ) {
         JsonMapper gsonMapper = new JsonMapper() {
             @NotNull
             @Override
