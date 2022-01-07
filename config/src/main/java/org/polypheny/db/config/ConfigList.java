@@ -18,10 +18,13 @@ package org.polypheny.db.config;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.SerializedName;
+import com.typesafe.config.ConfigException;
+import com.typesafe.config.ConfigObject;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
@@ -320,7 +323,25 @@ public class ConfigList extends Config {
 
     @Override
     void setValueFromFile( com.typesafe.config.Config conf ) {
-        throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
+
+        if ( template instanceof ConfigDocker ){
+            List<Object> tempList = new ArrayList<>();
+
+            com.typesafe.config.Config dockerInstancesConf = conf.getConfig( getKey() );
+
+            for ( Entry<String,Object> nestedConfObject : dockerInstancesConf.root().unwrapped().entrySet() ) {
+
+                String subInstanceKey = nestedConfObject.getKey();
+                tempList.add(
+                        ConfigDocker.parseConfigToMap(
+                                dockerInstancesConf.getConfig( subInstanceKey ) )
+                );
+            }
+
+            setConfigObjectList( tempList, getTemplateClass() );
+        }else {
+            throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
+        }
     }
 
 
