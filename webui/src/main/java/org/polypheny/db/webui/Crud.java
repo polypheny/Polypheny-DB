@@ -1797,12 +1797,12 @@ public class Crud implements InformationObserver {
     /**
      * Get artificially generated index/foreign key/constraint names for placeholders in the UI
      */
-    Result getGeneratedNames( final Context ctx ) {
+    void getGeneratedNames( final Context ctx ) {
         String[] data = new String[3];
         data[0] = NameGenerator.generateConstraintName();
         data[1] = NameGenerator.generateForeignKeyName();
         data[2] = NameGenerator.generateIndexName();
-        return new Result( new DbColumn[0], new String[][]{ data } );
+        ctx.json( new Result( new DbColumn[0], new String[][]{ data } ) );
     }
 
 

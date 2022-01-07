@@ -2,6 +2,8 @@ package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -146,7 +148,8 @@ public class AdapterManager {
                 }
 
                 // Used to evaluate which mode is used when deploying the adapter
-                settings.put( "mode",
+                settings.put(
+                        "mode",
                         Collections.singletonList(
                                 new AbstractAdapterSettingList(
                                         "mode",
@@ -294,6 +297,19 @@ public class AdapterManager {
         public final Class clazz;
         public final Map<String, List<AbstractAdapterSetting>> settings;
 
+
+        public static JsonSerializer<AdapterInformation> getSerializer() {
+            return ( src, typeOfSrc, context ) -> {
+                JsonObject jsonStore = new JsonObject();
+                jsonStore.addProperty( "name", src.name );
+                jsonStore.addProperty( "description", src.description );
+                jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
+                jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
+                return jsonStore;
+            };
+        }
+
     }
+
 
 }

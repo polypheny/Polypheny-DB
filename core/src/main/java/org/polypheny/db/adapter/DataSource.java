@@ -16,6 +16,8 @@
 
 package org.polypheny.db.adapter;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializer;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -76,6 +78,22 @@ public abstract class DataSource extends Adapter {
             return typeStr;
         }
 
+    }
+
+
+    public static JsonSerializer<DataSource> getSerializer() {
+        //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
+        return ( src, typeOfSrc, context ) -> {
+            JsonObject jsonSource = new JsonObject();
+            jsonSource.addProperty( "adapterId", src.getAdapterId() );
+            jsonSource.addProperty( "uniqueName", src.getUniqueName() );
+            jsonSource.addProperty( "adapterName", src.getAdapterName() );
+            jsonSource.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
+            jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
+            jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
+            jsonSource.addProperty( "type", src.getClass().getCanonicalName() );
+            return jsonSource;
+        };
     }
 
 }

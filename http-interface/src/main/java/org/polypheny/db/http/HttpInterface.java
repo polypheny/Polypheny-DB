@@ -21,6 +21,7 @@ import static io.javalin.apibuilder.ApiBuilder.post;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -63,7 +64,9 @@ public class HttpInterface extends QueryInterface {
             new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 )
     );
 
-    private final Gson gson = new Gson();
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter( Result.class, Result.getSerializer() )
+            .create();
 
     private final int port;
     private final String uniqueName;

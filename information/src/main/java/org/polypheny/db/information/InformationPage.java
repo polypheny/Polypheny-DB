@@ -19,6 +19,12 @@ package org.polypheny.db.information;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -35,6 +41,12 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 @Accessors(chain = true)
 public class InformationPage extends Refreshable {
 
+    // GsonBuilder, which is able to serialize the underlying InformationGroups
+    private static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
+            .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
+            .registerTypeAdapter( Duration.class, Duration.getSerializer() )
+            .create();
 
     /**
      * Id of this page
@@ -100,7 +112,7 @@ public class InformationPage extends Refreshable {
     /**
      * Constructor
      *
-     * @param title       Title of this page
+     * @param title Title of this page
      * @param description Description of this page, will be displayed in the UI
      */
     public InformationPage( final String title, final String description ) {
@@ -113,14 +125,50 @@ public class InformationPage extends Refreshable {
     /**
      * Constructor
      *
-     * @param id          Id of this page
-     * @param title       Title of this page
+     * @param id Id of this page
+     * @param title Title of this page
      * @param description Description of this page, will be displayed in the UI
      */
     public InformationPage( final String id, final String title, final String description ) {
         this.id = id;
         this.name = title;
         this.description = description;
+    }
+
+
+    private InformationPage( JsonReader in ) throws IOException {
+        String id = null;
+        while ( in.peek() != JsonToken.END_OBJECT ) {
+            switch ( in.nextName() ) {
+                case "id":
+                    id = in.nextString();
+                    break;
+                case "name":
+                    name = in.nextName();
+                    break;
+                case "description":
+                    description = in.nextString();
+                    break;
+                case "icon":
+                    icon = in.nextString();
+                    break;
+                case "implicit":
+                    implicit = in.nextBoolean();
+                    break;
+                case "label":
+                    label = in.nextString();
+                    break;
+                case "fullWidth":
+                    fullWidth = in.nextBoolean();
+                    break;
+                case "groups":
+                    addGroup( gson.fromJson( in, ConcurrentHashMap.class ) );
+                    break;
+                default:
+                    throw new RuntimeException( "Error while deserializing InformationPage." );
+            }
+        }
+        this.id = id;
     }
 
 
@@ -161,16 +209,66 @@ public class InformationPage extends Refreshable {
 
 
     /**
-     * Page is converted to a JSON using gson
+     * Convert page to Json using the custom TypeAdapter
      *
      * @return this page as JSON
      */
     public String asJson() {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
-                .registerTypeAdapter( Duration.class, Duration.getSerializer() )
-                .disableHtmlEscaping()
-                .create();
-        return gson.toJson( this );
+        return getSerializer().toJson( this );
     }
+
+
+    public static TypeAdapter<InformationPage> getSerializer() {
+        return new TypeAdapter<InformationPage>() {
+            @Override
+            public void write( JsonWriter out, InformationPage value ) throws IOException {
+                if ( value == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginObject();
+                out.name( "id" );
+                out.value( value.id );
+                out.name( "name" );
+                out.value( value.name );
+                out.name( "description" );
+                out.value( value.description );
+                out.name( "icon" );
+                out.value( value.icon );
+                out.name( "implicit" );
+                out.value( value.implicit );
+                out.name( "label" );
+                out.value( value.label );
+                out.name( "fullWidth" );
+                out.value( value.fullWidth );
+                out.name( "groups" );
+                handleGroups( out, value.groups );
+                out.endObject();
+            }
+
+
+            private void handleGroups( JsonWriter out, ConcurrentMap<String, InformationGroup> groups ) throws IOException {
+                out.beginObject();
+                for ( Entry<String, InformationGroup> entry : groups.entrySet() ) {
+                    out.name( entry.getKey() );
+                    gson.toJson( entry.getValue(), InformationGroup.class, out );
+                }
+                out.endObject();
+            }
+
+
+            @Override
+            public InformationPage read( JsonReader in ) throws IOException {
+                if ( in.peek() == JsonToken.NULL ) {
+                    in.nextNull();
+                    return null;
+                }
+                in.beginObject();
+                InformationPage page = new InformationPage( in );
+                in.endObject();
+                return page;
+            }
+        };
+    }
+
 }
