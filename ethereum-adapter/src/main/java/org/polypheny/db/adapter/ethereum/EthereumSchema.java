@@ -61,7 +61,7 @@ public class EthereumSchema extends AbstractSchema {
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : EthereumMapper.TRANSACTION;
-        EthereumTable table = new EthereumTable( clientUrl, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource );
+        EthereumTable table = new EthereumTable( clientUrl, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource, catalogTable.id);
         tableMap.put( catalogTable.name, table );
         return table;
     }

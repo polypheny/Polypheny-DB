@@ -60,8 +60,8 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        super( source, protoRowType, fieldTypes, fields, csvSource );
+    public CsvFilterableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
+        super( source, protoRowType, fieldTypes, fields, csvSource, tableId );
     }
 
 

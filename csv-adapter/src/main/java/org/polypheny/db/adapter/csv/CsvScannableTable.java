@@ -55,8 +55,8 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
     /**
      * Creates a CsvScannableTable.
      */
-    protected CsvScannableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        super( source, protoRowType, fieldTypes, fields, csvSource );
+    protected CsvScannableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
+        super( source, protoRowType, fieldTypes, fields, csvSource, tableId );
     }
 
 

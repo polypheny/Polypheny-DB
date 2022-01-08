@@ -62,8 +62,8 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     /**
      * Creates a CsvTable.
      */
-    CsvTranslatableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
-        super( source, protoRowType, fieldTypes, fields, csvSource );
+    CsvTranslatableTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
+        super( source, protoRowType, fieldTypes, fields, csvSource, tableId );
     }
 
 

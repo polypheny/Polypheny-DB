@@ -59,12 +59,14 @@ public abstract class CsvTable extends AbstractTable {
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    CsvTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.csvSource = csvSource;
+        this.tableId = tableId;
+
     }
 
 

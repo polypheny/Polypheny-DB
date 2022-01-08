@@ -50,13 +50,15 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
             List<EthereumFieldType> fieldTypes,
             int[] fields,
             EthereumMapper mapper,
-            EthereumDataSource ethereumDataSource ) {
+            EthereumDataSource ethereumDataSource,
+            Long tableId) {
         this.clientUrl = clientUrl;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.ethereumDataSource = ethereumDataSource;
         this.mapper = mapper;
+        this.tableId = tableId;
     }
 
 
