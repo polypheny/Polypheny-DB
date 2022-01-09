@@ -16,12 +16,25 @@
 
 package org.polypheny.db;
 
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class StatusService {
+
+    private static final String POLY_URL = "http://localhost:8080";
 
     private static final AtomicInteger idBuilder = new AtomicInteger();
 
@@ -56,13 +69,8 @@ public class StatusService {
     }
 
 
-    public static void printError( String status, Object arg ) {
-        fireOnSubs( errorSubs, status, arg );
-    }
-
-
-    public static void printErrorAndExit( String status ) {
-        printError( status, true );
+    public static void printError( String status, ErrorConfig config ) {
+        fireOnSubs( errorSubs, status, config );
     }
 
 
@@ -80,6 +88,36 @@ public class StatusService {
     public enum StatusType {
         INFO,
         ERROR
+    }
+
+
+    /**
+     * Config class, which allows to configure the behavior of errors printed
+     */
+    @Builder
+    @Getter
+    @Accessors(fluent = true)
+    public static class ErrorConfig {
+
+        static Consumer<?> OPEN_BROWSER = e -> {
+            try {
+                Desktop.getDesktop().browse( new URL( POLY_URL ).toURI() );
+            } catch ( IOException | URISyntaxException ex ) {
+                log.warn( "Polypheny-DB was not able to open the browser for the user!" );
+            }
+        };
+
+        @Default
+        String buttonMessage = "OK";
+        @Default
+        boolean doExit = false;
+        @Default
+        boolean doBlock = true;
+        @Default
+        boolean showButton = true;
+        @Default
+        Consumer<?> func = OPEN_BROWSER;
+
     }
 
 }

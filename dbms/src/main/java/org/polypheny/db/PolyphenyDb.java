@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
@@ -132,7 +133,9 @@ public class PolyphenyDb {
             polyphenyDb.runPolyphenyDb();
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
-                StatusService.printError( "Uncaught Throwable.", uncaught );
+                StatusService.printError(
+                        "Uncaught Throwable: " + uncaught.getMessage(),
+                        ErrorConfig.builder().doExit( true ).showButton( true ).buttonMessage( "Close Polypheny" ).build() );
             }
         }
     }
@@ -238,7 +241,7 @@ public class PolyphenyDb {
             final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
             final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
         } catch ( Exception e ) {
-            StatusService.printError( e.getMessage(), true );
+            StatusService.printError( e.getMessage(), ErrorConfig.builder().buttonMessage( "Open Polypheny" ).doExit( true ).build() );
         }
 
         try {

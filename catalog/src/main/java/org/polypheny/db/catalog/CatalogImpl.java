@@ -47,6 +47,7 @@ import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
 import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -353,7 +354,10 @@ public class CatalogImpl extends Catalog {
             log.error( "!!!!!!!!!!! Error while restoring the catalog !!!!!!!!!!!" );
             log.error( "This usually means that there have been changes to the internal structure of the catalog with the last update of Polypheny-DB." );
             log.error( "To fix this, you must reset the catalog. To do this, please start Polypheny-DB once with the argument \"-resetCatalog\"." );
-            StatusService.printErrorAndExit( "Unsupported version of catalog! Unable to restore the schema." );
+            StatusService.printError(
+                    "Unsupported version of catalog! Unable to restore the schema.",
+                    ErrorConfig.builder().func( c -> {
+                    } ).doExit( true ).showButton( true ).buttonMessage( "Close Polypheny" ).build() );
         }
     }
 

@@ -41,6 +41,7 @@ import javax.swing.border.EtchedBorder;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 
 
@@ -64,7 +65,7 @@ public class SplashHelper {
         Thread splashT = new Thread( screen );
         splashT.start();
         statusId = StatusService.addSubscriber( ( m, n ) -> screen.setStatus( m ), StatusType.INFO );
-        errorId = StatusService.addSubscriber( ( m, n ) -> screen.setError( m, (Boolean) n ), StatusType.ERROR );
+        errorId = StatusService.addSubscriber( ( m, n ) -> screen.setError( m, (ErrorConfig) n ), StatusType.ERROR );
     }
 
 
@@ -135,17 +136,6 @@ public class SplashHelper {
             this.openButton = new JButton( "Open Polypheny" );
             this.openButton.setOpaque( false );
             this.openButton.setVisible( false );
-            this.openButton.addActionListener( new AbstractAction() {
-                @Override
-                public void actionPerformed( ActionEvent e ) {
-                    try {
-                        Desktop.getDesktop().browse( new URL( POLY_URL ).toURI() );
-                    } catch ( IOException | URISyntaxException ex ) {
-                        log.warn( "Polypheny-DB was not able to open the browser for the user!" );
-                    }
-                    System.exit( -1 );
-                }
-            } );
             JPanel buttonPanel = new JPanel();
             buttonPanel.setBorder( BorderFactory.createEmptyBorder( 6, 24, 24, 24 ) );
             buttonPanel.add( openButton );
@@ -181,13 +171,34 @@ public class SplashHelper {
         }
 
 
-        public void setError( String errorMsg, boolean enableButton ) {
-            inErrorState = true;
-            if ( enableButton ) {
-                this.openButton.setVisible( true );
+        public void setError( String errorMsg, ErrorConfig config ) {
+            if ( inErrorState ) {
+                return;
             }
+
+            if ( config.doBlock() ) {
+                inErrorState = true;
+            }
+
+            if ( config.showButton() ) {
+                this.openButton.setVisible( true );
+
+                this.openButton.addActionListener( new AbstractAction() {
+                    @Override
+                    public void actionPerformed( ActionEvent e ) {
+                        config.func().accept( null );
+
+                        if ( config.doExit() ) {
+                            System.exit( -1 );
+                        }
+                    }
+                } );
+
+                this.openButton.setText( config.buttonMessage() );
+            }
+
             this.picLabel.setIcon( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "warning.png" ) ) ) );
-            this.status.setText( errorMsg );
+            this.status.setText( "<html>" + errorMsg + "</html>" );
         }
 
 
