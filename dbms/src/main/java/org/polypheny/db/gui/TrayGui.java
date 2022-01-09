@@ -95,7 +95,7 @@ public class TrayGui {
             EventQueue.invokeLater( () -> {
                 try {
                     AboutWindow window = new AboutWindow();
-                    window.frame.setVisible( true );
+                    window.setVisible();
                 } catch ( Exception ex ) {
                     log.error( "Caught exception in about window", ex );
                 }
