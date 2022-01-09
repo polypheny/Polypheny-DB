@@ -28,7 +28,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.SwingConstants;
-import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,26 +35,27 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AboutWindow {
 
-    @Getter
     private JFrame frame;
 
 
-    /**
-     * Create the application.
-     */
     public AboutWindow() {
         initialize();
     }
 
 
     private void initialize() {
-        this.frame = new JFrame();
+        frame = new JFrame();
         frame.setIconImage( new ImageIcon( Objects.requireNonNull( getClass().getClassLoader().getResource( "logo-600.png" ) ) ).getImage() );
         frame.setResizable( false );
         frame.setTitle( "Polypheny" );
         frame.setBounds( 100, 100, 505, 300 );
         frame.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
         frame.add( new AboutPanel() );
+    }
+
+
+    public void setVisible() {
+        frame.setVisible( true );
     }
 
 
