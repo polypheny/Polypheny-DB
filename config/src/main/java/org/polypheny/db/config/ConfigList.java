@@ -18,8 +18,6 @@ package org.polypheny.db.config;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.SerializedName;
-import com.typesafe.config.ConfigException;
-import com.typesafe.config.ConfigObject;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +28,8 @@ import java.util.stream.Collectors;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 /**
- * In contrast to Arrays, List of different Objects have the same erasure to Java
- * to counteract that, we have to use a different pattern as in the other ConfigTypes
+ * In contrast to Arrays, List of different objects have the same erasure to Java.
+ * To counteract that, we have to use a different pattern as in the other ConfigTypes.
  */
 public class ConfigList extends Config {
 
@@ -43,7 +41,7 @@ public class ConfigList extends Config {
     private ConfigScalar template;
 
     /**
-     * listener which propagates the changes to underlying configs to listeners of this config.
+     * Listener which propagates the changes to underlying configs to listeners of this config.
      */
     ConfigListener listener = new ConfigListener() {
         @Override
@@ -302,17 +300,13 @@ public class ConfigList extends Config {
             if ( validate( values.get( i ) ) ) {
                 Map<String, Object> value = (Map<String, Object>) values.get( i );
                 temp.add( i, scalarGetter.apply( (String) value.get( "key" ), value.getOrDefault( "value", value ) ) );
-
             } else {
                 return false;
             }
         }
         this.list.forEach( val -> val.removeObserver( listener ) );
-
         this.list = temp;
-
         this.list.forEach( val -> val.addObserver( listener ) );
-
         if ( this.oldList != null && this.oldList.equals( this.list ) ) {
             this.oldList = null;
         }
@@ -323,23 +317,15 @@ public class ConfigList extends Config {
 
     @Override
     void setValueFromFile( com.typesafe.config.Config conf ) {
-
-        if ( template instanceof ConfigDocker ){
+        if ( template instanceof ConfigDocker ) {
             List<Object> tempList = new ArrayList<>();
-
             com.typesafe.config.Config dockerInstancesConf = conf.getConfig( getKey() );
-
-            for ( Entry<String,Object> nestedConfObject : dockerInstancesConf.root().unwrapped().entrySet() ) {
-
+            for ( Entry<String, Object> nestedConfObject : dockerInstancesConf.root().unwrapped().entrySet() ) {
                 String subInstanceKey = nestedConfObject.getKey();
-                tempList.add(
-                        ConfigDocker.parseConfigToMap(
-                                dockerInstancesConf.getConfig( subInstanceKey ) )
-                );
+                tempList.add( ConfigDocker.parseConfigToMap( dockerInstancesConf.getConfig( subInstanceKey ) ) );
             }
-
             setConfigObjectList( tempList, getTemplateClass() );
-        }else {
+        } else {
             throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
         }
     }

@@ -106,7 +106,7 @@ public class ConfigDocker extends ConfigObject {
     public Map<String, String> getSettings() {
         Map<String, String> settings = new HashMap<>();
 
-        settings.put( "host", host);
+        settings.put( "host", host );
         settings.put( "id", String.valueOf( id ) );
         settings.put( "alias", alias );
         settings.put( "username", username );
@@ -158,25 +158,32 @@ public class ConfigDocker extends ConfigObject {
 
     @Override
     void setValueFromFile( com.typesafe.config.Config conf ) {
-        fromMap( parseConfigToMap(conf) );
+        fromMap( parseConfigToMap( conf ) );
     }
 
 
     /**
      * Build map of settings from config file
+     *
      * @param conf config file
      * @return parsed map representation of config file
      */
-    public static Map<String,Object> parseConfigToMap( com.typesafe.config.Config conf ){
+    public static Map<String, Object> parseConfigToMap( com.typesafe.config.Config conf ) {
         Map<String, Object> confMap = new HashMap<>();
 
         confMap.put( "host", conf.getString( "host" ) );
         confMap.put( "id", conf.getDouble( "id" ) );
         confMap.put( "alias", conf.getString( "alias" ) );
-        if ( conf.hasPath( "username" ) ) confMap.put( "username", conf.getString( "username" )  );
+        if ( conf.hasPath( "username" ) ) {
+            confMap.put( "username", conf.getString( "username" ) );
+        }
         confMap.put( "dockerRunning", conf.getBoolean( "dockerRunning" ) );
-        if ( conf.hasPath( "port" ) )confMap.put( "port", conf.getDouble( "port" ) );
-        if ( conf.hasPath( "protocol" ) )confMap.put( "protocol", conf.getString( "protocol" ) );
+        if ( conf.hasPath( "port" ) ) {
+            confMap.put( "port", conf.getDouble( "port" ) );
+        }
+        if ( conf.hasPath( "protocol" ) ) {
+            confMap.put( "protocol", conf.getString( "protocol" ) );
+        }
         confMap.put( "usingInsecure", conf.getBoolean( "usingInsecure" ) );
 
         return confMap;

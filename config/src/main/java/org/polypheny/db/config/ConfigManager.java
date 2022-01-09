@@ -19,9 +19,6 @@ package org.polypheny.db.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import com.typesafe.config.ConfigValueFactory;
@@ -34,10 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.Getter;
@@ -166,8 +160,8 @@ public class ConfigManager {
 
 
     /**
-    * Updates Config to file
-    */
+     * Updates Config to file
+     */
     public void persistConfigValue( String configKey, Object updatedValue ) {
         // TODO Extend with deviations from default Value, the actual defaultValue, description and link to website
 
@@ -190,23 +184,20 @@ public class ConfigManager {
     }
 
 
-    private com.typesafe.config.Config parseConfigObject( String configKey, Object updatedValue ){
-
+    private com.typesafe.config.Config parseConfigObject( String configKey, Object updatedValue ) {
         com.typesafe.config.Config modifiedConfig;
-
         if ( updatedValue instanceof Collection ) {
-            Map<String,Object> myList = new HashMap<>();
-            for ( Object value : (Collection)updatedValue ) {
+            Map<String, Object> myList = new HashMap<>();
+            for ( Object value : (Collection) updatedValue ) {
                 if ( (value instanceof ConfigDocker) ) {
                     Map<String, String> settingsMap = ((ConfigDocker) value).getSettings();
-                    myList.put( ((ConfigObject) value).getKey() , settingsMap );
+                    myList.put( ((ConfigObject) value).getKey(), settingsMap );
                 }
             }
             modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myList ) );
-        }else {
+        } else {
             modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
         }
-
         return modifiedConfig;
     }
 
