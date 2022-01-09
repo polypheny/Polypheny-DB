@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
+import org.polypheny.db.config.RuntimeConfig;
 
 
 /**
@@ -53,7 +54,8 @@ import org.polypheny.db.StatusService.StatusType;
 public class SplashHelper {
 
     private final SplashScreen screen;
-    private static final String POLY_URL = "http://localhost:8080";
+    private static final String POLYPHENY_UI_URL = "http://localhost:" + RuntimeConfig.WEBUI_SERVER_PORT;
+
     @Setter
     private int statusId;
     @Setter
@@ -71,7 +73,7 @@ public class SplashHelper {
 
     public void setComplete() {
         try {
-            Desktop.getDesktop().browse( new URL( POLY_URL ).toURI() );
+            Desktop.getDesktop().browse( new URL( POLYPHENY_UI_URL ).toURI() );
         } catch ( IOException | URISyntaxException e ) {
             log.warn( "Polypheny-DB was not able to open the browser for the user!" );
         }
