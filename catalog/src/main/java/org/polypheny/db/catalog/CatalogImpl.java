@@ -353,7 +353,7 @@ public class CatalogImpl extends Catalog {
             log.error( "!!!!!!!!!!! Error while restoring the catalog !!!!!!!!!!!" );
             log.error( "This usually means that there have been changes to the internal structure of the catalog with the last update of Polypheny-DB." );
             log.error( "To fix this, you must reset the catalog. To do this, please start Polypheny-DB once with the argument \"-resetCatalog\"." );
-            System.exit( 1 );
+            StatusService.printErrorAndExit( "Unsupported version of catalog! Unable to restore the schema." );
         }
     }
 

@@ -123,21 +123,22 @@ public class PolyphenyDb {
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
             final PolyphenyDb polyphenyDb = parser.parse( args );
 
+            StatusService.addSubscriber( log::info, StatusType.INFO );
+            StatusService.addSubscriber( log::error, StatusType.ERROR );
+
             // Hide dock icon on macOS systems
             System.setProperty( "apple.awt.UIElement", "true" );
 
             polyphenyDb.runPolyphenyDb();
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
-                log.error( "Uncaught Throwable.", uncaught );
+                StatusService.printError( "Uncaught Throwable.", uncaught );
             }
         }
     }
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
-        StatusService.addSubscriber( log::info, StatusType.INFO );
-        StatusService.addSubscriber( log::info, StatusType.ERROR );
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }

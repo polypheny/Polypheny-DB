@@ -61,6 +61,11 @@ public class StatusService {
     }
 
 
+    public static void printErrorAndExit( String status ) {
+        printError( status, true );
+    }
+
+
     private static void fireOnSubs( Map<Integer, BiConsumer<String, Object>> subs, String status, Object arg ) {
         subs.values().forEach( c -> c.accept( status, arg ) );
     }
