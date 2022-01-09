@@ -29,21 +29,21 @@ public class NotificationManager {
 
     public static void info( String message ) {
         if ( trayIcon != null ) {
-            trayIcon.displayMessage( "Polypheny-DB", message, MessageType.INFO );
+            trayIcon.displayMessage( "Polypheny", message, MessageType.INFO );
         }
     }
 
 
     public static void warning( String message ) {
         if ( trayIcon != null ) {
-            trayIcon.displayMessage( "Polypheny-DB", message, MessageType.WARNING );
+            trayIcon.displayMessage( "Polypheny", message, MessageType.WARNING );
         }
     }
 
 
     public static void error( String message ) {
         if ( trayIcon != null ) {
-            trayIcon.displayMessage( "Polypheny-DB", message, MessageType.ERROR );
+            trayIcon.displayMessage( "Polypheny", message, MessageType.ERROR );
         }
     }
 
