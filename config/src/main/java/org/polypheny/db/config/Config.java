@@ -124,7 +124,7 @@ public abstract class Config {
     }
 
 
-    public boolean getrequiresRestart() {
+    public boolean getRequiresRestart() {
         return this.requiresRestart;
     }
 
@@ -949,7 +949,7 @@ public abstract class Config {
     protected void notifyConfigListeners() {
         for ( ConfigListener listener : listeners.values() ) {
             listener.onConfigChange( this );
-            if ( getrequiresRestart() ) {
+            if ( getRequiresRestart() ) {
                 listener.restart( this );
             }
         }
