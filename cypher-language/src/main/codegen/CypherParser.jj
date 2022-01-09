@@ -1,0 +1,172 @@
+
+options {
+    STATIC = false;
+    IGNORE_CASE = true;
+    UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(CypherParserImpl)
+
+package org.polypheny.db.mql.parser.impl;
+
+
+import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
+
+/**
+ * openCypher language (Cypher) parser, generated from Parser.jj by JavaCC.
+ *
+ * The public wrapper for this parser is {@code CypherParser}.
+**/
+public class CypherParserImpl extends CypherAbstractParserImpl {
+
+private static Metadata metadata;
+
+
+      /**
+       * ParserFactory implementation for creating parser.
+       */
+      public static final ParserFactory FACTORY = new ParserFactory() {
+          public CypherAbstractParserImpl getParser(Reader reader) {
+              final MqlParserImpl parser = new CypherParserImpl(reader);
+              if (reader instanceof SourceStringReader) {
+                  final String Cypher = ((SourceStringReader) reader).getSourceString();
+                  parser.setOriginalMql(cypher);
+              }
+            return parser;
+          }
+      };
+
+      public CypherParseException normalizeException(Throwable ex)
+      {
+          try {
+              if (ex instanceof ParseException) {
+                  ex = cleanupParseException((ParseException) ex);
+              }
+              return convertException(ex);
+          } catch (ParseException e) {
+              throw new AssertionError(e);
+          }
+      }
+
+      public Metadata getMetadata()
+      {
+          synchronized (CypherParserImpl.class) {
+              if (metadata == null) {
+                  metadata = new MetadataImpl(new CypherParserImpl(new java.io.StringReader("")));
+              }
+              return metadata;
+          }
+      }
+
+      public CypherNode parseMqlExpressionEof() throws Exception
+      {
+          return Input();
+      }
+
+      public CypherNode parseMqlStmtEof() throws Exception
+      {
+          return Input();
+      }
+
+}
+
+PARSER_END(CypherParserImpl)
+
+<DEFAULT> SKIP : { " "
+                 | "\t"
+                 | "\n"
+                 | "\r"
+                 | "\f"
+}
+
+TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
+{
+< MATCH: "MATCH" >
+|
+< OPTIONAL_MATCH: "OPTIONAL MATCH" >
+|
+< MANDATORY_MATCH: "MANDATORY MATCH" >
+|
+< WITH: "WITH" >
+|
+< WHERE: "WHERE" >
+|
+< RETURN: "RETURN" >
+|
+< SET: "SET" >
+|
+< SSKIP: "SKIP" >
+|
+< LIMIT: "LIMIT" >
+|
+< ORDERBY: "ORDERBY" >
+|
+< CREATE: "CREATE" >
+|
+< DELETE: "DELETE" >
+|
+< DETACH_DELETE: "DETACH DELETE" >
+|
+< REMOVE: "REMOVE" >
+|
+< MERGE: "MERGE" >
+|
+< CALL: "CALL" >
+|
+< YIELD: "YIELD" >
+|
+< UNION: "UNION" >
+|
+< ALL: "ALL" >
+|
+< DESC: "DESC" >
+|
+< ASC: "ASC" >
+|
+< AS: "AS" >
+|
+< DISTINCT: "DISTINCT" >
+|
+< UNWIND: "UNWIND" >
+|
+< CASE: "CASE" >
+|
+< WHEN: "WHEN" >
+|
+< THEN: "THEN" >
+|
+< ELSE: "ELSE" >
+|
+< END: "END" >
+|
+< IS_NULL: "IS NULL" >
+|
+< IS_NOT_NULL: "IS NOT NULL" >
+|
+< STARTS_WITH: "STARTS WITH" >
+|
+< ENDS_WITH: "ENDS WITH" >
+|
+< CONTAINS: "CONTAINS" >
+|
+< #SYMBOL: [".", ",", ":", ";", "!", "$", "\"", "'", "(", ")", " ", "\n", "{", "}", "[", "]","&","\\","/", "=", "<" ,">", "�","^", "~", "´", "@" ] | <MATH> >
+|
+< #MATH: ["*", "/", "-", "+"] >
+|
+< IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+< #LETTER: ["_","a"-"z","A"-"Z","ö", "Ö", "ä", "Ä", "ü", "Ü", "à", "À", "ç","Ç", "á", "Á", "è", "È","í","Í", "î", "Î","ó","Ó","ò", "ô", "Ô", "Ò" , "í", "Í", "ë", "Ë", "â", "Â", "ï", "Ï", "é", "É", "ñ", "Ñ", "ß"] >
+|
+< #DIGIT: ["0"-"9"] >
+|
+< EOB: ")" >
+|
+< DOT: "." >
+}
+
+////////////////////////////////////////
+////* copied from Parser.jj start */////
+////////////////////////////////////////
