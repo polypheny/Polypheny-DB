@@ -56,6 +56,10 @@ public class AboutWindow {
 
     public void setVisible() {
         frame.setVisible( true );
+        java.awt.EventQueue.invokeLater( () -> {
+            frame.toFront();
+            frame.repaint();
+        } );
     }
 
 
