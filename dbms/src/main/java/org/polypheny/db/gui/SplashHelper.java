@@ -22,12 +22,10 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Objects;
-import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -187,14 +185,12 @@ public class SplashHelper {
             if ( config.showButton() ) {
                 this.openButton.setVisible( true );
 
-                this.openButton.addActionListener( new AbstractAction() {
-                    @Override
-                    public void actionPerformed( ActionEvent e ) {
-                        config.func().accept( null );
+                // call defined function and exit if needed
+                this.openButton.addActionListener( e -> {
+                    config.func().accept( null );
 
-                        if ( config.doExit() ) {
-                            System.exit( -1 );
-                        }
+                    if ( config.doExit() ) {
+                        System.exit( -1 );
                     }
                 } );
 
