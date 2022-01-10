@@ -44,7 +44,6 @@ dependencies {
     implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
 
-
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
     implementation group: "org.apache.commons", name: "commons-math3", version: commons_math_version  // Apache 2.0
@@ -61,7 +60,7 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
-    testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version
+    testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
 
     testImplementation group: "com.wix", name: "wix-embedded-mysql", version: embedded_mysql_version
     testImplementation group: "io.zonky.test", name: "embedded-postgres", version: embedded_postgres_version

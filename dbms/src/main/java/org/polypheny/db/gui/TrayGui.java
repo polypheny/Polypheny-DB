@@ -17,7 +17,6 @@
 package org.polypheny.db.gui;
 
 import java.awt.AWTException;
-import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.Image;
 import java.awt.MenuItem;
@@ -26,11 +25,7 @@ import java.awt.SystemTray;
 import java.awt.Taskbar;
 import java.awt.Toolkit;
 import java.awt.TrayIcon;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.config.RuntimeConfig;
 
 
 @Slf4j
@@ -78,17 +73,6 @@ public class TrayGui {
             log.error( "There was a security exception for: 'taskbar.setIconImage'", e );
         }
 
-        // Open Polypheny-UI in the browser
-        MenuItem puiItem = new MenuItem( "User Interface" );
-        puiItem.addActionListener( e -> {
-            try {
-                Desktop.getDesktop().browse( new URI( "http://localhost:" + RuntimeConfig.WEBUI_SERVER_PORT ) );
-            } catch ( IOException | URISyntaxException ex ) {
-                log.error( "Exception while opening UI in browser.", ex );
-            }
-        } );
-        trayPopupMenu.add( puiItem );
-
         // Show about window
         MenuItem aboutItem = new MenuItem( "About" );
         aboutItem.addActionListener( e -> {
@@ -102,6 +86,13 @@ public class TrayGui {
             } );
         } );
         trayPopupMenu.add( aboutItem );
+
+        // Open Polypheny-UI in the browser
+        MenuItem puiItem = new MenuItem( "User Interface" );
+        puiItem.addActionListener( e -> {
+            GuiUtils.openUiInBrowser();
+        } );
+        trayPopupMenu.add( puiItem );
 
         // Add separator
         trayPopupMenu.addSeparator();

@@ -46,6 +46,7 @@ import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
+import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
 import org.polypheny.db.iface.Authenticator;
@@ -149,6 +150,12 @@ public class PolyphenyDb {
         // Open splash screen
         if ( desktopMode ) {
             this.splashScreen = new SplashHelper();
+        }
+
+        // Check if Polypheny is already running
+        if ( desktopMode && GuiUtils.checkPolyphenyAlreadyRunning() ) {
+            GuiUtils.openUiInBrowser();
+            System.exit( 0 );
         }
 
         // Restore data folder

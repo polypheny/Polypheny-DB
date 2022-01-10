@@ -327,6 +327,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
 
+        webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
+
     }
 
 

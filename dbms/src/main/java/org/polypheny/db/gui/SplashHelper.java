@@ -18,13 +18,9 @@ package org.polypheny.db.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Toolkit;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -41,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
-import org.polypheny.db.config.RuntimeConfig;
 
 
 /**
@@ -52,7 +47,6 @@ import org.polypheny.db.config.RuntimeConfig;
 public class SplashHelper {
 
     private final SplashScreen screen;
-    private static final String POLYPHENY_UI_URL = "http://localhost:" + RuntimeConfig.WEBUI_SERVER_PORT;
 
     @Setter
     private int statusId;
@@ -70,11 +64,7 @@ public class SplashHelper {
 
 
     public void setComplete() {
-        try {
-            Desktop.getDesktop().browse( new URL( POLYPHENY_UI_URL ).toURI() );
-        } catch ( IOException | URISyntaxException e ) {
-            log.warn( "Polypheny-DB was not able to open the browser for the user!" );
-        }
+        GuiUtils.openUiInBrowser();
         this.screen.setComplete();
         StatusService.removeSubscriber( statusId );
         StatusService.removeSubscriber( errorId );
