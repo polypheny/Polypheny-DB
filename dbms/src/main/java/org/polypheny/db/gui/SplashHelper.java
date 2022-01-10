@@ -174,10 +174,12 @@ public class SplashHelper {
 
 
         public void setError( String errorMsg, ErrorConfig config ) {
+            // we are already blocking
             if ( inErrorState ) {
                 return;
             }
 
+            // block future changes
             if ( config.doBlock() ) {
                 inErrorState = true;
             }

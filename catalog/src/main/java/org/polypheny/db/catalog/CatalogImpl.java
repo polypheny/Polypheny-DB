@@ -356,8 +356,7 @@ public class CatalogImpl extends Catalog {
             log.error( "To fix this, you must reset the catalog. To do this, please start Polypheny-DB once with the argument \"-resetCatalog\"." );
             StatusService.printError(
                     "Unsupported version of catalog! Unable to restore the schema.",
-                    ErrorConfig.builder().func( c -> {
-                    } ).doExit( true ).showButton( true ).buttonMessage( "Close Polypheny" ).build() );
+                    ErrorConfig.builder().func( ErrorConfig.DO_NOTHING ).doExit( true ).showButton( true ).buttonMessage( "Close Polypheny" ).build() );
         }
     }
 

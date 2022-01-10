@@ -31,6 +31,10 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Status service is a utility class, which allows sending different types of statuses
+ * to the attached subscribers.
+ */
 @Slf4j
 public class StatusService {
 
@@ -99,12 +103,18 @@ public class StatusService {
     @Accessors(fluent = true)
     public static class ErrorConfig {
 
-        static Consumer<?> OPEN_BROWSER = e -> {
+        // Default method to open Polypheny in the default browser
+        public static Consumer<?> OPEN_BROWSER = e -> {
             try {
                 Desktop.getDesktop().browse( new URL( POLY_URL ).toURI() );
             } catch ( IOException | URISyntaxException ex ) {
                 log.warn( "Polypheny-DB was not able to open the browser for the user!" );
             }
+        };
+
+        // Utility method, which does nothing
+        public static Consumer<?> DO_NOTHING = e -> {
+            // empty on purpose
         };
 
         @Default
