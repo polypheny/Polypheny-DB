@@ -54,7 +54,6 @@ import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
 import org.polypheny.db.language.LanguageManagerImpl;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.monitoring.core.MonitoringService;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
@@ -136,7 +135,7 @@ public class PolyphenyDb {
                 log.error( "Uncaught Throwable.", uncaught );
                 StatusService.printError(
                         "Error: " + uncaught.getMessage(),
-                        ErrorConfig.builder().doExit( true ).showButton( true ).buttonMessage( "Exit" ).build() );
+                        ErrorConfig.builder().func( ErrorConfig.DO_NOTHING ).doExit( true ).showButton( true ).buttonMessage( "Exit" ).build() );
             }
         }
     }
@@ -147,11 +146,12 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        // Open splash screen
         if ( desktopMode ) {
             this.splashScreen = new SplashHelper();
         }
 
-        // Move data folder
+        // Restore data folder
         if ( PolyphenyHomeDirManager.getInstance().checkIfExists( "data.backup" ) ) {
             PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" );
             if ( !PolyphenyHomeDirManager.getInstance().moveFolder( "data.backup", "data" ) ) {
@@ -238,12 +238,9 @@ public class PolyphenyDb {
         final LanguageManagerImpl languageManager = new LanguageManagerImpl();
         LanguageManager.setAndGetInstance( languageManager );
 
-        try {
-            final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
-            final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
-        } catch ( Exception e ) {
-            StatusService.printError( e.getMessage(), ErrorConfig.builder().buttonMessage( "Open Polypheny" ).doExit( true ).build() );
-        }
+        // Start config server and information server
+        new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
+        new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
 
         try {
             new JavaInformation();
@@ -302,14 +299,14 @@ public class PolyphenyDb {
             throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
 
-        // Initialize DdlManager
+        // Initialize DDL Manager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
-        // Start Polypheny UI
+        // Start Polypheny-UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
         Thread polyphenyUiThread = new Thread( httpServer );
         polyphenyUiThread.start();
@@ -345,8 +342,9 @@ public class PolyphenyDb {
             new UiTestingMonitoringPage();
         }
 
+        // Start monitoring service
         MonitoringServiceProvider.resetRepository = resetCatalog;
-        MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
+        MonitoringServiceProvider.getInstance();
 
         // Add icon to system tray
         if ( desktopMode && SystemTray.isSupported() ) {
@@ -361,6 +359,7 @@ public class PolyphenyDb {
         log.info( "****************************************************************************************************" );
         isReady = true;
 
+        // Close splash screen
         if ( desktopMode ) {
             splashScreen.setComplete();
         }
