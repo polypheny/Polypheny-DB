@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,16 +44,20 @@ import org.polypheny.db.algebra.type.AlgDataType;
  *
  * <h2>Examples of members</h2>
  *
- * Several kinds of members crop up in real life. They all implement the {@code Member} interface, but tend to be treated differently by the back-end system if not by Polypheny-DB.
+ * Several kinds of members crop up in real life. They all implement the {@code Member} interface, but tend to be treated
+ * differently by the back-end system if not by Polypheny-DB.
  *
- * A member that has zero arguments and a type that is a collection of records is referred to as a <i>relation</i>. In schemas backed by a relational database, tables and views will appear as relations.
+ * A member that has zero arguments and a type that is a collection of records is referred to as a <i>relation</i>.
+ * In schemas backed by a relational database, tables and views will appear as relations.
  *
- * A member that has one or more arguments and a type that is a collection of records is referred to as a <i>parameterized relation</i>. Some relational databases support these;
- * for example, Oracle calls them "table functions".
+ * A member that has one or more arguments and a type that is a collection of records is referred to as a
+ * <i>parameterized relation</i>. Some relational databases support these; for example, Oracle calls them "table functions".
  *
- * Members may be also more typical of programming-language functions: they take zero or more arguments, and return a result of arbitrary type.
+ * Members may be also more typical of programming-language functions: they take zero or more arguments, and return a result
+ * of arbitrary type.
  *
- * From the above definitions, you can see that a member is a special kind of function. This makes sense, because even though it has no arguments, it is "evaluated" each time it is used in a query.
+ * From the above definitions, you can see that a member is a special kind of function. This makes sense, because even though
+ * it has no arguments, it is "evaluated" each time it is used in a query.
  */
 public interface Member {
 

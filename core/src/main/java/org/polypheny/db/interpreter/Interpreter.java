@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -511,7 +511,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> implements AutoClo
             if ( !found ) {
                 if ( p instanceof InterpretableRel ) {
                     InterpretableRel interpretableRel = (InterpretableRel) p;
-                    node = interpretableRel.implement( new InterpretableRel.InterpreterImplementor( this, null, null ) );
+                    node = interpretableRel.implement( new InterpretableRel.InterpreterImplementor( this, null ) );
                 } else {
                     // Probably need to add a visit(XxxRel) method to CoreCompiler.
                     throw new AssertionError( "interpreter: no implementation for " + p.getClass() );

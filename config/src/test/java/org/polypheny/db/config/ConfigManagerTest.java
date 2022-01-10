@@ -200,7 +200,7 @@ public class ConfigManagerTest implements ConfigListener {
             }
             cm.setApplicationConfFile( testFile.toFile() );
 
-            Config c = new ConfigString( "test.restart", "restart" ).setRequiresRestart( true ).addObserver( this );
+            Config c = new ConfigString( "test.restart", "restart" ).requiresRestart( true ).addObserver( this );
             cm.registerConfig( c );
             cm.getConfig( c.getKey() ).setString( "someValue" );
             Assert.assertTrue( this.wasRestarted );

@@ -25,6 +25,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigLong extends ConfigScalar {
 
     private long value;
+    private Long oldValue;
     private long defaultValue;
 
 
@@ -90,7 +91,16 @@ public class ConfigLong extends ConfigScalar {
     @Override
     public boolean setLong( final long value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldValue == null ) {
+                    this.oldValue = this.value;
+                }
+            }
             this.value = value;
+
+            if ( this.oldValue != null && this.oldValue.equals( this.value ) ) {
+                this.oldValue = null;
+            }
             notifyConfigListeners();
             return true;
         } else {

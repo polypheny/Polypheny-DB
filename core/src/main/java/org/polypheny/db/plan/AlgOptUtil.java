@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -121,7 +120,6 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.schema.ModifiableView;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.ArrayType;
@@ -1810,23 +1808,6 @@ public abstract class AlgOptUtil {
             }
             filters.add( node );
         }
-    }
-
-
-    /**
-     * Returns a mapping of the column ordinal in the underlying table to a column constraint of the modifiable view.
-     *
-     * @param modifiableViewTable The modifiable view which has a constraint
-     * @param targetRowType The target type
-     */
-    public static Map<Integer, RexNode> getColumnConstraints( ModifiableView modifiableViewTable, AlgDataType targetRowType, AlgDataTypeFactory typeFactory ) {
-        final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-        final RexNode constraint = modifiableViewTable.getConstraint( rexBuilder, targetRowType );
-        final Map<Integer, RexNode> projectMap = new HashMap<>();
-        final List<RexNode> filters = new ArrayList<>();
-        AlgOptUtil.inferViewPredicates( projectMap, filters, constraint );
-        assert filters.isEmpty();
-        return projectMap;
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,8 @@ import org.polypheny.db.util.Static;
  * Implementation of {@link AggregateFunction} via user-defined class.
  * The class should implement {@code A init()}, {@code A add(A, V)}, and {@code R result(A)} methods.
  * All the methods should be either static or instance.
- * Bonus point: when using non-static implementation, the aggregate object is reused through the calculation, thus it can have aggregation-related state.
+ * Bonus point: when using non-static implementation, the aggregate object is reused through the calculation, thus it can have
+ * aggregation-related state.
  */
 public class AggregateFunctionImpl implements AggregateFunction, ImplementableAggFunction {
 
@@ -73,7 +74,16 @@ public class AggregateFunctionImpl implements AggregateFunction, ImplementableAg
     /**
      * Private constructor; use {@link #create}.
      */
-    private AggregateFunctionImpl( Class<?> declaringClass, List<FunctionParameter> params, List<Class<?>> valueTypes, Class<?> accumulatorType, Class<?> resultType, Method initMethod, Method addMethod, Method mergeMethod, Method resultMethod ) {
+    private AggregateFunctionImpl(
+            Class<?> declaringClass,
+            List<FunctionParameter> params,
+            List<Class<?>> valueTypes,
+            Class<?> accumulatorType,
+            Class<?> resultType,
+            Method initMethod,
+            Method addMethod,
+            Method mergeMethod,
+            Method resultMethod ) {
         this.declaringClass = declaringClass;
         this.valueTypes = ImmutableList.copyOf( valueTypes );
         this.parameters = params;
@@ -129,7 +139,16 @@ public class AggregateFunctionImpl implements AggregateFunction, ImplementableAg
             // TODO: check merge args are (A, A)
             // TODO: check result args are (A)
 
-            return new AggregateFunctionImpl( clazz, params.build(), valueTypes.build(), accumulatorType, resultType, initMethod, addMethod, mergeMethod, resultMethod );
+            return new AggregateFunctionImpl(
+                    clazz,
+                    params.build(),
+                    valueTypes.build(),
+                    accumulatorType,
+                    resultType,
+                    initMethod,
+                    addMethod,
+                    mergeMethod,
+                    resultMethod );
         }
         return null;
     }

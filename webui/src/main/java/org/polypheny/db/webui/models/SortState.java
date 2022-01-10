@@ -17,6 +17,12 @@
 package org.polypheny.db.webui.models;
 
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+
 /**
  * Defines how a column is sorted.
  * Required for Gson.
@@ -51,6 +57,61 @@ public class SortState {
     public SortState( final SortDirection direction ) {
         this.direction = direction;
         this.sorting = true;
+    }
+
+
+    private SortState( JsonReader in ) throws IOException {
+        while ( in.peek() != JsonToken.END_OBJECT ) {
+            switch ( in.nextName() ) {
+                case "direction":
+                    direction = SortDirection.valueOf( in.nextString() );
+                    break;
+                case "sorting":
+                    sorting = in.nextBoolean();
+                    break;
+                case "column":
+                    column = in.nextString();
+                    break;
+                default:
+                    throw new RuntimeException( "There was an unrecognized column while deserializing SortState." );
+            }
+
+        }
+    }
+
+
+    public static TypeAdapter<SortState> getSerializer() {
+        return new TypeAdapter<SortState>() {
+            @Override
+            public void write( JsonWriter out, SortState state ) throws IOException {
+                if ( state == null ) {
+                    out.nullValue();
+                    return;
+                }
+
+                out.beginObject();
+                out.name( "direction" );
+                out.value( state.direction.name() );
+                out.name( "sorting" );
+                out.value( state.sorting );
+                out.name( "column" );
+                out.value( state.column );
+                out.endObject();
+            }
+
+
+            @Override
+            public SortState read( JsonReader in ) throws IOException {
+                if ( in.peek() == null ) {
+                    in.nextNull();
+                    return null;
+                }
+                in.beginObject();
+                SortState state = new SortState( in );
+                in.endObject();
+                return state;
+            }
+        };
     }
 
 }

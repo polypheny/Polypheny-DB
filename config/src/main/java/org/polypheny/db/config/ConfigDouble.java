@@ -26,6 +26,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigDouble extends ConfigScalar {
 
     private double value;
+    private Double oldValue;
     private double defaultValue;
 
 
@@ -97,7 +98,15 @@ public class ConfigDouble extends ConfigScalar {
     @Override
     public boolean setDouble( final double value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldValue == null ) {
+                    this.oldValue = this.value;
+                }
+            }
             this.value = value;
+            if ( this.oldValue != null && this.oldValue.equals( this.value ) ) {
+                this.oldValue = null;
+            }
             notifyConfigListeners();
             return true;
         } else {

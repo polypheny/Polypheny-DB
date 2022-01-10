@@ -47,6 +47,7 @@ import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
 import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -231,11 +232,11 @@ public class CatalogImpl extends Catalog {
             }
 
             if ( isPersistent ) {
-                StatusService.print( "Making the catalog persistent." );
+                StatusService.printInfo( "Making the catalog persistent." );
                 File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
-                    StatusService.print( "Resetting catalog on startup." );
+                    StatusService.printInfo( "Resetting catalog on startup." );
                     if ( new File( folder, fileName ).exists() ) {
                         //noinspection ResultOfMethodCallIgnored
                         new File( folder, fileName ).delete();
@@ -263,7 +264,7 @@ public class CatalogImpl extends Catalog {
                 db.getStore().fileLoad();
 
             } else {
-                StatusService.print( "Making the catalog in-memory." );
+                StatusService.printInfo( "Making the catalog in-memory." );
                 db = DBMaker
                         .memoryDB()
                         .transactionEnable()
@@ -314,7 +315,7 @@ public class CatalogImpl extends Catalog {
      * @return if it was possible
      */
     private boolean isPersistent() {
-        File file = new File( "testfile" );
+        File file = PolyphenyHomeDirManager.getInstance().registerNewFile( "testfile" );
         try {
             if ( !file.exists() ) {
                 boolean res = file.createNewFile();
@@ -353,7 +354,9 @@ public class CatalogImpl extends Catalog {
             log.error( "!!!!!!!!!!! Error while restoring the catalog !!!!!!!!!!!" );
             log.error( "This usually means that there have been changes to the internal structure of the catalog with the last update of Polypheny-DB." );
             log.error( "To fix this, you must reset the catalog. To do this, please start Polypheny-DB once with the argument \"-resetCatalog\"." );
-            System.exit( 1 );
+            StatusService.printError(
+                    "Unsupported version of catalog! Unable to restore the schema.",
+                    ErrorConfig.builder().func( ErrorConfig.DO_NOTHING ).doExit( true ).showButton( true ).buttonMessage( "Exit" ).build() );
         }
     }
 

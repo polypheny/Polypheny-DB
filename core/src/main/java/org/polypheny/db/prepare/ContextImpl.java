@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
-import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.transaction.Statement;
 
@@ -77,13 +75,6 @@ public class ContextImpl implements Context {
     @Override
     public PolyphenyDbConnectionConfig config() {
         return new PolyphenyDbConnectionConfigImpl( new Properties() );
-    }
-
-
-    @Override
-    public SparkHandler spark() {
-        final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
-        return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );
     }
 
 }

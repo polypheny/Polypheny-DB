@@ -17,6 +17,8 @@
 package org.polypheny.db.adapter;
 
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -94,4 +96,22 @@ public abstract class DataStore extends Adapter {
 
     }
 
+
+    public static JsonSerializer<DataStore> getSerializer() {
+        //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
+        return ( src, typeOfSrc, context ) -> {
+            JsonObject jsonStore = new JsonObject();
+            jsonStore.addProperty( "adapterId", src.getAdapterId() );
+            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
+            jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
+            jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
+            jsonStore.addProperty( "adapterName", src.getAdapterName() );
+            jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
+            jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
+            jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
+            return jsonStore;
+        };
+    }
+
 }
+

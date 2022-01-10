@@ -22,24 +22,26 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 /**
- * In contrast to Arrays, List of different Objects have the same erasure to Java
- * to counteract that, we have to use a different pattern as in the other ConfigTypes
+ * In contrast to Arrays, List of different objects have the same erasure to Java.
+ * To counteract that, we have to use a different pattern as in the other ConfigTypes.
  */
 public class ConfigList extends Config {
 
     @SerializedName("values")
     private List<ConfigScalar> list;
+    private List<ConfigScalar> oldList;
     private List<ConfigScalar> defaultList;
 
     private ConfigScalar template;
 
     /**
-     * listener which propagates the changes to underlying configs to listeners of this config.
+     * Listener which propagates the changes to underlying configs to listeners of this config.
      */
     ConfigListener listener = new ConfigListener() {
         @Override
@@ -271,28 +273,43 @@ public class ConfigList extends Config {
 
     @Override
     public void setList( List<ConfigScalar> values ) {
+        if ( requiresRestart() ) {
+            if ( this.oldList == null ) {
+                this.oldList = this.list;
+            }
+        }
         this.list = values;
         values.forEach( val -> val.addObserver( listener ) );
+        if ( this.oldList != null && this.oldList.equals( this.list ) ) {
+            this.oldList = null;
+        }
         notifyConfigListeners();
     }
 
 
     private boolean setConfigObjectList( List<Object> values, BiFunction<String, Object, ? extends ConfigScalar> scalarGetter ) {
         List<ConfigScalar> temp = new ArrayList<>();
+
+        if ( requiresRestart() ) {
+            if ( this.oldList == null ) {
+                this.oldList = this.list;
+            }
+        }
+
         for ( int i = 0; i < values.size(); i++ ) {
             if ( validate( values.get( i ) ) ) {
                 Map<String, Object> value = (Map<String, Object>) values.get( i );
                 temp.add( i, scalarGetter.apply( (String) value.get( "key" ), value.getOrDefault( "value", value ) ) );
-
             } else {
                 return false;
             }
         }
         this.list.forEach( val -> val.removeObserver( listener ) );
-
         this.list = temp;
-
         this.list.forEach( val -> val.addObserver( listener ) );
+        if ( this.oldList != null && this.oldList.equals( this.list ) ) {
+            this.oldList = null;
+        }
         notifyConfigListeners();
         return true;
     }
@@ -300,7 +317,17 @@ public class ConfigList extends Config {
 
     @Override
     void setValueFromFile( com.typesafe.config.Config conf ) {
-        throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
+        if ( template instanceof ConfigDocker ) {
+            List<Object> tempList = new ArrayList<>();
+            com.typesafe.config.Config dockerInstancesConf = conf.getConfig( getKey() );
+            for ( Entry<String, Object> nestedConfObject : dockerInstancesConf.root().unwrapped().entrySet() ) {
+                String subInstanceKey = nestedConfObject.getKey();
+                tempList.add( ConfigDocker.parseConfigToMap( dockerInstancesConf.getConfig( subInstanceKey ) ) );
+            }
+            setConfigObjectList( tempList, getTemplateClass() );
+        } else {
+            throw new ConfigRuntimeException( "Reading list of values from config files is not supported yet." );
+        }
     }
 
 

@@ -26,6 +26,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigString extends ConfigScalar {
 
     private String value;
+    private String oldValue;
     private String defaultValue;
 
 
@@ -54,7 +55,15 @@ public class ConfigString extends ConfigScalar {
     @Override
     public boolean setString( final String s ) {
         if ( validate( s ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldValue == null ) {
+                    this.oldValue = this.value;
+                }
+            }
             this.value = s;
+            if ( this.oldValue != null && this.oldValue.equals( this.value ) ) {
+                this.oldValue = null;
+            }
             notifyConfigListeners();
             return true;
         } else {

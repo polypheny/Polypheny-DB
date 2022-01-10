@@ -1797,12 +1797,12 @@ public class Crud implements InformationObserver {
     /**
      * Get artificially generated index/foreign key/constraint names for placeholders in the UI
      */
-    Result getGeneratedNames( final Context ctx ) {
+    void getGeneratedNames( final Context ctx ) {
         String[] data = new String[3];
         data[0] = NameGenerator.generateConstraintName();
         data[1] = NameGenerator.generateForeignKeyName();
         data[2] = NameGenerator.generateIndexName();
-        return new Result( new DbColumn[0], new String[][]{ data } );
+        ctx.json( new Result( new DbColumn[0], new String[][]{ data } ) );
     }
 
 
@@ -2821,7 +2821,7 @@ public class Crud implements InformationObserver {
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
-        Transaction transaction = getTransaction( true, request.useCache );
+        Transaction transaction = getTransaction( request.analyze, request.useCache );
         transaction.getQueryAnalyzer().setSession( session );
 
         Statement statement = transaction.createStatement();
@@ -3130,7 +3130,7 @@ public class Crud implements InformationObserver {
      */
     public void getAnalyzerPage( final Context ctx ) {
         String[] params = ctx.bodyAsClass( String[].class );
-        ctx.result( InformationManager.getInstance( params[0] ).getPage( params[1] ).asJson() );
+        ctx.json( InformationManager.getInstance( params[0] ).getPage( params[1] ) );
     }
 
 

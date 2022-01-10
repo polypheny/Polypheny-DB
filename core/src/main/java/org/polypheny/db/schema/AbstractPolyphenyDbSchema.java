@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,22 +127,26 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
 
     /**
-     * Returns a sub-schema with a given name that is defined implicitly (that is, by the underlying {@link Schema} object, not explicitly by a call to {@link #add(String, Schema, SchemaType)}), or null.
+     * Returns a sub-schema with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
+     * not explicitly by a call to {@link #add(String, Schema, SchemaType)}), or null.
      */
     protected abstract PolyphenyDbSchema getImplicitSubSchema( String schemaName, boolean caseSensitive );
 
     /**
-     * Returns a table with a given name that is defined implicitly (that is, by the underlying {@link Schema} object, not explicitly by a call to {@link #add(String, Table)}), or null.
+     * Returns a table with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
+     * not explicitly by a call to {@link #add(String, Table)}), or null.
      */
     protected abstract TableEntry getImplicitTable( String tableName, boolean caseSensitive );
 
     /**
-     * Returns a type with a given name that is defined implicitly (that is, by the underlying {@link Schema} object, not explicitly by a call to {@link #add(String, AlgProtoDataType)}), or null.
+     * Returns a type with a given name that is defined implicitly (that is, by the underlying {@link Schema} object,
+     * not explicitly by a call to {@link #add(String, AlgProtoDataType)}), or null.
      */
     protected abstract TypeEntry getImplicitType( String name, boolean caseSensitive );
 
     /**
-     * Returns table function with a given name and zero arguments that is defined implicitly (that is, by the underlying {@link Schema} object, not explicitly by a call to {@link #add(String, Function)}), or null.
+     * Returns table function with a given name and zero arguments that is defined implicitly (that is, by the underlying
+     * {@link Schema} object, not explicitly by a call to {@link #add(String, Function)}), or null.
      */
     protected abstract TableEntry getImplicitTableBasedOnNullaryFunction( String tableName, boolean caseSensitive );
 
@@ -635,6 +639,4 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
     }
 
-
 }
-

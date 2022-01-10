@@ -25,6 +25,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigTable extends Config {
 
     private ConfigScalar[][] table;
+    private ConfigScalar[][] oldTable;
     private ConfigScalar[][] defaultTable;
 
 
@@ -158,12 +159,20 @@ public class ConfigTable extends Config {
     @Override
     public boolean setIntTable( final int[][] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldTable == null ) {
+                    this.oldTable = this.table;
+                }
+            }
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
                     table[i][j].setInt( value[i][j] );
                 }
             }
             notifyConfigListeners();
+            if ( this.oldTable != null && Arrays.deepEquals( this.oldTable, this.table ) ) {
+                this.oldTable = null;
+            }
             return true;
         } else {
             return false;
@@ -186,12 +195,20 @@ public class ConfigTable extends Config {
     @Override
     public boolean setDoubleTable( final double[][] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldTable == null ) {
+                    this.oldTable = this.table;
+                }
+            }
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
                     table[i][j].setDouble( value[i][j] );
                 }
             }
             notifyConfigListeners();
+            if ( this.oldTable != null && Arrays.deepEquals( this.oldTable, this.table ) ) {
+                this.oldTable = null;
+            }
             return true;
         } else {
             return false;
@@ -214,12 +231,20 @@ public class ConfigTable extends Config {
     @Override
     public boolean setLongTable( long[][] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldTable == null ) {
+                    this.oldTable = this.table;
+                }
+            }
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
                     table[i][j].setLong( value[i][j] );
                 }
             }
             notifyConfigListeners();
+            if ( this.oldTable != null && Arrays.deepEquals( this.oldTable, this.table ) ) {
+                this.oldTable = null;
+            }
             return true;
         } else {
             return false;
@@ -242,12 +267,20 @@ public class ConfigTable extends Config {
     @Override
     public boolean setDecimalTable( final BigDecimal[][] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldTable == null ) {
+                    this.oldTable = this.table;
+                }
+            }
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
                     table[i][j].setDecimal( value[i][j] );
                 }
             }
             notifyConfigListeners();
+            if ( this.oldTable != null && Arrays.deepEquals( this.oldTable, this.table ) ) {
+                this.oldTable = null;
+            }
             return true;
         } else {
             return false;
@@ -270,12 +303,20 @@ public class ConfigTable extends Config {
     @Override
     public boolean setStringTable( final String[][] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldTable == null ) {
+                    this.oldTable = this.table;
+                }
+            }
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
                     table[i][j].setString( value[i][j] );
                 }
             }
             notifyConfigListeners();
+            if ( this.oldTable != null && Arrays.deepEquals( this.oldTable, this.table ) ) {
+                this.oldTable = null;
+            }
             return true;
         } else {
             return false;
@@ -298,10 +339,18 @@ public class ConfigTable extends Config {
     @Override
     public boolean setBooleanTable( final boolean[][] value ) {
         if ( validate( value ) ) {
+            if ( requiresRestart() ) {
+                if ( this.oldTable == null ) {
+                    this.oldTable = this.table;
+                }
+            }
             for ( int i = 0; i < table.length; i++ ) {
                 for ( int j = 0; j < table[0].length; j++ ) {
                     table[i][j].setBoolean( value[i][j] );
                 }
+            }
+            if ( this.oldTable != null && Arrays.deepEquals( this.oldTable, this.table ) ) {
+                this.oldTable = null;
             }
             notifyConfigListeners();
             return true;

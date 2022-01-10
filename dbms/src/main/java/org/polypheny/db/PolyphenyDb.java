@@ -21,10 +21,13 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.OptionType;
+import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.StatusService.ErrorConfig;
+import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Adapter;
@@ -43,14 +46,15 @@ import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
+import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
+import org.polypheny.db.gui.TrayGui;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
 import org.polypheny.db.language.LanguageManagerImpl;
 import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.monitoring.core.MonitoringService;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
@@ -120,30 +124,41 @@ public class PolyphenyDb {
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
             final PolyphenyDb polyphenyDb = parser.parse( args );
 
+            StatusService.addSubscriber( log::info, StatusType.INFO );
+            StatusService.addSubscriber( log::error, StatusType.ERROR );
+
             // Hide dock icon on macOS systems
             System.setProperty( "apple.awt.UIElement", "true" );
 
             polyphenyDb.runPolyphenyDb();
-
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
+                StatusService.printError(
+                        "Error: " + uncaught.getMessage(),
+                        ErrorConfig.builder().func( ErrorConfig.DO_NOTHING ).doExit( true ).showButton( true ).buttonMessage( "Exit" ).build() );
             }
         }
     }
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
-        StatusService.addSubscriber( log::info );
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        // Open splash screen
         if ( desktopMode ) {
-            showSplashScreen();
+            this.splashScreen = new SplashHelper();
         }
 
-        // Move data folder
+        // Check if Polypheny is already running
+        if ( desktopMode && GuiUtils.checkPolyphenyAlreadyRunning() ) {
+            GuiUtils.openUiInBrowser();
+            System.exit( 0 );
+        }
+
+        // Restore data folder
         if ( PolyphenyHomeDirManager.getInstance().checkIfExists( "data.backup" ) ) {
             PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" );
             if ( !PolyphenyHomeDirManager.getInstance().moveFolder( "data.backup", "data" ) ) {
@@ -230,8 +245,9 @@ public class PolyphenyDb {
         final LanguageManagerImpl languageManager = new LanguageManagerImpl();
         LanguageManager.setAndGetInstance( languageManager );
 
-        final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
-        final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
+        // Start config server and information server
+        new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
+        new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
 
         try {
             new JavaInformation();
@@ -290,14 +306,14 @@ public class PolyphenyDb {
             throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
 
-        // Initialize DdlManager
+        // Initialize DDL Manager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
-        // Start Polypheny UI
+        // Start Polypheny-UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
         Thread polyphenyUiThread = new Thread( httpServer );
         polyphenyUiThread.start();
@@ -333,8 +349,15 @@ public class PolyphenyDb {
             new UiTestingMonitoringPage();
         }
 
+        // Start monitoring service
         MonitoringServiceProvider.resetRepository = resetCatalog;
-        MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
+        MonitoringServiceProvider.getInstance();
+
+        // Add icon to system tray
+        if ( desktopMode && SystemTray.isSupported() ) {
+            // Init TrayGUI
+            TrayGui.getInstance();
+        }
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
@@ -342,6 +365,8 @@ public class PolyphenyDb {
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
         isReady = true;
+
+        // Close splash screen
         if ( desktopMode ) {
             splashScreen.setComplete();
         }
@@ -349,7 +374,7 @@ public class PolyphenyDb {
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );
             sh.join( 0 ); // "forever"
-            if ( sh.hasFinished() == false ) {
+            if ( !sh.hasFinished() ) {
                 log.warn( "The Shutdown-Hook has not finished execution, but join() returned ..." );
             } else {
                 log.info( "Waiting for the Shutdown-Hook to finish ... done." );
@@ -357,15 +382,10 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
-    }
 
-
-    private void showSplashScreen() {
-        this.splashScreen = new SplashHelper();
-        Thread splashT = new Thread( splashScreen );
-        splashT.start();
-        int statusId = StatusService.addSubscriber( splashScreen::setStatus );
-        this.splashScreen.setStatusId( statusId );
+        if ( desktopMode && SystemTray.isSupported() ) {
+            TrayGui.getInstance().shutdown();
+        }
     }
 
 }

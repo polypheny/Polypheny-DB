@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,8 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Table that can be scanned, optionally applying supplied filter expressions, and projecting a given list of columns, without creating an intermediate relational expression.
+ * Table that can be scanned, optionally applying supplied filter expressions, and projecting a given list of columns,
+ * without creating an intermediate relational expression.
  *
  * If you wish to write a table that can apply projects but not filters, simply decline all filters.
  *
@@ -68,4 +69,5 @@ public interface ProjectableFilterableTable extends Table {
      * @return Enumerable over all rows that match the accepted filters, returning for each row an array of column values, one value for each ordinal in {@code projects}.
      */
     Enumerable<Object[]> scan( DataContext root, List<RexNode> filters, int[] projects );
+
 }
