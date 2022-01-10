@@ -133,9 +133,10 @@ public class PolyphenyDb {
             polyphenyDb.runPolyphenyDb();
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
+                log.error( "Uncaught Throwable.", uncaught );
                 StatusService.printError(
-                        "Uncaught Throwable: " + uncaught.getMessage(),
-                        ErrorConfig.builder().doExit( true ).showButton( true ).buttonMessage( "Close Polypheny" ).build() );
+                        "Error: " + uncaught.getMessage(),
+                        ErrorConfig.builder().doExit( true ).showButton( true ).buttonMessage( "Exit" ).build() );
             }
         }
     }
