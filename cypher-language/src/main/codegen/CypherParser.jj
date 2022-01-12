@@ -13,7 +13,7 @@ package org.polypheny.db.mql.parser.impl;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.ArrayList;import org.polypheny.db.dml.CypherCreate;
 
 /**
  * openCypher language (Cypher) parser, generated from Parser.jj by JavaCC.
@@ -70,6 +70,8 @@ private static Metadata metadata;
       {
           return Input();
       }
+
+}}
 
 }
 
@@ -162,11 +164,223 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 |
 < #DIGIT: ["0"-"9"] >
 |
-< EOB: ")" >
+< EON: ")" >
+|
+< SON: "(" >
+|
+< EOR: "]" >
+|
+< SOR: "[" >
+|
+< OR: "|" >
 |
 < DOT: "." >
 }
 
-////////////////////////////////////////
-////* copied from Parser.jj start */////
-////////////////////////////////////////
+//////////////////////////////////////
+////* copied from Parser.jj end */////
+//////////////////////////////////////
+
+
+/**
+ * Converts a ParseException (local to this particular instantiation
+ * of the parser) into a CypherParseException (common to all parsers).
+ */
+JAVACODE CypherParseException convertException(Throwable ex)
+{
+    if (ex instanceof CypherParseException) {
+        return (CypherParseException) ex;
+    }
+    ParserPos pos = null;
+    int[][] expectedTokenSequences = null;
+    String[] tokenImage = null;
+    if (ex instanceof ParseException) {
+        ParseException pex = (ParseException) ex;
+        expectedTokenSequences = pex.expectedTokenSequences;
+        tokenImage = pex.tokenImage;
+        if (pex.currentToken != null) {
+            final Token token = pex.currentToken.next;
+            pos = new ParserPos(
+                token.beginLine,
+                token.beginColumn,
+                token.endLine,
+                token.endColumn);
+        }
+    } else if (ex instanceof TokenMgrError) {
+        TokenMgrError tme = (TokenMgrError) ex;
+        expectedTokenSequences = null;
+        tokenImage = null;
+        // Example:
+        //    Lexical error at line 3, column 24.  Encountered "#" after "a".
+        final java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+            "(?s)Lexical error at line ([0-9]+), column ([0-9]+).*");
+        java.util.regex.Matcher matcher = pattern.matcher(ex.getMessage());
+        if (matcher.matches()) {
+            int line = Integer.parseInt(matcher.group(1));
+            int column = Integer.parseInt(matcher.group(2));
+            pos = new ParserPos(line, column, line, column);
+        }
+    } else if (ex instanceof PolyphenyDbContextException) {
+        // PolyphenyDbContextException is the standard wrapper for exceptions
+        // produced by the validator, but in the parser, the standard is
+        // SqlParseException; so, strip it away. In case you were wondering,
+        // the PolyphenyDbContextException appears because the parser
+        // occasionally calls into validator-style code such as
+        // SqlSpecialOperator.reduceExpr.
+        PolyphenyDbContextException ece =
+            (PolyphenyDbContextException) ex;
+        pos = new ParserPos(
+            ece.getPosLine(),
+            ece.getPosColumn(),
+            ece.getEndPosLine(),
+            ece.getEndPosColumn());
+        ex = ece.getCause();
+    }
+
+    return new CypherParseException(
+        ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex);
+}
+
+/**
+ * Removes or transforms misleading information from a parse exception.
+ *
+ * @param e dirty excn
+ *
+ * @return clean excn
+ */
+JAVACODE ParseException cleanupParseException(ParseException ex)
+{
+    if (ex.expectedTokenSequences == null) {
+        return ex;
+    }
+    int iIdentifier = Arrays.asList(ex.tokenImage).indexOf("<IDENTIFIER>");
+
+    // Find all sequences in the error which contain identifier. For
+    // example,
+    //       {<IDENTIFIER>}
+    //       {A}
+    //       {B, C}
+    //       {D, <IDENTIFIER>}
+    //       {D, A}
+    //       {D, B}
+    //
+    // would yield
+    //       {}
+    //       {D}
+    boolean id = false;
+    final List<int[]> prefixList = new ArrayList<int[]>();
+    for (int i = 0; i < ex.expectedTokenSequences.length; ++i) {
+        int[] seq = ex.expectedTokenSequences[i];
+        int j = seq.length - 1;
+        int i1 = seq[j];
+        if (i1 == iIdentifier) {
+            int[] prefix = new int[j];
+            System.arraycopy(seq, 0, prefix, 0, j);
+            prefixList.add(prefix);
+        }
+    }
+
+    if (prefixList.isEmpty()) {
+        return ex;
+    }
+
+    int[][] prefixes = (int[][])
+        prefixList.toArray(new int[prefixList.size()][]);
+
+    // Since <IDENTIFIER> was one of the possible productions,
+    // we know that the parser will also have included all
+    // of the non-reserved keywords (which are treated as
+    // identifiers in non-keyword contexts).  So, now we need
+    // to clean those out, since they're totally irrelevant.
+
+    final List<int[]> list = new ArrayList<int[]>();
+    Metadata metadata = getMetadata();
+    for (int i = 0; i < ex.expectedTokenSequences.length; ++i) {
+        int [] seq = ex.expectedTokenSequences[i];
+        String tokenImage = ex.tokenImage[seq[seq.length - 1]];
+        String token = MqlParserUtil.getTokenVal(tokenImage);
+        if (token == null  || !metadata.isNonReservedKeyword(token)) {
+            list.add(seq);
+            continue;
+        }
+        boolean match = matchesPrefix(seq, prefixes);
+        if (!match) {
+            list.add(seq);
+        }
+    }
+
+    ex.expectedTokenSequences =
+        (int [][]) list.toArray(new int [list.size()][]);
+    return ex;
+}
+
+JAVACODE protected ParserPos getPos()
+{
+    return new ParserPos(
+        token.beginLine,
+        token.beginColumn,
+        token.endLine,
+        token.endColumn);
+}
+
+JAVACODE boolean matchesPrefix(int[] seq, int[][] prefixes)
+{
+    nextPrefix:
+    for (int[] prefix : prefixes) {
+        if (seq.length == prefix.length + 1) {
+            for (int k = 0; k < prefix.length; k++) {
+                if (prefix[k] != seq[k]) {
+                    continue nextPrefix;
+                }
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+
+//////////////////////////////////////
+//////////////////////////////////////
+//////////////////////////////////////
+
+
+/** Root production. */
+CypherNode Input() :
+{
+ CypherNode n;
+}
+{
+    /** only one statement for now **/
+    n = Statement() <EOF>
+    {return n;}
+}
+
+
+/** Brace matching production. */
+CypherNode Statement() :
+{
+    MqlNode n;
+}
+{
+    (
+        <CREATE> n = Create()
+        |
+        <MATCH> n = Match()
+    )
+    {return n;}
+}
+
+CypherNode Create():
+{
+}
+{
+    {return new CypherCreate();}
+}
+
+CypherNode Match():
+{
+}
+{
+    {return new CypherMatch();}
+}

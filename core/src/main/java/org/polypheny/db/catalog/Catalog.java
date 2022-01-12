@@ -1510,7 +1510,9 @@ public abstract class Catalog {
         @SerializedName("relational")
         RELATIONAL( 1 ),
         @SerializedName("document")
-        DOCUMENT( 2 );
+        DOCUMENT( 2 ),
+        @SerializedName("graph")
+        GRAPH( 3 );
 
         // GRAPH, DOCUMENT, ...
 
@@ -1564,7 +1566,10 @@ public abstract class Catalog {
         @SerializedName("rel")
         REL_ALG( SchemaType.RELATIONAL ),
         @SerializedName("pig")
-        PIG( SchemaType.RELATIONAL );
+        PIG( SchemaType.RELATIONAL ),
+        @SerializedName("cypher")
+        Cypher( SchemaType.RELATIONAL );
+
 
         @Getter
         private final SchemaType schemaType;
