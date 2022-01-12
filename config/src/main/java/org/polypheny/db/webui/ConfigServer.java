@@ -58,6 +58,7 @@ public class ConfigServer implements ConfigListener {
                 return gson.fromJson( json, targetClass );
             }
         };
+
         Javalin http = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
             config.enableCorsForAllOrigins();

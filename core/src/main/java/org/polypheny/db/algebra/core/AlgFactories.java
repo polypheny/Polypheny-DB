@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -248,7 +248,8 @@ public class AlgFactories {
 
 
     /**
-     * Can create a {@link SetOp} for a particular kind of set operation (UNION, EXCEPT, INTERSECT) and of the appropriate type for this rule's calling convention.
+     * Can create a {@link SetOp} for a particular kind of set operation (UNION, EXCEPT, INTERSECT) and of the appropriate
+     * type for this rule's calling convention.
      */
     public interface SetOpFactory {
 
@@ -261,7 +262,8 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link AlgFactories.SetOpFactory} that returns a vanilla {@link SetOp} for the particular kind of set operation (UNION, EXCEPT, INTERSECT).
+     * Implementation of {@link AlgFactories.SetOpFactory} that returns a vanilla {@link SetOp} for the particular kind of
+     * set operation (UNION, EXCEPT, INTERSECT).
      */
     private static class SetOpFactoryImpl implements SetOpFactory {
 
@@ -290,7 +292,12 @@ public class AlgFactories {
         /**
          * Creates an aggregate.
          */
-        AlgNode createAggregate( AlgNode input, boolean indicator, ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls );
+        AlgNode createAggregate(
+                AlgNode input,
+                boolean indicator,
+                ImmutableBitSet groupSet,
+                ImmutableList<ImmutableBitSet> groupSets,
+                List<AggregateCall> aggCalls );
 
     }
 
@@ -302,7 +309,12 @@ public class AlgFactories {
 
         @Override
         @SuppressWarnings("deprecation")
-        public AlgNode createAggregate( AlgNode input, boolean indicator, ImmutableBitSet groupSet, ImmutableList<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+        public AlgNode createAggregate(
+                AlgNode input,
+                boolean indicator,
+                ImmutableBitSet groupSet,
+                ImmutableList<ImmutableBitSet> groupSets,
+                List<AggregateCall> aggCalls ) {
             return LogicalAggregate.create( input, indicator, groupSet, groupSets, aggCalls );
         }
 
@@ -352,7 +364,13 @@ public class AlgFactories {
          * @param joinType Join type
          * @param semiJoinDone Whether this join has been translated to a semi-join
          */
-        AlgNode createJoin( AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean semiJoinDone );
+        AlgNode createJoin(
+                AlgNode left,
+                AlgNode right,
+                RexNode condition,
+                Set<CorrelationId> variablesSet,
+                JoinAlgType joinType,
+                boolean semiJoinDone );
 
     }
 
@@ -363,8 +381,21 @@ public class AlgFactories {
     private static class JoinFactoryImpl implements JoinFactory {
 
         @Override
-        public AlgNode createJoin( AlgNode left, AlgNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinAlgType joinType, boolean semiJoinDone ) {
-            return LogicalJoin.create( left, right, condition, variablesSet, joinType, semiJoinDone, ImmutableList.of() );
+        public AlgNode createJoin(
+                AlgNode left,
+                AlgNode right,
+                RexNode condition,
+                Set<CorrelationId> variablesSet,
+                JoinAlgType joinType,
+                boolean semiJoinDone ) {
+            return LogicalJoin.create(
+                    left,
+                    right,
+                    condition,
+                    variablesSet,
+                    joinType,
+                    semiJoinDone,
+                    ImmutableList.of() );
         }
 
     }
@@ -386,7 +417,12 @@ public class AlgFactories {
          * @param requiredColumns Required columns
          * @param joinType Join type
          */
-        AlgNode createCorrelate( AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType );
+        AlgNode createCorrelate(
+                AlgNode left,
+                AlgNode right,
+                CorrelationId correlationId,
+                ImmutableBitSet requiredColumns,
+                SemiJoinType joinType );
 
     }
 
@@ -397,8 +433,18 @@ public class AlgFactories {
     private static class CorrelateFactoryImpl implements CorrelateFactory {
 
         @Override
-        public AlgNode createCorrelate( AlgNode left, AlgNode right, CorrelationId correlationId, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
-            return LogicalCorrelate.create( left, right, correlationId, requiredColumns, joinType );
+        public AlgNode createCorrelate(
+                AlgNode left,
+                AlgNode right,
+                CorrelationId correlationId,
+                ImmutableBitSet requiredColumns,
+                SemiJoinType joinType ) {
+            return LogicalCorrelate.create(
+                    left,
+                    right,
+                    correlationId,
+                    requiredColumns,
+                    joinType );
         }
 
     }
@@ -480,7 +526,11 @@ public class AlgFactories {
                 ImmutableList<BsonValue> tuples,
                 AlgDataType rowType,
                 ImmutableList<ImmutableList<RexLiteral>> normalizedTuple ) {
-            return LogicalDocuments.create( cluster, ImmutableList.copyOf( tuples ), rowType, ImmutableList.copyOf( normalizedTuple ) );
+            return LogicalDocuments.create(
+                    cluster,
+                    ImmutableList.copyOf( tuples ),
+                    rowType,
+                    ImmutableList.copyOf( normalizedTuple ) );
         }
 
     }
@@ -507,7 +557,7 @@ public class AlgFactories {
         @Override
         public AlgNode createScan( AlgOptCluster cluster, AlgOptTable table ) {
 
-            //check if RelOptTable contains a View, in this case a LogicalViewTableScan needs to be created
+            // Check if RelOptTable contains a View, in this case a LogicalViewTableScan needs to be created
             if ( (((AlgOptTableImpl) table).getTable()) instanceof LogicalTable ) {
                 Catalog catalog = Catalog.getInstance();
                 long idLogical = ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId();
@@ -526,7 +576,7 @@ public class AlgFactories {
 
 
     /**
-     * Creates a {@link TableScanFactory} that can expand {@link TranslatableTable} instances, but explodes on views.
+     * Creates a {@link TableScanFactory} that can expand {@link TranslatableTable} instances.
      *
      * @param tableScanFactory Factory for non-translatable tables
      * @return Table scan factory
@@ -553,8 +603,19 @@ public class AlgFactories {
          * Creates a {@link Match}.
          */
         AlgNode createMatch(
-                AlgNode input, RexNode pattern, AlgDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
-                RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval );
+                AlgNode input,
+                RexNode pattern,
+                AlgDataType rowType,
+                boolean strictStart,
+                boolean strictEnd,
+                Map<String, RexNode> patternDefinitions,
+                Map<String, RexNode> measures,
+                RexNode after,
+                Map<String, ? extends SortedSet<String>> subsets,
+                boolean allRows,
+                List<RexNode> partitionKeys,
+                AlgCollation orderKeys,
+                RexNode interval );
 
     }
 
@@ -566,9 +627,33 @@ public class AlgFactories {
 
         @Override
         public AlgNode createMatch(
-                AlgNode input, RexNode pattern, AlgDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
-                RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, AlgCollation orderKeys, RexNode interval ) {
-            return LogicalMatch.create( input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
+                AlgNode input,
+                RexNode pattern,
+                AlgDataType rowType,
+                boolean strictStart,
+                boolean strictEnd,
+                Map<String, RexNode> patternDefinitions,
+                Map<String, RexNode> measures,
+                RexNode after,
+                Map<String, ? extends SortedSet<String>> subsets,
+                boolean allRows,
+                List<RexNode> partitionKeys,
+                AlgCollation orderKeys,
+                RexNode interval ) {
+            return LogicalMatch.create(
+                    input,
+                    rowType,
+                    pattern,
+                    strictStart,
+                    strictEnd,
+                    patternDefinitions,
+                    measures,
+                    after,
+                    subsets,
+                    allRows,
+                    partitionKeys,
+                    orderKeys,
+                    interval );
         }
 
     }
@@ -582,7 +667,12 @@ public class AlgFactories {
         /**
          * Creates a {@link ConditionalExecute}.
          */
-        AlgNode createConditionalExecute( AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage );
+        AlgNode createConditionalExecute(
+                AlgNode left,
+                AlgNode right,
+                Condition condition,
+                Class<? extends Exception> exceptionClass,
+                String exceptionMessage );
 
     }
 
@@ -593,8 +683,18 @@ public class AlgFactories {
     private static class ConditionalExecuteFactoryImpl implements ConditionalExecuteFactory {
 
         @Override
-        public AlgNode createConditionalExecute( AlgNode left, AlgNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
-            return LogicalConditionalExecute.create( left, right, condition, exceptionClass, exceptionMessage );
+        public AlgNode createConditionalExecute(
+                AlgNode left,
+                AlgNode right,
+                Condition condition,
+                Class<? extends Exception> exceptionClass,
+                String exceptionMessage ) {
+            return LogicalConditionalExecute.create(
+                    left,
+                    right,
+                    condition,
+                    exceptionClass,
+                    exceptionMessage );
         }
 
     }

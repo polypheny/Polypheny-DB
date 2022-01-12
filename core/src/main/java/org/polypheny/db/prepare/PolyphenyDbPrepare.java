@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,11 @@
 package org.polypheny.db.prepare;
 
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function0;
-import org.apache.calcite.linq4j.tree.ClassDeclaration;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -34,13 +29,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.ArrayBindable;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.util.CyclicDefinitionException;
-import org.polypheny.db.util.ImmutableIntList;
 
 
 /**
@@ -63,83 +52,11 @@ public interface PolyphenyDbPrepare {
     void executeDdl( Context context, Node node );
 
     /**
-     * Analyzes a view.
-     *
-     * @param context Context
-     * @param sql View SQL
-     * @param fail Whether to fail (and throw a descriptive error message) if the view is not modifiable
-     * @return Result of analyzing the view
-     */
-    AnalyzeViewResult analyzeView( Context context, String sql, boolean fail );
-
-    //<T> PolyphenyDbSignature<T> prepareSql( Context context, Query<T> query, Type elementType, long maxRowCount );
-
-    //<T> PolyphenyDbSignature<T> prepareQueryable( Context context, Queryable<T> queryable );
-
-
-    /**
-     * Callback to register Spark as the main engine.
-     */
-    interface SparkHandler {
-
-        AlgNode flattenTypes( AlgOptPlanner planner, AlgNode rootRel, boolean restructure );
-
-        void registerRules( RuleSetBuilder builder );
-
-        boolean enabled();
-
-        ArrayBindable compile( ClassDeclaration expr, String s );
-
-        Object sparkContext();
-
-        /**
-         * Allows Spark to declare the rules it needs.
-         */
-        interface RuleSetBuilder {
-
-            void addRule( AlgOptRule rule );
-
-            void removeRule( AlgOptRule rule );
-
-        }
-
-    }
-
-
-    /**
      * Namespace that allows us to define non-abstract methods inside an interface.
      */
     class Dummy {
 
-        private static SparkHandler sparkHandler;
-
-
         private Dummy() {
-        }
-
-
-        /**
-         * Returns a spark handler. Returns a trivial handler, for which {@link SparkHandler#enabled()} returns {@code false},
-         * if {@code enable} is {@code false} or if Spark is not on the class path. Never returns null.
-         */
-        public static synchronized SparkHandler getSparkHandler( boolean enable ) {
-            if ( sparkHandler == null ) {
-                sparkHandler = enable ? createHandler() : new TrivialSparkHandler();
-            }
-            return sparkHandler;
-        }
-
-
-        private static SparkHandler createHandler() {
-            try {
-                final Class<?> clazz = Class.forName( "org.polypheny.db.adapter.spark.SparkHandlerImpl" );
-                Method method = clazz.getMethod( "instance" );
-                return (PolyphenyDbPrepare.SparkHandler) method.invoke( null );
-            } catch ( ClassNotFoundException e ) {
-                return new TrivialSparkHandler();
-            } catch ( IllegalAccessException | ClassCastException | InvocationTargetException | NoSuchMethodException e ) {
-                throw new RuntimeException( e );
-            }
         }
 
 
@@ -166,42 +83,6 @@ public interface PolyphenyDbPrepare {
         public static void pop( Context context ) {
             Context x = THREAD_CONTEXT_STACK.get().pop();
             assert x == context;
-        }
-
-
-        /**
-         * Implementation of {@link SparkHandler} that either does nothing or throws for each method. Use this if Spark is not installed.
-         */
-        private static class TrivialSparkHandler implements SparkHandler {
-
-            @Override
-            public AlgNode flattenTypes( AlgOptPlanner planner, AlgNode rootRel, boolean restructure ) {
-                return rootRel;
-            }
-
-
-            @Override
-            public void registerRules( RuleSetBuilder builder ) {
-            }
-
-
-            @Override
-            public boolean enabled() {
-                return false;
-            }
-
-
-            @Override
-            public ArrayBindable compile( ClassDeclaration expr, String s ) {
-                throw new UnsupportedOperationException();
-            }
-
-
-            @Override
-            public Object sparkContext() {
-                throw new UnsupportedOperationException();
-            }
-
         }
 
     }
@@ -261,45 +142,6 @@ public interface PolyphenyDbPrepare {
         public ConvertResult( PolyphenyDbPrepareImpl prepare, Validator validator, String sql, Node sqlNode, AlgDataType rowType, AlgRoot root ) {
             super( prepare, validator, sql, sqlNode, rowType );
             this.root = root;
-        }
-
-    }
-
-
-    /**
-     * The result of analyzing a view.
-     */
-    class AnalyzeViewResult extends ConvertResult {
-
-        /**
-         * Not null if and only if the view is modifiable.
-         */
-        public final Table table;
-        public final ImmutableList<String> tablePath;
-        public final RexNode constraint;
-        public final ImmutableIntList columnMapping;
-        public final boolean modifiable;
-
-
-        public AnalyzeViewResult(
-                PolyphenyDbPrepareImpl prepare,
-                Validator validator,
-                String sql,
-                Node sqlNode,
-                AlgDataType rowType,
-                AlgRoot root,
-                Table table,
-                ImmutableList<String> tablePath,
-                RexNode constraint,
-                ImmutableIntList columnMapping,
-                boolean modifiable ) {
-            super( prepare, validator, sql, sqlNode, rowType, root );
-            this.table = table;
-            this.tablePath = tablePath;
-            this.constraint = constraint;
-            this.columnMapping = columnMapping;
-            this.modifiable = modifiable;
-            Preconditions.checkArgument( modifiable == (table != null) );
         }
 
     }

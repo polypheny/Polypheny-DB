@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,6 @@ import org.polypheny.db.interpreter.Sink;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
@@ -97,7 +96,6 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     public Node implement( final InterpreterImplementor implementor ) {
         final Bindable bindable = toBindable(
                 implementor.internalParameters,
-                implementor.spark,
                 (EnumerableAlg) getInput(),
                 Prefer.ARRAY,
                 implementor.dataContext.getStatement() ).left;
@@ -107,7 +105,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     }
 
 
-    public static Pair<Bindable<Object[]>, String> toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableAlg alg, EnumerableAlg.Prefer prefer, Statement statement ) {
+    public static Pair<Bindable<Object[]>, String> toBindable( Map<String, Object> parameters, EnumerableAlg alg, EnumerableAlg.Prefer prefer, Statement statement ) {
         EnumerableAlgImplementor algImplementor = new EnumerableAlgImplementor( alg.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = algImplementor.implementRoot( alg, prefer );
@@ -120,11 +118,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
         Hook.JAVA_PLAN.run( s );
 
         try {
-            if ( spark != null && spark.enabled() ) {
-                return new Pair<>( spark.compile( expr, s ), s );
-            } else {
-                return new Pair<>( getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
-            }
+            return new Pair<>( getBindable( expr, s, alg.getRowType().getFieldCount() ), s );
         } catch ( Exception e ) {
             throw Helper.INSTANCE.wrap( "Error while compiling generated Java code:\n" + s, e );
         }

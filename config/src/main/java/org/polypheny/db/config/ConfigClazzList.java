@@ -44,6 +44,7 @@ public class ConfigClazzList extends Config {
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private final List<Class> value;
+    private List<Class> oldValue;
     private List<Class> defaultValue;
 
 
@@ -126,8 +127,17 @@ public class ConfigClazzList extends Config {
     public boolean setClazzList( final List<Class> value ) {
         if ( classes.containsAll( value ) ) {
             if ( validate( value ) ) {
+                if ( requiresRestart() ) {
+                    if ( this.oldValue == null ) {
+                        this.oldValue = new ArrayList<>();
+                        this.oldValue.addAll( this.value );
+                    }
+                }
                 this.value.clear();
                 this.value.addAll( value );
+                if ( this.oldValue != null && this.oldValue.equals( this.value ) ) {
+                    this.oldValue = null;
+                }
                 notifyConfigListeners();
                 return true;
             } else {

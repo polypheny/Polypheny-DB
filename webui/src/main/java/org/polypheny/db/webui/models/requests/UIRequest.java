@@ -17,7 +17,16 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import org.polypheny.db.webui.models.SortState;
 
 
@@ -25,6 +34,11 @@ import org.polypheny.db.webui.models.SortState;
  * Required to parse a request coming from the UI using Gson
  */
 public class UIRequest {
+
+    static {
+
+    }
+
 
     /**
      * Type of a request, e.g. QueryRequest or RelAlgRequest
@@ -63,6 +77,42 @@ public class UIRequest {
     public boolean noLimit;
 
 
+    public UIRequest() {
+        // empty on purpose
+    }
+
+
+    private UIRequest( JsonReader in ) throws IOException {
+        while ( in.peek() != JsonToken.NULL ) {
+            switch ( in.nextName() ) {
+                case "requestType":
+                    requestType = in.nextString();
+                    break;
+                case "tableId":
+                    tableId = in.nextString();
+                    break;
+                case "currentPage":
+                    currentPage = in.nextInt();
+                    break;
+                case "data":
+                    data = stringMapAdapter.read( in );
+                    break;
+                case "filter":
+                    filter = stringMapAdapter.read( in );
+                    break;
+                case "sortState":
+                    sortState = sortStateMapAdapter.read( in );
+                    break;
+                case "noLimit":
+                    noLimit = in.nextBoolean();
+                    break;
+                default:
+                    throw new RuntimeException( "Error while deserializing UIRequest." );
+            }
+        }
+    }
+
+
     public String getSchemaName() {
         if ( tableId != null ) {
             return tableId.split( "\\." )[0];
@@ -76,6 +126,119 @@ public class UIRequest {
             return tableId.split( "\\." )[1];
         }
         return null;
+    }
+
+
+    static BiConsumer<JsonWriter, String> stringSerializer = ( out, val ) -> {
+        try {
+            out.value( val );
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Error while serializing string." );
+        }
+    };
+
+    static BiConsumer<JsonWriter, SortState> sortSerializer = ( out, val ) -> {
+        try {
+            SortState.getSerializer().write( out, val );
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Error while serializing sort." );
+        }
+    };
+
+    static final TypeAdapter<Map<String, String>> stringMapAdapter = getMapTypeAdapter( stringSerializer, ( e ) -> {
+        try {
+            return e.nextString();
+        } catch ( IOException ex ) {
+            throw new RuntimeException( "Error while deserializing string." );
+        }
+    } );
+    static final TypeAdapter<Map<String, SortState>> sortStateMapAdapter = getMapTypeAdapter( sortSerializer, ( e ) -> {
+        try {
+            return SortState.getSerializer().read( e );
+        } catch ( IOException ex ) {
+            throw new RuntimeException( "Error while deserializing string." );
+        }
+    } );
+
+
+    public static TypeAdapter<UIRequest> getSerializer() {
+        return new TypeAdapter<UIRequest>() {
+            @Override
+            public void write( JsonWriter out, UIRequest value ) throws IOException {
+                if ( value == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginObject();
+                out.name( "requestType" );
+                out.value( value.requestType );
+                out.name( "tableId" );
+                out.value( value.tableId );
+                out.name( "currentPage" );
+                out.value( value.currentPage );
+                out.name( "data" );
+                stringMapAdapter.write( out, value.data );
+                out.name( "filter" );
+                stringMapAdapter.write( out, value.filter );
+                out.name( "sortState" );
+                sortStateMapAdapter.write( out, value.sortState );
+                out.name( "noLimit" );
+                out.value( value.noLimit );
+                out.endObject();
+            }
+
+
+            @Override
+            public UIRequest read( JsonReader in ) throws IOException {
+                if ( in.peek() == JsonToken.NULL ) {
+                    in.nextNull();
+                    return null;
+                }
+                in.beginObject();
+                UIRequest request = new UIRequest( in );
+                in.endObject();
+                return request;
+            }
+        };
+    }
+
+
+    private static <E> TypeAdapter<Map<String, E>> getMapTypeAdapter( BiConsumer<JsonWriter, E> valSerializer, Function<JsonReader, E> valDeserializer ) {
+        return new TypeAdapter<Map<String, E>>() {
+            @Override
+            public void write( JsonWriter out, Map<String, E> value ) throws IOException {
+                if ( value == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginObject();
+                for ( Entry<String, E> entry : value.entrySet() ) {
+                    out.beginObject();
+                    out.name( entry.getKey() );
+                    valSerializer.accept( out, entry.getValue() );
+                    out.endObject();
+                }
+                out.endObject();
+            }
+
+
+            @Override
+            public Map<String, E> read( JsonReader in ) throws IOException {
+                if ( in.peek() == JsonToken.NULL ) {
+                    in.nextNull();
+                    return null;
+                }
+                Map<String, E> map = new HashMap<>();
+                in.beginObject();
+                while ( in.peek() != JsonToken.END_OBJECT ) {
+                    in.beginObject();
+                    map.put( in.nextName(), valDeserializer.apply( in ) );
+                    in.endObject();
+                }
+                in.endObject();
+                return map;
+            }
+        };
     }
 
 }

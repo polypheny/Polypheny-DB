@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,8 @@ public class AbstractSchema implements Schema {
 
     /**
      * Returns a multi-map of functions in this schema by name.
-     * It is a multi-map because functions are overloaded; there may be more than one function in a schema with a given name (as long as they have different parameter lists).
+     * It is a multi-map because functions are overloaded; there may be more than one function in a schema with a given
+     * name (as long as they have different parameter lists).
      *
      * The implementations of {@link #getFunctionNames()} and {@link Schema#getFunctions(String)} depend on this map.
      * The default implementation of this method returns the empty multi-map.

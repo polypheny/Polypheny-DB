@@ -34,6 +34,7 @@ public class ConfigEnumList extends Config {
     @SerializedName("values")
     private final Set<Enum> enumValues;
     private final List<Enum> value;
+    private List<Enum> oldValue;
     private List<Enum> defaultValue;
 
 
@@ -107,8 +108,19 @@ public class ConfigEnumList extends Config {
     public boolean setEnumList( final List<Enum> value ) {
         if ( enumValues.containsAll( value ) ) {
             if ( validate( value ) ) {
+                if ( requiresRestart() ) {
+                    if ( this.oldValue == null ) {
+                        this.oldValue = new ArrayList<>();
+                        this.oldValue.addAll( this.value );
+                    }
+                }
+
                 this.value.clear();
                 this.value.addAll( value );
+
+                if ( this.oldValue != null && this.oldValue.equals( this.value ) ) {
+                    this.oldValue = null;
+                }
                 notifyConfigListeners();
                 return true;
             } else {

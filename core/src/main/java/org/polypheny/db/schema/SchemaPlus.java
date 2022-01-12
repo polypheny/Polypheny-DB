@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,14 +41,15 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 /**
  * Extension to the {@link Schema} interface.
  *
- * Given a user-defined schema that implements the {@link Schema} interface, Polypheny-DB creates a wrapper that implements the {@code SchemaPlus} interface.
- * This provides extra functionality, such as access to tables that have been added explicitly.
+ * Given a user-defined schema that implements the {@link Schema} interface, Polypheny-DB creates a wrapper that implements
+ * the {@code SchemaPlus} interface. This provides extra functionality, such as access to tables that have been added explicitly.
  *
- * A user-defined schema does not need to implement this interface, but by the time a schema is passed to a method in a user-defined schema or user-defined table, it will have been wrapped in this interface.
+ * A user-defined schema does not need to implement this interface, but by the time a schema is passed to a method in a
+ * user-defined schema or user-defined table, it will have been wrapped in this interface.
  *
- * SchemaPlus is intended to be used by users but not instantiated by them.
- * Users should only use the SchemaPlus they are given by the system.
- * The purpose of SchemaPlus is to expose to user code, in a read only manner, some of the extra information about schemas that Polypheny-DB builds up when a schema is registered.
+ * SchemaPlus is intended to be used by users but not instantiated by them. Users should only use the SchemaPlus they are
+ * given by the system. The purpose of SchemaPlus is to expose to user code, in a read only manner, some of the extra
+ * information about schemas that Polypheny-DB builds up when a schema is registered.
  */
 public interface SchemaPlus extends Schema {
 

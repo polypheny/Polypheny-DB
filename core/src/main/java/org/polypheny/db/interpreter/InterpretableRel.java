@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler;
 
 
 /**
@@ -60,14 +59,12 @@ public interface InterpretableRel extends AlgNode {
 
         public final Compiler compiler;
         public final Map<String, Object> internalParameters = new LinkedHashMap<>();
-        public final SparkHandler spark;
         public final DataContext dataContext;
         public final Map<AlgNode, List<Sink>> algSinks = new HashMap<>();
 
 
-        public InterpreterImplementor( Compiler compiler, SparkHandler spark, DataContext dataContext ) {
+        public InterpreterImplementor( Compiler compiler, DataContext dataContext ) {
             this.compiler = compiler;
-            this.spark = spark;
             this.dataContext = dataContext;
         }
 

@@ -17,13 +17,23 @@
 package org.polypheny.db.webui.models;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
@@ -174,6 +184,135 @@ public class Result {
 
 
     /**
+     * Deserializer Constructor, which is able to create a Result from its
+     * serialized form
+     *
+     * @param in the reader, which contains the Result
+     */
+    private Result( JsonReader in ) throws IOException {
+        while ( in.peek() != JsonToken.END_OBJECT ) {
+            switch ( in.nextName() ) {
+                case "header":
+                    in.beginArray();
+                    TypeAdapter<DbColumn> serializer = DbColumn.getSerializer();
+                    List<DbColumn> cols = new ArrayList<>();
+                    while ( in.peek() != JsonToken.END_ARRAY ) {
+                        cols.add( serializer.read( in ) );
+                    }
+                    in.endArray();
+                    header = cols.toArray( new DbColumn[0] );
+                    break;
+                case "data":
+                    data = extractNestedArray( in );
+                    break;
+                case "currentPage":
+                    currentPage = in.nextInt();
+                    break;
+                case "highestPage":
+                    highestPage = in.nextInt();
+                    break;
+                case "table":
+                    table = in.nextString();
+                    break;
+                case "tables":
+                    tables = extractArray( in ).toArray( new String[0] );
+                    break;
+                case "request":
+                    request = UIRequest.getSerializer().read( in );
+                    break;
+                case "error":
+                    error = in.nextString();
+                    break;
+                case "exception":
+                    exception = HttpServer.throwableTypeAdapter.read( in );
+                    break;
+                case "affectedRows":
+                    affectedRows = in.nextInt();
+                    break;
+                case "generatedQuery":
+                    generatedQuery = in.nextString();
+                    break;
+                case "type":
+                    type = extractEnum( in, ResultType::valueOf );
+                    break;
+                case "schemaType":
+                    schemaType = extractEnum( in, SchemaType::valueOf );
+                    break;
+                case "language":
+                    language = extractEnum( in, QueryLanguage::valueOf );
+                    break;
+                case "hasMoreRows":
+                    hasMoreRows = in.nextBoolean();
+                    break;
+                case "classificationInfo":
+                    classificationInfo = in.nextString();
+                    break;
+                case "explorerInd":
+                    explorerId = in.nextInt();
+                    break;
+                case "includesClassificationInfo":
+                    includesClassificationInfo = in.nextBoolean();
+                    break;
+                case "classifiedData":
+                    classifiedData = extractNestedArray( in );
+                    break;
+                case "isConvertedToSql":
+                    isConvertedToSql = in.nextBoolean();
+                    break;
+                case "xid":
+                    xid = in.nextString();
+                    break;
+                default:
+                    throw new RuntimeException( "There was an unrecognized column while deserializing Result." );
+            }
+        }
+
+    }
+
+
+    private String[][] extractNestedArray( JsonReader in ) throws IOException {
+        if ( in.peek() == JsonToken.NULL ) {
+            in.nextNull();
+            return null;
+        }
+        in.beginArray();
+        List<List<String>> rawData = new ArrayList<>();
+        while ( in.peek() != JsonToken.END_ARRAY ) {
+            List<String> list = extractArray( in );
+            rawData.add( list );
+        }
+        in.endArray();
+        return rawData.toArray( new String[0][] );
+    }
+
+
+    @NotNull
+    private List<String> extractArray( JsonReader in ) throws IOException {
+        if ( in.peek() == JsonToken.NULL ) {
+            in.nextNull();
+            return new ArrayList<>();
+        }
+        List<String> list = new ArrayList<>();
+        in.beginArray();
+        while ( in.peek() != JsonToken.END_ARRAY ) {
+            list.add( in.nextString() );
+        }
+        in.endArray();
+        return list;
+    }
+
+
+    private <T extends Enum<?>> T extractEnum( JsonReader in, Function<String, T> enumFunction ) throws IOException {
+        if ( in.peek() == JsonToken.NULL ) {
+            in.nextNull();
+            return null;
+        } else {
+            return enumFunction.apply( in.nextString() );
+        }
+    }
+
+
+    /**
      * Build a Result object containing the error message of a failed query
      *
      * @param error error message of the query
@@ -253,6 +392,130 @@ public class Result {
     public Result setTables( ArrayList<String> tables ) {
         this.tables = tables.toArray( new String[0] );
         return this;
+    }
+
+
+    public static TypeAdapter<Result> getSerializer() {
+        return new TypeAdapter<Result>() {
+            final ObjectMapper mapper = new ObjectMapper();
+
+
+            @Override
+            public void write( JsonWriter out, Result result ) throws IOException {
+                if ( result == null ) {
+                    out.nullValue();
+                    return;
+                }
+
+                out.beginObject();
+                out.name( "header" );
+                handleDbColumns( out, result );
+                out.name( "data" );
+                handleNestedArray( out, result.getData() );
+                out.name( "currentPage" );
+                out.value( result.currentPage );
+                out.name( "highestPage" );
+                out.value( result.highestPage );
+                out.name( "table" );
+                out.value( result.table );
+                out.name( "tables" );
+                handleArray( out, result.tables );
+                out.name( "request" );
+                UIRequest.getSerializer().write( out, result.request );
+                out.name( "error" );
+                out.value( result.error );
+                out.name( "exception" );
+                HttpServer.throwableTypeAdapter.write( out, result.exception );
+                out.name( "affectedRows" );
+                out.value( result.affectedRows );
+                out.name( "generatedQuery" );
+                out.value( result.generatedQuery );
+                out.name( "type" );
+                handleEnum( out, result.type );
+                out.name( "schemaType" );
+                handleEnum( out, result.schemaType );
+                out.name( "language" );
+                handleEnum( out, result.language );
+                out.name( "hasMoreRows" );
+                out.value( result.hasMoreRows );
+                out.name( "classificationInfo" );
+                out.value( result.classificationInfo );
+                out.name( "explorerId" );
+                out.value( result.explorerId );
+                out.name( "includesClassificationInfo" );
+                out.value( result.includesClassificationInfo );
+                out.name( "classifiedData" );
+                handleNestedArray( out, result.classifiedData );
+                out.name( "isConvertedToSql" );
+                out.value( result.isConvertedToSql );
+                out.name( "xid" );
+                out.value( result.xid );
+                out.endObject();
+            }
+
+
+            private void handleDbColumns( JsonWriter out, Result result ) throws IOException {
+                if ( result.getHeader() == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginArray();
+                TypeAdapter<DbColumn> dbSerializer = DbColumn.getSerializer();
+                for ( DbColumn column : result.getHeader() ) {
+                    dbSerializer.write( out, column );
+                }
+                out.endArray();
+            }
+
+
+            private void handleArray( JsonWriter out, String[] result ) throws IOException {
+                if ( result == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginArray();
+                for ( String table : result ) {
+                    out.value( table );
+                }
+                out.endArray();
+            }
+
+
+            private void handleNestedArray( JsonWriter out, String[][] result ) throws IOException {
+                if ( result == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginArray();
+                for ( String[] data : result ) {
+                    handleArray( out, data );
+                }
+                out.endArray();
+            }
+
+
+            private void handleEnum( JsonWriter out, Enum<?> enums ) throws IOException {
+                if ( enums == null ) {
+                    out.nullValue();
+                } else {
+                    out.value( enums.name() );
+                }
+            }
+
+
+            @Override
+            public Result read( JsonReader in ) throws IOException {
+                if ( in.peek() == null ) {
+                    in.nextNull();
+                    return null;
+                }
+                in.beginObject();
+                Result res = new Result( in );
+                in.endObject();
+                return res;
+            }
+
+        };
     }
 
 }

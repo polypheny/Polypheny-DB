@@ -30,6 +30,7 @@ public class ConfigEnum extends Config {
     @SerializedName("values")
     private final Set<Enum> enumValues;
     private Enum value;
+    private Enum oldValue;
     private Enum defaultValue;
 
 
@@ -96,7 +97,15 @@ public class ConfigEnum extends Config {
     public boolean setEnum( final Enum value ) {
         if ( enumValues.contains( value ) ) {
             if ( validate( value ) ) {
+                if ( requiresRestart() ) {
+                    if ( this.oldValue == null ) {
+                        this.oldValue = this.value;
+                    }
+                }
                 this.value = value;
+                if ( this.oldValue != null && this.oldValue.equals( value ) ) {
+                    this.oldValue = null;
+                }
                 notifyConfigListeners();
                 return true;
             } else {

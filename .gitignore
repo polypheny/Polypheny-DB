@@ -225,5 +225,6 @@ nbdist/
 !/libs/avatica-1.16.0-POLYPHENYDB-shaded.jar
 !/libs/avatica-server-1.16.0-POLYPHENYDB.jar
 /dbms/target/
+/dbms/src/main/resources/acknowledgements.txt
 
 .polypheny/*
