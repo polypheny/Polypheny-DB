@@ -175,6 +175,41 @@ public class Condition {
         return out;
     }
 
+    /**
+     * Implement the like keyword
+     *
+     * @param str Data in database
+     * @param expr String in SQL statement
+     * @return
+     */
+    private static boolean like( final String str, String expr ) {
+        final String[] parts = expr.split( "%" );
+        final boolean traillingOp = expr.endsWith( "%" );
+        expr = "";
+        for ( int i = 0, l = parts.length; i < l; ++i ) {
+            final String[] p = parts[i].split( "\\\\\\?" );
+            if ( p.length > 1 ) {
+                for ( int y = 0, l2 = p.length; y < l2; ++y ) {
+                    expr += p[y];
+                    if ( i + 1 < l2 ) {
+                        expr += ".";
+                    }
+                }
+            } else {
+                expr += parts[i];
+            }
+            if ( i + 1 < l ) {
+                expr += "%";
+            }
+        }
+        if ( traillingOp ) {
+            expr += "%";
+        }
+        expr = expr.replace( "_", "." );
+        expr = expr.replace( "%", ".*" );
+
+        return str.matches( expr );
+    }
 
     public boolean matches( final Object[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
@@ -286,10 +321,7 @@ public class Condition {
             case LESS_THAN_OR_EQUAL:
                 return comparison <= 0;
             case LIKE:
-                //todo maybe replace '%' by '(.*)' etc.
-                Pattern pattern = Pattern.compile( parameterValue.toString() );
-                Matcher matcher = pattern.matcher( columnValue.toString() );
-                return matcher.matches();
+                return like( columnValue.toString(), parameterValue.toString() );
             default:
                 throw new RuntimeException( operator + " comparison not supported by file adapter." );
         }
