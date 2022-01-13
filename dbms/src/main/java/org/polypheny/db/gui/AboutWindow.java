@@ -51,15 +51,12 @@ public class AboutWindow {
         frame.setBounds( 100, 100, 505, 300 );
         frame.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
         frame.add( new AboutPanel() );
+        frame.setAlwaysOnTop( true );
     }
 
 
     public void setVisible() {
         frame.setVisible( true );
-        java.awt.EventQueue.invokeLater( () -> {
-            frame.toFront();
-            frame.repaint();
-        } );
     }
 
 
