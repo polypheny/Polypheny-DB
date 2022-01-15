@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2142,10 +2142,10 @@ public class AlgDecorrelator implements ReflectiveVisitor {
 
     }
 
-    // REVIEW jhyde: This rule is non-static, depends on the state of members in RelDecorrelator, and has side-effects in the decorrelator.
+    // REVIEW: This rule is non-static, depends on the state of members in RelDecorrelator, and has side-effects in the decorrelator.
     // This breaks the contract of a planner rule, and the rule will not be reusable in other planners.
 
-    // REVIEW jvs: Shouldn't it also be incorporating the flavor attribute into the description?
+    // REVIEW: Shouldn't it also be incorporating the flavor attribute into the description?
 
 
     /**

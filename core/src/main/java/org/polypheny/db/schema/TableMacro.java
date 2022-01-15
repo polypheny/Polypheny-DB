@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,8 @@ import java.util.List;
 /**
  * Function that returns a {@link Table}.
  *
- * As the name "macro" implies, this is invoked at "compile time", that is, during query preparation. Compile-time expansion of table expressions allows for some very powerful query-optimizations.
+ * As the name "macro" implies, this is invoked at "compile time", that is, during query preparation. Compile-time expansion
+ * of table expressions allows for some very powerful query-optimizations.
  */
 public interface TableMacro extends Function {
 
@@ -51,5 +52,6 @@ public interface TableMacro extends Function {
      * @return Table
      */
     TranslatableTable apply( List<Object> arguments );
+
 }
 

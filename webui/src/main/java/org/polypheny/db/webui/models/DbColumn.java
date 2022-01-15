@@ -17,6 +17,11 @@
 package org.polypheny.db.webui.models;
 
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
@@ -116,6 +121,111 @@ public class DbColumn {
         this( name, dataType, collectionsType, nullable, precision, scale, dimension, cardinality, primary, defaultValue );
         this.sort = sort;
         this.filter = filter;
+    }
+
+
+    private DbColumn( JsonReader in ) throws IOException {
+        while ( in.peek() != JsonToken.END_OBJECT ) {
+            switch ( in.nextName() ) {
+                case "name":
+                    name = in.nextString();
+                    break;
+                case "dataType":
+                    dataType = in.nextString();
+                    break;
+                case "collectionsType":
+                    collectionsType = in.nextString();
+                    break;
+                case "nullable":
+                    nullable = in.nextBoolean();
+                    break;
+                case "precision":
+                    precision = handleInteger( in );
+                    break;
+                case "scale":
+                    scale = handleInteger( in );
+                    break;
+                case "dimension":
+                    dimension = handleInteger( in );
+                    break;
+                case "cardinality":
+                    cardinality = handleInteger( in );
+                    break;
+                case "primary":
+                    primary = in.nextBoolean();
+                    break;
+                case "defaultValue":
+                    defaultValue = in.nextString();
+                    break;
+                case "sort":
+                    sort = SortState.getSerializer().read( in );
+                    break;
+                case "filter":
+                    filter = in.nextString();
+                    break;
+                default:
+                    throw new RuntimeException( "There was an unrecognized column while deserializing DbColumn." );
+            }
+        }
+    }
+
+
+    private Integer handleInteger( JsonReader in ) throws IOException {
+        if ( in.peek() == JsonToken.NULL ) {
+            in.nextNull();
+            return null;
+        } else {
+            return in.nextInt();
+        }
+    }
+
+
+    public static TypeAdapter<DbColumn> getSerializer() {
+        return new TypeAdapter<DbColumn>() {
+            @Override
+            public void write( JsonWriter out, DbColumn col ) throws IOException {
+                out.beginObject();
+                out.name( "name" );
+                out.value( col.name );
+                out.name( "dataType" );
+                out.value( col.dataType );
+                out.name( "collectionsType" );
+                out.value( col.collectionsType );
+                out.name( "nullable" );
+                out.value( col.nullable );
+                out.name( "precision" );
+                out.value( col.precision );
+                out.name( "scale" );
+                out.value( col.scale );
+                out.name( "dimension" );
+                out.value( col.dimension );
+                out.name( "cardinality" );
+                out.value( col.cardinality );
+                out.name( "primary" );
+                out.value( col.primary );
+                out.name( "defaultValue" );
+                out.value( col.defaultValue );
+                out.name( "sort" );
+                SortState.getSerializer().write( out, col.sort );
+                out.name( "filter" );
+                out.value( col.filter );
+                out.endObject();
+            }
+
+
+            @Override
+            public DbColumn read( JsonReader in ) throws IOException {
+                if ( in.peek() == null ) {
+                    in.nextNull();
+                    return null;
+                }
+                in.beginObject();
+                DbColumn column = new DbColumn( in );
+                in.endObject();
+
+                return column;
+            }
+        };
     }
 
 }

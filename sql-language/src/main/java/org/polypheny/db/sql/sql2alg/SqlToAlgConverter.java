@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,7 +164,6 @@ import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.ModifiableView;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.Wrapper;
@@ -242,7 +241,7 @@ import org.slf4j.Logger;
 
 
 /**
- * Converts a SQL parse tree (consisting of {@link SqlNode} objects) into a relational algebra expression (consisting of {@link AlgNode} objects).
+ * Converts a SQL parse tree (consisting of {@link SqlNode} objects) into an algebra expression (consisting of {@link AlgNode} objects).
  *
  * The public entry points are: {@link #convertQuery}, {@link #convertExpression(SqlNode)}.
  */
@@ -2871,19 +2870,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     null,
                     false );
         }
-        final ModifiableView modifiableView = targetTable.unwrap( ModifiableView.class );
-        if ( modifiableView != null ) {
-            final Table delegateTable = modifiableView.getTable();
-            final AlgDataType delegateRowType = delegateTable.getRowType( typeFactory );
-            final AlgOptTable delegateRelOptTable =
-                    AlgOptTableImpl.create(
-                            null,
-                            delegateRowType,
-                            delegateTable,
-                            modifiableView.getTablePath() );
-            final AlgNode newSource = createSource( targetTable, source, modifiableView, delegateRowType );
-            return createModify( delegateRelOptTable, newSource );
-        }
         return LogicalTableModify.create(
                 targetTable,
                 catalogReader,
@@ -2892,48 +2878,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 null,
                 null,
                 false );
-    }
-
-
-    /**
-     * Wraps a relational expression in the projects and filters implied by a {@link ModifiableView}.
-     *
-     * The input relational expression is suitable for inserting into the view, and the returned relational expression is suitable for inserting into its delegate table.
-     *
-     * In principle, the delegate table of a view might be another modifiable view, and if so, the process can be repeated.
-     */
-    private AlgNode createSource( AlgOptTable targetTable, AlgNode source, ModifiableView modifiableView, AlgDataType delegateRowType ) {
-        final ImmutableIntList mapping = modifiableView.getColumnMapping();
-        assert mapping.size() == targetTable.getRowType().getFieldCount();
-
-        // For columns represented in the mapping, the expression is just a field reference.
-        final Map<Integer, RexNode> projectMap = new HashMap<>();
-        final List<RexNode> filters = new ArrayList<>();
-        for ( int i = 0; i < mapping.size(); i++ ) {
-            int target = mapping.get( i );
-            if ( target >= 0 ) {
-                projectMap.put( target, RexInputRef.of( i, source.getRowType() ) );
-            }
-        }
-
-        // For columns that are not in the mapping, and have a constraint of the form "column = value", the expression is the literal "value".
-        //
-        // If a column has multiple constraints, the extra ones will become a filter.
-        final RexNode constraint = modifiableView.getConstraint( rexBuilder, delegateRowType );
-        AlgOptUtil.inferViewPredicates( projectMap, filters, constraint );
-        final List<Pair<RexNode, String>> projects = new ArrayList<>();
-        for ( AlgDataTypeField field : delegateRowType.getFieldList() ) {
-            RexNode node = projectMap.get( field.getIndex() );
-            if ( node == null ) {
-                node = rexBuilder.makeNullLiteral( field.getType() );
-            }
-            projects.add( Pair.of( rexBuilder.ensureType( field.getType(), node, false ), field.getName() ) );
-        }
-
-        return algBuilder.push( source )
-                .projectNamed( Pair.left( projects ), Pair.right( projects ), false )
-                .filter( filters )
-                .build();
     }
 
 
@@ -2994,8 +2938,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      *
      * If the column list is not specified, source expressions match target columns in order.
      *
-     * If the column list is specified, Source expressions are mapped to target columns by name via targetColumnList, and may not cover the entire target table. So, we'll make up a full row, using a combination of
-     * default values and the source expressions provided.
+     * If the column list is specified, Source expressions are mapped to target columns by name via targetColumnList, and may
+     * not cover the entire target table. So, we'll make up a full row, using a combination of default values and the source
+     * expressions provided.
      *
      * @param call Insert expression
      * @param source Source relational expression

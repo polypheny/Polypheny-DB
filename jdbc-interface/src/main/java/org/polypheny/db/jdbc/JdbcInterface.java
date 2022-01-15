@@ -90,7 +90,7 @@ public class JdbcInterface extends QueryInterface {
             log.error( "Exception while starting JDBC interface", e );
         }
 
-        StatusService.print( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
+        StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
     }
 
 
@@ -116,6 +116,7 @@ public class JdbcInterface extends QueryInterface {
     protected void reloadSettings( List<String> updatedSettings ) {
         // There is no modifiable setting for this query interface
     }
+
 
     @Override
     public String getInterfaceType() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,20 +44,23 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 /**
  * A namespace for tables and functions.
  *
- * A schema can also contain sub-schemas, to any level of nesting. Most providers have a limited number of levels; for example, most JDBC databases have either one level ("schemas")
- * or two levels ("database" and "catalog").
+ * A schema can also contain sub-schemas, to any level of nesting. Most providers have a limited number of levels; for
+ * example, most JDBC databases have either one level ("schemas") or two levels ("database" and "catalog").
  *
- * There may be multiple overloaded functions with the same name but different numbers or types of parameters.
- * For this reason, {@link #getFunctions} returns a list of all members with the same name. Polypheny-DB will call {@link Schemas#resolve(AlgDataTypeFactory, String, java.util.Collection, java.util.List)}
+ * There may be multiple overloaded functions with the same name but different numbers or types of parameters. For this reason,
+ * {@link #getFunctions} returns a list of all members with the same name. Polypheny-DB will call
+ * {@link Schemas#resolve(AlgDataTypeFactory, String, java.util.Collection, java.util.List)}
  * to choose the appropriate one.
  *
- * The most common and important type of member is the one with no arguments and a result type that is a collection of records. This is called a <dfn>relation</dfn>. It is equivalent to a table in a relational database.
+ * The most common and important type of member is the one with no arguments and a result type that is a collection of records.
+ * This is called a <dfn>relation</dfn>. It is equivalent to a table in a relational database.
  *
  * For example, the query
  *
  * <blockquote>select * from sales.emps</blockquote>
  *
- * is valid if "sales" is a registered schema and "emps" is a member with zero parameters and a result type of <code>Collection(Record(int: "empno", String: "name"))</code>.
+ * is valid if "sales" is a registered schema and "emps" is a member with zero parameters and a result type of
+ * <code>Collection(Record(int: "empno", String: "name"))</code>.
  *
  * A schema may be nested within another schema; see {@link Schema#getSubSchema(String)}.
  */
@@ -133,7 +136,8 @@ public interface Schema {
     Expression getExpression( SchemaPlus parentSchema, String name );
 
     /**
-     * Returns whether the user is allowed to create new tables, functions and sub-schemas in this schema, in addition to those returned automatically by methods such as {@link #getTable(String)}.
+     * Returns whether the user is allowed to create new tables, functions and sub-schemas in this schema, in addition to
+     * those returned automatically by methods such as {@link #getTable(String)}.
      *
      * Even if this method returns true, the maps are not modified. Polypheny-DB stores the defined objects in a wrapper object.
      *
@@ -142,7 +146,8 @@ public interface Schema {
     boolean isMutable();
 
     /**
-     * Returns the snapshot of this schema as of the specified time. The contents of the schema snapshot should not change over time.
+     * Returns the snapshot of this schema as of the specified time. The contents of the schema snapshot should not change
+     * over time.
      *
      * @param version The current schema version
      * @return the schema snapshot.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ package org.polypheny.db.schema;
 
 
 /**
- * An interface to represent a version ID that can be used to create a read-consistent view of a Schema. This interface assumes a strict partial ordering contract that is:
+ * An interface to represent a version ID that can be used to create a read-consistent view of a Schema. This interface
+ * assumes a strict partial ordering contract that is:
  * <ol>
  * <li>irreflexive: !a.isBefore(a), which means a cannot happen before itself;</li>
  * <li>transitive: if a.isBefore(b) and b.isBefore(c) then a.isBefore(c);</li>
@@ -53,5 +54,6 @@ public interface SchemaVersion {
      * @param other the other Version object
      */
     boolean isBefore( SchemaVersion other );
+
 }
 

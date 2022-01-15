@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,10 +84,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
@@ -137,7 +133,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.Convention;
@@ -145,25 +140,21 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.hep.HepPlanner;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
-import org.polypheny.db.prepare.PolyphenyDbPrepare.SparkHandler.RuleSetBuilder;
 import org.polypheny.db.prepare.Prepare.PreparedExplain;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
 
 
@@ -280,14 +271,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-    @Override
-    public AnalyzeViewResult analyzeView( Context context, String sql, boolean fail ) {
-        return (AnalyzeViewResult) parse_( context, sql, true, true, fail );
-    }
-
-
     /**
-     * Shared implementation for {@link #parse}, {@link #convert} and {@link #analyzeView}.
+     * Shared implementation for {@link #parse} and {@link #convert}.
      */
     private ParseResult parse_( Context context, String sql, boolean convert, boolean analyze, boolean fail ) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
@@ -338,161 +323,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final NodeToAlgConverter converter = preparingStmt.getSqlToRelConverter( validator, catalogReader, new ConfigBuilder().build() );
 
         final AlgRoot root = converter.convertQuery( sqlNode1, false, true );
-        if ( analyze ) {
-            return analyze_( validator, sql, sqlNode1, root, fail );
-        }
         return new ConvertResult( this, validator, sql, sqlNode1, validator.getValidatedNodeType( sqlNode1 ), root );
-    }
-
-
-    private AnalyzeViewResult analyze_( Validator validator, String sql, Node sqlNode, AlgRoot root, boolean fail ) {
-        final RexBuilder rexBuilder = root.alg.getCluster().getRexBuilder();
-        AlgNode alg = root.alg;
-        final AlgNode viewRel = alg;
-        Project project;
-        if ( alg instanceof Project ) {
-            project = (Project) alg;
-            alg = project.getInput();
-        } else {
-            project = null;
-        }
-        Filter filter;
-        if ( alg instanceof Filter ) {
-            filter = (Filter) alg;
-            alg = filter.getInput();
-        } else {
-            filter = null;
-        }
-        TableScan scan;
-        if ( alg instanceof TableScan ) {
-            scan = (TableScan) alg;
-        } else {
-            scan = null;
-        }
-        if ( scan == null ) {
-            if ( fail ) {
-                throw validator.newValidationError( sqlNode, Static.RESOURCE.modifiableViewMustBeBasedOnSingleTable() );
-            }
-            return new AnalyzeViewResult(
-                    this,
-                    validator,
-                    sql,
-                    sqlNode,
-                    validator.getValidatedNodeType( sqlNode ),
-                    root,
-                    null,
-                    null,
-                    null,
-                    null,
-                    false );
-        }
-        final AlgOptTable targetRelTable = scan.getTable();
-        final AlgDataType targetRowType = targetRelTable.getRowType();
-        final Table table = targetRelTable.unwrap( Table.class );
-        final List<String> tablePath = targetRelTable.getQualifiedName();
-        assert table != null;
-        List<Integer> columnMapping;
-        final Map<Integer, RexNode> projectMap = new HashMap<>();
-        if ( project == null ) {
-            columnMapping = ImmutableIntList.range( 0, targetRowType.getFieldCount() );
-        } else {
-            columnMapping = new ArrayList<>();
-            for ( Ord<RexNode> node : Ord.zip( project.getProjects() ) ) {
-                if ( node.e instanceof RexInputRef ) {
-                    RexInputRef rexInputRef = (RexInputRef) node.e;
-                    int index = rexInputRef.getIndex();
-                    if ( projectMap.get( index ) != null ) {
-                        if ( fail ) {
-                            throw validator.newValidationError(
-                                    sqlNode,
-                                    Static.RESOURCE.moreThanOneMappedColumn(
-                                            targetRowType.getFieldList().get( index ).getName(),
-                                            Util.last( tablePath ) ) );
-                        }
-                        return new AnalyzeViewResult(
-                                this,
-                                validator,
-                                sql,
-                                sqlNode,
-                                validator.getValidatedNodeType( sqlNode ),
-                                root,
-                                null,
-                                null,
-                                null,
-                                null,
-                                false );
-                    }
-                    projectMap.put( index, rexBuilder.makeInputRef( viewRel, node.i ) );
-                    columnMapping.add( index );
-                } else {
-                    columnMapping.add( -1 );
-                }
-            }
-        }
-        final RexNode constraint;
-        if ( filter != null ) {
-            constraint = filter.getCondition();
-        } else {
-            constraint = rexBuilder.makeLiteral( true );
-        }
-        final List<RexNode> filters = new ArrayList<>();
-        // If we put a constraint in projectMap above, then filters will not be empty despite being a modifiable view.
-        final List<RexNode> filters2 = new ArrayList<>();
-        boolean retry = false;
-        AlgOptUtil.inferViewPredicates( projectMap, filters, constraint );
-        if ( fail && !filters.isEmpty() ) {
-            final Map<Integer, RexNode> projectMap2 = new HashMap<>();
-            AlgOptUtil.inferViewPredicates( projectMap2, filters2, constraint );
-            if ( !filters2.isEmpty() ) {
-                throw validator.newValidationError( sqlNode, Static.RESOURCE.modifiableViewMustHaveOnlyEqualityPredicates() );
-            }
-            retry = true;
-        }
-
-        // Check that all columns that are not projected have a constant value
-        for ( AlgDataTypeField field : targetRowType.getFieldList() ) {
-            final int x = columnMapping.indexOf( field.getIndex() );
-            if ( x >= 0 ) {
-                assert Util.skip( columnMapping, x + 1 ).indexOf( field.getIndex() ) < 0
-                        : "column projected more than once; should have checked above";
-                continue; // target column is projected
-            }
-            if ( projectMap.get( field.getIndex() ) != null ) {
-                continue; // constant expression
-            }
-            if ( field.getType().isNullable() ) {
-                continue; // don't need expression for nullable columns; NULL suffices
-            }
-            if ( fail ) {
-                throw validator.newValidationError( sqlNode, Static.RESOURCE.noValueSuppliedForViewColumn( field.getName(), Util.last( tablePath ) ) );
-            }
-            return new AnalyzeViewResult(
-                    this,
-                    validator,
-                    sql,
-                    sqlNode,
-                    validator.getValidatedNodeType( sqlNode ),
-                    root,
-                    null,
-                    null,
-                    null,
-                    null,
-                    false );
-        }
-
-        final boolean modifiable = filters.isEmpty() || retry && filters2.isEmpty();
-        return new AnalyzeViewResult(
-                this,
-                validator,
-                sql,
-                sqlNode,
-                validator.getValidatedNodeType( sqlNode ),
-                root,
-                modifiable ? table : null,
-                ImmutableList.copyOf( tablePath ),
-                constraint,
-                ImmutableIntList.copyOf( columnMapping ),
-                modifiable );
     }
 
 
@@ -621,98 +452,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             }
         }
 
-        final SparkHandler spark = prepareContext.spark();
-        if ( spark.enabled() ) {
-            spark.registerRules(
-                    new RuleSetBuilder() {
-                        @Override
-                        public void addRule( AlgOptRule rule ) {
-                            // TODO:
-                        }
-
-
-                        @Override
-                        public void removeRule( AlgOptRule rule ) {
-                            // TODO:
-                        }
-                    } );
-        }
-
         Hook.PLANNER.run( planner ); // allow test to add or remove rules
 
         return planner;
     }
-
-    //@Override
-    /*public <T> PolyphenyDbSignature<T> prepareQueryable( Context context, Queryable<T> queryable ) {
-        return prepare_( context, Query.of( queryable ), queryable.getElementType(), -1 );
-    }*/
-
-    //@Override
-    /*public <T> PolyphenyDbSignature<T> prepareSql( Context context, Query<T> query, Type elementType, long maxRowCount ) {
-        return prepare_( context, query, elementType, maxRowCount );
-    }
-
-
-    <T> PolyphenyDbSignature<T> prepare_( Context context, Query<T> query, Type elementType, long maxRowCount ) {
-        if ( SIMPLE_SQLS.contains( query.sql ) ) {
-            return simplePrepare( context, query.sql );
-        }
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        PolyphenyDbCatalogReader catalogReader =
-                new PolyphenyDbCatalogReader(
-                        context.getRootSchema(),
-                        context.getDefaultSchemaPath(),
-                        typeFactory );
-        final List<Function1<Context, AlgOptPlanner>> plannerFactories = createPlannerFactories();
-        if ( plannerFactories.isEmpty() ) {
-            throw new AssertionError( "no planner factories" );
-        }
-        RuntimeException exception = FoundOne.NULL;
-        for ( Function1<Context, AlgOptPlanner> plannerFactory : plannerFactories ) {
-            final AlgOptPlanner planner = plannerFactory.apply( context );
-            if ( planner == null ) {
-                throw new AssertionError( "factory returned null planner" );
-            }
-            try {
-                return prepare2_( context, query, elementType, maxRowCount, catalogReader, planner );
-            } catch ( CannotPlanException e ) {
-                exception = e;
-            }
-        }
-        throw exception;
-    }
-*/
-
-    /**
-     * Quickly prepares a simple SQL statement, circumventing the usual preparation process.
-     */
-    /*private <T> PolyphenyDbSignature<T> simplePrepare( Context context, String sql ) {
-        final JavaTypeFactory typeFactory = context.getTypeFactory();
-        final AlgDataType x =
-                typeFactory.builder()
-                        .add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, PolyType.INTEGER )
-                        .build();
-        @SuppressWarnings("unchecked") final List<T> list = (List) ImmutableList.of( 1 );
-        final List<String> origin = null;
-        final List<List<String>> origins = Collections.nCopies( x.getFieldCount(), origin );
-        final List<ColumnMetaData> columns = getColumnMetaDataList( typeFactory, x, x, origins );
-        final CursorFactory cursorFactory = CursorFactory.deduce( columns, null );
-        return new PolyphenyDbSignature<>(
-                sql,
-                ImmutableList.of(),
-                ImmutableMap.of(),
-                x,
-                columns,
-                cursorFactory,
-                context.getRootSchema(),
-                ImmutableList.of(),
-                -1,
-                dataContext -> Linq4j.asEnumerable( list ),
-                StatementType.SELECT,
-                new ExecutionTimeMonitor(),
-                SchemaType.RELATIONAL );
-    }*/
 
 
     /**
@@ -1152,10 +895,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
         @Override
         public AlgNode flattenTypes( AlgNode rootRel, boolean restructure ) {
-            final SparkHandler spark = context.spark();
-            if ( spark.enabled() ) {
-                return spark.flattenTypes( planner, rootRel, restructure );
-            }
             return rootRel;
         }
 
@@ -1218,7 +957,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     internalParameters.put( "_conformance", conformance );
                     Pair<Bindable<Object[]>, String> implementationPair = EnumerableInterpretable.toBindable(
                             internalParameters,
-                            context.spark(),
                             enumerable,
                             prefer,
                             null );

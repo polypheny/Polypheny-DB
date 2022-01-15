@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,8 +105,9 @@ public interface PolyphenyDbSchema {
     /**
      * Entry in a schema, such as a table or sub-schema.
      *
-     * Each object's name is a property of its membership in a schema; therefore in principle it could belong to several schemas, or even the same schema several times, with different names. In this
-     * respect, it is like an inode in a Unix file system.
+     * Each object's name is a property of its membership in a schema; therefore in principle it could belong to several
+     * schemas, or even the same schema several times, with different names. In this respect, it is like an inode in a
+     * Unix file system.
      *
      * The members of a schema must have unique names.
      */

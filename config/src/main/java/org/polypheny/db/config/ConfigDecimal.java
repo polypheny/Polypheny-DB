@@ -26,6 +26,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 public class ConfigDecimal extends ConfigScalar {
 
     private BigDecimal value;
+    private BigDecimal oldValue;
     private BigDecimal defaultValue;
 
 
@@ -91,7 +92,16 @@ public class ConfigDecimal extends ConfigScalar {
     @Override
     public boolean setDecimal( final BigDecimal value ) {
         if ( validate( value ) ) {
+
+            if ( requiresRestart() ) {
+                if ( this.oldValue == null ) {
+                    this.oldValue = this.value;
+                }
+            }
             this.value = value;
+            if ( this.oldValue != null && this.oldValue.equals( this.value ) ) {
+                this.oldValue = null;
+            }
             notifyConfigListeners();
             return true;
         } else {

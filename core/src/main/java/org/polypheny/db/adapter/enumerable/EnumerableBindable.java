@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
     @Override
     public Enumerable<Object[]> bind( DataContext dataContext ) {
         final Map<String, Object> map = new HashMap<>();
-        final Bindable bindable = EnumerableInterpretable.toBindable( map, null, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
+        final Bindable bindable = EnumerableInterpretable.toBindable( map, (EnumerableAlg) getInput(), Prefer.ARRAY, dataContext.getStatement() ).left;
         final ArrayBindable arrayBindable = EnumerableInterpretable.box( bindable );
         dataContext.addAll( map );
         return arrayBindable.bind( dataContext );

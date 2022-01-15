@@ -140,7 +140,7 @@ public class CottontailStore extends DataStore {
                     false,
                     null,
                     new MapDBConfig( true, true, 22, 1000L ),
-                    new ServerConfig(),
+                    new ServerConfig( dbPort, null, null ),
                     new ExecutionConfig(),
                     new CacheConfig()
             );

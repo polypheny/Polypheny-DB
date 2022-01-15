@@ -2,6 +2,8 @@ package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -145,8 +147,9 @@ public class AdapterManager {
                     throw new RuntimeException( clazz.getSimpleName() + " does not annotate the adapter correctly" );
                 }
 
-                // used to evaluate which mode is used when deploying the adapter
-                settings.put( "mode",
+                // Used to evaluate which mode is used when deploying the adapter
+                settings.put(
+                        "mode",
                         Collections.singletonList(
                                 new AbstractAdapterSettingList(
                                         "mode",
@@ -157,17 +160,17 @@ public class AdapterManager {
                                         Collections.singletonList( DeploySetting.DEFAULT ),
                                         0 ) ) );
 
-                // add empty list for each available mode
+                // Add empty list for each available mode
                 Arrays.stream( properties.usedModes() ).forEach( mode -> settings.put( mode.getName(), new ArrayList<>() ) );
 
-                // add default which is used by all available modes
+                // Add default which is used by all available modes
                 settings.put( "default", new ArrayList<>() );
 
-                // merge annotated AdapterSettings into settings
+                // Merge annotated AdapterSettings into settings
                 Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) );
                 annotatedSettings.forEach( settings::put );
 
-                // if the adapter uses docker add the dynamic docker setting
+                // If the adapter uses docker add the dynamic docker setting
                 if ( settings.containsKey( "docker" ) ) {
                     settings
                             .get( "docker" )
@@ -294,6 +297,19 @@ public class AdapterManager {
         public final Class clazz;
         public final Map<String, List<AbstractAdapterSetting>> settings;
 
+
+        public static JsonSerializer<AdapterInformation> getSerializer() {
+            return ( src, typeOfSrc, context ) -> {
+                JsonObject jsonStore = new JsonObject();
+                jsonStore.addProperty( "name", src.name );
+                jsonStore.addProperty( "description", src.description );
+                jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
+                jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
+                return jsonStore;
+            };
+        }
+
     }
+
 
 }

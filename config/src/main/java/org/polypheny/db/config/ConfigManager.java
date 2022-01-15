@@ -30,6 +30,8 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.Getter;
@@ -175,10 +177,28 @@ public class ConfigManager {
                 log.warn( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
                 newConfig = configFile.withoutPath( configKey );
             } else {
-                newConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue.toString() ) );
+                newConfig = parseConfigObject( configKey, updatedValue );
             }
             writeConfiguration( newConfig );
         }
+    }
+
+
+    private com.typesafe.config.Config parseConfigObject( String configKey, Object updatedValue ) {
+        com.typesafe.config.Config modifiedConfig;
+        if ( updatedValue instanceof Collection ) {
+            Map<String, Object> myList = new HashMap<>();
+            for ( Object value : (Collection) updatedValue ) {
+                if ( (value instanceof ConfigDocker) ) {
+                    Map<String, String> settingsMap = ((ConfigDocker) value).getSettings();
+                    myList.put( ((ConfigObject) value).getKey(), settingsMap );
+                }
+            }
+            modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myList ) );
+        } else {
+            modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( updatedValue ) );
+        }
+        return modifiedConfig;
     }
 
 

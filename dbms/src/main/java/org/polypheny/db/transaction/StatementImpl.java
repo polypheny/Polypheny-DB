@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
@@ -87,9 +86,6 @@ public class StatementImpl implements Statement {
             final AtomicBoolean cancelFlag;
             cancelFlag = transaction.getCancelFlag();
             map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
-            if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
-                return new SlimDataContext();
-            }
             dataContext = new DataContextImpl(
                     new QueryProviderImpl(),
                     map,

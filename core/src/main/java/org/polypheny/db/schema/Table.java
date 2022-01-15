@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,11 +43,13 @@ import org.polypheny.db.nodes.Node;
 /**
  * Table.
  *
- * The typical way for a table to be created is when Polypheny-DB interrogates a user-defined schema in order to validate names appearing in a SQL query.
- * Polypheny-DB finds the schema by calling {@link Schema#getSubSchema(String)} on the connection's root schema, then gets a table by calling {@link Schema#getTable(String)}.
+ * The typical way for a table to be created is when Polypheny-DB interrogates a user-defined schema in order to validate
+ * names appearing in a SQL query. Polypheny-DB finds the schema by calling {@link Schema#getSubSchema(String)} on the
+ * connection's root schema, then gets a table by calling {@link Schema#getTable(String)}.
  *
- * Note that a table does not know its name. It is in fact possible for a table to be used more than once, perhaps under multiple names or under multiple schemas.
- * (Compare with the <a href="http://en.wikipedia.org/wiki/Inode">i-node</a> concept in the UNIX filesystem.)
+ * Note that a table does not know its name. It is in fact possible for a table to be used more than once, perhaps under
+ * multiple names or under multiple schemas. (Compare with the <a href="http://en.wikipedia.org/wiki/Inode">i-node</a> concept
+ * in the UNIX filesystem.)
  *
  * A particular table instance may also implement {@link Wrapper}, to give access to sub-objects.
  *
@@ -60,7 +62,8 @@ public interface Table {
      *
      * This is a struct type whose fields describe the names and types of the columns in this table.
      *
-     * The implementer must use the type factory provided. This ensures that the type is converted into a canonical form; other equal types in the same query will use the same object.
+     * The implementer must use the type factory provided. This ensures that the type is converted into a canonical form;
+     * other equal types in the same query will use the same object.
      *
      * @param typeFactory Type factory with which to create the type
      * @return Row type

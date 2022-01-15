@@ -71,7 +71,7 @@ public class InformationServer implements InformationObserver {
 
         informationRoutes( http );
 
-        StatusService.print( "InformationServer started." );
+        StatusService.printInfo( "InformationServer started." );
     }
 
 
