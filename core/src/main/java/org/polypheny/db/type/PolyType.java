@@ -1193,11 +1193,13 @@ public enum PolyType {
     }
 
 
-    public static JsonSerializer<PolyType> serializer = ( src, typeOfSrc, context ) -> {
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty( "name", src.name() );
-        jsonObject.addProperty( "signatures", src.signatures );
-        return jsonObject;
-    };
+    public static JsonSerializer<PolyType> getSerializer() {
+        return ( src, typeOfSrc, context ) -> {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty( "name", src.name() );
+            jsonObject.addProperty( "signatures", src.signatures );
+            return jsonObject;
+        };
+    }
 }
 

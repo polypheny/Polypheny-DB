@@ -17,9 +17,17 @@
 package org.polypheny.db.information;
 
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.polypheny.db.information.InformationDuration.Duration;
 import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
@@ -27,6 +35,13 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
  * An InformationGroup contains multiple Information object that will be rendered together in the UI.
  */
 public class InformationGroup extends Refreshable {
+
+    // Gson builder who is able to serialize underlying Information'
+    private static final transient Gson gson = new GsonBuilder()
+            .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
+            .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
+            .registerTypeAdapter( Duration.class, Duration.getSerializer() )
+            .create();
 
     /**
      * Unique id for an InformationGroup.
@@ -73,7 +88,7 @@ public class InformationGroup extends Refreshable {
     /**
      * Constructor
      *
-     * @param id     Id of this group
+     * @param id Id of this group
      * @param pageId Id of the page this group belongs to
      */
     public InformationGroup( final String id, final String pageId, final String name ) {
@@ -102,6 +117,43 @@ public class InformationGroup extends Refreshable {
      */
     public InformationGroup( final InformationPage page, final String name ) {
         this( page.getId(), name );
+    }
+
+
+    private InformationGroup( JsonReader in ) throws IOException {
+        String id = null;
+        String pageId = null;
+        while ( in.peek() != JsonToken.END_OBJECT ) {
+            switch ( in.nextName() ) {
+                case "id":
+                    id = in.nextString();
+                    break;
+                case "pageId":
+                    pageId = in.nextString();
+                    break;
+                case "name":
+                    name = in.nextString();
+                    break;
+                case "color":
+                    if ( in.peek() != JsonToken.NULL ) {
+                        color = GroupColor.valueOf( in.nextString() );
+                    }
+                    break;
+                case "uiOrder":
+                    uiOrder = in.nextInt();
+                    break;
+                case "implicit":
+                    implicit = in.nextBoolean();
+                    break;
+                case "informationObjects":
+                    informationObjects.putAll( gson.fromJson( in, ConcurrentHashMap.class ) );
+                    break;
+                default:
+                    throw new RuntimeException( "Error while deserializing InformationGroup." );
+            }
+        }
+        this.id = id;
+        this.pageId = pageId;
     }
 
 
@@ -192,6 +244,49 @@ public class InformationGroup extends Refreshable {
         this.uiOrder = group.uiOrder;
         this.informationObjects.putAll( group.informationObjects );
         this.implicit = false;
+    }
+
+
+    public static TypeAdapter<InformationGroup> getSerializer() {
+        return new TypeAdapter<InformationGroup>() {
+            @Override
+            public void write( JsonWriter out, InformationGroup value ) throws IOException {
+                if ( value == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginObject();
+                out.name( "id" );
+                out.value( value.id );
+                out.name( "pageId" );
+                out.value( value.pageId );
+                out.name( "color" );
+                if ( value.color == null ) {
+                    out.nullValue();
+                } else {
+                    out.value( value.color.name() );
+                }
+                out.name( "uiOder" );
+                out.value( value.uiOrder );
+                out.name( "implicit" );
+                out.value( value.implicit );
+                out.name( "informationObjects" );
+                gson.toJson( value.informationObjects, ConcurrentHashMap.class, out );
+                out.endObject();
+            }
+
+
+            @Override
+            public InformationGroup read( JsonReader in ) throws IOException {
+                if ( in.peek() == JsonToken.NULL ) {
+                    return null;
+                }
+                in.beginObject();
+                InformationGroup group = new InformationGroup( in );
+                in.endObject();
+                return group;
+            }
+        };
     }
 
 }

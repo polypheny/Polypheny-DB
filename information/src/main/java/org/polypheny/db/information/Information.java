@@ -18,6 +18,8 @@ package org.polypheny.db.information;
 
 
 import com.google.gson.Gson;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.exception.InformationRuntimeException;
 
@@ -33,7 +35,7 @@ public abstract class Information {
     /**
      * The field type is used by Gson and is needed for the frontend.
      */
-    final String type;
+    String type;
 
     /**
      * The field informationGroup consists of the id of the InformationGroup to which it belongs.
@@ -45,6 +47,8 @@ public abstract class Information {
      * Field required for GSON.
      */
     @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+    @Getter
+    @Setter
     private int uiOrder;
 
     /**

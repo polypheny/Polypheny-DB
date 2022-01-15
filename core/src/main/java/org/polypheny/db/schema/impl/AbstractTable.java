@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,9 @@ import org.polypheny.db.schema.Wrapper;
 /**
  * Abstract base class for implementing {@link Table}.
  *
- * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, Call, Node)} if their table can potentially contain rolled up values.
- * This information is used by the validator to check for illegal uses of these columns.
+ * Sub-classes should override {@link #isRolledUp} and {@link Table#rolledUpColumnValidInsideAgg(String, Call, Node)} if
+ * their table can potentially contain rolled up values. This information is used by the validator to check for illegal uses
+ * of these columns.
  */
 public abstract class AbstractTable implements Table, Wrapper {
 

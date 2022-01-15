@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public interface DataContext {
     /**
      * Returns a context variable.
      *
-     * Supported variables include: "sparkContext", "currentTimestamp", "localTimestamp".
+     * Supported variables include: "currentTimestamp", "localTimestamp".
      *
      * @param name Name of variable
      */
@@ -118,11 +118,6 @@ public interface DataContext {
          * statement. Required.
          */
         LOCAL_TIMESTAMP( "localTimestamp", Long.class ),
-
-        /**
-         * The Spark engine. Available if Spark is on the class path.
-         */
-        SPARK_CONTEXT( "sparkContext", Object.class ),
 
         /**
          * A mutable flag that indicates whether user has requested that the current statement be canceled. Cancellation may not be immediate, but implementations of relational operators should check the flag fairly
@@ -182,7 +177,7 @@ public interface DataContext {
 
 
     /**
-     * Implementation of {@link DataContext} that has few variables and is {@link Serializable}. For Spark.
+     * Implementation of {@link DataContext} that has few variables and is {@link Serializable}.
      */
     class SlimDataContext implements DataContext, Serializable {
 

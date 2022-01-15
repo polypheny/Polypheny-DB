@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,14 +34,15 @@ import lombok.experimental.Accessors;
 /**
  * Page for the WebUi containing WebUiGroups that contain configuration elements.
  */
-@Accessors( chain = true )
+@Accessors(chain = true)
 public class WebUiPage {
 
     @Getter
     private String id;
     @Getter
     private String title;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String label;
     private String description;
     @Getter
@@ -112,9 +113,13 @@ public class WebUiPage {
             public void write( JsonWriter out, Enum value ) throws IOException {
                 out.beginObject();
                 out.name( "clazz" );
-                out.value( value.getClass().toString() );
-                out.name( "all" );
-                out.value( new ObjectMapper().writeValueAsString( value ) );
+                if ( value == null ) {
+                    out.value( "null" );
+                } else {
+                    out.value( value.getClass().toString() );
+                    out.name( "all" );
+                    out.value( new ObjectMapper().writeValueAsString( value ) );
+                }
                 out.endObject();
             }
 
@@ -124,9 +129,13 @@ public class WebUiPage {
                 try {
                     in.nextName();
                     String clazz = in.nextString();
-                    in.nextName();
-                    String e = in.nextString();
-                    return (Enum<?>) new ObjectMapper().readValue( e, Class.forName( clazz ) );
+                    if ( clazz.equals( "null" ) ) {
+                        return null;
+                    } else {
+                        in.nextName();
+                        String e = in.nextString();
+                        return (Enum<?>) new ObjectMapper().readValue( e, Class.forName( clazz ) );
+                    }
                 } catch ( ClassNotFoundException e ) {
                     throw new RuntimeException( "The Enum was not serializable." );
                 }
@@ -140,4 +149,5 @@ public class WebUiPage {
                 .create();
         return gson.toJson( this );
     }
+
 }

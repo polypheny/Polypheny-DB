@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,8 @@ public abstract class AbstractAlgNode implements AlgNode {
     protected AlgDataType rowType;
 
     /**
-     * A short description of this relational expression's type, inputs, and other properties. The string uniquely identifies the node; another node is equivalent if and only if it has the same value.
+     * A short description of this relational expression's type, inputs, and other properties. The string uniquely identifies
+     * the node; another node is equivalent if and only if it has the same value.
      * Computed by {@link #computeDigest}, assigned by {@link #onRegister}, returned by {@link #getDigest()}.
      *
      * @see #desc
@@ -102,7 +103,7 @@ public abstract class AbstractAlgNode implements AlgNode {
     @Getter
     protected String digest;
 
-    //Setter is used to set the cluster in Views
+    // Setter is used to set the cluster in Views
     @Setter
     @Getter
     private transient AlgOptCluster cluster;
@@ -298,7 +299,8 @@ public abstract class AbstractAlgNode implements AlgNode {
         final MetadataFactory factory = cluster.getMetadataFactory();
         final M metadata = factory.query( this, mq, metadataClass );
         assert metadata != null : "no provider found (rel=" + this + ", m=" + metadataClass + "); a backstop provider is recommended";
-        // Usually the metadata belongs to the alg that created it. RelSubset and HepAlgVertex are notable exceptions, so disable the assert. It's not worth the performance hit to override this method for them.
+        // Usually the metadata belongs to the alg that created it. RelSubset and HepAlgVertex are notable exceptions, so
+        // disable the assert. It's not worth the performance hit to override this method for them.
         //   assert metadata.rel() == this : "someone else's metadata";
         return metadata;
     }
@@ -312,8 +314,8 @@ public abstract class AbstractAlgNode implements AlgNode {
 
     /**
      * Describes the inputs and attributes of this relational expression.
-     * Each node should call {@code super.explainTerms}, then call the {@link AlgWriterImpl#input(String, AlgNode)} and {@link AlgWriterImpl#item(String, Object)}
-     * methods for each input and attribute.
+     * Each node should call {@code super.explainTerms}, then call the {@link AlgWriterImpl#input(String, AlgNode)} and
+     * {@link AlgWriterImpl#item(String, Object)} methods for each input and attribute.
      *
      * @param pw Plan writer
      * @return Plan writer for fluent-explain pattern

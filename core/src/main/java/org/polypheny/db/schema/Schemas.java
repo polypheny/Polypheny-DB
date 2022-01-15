@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,6 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbPrepare;
@@ -319,36 +318,6 @@ public final class Schemas {
 
 
     /**
-     * Analyzes a view. For use within Polypheny-DB only.
-     */
-    public static PolyphenyDbPrepare.AnalyzeViewResult analyzeView( final PolyphenyDbSchema schema, final List<String> schemaPath, final String viewSql, List<String> viewPath, boolean fail ) {
-        final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
-        final ImmutableMap<PolyphenyDbConnectionProperty, String> propValues = ImmutableMap.of();
-        final Context context = makeContext( schema, schemaPath, viewPath, propValues );
-        PolyphenyDbPrepare.Dummy.push( context );
-        try {
-            return prepare.analyzeView( context, viewSql, fail );
-        } finally {
-            PolyphenyDbPrepare.Dummy.pop( context );
-        }
-    }
-
-    /**
-     * Prepares a SQL query for execution. For use within Polypheny-DB only.
-     */
-   /* public static PolyphenyDbSignature<Object> prepare( final PolyphenyDbSchema schema, final List<String> schemaPath, final String sql, final ImmutableMap<PolyphenyDbConnectionProperty, String> map ) {
-        final PolyphenyDbPrepare prepare = PolyphenyDbPrepare.DEFAULT_FACTORY.apply();
-        final Context context = makeContext( schema, schemaPath, null, map );
-        PolyphenyDbPrepare.Dummy.push( context );
-        try {
-            return prepare.prepareSql( context, PolyphenyDbPrepare.Query.of( sql ), Object[].class, -1 );
-        } finally {
-            PolyphenyDbPrepare.Dummy.pop( context );
-        }
-    }*/
-
-
-    /**
      * Creates a context for the purposes of preparing a statement.
      *
      * @param schema Schema
@@ -444,12 +413,6 @@ public final class Schemas {
                 return 0;
             }
 
-
-            @Override
-            public PolyphenyDbPrepare.SparkHandler spark() {
-                final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
-                return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );
-            }
         };
     }
 

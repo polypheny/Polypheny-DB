@@ -190,7 +190,7 @@ public class MapDbRepository implements MonitoringRepository {
             File folder = PolyphenyHomeDirManager.getInstance().registerNewFolder( folderName );
 
             if ( Catalog.resetCatalog ) {
-                StatusService.print( "Resetting monitoring repository on startup." );
+                StatusService.printInfo( "Resetting monitoring repository on startup." );
 
                 if ( new File( folder, filePath ).exists() ) {
                     new File( folder, filePath ).delete();

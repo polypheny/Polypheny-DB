@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,13 +59,6 @@ public enum RuntimeConfig {
     CASE_SENSITIVE(
             "runtime/caseSensitive",
             "Whether identifiers are matched case-sensitively.",
-            false,
-            ConfigType.BOOLEAN
-    ),
-
-    SPARK_ENGINE(
-            "runtime/sparkEngine",
-            "Specifies whether Spark should be used as the engine for processing that cannot be pushed to the source system. If false, Polypheny-DB generates code that implements the Enumerable interface.",
             false,
             ConfigType.BOOLEAN
     ),
@@ -155,8 +148,8 @@ public enum RuntimeConfig {
             "runtime/twoPcMode",
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
-            ConfigType.BOOLEAN,
-            "processingExecutionGroup" ),
+            ConfigType.BOOLEAN ),
+    // "processingExecutionGroup" ),
 
     DYNAMIC_QUERYING(
             "statistics/useDynamicQuerying",
@@ -247,7 +240,7 @@ public enum RuntimeConfig {
     HUB_IMPORT_BATCH_SIZE(
             "hub/hubImportBatchSize",
             "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
-            100,
+            1000,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
@@ -267,7 +260,7 @@ public enum RuntimeConfig {
     QUERY_PLAN_CACHING_DML(
             "runtime/queryPlanCachingDml",
             "Cache DML query plans.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "queryPlanCachingGroup" ),
 
@@ -288,7 +281,7 @@ public enum RuntimeConfig {
     IMPLEMENTATION_CACHING_DML(
             "runtime/implementationCachingDml",
             "Cache implementation for DML queries.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "implementationCachingGroup" ),
 
@@ -708,6 +701,11 @@ public enum RuntimeConfig {
 
     public void setList( final List<ConfigScalar> values ) {
         configManager.getConfig( key ).setList( values );
+    }
+
+
+    public void setRequiresRestart( boolean requiresRestart ) {
+        configManager.getConfig( key ).requiresRestart( requiresRestart );
     }
 
 

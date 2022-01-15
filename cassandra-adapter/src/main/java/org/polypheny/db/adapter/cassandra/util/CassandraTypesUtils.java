@@ -44,7 +44,7 @@ public class CassandraTypesUtils {
 
 
     static {
-        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( PolyType.class, PolyType.serializer );
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( PolyType.class, PolyType.getSerializer() );
         GSON = gsonBuilder.create();
     }
 
