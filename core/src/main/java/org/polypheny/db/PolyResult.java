@@ -320,7 +320,9 @@ public class PolyResult {
         }
 
         StatementEvent eventData = statement.getMonitoringEvent();
-        eventData.setRowCount( rowsChanged );
+        if ( rowsChanged > 0 ) {
+            eventData.setRowCount( rowsChanged );
+        }
         if ( Kind.INSERT.name() == kind ) {
 
             HashMap<Long, List<Object>> ordered = new HashMap<>();
@@ -339,7 +341,9 @@ public class PolyResult {
             }
 
             eventData.setChangedValues( ordered );
-            eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
+            if ( rowsChanged > 0 ) {
+                eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
+            }
 
         }
         // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
