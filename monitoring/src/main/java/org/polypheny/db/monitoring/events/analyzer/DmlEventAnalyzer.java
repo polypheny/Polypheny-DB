@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.events.analyzer;
 
 
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,6 @@ public class DmlEventAnalyzer {
                 .isSubQuery( dmlEvent.isSubQuery() )
                 .isCommitted( dmlEvent.isCommitted() )
                 .recordedTimestamp( dmlEvent.getRecordedTimestamp() )
-                .accessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
                 .queryClass( dmlEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( dmlEvent.getMonitoringType() )
                 .physicalQueryClass( dmlEvent.getPhysicalQueryClass() )
@@ -45,6 +45,12 @@ public class DmlEventAnalyzer {
                 .changedValues( dmlEvent.getChangedValues() )
                 .build();
         metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );
+
+        if ( dmlEvent.getAccessedPartitions() != null ) {
+            metric.setAccessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) );
+        } else {
+            metric.setAccessedPartitions( Collections.emptyList() );
+        }
 
         return metric;
     }

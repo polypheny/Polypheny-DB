@@ -81,15 +81,18 @@ public class StatisticRepository implements MonitoringRepository {
                     Long tableId = values.stream().findFirst().get();
                     if ( catalog.checkIfExistsTable( tableId ) ) {
                         statisticsManager.setTableCalls( tableId, dqlDataPoint.getMonitoringType() );
+                        statisticsManager.setRowCount(tableId, dqlDataPoint.getRowCount());
 
                         if ( dqlDataPoint.getIndexSize() != null ) {
                             statisticsManager.setIndexSize( tableId, dqlDataPoint.getIndexSize() );
                         }
+
                     }
                 } else{
                     for ( Long id : values ) {
                         if ( catalog.checkIfExistsTable( id ) ) {
                             statisticsManager.setTableCalls( id, dqlDataPoint.getMonitoringType() );
+                            statisticsManager.setRowCount(id, dqlDataPoint.getRowCount());
                         }
 
                     }

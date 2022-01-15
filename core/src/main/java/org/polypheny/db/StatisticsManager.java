@@ -81,4 +81,6 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract Integer rowCountPerTable( Long tableId );
 
+    public abstract void setRowCount( Long tableId, int rowCount );
+
 }

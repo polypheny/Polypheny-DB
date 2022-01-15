@@ -162,6 +162,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -3879,11 +3880,16 @@ public class Crud implements InformationObserver {
         if ( request.filter != null ) {
             query += " " + filterTable( request.filter );
         }
-        Result result = executeSqlSelect( transaction.createStatement(), request, query );
+        Statement statement = transaction.createStatement();
+        Result result = executeSqlSelect( statement, request, query );
         // We expect the result to be in the first column of the first row
         if ( result.getData().length == 0 ) {
             return 0;
         } else {
+            if(statement.getMonitoringEvent() != null){
+                StatementEvent eventData = statement.getMonitoringEvent();
+                eventData.setRowCount(  Integer.parseInt( result.getData()[0][0] ));
+            }
             return Integer.parseInt( result.getData()[0][0] );
         }
     }

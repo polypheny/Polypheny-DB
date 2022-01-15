@@ -932,6 +932,19 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    @Override
+    public void setRowCount( Long tableId, int rowCount ) {
+        StatisticTable statisticTable;
+        if ( tableStatistic.containsKey( tableId ) ) {
+            statisticTable = tableStatistic.remove( tableId );
+        } else {
+            statisticTable = new StatisticTable( tableId );
+        }
+        statisticTable.setNumberOfRows( rowCount );
+        tableStatistic.put( tableId, statisticTable );
+    }
+
+
     private void updateCalls( Long tableId, String kind, TableCalls calls ) {
         StatisticTable statisticTable;
         if ( tableStatistic.containsKey( tableId ) ) {
