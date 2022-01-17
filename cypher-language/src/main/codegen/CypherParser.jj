@@ -13,7 +13,12 @@ package org.polypheny.db.mql.parser.impl;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
-import java.util.ArrayList;import org.polypheny.db.dml.CypherCreate;
+import java.util.ArrayList;
+import javax.print.DocFlavor.READER;import org.polypheny.db.CypherNode;
+import org.polypheny.db.dml.CypherCreate;
+import org.polypheny.db.dql.CypherAs;
+import org.polypheny.db.dql.CypherReturn;
+import org.polypheny.db.dql.CypherUnwind;
 
 /**
  * openCypher language (Cypher) parser, generated from Parser.jj by JavaCC.
@@ -70,8 +75,6 @@ private static Metadata metadata;
       {
           return Input();
       }
-
-}}
 
 }
 
@@ -353,7 +356,7 @@ CypherNode Input() :
 {
     /** only one statement for now **/
     n = Statement() <EOF>
-    {return n;}
+    { return n; }
 }
 
 
@@ -367,20 +370,125 @@ CypherNode Statement() :
         <CREATE> n = Create()
         |
         <MATCH> n = Match()
+        |
+        <CREATE> n = Create()
     )
-    {return n;}
+    { return n; }
 }
 
-CypherNode Create():
+CypherNode Create() :
 {
+    CypherNode n;
 }
 {
-    {return new CypherCreate();}
+    { return new CypherCreate( getPos(), n ); }
 }
 
-CypherNode Match():
+CypherNode Match() :
 {
+    CypherNode n;
 }
 {
-    {return new CypherMatch();}
+    (
+        <MATCH> n = Match()
+        |
+        <WITH> n = With()
+        |
+        <WHERE> n = Where()
+        |
+        <RETURN> n = Return()
+    )
+
+    { return new CypherMatch( getPos(), n ); }
+}
+
+CypherNode With() :
+{
+    CypherNode n;
+}
+{
+    (
+        <SET> n = Set()
+        |
+        <WHERE> n = Where()
+        |
+        <RETURN> n = Return()
+    )
+    { return new CypherWith( getPos(), n ); }
+}
+
+CypherNode Set() :
+{
+    CypherNode n;
+}
+{
+    <RETURN> n = Return()
+    { return new CypherSet( getPos(), n ); }
+}
+
+CypherNode Where() :
+{
+    CypherNode n;
+}
+{
+    <RETURN> n = Return()
+    { return new CypherWhere( getPos(), n ); }
+}
+
+CypherNode Unwind() :
+{
+    CypherNode n;
+}
+{
+    (
+        <MATCH> n = Match()
+        |
+        <WHERE> n = Where()
+        |
+        <RETURN> n = Return()
+    )
+    { return new CypherUnwind( getPos(), n ); }
+}
+
+CypherNode Return() :
+{
+    CypherNode n;
+}
+{
+    (
+        <AS> n = As()
+        |
+        <LIMIT> n = Limit()
+        |
+        <ORDERBY> n = OrderBy()
+    )
+
+    { return new CypherReturn( getPos(), n ); }
+}
+
+CypherNode As() :
+{
+    CypherNode n;
+}
+{
+
+    { return new CypherAs( getPos(), n ); }
+}
+
+CypherNode OrderBy() :
+{
+    CypherNode n;
+}
+{
+
+    { return new CypherOrderBy( getPos(), n ); }
+}
+
+CypherNode Limit() :
+{
+    CypherNode n;
+}
+{
+
+    { return new CypherLimit( getPos(), n ); }
 }

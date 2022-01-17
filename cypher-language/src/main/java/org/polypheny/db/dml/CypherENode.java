@@ -16,6 +16,13 @@
 
 package org.polypheny.db.dml;
 
-public class CypherENode {
+import org.polypheny.db.CypherNode;
+import org.polypheny.db.languages.ParserPos;
+
+public class CypherENode extends CypherNode {
+
+    protected CypherENode( ParserPos pos, CypherNode input ) {
+        super( pos, input );
+    }
 
 }

@@ -21,8 +21,8 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherWhere extends CypherNode {
 
-    protected CypherWhere( ParserPos pos ) {
-        super( pos );
+    protected CypherWhere( ParserPos pos, CypherNode input ) {
+        super( pos, input );
     }
 
 }

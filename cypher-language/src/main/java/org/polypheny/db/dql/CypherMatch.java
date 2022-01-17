@@ -21,7 +21,7 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherMatch extends CypherNode {
 
-    protected CypherMatch( ParserPos pos ) {
+    protected CypherMatch( CypherNode node, ParserPos pos ) {
         super( pos );
     }
 

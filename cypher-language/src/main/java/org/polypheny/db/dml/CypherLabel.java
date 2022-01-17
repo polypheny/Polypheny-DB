@@ -21,8 +21,9 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherLabel extends CypherNode {
 
-    protected CypherLabel( ParserPos pos ) {
-        super( pos );
+
+    protected CypherLabel( ParserPos pos, CypherNode input ) {
+        super( pos, input );
     }
 
 }

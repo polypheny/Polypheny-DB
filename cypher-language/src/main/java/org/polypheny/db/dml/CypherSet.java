@@ -19,9 +19,9 @@ package org.polypheny.db.dml;
 import org.polypheny.db.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherCreate extends CypherNode {
+public class CypherSet extends CypherNode {
 
-    protected CypherCreate( ParserPos pos, CypherNode input ) {
+    protected CypherSet( ParserPos pos, CypherNode input ) {
         super( pos, input );
     }
 

@@ -27,15 +27,18 @@ import org.polypheny.db.util.Litmus;
 
 public abstract class CypherNode implements Node {
 
+    protected final static CypherNode EMPTY_CYPHER = new EmptyNode();
+
     @Getter
     protected final ParserPos pos;
 
     @Getter
-    private CypherNode input;
+    private final CypherNode input;
 
 
-    protected CypherNode( ParserPos pos ) {
+    protected CypherNode( ParserPos pos, CypherNode input ) {
         this.pos = pos;
+        this.input = input;
     }
 
 
@@ -72,6 +75,16 @@ public abstract class CypherNode implements Node {
     @Override
     public <R> R accept( NodeVisitor<R> visitor ) {
         return null;
+    }
+
+
+    private static class EmptyNode extends CypherNode {
+
+
+        protected EmptyNode() {
+            super( ParserPos.ZERO, null );
+        }
+
     }
 
 }

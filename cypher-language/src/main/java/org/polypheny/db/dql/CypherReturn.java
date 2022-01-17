@@ -21,8 +21,8 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherReturn extends CypherNode {
 
-    protected CypherReturn( ParserPos pos ) {
-        super( pos );
+    protected CypherReturn( ParserPos pos, CypherNode input ) {
+        super( pos, input );
     }
 
 }
