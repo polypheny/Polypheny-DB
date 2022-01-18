@@ -18,7 +18,7 @@ import javax.print.DocFlavor.READER;import org.polypheny.db.CypherNode;
 import org.polypheny.db.dml.CypherCreate;
 import org.polypheny.db.dql.CypherAs;
 import org.polypheny.db.dql.CypherReturn;
-import org.polypheny.db.dql.CypherUnwind;
+import org.polypheny.db.dql.CypherReturnEntity;import org.polypheny.db.dql.CypherUnwind;
 
 /**
  * openCypher language (Cypher) parser, generated from Parser.jj by JavaCC.
@@ -76,6 +76,8 @@ private static Metadata metadata;
           return Input();
       }
 
+}}
+
 }
 
 PARSER_END(CypherParserImpl)
@@ -87,13 +89,13 @@ PARSER_END(CypherParserImpl)
                  | "\f"
 }
 
-TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
+TOKEN : /* IDENTIFIERS */
 {
 < MATCH: "MATCH" >
 |
-< OPTIONAL_MATCH: "OPTIONAL MATCH" >
+< OPTIONAL: "OPTIONAL" >
 |
-< MANDATORY_MATCH: "MANDATORY MATCH" >
+< MANDATORY: "MANDATORY" >
 |
 < WITH: "WITH" >
 |
@@ -176,6 +178,8 @@ TOKEN : /* IDENTIFIERS */ // for nested documents check out Document_Splits()
 < SOR: "[" >
 |
 < OR: "|" >
+|
+< COMMA: "," >
 |
 < DOT: "." >
 }
@@ -364,14 +368,23 @@ CypherNode Input() :
 CypherNode Statement() :
 {
     MqlNode n;
+    boolean isOptional = false;
+    boolean isMandatory = false;
 }
 {
     (
         <CREATE> n = Create()
         |
-        <MATCH> n = Match()
-        |
-        <CREATE> n = Create()
+        (
+            (
+                <MANDATORY>
+                { isMandatory = true; }
+                |
+                <OPTIONAL>
+                { isOptional = true; }
+            )
+            <MATCH> n = Match( isOptional, isMandatory )
+        )
     )
     { return n; }
 }
@@ -384,7 +397,7 @@ CypherNode Create() :
     { return new CypherCreate( getPos(), n ); }
 }
 
-CypherNode Match() :
+CypherNode Match( boolean isOptional, boolean isMandatory ) :
 {
     CypherNode n;
 }
@@ -399,7 +412,7 @@ CypherNode Match() :
         <RETURN> n = Return()
     )
 
-    { return new CypherMatch( getPos(), n ); }
+    { return new CypherMatch( getPos(), n, isOptional, isMandatory ); }
 }
 
 CypherNode With() :
@@ -456,14 +469,41 @@ CypherNode Return() :
 }
 {
     (
-        <AS> n = As()
-        |
+
+    )*
+
+    (
         <LIMIT> n = Limit()
         |
         <ORDERBY> n = OrderBy()
     )
 
     { return new CypherReturn( getPos(), n ); }
+}
+
+List<CypherNode> Returns() :
+{
+    List<CypherReturnEntity> returns = new ArrayList<>();
+    CypherNode entity;
+    CypherNode alias = null;
+}
+{
+    (
+        <CASE> entity = Case()
+        |
+        entity = Entity()
+    )
+
+    [<AS> alias = As()]
+
+    {
+        n = new CypherReturnEntity( getPos(), entity, alias );
+    }
+
+    [
+        <COMMA> returns = Returns()
+    ]
+    { returns.add( 0, n ); }
 }
 
 CypherNode As() :
@@ -491,4 +531,48 @@ CypherNode Limit() :
 {
 
     { return new CypherLimit( getPos(), n ); }
+}
+
+CypherNode Case() :
+{
+    List<CypherNode> ns = new ArrayList<>();
+}
+{
+    (
+        <WHEN> n = When()
+        { ns.add( n ); }
+    )+
+    (
+        <ELSE> n = Else()
+        |
+        <END>
+        { n = null; }
+    )
+    { return new CypherCase( getPos(), ns, n ); }
+
+}
+
+CypherNode When() :
+{
+    CypherNode n;
+}
+{
+    <THEN> n = Then()
+    { return new CypherWhen( getPos(), n ); }
+}
+
+CypherNode Then() :
+{
+    CypherNode n;
+}
+{
+    { return new CypherThen( getPos(), n ); }
+}
+
+CypherNode Else() :
+{
+    CypherNode n;
+}
+{
+    { return new CypherElse( getPos(), n); }
 }

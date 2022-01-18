@@ -21,8 +21,17 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherMatch extends CypherNode {
 
-    protected CypherMatch( CypherNode node, ParserPos pos ) {
-        super( pos );
+    private final boolean isOptional;
+    private final boolean isMandatory;
+
+
+    protected CypherMatch( ParserPos pos, CypherNode input, boolean isOptional, boolean isMandatory ) {
+        super( pos, input );
+        this.isOptional = isOptional;
+        this.isMandatory = isMandatory;
+        if ( isMandatory && isOptional ) {
+            throw new RuntimeException( "MATCH cannot be OPTIONAL and MANDATORY at the same time." );
+        }
     }
 
 }

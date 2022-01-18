@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.dql;
 
-import org.polypheny.db.languages.NodeParseException;
+import java.util.List;
+import org.polypheny.db.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherParseException extends NodeParseException {
+public class CypherCase extends CypherNode {
 
-    /**
-     * Creates a CypherParseException.
-     *
-     * @param message Message
-     * @param pos Position
-     * @param expectedTokenSequences Token sequences
-     * @param tokenImages Token images
-     * @param parserException Parser exception
-     */
-    public CypherParseException( String message, ParserPos pos, int[][] expectedTokenSequences, String[] tokenImages, Throwable parserException ) {
-        super( message, pos, expectedTokenSequences, tokenImages, parserException );
+    private final List<CypherNode> whens;
+    private final CypherNode elze;
+
+
+    protected CypherCase( ParserPos pos, List<CypherNode> whens, CypherNode elze ) {
+        super( pos, whens.get( 0 ) );
+        this.whens = whens;
+        this.elze = elze;
     }
 
 }

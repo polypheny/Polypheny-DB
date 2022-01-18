@@ -16,13 +16,18 @@
 
 package org.polypheny.db.dql;
 
+import java.util.List;
 import org.polypheny.db.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherReturn extends CypherNode {
 
-    protected CypherReturn( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    private final List<CypherReturnEntity> returns;
+
+
+    protected CypherReturn( ParserPos pos, List<CypherReturnEntity> returns ) {
+        super( pos, returns.get( 0 ) );
+        this.returns = returns;
     }
 
 }
