@@ -17,6 +17,7 @@
 package org.polypheny.db.routing.strategies;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -42,6 +43,11 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewTable() {
+        /*
+         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
+        return PolicyManager.getInstance().checkTableStoreOptions(availableStores, false);
+         */
+
         return AdapterManager.getInstance().getStores().values().asList();
     }
 

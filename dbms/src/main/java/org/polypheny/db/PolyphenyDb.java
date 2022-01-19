@@ -60,6 +60,7 @@ import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
+import org.polypheny.db.policies.policy.PolicyManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -338,6 +339,10 @@ public class PolyphenyDb {
 
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
+
+
+        //start the policy manager
+        PolicyManager.getInstance();
 
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();

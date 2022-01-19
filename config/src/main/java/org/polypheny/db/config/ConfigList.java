@@ -77,7 +77,9 @@ public class ConfigList extends Config {
             booleanList( key, (List<Boolean>) list );
         } else if ( clazz.equals( ConfigDocker.class ) ) {
             dockerList( key, (List<ConfigDocker>) list );
-        } else {
+        } else if ( clazz.equals( ConfigPolicy.class ) ) {
+            policyList( key, (List<ConfigPolicy>) list );
+        }else {
             throw new UnsupportedOperationException( "A ConfigList, which uses that that type is not supported." );
         }
     }
@@ -161,6 +163,11 @@ public class ConfigList extends Config {
         this.defaultList = ImmutableList.copyOf( this.list );
     }
 
+    private void policyList( String key, final List<ConfigPolicy> list ) {
+        this.template = new ConfigPolicy( "availability", "polypheny" );
+        this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
+        this.defaultList = ImmutableList.copyOf( this.list );
+    }
 
     @Override
     public <T> List<T> getList( Class<T> type ) {
@@ -264,7 +271,9 @@ public class ConfigList extends Config {
             setter = ( key, value ) -> new ConfigBoolean( key, (Boolean) value );
         } else if ( clazz.equals( ConfigDocker.class ) ) {
             setter = ( key, value ) -> ConfigDocker.fromMap( (Map<String, Object>) value );
-        } else {
+        } else if ( clazz.equals( ConfigPolicy.class ) ) {
+            setter = ( key, value ) -> ConfigPolicy.fromMap( (Map<String, Object>) value );
+        }else {
             return false;
         }
         return setConfigObjectList( values, setter );
