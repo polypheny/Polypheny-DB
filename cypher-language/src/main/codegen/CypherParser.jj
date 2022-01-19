@@ -14,11 +14,14 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
-import javax.print.DocFlavor.READER;import org.polypheny.db.CypherNode;
+import javax.print.DocFlavor.READER;
+import org.polypheny.db.Cypher;
+import org.polypheny.db.CypherList;import org.polypheny.db.CypherNode;
 import org.polypheny.db.dml.CypherCreate;
 import org.polypheny.db.dql.CypherAs;
 import org.polypheny.db.dql.CypherReturn;
-import org.polypheny.db.dql.CypherReturnEntity;import org.polypheny.db.dql.CypherUnwind;
+import org.polypheny.db.dql.CypherReturnExpr;
+import org.polypheny.db.dql.CypherUnwind;
 
 /**
  * openCypher language (Cypher) parser, generated from Parser.jj by JavaCC.
@@ -76,8 +79,6 @@ private static Metadata metadata;
           return Input();
       }
 
-}}
-
 }
 
 PARSER_END(CypherParserImpl)
@@ -127,6 +128,14 @@ TOKEN : /* IDENTIFIERS */
 |
 < UNION: "UNION" >
 |
+< AND: "AND" >
+|
+< OR: "OR" >
+|
+< XOR: "XOR" >
+|
+< NOT: "NOT" >
+|
 < ALL: "ALL" >
 |
 < DESC: "DESC" >
@@ -149,6 +158,22 @@ TOKEN : /* IDENTIFIERS */
 |
 < END: "END" >
 |
+< NULL: "null" >
+|
+< TRUE: ( <STRUE> | <BTRUE> )>
+|
+< STRUE: "true">
+|
+< BTRUE: "TRUE">
+|
+< FALSE: ( <SFALSE> | <BFALSE> )>
+|
+< SFALSE: "false">
+|
+< BFALSE: "FALSE" >
+|
+< IN: "IN" >
+|
 < IS_NULL: "IS NULL" >
 |
 < IS_NOT_NULL: "IS NOT NULL" >
@@ -159,6 +184,50 @@ TOKEN : /* IDENTIFIERS */
 |
 < CONTAINS: "CONTAINS" >
 |
+< EON: ")" >
+|
+< SON: "(" >
+|
+< EOR: "]" >
+|
+< SOR: "[" >
+|
+< COMMA: "," >
+|
+< DOT: "." >
+|
+< LTE: "<=" >
+|
+< LT: "<" >
+|
+< GTE: ">=" >
+|
+< GT: ">" >
+|
+< COUNT: "count(" >
+|
+< MIN: "min(" >
+|
+< MAX: "max(" >
+|
+< SUM: "sum(" >
+|
+< AVG: "avg(" >
+|
+< COLLECT: "collect(" >
+|
+< STD: "stdev(" >
+|
+< STDP: "stdevp(" >
+|
+< LENGTH: "length(" >
+|
+< NODES: "nodes(" >
+|
+< PERCENTILE_D: "percentile_disc(" >
+|
+< PERCENTILE_C: "percentile_cont(" >
+|
 < #SYMBOL: [".", ",", ":", ";", "!", "$", "\"", "'", "(", ")", " ", "\n", "{", "}", "[", "]","&","\\","/", "=", "<" ,">", "�","^", "~", "´", "@" ] | <MATH> >
 |
 < #MATH: ["*", "/", "-", "+"] >
@@ -168,20 +237,6 @@ TOKEN : /* IDENTIFIERS */
 < #LETTER: ["_","a"-"z","A"-"Z","ö", "Ö", "ä", "Ä", "ü", "Ü", "à", "À", "ç","Ç", "á", "Á", "è", "È","í","Í", "î", "Î","ó","Ó","ò", "ô", "Ô", "Ò" , "í", "Í", "ë", "Ë", "â", "Â", "ï", "Ï", "é", "É", "ñ", "Ñ", "ß"] >
 |
 < #DIGIT: ["0"-"9"] >
-|
-< EON: ")" >
-|
-< SON: "(" >
-|
-< EOR: "]" >
-|
-< SOR: "[" >
-|
-< OR: "|" >
-|
-< COMMA: "," >
-|
-< DOT: "." >
 }
 
 //////////////////////////////////////
@@ -465,39 +520,50 @@ CypherNode Unwind() :
 
 CypherNode Return() :
 {
-    CypherNode n;
+    List<CypherReturnExpr> ns;
+    CypherNode limit = null;
+    CypherNode order = null;
 }
 {
     (
+        ns = Returns()
+    )+
 
-    )*
-
-    (
-        <LIMIT> n = Limit()
+    [
+        (
+            <LIMIT> limit = Limit()
+            [<ORDERBY> order = OrderBy()]
+        )
         |
-        <ORDERBY> n = OrderBy()
-    )
+        (
+            <ORDERBY> order = OrderBy()
+            [<LIMIT> limit = Limit()]
+        )
 
-    { return new CypherReturn( getPos(), n ); }
+    ]
+
+    { return new CypherReturn( getPos(), new CypherList<>(ns), n, limit, order ); }
 }
 
-List<CypherNode> Returns() :
+List<CypherReturnExpr> Returns() :
 {
-    List<CypherReturnEntity> returns = new ArrayList<>();
-    CypherNode entity;
+    List<CypherReturnExpr> returns = new ArrayList<>();
+    CypherNode expr;
     CypherNode alias = null;
+    boolean distinct = false;
 }
 {
     (
-        <CASE> entity = Case()
+        <DISTINCT> expr = Expression()
+        { distinct = true; }
         |
-        entity = Entity()
+        expr = Expression()
     )
 
     [<AS> alias = As()]
 
     {
-        n = new CypherReturnEntity( getPos(), entity, alias );
+        n = new CypherReturnExpr( getPos(), expr, alias, distinct );
     }
 
     [
@@ -535,7 +601,7 @@ CypherNode Limit() :
 
 CypherNode Case() :
 {
-    List<CypherNode> ns = new ArrayList<>();
+    CypherList<CypherNode> ns = new CypherList<>();
 }
 {
     (
@@ -575,4 +641,23 @@ CypherNode Else() :
 }
 {
     { return new CypherElse( getPos(), n); }
+}
+
+CypherNode List() :
+{
+    List<CypherNode> ns = new ArrayList<>();
+}
+{
+    ns = ListEntity( ns )
+    { return new CypherList<>(ns); }
+}
+
+CypherNode Expression():
+{
+    CypherNode n;
+}
+{
+    <CASE> n = Case()
+    |
+
 }

@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.dql;
+package org.polypheny.db;
 
-import org.polypheny.db.CypherList;
-import org.polypheny.db.CypherNode;
+import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherReturn extends CypherNode {
+@Getter
+public class CypherList<T> extends CypherNode {
 
-    private final CypherNode limit;
-    private final CypherNode order;
-    private final CypherList<CypherReturnExpr> returns;
+    private final List<T> inputs;
 
 
-    protected CypherReturn( ParserPos pos, CypherList<CypherReturnExpr> returns, CypherNode limit, CypherNode order ) {
+    protected CypherList( ParserPos pos, List<T> inputs ) {
         super( pos, EMPTY_CYPHER );
-        this.returns = returns;
-        this.limit = limit;
-        this.order = order;
+        this.inputs = inputs;
     }
+
 
 }

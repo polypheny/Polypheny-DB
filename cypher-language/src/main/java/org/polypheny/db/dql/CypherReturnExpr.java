@@ -19,14 +19,16 @@ package org.polypheny.db.dql;
 import org.polypheny.db.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherReturnEntity extends CypherNode {
+public class CypherReturnExpr extends CypherNode {
 
     private final CypherNode alias;
+    private final boolean distinct;
 
 
-    protected CypherReturnEntity( ParserPos pos, CypherNode input, CypherNode alias ) {
+    protected CypherReturnExpr( ParserPos pos, CypherNode input, CypherNode alias, boolean distinct ) {
         super( pos, input );
         this.alias = alias;
+        this.distinct = distinct;
     }
 
 }
