@@ -61,6 +61,7 @@ import org.polypheny.db.partition.FrequencyMap;
 import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
+import org.polypheny.db.policies.policy.PolicyManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
 import org.polypheny.db.transaction.PUID;
@@ -316,7 +317,6 @@ public class PolyphenyDb {
         // Create internal query interfaces
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
         StatisticsManager.setAndGetInstance(new StatisticsManagerImpl( statisticQueryProcessor));
-        //statisticsManager.asyncReevaluateAllStatistics();
 
         // Start Polypheny-UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
@@ -338,6 +338,10 @@ public class PolyphenyDb {
 
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
+
+
+        //start the policy manager
+        PolicyManager.getInstance();
 
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();

@@ -28,6 +28,7 @@ include 'explore-by-example'
 include 'rest-interface'
 include 'cottontail-adapter'
 include 'ethereum-adapter'
+include 'policies'
 
 
 include 'dbms'
