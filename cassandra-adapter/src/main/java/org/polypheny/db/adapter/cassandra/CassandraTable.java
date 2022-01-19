@@ -134,9 +134,8 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         try {
             return Catalog.getInstance().getTable(cassandraSchema.name, columnFamily, physicalName).id;
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-            e.printStackTrace();
+            throw new RuntimeException("Not possible to get tableId within CassandraTable", e);
         }
-        return null;
     }
 
     public String toString() {

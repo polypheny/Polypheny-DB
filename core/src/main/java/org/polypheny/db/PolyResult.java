@@ -183,16 +183,16 @@ public class PolyResult {
 
 
     public List<List<Object>> getRows( Statement statement, int size ) {
-        return getRows( statement, size, false, false, null );
+        return getRows( statement, size, false, false );
     }
 
 
     public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed ) {
-        return getRows( statement, size, isTimed, isAnalyzed, null );
+        return getRows( statement, size, isTimed, isAnalyzed, null, false );
     }
 
 
-    public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent ) {
+    public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent, boolean isIndex ) {
         Iterator<Object> iterator = null;
         StopWatch stopWatch = null;
         try {
@@ -214,7 +214,8 @@ public class PolyResult {
                 executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
             }
 
-            if ( statementEvent != null ) {
+            //only if it is an index
+            if ( statementEvent != null && isIndex) {
                 statementEvent.setIndexSize( res.size() );
             }
 

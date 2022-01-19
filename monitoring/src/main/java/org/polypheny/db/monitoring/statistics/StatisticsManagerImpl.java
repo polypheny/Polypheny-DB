@@ -129,6 +129,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         registerIsFullTracking();
 
         this.listeners.addPropertyChangeListener( this );
+
+        asyncReevaluateAllStatistics();
     }
 
 
@@ -170,47 +172,37 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         }
                     }
                 } else {
-                    for ( int i = 0; i < columns.size(); i++ ) {
-                        PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
-                        QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
-
-                        if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
-                            NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
-                            numericalStatisticColumn.insert( changedValues.get( (long) i ) );
-                            put( queryColumn, numericalStatisticColumn );
-                        } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                            AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
-                            alphabeticStatisticColumn.insert( changedValues.get( (long) i ) );
-                            put( queryColumn, alphabeticStatisticColumn );
-                        } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-                            TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
-                            temporalStatisticColumn.insert( changedValues.get( (long) i ) );
-                            put( queryColumn, temporalStatisticColumn );
-                        }
-                    }
+                    addDataStatistics( changedValues, catalog, catalogTable, columns );
                 }
             } else {
 
-                for ( int i = 0; i < columns.size(); i++ ) {
-                    PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
-                    QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
-
-                    if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
-                        NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
-                        numericalStatisticColumn.insert( changedValues.get( (long) i ) );
-                        put( queryColumn, numericalStatisticColumn );
-                    } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                        AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
-                        alphabeticStatisticColumn.insert( changedValues.get( (long) i ) );
-                        put( queryColumn, alphabeticStatisticColumn );
-                    } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-                        TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
-                        temporalStatisticColumn.insert( changedValues.get( (long) i ) );
-                        put( queryColumn, temporalStatisticColumn );
-                    }
-                }
+                addDataStatistics( changedValues, catalog, catalogTable, columns );
             }
 
+        }else if ( type.equals( "DELETE" ) ) {
+
+        }
+    }
+
+
+    private void addDataStatistics( HashMap<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
+        for ( int i = 0; i < columns.size(); i++ ) {
+            PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
+            QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
+
+            if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
+                numericalStatisticColumn.insert( changedValues.get( (long) i ) );
+                put( queryColumn, numericalStatisticColumn );
+            } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
+                alphabeticStatisticColumn.insert( changedValues.get( (long) i ) );
+                put( queryColumn, alphabeticStatisticColumn );
+            } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
+                temporalStatisticColumn.insert( changedValues.get( (long) i ) );
+                put( queryColumn, temporalStatisticColumn );
+            }
         }
     }
 

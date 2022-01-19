@@ -87,19 +87,6 @@ public abstract class TableScan extends AbstractAlgNode {
 
     @Override
     public double estimateRowCount( AlgMetadataQuery mq ) {
-        /*
-        if ( table.getTable() instanceof LogicalTable ) {
-            Long tableId = ((LogicalTable) table.getTable()).getTableId();
-            if ( StatisticsHelper.getInstance().tableRowCount.containsKey( tableId ) ) {
-                if ( StatisticsHelper.getInstance().tableRowCount.get( tableId ) > 0 ) {
-                    double rowCount = StatisticsHelper.getInstance().tableRowCount.get( tableId );
-                    return rowCount;
-                }
-            }
-        }
-
-         */
-
         return table.getRowCount();
     }
 
