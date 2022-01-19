@@ -103,7 +103,7 @@ public abstract class Index {
         final PolyResult result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
 
-        final List<List<Object>> rows = result.getRows(statement, 1, false, false, result.getStatement().getMonitoringEvent() );
+        final List<List<Object>> rows = result.getRows(statement, 1, false, false, result.getStatement().getMonitoringEvent(), true );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
         for ( final List<Object> row : rows ) {
             if ( row.size() > columns.size() ) {
