@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -640,7 +640,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
+    public void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
         List<CatalogColumn> addedColumns = new LinkedList<>();
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
@@ -780,6 +780,21 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    /**
+     * Adds a new data placements of a table to a specific store
+     *
+     * @param catalogTable the table
+     * @param columnIds the ids of the columns for which to create a new placement
+     * @param partitionGroupIds the ids of the partition groups
+     * @param dataStore the data store on which to create the placement
+     * @param statement the query statement
+     */
+    @Override
+    public void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
+
     }
 
 
@@ -966,7 +981,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropPlacement( CatalogTable catalogTable, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException {
+    public void dropDataPlacement( CatalogTable catalogTable, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException {
         // Check whether this placement exists
         if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
             throw new PlacementNotExistsException();
@@ -1165,6 +1180,21 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    /**
+     * Modifies an existing data placement of a table on a specific store
+     *
+     * @param catalogTable the table
+     * @param columnIds the ids of the columns for which to create a new placement
+     * @param partitionGroupIds the ids of the partitions of the column
+     * @param dataStore the data store on which to create the placement
+     * @param statement the query statement
+     */
+    @Override
+    public void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
+
     }
 
 
@@ -1854,6 +1884,9 @@ public class DdlManagerImpl extends DdlManager {
                     TableType.TABLE,
                     true );
 
+            // Initially create DataPlacement containers on every store the table should be placed.
+            stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), tableId ) );
+
             for ( ColumnInformation column : columns ) {
                 addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
             }
@@ -1879,6 +1912,7 @@ public class DdlManagerImpl extends DdlManager {
 
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
             }
+
 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );

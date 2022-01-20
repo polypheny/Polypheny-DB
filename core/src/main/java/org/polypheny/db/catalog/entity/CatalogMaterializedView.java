@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ public class CatalogMaterializedView extends CatalogView {
             String query,
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            @NonNull ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             AlgCollation algCollation,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
@@ -69,7 +70,7 @@ public class CatalogMaterializedView extends CatalogView {
             boolean ordered,
             PartitionProperty partitionProperty
     ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter,
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter, dataPlacements,
                 modifiable, algCollation, underlyingTables, language, partitionProperty );
         this.query = query;
         this.algCollation = algCollation;
@@ -91,6 +92,7 @@ public class CatalogMaterializedView extends CatalogView {
             String query,
             Long primaryKey,
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            @NonNull ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionType partitionType,
             long partitionColumnId,
@@ -115,6 +117,7 @@ public class CatalogMaterializedView extends CatalogView {
                 query,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 partitionType,
                 partitionColumnId,
@@ -146,6 +149,7 @@ public class CatalogMaterializedView extends CatalogView {
                 query,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 algCollation,
                 underlyingTables,
@@ -170,6 +174,7 @@ public class CatalogMaterializedView extends CatalogView {
                 query,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 partitionType,
                 partitionColumnId,
@@ -198,6 +203,7 @@ public class CatalogMaterializedView extends CatalogView {
                 query,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 partitionType,
                 partitionColumnId,

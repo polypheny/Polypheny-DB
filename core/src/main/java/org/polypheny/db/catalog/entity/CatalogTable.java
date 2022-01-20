@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -52,9 +53,12 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     public final boolean modifiable;
 
     public final boolean isPartitioned;
-    public final Catalog.PartitionType partitionType;
+    public final PartitionType partitionType;
     public final long partitionColumnId;
     public final PartitionProperty partitionProperty;
+
+    //public final ImmutableMap<DataPlacementRole, ImmutableList<Long>> dataPlacementsByRole;
+    public final ImmutableList<Integer> dataPlacements;
 
     @Getter
     public final ImmutableList<Long> connectedViews;
@@ -71,6 +75,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             @NonNull final TableType type,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty ) {
         this.id = id;
@@ -91,6 +96,9 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.partitionProperty = partitionProperty;
         this.connectedViews = ImmutableList.of();
 
+        //this.dataPlacementsByRole = structurizeDataPlacements( dataPlacements );
+        this.dataPlacements = ImmutableList.copyOf( dataPlacements );
+
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
@@ -110,6 +118,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             @NonNull final TableType type,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             final PartitionType partitionType,
             final long partitionColumnId,
@@ -133,6 +142,9 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
         this.connectedViews = connectedViews;
 
+        //this.dataPlacementsByRole = structurizeDataPlacements( dataPlacements );
+        this.dataPlacements = ImmutableList.copyOf( dataPlacements );
+
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
@@ -150,6 +162,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             @NonNull final TableType type,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             final PartitionType partitionType,
             final long partitionColumnId,
@@ -176,6 +189,9 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
         this.connectedViews = connectedViews;
 
+        //this.dataPlacementsByRole = structurizeDataPlacements( dataPlacements );
+        this.dataPlacements = ImmutableList.copyOf( dataPlacements );
+
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
@@ -193,6 +209,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             @NonNull final TableType type,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty,
             ImmutableList<Long> connectedViews ) {
@@ -215,6 +232,9 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.partitionProperty = partitionProperty;
 
         this.connectedViews = connectedViews;
+
+        //this.dataPlacementsByRole = structurizeDataPlacements( dataPlacements );
+        this.dataPlacements = ImmutableList.copyOf( dataPlacements );
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
@@ -301,12 +321,12 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 tableType,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 partitionType,
                 partitionColumnId,
                 isPartitioned,
-                partitionProperty,
-                connectedViews );
+                partitionProperty, connectedViews );
     }
 
 
@@ -322,12 +342,12 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 tableType,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 partitionType,
                 partitionColumnId,
                 isPartitioned,
-                partitionProperty,
-                newConnectedViews );
+                partitionProperty, newConnectedViews );
     }
 
 
@@ -343,12 +363,12 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 tableType,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 partitionType,
                 partitionColumnId,
                 isPartitioned,
-                partitionProperty,
-                connectedViews );
+                partitionProperty, connectedViews );
     }
 
 
@@ -367,6 +387,38 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         public final String refGeneration;
         public final String owner;
 
+    }
+
+
+    private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final ImmutableList<CatalogDataPlacement> unsortedDataPlacements ) {
+
+      /*  // Since this shall only be called after initialization of table object,
+        // we need to clear the contents of dataPlacements
+        Map<DataPlacementRole,ImmutableList<Long>> adaptersPerRole = new HashMap<>();
+
+        for ( CatalogDataPlacement dataPlacement : unsortedDataPlacements ){
+
+            DataPlacementRole role = dataPlacement.role;
+            long adapterId = dataPlacement.adapterId;
+
+            List<Long> adapters = new ArrayList<>();
+
+            if ( dataPlacementsByRole.containsKey( role ) ){
+                // Get contents of List and add adapter to it
+                adapters = new ArrayList<>( adaptersPerRole.get( role ) );
+            }
+            else{
+                adaptersPerRole.put( role, ImmutableList.copyOf(new ArrayList<>()) );
+            }
+            adapters.add( adapterId );
+            adaptersPerRole.replace( role, ImmutableList.copyOf( adapters ) );
+        }
+
+        // Finally, overwrite entire dataPlacements at Once
+        return ImmutableMap.copyOf( adaptersPerRole );
+
+       */
+        return null;
     }
 
 }

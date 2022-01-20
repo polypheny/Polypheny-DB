@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.annotations.SerializedName;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -35,6 +37,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -67,6 +70,8 @@ import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementRoleRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
@@ -488,6 +493,7 @@ public abstract class Catalog {
      */
     public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds );
 
+
     /**
      * Deletes all dependent column placements
      *
@@ -545,6 +551,10 @@ public abstract class Catalog {
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId );
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
+
+    public abstract ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId );
+
+    public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionPlacementsByAdapter( long tableId );
 
     public abstract List<CatalogKey> getKeys();
 
@@ -1304,6 +1314,32 @@ public abstract class Catalog {
     public abstract boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold );
 
     /**
+     * Returns a specific DataPlacement of a given table.
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @return DataPlacement of a table placed on a specific store
+     */
+    public abstract CatalogDataPlacement getDataPlacement( int adapterId, long tableId );
+
+    /**
+     * Returns all DataPlacements of a given table.
+     *
+     * @param tableId table to retrieve the placements from
+     * @return List of all DataPlacements for the table
+     */
+    public abstract List<CatalogDataPlacement> getDataPlacements( long tableId );
+
+    /**
+     * Returns all DataPlacements of a given table that are associated with a given role.
+     *
+     * @param tableId table to retrieve the placements from
+     * @param role role to specifically filter
+     * @return List of all DataPlacements for the table that are associated with a specific role
+     */
+    public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
+
+    /**
      * Flags the table for deletion.
      * This method should be executed on a partitioned table before we run a DROP TABLE statement.
      *
@@ -1333,6 +1369,116 @@ public abstract class Catalog {
      * @param physicalTableName The table name on the adapter
      */
     public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName );
+
+    /**
+     * Adds a new DataPlacement for a given table on a specific store
+     *
+     * @param adapterId adapter where placement should be located
+     * @param tableId table to retrieve the placement from
+     * @return Newly created DataPlacement of a table placed on a specific store
+     */
+    public abstract void addDataPlacement( int adapterId, long tableId );
+
+
+    /**
+     * Adds a new DataPlacement for a given table on a specific store.
+     * If it already exists it simply returns the existing placement.
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @return DataPlacement of a table placed on a specific store
+     */
+    public abstract CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId );
+
+
+    /**
+     * Modifies a specific DataPlacement of a given table.
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param catalogDataPlacement new dataPlacement to be written
+     * @return Modified DataPlacement of a table placed on a specific store
+     */
+    protected abstract void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement );
+
+
+    /**
+     * Adds a single dataPlacement on a store for a specific table
+     *
+     * @param tableId table to be updated
+     * @param adapterId adapter id corresponding to a new DataPlacements
+     */
+    protected abstract void addSingleDataPlacementToTable( long tableId, Integer adapterId );
+
+
+    /**
+     * Removes a single dataPlacement from a store for a specific table
+     *
+     * @param tableId table to be updated
+     * @param adapterId adapter id corresponding to a new DataPlacements
+     */
+    protected abstract void removeSingleDataPlacementFromTable( long tableId, Integer adapterId );
+
+
+    /**
+     * Updates the list of data placements on a table
+     *
+     * @param tableId table to be updated
+     * @param newDataPlacements list of new DataPlacements that shall replace the old ones
+     */
+    public abstract void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements );
+
+
+    /**
+     * Adds columns to dataPlacement on a store for a specific table
+     *
+     * @param tableId table to be updated
+     * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param columnIds List of columnIds to add to a specific store for the table
+     */
+    protected abstract void addColumnsToDataPlacement( long tableId, int adapterId, List<Long> columnIds );
+
+
+    /**
+     * Remove columns to dataPlacement on a store for a specific table
+     *
+     * @param tableId table to be updated
+     * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param columnIds List of columnIds to remove from a specific store for the table
+     */
+    protected abstract void removeColumnsFromDataPlacement( long tableId, int adapterId, List<Long> columnIds );
+
+
+    /**
+     * Adds partitions to dataPlacement on a store for a specific table
+     *
+     * @param tableId table to be updated
+     * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param partitionIds List of partitionIds to add to a specific store for the table
+     */
+    protected abstract void addPartitionsToDataPlacement( long tableId, int adapterId, List<Long> partitionIds );
+
+
+    /**
+     * Remove partitions to dataPlacement on a store for a specific table
+     *
+     * @param tableId table to be updated
+     * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param partitionIds List of partitionIds to remove from a specific store for the table
+     */
+    protected abstract void removePartitionsFromDataPlacement( long tableId, int adapterId, List<Long> partitionIds );
+
+
+    /**
+     * Updates and overrides list of associated columnPlacements & partitionPlacements for a given data placement
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @param columnIds List of columnIds to be located on a specific store for the table
+     * @param partitionIds List of partitionIds to be located on a specific store for the table
+     */
+    public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds );
+
 
     /**
      * Change physical names of a partition placement.
@@ -1838,6 +1984,45 @@ public abstract class Catalog {
                 }
             }
             throw new UnknownPartitionTypeException( name );
+        }
+
+    }
+
+
+    public enum DataPlacementRole {
+        UPTODATE( 0 ),
+        REFRESHABLE( 1 );
+
+        private final int id;
+
+
+        DataPlacementRole( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static DataPlacementRole getById( final int id ) {
+            for ( DataPlacementRole t : values() ) {
+                if ( t.id == id ) {
+                    return t;
+                }
+            }
+            throw new UnknownPlacementRoleRuntimeException( id );
+        }
+
+
+        public static DataPlacementRole getByName( final String name ) throws UnknownPlacementRoleException {
+            for ( DataPlacementRole t : values() ) {
+                if ( t.name().equalsIgnoreCase( name ) ) {
+                    return t;
+                }
+            }
+            throw new UnknownPlacementRoleException( name );
         }
 
     }

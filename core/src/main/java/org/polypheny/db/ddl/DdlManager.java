@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,20 @@ public abstract class DdlManager {
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+
+
+    /**
+     * Adds a new data placements of a table to a specific store
+     *
+     * @param catalogTable the table
+     * @param columnIds the ids of the columns for which to create a new placement
+     * @param partitionGroupIds the ids of the partition groups
+     * @param dataStore the data store on which to create the placement
+     * @param statement the query statement
+     */
+    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+
 
     /**
      * Adds a new primary key to a table
@@ -282,13 +295,13 @@ public abstract class DdlManager {
     public abstract void dropIndex( CatalogTable catalogTable, String indexName, Statement statement ) throws DdlOnSourceException;
 
     /**
-     * Drop the placement of a table on a specified data store
+     * Drop the data placement of a table on a specified data store
      *
-     * @param catalogTable the table for which to to drop a placement
+     * @param catalogTable the table for which to drop a placement
      * @param storeInstance the data store from which to drop the placement
      * @param statement the query statement
      */
-    public abstract void dropPlacement( CatalogTable catalogTable, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException;
+    public abstract void dropDataPlacement( CatalogTable catalogTable, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException;
 
     /**
      * Drop the primary key of a table
@@ -356,6 +369,18 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void dropDefaultValue( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException;
+
+
+    /**
+     * Modifies an existing data placement of a table on a specific store
+     *
+     * @param catalogTable the table
+     * @param columnIds the ids of the columns for which to create a new placement
+     * @param partitionGroupIds the ids of the partitions of the column
+     * @param dataStore the data store on which to create the placement
+     * @param statement the query statement
+     */
+    public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
 
     /**
      * Modify the placement of a table on a specified data store. This method compares the specified list of column ids with

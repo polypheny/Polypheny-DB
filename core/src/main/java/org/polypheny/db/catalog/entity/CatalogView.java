@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,12 +60,13 @@ public class CatalogView extends CatalogTable {
             String query,
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            @NonNull ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             AlgCollation algCollation,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language,
             PartitionProperty partitionProperty ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, modifiable, partitionProperty );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, dataPlacements, modifiable, partitionProperty );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
@@ -85,6 +86,7 @@ public class CatalogView extends CatalogTable {
             String query,
             Long primaryKey,
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionType partitionType,
             long partitionColumnId,
@@ -94,7 +96,7 @@ public class CatalogView extends CatalogTable {
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty, connectedViews );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, dataPlacements, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
@@ -116,6 +118,7 @@ public class CatalogView extends CatalogTable {
                 query,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 partitionType,
                 partitionColumnId,
@@ -142,6 +145,7 @@ public class CatalogView extends CatalogTable {
                 query,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 partitionType,
                 partitionColumnId,
@@ -168,6 +172,7 @@ public class CatalogView extends CatalogTable {
                 query,
                 primaryKey,
                 placementsByAdapter,
+                dataPlacements,
                 modifiable,
                 algCollation,
                 underlyingTables,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,17 @@
 
 package org.polypheny.db.catalog.entity;
 
+
 import java.io.Serializable;
+import java.sql.Timestamp;
 import lombok.NonNull;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
+/**
+ * This class is considered the logical representation of a physical table on a specific store.
+ */
 public class CatalogPartitionPlacement implements CatalogEntity {
 
     private static final long serialVersionUID = 3035193464866141590L;
@@ -33,6 +39,15 @@ public class CatalogPartitionPlacement implements CatalogEntity {
 
     public final String physicalSchemaName;
     public final String physicalTableName;
+
+
+    // Related to multi-tier replication. If Placement is considered a primary node it needs to receive every update eagerly.
+    // If false, nodes are considered refreshable and can be lazily replicated
+    // This attribute is derived from an effective data placement (table entity on a store)
+    // This means that the store is not entirely considered a primary and can therefore be different on another table
+    // TODO @HENNLO remove default role
+    public final DataPlacementRole role = DataPlacementRole.UPTODATE;
+    public Timestamp updateTimestamp;
 
 
     public CatalogPartitionPlacement(
