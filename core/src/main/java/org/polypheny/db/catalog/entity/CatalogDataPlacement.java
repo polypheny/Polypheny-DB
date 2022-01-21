@@ -22,6 +22,8 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
@@ -63,6 +65,18 @@ public class CatalogDataPlacement implements CatalogEntity {
         this.columnPlacementsOnAdapter = columnPlacementsOnAdapter;
         this.partitionPlacementsOnAdapter = partitionPlacementsOnAdapter;
 
+    }
+
+
+    @SneakyThrows
+    public String getTableName() {
+        return Catalog.getInstance().getTable( tableId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getAdapterName() {
+        return Catalog.getInstance().getAdapter( adapterId ).uniqueName;
     }
 
 

@@ -383,6 +383,14 @@ public abstract class Catalog {
     public abstract CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException;
 
     /**
+     * Returns the table which is associated with a given partitionId
+     *
+     * @param partitionId to use for lookup
+     * @return CatalogTable that contians partitionId
+     */
+    public abstract CatalogTable getTableFromPartition( long partitionId );
+
+    /**
      * Adds a table to a specified schema.
      *
      * @param name The name of the table to add
@@ -1375,7 +1383,6 @@ public abstract class Catalog {
      *
      * @param adapterId adapter where placement should be located
      * @param tableId table to retrieve the placement from
-     * @return Newly created DataPlacement of a table placed on a specific store
      */
     public abstract void addDataPlacement( int adapterId, long tableId );
 
@@ -1397,27 +1404,33 @@ public abstract class Catalog {
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from
      * @param catalogDataPlacement new dataPlacement to be written
-     * @return Modified DataPlacement of a table placed on a specific store
      */
     protected abstract void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement );
 
+    /**
+     * Removes a  DataPlacement for a given table on a specific store
+     *
+     * @param adapterId adapter where placement should be removed from
+     * @param tableId table to retrieve the placement from
+     */
+    public abstract void removeDataPlacement( int adapterId, long tableId );
 
     /**
      * Adds a single dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      */
-    protected abstract void addSingleDataPlacementToTable( long tableId, Integer adapterId );
+    protected abstract void addSingleDataPlacementToTable( Integer adapterId, long tableId );
 
 
     /**
      * Removes a single dataPlacement from a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      */
-    protected abstract void removeSingleDataPlacementFromTable( long tableId, Integer adapterId );
+    protected abstract void removeSingleDataPlacementFromTable( Integer adapterId, long tableId );
 
 
     /**
@@ -1432,41 +1445,41 @@ public abstract class Catalog {
     /**
      * Adds columns to dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      * @param columnIds List of columnIds to add to a specific store for the table
      */
-    protected abstract void addColumnsToDataPlacement( long tableId, int adapterId, List<Long> columnIds );
+    protected abstract void addColumnsToDataPlacement( int adapterId, long tableId, List<Long> columnIds );
 
 
     /**
      * Remove columns to dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      * @param columnIds List of columnIds to remove from a specific store for the table
      */
-    protected abstract void removeColumnsFromDataPlacement( long tableId, int adapterId, List<Long> columnIds );
+    protected abstract void removeColumnsFromDataPlacement( int adapterId, long tableId, List<Long> columnIds );
 
 
     /**
      * Adds partitions to dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      * @param partitionIds List of partitionIds to add to a specific store for the table
      */
-    protected abstract void addPartitionsToDataPlacement( long tableId, int adapterId, List<Long> partitionIds );
+    protected abstract void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
 
 
     /**
      * Remove partitions to dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      * @param partitionIds List of partitionIds to remove from a specific store for the table
      */
-    protected abstract void removePartitionsFromDataPlacement( long tableId, int adapterId, List<Long> partitionIds );
+    protected abstract void removePartitionsFromDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
 
 
     /**

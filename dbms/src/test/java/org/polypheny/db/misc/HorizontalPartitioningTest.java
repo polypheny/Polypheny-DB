@@ -36,6 +36,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -938,6 +939,110 @@ public class HorizontalPartitioningTest {
             }
         }
 
+    }
+
+
+    @Test
+    public void dataPlacementTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            long partitionsToCreate = 4;
+
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE horizontalDataPlacementTest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )"
+                        + "PARTITION BY HASH (tvarchar) "
+                        + "WITH (foo, bar, foobar, barfoo) " );
+
+                try {
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "horizontaldataplacementtest" ) ).get( 0 );
+                    // Check if sufficient PartitionPlacements have been created
+
+                    // Check if initially as many DataPlacements are created as requested
+                    // One for each store
+                    Assert.assertEquals( 1, table.dataPlacements.size() );
+
+                    CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
+
+                    // Check how many columnPlacements are added to the one DataPlacement
+                    Assert.assertEquals( table.columnIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
+
+                    // Check how many partitionPlacements are added to the one DataPlacement
+                    Assert.assertEquals( partitionsToCreate, dataPlacement.partitionPlacementsOnAdapter.size() );
+
+                    // ADD adapter
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    // ADD FullPlacement
+                    statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
+
+                    // Check if we now have two  dataPlacements in table
+                    table = Catalog.getInstance().getTable( table.id );
+                    Assert.assertEquals( 2, Catalog.getInstance().getDataPlacements( table.id ).size() );
+
+                    // Modify partitions on second store
+                    statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
+                    List<CatalogDataPlacement> dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+
+                    int adapterId = -1;
+                    int initialAdapterId = -1;
+                    for ( CatalogDataPlacement dp : dataPlacements ) {
+                        if ( dp.getAdapterName().equals( "anotherstore" ) ) {
+                            adapterId = dp.adapterId;
+                            Assert.assertEquals( 1, dp.partitionPlacementsOnAdapter.size() );
+                        } else {
+                            initialAdapterId = dp.adapterId;
+                            Assert.assertEquals( 4, dp.partitionPlacementsOnAdapter.size() );
+                        }
+                    }
+
+                    // Modify columns on second store
+                    statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MODIFY PLACEMENT (tinteger) "
+                            + "ON STORE anotherstore WITH partitions (\"bar\", \"barfoo\", \"foo\") " );
+
+                    dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+                    for ( CatalogDataPlacement dp : dataPlacements ) {
+                        if ( dp.adapterId == adapterId ) {
+                            Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
+                            Assert.assertEquals( 3, dp.partitionPlacementsOnAdapter.size() );
+                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 3, Catalog.getInstance().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
+                        } else if ( dp.adapterId == initialAdapterId ) {
+                            Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
+                            Assert.assertEquals( 4, dp.partitionPlacementsOnAdapter.size() );
+                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapter( initialAdapterId ).size() );
+                            Assert.assertEquals( 4, Catalog.getInstance().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
+                        }
+
+                    }
+
+                    // After MERGE should only hold one partition
+                    statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MERGE PARTITIONS" );
+                    dataPlacements = Catalog.getInstance().getDataPlacements( table.id );
+
+                    for ( CatalogDataPlacement dp : dataPlacements ) {
+                        Assert.assertEquals( 1, dp.partitionPlacementsOnAdapter.size() );
+                    }
+
+                    //Still two data placements left
+                    Assert.assertEquals( 2, dataPlacements.size() );
+
+                    // DROP STORE and verify number of dataPlacements
+                    statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
+                    Assert.assertEquals( 1, Catalog.getInstance().getDataPlacements( table.id ).size() );
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE IF EXISTS horizontalDataPlacementTest" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP anotherstore" );
+                }
+            }
+        }
     }
 
 }

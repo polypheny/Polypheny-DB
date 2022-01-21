@@ -1022,6 +1022,10 @@ public class DdlManagerImpl extends DdlManager {
         // Remove All
         catalog.deletePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
 
+        // TODO @HENNLO ultimately only this should be called in this method to clean up anything catalog related
+        // Remove physical stores afterwards
+        catalog.removeDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
+
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -2276,6 +2280,12 @@ public class DdlManagerImpl extends DdlManager {
             List<CatalogColumn> necessaryColumns = new LinkedList<>();
             catalog.getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), mergedTable.id ).forEach( cp -> necessaryColumns.add( catalog.getColumn( cp.columnId ) ) );
 
+            // TODO @HENNLO Check if this can be omitted
+            catalog.updateDataPlacement( store.getAdapterId(), mergedTable.id,
+                    catalog.getDataPlacement( store.getAdapterId(), mergedTable.id ).columnPlacementsOnAdapter,
+                    mergedTable.partitionProperty.partitionIds );
+            //
+
             dataMigrator.copySelectiveData(
                     statement.getTransaction(),
                     catalog.getAdapter( store.getAdapterId() ),
@@ -2290,7 +2300,6 @@ public class DdlManagerImpl extends DdlManager {
         for ( DataStore store : stores ) {
             List<Long> partitionIdsOnStore = new ArrayList<>();
             catalog.getPartitionPlacementByTable( store.getAdapterId(), partitionedTable.id ).forEach( p -> partitionIdsOnStore.add( p.partitionId ) );
-
             // Otherwise everything will be dropped again, leaving the table inaccessible
             partitionIdsOnStore.remove( mergedTable.partitionProperty.partitionIds.get( 0 ) );
 

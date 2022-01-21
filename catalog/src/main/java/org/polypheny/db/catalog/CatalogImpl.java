@@ -1393,6 +1393,18 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Returns the table which is associated with a given partitionId
+     *
+     * @param partitionId to use for lookup
+     * @return CatalogTable that contians partitionId
+     */
+    @Override
+    public CatalogTable getTableFromPartition( long partitionId ) {
+        return getTable( getPartition( partitionId ).tableId );
+    }
+
+
+    /**
      * Returns the table with the given name in the specified database and schema.
      *
      * @param databaseName The name of the database
@@ -1946,7 +1958,7 @@ public class CatalogImpl extends Catalog {
             columnPlacements.put( new Object[]{ adapterId, columnId }, columnPlacement );
 
             // adds this ColumnPlacement to existing DataPlacement container
-            addColumnsToDataPlacement( column.tableId, adapterId, Arrays.asList( columnId ) );
+            addColumnsToDataPlacement( adapterId, column.tableId, Arrays.asList( columnId ) );
 
             CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
             Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
@@ -2254,6 +2266,7 @@ public class CatalogImpl extends Catalog {
             tables.replace( table.id, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
             columnPlacements.remove( new Object[]{ adapterId, columnId } );
+            removeColumnsFromDataPlacement( adapterId, table.id, Arrays.asList( columnId ) );
         }
         listeners.firePropertyChange( "columnPlacement", table, null );
     }
@@ -4431,6 +4444,10 @@ public class CatalogImpl extends Catalog {
                     }
                 }
             }
+            // TODO Change partitionOnAdapters in Data Placement to PartitionGroupsOnAdapter
+            List<Long> partitionIds = new ArrayList<>();
+            partitionGroupIds.forEach( pgId -> partitionIds.addAll( getPartitionGroup( pgId ).partitionIds ) );
+            addPartitionsToDataPlacement( adapterId, tableId, partitionIds );
             dataPartitionGroupPlacement.replace( new Object[]{ adapterId, tableId }, ImmutableList.copyOf( partitionGroupIds ) );
         }
     }
@@ -4655,7 +4672,7 @@ public class CatalogImpl extends Catalog {
                 partitionPlacements.put( new Object[]{ adapterId, partitionId }, partitionPlacement );
 
                 // adds this PartitionPlacement to existing DataPlacement container
-                addPartitionsToDataPlacement( tableId, adapterId, Arrays.asList( partitionId ) );
+                addPartitionsToDataPlacement( adapterId, tableId, Arrays.asList( partitionId ) );
 
                 listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
             }
@@ -4669,7 +4686,6 @@ public class CatalogImpl extends Catalog {
      *
      * @param adapterId adapter where placement should be located
      * @param tableId table to retrieve the placement from
-     * @return Newly created DataPlacement of a table placed on a specific store
      */
     @Override
     public void addDataPlacement( int adapterId, long tableId ) {
@@ -4689,7 +4705,7 @@ public class CatalogImpl extends Catalog {
 
             synchronized ( this ) {
                 dataPlacements.put( new Object[]{ adapterId, tableId }, dataPlacement );
-                addSingleDataPlacementToTable( tableId, adapterId );
+                addSingleDataPlacementToTable( adapterId, tableId );
             }
             listeners.firePropertyChange( "dataPlacement", null, dataPlacement );
         }
@@ -4724,7 +4740,6 @@ public class CatalogImpl extends Catalog {
      *
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from
-     * @return Modified DataPlacement of a table placed on a specific store
      */
     @Override
     protected void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement ) {
@@ -4742,13 +4757,45 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Adds a single dataPlacement on a store for a specific table
+     * Removes a  DataPlacement for a given table on a specific store
      *
-     * @param tableId table to be updated
-     * @param adapterId adapter id corresponding to a new DataPlaceements
+     * @param adapterId adapter where placement should be removed from
+     * @param tableId table to retrieve the placement from
      */
     @Override
-    protected void addSingleDataPlacementToTable( long tableId, Integer adapterId ) {
+    public void removeDataPlacement( int adapterId, long tableId ) {
+
+        CatalogDataPlacement dataPlacement = getDataPlacement( adapterId, tableId );
+
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Removing DataPlacement on adapter '{}' for entity '{}'", getAdapter( adapterId ), getTable( tableId ) );
+        }
+
+        // Recursively removing columns that exist on this placement
+        dataPlacement.columnPlacementsOnAdapter.forEach( columnId -> deleteColumnPlacement( adapterId, columnId, false ) );
+
+        // Recursively removing partitions that exist on this placement
+        dataPlacement.partitionPlacementsOnAdapter.forEach( partitionId -> deletePartitionPlacement( adapterId, partitionId ) );
+
+        // TODO @HENNLO think about droping physicalPlacements after removing the entire dataPlacement
+
+        synchronized ( this ) {
+            dataPlacements.remove( new Object[]{ adapterId, tableId } );
+            removeSingleDataPlacementFromTable( adapterId, tableId );
+        }
+        listeners.firePropertyChange( "dataPlacement", dataPlacement, null );
+
+    }
+
+
+    /**
+     * Adds a single dataPlacement on a store for a specific table
+     *
+     * @param adapterId adapter id corresponding to a new DataPlaceements
+     * @param tableId table to be updated
+     */
+    @Override
+    protected void addSingleDataPlacementToTable( Integer adapterId, long tableId ) {
         CatalogTable old = getTable( tableId );
         List<Integer> updatedPlacements = old.dataPlacements.stream().collect( Collectors.toList() );
 
@@ -4762,11 +4809,11 @@ public class CatalogImpl extends Catalog {
     /**
      * Removes a single dataPlacement from a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlaceements
+     * @param tableId table to be updated
      */
     @Override
-    protected void removeSingleDataPlacementFromTable( long tableId, Integer adapterId ) {
+    protected void removeSingleDataPlacementFromTable( Integer adapterId, long tableId ) {
         CatalogTable old = getTable( tableId );
         List<Integer> updatedPlacements = old.dataPlacements.stream().collect( Collectors.toList() );
 
@@ -4799,6 +4846,9 @@ public class CatalogImpl extends Catalog {
                     old.placementsByAdapter,
                     ImmutableList.copyOf( newDataPlacements ),
                     old.modifiable,
+                    old.partitionType,
+                    old.partitionColumnId,
+                    old.isPartitioned,
                     old.partitionProperty,
                     old.connectedViews );
 
@@ -4810,12 +4860,12 @@ public class CatalogImpl extends Catalog {
     /**
      * Adds columns to dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      * @param columnIds List of columnIds to add to a specific store for the table
      */
     @Override
-    protected void addColumnsToDataPlacement( long tableId, int adapterId, List<Long> columnIds ) {
+    protected void addColumnsToDataPlacement( int adapterId, long tableId, List<Long> columnIds ) {
         CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
 
         Set<Long> columnPlacementsOnAdapter = oldDataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toSet() );
@@ -4842,12 +4892,12 @@ public class CatalogImpl extends Catalog {
     /**
      * Remove columns from dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      * @param columnIds List of columnIds to remove from a specific store for the table
      */
     @Override
-    protected void removeColumnsFromDataPlacement( long tableId, int adapterId, List<Long> columnIds ) {
+    protected void removeColumnsFromDataPlacement( int adapterId, long tableId, List<Long> columnIds ) {
         CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
 
         Set<Long> columnPlacementsOnAdapter = oldDataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toSet() );
@@ -4872,12 +4922,12 @@ public class CatalogImpl extends Catalog {
     /**
      * Adds partitions to dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      * @param partitionIds List of partitionIds to add to a specific store for the table
      */
     @Override
-    protected void addPartitionsToDataPlacement( long tableId, int adapterId, List<Long> partitionIds ) {
+    protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
 
         CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
 
@@ -4903,12 +4953,12 @@ public class CatalogImpl extends Catalog {
     /**
      * Remove partitions from dataPlacement on a store for a specific table
      *
-     * @param tableId table to be updated
      * @param adapterId adapter id corresponding to a new DataPlacements
+     * @param tableId table to be updated
      * @param partitionIds List of partitionIds to remove from a specific store for the table
      */
     @Override
-    protected void removePartitionsFromDataPlacement( long tableId, int adapterId, List<Long> partitionIds ) {
+    protected void removePartitionsFromDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
 
         CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
 
@@ -4970,6 +5020,7 @@ public class CatalogImpl extends Catalog {
         if ( checkIfExistsPartitionPlacement( adapterId, partitionId ) ) {
             synchronized ( this ) {
                 partitionPlacements.remove( new Object[]{ adapterId, partitionId } );
+                removePartitionsFromDataPlacement( adapterId, getTableFromPartition( partitionId ).id, Arrays.asList( partitionId ) );
             }
         }
     }
