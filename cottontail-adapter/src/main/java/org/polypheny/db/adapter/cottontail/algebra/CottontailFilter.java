@@ -43,7 +43,6 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.Pair;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
@@ -85,14 +84,9 @@ public class CottontailFilter extends Filter implements CottontailAlg {
     @Override
     public void implement( CottontailImplementContext context ) {
         context.visitChild( 0, getInput() );
-
-        BooleanPredicate predicate = convertToCnf( this.condition );
-
-        Translator translator = new Translator( context.cottontailTable.getRowType( this.getCluster().getTypeFactory() ) );
-
-        Expression filterBuilder_ = translator.generateWhereBuilder( predicate, context.blockBuilder );
-
-        context.filterBuilder = filterBuilder_;
+        final BooleanPredicate predicate = convertToCnf( this.condition );
+        final Translator translator = new Translator( context, input.getRowType() );
+        context.filterBuilder = translator.generateWhereBuilder( predicate, context.blockBuilder );
     }
 
 
@@ -122,13 +116,10 @@ public class CottontailFilter extends Filter implements CottontailAlg {
         private final List<PolyType> columnTypes;
 
 
-        public Translator( AlgDataType rowType ) {
+        public Translator( CottontailImplementContext context, AlgDataType rowType ) {
             this.rowType = rowType;
-            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream()
-                    .map( AlgDataTypeField::getPhysicalName )
-                    .collect( Collectors.toList() ), rowType.getFieldNames() );
-            this.fieldNames = pairs.stream()
-                    .map( it -> it.left != null ? it.left : it.right )
+            this.fieldNames = rowType.getFieldList().stream()
+                    .map( it -> context.cottontailTable.getPhysicalColumnName( it.getName() ) )
                     .collect( Collectors.toList() );
             this.columnTypes = rowType.getFieldList().stream()
                     .map( AlgDataTypeField::getType )
@@ -139,8 +130,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
         private Expression generateWhereBuilder(
                 BooleanPredicate predicate,
-                BlockBuilder builder
-        ) {
+                BlockBuilder builder ) {
             ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, builder.newName( "dynamicParameters" ) );
 
             if ( !(predicate instanceof CompoundPredicate) || (((CompoundPredicate) predicate).op != Op.ROOT) ) {
@@ -247,7 +237,6 @@ public class CottontailFilter extends Filter implements CottontailAlg {
             }
 
             final RexInputRef left1 = (RexInputRef) left;
-
             switch ( right.getKind() ) {
                 case LITERAL:
                     rightSideData = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) right, columnTypes.get( left1.getIndex() ) );

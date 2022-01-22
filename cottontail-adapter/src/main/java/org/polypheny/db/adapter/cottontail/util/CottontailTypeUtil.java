@@ -278,7 +278,7 @@ public class CottontailTypeUtil {
             // TODO js(ct): add list.size() == 0 handling
             // Check whether the decimal array should be converted to a double array (i.e. when we are not comparing to a column of
             // type decimal (which is encoded as string since cottontail does not support the data type decimal))
-            if ( parameterComponentType != null && parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && ((List) value).get( 0 ) instanceof BigDecimal ) {
+            if ( parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && ((List) value).get( 0 ) instanceof BigDecimal ) {
                 ArrayList<Double> arrayList = new ArrayList<>( ((List) value).size() );
                 ((List) value).forEach( e -> arrayList.add( ((BigDecimal) e).doubleValue() ) );
                 value = arrayList;

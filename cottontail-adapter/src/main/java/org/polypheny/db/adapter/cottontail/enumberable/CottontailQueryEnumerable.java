@@ -158,10 +158,10 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
                     return Linq4JFixer.getDecimalData( data );
                 case DATE:
                     return Linq4JFixer.getDateData( data );
-                case TIMESTAMP:
-                    return Linq4JFixer.getTimestampData( data );
                 case TIME:
                     return Linq4JFixer.getTimeData( data );
+                case TIMESTAMP:
+                    return Linq4JFixer.getTimestampData( data );
                 case BINARY:
                 case VARBINARY:
                     return Linq4JFixer.getBinaryData( data );
