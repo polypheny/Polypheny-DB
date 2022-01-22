@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             CatalogTable catalogTable = catalog.getTable( logicalTable.getTableId() );
 
             // Check if table is even horizontal partitioned
-            if ( catalogTable.isPartitioned ) {
+            if ( catalogTable.partitionProperty.isPartitioned ) {
                 return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
 
             } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
         }
 
-        if ( !catalogTable.isPartitioned ) {
+        if ( !catalogTable.partitionProperty.isPartitioned ) {
             throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
 

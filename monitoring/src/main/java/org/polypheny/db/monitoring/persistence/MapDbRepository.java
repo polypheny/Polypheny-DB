@@ -227,7 +227,6 @@ public class MapDbRepository implements MonitoringRepository {
             }
 
             simpleBackendDb.getStore().fileLoad();
-            log.warn( "Monitoring repository has been initialized" );
         }
     }
 

@@ -1252,7 +1252,7 @@ public class DdlManagerImpl extends DdlManager {
         List<Long> tempPartitionGroupList = new ArrayList<>();
 
         // Select partitions to create on this placement
-        if ( catalogTable.isPartitioned ) {
+        if ( catalogTable.partitionProperty.isPartitioned ) {
             long tableId = catalogTable.id;
             // If index partitions are specified
             if ( !partitionGroupIds.isEmpty() && partitionGroupNames.isEmpty() ) {
@@ -2128,6 +2128,7 @@ public class DdlManagerImpl extends DdlManager {
 
             partitionProperty = TemperaturePartitionProperty.builder()
                     .partitionType( actualPartitionType )
+                    .isPartitioned( true )
                     .internalPartitionFunction( PartitionType.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInternalPartitionFunction().toString().toUpperCase() ) )
                     .partitionColumnId( catalogColumn.id )
                     .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
@@ -2145,6 +2146,7 @@ public class DdlManagerImpl extends DdlManager {
         } else {
             partitionProperty = PartitionProperty.builder()
                     .partitionType( actualPartitionType )
+                    .isPartitioned( true )
                     .partitionColumnId( catalogColumn.id )
                     .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
                     .partitionIds( ImmutableList.copyOf( partitionIds ) )

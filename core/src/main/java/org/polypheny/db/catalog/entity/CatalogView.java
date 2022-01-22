@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -88,15 +87,12 @@ public class CatalogView extends CatalogTable {
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             ImmutableList<Integer> dataPlacements,
             boolean modifiable,
-            PartitionType partitionType,
-            long partitionColumnId,
-            boolean isPartitioned,
             PartitionProperty partitionProperty,
             AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, dataPlacements, modifiable, partitionType, partitionColumnId, isPartitioned, partitionProperty, connectedViews );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, dataPlacements, modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
@@ -120,9 +116,6 @@ public class CatalogView extends CatalogTable {
                 placementsByAdapter,
                 dataPlacements,
                 modifiable,
-                partitionType,
-                partitionColumnId,
-                isPartitioned,
                 partitionProperty,
                 algCollation,
                 newConnectedViews,
@@ -147,9 +140,6 @@ public class CatalogView extends CatalogTable {
                 placementsByAdapter,
                 dataPlacements,
                 modifiable,
-                partitionType,
-                partitionColumnId,
-                isPartitioned,
                 partitionProperty,
                 algCollation,
                 connectedViews,

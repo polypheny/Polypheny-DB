@@ -23,7 +23,6 @@ import lombok.NonNull;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -94,9 +93,6 @@ public class CatalogMaterializedView extends CatalogView {
             ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             @NonNull ImmutableList<Integer> dataPlacements,
             boolean modifiable,
-            PartitionType partitionType,
-            long partitionColumnId,
-            boolean isPartitioned,
             PartitionProperty partitionProperty,
             AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
@@ -119,9 +115,6 @@ public class CatalogMaterializedView extends CatalogView {
                 placementsByAdapter,
                 dataPlacements,
                 modifiable,
-                partitionType,
-                partitionColumnId,
-                isPartitioned,
                 partitionProperty,
                 algCollation,
                 connectedViews,
@@ -176,9 +169,6 @@ public class CatalogMaterializedView extends CatalogView {
                 placementsByAdapter,
                 dataPlacements,
                 modifiable,
-                partitionType,
-                partitionColumnId,
-                isPartitioned,
                 partitionProperty,
                 algCollation,
                 newConnectedViews,
@@ -205,9 +195,6 @@ public class CatalogMaterializedView extends CatalogView {
                 placementsByAdapter,
                 dataPlacements,
                 modifiable,
-                partitionType,
-                partitionColumnId,
-                isPartitioned,
                 partitionProperty,
                 algCollation,
                 connectedViews,

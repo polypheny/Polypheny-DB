@@ -1450,6 +1450,7 @@ public class CatalogImpl extends Catalog {
 
             PartitionProperty partitionProperty = PartitionProperty.builder()
                     .partitionType( PartitionType.NONE )
+                    .isPartitioned( false )
                     .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
                     .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
                     .reliesOnPeriodicChecks( false )
@@ -1467,7 +1468,8 @@ public class CatalogImpl extends Catalog {
                     null,
                     ImmutableMap.of(),
                     ImmutableList.of(),
-                    modifiable, partitionProperty );
+                    modifiable,
+                    partitionProperty );
 
             updateTableLogistics( name, schemaId, id, schema, table );
             openTable = id;
@@ -1738,7 +1740,7 @@ public class CatalogImpl extends Catalog {
                 removeTableFromPeriodicProcessing( tableId );
             }
 
-            if ( table.isPartitioned ) {
+            if ( table.partitionProperty.isPartitioned ) {
                 for ( Long partitionGroupId : Objects.requireNonNull( table.partitionProperty.partitionGroupIds ) ) {
                     deletePartitionGroup( table.id, table.schemaId, partitionGroupId );
                 }
@@ -1773,39 +1775,22 @@ public class CatalogImpl extends Catalog {
         CatalogTable old = getTable( tableId );
         CatalogUser user = getUser( ownerId );
 
-        CatalogTable table;
-        if ( old.isPartitioned ) {
-            table = new CatalogTable(
-                    old.id,
-                    old.name,
-                    old.columnIds,
-                    old.schemaId,
-                    old.databaseId,
-                    ownerId,
-                    user.name,
-                    old.tableType,
-                    old.primaryKey,
-                    old.placementsByAdapter,
-                    old.dataPlacements,
-                    old.modifiable,
-                    old.partitionType,
-                    old.partitionColumnId,
-                    old.partitionProperty, old.connectedViews );
-        } else {
-            table = new CatalogTable(
-                    old.id,
-                    old.name,
-                    old.columnIds,
-                    old.schemaId,
-                    old.databaseId,
-                    ownerId,
-                    user.name,
-                    old.tableType,
-                    old.primaryKey,
-                    old.placementsByAdapter,
-                    old.dataPlacements,
-                    old.modifiable, old.partitionProperty );
-        }
+        CatalogTable table = new CatalogTable(
+                old.id,
+                old.name,
+                old.columnIds,
+                old.schemaId,
+                old.databaseId,
+                ownerId,
+                user.name,
+                old.tableType,
+                old.primaryKey,
+                old.placementsByAdapter,
+                old.dataPlacements,
+                old.modifiable,
+                old.partitionProperty,
+                old.connectedViews );
+
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1825,88 +1810,44 @@ public class CatalogImpl extends Catalog {
         CatalogTable old = getTable( tableId );
 
         CatalogTable table;
-        if ( old.isPartitioned ) {
-            if ( old instanceof CatalogMaterializedView ) {
-                table = new CatalogMaterializedView(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        ((CatalogMaterializedView) old).getQuery(),
-                        keyId,
-                        old.placementsByAdapter,
-                        old.dataPlacements,
-                        old.modifiable,
-                        old.partitionType,
-                        old.partitionColumnId,
-                        old.isPartitioned,
-                        old.partitionProperty,
-                        ((CatalogMaterializedView) old).getAlgCollation(),
-                        old.connectedViews,
-                        ((CatalogMaterializedView) old).getUnderlyingTables(),
-                        ((CatalogMaterializedView) old).getLanguage(),
-                        ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                        ((CatalogMaterializedView) old).isOrdered() );
-            } else {
-                table = new CatalogTable(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        keyId,
-                        old.placementsByAdapter,
-                        old.dataPlacements,
-                        old.modifiable,
-                        old.partitionType,
-                        old.partitionColumnId,
-                        old.partitionProperty, old.connectedViews );
-            }
 
+        if ( old instanceof CatalogMaterializedView ) {
+            table = new CatalogMaterializedView(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    ((CatalogMaterializedView) old).getQuery(),
+                    keyId,
+                    old.placementsByAdapter,
+                    old.dataPlacements,
+                    old.modifiable,
+                    old.partitionProperty,
+                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    old.connectedViews,
+                    ((CatalogMaterializedView) old).getUnderlyingTables(),
+                    ((CatalogMaterializedView) old).getLanguage(),
+                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                    ((CatalogMaterializedView) old).isOrdered() );
         } else {
-            if ( old instanceof CatalogMaterializedView ) {
-                table = new CatalogMaterializedView(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        ((CatalogMaterializedView) old).getQuery(),
-                        keyId,
-                        old.placementsByAdapter,
-                        old.dataPlacements,
-                        old.modifiable,
-                        ((CatalogMaterializedView) old).getAlgCollation(),
-                        ((CatalogMaterializedView) old).getUnderlyingTables(),
-                        ((CatalogMaterializedView) old).getLanguage(),
-                        ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                        ((CatalogMaterializedView) old).isOrdered(),
-                        old.partitionProperty );
-            } else {
-                table = new CatalogTable(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        keyId,
-                        old.placementsByAdapter,
-                        old.dataPlacements,
-                        old.modifiable, old.partitionProperty );
-            }
+            table = new CatalogTable(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    keyId,
+                    old.placementsByAdapter,
+                    old.dataPlacements,
+                    old.modifiable,
+                    old.partitionProperty, old.connectedViews );
         }
 
         synchronized ( this ) {
@@ -1971,102 +1912,46 @@ public class CatalogImpl extends Catalog {
 
             }
 
-
             CatalogTable table;
 
-            // Required because otherwise an already partitioned table would be reset to a regular table due to the different constructors.
-            if ( old.isPartitioned ) {
-                if ( log.isDebugEnabled() ) {
-                    log.debug( " Table '{}' is partitioned.", old.name );
-                }
-                if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
-                    table = new CatalogMaterializedView(
-                            old.id,
-                            old.name,
-                            old.columnIds,
-                            old.schemaId,
-                            old.databaseId,
-                            old.ownerId,
-                            old.ownerName,
-                            old.tableType,
-                            ((CatalogMaterializedView) old).getQuery(),
-                            old.primaryKey,
-                            ImmutableMap.copyOf( placementsByStore ),
-                            old.dataPlacements,
-                            old.modifiable,
-                            old.partitionType,
-                            old.partitionColumnId,
-                            old.isPartitioned,
-                            old.partitionProperty,
-                            ((CatalogMaterializedView) old).getAlgCollation(),
-                            old.connectedViews,
-                            ((CatalogMaterializedView) old).getUnderlyingTables(),
-                            ((CatalogMaterializedView) old).getLanguage(),
-                            ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                            ((CatalogMaterializedView) old).isOrdered()
-                    );
-                } else {
-                    table = new CatalogTable(
-                            old.id,
-                            old.name,
-                            old.columnIds,
-                            old.schemaId,
-                            old.databaseId,
-                            old.ownerId,
-                            old.ownerName,
-                            old.tableType,
-                            old.primaryKey,
-                            ImmutableMap.copyOf( placementsByStore ),
-                            old.dataPlacements,
-                            old.modifiable,
-                            old.partitionType,
-                            old.partitionColumnId,
-                            old.partitionProperty, old.connectedViews );
-                }
+            if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
+                table = new CatalogMaterializedView(
+                        old.id,
+                        old.name,
+                        old.columnIds,
+                        old.schemaId,
+                        old.databaseId,
+                        old.ownerId,
+                        old.ownerName,
+                        old.tableType,
+                        ((CatalogMaterializedView) old).getQuery(),
+                        old.primaryKey,
+                        ImmutableMap.copyOf( placementsByStore ),
+                        old.dataPlacements,
+                        old.modifiable,
+                        old.partitionProperty,
+                        ((CatalogMaterializedView) old).getAlgCollation(),
+                        old.connectedViews,
+                        ((CatalogMaterializedView) old).getUnderlyingTables(),
+                        ((CatalogMaterializedView) old).getLanguage(),
+                        ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                        ((CatalogMaterializedView) old).isOrdered()
+                );
             } else {
-                if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
-                    table = new CatalogMaterializedView(
-                            old.id,
-                            old.name,
-                            old.columnIds,
-                            old.schemaId,
-                            old.databaseId,
-                            old.ownerId,
-                            old.ownerName,
-                            old.tableType,
-                            ((CatalogMaterializedView) old).getQuery(),
-                            old.primaryKey,
-                            ImmutableMap.copyOf( placementsByStore ),
-                            old.dataPlacements,
-                            old.modifiable,
-                            old.partitionType,
-                            old.partitionColumnId,
-                            old.isPartitioned,
-                            old.partitionProperty,
-                            ((CatalogMaterializedView) old).getAlgCollation(),
-                            old.connectedViews,
-                            ((CatalogMaterializedView) old).getUnderlyingTables(),
-                            ((CatalogMaterializedView) old).getLanguage(),
-                            ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                            ((CatalogMaterializedView) old).isOrdered()
-                    );
-                } else {
-                    table = new CatalogTable(
-                            old.id,
-                            old.name,
-                            old.columnIds,
-                            old.schemaId,
-                            old.databaseId,
-                            old.ownerId,
-                            old.ownerName,
-                            old.tableType,
-                            old.primaryKey,
-                            ImmutableMap.copyOf( placementsByStore ),
-                            old.dataPlacements,
-                            old.modifiable,
-                            old.partitionProperty, old.connectedViews );
-                }
-
+                table = new CatalogTable(
+                        old.id,
+                        old.name,
+                        old.columnIds,
+                        old.schemaId,
+                        old.databaseId,
+                        old.ownerId,
+                        old.ownerName,
+                        old.tableType,
+                        old.primaryKey,
+                        ImmutableMap.copyOf( placementsByStore ),
+                        old.dataPlacements,
+                        old.modifiable,
+                        old.partitionProperty, old.connectedViews );
             }
 
             // If table is partitioned and no concrete partitions are defined place all partitions on columnPlacement
@@ -2158,9 +2043,6 @@ public class CatalogImpl extends Catalog {
                 old.placementsByAdapter,
                 old.dataPlacements,
                 old.modifiable,
-                old.partitionType,
-                old.partitionColumnId,
-                old.isPartitioned,
                 old.partitionProperty,
                 old.getAlgCollation(),
                 old.connectedViews,
@@ -2202,11 +2084,11 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table;
         synchronized ( this ) {
-            // Needed because otherwise an already partitioned table would be reset to a regular table due to the different constructors.
-            if ( oldTable.isPartitioned ) {
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "Is flagged for deletion {}", isTableFlaggedForDeletion( oldTable.id ) );
-                }
+
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Is flagged for deletion {}", isTableFlaggedForDeletion( oldTable.id ) );
+            }
+            if ( oldTable.partitionProperty.isPartitioned ) {
                 if ( !isTableFlaggedForDeletion( oldTable.id ) ) {
                     if ( !columnOnly ) {
                         if ( !validatePartitionGroupDistribution( adapterId, oldTable.id, columnId, 1 ) ) {
@@ -2214,53 +2096,37 @@ public class CatalogImpl extends Catalog {
                         }
                     }
                 }
+            }
 
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Table '{}' is partitioned.", oldTable.name );
+            }
+            table = new CatalogTable(
+                    oldTable.id,
+                    oldTable.name,
+                    oldTable.columnIds,
+                    oldTable.schemaId,
+                    oldTable.databaseId,
+                    oldTable.ownerId,
+                    oldTable.ownerName,
+                    oldTable.tableType,
+                    oldTable.primaryKey,
+                    ImmutableMap.copyOf( placementsByStore ),
+                    oldTable.dataPlacements,
+                    oldTable.modifiable,
+                    oldTable.partitionProperty,
+                    oldTable.connectedViews );
+
+            //Check if this is the last placement on store. If so remove dataPartitionPlacement
+            if ( lastPlacementOnStore ) {
+                dataPartitionGroupPlacement.remove( new Object[]{ adapterId, oldTable.id } );
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "Table '{}' is partitioned.", oldTable.name );
+                    log.debug(
+                            "Column '{}' was the last placement on store: '{}.{}' ",
+                            getColumn( columnId ).name,
+                            getAdapter( adapterId ).uniqueName,
+                            table.name );
                 }
-                table = new CatalogTable(
-                        oldTable.id,
-                        oldTable.name,
-                        oldTable.columnIds,
-                        oldTable.schemaId,
-                        oldTable.databaseId,
-                        oldTable.ownerId,
-                        oldTable.ownerName,
-                        oldTable.tableType,
-                        oldTable.primaryKey,
-                        ImmutableMap.copyOf( placementsByStore ),
-                        oldTable.dataPlacements,
-                        oldTable.modifiable,
-                        oldTable.partitionType,
-                        oldTable.partitionColumnId,
-                        oldTable.partitionProperty, oldTable.connectedViews );
-
-                //Check if this is the last placement on store. If so remove dataPartitionPlacement
-                if ( lastPlacementOnStore ) {
-                    dataPartitionGroupPlacement.remove( new Object[]{ adapterId, oldTable.id } );
-                    if ( log.isDebugEnabled() ) {
-                        log.debug(
-                                "Column '{}' was the last placement on store: '{}.{}' ",
-                                getColumn( columnId ).name,
-                                getAdapter( adapterId ).uniqueName,
-                                table.name );
-                    }
-                }
-            } else {
-                table = new CatalogTable(
-                        oldTable.id,
-                        oldTable.name,
-                        oldTable.columnIds,
-                        oldTable.schemaId,
-                        oldTable.databaseId,
-                        oldTable.ownerId,
-                        oldTable.ownerName,
-                        oldTable.tableType,
-                        oldTable.primaryKey,
-                        ImmutableMap.copyOf( placementsByStore ),
-                        oldTable.dataPlacements,
-                        oldTable.modifiable,
-                        oldTable.partitionProperty, oldTable.connectedViews );
             }
 
             tables.replace( table.id, table );
@@ -2922,43 +2788,21 @@ public class CatalogImpl extends Catalog {
         List<Long> columnIds = new ArrayList<>( old.columnIds );
         columnIds.remove( columnId );
 
-        CatalogTable table;
+        CatalogTable table = new CatalogTable(
+                old.id,
+                old.name,
+                ImmutableList.copyOf( columnIds ),
+                old.schemaId,
+                old.databaseId,
+                old.ownerId,
+                old.ownerName,
+                old.tableType,
+                old.primaryKey,
+                old.placementsByAdapter,
+                    old.dataPlacements,
+                    old.modifiable,
+                    old.partitionProperty, old.connectedViews );
 
-        // This is needed otherwise this would reset the already partitioned table
-        if ( old.isPartitioned ) {
-            table = new CatalogTable(
-                    old.id,
-                    old.name,
-                    ImmutableList.copyOf( columnIds ),
-                    old.schemaId,
-                    old.databaseId,
-                    old.ownerId,
-                    old.ownerName,
-                    old.tableType,
-                    old.primaryKey,
-                    old.placementsByAdapter,
-                    old.dataPlacements,
-                    old.modifiable,
-                    old.partitionType,
-                    old.partitionColumnId,
-                    old.isPartitioned,
-                    old.partitionProperty, old.connectedViews );
-        } else {
-            table = new CatalogTable(
-                    old.id,
-                    old.name,
-                    ImmutableList.copyOf( columnIds ),
-                    old.schemaId,
-                    old.databaseId,
-                    old.ownerId,
-                    old.ownerName,
-                    old.tableType,
-                    old.primaryKey,
-                    old.placementsByAdapter,
-                    old.dataPlacements,
-                    old.modifiable,
-                    old.partitionProperty, old.connectedViews );
-        }
         synchronized ( this ) {
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
             tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
@@ -4141,8 +3985,6 @@ public class CatalogImpl extends Catalog {
                 old.placementsByAdapter,
                 old.dataPlacements,
                 old.modifiable,
-                partitionType,
-                partitionColumnId,
                 partitionProperty,
                 old.connectedViews );
 
@@ -4185,6 +4027,7 @@ public class CatalogImpl extends Catalog {
         CatalogPartitionGroup defaultUnpartitionedGroup = getPartitionGroup( partitionGroupIds.get( 0 ) );
         PartitionProperty partitionProperty = PartitionProperty.builder()
                 .partitionType( PartitionType.NONE )
+                .isPartitioned( false )
                 .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
                 .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
                 .reliesOnPeriodicChecks( false )
@@ -4202,7 +4045,8 @@ public class CatalogImpl extends Catalog {
                 old.primaryKey,
                 old.placementsByAdapter,
                 old.dataPlacements,
-                old.modifiable, partitionProperty );
+                old.modifiable,
+                partitionProperty );
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -4247,7 +4091,8 @@ public class CatalogImpl extends Catalog {
                 old.primaryKey,
                 old.placementsByAdapter,
                 old.dataPlacements,
-                old.modifiable, partitionProperty );
+                old.modifiable,
+                partitionProperty );
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -4548,7 +4393,7 @@ public class CatalogImpl extends Catalog {
             return true;
         }
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
 
         return partitionManager.probePartitionGroupDistributionChange( catalogTable, adapterId, columnId, threshold );
     }
@@ -4833,104 +4678,46 @@ public class CatalogImpl extends Catalog {
     public void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements ) {
         CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
 
-
         CatalogTable newTable;
 
-
-        // Required because otherwise an already partitioned table would be reset to a regular table due to the different constructors.
-        if ( old.isPartitioned ) {
-            if ( log.isDebugEnabled() ) {
-                log.debug( " Table '{}' is partitioned.", old.name );
-            }
-            if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
-                newTable = new CatalogMaterializedView(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        ((CatalogMaterializedView) old).getQuery(),
-                        old.primaryKey,
-                        old.placementsByAdapter,
-                        ImmutableList.copyOf( newDataPlacements ),
-                        old.modifiable,
-                        old.partitionType,
-                        old.partitionColumnId,
-                        old.isPartitioned,
-                        old.partitionProperty,
-                        ((CatalogMaterializedView) old).getAlgCollation(),
-                        old.connectedViews,
-                        ((CatalogMaterializedView) old).getUnderlyingTables(),
-                        ((CatalogMaterializedView) old).getLanguage(),
-                        ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                        ((CatalogMaterializedView) old).isOrdered()
-                );
-            } else {
-                newTable = new CatalogTable(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        old.primaryKey,
-                        old.placementsByAdapter,
-                        ImmutableList.copyOf( newDataPlacements ),
-                        old.modifiable,
-                        old.partitionType,
-                        old.partitionColumnId,
-                        old.partitionProperty, old.connectedViews );
-            }
+        if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
+            newTable = new CatalogMaterializedView(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    ((CatalogMaterializedView) old).getQuery(),
+                    old.primaryKey,
+                    old.placementsByAdapter,
+                    ImmutableList.copyOf( newDataPlacements ),
+                    old.modifiable,
+                    old.partitionProperty,
+                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    old.connectedViews,
+                    ((CatalogMaterializedView) old).getUnderlyingTables(),
+                    ((CatalogMaterializedView) old).getLanguage(),
+                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                    ((CatalogMaterializedView) old).isOrdered()
+            );
         } else {
-            if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
-                newTable = new CatalogMaterializedView(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        ((CatalogMaterializedView) old).getQuery(),
-                        old.primaryKey,
-                        old.placementsByAdapter,
-                        ImmutableList.copyOf( newDataPlacements ),
-                        old.modifiable,
-                        old.partitionType,
-                        old.partitionColumnId,
-                        old.isPartitioned,
-                        old.partitionProperty,
-                        ((CatalogMaterializedView) old).getAlgCollation(),
-                        old.connectedViews,
-                        ((CatalogMaterializedView) old).getUnderlyingTables(),
-                        ((CatalogMaterializedView) old).getLanguage(),
-                        ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                        ((CatalogMaterializedView) old).isOrdered()
-                );
-            } else {
-                newTable = new CatalogTable(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        old.primaryKey,
-                        old.placementsByAdapter,
-                        ImmutableList.copyOf( newDataPlacements ),
-                        old.modifiable,
-                        old.partitionProperty,
-                        old.connectedViews );
-            }
-
+            newTable = new CatalogTable(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    old.primaryKey,
+                    old.placementsByAdapter,
+                    ImmutableList.copyOf( newDataPlacements ),
+                    old.modifiable,
+                    old.partitionProperty, old.connectedViews );
         }
 
         synchronized ( this ) {
@@ -4941,6 +4728,7 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Adds columns to dataPlacement on a store for a specific table
+     *
      *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated

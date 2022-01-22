@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // We need a columnPlacement for every partition
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-        if ( table.isPartitioned ) {
+        if ( table.partitionProperty.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
             placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, Collections.singletonList( store.id ) );
@@ -605,7 +605,7 @@ public class DataMigratorImpl implements DataMigrator {
             int partitionColumnIndex = -1;
             String parsedValue = null;
             String nullifiedPartitionValue = partitionManager.getUnifiedNullValue();
-            if ( targetTable.isPartitioned ) {
+            if ( targetTable.partitionProperty.isPartitioned ) {
                 if ( resultColMapping.containsKey( targetTable.partitionProperty.partitionColumnId ) ) {
                     partitionColumnIndex = resultColMapping.get( targetTable.partitionProperty.partitionColumnId );
                 } else {

@@ -1302,8 +1302,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     log.debug(
                                             "TableID: {} is partitioned on column: {} - {}",
                                             logicalTable.getTableId(),
-                                            catalogTable.partitionColumnId,
-                                            Catalog.getInstance().getColumn( catalogTable.partitionColumnId ).name );
+                                            catalogTable.partitionProperty.partitionColumnId,
+                                            Catalog.getInstance().getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
                                 }
                                 List<Long> identifiedPartitions = new ArrayList<>();
                                 for ( String partitionValue : partitionValues ) {
@@ -1311,7 +1311,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         log.debug( "Extracted PartitionValue: {}", partitionValue );
                                     }
                                     long identifiedPartition = PartitionManagerFactory.getInstance()
-                                            .getPartitionManager( catalogTable.partitionType )
+                                            .getPartitionManager( catalogTable.partitionProperty.partitionType )
                                             .getTargetPartitionId( catalogTable, partitionValue );
 
                                     identifiedPartitions.add( identifiedPartition );
