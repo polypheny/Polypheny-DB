@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,7 +203,7 @@ public class VerticalPartitioningTest {
                         if ( dp.getAdapterName().equals( "anotherstore" ) ) {
                             Assert.assertEquals( 1, dp.columnPlacementsOnAdapter.size() );
                             adapterId = dp.adapterId;
-                            Assert.assertEquals( 1, Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 1, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                         } else {
                             initialAdapterId = dp.adapterId;
                         }
@@ -215,10 +215,10 @@ public class VerticalPartitioningTest {
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapter( initialAdapterId ).size() );
+                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                         }
                     }
 
@@ -228,12 +228,12 @@ public class VerticalPartitioningTest {
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                             Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
                             Assert.assertEquals( 1, Catalog.getInstance().getPartitionPlacementsByAdapter( table.id ).get( adapterId ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapter( initialAdapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                             Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
                             Assert.assertEquals( 1, Catalog.getInstance().getPartitionPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
                         }
@@ -255,11 +255,11 @@ public class VerticalPartitioningTest {
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                             Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapter( initialAdapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                             Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
                         }
                     }
@@ -273,11 +273,11 @@ public class VerticalPartitioningTest {
                     for ( CatalogDataPlacement dp : dataPlacements ) {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                             Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( adapterId ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapter( initialAdapterId ).size() );
+                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                             Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsByAdapter( table.id ).get( initialAdapterId ).size() );
                         }
                     }
@@ -288,7 +288,7 @@ public class VerticalPartitioningTest {
                     Assert.assertEquals( 1, Catalog.getInstance().getDataPlacements( table.id ).size() );
 
                     //Check also if ColumnPlacements have been correctly removed
-                    Assert.assertEquals( 0, Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).size() );
+                    Assert.assertEquals( 0, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
 
 
                 } finally {

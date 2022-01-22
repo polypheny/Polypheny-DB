@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1010,12 +1010,12 @@ public class HorizontalPartitioningTest {
                         if ( dp.adapterId == adapterId ) {
                             Assert.assertEquals( 2, dp.columnPlacementsOnAdapter.size() );
                             Assert.assertEquals( 3, dp.partitionPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).size() );
+                            Assert.assertEquals( 2, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
                             Assert.assertEquals( 3, Catalog.getInstance().getPartitionsOnDataPlacement( adapterId, table.id ).size() );
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
                             Assert.assertEquals( 4, dp.partitionPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapter( initialAdapterId ).size() );
+                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId , table.id ).size() );
                             Assert.assertEquals( 4, Catalog.getInstance().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
 
