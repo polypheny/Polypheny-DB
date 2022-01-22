@@ -20,8 +20,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
 import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
@@ -117,32 +115,28 @@ public class Linq4JFixer {
     /**
      * Converts the given object and returns it as {@link Integer} object.
      *
-     * TODO: Internally, Polypheny DB uses {@link TimeString}. Conversion could take place here.
-     *
      * @param data The data, expected to be {@link Integer}.
      * @return {@link Integer}
      */
     public static Object getTimeData( Object data ) {
-        if ( data == null ) {
+        if ( !(data instanceof Integer) ) {
             return null;
         }
-        return ((Integer) data);
+        return data;
     }
 
 
     /**
      * Converts the given object and returns it as {@link Integer} object.
      *
-     * TODO: Internally, Polypheny DB uses {@link DateString}. Conversion could take place here.
-     *
      * @param data The data, expected to be {@link Integer}.
      * @return {@link Integer}
      */
     public static Object getDateData( Object data ) {
-        if ( data == null ) {
+        if ( !(data instanceof Integer) ) {
             return null;
         }
-        return ((Integer) data);
+        return data;
     }
 
 
