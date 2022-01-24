@@ -50,37 +50,6 @@ public class CatalogMaterializedView extends CatalogView {
 
     public CatalogMaterializedView(
             long id,
-            @NonNull String name,
-            ImmutableList<Long> columnIds,
-            long schemaId,
-            long databaseId,
-            int ownerId,
-            @NonNull String ownerName,
-            @NonNull Catalog.TableType type,
-            String query,
-            Long primaryKey,
-            @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
-            @NonNull ImmutableList<Integer> dataPlacements,
-            boolean modifiable,
-            AlgCollation algCollation,
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            QueryLanguage language,
-            MaterializedCriteria materializedCriteria,
-            boolean ordered,
-            PartitionProperty partitionProperty
-    ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter, dataPlacements,
-                modifiable, algCollation, underlyingTables, language, partitionProperty );
-        this.query = query;
-        this.algCollation = algCollation;
-        this.language = language;
-        this.materializedCriteria = materializedCriteria;
-        this.ordered = ordered;
-    }
-
-
-    public CatalogMaterializedView(
-            long id,
             String name,
             ImmutableList<Long> columnIds,
             long schemaId,
@@ -144,12 +113,13 @@ public class CatalogMaterializedView extends CatalogView {
                 placementsByAdapter,
                 dataPlacements,
                 modifiable,
+                partitionProperty,
                 algCollation,
+                connectedViews,
                 underlyingTables,
                 language,
                 materializedCriteria,
-                ordered,
-                partitionProperty );
+                ordered );
     }
 
 

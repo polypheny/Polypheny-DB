@@ -16,10 +16,10 @@
 
 package org.polypheny.db.catalog.entity;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
-import lombok.NonNull;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -45,32 +45,6 @@ public class CatalogView extends CatalogTable {
     private final AlgCollation algCollation;
     @Getter
     private final String query;
-
-
-    public CatalogView(
-            long id,
-            @NonNull String name,
-            ImmutableList<Long> columnIds,
-            long schemaId,
-            long databaseId,
-            int ownerId,
-            @NonNull String ownerName,
-            @NonNull Catalog.TableType type,
-            String query,
-            Long primaryKey,
-            @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
-            @NonNull ImmutableList<Integer> dataPlacements,
-            boolean modifiable,
-            AlgCollation algCollation,
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            QueryLanguage language,
-            PartitionProperty partitionProperty ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, primaryKey, placementsByAdapter, dataPlacements, modifiable, partitionProperty );
-        this.query = query;
-        this.algCollation = algCollation;
-        this.underlyingTables = underlyingTables;
-        this.language = language;
-    }
 
 
     public CatalogView(
@@ -164,10 +138,11 @@ public class CatalogView extends CatalogTable {
                 placementsByAdapter,
                 dataPlacements,
                 modifiable,
+                partitionProperty,
                 algCollation,
+                connectedViews,
                 underlyingTables,
-                language,
-                partitionProperty );
+                language );
     }
 
 

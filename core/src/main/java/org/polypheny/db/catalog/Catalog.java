@@ -564,6 +564,8 @@ public abstract class Catalog {
 
     public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionPlacementsByAdapter( long tableId );
 
+    public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId );
+
     public abstract List<CatalogKey> getKeys();
 
     public abstract List<CatalogKey> getTableKeys( long tableId );

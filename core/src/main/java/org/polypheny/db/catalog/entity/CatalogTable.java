@@ -53,7 +53,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
     public final PartitionProperty partitionProperty;
 
-    //public final ImmutableMap<DataPlacementRole, ImmutableList<Long>> dataPlacementsByRole;
     public final ImmutableList<Integer> dataPlacements;
 
     @Getter
@@ -89,7 +88,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.partitionProperty = partitionProperty;
         this.connectedViews = ImmutableList.of();
 
-        //this.dataPlacementsByRole = structurizeDataPlacements( dataPlacements );
         this.dataPlacements = ImmutableList.copyOf( dataPlacements );
 
         if ( type == TableType.TABLE && !modifiable ) {
@@ -129,7 +127,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
         this.connectedViews = connectedViews;
 
-        //this.dataPlacementsByRole = structurizeDataPlacements( dataPlacements );
         this.dataPlacements = ImmutableList.copyOf( dataPlacements );
 
         if ( type == TableType.TABLE && !modifiable ) {

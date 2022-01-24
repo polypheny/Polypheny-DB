@@ -1195,4 +1195,10 @@ public abstract class MockCatalog extends Catalog {
     public ImmutableMap<Integer, ImmutableList<Long>> getPartitionPlacementsByAdapter( long tableId ) {
         throw new NotImplementedException();
     }
+
+
+    @Override
+    public ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId ) {
+        return null;
+    }
 }

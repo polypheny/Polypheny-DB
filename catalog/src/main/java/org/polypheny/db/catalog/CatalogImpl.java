@@ -1469,7 +1469,8 @@ public class CatalogImpl extends Catalog {
                     ImmutableMap.of(),
                     ImmutableList.of(),
                     modifiable,
-                    partitionProperty );
+                    partitionProperty,
+                    ImmutableList.of() );
 
             updateTableLogistics( name, schemaId, id, schema, table );
             openTable = id;
@@ -1522,13 +1523,14 @@ public class CatalogImpl extends Catalog {
                     ImmutableMap.of(),
                     ImmutableList.of(),
                     modifiable,
+                    partitionProperty,
                     algCollation,
+                    ImmutableList.of(),
                     ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
                             Entry::getKey,
                             e -> ImmutableList.copyOf( e.getValue() )
                     ) ) ),
-                    language, //fieldList
-                    partitionProperty
+                    language //fieldList
             );
             addConnectedViews( underlyingTables, viewTable.id );
             updateTableLogistics( name, schemaId, id, schema, viewTable );
@@ -1595,15 +1597,16 @@ public class CatalogImpl extends Catalog {
                     ImmutableMap.of(),
                     ImmutableList.of(),
                     modifiable,
+                    partitionProperty,
                     algCollation,
+                    ImmutableList.of(),
                     ImmutableMap.copyOf( underlyingTables.entrySet().stream().collect( Collectors.toMap(
                             Entry::getKey,
                             e -> ImmutableList.copyOf( e.getValue() )
                     ) ) ),
                     language,
                     materializedCriteria,
-                    ordered,
-                    partitionProperty
+                    ordered
             );
             addConnectedViews( underlyingTables, materializedViewTable.id );
             updateTableLogistics( name, schemaId, id, schema, materializedViewTable );
@@ -2252,6 +2255,12 @@ public class CatalogImpl extends Catalog {
         );
 
         return ImmutableMap.copyOf( partitionPlacementsByAdapter );
+    }
+
+
+    @Override
+    public ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId ) {
+        return null;
     }
 
 
@@ -4046,7 +4055,8 @@ public class CatalogImpl extends Catalog {
                 old.placementsByAdapter,
                 old.dataPlacements,
                 old.modifiable,
-                partitionProperty );
+                partitionProperty,
+                old.connectedViews );
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -4092,7 +4102,8 @@ public class CatalogImpl extends Catalog {
                 old.placementsByAdapter,
                 old.dataPlacements,
                 old.modifiable,
-                partitionProperty );
+                partitionProperty,
+                old.connectedViews );
 
         synchronized ( this ) {
             tables.replace( tableId, table );
