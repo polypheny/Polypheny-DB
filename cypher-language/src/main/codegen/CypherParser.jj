@@ -18,10 +18,10 @@ import java.util.Set;import javax.print.DocFlavor.READER;
 import org.polypheny.db.Cypher;
 import org.polypheny.db.CypherList;import org.polypheny.db.CypherNode;
 import org.polypheny.db.CypherOperator;import org.polypheny.db.dml.CypherCreate;
-import org.polypheny.db.dql.CypherAs;
+import org.polypheny.db.dml.CypherRelationship;import org.polypheny.db.dql.CypherAs;
 import org.polypheny.db.dql.CypherOrderBy;import org.polypheny.db.dql.CypherReturn;
 import org.polypheny.db.dql.CypherReturnExpr;
-import org.polypheny.db.dql.CypherUnwind;
+import org.polypheny.db.dql.CypherUnwind;import org.polypheny.db.util.PrecedenceClimbingParser.Token;
 
 /**
  * openCypher language (Cypher) parser, generated from Parser.jj by JavaCC.
@@ -30,54 +30,55 @@ import org.polypheny.db.dql.CypherUnwind;
 **/
 public class CypherParserImpl extends CypherAbstractParserImpl {
 
-private static Metadata metadata;
+    private static Metadata metadata;
 
-
-      /**
-       * ParserFactory implementation for creating parser.
-       */
-      public static final ParserFactory FACTORY = new ParserFactory() {
-          public CypherAbstractParserImpl getParser(Reader reader) {
-              final MqlParserImpl parser = new CypherParserImpl(reader);
-              if (reader instanceof SourceStringReader) {
-                  final String Cypher = ((SourceStringReader) reader).getSourceString();
-                  parser.setOriginalMql(cypher);
-              }
-            return parser;
+    /**
+    * ParserFactory implementation for creating parser.
+    */
+    public static final ParserFactory FACTORY = new ParserFactory() {
+      public CypherAbstractParserImpl getParser(Reader reader) {
+          final MqlParserImpl parser = new CypherParserImpl(reader);
+          if (reader instanceof SourceStringReader) {
+              final String Cypher = ((SourceStringReader) reader).getSourceString();
+              parser.setOriginalMql(cypher);
           }
-      };
+        return parser;
+      }
+    };
 
-      public CypherParseException normalizeException(Throwable ex)
-      {
-          try {
-              if (ex instanceof ParseException) {
-                  ex = cleanupParseException((ParseException) ex);
-              }
-              return convertException(ex);
-          } catch (ParseException e) {
-              throw new AssertionError(e);
+    public CypherParseException normalizeException(Throwable ex)
+    {
+      try {
+          if (ex instanceof ParseException) {
+              ex = cleanupParseException((ParseException) ex);
           }
+          return convertException(ex);
+      } catch (ParseException e) {
+          throw new AssertionError(e);
       }
+    }
 
-      public Metadata getMetadata()
-      {
-          synchronized (CypherParserImpl.class) {
-              if (metadata == null) {
-                  metadata = new MetadataImpl(new CypherParserImpl(new java.io.StringReader("")));
-              }
-              return metadata;
+    public Metadata getMetadata()
+    {
+      synchronized (CypherParserImpl.class) {
+          if (metadata == null) {
+              metadata = new MetadataImpl(new CypherParserImpl(new java.io.StringReader("")));
           }
+          return metadata;
       }
+    }
 
-      public CypherNode parseMqlExpressionEof() throws Exception
-      {
-          return Input();
-      }
+    public CypherNode parseMqlExpressionEof() throws Exception
+    {
+      return Input();
+    }
 
-      public CypherNode parseMqlStmtEof() throws Exception
-      {
-          return Input();
-      }
+    public CypherNode parseMqlStmtEof() throws Exception
+    {
+      return Input();
+    }
+
+}}
 
 }
 
@@ -156,6 +157,10 @@ TOKEN : /* IDENTIFIERS */
 |
 < ASC: "ASC" >
 |
+< SHORTEST_PATH: "shortestPath" >
+|
+< ALL_SHORTEST_PATH: "allShortestPath" >
+|
 < AS: "AS" >
 |
 < STAR: ["*"] >
@@ -181,6 +186,10 @@ TOKEN : /* IDENTIFIERS */
 < TRUE: ( <STRUE> | <BTRUE> )>
 |
 < STRUE: "true">
+|
+< LINE: "-" >
+|
+< VLINE: "|">
 |
 < BTRUE: "TRUE">
 |
@@ -210,9 +219,21 @@ TOKEN : /* IDENTIFIERS */
 |
 < SOR: "[" >
 |
+< SOS: "{" >
+|
+< EOS: "}" >
+|
 < COMMA: "," >
 |
 < DOT: "." >
+|
+< DPOINT: ":" >
+|
+< QUOTE: "'" >
+|
+< DQUOTE: "\"" >
+|
+< EQ: "=" >
 |
 < ADD: "+=" >
 |
@@ -233,6 +254,18 @@ TOKEN : /* IDENTIFIERS */
 < SUM: "sum(" >
 |
 < AVG: "avg(" >
+|
+<LOAD: "LOAD">
+|
+<CSV: "CSV">
+|
+<HEADERS: "HEADERS">
+|
+<FROM: "FROM">
+|
+<FIELDTERMINATOR: "FIELDTERMINATOR">
+|
+<FOREACH: "FOREACH">
 |
 < COLLECT: "collect(" >
 |
@@ -881,3 +914,283 @@ CypherNode Scan():
     <SCAN> n = Variable() type = LabelOrRelType()
     { return new CypherScan( getPos(), n); }
 }
+
+CypherNode MergeClause():
+{
+    CypherNode pattern;
+    CypherNode set;
+    boolean onMatch = false;
+}
+{
+    <MERGE> pattern = Pattern()
+    [
+        <ON> ((<MATCH> { onMatch = true; }) | <CREATE> ) set = SetClause()
+        { return new CypherMerge( getPos(), pattern, onMatch, set); }
+    ]
+    { return new CypherMerge( getPos(), pattern ); }
+}
+
+CypherNode UnwindClause():
+{
+    CypherNode exp;
+    CypherNode as;
+}
+{
+    <UNWIND> exp = Expression() <AS> as = Variable()
+    { return CypherUnwind( getPos(), exp, as ); }
+}
+
+CypherNode CallClause():
+{
+    CypherNode namespace;
+    CypherNode procedure;
+    CypherNode exp;
+    List<CypherNode> exps = new ArrayList<>();
+    CypherNode item;
+    List<CypherNode> items = new ArrayList<>();
+    CypherNode where;
+}
+{
+    <CALL> namespace = Namespace() procedure = ProcedureName()
+    [ <SON> exp = Expression() { exps.add(exp); }
+    ( <COMMA> exp = Expression() { exps.add(exp); } )* <EON> ]
+    [ <YIELD> (
+        <STAR> { return new CypherCall( getPos(), namespace, procedure, new CypherList<>( getPos(), exps ), CypherNode.STAR); }
+        |
+        item = ProcedureResultItem() { items.add( item ); }
+        ( <COMMA> item = ProcedureResultItem() { items.add( item ); } )*
+        [ where = Where() ]
+    ) ]
+
+    { return new CypherCall( getPos(), namespace, procedure, exps, items, where ); }
+}
+
+CypherNode ProcedureName() :
+{
+    CypherNode n;
+}
+{
+    n = <SYMBOLIC_NAME_STRING>
+    { return n; }
+}
+
+CypherNode ProcedureResultItem() :
+{
+    Token n;
+    CypherNode as;
+}
+{
+    n = <SYMBOLIC_NAME_STRING>
+    [ <AS> as = Variable() ]
+    { return new CyperProcedureResultItem( getPos(), n.image, as ); }
+}
+
+
+CypherNode LoadCSVClause() :
+{
+    CypherNode exp;
+    boolean withHeader = false;
+    CypherNode as;
+    Char terminator = null;
+}
+{
+    <LOAD> <CSV> [ <WITH> <HEADERS> { withHeader = true; } ] <FROM> exp = Expression() <AS> as = Variable()
+    [ <FIELDTERMINATOR> <QUOTE> { terminator = "'"; } | <DQUOTE> { terminator = '"'; } ]
+    { return new CypherCSVClause( getPos(), exp, as, withHeader, terminator ); }
+}
+
+CypherNode ForeachClause() :
+{
+    CypherNode var;
+    CypherNode exp;
+    CypherNode clause;
+    List<CypherNode> clauses;
+}
+{
+    <FOREACH> <SON> var = Variable() <IN> exp = Expression() <LINE> (clause = Clause())+ <EON>
+    { return new CypherForEach( getPos(), exp, clause, clauses ); }
+}
+
+CypherNode SubQueryClause() :
+{
+    CypherNode query;
+}
+{
+    <CALL> <SOS> ( query = PeriodicCommitQuery() | query = RegularQuery()) <EOS>
+    { return new CypherSubQuery( getPos(), query ); }
+}
+
+CypherNode Where() :
+{
+    CypherNode exp;
+}
+{
+    <WHERE> exp = Expression()
+    { return new CypherWhere( getPos(), exp ); }
+}
+
+CypherNode PatternList() :
+{
+    CypherNode pattern;
+    List<CypherNode> patterns;
+}
+{
+    pattern = Pattern() { patterns.add( pattern ); } ( <COMMA> pattern = Pattern() { patterns.add( pattern ); } )*
+    { return new CypherList<>( getPos(), patterns ); }
+}
+
+CypherNode Pattern() :
+{
+    CypherNode pattern;
+    CypherNode variable;
+}
+{
+    [ variable = Variable() <EQ> ] pattern = AnonymousPattern()
+    { return new CypherPattern( getPos(), pattern, variable ); }
+}
+
+CypherNode AnonymousPattern() :
+{
+    CypherNode pattern;
+}
+{
+    pattern = ShortestPathPattern()
+    |
+    pattern = EveryPathPattern()
+    |
+    <SON> pattern = AnonymousPattern() <EON>
+
+    { return pattern; }
+}
+
+CypherNode ShortestPathPattern():
+{
+    CypherNode pattern;
+    boolean all = false;
+}
+{
+    (
+    <SHORTEST_PATH>
+    |
+    <ALL_SHORTEST_PATH>
+    { all = true; }
+    )
+    <SON> pattern = EveryPathPattern() <EON>
+    { return new CypherShortestPath( getPos(), pattern, all); }
+}
+
+CypherNode EveryPathPattern() :
+{
+    CypherNode node;
+    CypherNode relationship;
+    List<CypherNode> path;
+}
+{
+    pattern = NodePattern()
+    { path.add(node); }
+    (
+        pattern = RelationshipPattern()
+        { path.add(node); }
+        |
+        pattern = NodePattern()
+        { path.add(node); }
+    )*
+}
+
+CypherNode EveryPathNonEmpty():
+{
+    CypherNode node;
+    CypherNode relationship;
+    List<CypherNode> path;
+}
+{
+    node = NodePattern()
+    { path.add(node); }
+    (
+        relationship = RelationshipPattern() node = NodePattern()
+        {
+            path.add(relationship);
+            path.add(node);
+        }
+    )+
+    { return new CypherPath( getPos(), path ); }
+}
+
+CypherNode NodePattern():
+{
+    CypherNode var;
+    List<CypherNode> labels;
+    CypherNode props;
+}
+{
+    <SON> [ var = Variable() ][ labels = NodeLabels() ][ props = Properties() ] <EON>
+    { return new CypherNode( getPos(), var, labels, props ); }
+}
+
+List<CypherNode> NodeLabels() :
+{
+    CypherNode n;
+    List<CypherNode> ns;
+}
+{
+    ( n = LabelOrReltype() { ns.add( n ); } )+
+    { return ns; }
+}
+
+CypherNode HasLabels() :
+{
+    List<CypherNode> ns;
+}
+{
+    ns = NodeLabels()
+    { return ns; }
+}
+
+CypherNode LabelOrRelType() :
+{
+    CypherNode n;
+}
+{
+    <DPOINT> n = SymbolicNameString()
+    { return new CypherLabelOrRelType( getPos(), n ); }
+}
+
+CypherNode Properties() :
+{
+    CypherNode n;
+}
+{
+    n = MapLiteral()
+    |
+    n = Parameter()
+    |
+    n = OldParameter()
+    { return new CypherProperty( getPos(), n ); }
+}
+
+CypherNode RelationshipPattern() :
+{
+    boolean left = false;
+    boolean right = false;
+    Cypher var;
+    CypherNode type;
+    List<CypherNode> types;
+    CypherNode length;
+    CypherNode props;
+}
+{
+    [ <LT> { left = true; } ]
+    <LINE>
+    [
+        <SOR>
+        [ var = Variable() ]
+        [ <DPOINT> type = SymbolicNameString() { types.add(type); }( <DPOINT> <VLINE> type = SymbolicNameString() { types.add(type); } )* ]
+        [ length = PathLength() ]
+        [ props = Properties() ]
+        <EOR>
+    ]
+    <LINE>
+    [ <GT> { right = true; } ]
+    { return new CypherRelationship( getPos(), var, left, right, types, length, props ); }
+}
+
