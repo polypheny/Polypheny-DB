@@ -14,12 +14,12 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
-import javax.print.DocFlavor.READER;
+import java.util.Set;import javax.print.DocFlavor.READER;
 import org.polypheny.db.Cypher;
 import org.polypheny.db.CypherList;import org.polypheny.db.CypherNode;
-import org.polypheny.db.dml.CypherCreate;
+import org.polypheny.db.CypherOperator;import org.polypheny.db.dml.CypherCreate;
 import org.polypheny.db.dql.CypherAs;
-import org.polypheny.db.dql.CypherReturn;
+import org.polypheny.db.dql.CypherOrderBy;import org.polypheny.db.dql.CypherReturn;
 import org.polypheny.db.dql.CypherReturnExpr;
 import org.polypheny.db.dql.CypherUnwind;
 
@@ -108,15 +108,29 @@ TOKEN : /* IDENTIFIERS */
 |
 < SSKIP: "SKIP" >
 |
+< INDEX: "INDEX" >
+|
+< SCAN: "SCAN" >
+|
+< JOIN: "JOIN" >
+|
+< ON: "ON" >
+|
+< SEEK: "SEEK" >
+|
+< GRAPH: "GRAPH" >
+|
 < LIMIT: "LIMIT" >
 |
 < ORDERBY: "ORDERBY" >
+|
+< USE: "USE" >
 |
 < CREATE: "CREATE" >
 |
 < DELETE: "DELETE" >
 |
-< DETACH_DELETE: "DETACH DELETE" >
+< DETACH: "DETACH" >
 |
 < REMOVE: "REMOVE" >
 |
@@ -144,9 +158,13 @@ TOKEN : /* IDENTIFIERS */
 |
 < AS: "AS" >
 |
+< STAR: ["*"] >
+|
 < DISTINCT: "DISTINCT" >
 |
 < UNWIND: "UNWIND" >
+|
+< CATALOG: "CATALOG" >
 |
 < CASE: "CASE" >
 |
@@ -196,6 +214,8 @@ TOKEN : /* IDENTIFIERS */
 |
 < DOT: "." >
 |
+< ADD: "+=" >
+|
 < LTE: "<=" >
 |
 < LT: "<" >
@@ -228,6 +248,25 @@ TOKEN : /* IDENTIFIERS */
 |
 < PERCENTILE_C: "percentile_cont(" >
 |
+< UNSIGNED_DECIMAL_INTEGER: <DIGIT_NO_ZERO> (<DIGIT>)* (<PART_LETTER>)* >
+|
+< USING: "USING" >
+|
+< PERIODIC: "PERIODIC" >
+|
+< COMMIT: "COMMIT" >
+|
+< PART_LETTER:
+    <DIGIT>
+    |
+    <BCHARS>
+    |
+    <UNDERSCORE>
+    |
+    <SCHARS>
+    // MISSING EXTEND HERE
+>
+|
 < #SYMBOL: [".", ",", ":", ";", "!", "$", "\"", "'", "(", ")", " ", "\n", "{", "}", "[", "]","&","\\","/", "=", "<" ,">", "�","^", "~", "´", "@" ] | <MATH> >
 |
 < #MATH: ["*", "/", "-", "+"] >
@@ -237,6 +276,16 @@ TOKEN : /* IDENTIFIERS */
 < #LETTER: ["_","a"-"z","A"-"Z","ö", "Ö", "ä", "Ä", "ü", "Ü", "à", "À", "ç","Ç", "á", "Á", "è", "È","í","Í", "î", "Î","ó","Ó","ò", "ô", "Ô", "Ò" , "í", "Í", "ë", "Ë", "â", "Â", "ï", "Ï", "é", "É", "ñ", "Ñ", "ß"] >
 |
 < #DIGIT: ["0"-"9"] >
+|
+< #DIGIT_NO_ZERO: ["1"-"9"] >
+|
+< #BCHARS: ["A"-"Z"] >
+|
+< #SCHARS: ["a"-"z"] >
+|
+< SEMICOLON: ";" >
+|
+< UNDERSCORE: "_" >
 }
 
 //////////////////////////////////////
@@ -248,8 +297,7 @@ TOKEN : /* IDENTIFIERS */
  * Converts a ParseException (local to this particular instantiation
  * of the parser) into a CypherParseException (common to all parsers).
  */
-JAVACODE CypherParseException convertException(Throwable ex)
-{
+JAVACODE CypherParseException convertException(Throwable ex){
     if (ex instanceof CypherParseException) {
         return (CypherParseException) ex;
     }
@@ -401,6 +449,15 @@ JAVACODE boolean matchesPrefix(int[] seq, int[][] prefixes)
     return false;
 }
 
+JAVACODE CypherNode setInputIfNotNull ( CypherNode parent, CypherNode child ) {
+    if( parent != null ){
+        parent.setInput(child);
+    }else {
+        parent = child;
+    }
+    return parent;
+}
+
 
 //////////////////////////////////////
 //////////////////////////////////////
@@ -414,7 +471,7 @@ CypherNode Input() :
 }
 {
     /** only one statement for now **/
-    n = Statement() <EOF>
+    n = Statement() ( <SEMICOLON> n = Statement() )* [<SEMICOLON>] <EOF>
     { return n; }
 }
 
@@ -422,172 +479,223 @@ CypherNode Input() :
 /** Brace matching production. */
 CypherNode Statement() :
 {
+    MqlNode input;
     MqlNode n;
-    boolean isOptional = false;
-    boolean isMandatory = false;
+}
+{
+
+    n = PeriodicCommitQuery()
+    |
+    [ n = UseClause() ] input = SingleQueryOrAdministrationCommand()
+
+    { return setInputIfNotNull( n, input ); }
+}
+
+CypherNode SingleQueryOrAdministrationCommand() :
+{
+    CypherNode n;
+}
+{
+    n = CreateAdministrationCommand()
+    |
+    n = ShowCommand()
+    |
+    <CATALOG> (
+        n = AdministrationCommand()
+        |
+        n = ShowAdministrationCommandAfterCatalog()
+    )
+    |
+    n = AdministrationCommand()
+    |
+    n = SingleQuery()  (input = Union())*
+
+    { return setInputIfNotNull( n, input ); }
+}
+
+
+CypherNode PeriodicCommitQuery() :
+{
+    CypherCSVLoadClause n;
+    CypherNode m;
+    Token d;
+}
+{
+    <USING> <PERIODIC> <COMMIT> [ d = <UNSIGNED_DECIMAL_INTEGER> ] n = LoadCSVClause() m = PeriodicCommitBody()
+    {
+        n.setInputIfNotNull( n, m );
+        if ( d != null ){
+            n.setAmount( Integer.parseInt( d.image ) );
+        }
+        return n;
+    }
+}
+
+CypherNode PeriodicCommitBody() :
+{
+    List<CypherNode> ns = new ArrayList<>();
+    CypherNode n;
 }
 {
     (
-        <CREATE> n = Create()
-        |
-        (
-            (
-                <MANDATORY>
-                { isMandatory = true; }
-                |
-                <OPTIONAL>
-                { isOptional = true; }
-            )
-            <MATCH> n = Match( isOptional, isMandatory )
-        )
-    )
+      n = Clause()
+      { ns.add( n ); }
+    )*
+    { return new CypherList<>( getPos(), ns ); }
+
+}
+
+CypherNode RegularQuery() :
+{
+    CypherNode n;
+    CypherNode input;
+    List<CypherNode> ns = new ArrayList<>();
+}
+{
+    n = SingleQuery() (
+        input = Union()
+        { ns.add( input ); }
+    )*
+    { return n.setInput( new CypherList<>( getPos(), ns ) ); }
+}
+
+CypherNode Union() :
+{
+    CypherNode n;
+    boolean all = false;
+}
+{
+    <UNION> [ <ALL> { all = true; }] n = SingleQuery()
     { return n; }
 }
 
-CypherNode Create() :
+CypherNode SingleQuery() :
 {
     CypherNode n;
-}
-{
-    { return new CypherCreate( getPos(), n ); }
-}
-
-CypherNode Match( boolean isOptional, boolean isMandatory ) :
-{
-    CypherNode n;
+    List<CypherNode> ns = new ArrayList<>();
 }
 {
     (
-        <MATCH> n = Match()
-        |
-        <WITH> n = With()
-        |
-        <WHERE> n = Where()
-        |
-        <RETURN> n = Return()
-    )
-
-    { return new CypherMatch( getPos(), n, isOptional, isMandatory ); }
-}
-
-CypherNode With() :
-{
-    CypherNode n;
-}
-{
-    (
-        <SET> n = Set()
-        |
-        <WHERE> n = Where()
-        |
-        <RETURN> n = Return()
-    )
-    { return new CypherWith( getPos(), n ); }
-}
-
-CypherNode Set() :
-{
-    CypherNode n;
-}
-{
-    <RETURN> n = Return()
-    { return new CypherSet( getPos(), n ); }
-}
-
-CypherNode Where() :
-{
-    CypherNode n;
-}
-{
-    <RETURN> n = Return()
-    { return new CypherWhere( getPos(), n ); }
-}
-
-CypherNode Unwind() :
-{
-    CypherNode n;
-}
-{
-    (
-        <MATCH> n = Match()
-        |
-        <WHERE> n = Where()
-        |
-        <RETURN> n = Return()
-    )
-    { return new CypherUnwind( getPos(), n ); }
-}
-
-CypherNode Return() :
-{
-    List<CypherReturnExpr> ns;
-    CypherNode limit = null;
-    CypherNode order = null;
-}
-{
-    (
-        ns = Returns()
+        n = Clause()
+        { ns.add( n ); }
     )+
-
-    [
-        (
-            <LIMIT> limit = Limit()
-            [<ORDERBY> order = OrderBy()]
-        )
-        |
-        (
-            <ORDERBY> order = OrderBy()
-            [<LIMIT> limit = Limit()]
-        )
-
-    ]
-
-    { return new CypherReturn( getPos(), new CypherList<>(ns), n, limit, order ); }
+    { return new CypherList<>( getPos(), ns ); }
 }
 
-List<CypherReturnExpr> Returns() :
+CypherNode Clause( ):
 {
-    List<CypherReturnExpr> returns = new ArrayList<>();
-    CypherNode expr;
-    CypherNode alias = null;
+    CypherNode n;
+}
+{
+    n = UseClause()
+    |
+    n = ReturnClause()
+    |
+    n = CreateClause()
+    |
+    n = DeleteClause()
+    |
+    n = SetClause()
+    |
+    n = RemoveClause()
+    |
+    n = MatchClause()
+    |
+    n = MergeClause()
+    |
+    n = WithClause()
+    |
+    n = UnwindClause()
+    |
+    n = CallClause()
+    |
+    n = SubQueryClause()
+    |
+    n = LoadCSVClause()
+    |
+    n = ForEachClause()
+
+    { return n; }
+}
+
+CypherNode UseClause() :
+{
+    CypherNode n;
+    boolean graph = false;
+}
+{
+    <USE> [ <GRAPH> { graph = true; }] n = Expression()
+    { return new CypherUseClause( getPos(), n, graph ); }
+}
+
+CypherNode ReturnClause() :
+{
+    CypherNode n;
+}
+{
+    <RETURN> n = ReturnBody()
+    { return n; }
+}
+
+CypherNode ReturnBody() :
+{
+    CypherNode n;
+    List<CypherNode> returns = new ArrayList<>();
     boolean distinct = false;
+    CypherNode order;
+    CypherNode skip;
+    CypherNode limit;
 }
 {
-    (
-        <DISTINCT> expr = Expression()
-        { distinct = true; }
-        |
-        expr = Expression()
-    )
+    [ <DISTINCT> { distinct = true; }
+    ( (<STAR> { n = CypherNode.STAR; }) | n = ReturnItem() { returns.add(n); } )]
+    ( <COMMA> n = ReturnItem() { returns.add(n); } )*
+    [ order = Order() ]
+    [ skip = Skip() ]
+    [ limit = Limit() ]
+    { return new CypherReturn( getPos(), new CypherList<>( getPost(), returns), distinct, order, skip, limit ); }
+}
 
-    [<AS> alias = As()]
-
+CypherNode ReturnItem() :
+{
+    CypherNode n;
+    Cyphernode as;
+}
+{
+    n = Expression() [ <AS> as = Variable() ]
     {
-        n = new CypherReturnExpr( getPos(), expr, alias, distinct );
+        n = setInputIfNotNull( n, as );
+        return n;
     }
-
-    [
-        <COMMA> returns = Returns()
-    ]
-    { returns.add( 0, n ); }
 }
 
-CypherNode As() :
+CypherNode Order() :
+{
+    CypherNode n;
+    List<CypherNode> ns = new ArrayList<>();
+}
+{
+    <ORDERBY> n = OrderItem() { ns.add(n); } ( <COMMA> n = OrderItem() { ns.add(n); } )*
+    { return new CypherOrderBy( getPos(), new CypherList<>( getPost(), ns)); }
+}
+
+CypherNode OrderItem() :
+{
+    CypherNode n;
+    boolean asc = true;
+}
+{
+    n = Expression() [ <ASC> | (<DESC> { asc = false; }) ]
+    { return new CypherOrderByItem( getPos(), n, asc ); }
+}
+
+CypherNode Skip() :
 {
     CypherNode n;
 }
 {
-
-    { return new CypherAs( getPos(), n ); }
-}
-
-CypherNode OrderBy() :
-{
-    CypherNode n;
-}
-{
-
-    { return new CypherOrderBy( getPos(), n ); }
+    <SSKIP> n = Expression()
+    { return n; }
 }
 
 CypherNode Limit() :
@@ -595,69 +703,181 @@ CypherNode Limit() :
     CypherNode n;
 }
 {
-
-    { return new CypherLimit( getPos(), n ); }
+    <LIMIT> n = Expression()
+    { return n; }
 }
 
-CypherNode Case() :
+CypherNode WithClause() :
 {
-    CypherList<CypherNode> ns = new CypherList<>();
+    CypherNode n;
+    CypherNode where;
 }
 {
-    (
-        <WHEN> n = When()
-        { ns.add( n ); }
-    )+
-    (
-        <ELSE> n = Else()
-        |
-        <END>
-        { n = null; }
-    )
-    { return new CypherCase( getPos(), ns, n ); }
-
+    n = ReturnBody() [ where = Where() ]
+    {
+        n = setInputIfNotNull( n, where );
+        return n;
+    }
 }
 
-CypherNode When() :
+CypherNode CreateClause() :
 {
     CypherNode n;
 }
 {
-    <THEN> n = Then()
-    { return new CypherWhen( getPos(), n ); }
+    <CREATE> n = PatternList()
+    { return new CypherCreate( getPos(), n); }
 }
 
-CypherNode Then() :
+CypherNode SetClause() :
 {
     CypherNode n;
-}
-{
-    { return new CypherThen( getPos(), n ); }
-}
-
-CypherNode Else() :
-{
-    CypherNode n;
-}
-{
-    { return new CypherElse( getPos(), n); }
-}
-
-CypherNode List() :
-{
     List<CypherNode> ns = new ArrayList<>();
 }
 {
-    ns = ListEntity( ns )
-    { return new CypherList<>(ns); }
+    <SET> n = SetItem()
+    { ns.add(n); }
+    (<COMMA> n = SetItem() { ns.add(n); })*
+    { return new CypherSet( getPos(), new CypherList<>( getPost(), ns) ); }
 }
 
-CypherNode Expression():
+CypherNode SetItem() :
+{
+    CypherNode n;
+    CypherNode val;
+    CypherOperator op;
+}
+{ // maybe error
+    n = PropertyExpression() <EQ> val = Expression()
+    { return new CypherAssign( getPos(), n,CypherOperator.EQ, val ); }
+    |
+    n = Variable()
+    (
+        (
+            <EQ>
+            { op = CypherOperator.EQ; }
+        )
+        |
+        <ADD>
+        { op = CypherOperator.INC; }
+    )
+    val = Expression()
+    { return new CypherAssign( getPos(), n, op, val ); }
+    |
+    (
+        val = NodeLabels()
+        { return new CypherAssign( getPos(), n, CypherOperator.AKA, val ); }
+    )
+}
+
+CypherNode RemoveClause () :
+{
+    CypherNode n;
+    List<CypherNode> ns = new ArrayList<>();
+}
+{
+    <REMOVE> n = RemoveItem()
+    { ns.add(n); }
+    (
+        <COMMA> n = RemoveItem()
+        { ns.add(n); }
+    )*
+    { return new RemoveClause( getPos(), new CypherList<>(ns) ); }
+}
+
+CypherNode RemoveItem():
+{
+    CypherNode n;
+    CypherNode m;
+}
+{
+    n = PropertyExpression()
+    { return new CypherProperty( getPos(), n); }
+    |
+    n = Variable() m = NodeLabels()
+    { return new CypherAssign( getPos(), n, OperatorName.AKA, m); }
+}
+
+CypherNode DeleteClause() :
+{
+    List<CypherNode> ns = new ArrayList<>();
+    CypherNode n;
+    boolean detach = false;
+}
+{
+    [ <DETACH> { detach = true; }]
+    <DELETE> n = Expression()
+    { ns.add(n); }
+    (
+        n = Expression()
+        { ns.add(n); }
+    )*
+    { return new CypherDelete<>( getPos(), ns, detach ); }
+}
+
+CypherNode MatchClause() :
+{
+    CypherNode n;
+    boolean optional = false;
+    CypherNode hints;
+    Cyphernode where;
+}
+{
+    [ <OPTIONAL> { opional = true; } ]
+    <MATCH> n = PatternList() hints = Hints()
+    [ where = Where() ]
+    { return new CypherMatch( getPos(), n, hints, where ); }
+}
+
+CypherNode Hints() :
+{
+    CypherNode n;
+    List<CypherNode> ns = new ArrayList<>();
+}
+{
+    (
+        <USING>
+        (
+            n = Index()
+            |
+            n = Join()
+            |
+            n = Scan()
+        )
+        { ns.add(n); }
+    )*
+    { return new CypherHints( getPos(), new CypherList<>( getPos(), ns )); }
+}
+
+CypherNode Index() :
+{
+    CypherNode n;
+    boolean seek = false;
+    CypherNode type;
+    CypherNode names;
+}
+{
+    <INDEX> [<SEEK> { seek = true; }]
+    n = Variable() type = LabelOrRelType()
+    <SON> names = SymbolicNameList1() <EON>
+    { return new CypherIndex( getPos(), n, type, names); }
+}
+
+CypherNode Join():
 {
     CypherNode n;
 }
 {
-    <CASE> n = Case()
-    |
+    <JOIN> <ON> n = VariableList1()
+    { return new CypherJoin( getPos(), n ); }
+}
 
+CypherNode Scan():
+{
+    CypherNode n;
+    CypherNode type;
+}
+{
+    <SCAN> n = Variable() type = LabelOrRelType()
+    { return new CypherScan( getPos(), n); }
 }

@@ -18,6 +18,7 @@ package org.polypheny.db;
 
 import java.util.Set;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.languages.ParserPos;
@@ -29,11 +30,14 @@ public abstract class CypherNode implements Node {
 
     protected final static CypherNode EMPTY_CYPHER = new EmptyNode();
 
+    protected final static CypherNode STAR = new StarNode();
+
     @Getter
     protected final ParserPos pos;
 
     @Getter
-    private final CypherNode input;
+    @Setter
+    private CypherNode input;
 
 
     protected CypherNode( ParserPos pos, CypherNode input ) {
@@ -78,11 +82,42 @@ public abstract class CypherNode implements Node {
     }
 
 
+    public boolean isStar() {
+        return false;
+    }
+
+
+    public boolean isEmpty() {
+        return false;
+    }
+
+
     private static class EmptyNode extends CypherNode {
 
 
         protected EmptyNode() {
             super( ParserPos.ZERO, null );
+        }
+
+
+        @Override
+        public boolean isEmpty() {
+            return true;
+        }
+
+    }
+
+
+    private static class StarNode extends CypherNode {
+
+        protected StarNode() {
+            super( ParserPos.ZERO, null );
+        }
+
+
+        @Override
+        public boolean isStar() {
+            return true;
         }
 
     }
