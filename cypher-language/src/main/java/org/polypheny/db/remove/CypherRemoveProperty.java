@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.dql;
+package org.polypheny.db.remove;
 
 import org.polypheny.db.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherWith extends CypherNode {
+public class CypherRemoveProperty extends CypherRemoveItem {
 
-    protected CypherWith( ParserPos pos, CypherNode input ) {
+    protected CypherRemoveProperty( ParserPos pos, CypherNode input ) {
         super( pos, input );
     }
 

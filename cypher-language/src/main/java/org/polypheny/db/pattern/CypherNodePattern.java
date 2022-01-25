@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.dql;
+package org.polypheny.db.pattern;
 
 import org.polypheny.db.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherOrderBy extends CypherNode {
+public class CypherNodePattern extends CypherPattern {
 
-    protected CypherOrderBy( ParserPos pos, CypherNode input ) {
+    protected CypherNodePattern( ParserPos pos, CypherNode input ) {
         super( pos, input );
     }
 

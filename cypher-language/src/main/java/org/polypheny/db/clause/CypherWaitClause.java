@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.dql;
+package org.polypheny.db.clause;
 
 import org.polypheny.db.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherWhere extends CypherNode {
+public class CypherWaitClause extends CypherClause {
 
-    protected CypherWhere( ParserPos pos, CypherNode input ) {
+    protected CypherWaitClause( ParserPos pos, CypherNode input ) {
         super( pos, input );
     }
 

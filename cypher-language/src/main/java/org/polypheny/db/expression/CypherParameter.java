@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.dml;
+package org.polypheny.db.expression;
 
 import org.polypheny.db.CypherNode;
+import org.polypheny.db.clause.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherCreate extends CypherNode {
+public class CypherParameter extends CypherExpression {
 
-    protected CypherCreate( ParserPos pos, CypherNode input ) {
+    protected CypherParameter( ParserPos pos, CypherNode input ) {
         super( pos, input );
     }
 

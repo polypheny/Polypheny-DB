@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.dql;
+package org.polypheny.db;
 
-import org.polypheny.db.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherUnwind extends CypherNode {
+public class CypherOrderItem extends CypherNode {
 
-    protected CypherUnwind( ParserPos pos, CypherNode input ) {
+    protected CypherOrderItem( ParserPos pos, CypherNode input ) {
         super( pos, input );
     }
 
