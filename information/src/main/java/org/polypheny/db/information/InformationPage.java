@@ -46,6 +46,7 @@ public class InformationPage extends Refreshable {
             .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
             .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
             .registerTypeAdapter( Duration.class, Duration.getSerializer() )
+            .registerTypeAdapter( Enum.class, getSerializer() )
             .create();
 
     /**
@@ -214,7 +215,7 @@ public class InformationPage extends Refreshable {
      * @return this page as JSON
      */
     public String asJson() {
-        return getSerializer().toJson( this );
+        return gson.toJson( this );
     }
 
 

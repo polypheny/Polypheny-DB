@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService;
-import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -149,9 +148,9 @@ public class InformationServer implements InformationObserver {
      * Observe Changes in Information Objects of the Information Manager
      */
     @Override
-    public void observeInfos( final Information info, final String informationManagerId, final Session session ) {
+    public void observeInfos( final String info, final String informationManagerId, final Session session ) {
         try {
-            InformationWebSocket.broadcast( info.asJson() );
+            InformationWebSocket.broadcast( info );
         } catch ( IOException e ) {
             log.info( "Error while sending information object to web ui!", e );
         }

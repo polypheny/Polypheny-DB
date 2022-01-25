@@ -17,8 +17,10 @@
 package org.polypheny.db.information;
 
 
+import com.google.common.collect.EvictingQueue;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 
 
@@ -27,7 +29,7 @@ public class InformationTable extends InformationHtml {
     @SuppressWarnings({ "unused" })
     private List<String> labels;
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
-    private List<List<String>> rows = new LinkedList<>();
+    private Queue<List<String>> rows = new LinkedList<>();
 
 
     /**
@@ -64,6 +66,10 @@ public class InformationTable extends InformationHtml {
         this.labels = labels;
     }
 
+    public void setLimit( int limit ) {
+        this.rows.clear();
+        this.rows = EvictingQueue.create( limit );
+    }
 
     public void updateLabels( List<String> labels ) {
         this.labels = labels;

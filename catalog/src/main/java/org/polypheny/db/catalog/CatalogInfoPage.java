@@ -68,6 +68,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.partitionInformation = addCatalogInformationTable( page, "Partitions", 8, Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ) );
 
         this.debugInformation = addCatalogInformationTable( page, "Debug", 10, Arrays.asList( "Time", "Message" ) );
+        this.debugInformation.setLimit( 100 );
 
         addPersistentInfo( page );
 

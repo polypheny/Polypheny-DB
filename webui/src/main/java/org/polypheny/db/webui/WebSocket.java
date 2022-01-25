@@ -81,7 +81,7 @@ public class WebSocket implements Consumer<WsConfig> {
     }
 
 
-    public static void sendMessage( Session session, String message ) {
+    public static synchronized void sendMessage( Session session, String message ) {
         try {
             session.getRemote().sendString( message );
         } catch ( IOException e ) {

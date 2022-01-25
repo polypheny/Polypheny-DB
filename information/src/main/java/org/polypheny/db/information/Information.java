@@ -27,6 +27,8 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 @Slf4j
 public abstract class Information {
 
+    private static Gson gson = new Gson();
+
     /**
      * The id needs to be unique for every Information object.
      */
@@ -123,7 +125,6 @@ public abstract class Information {
      * @return object as JSON string
      */
     public String asJson() {
-        Gson gson = new Gson();
         return gson.toJson( this );
     }
 

@@ -301,8 +301,9 @@ public class InformationManager {
      * Send an updated information object as JSON via Websocket to the WebUI
      */
     public void notify( final Information i ) {
+        String info = i.asJson();
         for ( InformationObserver observer : this.observers ) {
-            observer.observeInfos( i, instanceId, session );
+           observer.observeInfos( info, instanceId, session );
         }
     }
 
