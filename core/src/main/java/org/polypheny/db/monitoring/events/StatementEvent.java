@@ -31,6 +31,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.transaction.Statement;
 
@@ -61,6 +62,8 @@ public abstract class StatementEvent extends BaseEvent {
     protected String physicalQueryClass;
     protected HashMap<Long, List<Object>> changedValues;
     protected Integer indexSize = null;
+    protected long tableId;
+    protected long schemaId;
 
 
     @Override

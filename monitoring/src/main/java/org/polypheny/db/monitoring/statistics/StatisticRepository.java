@@ -18,23 +18,26 @@ package org.polypheny.db.monitoring.statistics;
 
 import java.util.HashSet;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
+import org.polypheny.db.monitoring.events.metrics.DdlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
 
+@Slf4j
 public class StatisticRepository implements MonitoringRepository {
 
     @Override
     public void dataPoint( MonitoringDataPoint dataPoint ) {
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-        if(dataPoint.isCommitted()){
-            statisticsManager.setNumberOfCommits(statisticsManager.getNumberOfCommits());
-        }else{
-            statisticsManager.setNumberOfRollbacks(statisticsManager.getNumberOfRollbacks());
+        if ( dataPoint.isCommitted() ) {
+            statisticsManager.setNumberOfCommits( statisticsManager.getNumberOfCommits() );
+        } else {
+            statisticsManager.setNumberOfRollbacks( statisticsManager.getNumberOfRollbacks() );
         }
         if ( dataPoint.getDataPointType() == DataPointType.DML ) {
             DmlDataPoint dmlDataPoint = ((DmlDataPoint) dataPoint);
@@ -48,18 +51,20 @@ public class StatisticRepository implements MonitoringRepository {
                     statisticsManager.setTableCalls( tableId, dmlDataPoint.getMonitoringType() );
 
                     if ( catalog.checkIfExistsTable( tableId ) ) {
-                        statisticsManager.tablesToUpdate( tableId, dmlDataPoint.getChangedValues(), dmlDataPoint.getMonitoringType() );
+                        statisticsManager.tablesToUpdate( tableId, dmlDataPoint.getChangedValues(), dmlDataPoint.getMonitoringType(), catalog.getTable( tableId ).schemaId );
 
                         if ( dmlDataPoint.getMonitoringType().equals( "INSERT" ) ) {
                             int added = dmlDataPoint.getRowCount();
-                            statisticsManager.updateRowCountPerTable( tableId, added, true );
+                            statisticsManager.updateRowCountPerTable( tableId, added, dmlDataPoint.getMonitoringType() );
                         } else if ( dmlDataPoint.getMonitoringType().equals( "DELETE" ) ) {
                             int deleted = dmlDataPoint.getRowCount();
-                            statisticsManager.updateRowCountPerTable( tableId, deleted, false );
+                            statisticsManager.updateRowCountPerTable( tableId, deleted, dmlDataPoint.getMonitoringType() );
+                            //after a delete it is not clear what exactly was deleted, so the statistics are updated
+                            statisticsManager.tablesToUpdate( tableId );
                         }
 
                     }
-                }else{
+                } else {
                     for ( Long id : values ) {
                         if ( catalog.checkIfExistsTable( id ) ) {
                             statisticsManager.setTableCalls( id, dmlDataPoint.getMonitoringType() );
@@ -83,17 +88,16 @@ public class StatisticRepository implements MonitoringRepository {
                         statisticsManager.setTableCalls( tableId, dqlDataPoint.getMonitoringType() );
 
                         //rowCount from UI is only used if there is no other possibility
-                        if(statisticsManager.rowCountPerTable( tableId ) == null || statisticsManager.rowCountPerTable( tableId ) == 0 ){
-                            statisticsManager.setRowCount(tableId, dqlDataPoint.getRowCount());
+                        if ( statisticsManager.rowCountPerTable( tableId ) == null || statisticsManager.rowCountPerTable( tableId ) == 0 ) {
+                            statisticsManager.updateRowCountPerTable( tableId, dqlDataPoint.getRowCount(), "SOURCE-TABLE-UI" );
                         }
-
 
                         if ( dqlDataPoint.getIndexSize() != null ) {
                             statisticsManager.setIndexSize( tableId, dqlDataPoint.getIndexSize() );
                         }
 
                     }
-                } else{
+                } else {
                     for ( Long id : values ) {
                         if ( catalog.checkIfExistsTable( id ) ) {
                             statisticsManager.setTableCalls( id, dqlDataPoint.getMonitoringType() );
@@ -101,6 +105,18 @@ public class StatisticRepository implements MonitoringRepository {
 
                     }
                 }
+            }
+        } else if ( dataPoint.getDataPointType() == DataPointType.DDL ) {
+
+            DdlDataPoint ddlDataPoint = ((DdlDataPoint) dataPoint);
+            if ( ddlDataPoint.getMonitoringType().equals( "TRUNCATE" ) ) {
+                statisticsManager.updateRowCountPerTable( ddlDataPoint.getTableId(), 0, ddlDataPoint.getMonitoringType() );
+                statisticsManager.tablesToUpdate( ddlDataPoint.getTableId(), null, ddlDataPoint.getMonitoringType(), ddlDataPoint.getSchemaId() );
+
+            }
+            if ( ddlDataPoint.getMonitoringType().equals( "DROP_TABLE" ) || ddlDataPoint.getMonitoringType().equals( "DROP_VIEW" ) || ddlDataPoint.getMonitoringType().equals( "DROP_MATERIALIZED_VIEW" ) ) {
+                statisticsManager.deleteTableToUpdate( ddlDataPoint.getTableId(), ddlDataPoint.getSchemaId() );
+
             }
         }
 

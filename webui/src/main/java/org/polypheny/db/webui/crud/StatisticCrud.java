@@ -83,7 +83,7 @@ public class StatisticCrud {
     }
 
 
-    public void getTableStatistics( Context ctx, Gson gsonExpose ) {
+    public void getTableStatistics( Context ctx ) {
 
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 

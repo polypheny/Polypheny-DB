@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,31 +16,26 @@
 
 package org.polypheny.db.monitoring.events;
 
-import java.io.Serializable;
-import java.sql.Timestamp;
-import java.util.UUID;
+import java.util.Arrays;
+import java.util.List;
+import org.polypheny.db.monitoring.events.analyzer.DdlEventAnalyzer;
+import org.polypheny.db.monitoring.events.metrics.DdlDataPoint;
+
+public class DdlEvent extends StatementEvent {
+
+    private String eventType = "DDL EVENT";
 
 
-/**
- * Marker interface for the persistent metric type, which can be monitored.
- * A MonitoringEvent will be analyzed and create metric objects.
- */
-public interface MonitoringDataPoint extends Serializable {
-
-    UUID id();
-
-    Timestamp timestamp();
-
-    DataPointType getDataPointType();
-
-    boolean isCommitted();
-
-    enum DataPointType {
-        DML,
-        DQL,
-        DDL,
-        QueryDataPointImpl,
-        QueryPostCostImpl;
+    @Override
+    public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
+        return Arrays.asList( (Class<T>) DdlDataPoint.class );
     }
+
+
+    @Override
+    public List<MonitoringDataPoint> analyze() {
+        return Arrays.asList( DdlEventAnalyzer.analyze( this ) );
+    }
+
 
 }

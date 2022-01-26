@@ -342,10 +342,11 @@ public class PolyResult {
             }
 
             eventData.setChangedValues( ordered );
-            if ( rowsChanged > 0 ) {
-                eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
+            if(Kind.INSERT.name().equals( kind )){
+                if ( rowsChanged >= 0 ) {
+                    eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
+                }
             }
-
         }
         // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
         if ( rowsChanged < 0 ) {

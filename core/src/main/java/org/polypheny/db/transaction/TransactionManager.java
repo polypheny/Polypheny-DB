@@ -17,6 +17,8 @@
 package org.polypheny.db.transaction;
 
 
+import com.google.common.annotations.VisibleForTesting;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;

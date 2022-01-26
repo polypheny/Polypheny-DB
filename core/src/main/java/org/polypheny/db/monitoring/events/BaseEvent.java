@@ -19,6 +19,7 @@ package org.polypheny.db.monitoring.events;
 import java.sql.Timestamp;
 import java.util.UUID;
 import lombok.Getter;
+import org.polypheny.db.monitoring.events.MonitoringDataPoint.DataPointType;
 
 
 public abstract class BaseEvent implements MonitoringEvent {

@@ -41,13 +41,11 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
         return INSTANCE;
     }
 
-
-
     //use relNode to update
-    protected abstract void tablesToUpdate( Long tableId );
+    public abstract void tablesToUpdate( Long tableId );
 
     //use cache if possible
-    public abstract void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type );
+    public abstract void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId );
 
     protected abstract void reevaluateTable( Long tableId );
 
@@ -55,9 +53,9 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void asyncReevaluateAllStatistics();
 
-    public abstract void deleteTableToUpdate( Long tableId );
+    public abstract void deleteTableToUpdate( Long tableId, Long schemaId  );
 
-    public abstract void updateRowCountPerTable( Long tableId, int number, boolean isAdding );
+    public abstract void updateRowCountPerTable( Long tableId, Integer number, String source );
 
     public abstract void setIndexSize( Long tableId, int indexSize );
 
@@ -80,7 +78,5 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
     public abstract void setNumberOfRollbacks(int numberOfRollbacks);
 
     public abstract Integer rowCountPerTable( Long tableId );
-
-    public abstract void setRowCount( Long tableId, int rowCount );
 
 }
