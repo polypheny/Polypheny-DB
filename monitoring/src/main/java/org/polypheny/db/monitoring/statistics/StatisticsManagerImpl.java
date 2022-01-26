@@ -87,13 +87,11 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 @Slf4j
 public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsManager<T> {
 
-
-    @Getter
-    public volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
-
     private static StatisticQueryProcessor sqlQueryInterface;
 
     private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
+
+    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
     private int buffer = RuntimeConfig.STATISTIC_BUFFER.getInteger();
 
@@ -101,13 +99,14 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Getter
     private String revalId = null;
 
-    //new Additions for additional Information
-    Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
-    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
+    @Getter
+    public volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
 
     @Getter
     public ConcurrentHashMap<Long, StatisticTable<T>> tableStatistic;
+
+    //new Additions for additional Information
+    Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
 
     private List<Long> deletedTable = new ArrayList<>();
 
@@ -175,7 +174,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     addDataStatistics( changedValues, catalog, catalogTable, columns );
                 }
             } else {
-
                 addDataStatistics( changedValues, catalog, catalogTable, columns );
             }
 

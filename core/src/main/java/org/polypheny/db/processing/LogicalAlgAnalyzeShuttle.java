@@ -222,7 +222,6 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalExchange exchange ) {
         hashBasis.add( "LogicalExchange#" + exchange.distribution.getType().shortName );
-
         return visitChildren( exchange );
     }
 
@@ -232,11 +231,11 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         hashBasis.add( "other#" + other.getClass().getSimpleName() );
 
         if ( other instanceof LogicalTableModify ) {
-
+            //add all columns to availableColumnsWithTable for statistics
             if ( (other.getTable().getTable() instanceof LogicalTable) ) {
                 LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
                 Long tableId = logicalTable.getTableId();
-                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable. put( v, tableId) );
+                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable.put( v, tableId) );
             }
         }
         return visitChildren( other );

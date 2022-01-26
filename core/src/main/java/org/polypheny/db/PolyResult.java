@@ -324,7 +324,7 @@ public class PolyResult {
         if ( rowsChanged > 0 ) {
             eventData.setRowCount( rowsChanged );
         }
-        if ( Kind.INSERT.name() == kind ) {
+        if ( Kind.INSERT.name().equals( kind ) || Kind.DELETE.name().equals( kind ) ) {
 
             HashMap<Long, List<Object>> ordered = new HashMap<>();
 

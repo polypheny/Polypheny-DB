@@ -316,7 +316,6 @@ public class PolyphenyDb {
         // Create internal query interfaces
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
         StatisticsManager.setAndGetInstance(new StatisticsManagerImpl( statisticQueryProcessor));
-        //statisticsManager.asyncReevaluateAllStatistics();
 
         // Start Polypheny-UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
