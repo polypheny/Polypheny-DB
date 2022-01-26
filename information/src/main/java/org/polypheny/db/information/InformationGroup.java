@@ -256,6 +256,8 @@ public class InformationGroup extends Refreshable {
                     return;
                 }
                 out.beginObject();
+                out.name( "name" );
+                out.value( value.name );
                 out.name( "id" );
                 out.value( value.id );
                 out.name( "pageId" );

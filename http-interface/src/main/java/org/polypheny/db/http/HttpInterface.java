@@ -76,7 +76,7 @@ public class HttpInterface extends QueryInterface {
 
     private final MonitoringPage monitoringPage;
 
-    private Javalin restServer;
+    private Javalin server;
 
 
     public HttpInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
@@ -108,11 +108,11 @@ public class HttpInterface extends QueryInterface {
                 return gson.fromJson( json, targetClass );
             }
         };
-        restServer = Javalin.create( config -> {
+        server = Javalin.create( config -> {
             config.jsonMapper( gsonMapper );
             config.enableCorsForAllOrigins();
         } ).start( port );
-        restServer.exception( Exception.class, ( e, ctx ) -> {
+        server.exception( Exception.class, ( e, ctx ) -> {
             log.warn( "Caught exception in the HTTP interface", e );
             if ( e instanceof JsonSyntaxException ) {
                 ctx.result( "Malformed request: " + e.getCause().getMessage() );
@@ -121,7 +121,7 @@ public class HttpInterface extends QueryInterface {
             }
         } );
 
-        restServer.routes( () -> {
+        server.routes( () -> {
             post( "/mongo", ctx -> anyQuery( QueryLanguage.MONGO_QL, ctx ) );
             post( "/mql", ctx -> anyQuery( QueryLanguage.MONGO_QL, ctx ) );
 
@@ -164,7 +164,7 @@ public class HttpInterface extends QueryInterface {
 
     @Override
     public void shutdown() {
-        restServer.stop();
+        server.stop();
     }
 
 
