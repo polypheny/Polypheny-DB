@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.polypheny.db.processing;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableScan;
@@ -44,11 +42,9 @@ import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
-import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.AlgOptTableImpl;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.Statement;
@@ -235,7 +231,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
             if ( (other.getTable().getTable() instanceof LogicalTable) ) {
                 LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
                 Long tableId = logicalTable.getTableId();
-                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable.put( v, tableId) );
+                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable.put( v, tableId ) );
             }
         }
         return visitChildren( other );

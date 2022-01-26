@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
@@ -110,7 +109,6 @@ import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.monitoring.events.DdlEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -2543,13 +2541,12 @@ public class DdlManagerImpl extends DdlManager {
             StatementEvent event = new DdlEvent();
 
             event.setMonitoringType( kind.name() );
-            event.setTableId(catalogTable.id);
-            event.setSchemaId(catalogTable.schemaId);
+            event.setTableId( catalogTable.id );
+            event.setSchemaId( catalogTable.schemaId );
             statement.setMonitoringEvent( event );
 
         }
     }
-
 
 
     @Override

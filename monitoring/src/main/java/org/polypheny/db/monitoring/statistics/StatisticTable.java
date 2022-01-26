@@ -16,9 +16,7 @@
 
 package org.polypheny.db.monitoring.statistics;
 
-import com.google.gson.annotations.Expose;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,7 +25,7 @@ import org.polypheny.db.catalog.Catalog;
 /**
  * Stores the available statistic data of a specific table
  */
-public class StatisticTable <T extends Comparable<T>>{
+public class StatisticTable<T extends Comparable<T>> {
 
     @Getter
     public String table;
@@ -55,11 +53,12 @@ public class StatisticTable <T extends Comparable<T>>{
     @Setter
     public List<TemporalStatisticColumn<T>> temporalColumn;
 
+
     public StatisticTable( Long tableId ) {
         this.tableId = tableId;
 
         Catalog catalog = Catalog.getInstance();
-        if(catalog.checkIfExistsTable( tableId )){
+        if ( catalog.checkIfExistsTable( tableId ) ) {
             this.table = catalog.getTable( tableId ).name;
         }
 
@@ -68,7 +67,6 @@ public class StatisticTable <T extends Comparable<T>>{
         numericalColumn = new ArrayList<>();
         temporalColumn = new ArrayList<>();
     }
-
 
 
 }

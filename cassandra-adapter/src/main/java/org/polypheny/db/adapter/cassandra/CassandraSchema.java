@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -336,7 +336,7 @@ public class CassandraSchema extends AbstractSchema {
     protected Map<String, Table> getTableMap() {
         final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
         for ( Entry<CqlIdentifier, TableMetadata> table : getKeyspace().getTables().entrySet() ) {
-            builder.put( table.getKey().toString(), new CassandraTable( this, table.getKey().toString()) );
+            builder.put( table.getKey().toString(), new CassandraTable( this, table.getKey().toString() ) );
 
             // TODO JS: Fix the view situation!
             /*for ( MaterializedViewMetadata view : table.getValue().getViews() ) {

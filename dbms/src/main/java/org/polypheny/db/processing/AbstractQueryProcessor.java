@@ -85,7 +85,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;

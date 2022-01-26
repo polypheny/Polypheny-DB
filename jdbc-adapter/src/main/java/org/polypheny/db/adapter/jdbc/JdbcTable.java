@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,19 +34,16 @@
 package org.polypheny.db.adapter.jdbc;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import lombok.Getter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -70,8 +67,6 @@ import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema.TableType;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Statistic;
-import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.sql.sql.SqlBasicCall;
@@ -119,7 +114,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             String physicalSchemaName,
             String physicalTableName,
             List<String> physicalColumnNames,
-            Long tableId) {
+            Long tableId ) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
         this.logicalSchemaName = logicalSchemaName;

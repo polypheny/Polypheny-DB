@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
@@ -113,7 +112,6 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
-
     public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, String physicalName, boolean view, Long tableId ) {
         super( Object[].class );
         this.cassandraSchema = cassandraSchema;
@@ -129,14 +127,14 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
-
     private Long getCatalogTableId() {
         try {
-            return Catalog.getInstance().getTable(cassandraSchema.name, columnFamily, physicalName).id;
+            return Catalog.getInstance().getTable( cassandraSchema.name, columnFamily, physicalName ).id;
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-            throw new RuntimeException("Not possible to get tableId within CassandraTable", e);
+            throw new RuntimeException( "Not possible to get tableId within CassandraTable", e );
         }
     }
+
 
     public String toString() {
         return "CassandraTable {" + columnFamily + "}";

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class EthereumSchema extends AbstractSchema {
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : EthereumMapper.TRANSACTION;
-        EthereumTable table = new EthereumTable( clientUrl, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource, catalogTable.id);
+        EthereumTable table = new EthereumTable( clientUrl, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource, catalogTable.id );
         tableMap.put( catalogTable.name, table );
         return table;
     }

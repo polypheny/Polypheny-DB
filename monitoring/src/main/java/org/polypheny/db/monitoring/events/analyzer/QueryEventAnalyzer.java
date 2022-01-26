@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ public class QueryEventAnalyzer {
                 .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( queryEvent.getMonitoringType() )
                 .physicalQueryClass( queryEvent.getPhysicalQueryClass() )
-                .availableColumnsWithTable(queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
-                .indexSize(queryEvent.getIndexSize())
+                .availableColumnsWithTable( queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
+                .indexSize( queryEvent.getIndexSize() )
                 .build();
         metric.getTables().addAll( queryEvent.getLogicalQueryInformation().getTables() );
         if ( queryEvent.getAccessedPartitions() != null ) {

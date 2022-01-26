@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -219,7 +219,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/allStatistics", ( ctx ) -> crud.statisticCrud.getStatistics( ctx, gsonExpose ) );
 
-        webuiServer.post( "/getTableStatistics", (ctx) -> crud.statisticCrud.getTableStatistics(ctx) );
+        webuiServer.post( "/getTableStatistics", ( ctx ) -> crud.statisticCrud.getTableStatistics( ctx ) );
 
         webuiServer.post( "/getDmlInformation", crud.statisticCrud::getDmlInformation );
 

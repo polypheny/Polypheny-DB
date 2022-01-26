@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.TestOnly;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;

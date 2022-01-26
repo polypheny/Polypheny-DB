@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public static StatisticsManager<?> INSTANCE = null;
 
+
     public static StatisticsManager<?> setAndGetInstance( StatisticsManager transaction ) {
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
@@ -41,6 +42,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
         return INSTANCE;
     }
 
+
     //use relNode to update
     public abstract void tablesToUpdate( Long tableId );
 
@@ -53,7 +55,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void asyncReevaluateAllStatistics();
 
-    public abstract void deleteTableToUpdate( Long tableId, Long schemaId  );
+    public abstract void deleteTableToUpdate( Long tableId, Long schemaId );
 
     public abstract void updateRowCountPerTable( Long tableId, Integer number, String source );
 
@@ -65,9 +67,9 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void setRevalId( String revalId );
 
-    public abstract ConcurrentHashMap<?,?> getStatisticSchemaMap();
+    public abstract ConcurrentHashMap<?, ?> getStatisticSchemaMap();
 
-    public abstract Object getTableStatistic(Long schemaId, Long tableId);
+    public abstract Object getTableStatistic( Long schemaId, Long tableId );
 
     public abstract int getNumberOfCommits();
 
@@ -75,7 +77,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void setNumberOfCommits( int numberOfCommits );
 
-    public abstract void setNumberOfRollbacks(int numberOfRollbacks);
+    public abstract void setNumberOfRollbacks( int numberOfRollbacks );
 
     public abstract Integer rowCountPerTable( Long tableId );
 

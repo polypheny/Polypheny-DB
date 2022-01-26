@@ -892,6 +892,7 @@ public class Crud implements InformationObserver {
         queryAnalyzer.registerInformation( text3 );
     }
 
+
     /**
      * Gets the classified Data from User
      * return possibly interesting Data to User
@@ -3881,9 +3882,9 @@ public class Crud implements InformationObserver {
         if ( result.getData().length == 0 ) {
             return 0;
         } else {
-            if(statement.getMonitoringEvent() != null){
+            if ( statement.getMonitoringEvent() != null ) {
                 StatementEvent eventData = statement.getMonitoringEvent();
-                eventData.setRowCount(  Integer.parseInt( result.getData()[0][0] ));
+                eventData.setRowCount( Integer.parseInt( result.getData()[0][0] ) );
             }
             return Integer.parseInt( result.getData()[0][0] );
         }

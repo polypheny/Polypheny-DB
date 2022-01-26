@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ package org.polypheny.db.adapter.index;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.apache.calcite.avatica.MetaImpl;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -32,7 +30,6 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -86,7 +83,7 @@ public abstract class Index {
     /**
      * Trigger an index rebuild, e.g. at crash recovery.
      */
-    public void rebuild( final Transaction transaction) {
+    public void rebuild( final Transaction transaction ) {
         Statement statement = transaction.createStatement();
 
         // Prepare query
@@ -103,7 +100,7 @@ public abstract class Index {
         final PolyResult result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
 
-        final List<List<Object>> rows = result.getRows(statement, 1, false, false, result.getStatement().getMonitoringEvent(), true );
+        final List<List<Object>> rows = result.getRows( statement, 1, false, false, result.getStatement().getMonitoringEvent(), true );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
         for ( final List<Object> row : rows ) {
             if ( row.size() > columns.size() ) {

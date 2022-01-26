@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,10 +66,12 @@ public class InformationTable extends InformationHtml {
         this.labels = labels;
     }
 
+
     public void setLimit( int limit ) {
         this.rows.clear();
         this.rows = EvictingQueue.create( limit );
     }
+
 
     public void updateLabels( List<String> labels ) {
         this.labels = labels;

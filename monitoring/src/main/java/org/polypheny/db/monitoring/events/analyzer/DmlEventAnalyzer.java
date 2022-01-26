@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public class DmlEventAnalyzer {
                 .queryClass( dmlEvent.getLogicalQueryInformation().getQueryClass() )
                 .monitoringType( dmlEvent.getMonitoringType() )
                 .physicalQueryClass( dmlEvent.getPhysicalQueryClass() )
-                .availableColumnsWithTable(dmlEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
+                .availableColumnsWithTable( dmlEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
                 .changedValues( dmlEvent.getChangedValues() )
                 .build();
         metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assume;
 import org.junit.BeforeClass;

@@ -16,13 +16,11 @@
 
 package org.polypheny.db.schema;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
-import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.algebra.AlgNode;
@@ -57,6 +55,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private final List<Long> columnIds;
     @Getter
     private final List<String> logicalColumnNames;
+
 
     protected LogicalTable(
             Long tableId,

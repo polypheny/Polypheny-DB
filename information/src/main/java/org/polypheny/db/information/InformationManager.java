@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -303,7 +303,7 @@ public class InformationManager {
     public void notify( final Information i ) {
         String info = i.asJson();
         for ( InformationObserver observer : this.observers ) {
-           observer.observeInfos( info, instanceId, session );
+            observer.observeInfos( info, instanceId, session );
         }
     }
 

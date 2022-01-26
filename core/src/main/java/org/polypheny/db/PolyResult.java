@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -215,7 +215,7 @@ public class PolyResult {
             }
 
             //only if it is an index
-            if ( statementEvent != null && isIndex) {
+            if ( statementEvent != null && isIndex ) {
                 statementEvent.setIndexSize( res.size() );
             }
 
@@ -342,7 +342,7 @@ public class PolyResult {
             }
 
             eventData.setChangedValues( ordered );
-            if(Kind.INSERT.name().equals( kind )){
+            if ( Kind.INSERT.name().equals( kind ) ) {
                 if ( rowsChanged >= 0 ) {
                     eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
                 }
