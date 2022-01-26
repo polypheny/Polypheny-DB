@@ -3427,7 +3427,7 @@ public class Crud implements InformationObserver {
 
 
     void getFile( final Context ctx ) {
-        String fileName = ctx.req.getParameter( "file" );
+        String fileName = ctx.pathParam( "file" );
         File f = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + fileName );
         if ( !f.exists() ) {
             ctx.status( 404 );
@@ -4017,7 +4017,7 @@ public class Crud implements InformationObserver {
      * it is running correctly when using the provided settings
      */
     public void testDockerInstance( final Context ctx ) {
-        String dockerId = ctx.req.getParameter( "dockerId" );
+        String dockerId = ctx.pathParam( "dockerId" );
         ctx.result( String.valueOf( DockerManager.getInstance().testDockerRunning( Integer.parseInt( dockerId ) ) ) );
     }
 

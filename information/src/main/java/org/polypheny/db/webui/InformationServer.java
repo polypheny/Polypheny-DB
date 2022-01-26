@@ -18,6 +18,12 @@ package org.polypheny.db.webui;
 
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.plugin.json.JsonMapper;
@@ -40,7 +46,44 @@ import org.polypheny.db.information.InformationResponse;
 @Slf4j
 public class InformationServer implements InformationObserver {
 
-    private final Gson gson = new Gson();
+    private static final Gson gson;
+    public static final TypeAdapterFactory throwableTypeAdapterFactory;
+    public static final TypeAdapter<Throwable> throwableTypeAdapter;
+
+
+    static {
+        // adapter factory, which handles generic Throwables
+        throwableTypeAdapterFactory = new TypeAdapterFactory() {
+            @Override
+            public <T> TypeAdapter<T> create( Gson gson, TypeToken<T> type ) {
+                if ( !Throwable.class.isAssignableFrom( type.getRawType() ) ) {
+                    return null;
+                }
+                //noinspection unchecked
+                return (TypeAdapter<T>) throwableTypeAdapter;
+            }
+        };
+        throwableTypeAdapter = new TypeAdapter<Throwable>() {
+            @Override
+            public void write( JsonWriter out, Throwable value ) throws IOException {
+                if ( value == null ) {
+                    out.nullValue();
+                    return;
+                }
+                out.beginObject();
+                out.name( "message" );
+                out.value( value.getMessage() );
+                out.endObject();
+            }
+
+
+            @Override
+            public Throwable read( JsonReader in ) throws IOException {
+                return new Throwable( in.nextString() );
+            }
+        };
+        gson = new GsonBuilder().registerTypeAdapterFactory( throwableTypeAdapterFactory ).create();
+    }
 
 
     public InformationServer( final int port ) {
@@ -65,8 +108,6 @@ public class InformationServer implements InformationObserver {
 
         // Needs to be called before defining routes!
         webSockets( http );
-
-        //enableCORS( http );
 
         informationRoutes( http );
 
