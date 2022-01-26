@@ -1354,7 +1354,17 @@ public enum OperatorName {
 
     MQL_GTE( LangFunctionOperator.class ),
 
-    MQL_JSONIFY( LangFunctionOperator.class );
+    MQL_JSONIFY( LangFunctionOperator.class ),
+
+    //-------------------------------------------------------------
+    //                   OPENCYPHER OPERATORS
+    //-------------------------------------------------------------
+
+    REG_EQUALS( LangFunctionOperator.class ),
+
+    STARTS_WITH( LangFunctionOperator.class ),
+
+    ENDS_WITH( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;

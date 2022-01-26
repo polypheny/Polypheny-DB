@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;

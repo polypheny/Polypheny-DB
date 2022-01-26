@@ -24,7 +24,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;

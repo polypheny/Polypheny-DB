@@ -132,6 +132,9 @@ public class HttpInterface extends QueryInterface {
 
             post( "/cql", ctx -> anyQuery( QueryLanguage.CQL, ctx ) );
 
+            post( "/cypher", ctx -> anyQuery( QueryLanguage.CYPHER, ctx ) );
+            post( "/opencypher", ctx -> anyQuery( QueryLanguage.CYPHER, ctx ) );
+
             StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
         } );
     }

@@ -450,7 +450,7 @@ public class CqlInterfaceTest extends CqlTestHelper {
         data.addProperty( "query", cqlQuery );
         data.addProperty( "noLimit", true );
 
-        return request.body( data ).header( "Content-Type", "application/json" ).asJson();
+        return request.body( data ).header( "Content-Expression", "application/json" ).asJson();
     }
 
 }

@@ -49,7 +49,7 @@ public class DataContextImpl implements DataContext {
     @Getter
     private final Statement statement;
 
-    private final Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Type
+    private final Map<Long, AlgDataType> parameterTypes; // ParameterIndex -> Data Expression
     @Getter
     private final List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 

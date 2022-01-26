@@ -145,8 +145,8 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.cypher.ddl.DdlManager;
+import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
@@ -2233,7 +2233,7 @@ public class Crud implements InformationObserver {
                     type = FieldType.LABEL;
                     break;
                 default:
-                    throw new RuntimeException( "Unknown Field Type: " + currentColumn.getFieldType() );
+                    throw new RuntimeException( "Unknown Field Expression: " + currentColumn.getFieldType() );
             }
 
             if ( type.equals( FieldType.LIST ) ) {
@@ -3559,7 +3559,7 @@ public class Crud implements InformationObserver {
 
 
     void getDirectory( File dir, Context ctx ) {
-        ctx.header( "Content-Type", "application/zip" );
+        ctx.header( "Content-Expression", "application/zip" );
         ctx.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
         String zipFileName = UUID.randomUUID().toString() + ".zip";
         File zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + zipFileName );
@@ -4043,7 +4043,7 @@ public class Crud implements InformationObserver {
      *
      * @param schemaName name of the schema
      * @param tableName name of the table
-     * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
+     * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Expression (java.sql.Types).
      */
     private Map<String, CatalogColumn> getCatalogColumns( String schemaName, String tableName ) {
         Map<String, CatalogColumn> dataTypes = new HashMap<>();

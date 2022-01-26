@@ -20,7 +20,7 @@ package org.polypheny.db.sql.sql.ddl;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;

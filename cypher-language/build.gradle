@@ -20,7 +20,7 @@ buildscript {
 dependencies {
     implementation project(":core")
 
-    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version_cypher  // BSD 2-clause
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
     implementation group: "commons-codec", name: "commons-codec", version: commons_codec_version  // // Apache 2.0
     implementation group: "com.j256.simplemagic", name: "simplemagic", version: simplemagic_version  // ISC

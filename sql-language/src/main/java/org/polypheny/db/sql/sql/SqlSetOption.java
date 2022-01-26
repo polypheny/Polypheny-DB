@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Call;

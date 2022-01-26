@@ -38,10 +38,10 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.processing.CypherProcessorImpl;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
@@ -237,6 +237,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 return new MqlProcessorImpl();
             case PIG:
                 return new PigProcessorImpl();
+            case CYPHER:
+                return new CypherProcessorImpl();
             default:
                 throw new RuntimeException( "This language seems to not be supported!" );
         }

@@ -41,8 +41,8 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.DdlManagerImpl;
+import org.polypheny.db.cypher.ddl.DdlManager;
+import org.polypheny.db.cypher.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
@@ -101,10 +101,10 @@ public class PolyphenyDb {
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
 
-    @Option(name = { "-defaultStore" }, description = "Type of default store")
+    @Option(name = { "-defaultStore" }, description = "Expression of default store")
     public String defaultStoreName = "hsqldb";
 
-    @Option(name = { "-defaultSource" }, description = "Type of default source")
+    @Option(name = { "-defaultSource" }, description = "Expression of default source")
     public String defaultSourceName = "csv";
 
     @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)

@@ -1568,7 +1568,7 @@ public abstract class Catalog {
         @SerializedName("pig")
         PIG( SchemaType.RELATIONAL ),
         @SerializedName("cypher")
-        Cypher( SchemaType.RELATIONAL );
+        CYPHER( SchemaType.RELATIONAL );
 
 
         @Getter

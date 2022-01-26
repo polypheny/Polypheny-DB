@@ -28,6 +28,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
@@ -46,6 +47,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.cql.Cql2RelConverter;
 import org.polypheny.db.cql.CqlQuery;
 import org.polypheny.db.cql.parser.CqlParser;
+import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.QueryParameters;
@@ -106,6 +108,8 @@ public class LanguageCrud {
             case PIG:
                 results = anyPigQuery( session, request, transactionManager, userName, databaseName, observer );
                 break;
+            case CYPHER:
+                results = anyCypherQuery( session, request, transactionManager, userName, databaseName, observer );
             default:
                 return Collections.singletonList( new Result( "The used language seems not to be supported!" ) );
         }
@@ -294,24 +298,17 @@ public class LanguageCrud {
             InformationObserver observer ) {
 
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
-        PolyResult polyResult;
         MqlProcessor mqlProcessor = (MqlProcessor) transaction.getProcessor( QueryLanguage.MONGO_QL );
-        String mql = request.query;
 
         if ( request.analyze ) {
             transaction.getQueryAnalyzer().setSession( session );
         }
 
-        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
-        // and in case of auto commit of, the information is overwritten
-        InformationManager queryAnalyzer = null;
-        if ( request.analyze ) {
-            queryAnalyzer = transaction.getQueryAnalyzer().observe( observer );
-        }
+        InformationManager queryAnalyzer = attachAnalyzerIfSpecified( request, observer, transaction );
 
         List<Result> results = new ArrayList<>();
 
-        String[] mqls = mql.trim().split( "\\n(?=(use|db.|show))" );
+        String[] mqls = request.query.trim().split( "\\n(?=(use|db.|show))" );
 
         String database = request.database;
         long executionTime = System.nanoTime();
@@ -356,7 +353,7 @@ public class LanguageCrud {
                 }
 
                 // Prepare
-                polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+                PolyResult polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().start( "Execution" );
@@ -368,6 +365,13 @@ public class LanguageCrud {
             }
         }
 
+        commitAndFinish( transaction, queryAnalyzer, results, executionTime );
+
+        return results;
+    }
+
+
+    private static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<Result> results, long executionTime ) {
         executionTime = System.nanoTime() - executionTime;
         String commitStatus;
         try {
@@ -388,8 +392,95 @@ public class LanguageCrud {
         if ( queryAnalyzer != null ) {
             Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
         }
+    }
+
+
+    @Nullable
+    private static InformationManager attachAnalyzerIfSpecified( QueryRequest request, InformationObserver observer, Transaction transaction ) {
+        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+        // and in case of auto commit of, the information is overwritten
+        InformationManager queryAnalyzer = null;
+        if ( request.analyze ) {
+            queryAnalyzer = transaction.getQueryAnalyzer().observe( observer );
+        }
+        return queryAnalyzer;
+    }
+
+
+    private static List<Result> anyCypherQuery( Session session, QueryRequest request, TransactionManager transactionManager, String userName, String databaseName, InformationObserver observer ) {
+        Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName );
+        Processor cypherProcessor = transaction.getProcessor( QueryLanguage.CYPHER );
+
+        if ( request.analyze ) {
+            transaction.getQueryAnalyzer().setSession( session );
+        }
+
+        InformationManager queryAnalyzer = attachAnalyzerIfSpecified( request, observer, transaction );
+
+        List<Result> results = new ArrayList<>();
+
+        String database = request.database;
+        long executionTime = System.nanoTime();
+        boolean noLimit = false;
+
+        String query = request.query;
+
+        //for ( String query : mqls ) {
+        Statement statement = transaction.createStatement();
+        QueryParameters parameters = new QueryParameters( query, SchemaType.GRAPH );
+
+        if ( transaction.isAnalyze() ) {
+            statement.getOverviewDuration().start( "Parsing" );
+        }
+        CypherNode parsed = (CypherNode) cypherProcessor.parse( query );
+        if ( transaction.isAnalyze() ) {
+            statement.getOverviewDuration().stop( "Parsing" );
+        }
+
+            /*
+            if ( parsed instanceof MqlUseDatabase ) {
+                database = ((MqlUseDatabase) parsed).getDatabase();
+                //continue;
+            }
+
+            if ( parsed instanceof MqlCollectionStatement && ((MqlCollectionStatement) parsed).getLimit() != null ) {
+                noLimit = true;
+            }
+
+            if ( parsed.getFamily() == Family.DML && mqlProcessor.needsDdlGeneration( parsed, parameters ) ) {
+                mqlProcessor.autoGenerateDDL( Crud.getTransaction( request.analyze, request.cache, transactionManager, userName, databaseName ).createStatement(), parsed, parameters );
+            }
+
+            if ( parsed.getFamily() == Family.DDL ) {
+                mqlProcessor.prepareDdl( statement, parsed, parameters );
+                Result result = new Result( 1 ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                results.add( result );
+            } else {
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().start( "Translation" );
+                }
+                AlgRoot logicalRoot = mqlProcessor.translate( statement, parsed, parameters );
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().stop( "Translation" );
+                }
+
+                // Prepare
+                PolyResult polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().start( "Execution" );
+                }
+                results.add( getResult( QueryLanguage.MONGO_QL, statement, request, query, polyResult, noLimit ) );
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().stop( "Execution" );
+                }
+            //}
+        }
+        */
+        commitAndFinish( transaction, queryAnalyzer, results, executionTime );
 
         return results;
+
     }
 
 

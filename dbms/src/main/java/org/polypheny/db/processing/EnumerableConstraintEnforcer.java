@@ -157,7 +157,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     joinCondition = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ), joinCondition, joinComparison );
                 }
                 //
-                // TODO MV: Changed JOIN Type from LEFT to INNER to fix issues row types in index based query simplification.
+                // TODO MV: Changed JOIN Expression from LEFT to INNER to fix issues row types in index based query simplification.
                 //  Make sure this is ok!
                 //
                 final AlgNode join = builder.join( JoinAlgType.INNER, joinCondition ).build();

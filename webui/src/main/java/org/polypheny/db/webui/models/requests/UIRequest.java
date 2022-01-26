@@ -41,7 +41,7 @@ public class UIRequest {
 
 
     /**
-     * Type of a request, e.g. QueryRequest or RelAlgRequest
+     * Expression of a request, e.g. QueryRequest or RelAlgRequest
      */
     public String requestType;
 

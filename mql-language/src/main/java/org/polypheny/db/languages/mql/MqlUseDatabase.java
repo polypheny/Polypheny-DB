@@ -20,7 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
-import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
