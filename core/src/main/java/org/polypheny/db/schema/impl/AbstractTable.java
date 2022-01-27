@@ -94,6 +94,9 @@ public abstract class AbstractTable implements Table, Wrapper {
 
     public Statistic getStatistic() {
 
+        return Statistics.UNKNOWN;
+
+        /*
         if ( tableId == null ) {
             return Statistics.UNKNOWN;
         }
@@ -104,6 +107,8 @@ public abstract class AbstractTable implements Table, Wrapper {
         } else {
             return Statistics.of( Double.valueOf( rowCount ), ImmutableList.of() );
         }
+
+         */
 
     }
 
