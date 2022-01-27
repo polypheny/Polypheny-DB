@@ -50,6 +50,7 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.LimitIterator;
 
+
 @Getter
 public class PolyResult {
 

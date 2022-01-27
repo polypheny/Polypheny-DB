@@ -142,7 +142,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     // Use cache if possible
     @Override
     public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId ) {
-
         if ( type.equals( "INSERT" ) ) {
             Catalog catalog = Catalog.getInstance();
             CatalogTable catalogTable = catalog.getTable( tableId );
@@ -594,7 +593,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private LogicalTableScan getLogicalTableScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
-
         AlgOptTable relOptTable = reader.getTable( Arrays.asList( schema, table ) );
         return LogicalTableScan.create( cluster, relOptTable );
     }
@@ -604,7 +602,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Gets the amount of entries for a column
      */
     private Integer getCount( QueryColumn queryColumn ) {
-
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.monitoring.statistics;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;

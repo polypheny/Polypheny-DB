@@ -16,7 +16,6 @@
 
 package org.polypheny.db.monitoring.statistics;
 
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -30,27 +29,26 @@ import org.polypheny.db.type.PolyType;
 @Slf4j
 class QueryColumn {
 
+    @Getter
+    private final String schema;
 
     @Getter
-    private String schema;
+    private final String table;
 
     @Getter
-    private String table;
+    private final String column;
 
     @Getter
-    private String column;
+    private final Long schemaId;
 
     @Getter
-    private Long schemaId;
+    private final Long tableId;
 
     @Getter
-    private Long tableId;
+    private final Long columnId;
 
     @Getter
-    private Long columnId;
-
-    @Getter
-    private PolyType type;
+    private final PolyType type;
 
 
     QueryColumn( Long schemaId, Long tableId, Long columnId, PolyType type ) {
