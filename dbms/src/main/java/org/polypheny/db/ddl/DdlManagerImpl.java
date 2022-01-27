@@ -2400,7 +2400,7 @@ public class DdlManagerImpl extends DdlManager {
 
         dropTable( materializedView, statement );
 
-        //monitor dropTables for statistics
+        // Monitor dropTables for statistics
         prepareMonitoring( statement, Kind.DROP_VIEW, materializedView );
 
         // Reset query plan cache, implementation cache & routing cache
@@ -2510,7 +2510,7 @@ public class DdlManagerImpl extends DdlManager {
         // Delete the table
         catalog.deleteTable( catalogTable.id );
 
-        //monitor dropTables for statistics
+        // Monitor dropTables for statistics
         prepareMonitoring( statement, Kind.DROP_TABLE, catalogTable );
 
         // Reset plan cache implementation cache & routing cache
@@ -2525,7 +2525,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new RuntimeException( "Unable to modify a read-only table!" );
         }
 
-        //monitor truncate for rowCount
+        // Monitor truncate for rowCount
         prepareMonitoring( statement, Kind.TRUNCATE, catalogTable );
 
         //  Execute truncate on all placements
@@ -2544,7 +2544,6 @@ public class DdlManagerImpl extends DdlManager {
             event.setTableId( catalogTable.id );
             event.setSchemaId( catalogTable.schemaId );
             statement.setMonitoringEvent( event );
-
         }
     }
 

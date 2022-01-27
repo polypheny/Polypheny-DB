@@ -239,7 +239,7 @@ public class FileAdapterTest {
                 statement.executeUpdate( "CREATE TABLE public.partitioned ( id INTEGER NOT NULL, username VARCHAR(20), pic FILE, PRIMARY KEY(id)) ON STORE \"mm\"" );
                 try {
                     statement.executeUpdate( "ALTER TABLE public.partitioned ADD PLACEMENT (username) ON STORE \"hsqldb\"" );
-                    //statement.executeUpdate( "ALTER TABLE public.partitioned MODIFY PLACEMENT (pic) ON STORE \"mm\"" );
+                    statement.executeUpdate( "ALTER TABLE public.partitioned MODIFY PLACEMENT (pic) ON STORE \"mm\"" );
 
                     PreparedStatement ps = connection.prepareStatement( "INSERT INTO public.partitioned (id, username, pic) VALUES(?,?,?)" );
                     ps.setInt( 1, 1 );

@@ -254,13 +254,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Reset all statistics and reevaluate them
      */
     private void reevaluateAllStatistics() {
-        if ( this.sqlQueryInterface == null ) {
+        if ( sqlQueryInterface == null ) {
             return;
         }
         log.debug( "Resetting StatisticManager." );
         ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
 
-        for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
+        for ( QueryColumn column : sqlQueryInterface.getAllColumns() ) {
             StatisticColumn<T> col = reevaluateColumn( column );
             if ( col != null ) {
                 put( statisticSchemaMapCopy, column, col );
@@ -285,13 +285,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public void reevaluateTable( Long tableId ) {
-        if ( this.sqlQueryInterface == null ) {
+        if ( sqlQueryInterface == null ) {
             return;
         }
         if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
             deleteTable( Catalog.getInstance().getTable( tableId ).schemaId, tableId );
 
-            List<QueryColumn> res = this.sqlQueryInterface.getAllColumns( tableId );
+            List<QueryColumn> res = sqlQueryInterface.getAllColumns( tableId );
 
             for ( QueryColumn column : res ) {
                 StatisticColumn<T> col = reevaluateColumn( column );
@@ -531,7 +531,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         Collections.singletonList( ImmutableBitSet.of() ),
                         Collections.singletonList( aggregateCall ) );
 
-                return this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                return sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
 
             }
         }
@@ -571,7 +571,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         null,
                         new RexLiteral( valuePair.left, rexBuilder.makeInputRef( tableScan, i ).getType(), valuePair.right ) );
 
-                return this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                return sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
             }
         }
         return null;
@@ -583,7 +583,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         try {
             transaction = sqlQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-            e.printStackTrace();
+            throw new RuntimeException( e );
         }
         return transaction;
     }
@@ -635,7 +635,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         Collections.singletonList( ImmutableBitSet.of() ),
                         Collections.singletonList( aggregateCall ) );
 
-                StatisticQueryColumn res = this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                StatisticQueryColumn res = sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
 
                 if ( res != null && res.getData() != null && res.getData().length != 0 ) {
                     try {
@@ -661,6 +661,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * Configures and registers the statistics InformationPage for the frontend
      */
+    @Override
     public void displayInformation() {
         InformationManager im = InformationManager.getInstance();
 
@@ -928,7 +929,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 tableStatistic.put( tableId, statisticTable );
                 break;
             default:
-                System.out.println( "at the time only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
+                log.error( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
         }
     }
 

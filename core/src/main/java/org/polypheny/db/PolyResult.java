@@ -214,13 +214,12 @@ public class PolyResult {
                 executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
             }
 
-            //only if it is an index
+            // Only if it is an index
             if ( statementEvent != null && isIndex ) {
                 statementEvent.setIndexSize( res.size() );
             }
 
             return res;
-
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {

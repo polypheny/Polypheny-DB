@@ -225,9 +225,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( AlgNode other ) {
         hashBasis.add( "other#" + other.getClass().getSimpleName() );
-
         if ( other instanceof LogicalTableModify ) {
-            //add all columns to availableColumnsWithTable for statistics
+            // Add all columns to availableColumnsWithTable for statistics
             if ( (other.getTable().getTable() instanceof LogicalTable) ) {
                 LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
                 Long tableId = logicalTable.getTableId();

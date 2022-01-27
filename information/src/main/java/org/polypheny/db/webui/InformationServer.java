@@ -52,7 +52,7 @@ public class InformationServer implements InformationObserver {
 
 
     static {
-        // adapter factory, which handles generic Throwables
+        // Adapter factory, which handles generic throwables
         throwableTypeAdapterFactory = new TypeAdapterFactory() {
             @Override
             public <T> TypeAdapter<T> create( Gson gson, TypeToken<T> type ) {
@@ -138,7 +138,7 @@ public class InformationServer implements InformationObserver {
                 }
                 ctx.result( page.asJson() );
             } catch ( Exception e ) {
-                // if input not number or page does not exist
+                // If input not number or page does not exist
                 log.error( "Caught exception!", e );
                 ctx.result( "" );
             }
@@ -157,7 +157,7 @@ public class InformationServer implements InformationObserver {
         } );
 
         http.post( "/refreshPage", ctx -> {
-            //refresh not necessary, since getPage already triggers a refresh
+            // Refresh not necessary, since getPage already triggers a refresh
             try {
                 im.getPage( ctx.body() );
             } catch ( Exception e ) {
@@ -176,7 +176,6 @@ public class InformationServer implements InformationObserver {
         } );
 
         http.get( "/getEnabledPlugins", this::getEnabledPlugins );
-
     }
 
 

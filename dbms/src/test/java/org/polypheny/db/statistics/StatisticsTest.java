@@ -36,6 +36,8 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
+
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class StatisticsTest {
 
@@ -45,7 +47,6 @@ public class StatisticsTest {
     private final static String DROP_TABLES_REGION = "DROP TABLE IF EXISTS region";
     private final static String DROP_TABLES_NATION1 = "DROP TABLE IF EXISTS nationdelete";
     private final static String DROP_SCHEMA = "DROP SCHEMA statisticschema";
-
 
     private final static String SCHEMA = "CREATE SCHEMA statisticschema";
 
@@ -203,12 +204,10 @@ public class StatisticsTest {
                             statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
                             NATION_TEST_DATA
                     );
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM statisticschema.region" ),
                             REGION_TEST_DATA
                     );
-
                     connection.commit();
                 } finally {
                     connection.rollback();
@@ -223,14 +222,11 @@ public class StatisticsTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-
                 try {
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM statisticschema.nation" ),
                             NATION_TEST_DATA
                     );
-
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM statisticschema.region" ),
                             REGION_TEST_DATA
@@ -238,7 +234,6 @@ public class StatisticsTest {
 
                     waiter.await( 20, TimeUnit.SECONDS );
                     try {
-
                         CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nation" );
                         CatalogTable catalogTableRegion = Catalog.getInstance().getTable( "APP", "statisticschema", "region" );
 
@@ -247,14 +242,12 @@ public class StatisticsTest {
 
                         Assert.assertEquals( rowCountNation, Integer.valueOf( 3 ) );
                         Assert.assertEquals( rowCountRegion, Integer.valueOf( 2 ) );
-
-
                     } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-                        e.printStackTrace();
+                        log.error( "Caught exception test", e );
                     }
                     connection.commit();
                 } catch ( InterruptedException e ) {
-                    e.printStackTrace();
+                    log.error( "Caught exception test", e );
                 } finally {
                     connection.rollback();
                 }
@@ -275,19 +268,15 @@ public class StatisticsTest {
                     );
                     waiter.await( 30, TimeUnit.SECONDS );
                     try {
-
                         CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
                         Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-
                         Assert.assertEquals( rowCountNation, Integer.valueOf( 0 ) );
-
-
                     } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
-                        e.printStackTrace();
+                        log.error( "Caught exception test", e );
                     }
                     connection.commit();
                 } catch ( InterruptedException e ) {
-                    e.printStackTrace();
+                    log.error( "Caught exception test", e );
                 } finally {
                     connection.rollback();
                 }

@@ -129,7 +129,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = storeId;
         this.tableId = catalogTable.id;
-
     }
 
 
@@ -242,7 +241,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket(), dataContext );
                 list.add( opUtil.insert( parameterValues ) );
             }
-
         }
 
         if ( logicalCols.size() != 0 ) {
