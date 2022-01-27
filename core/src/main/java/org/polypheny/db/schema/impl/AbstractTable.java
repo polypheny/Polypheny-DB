@@ -94,21 +94,16 @@ public abstract class AbstractTable implements Table, Wrapper {
 
     public Statistic getStatistic() {
 
-        return Statistics.UNKNOWN;
-
-        /*
         if ( tableId == null ) {
             return Statistics.UNKNOWN;
         }
         Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( tableId );
 
         if ( rowCount == null ) {
-            return Statistics.of( null, ImmutableList.of() );
+            return Statistics.UNKNOWN;
         } else {
             return Statistics.of( Double.valueOf( rowCount ), ImmutableList.of() );
         }
-
-         */
 
     }
 
