@@ -28,9 +28,6 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 @Setter
 public class DmlEvent extends StatementEvent {
 
-    private String eventType = "DML EVENT";
-
-
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {
         return Arrays.asList( (Class<T>) DmlDataPoint.class );

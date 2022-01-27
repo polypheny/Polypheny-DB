@@ -100,10 +100,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private String revalId = null;
 
     @Getter
-    private volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
+    private volatile HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
 
     @Getter
-    private final ConcurrentHashMap<Long, StatisticTable<T>> tableStatistic;
+    private final HashMap<Long, StatisticTable<T>> tableStatistic;
 
     //new Additions for additional Information
     private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
@@ -119,8 +119,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     public StatisticsManagerImpl( StatisticQueryProcessor statisticQueryProcessor ) {
         this.setQueryInterface( statisticQueryProcessor );
-        this.statisticSchemaMap = new ConcurrentHashMap<>();
-        this.tableStatistic = new ConcurrentHashMap<>();
+        this.statisticSchemaMap = new HashMap<>();
+        this.tableStatistic = new HashMap<>();
         displayInformation();
         registerTaskTracking();
         registerIsFullTracking();
@@ -142,7 +142,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     // Use cache if possible
     @Override
     public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId ) {
-
         if ( type.equals( "INSERT" ) ) {
             Catalog catalog = Catalog.getInstance();
             CatalogTable catalogTable = catalog.getTable( tableId );
@@ -258,7 +257,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             return;
         }
         log.debug( "Resetting StatisticManager." );
-        ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
+        HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new HashMap<>();
 
         for ( QueryColumn column : sqlQueryInterface.getAllColumns() ) {
             StatisticColumn<T> col = reevaluateColumn( column );
@@ -313,8 +312,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * replace the the tracked statistics with other statistics
      */
-    private synchronized void replaceStatistics( ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map ) {
-        this.statisticSchemaMap = new ConcurrentHashMap<>( map );
+    private synchronized void replaceStatistics( HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map ) {
+        this.statisticSchemaMap = new HashMap<>( map );
     }
 
 
@@ -444,7 +443,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private void put(
-            ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy,
+            HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy,
             QueryColumn queryColumn,
             StatisticColumn<T> statisticColumn ) {
         put( statisticSchemaMapCopy, queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), statisticColumn );
@@ -458,7 +457,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * @param statisticColumn the Column with its statistics
      */
     private void put(
-            ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map,
+            HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map,
             Long schemaId,
             Long tableId,
             Long columnId,
@@ -594,7 +593,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private LogicalTableScan getLogicalTableScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
-
         AlgOptTable relOptTable = reader.getTable( Arrays.asList( schema, table ) );
         return LogicalTableScan.create( cluster, relOptTable );
     }
@@ -604,7 +602,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Gets the amount of entries for a column
      */
     private Integer getCount( QueryColumn queryColumn ) {
-
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();

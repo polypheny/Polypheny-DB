@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 public abstract class StatisticsManager<T extends Comparable<T>> implements PropertyChangeListener {
 
     public static StatisticsManager<?> INSTANCE = null;
@@ -67,7 +68,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void setRevalId( String revalId );
 
-    public abstract ConcurrentHashMap<?, ?> getStatisticSchemaMap();
+    public abstract HashMap<?, ?> getStatisticSchemaMap();
 
     public abstract Object getTableStatistic( Long schemaId, Long tableId );
 

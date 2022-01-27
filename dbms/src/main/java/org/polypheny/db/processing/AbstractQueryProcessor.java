@@ -1399,7 +1399,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      *
      * @param eventData monitoring data to be updated
      */
-    public void finalizeAccessedPartitions( StatementEvent eventData ) {
+    private void finalizeAccessedPartitions( StatementEvent eventData ) {
         Map<Integer, List<Long>> partitionsInQueryInformation = eventData.getLogicalQueryInformation().getAccessedPartitions();
         Map<Long, Set<Long>> tempAccessedPartitions = new HashMap<>();
 

@@ -93,7 +93,7 @@ public class StatisticCrud {
             StatisticTable test = (StatisticTable) statisticsManager.getTableStatistic( schemaId, tableId );
             ctx.json( test );
         } catch ( UnknownTableException | UnknownSchemaException e ) {
-            e.printStackTrace();
+            throw new RuntimeException("Schema: " + request.tableId.split( "\\." )[0] + " or Table: " + request.tableId.split( "\\." )[1] + "is unknown.");
         }
     }
 
