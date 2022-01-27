@@ -23,13 +23,12 @@ import lombok.Setter;
 @Setter
 public class TableCalls {
 
+    private Long tableId;
 
-    public Long tableId;
-
-    public int numberOfSelects;
-    public int numberOfInserts;
-    public int numberOfDeletes;
-    public int numberOfUpdates;
+    private int numberOfSelects;
+    private int numberOfInserts;
+    private int numberOfDeletes;
+    private int numberOfUpdates;
 
 
     public TableCalls( Long tableId, int numberOfSelects, int numberOfInserts, int numberOfDeletes, int numberOfUpdates ) {

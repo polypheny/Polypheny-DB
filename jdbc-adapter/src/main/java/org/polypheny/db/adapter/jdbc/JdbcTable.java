@@ -126,7 +126,6 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
         this.protoRowType = protoRowType;
         this.tableId = tableId;
-
     }
 
 

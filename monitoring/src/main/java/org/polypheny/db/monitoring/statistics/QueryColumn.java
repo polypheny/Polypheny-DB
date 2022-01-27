@@ -70,5 +70,4 @@ class QueryColumn {
         return new QueryColumn( column.schemaId, column.tableId, column.id, column.type );
     }
 
-
 }

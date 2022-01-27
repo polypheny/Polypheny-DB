@@ -59,7 +59,6 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
         for ( T val : values ) {
             insert( val );
         }
-
     }
 
 
@@ -96,7 +95,6 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
             }
             maxCache.add( val );
         }
-
     }
 
 

@@ -2359,7 +2359,7 @@ public class DdlManagerImpl extends DdlManager {
     public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type VIEW
         if ( catalogView.tableType == TableType.VIEW ) {
-            //empty on purpose
+            // Empty on purpose
         } else {
             throw new NotViewException();
         }
@@ -2377,7 +2377,7 @@ public class DdlManagerImpl extends DdlManager {
         // Delete the view
         catalog.deleteTable( catalogView.id );
 
-        //monitor dropTables for statistics
+        // Monitor dropTables for statistics
         prepareMonitoring( statement, Kind.DROP_MATERIALIZED_VIEW, catalogView );
 
         // Reset plan cache implementation cache & routing cache
