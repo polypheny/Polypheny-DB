@@ -81,7 +81,6 @@ public class StatisticCrud {
 
 
     public void getTableStatistics( Context ctx ) {
-
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
         Long tableId;
@@ -93,11 +92,9 @@ public class StatisticCrud {
 
             StatisticTable test = (StatisticTable) statisticsManager.getTableStatistic( schemaId, tableId );
             ctx.json( test );
-
         } catch ( UnknownTableException | UnknownSchemaException e ) {
             e.printStackTrace();
         }
-
     }
 
 
@@ -114,12 +111,9 @@ public class StatisticCrud {
 
 
     public void getMonitoringInformation( final Context ctx ) {
-
         ctx.json( "result" );
         List<QueryDataPoint> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class );
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
-
-
     }
 
 

@@ -615,7 +615,6 @@ public class CottontailTypeUtil {
      *
      * @param node {@link RexNode} to convert
      * @param physicalColumnNames List of physical column names
-     * @param dynamicParamMap
      * @return {@link Expression}
      */
     private static Expression knnCallTargetColumn( RexNode node, List<String> physicalColumnNames, ParameterExpression dynamicParamMap ) {
@@ -635,7 +634,6 @@ public class CottontailTypeUtil {
      * Converts the given {@link RexNode} to an {@link Expression} for the query vector for a distance function invocation.
      *
      * @param node {@link RexNode} to convert
-     * @param dynamicParamMap
      * @param actualType The {@link PolyType} of the array elements. Required for proper conversion!
      * @return {@link Expression}
      */
@@ -657,7 +655,6 @@ public class CottontailTypeUtil {
      * Converts the given {@link RexNode} to an {@link Expression} for the name of the distance function.
      *
      * @param node {@link RexNode} to convert
-     * @param dynamicParamMap
      * @return {@link Expression}
      */
     private static Expression knnCallDistance( RexNode node, ParameterExpression dynamicParamMap ) {

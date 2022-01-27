@@ -66,7 +66,6 @@ public abstract class CsvTable extends AbstractTable {
         this.fields = fields;
         this.csvSource = csvSource;
         this.tableId = tableId;
-
     }
 
 

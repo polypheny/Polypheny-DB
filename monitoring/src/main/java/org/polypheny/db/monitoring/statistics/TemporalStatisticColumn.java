@@ -27,8 +27,8 @@ import org.polypheny.db.config.RuntimeConfig;
 
 
 /**
- * Stores the available statistic data of a specific column
- * Responsible to validate if data should be changed
+ * Stores the available statistic data of a specific column.
+ * Responsible to validate if data should be changed.
  */
 @Slf4j
 public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
@@ -93,7 +93,6 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
             }
             maxCache.add( val );
         }
-
     }
 
 

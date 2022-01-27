@@ -27,7 +27,7 @@ import org.polypheny.db.util.DeadlockException;
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
-    public static final TableIdentifier GLOBAL_LOCK = new TableIdentifier( (long) -1 ); // For locking whole schema
+    public static final TableIdentifier GLOBAL_LOCK = new TableIdentifier( -1L ); // For locking whole schema
 
     private final ConcurrentHashMap<TableIdentifier, Lock> lockTable;
     @Getter

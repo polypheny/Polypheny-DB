@@ -47,7 +47,6 @@ import org.polypheny.db.transaction.TransactionManager;
 @Slf4j
 public class StatisticQueryProcessor {
 
-
     @Getter
     private final TransactionManager transactionManager;
     private final String databaseName;
@@ -119,10 +118,14 @@ public class StatisticQueryProcessor {
      */
     public List<QueryColumn> getAllColumns() {
         Catalog catalog = Catalog.getInstance();
-
-        List<CatalogColumn> catalogColumns = catalog.getColumns( new Pattern( databaseName ), null, null, null );
-
-        return catalogColumns.stream().map( c -> new QueryColumn( c.schemaId, c.tableId, c.id, c.type ) ).collect( Collectors.toList() );
+        List<CatalogColumn> catalogColumns = catalog.getColumns(
+                new Pattern( databaseName ),
+                null,
+                null,
+                null );
+        return catalogColumns.stream()
+                .map( c -> new QueryColumn( c.schemaId, c.tableId, c.id, c.type ) )
+                .collect( Collectors.toList() );
     }
 
 
@@ -133,13 +136,9 @@ public class StatisticQueryProcessor {
      */
     public List<QueryColumn> getAllColumns( Long tableId ) {
         Catalog catalog = Catalog.getInstance();
-
         List<QueryColumn> columns = new ArrayList<>();
-
         catalog.getColumns( tableId ).forEach( c -> columns.add( QueryColumn.fromCatalogColumn( c ) ) );
-
         return columns;
-
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -239,7 +239,7 @@ public class FileAdapterTest {
                 statement.executeUpdate( "CREATE TABLE public.partitioned ( id INTEGER NOT NULL, username VARCHAR(20), pic FILE, PRIMARY KEY(id)) ON STORE \"mm\"" );
                 try {
                     statement.executeUpdate( "ALTER TABLE public.partitioned ADD PLACEMENT (username) ON STORE \"hsqldb\"" );
-                    //statement.executeUpdate( "ALTER TABLE public.partitioned MODIFY PLACEMENT (pic) ON STORE \"mm\"" );
+                    statement.executeUpdate( "ALTER TABLE public.partitioned MODIFY PLACEMENT (pic) ON STORE \"mm\"" );
 
                     PreparedStatement ps = connection.prepareStatement( "INSERT INTO public.partitioned (id, username, pic) VALUES(?,?,?)" );
                     ps.setInt( 1, 1 );

@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.repository;
 
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 
+
 public interface MonitoringRepository {
 
     /**
@@ -26,6 +27,5 @@ public interface MonitoringRepository {
      * @param dataPoint to be processed
      */
     void dataPoint( MonitoringDataPoint dataPoint );
-
 
 }

@@ -841,7 +841,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
         @Override
         public Long getTableId() {
-            throw new RuntimeException( "Method getTableId is not implemented yet." );
+            throw new RuntimeException( "Method getTableId is not implemented." );
         }
 
 

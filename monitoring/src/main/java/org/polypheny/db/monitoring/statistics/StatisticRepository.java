@@ -28,6 +28,7 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
 
+
 @Slf4j
 public class StatisticRepository implements MonitoringRepository {
 
@@ -73,8 +74,6 @@ public class StatisticRepository implements MonitoringRepository {
                     }
                 }
             }
-
-
         } else if ( dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl ) {
             QueryDataPointImpl dqlDataPoint = ((QueryDataPointImpl) dataPoint);
             if ( !dqlDataPoint.getAvailableColumnsWithTable().isEmpty() ) {
@@ -87,7 +86,7 @@ public class StatisticRepository implements MonitoringRepository {
                     if ( catalog.checkIfExistsTable( tableId ) ) {
                         statisticsManager.setTableCalls( tableId, dqlDataPoint.getMonitoringType() );
 
-                        //rowCount from UI is only used if there is no other possibility
+                        // RowCount from UI is only used if there is no other possibility
                         if ( statisticsManager.rowCountPerTable( tableId ) == null || statisticsManager.rowCountPerTable( tableId ) == 0 ) {
                             statisticsManager.updateRowCountPerTable( tableId, dqlDataPoint.getRowCount(), "SOURCE-TABLE-UI" );
                         }
@@ -95,31 +94,25 @@ public class StatisticRepository implements MonitoringRepository {
                         if ( dqlDataPoint.getIndexSize() != null ) {
                             statisticsManager.setIndexSize( tableId, dqlDataPoint.getIndexSize() );
                         }
-
                     }
                 } else {
                     for ( Long id : values ) {
                         if ( catalog.checkIfExistsTable( id ) ) {
                             statisticsManager.setTableCalls( id, dqlDataPoint.getMonitoringType() );
                         }
-
                     }
                 }
             }
         } else if ( dataPoint.getDataPointType() == DataPointType.DDL ) {
-
             DdlDataPoint ddlDataPoint = ((DdlDataPoint) dataPoint);
             if ( ddlDataPoint.getMonitoringType().equals( "TRUNCATE" ) ) {
                 statisticsManager.updateRowCountPerTable( ddlDataPoint.getTableId(), 0, ddlDataPoint.getMonitoringType() );
                 statisticsManager.tablesToUpdate( ddlDataPoint.getTableId(), null, ddlDataPoint.getMonitoringType(), ddlDataPoint.getSchemaId() );
-
             }
             if ( ddlDataPoint.getMonitoringType().equals( "DROP_TABLE" ) || ddlDataPoint.getMonitoringType().equals( "DROP_VIEW" ) || ddlDataPoint.getMonitoringType().equals( "DROP_MATERIALIZED_VIEW" ) ) {
                 statisticsManager.deleteTableToUpdate( ddlDataPoint.getTableId(), ddlDataPoint.getSchemaId() );
-
             }
         }
-
 
     }
 

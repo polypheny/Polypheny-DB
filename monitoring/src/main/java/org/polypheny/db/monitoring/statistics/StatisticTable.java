@@ -22,36 +22,37 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 
+
 /**
- * Stores the available statistic data of a specific table
+ * Stores the available statistic data of a specific table.
  */
 public class StatisticTable<T extends Comparable<T>> {
 
     @Getter
-    public String table;
+    private String table;
 
     @Getter
-    public Long tableId;
-
-    @Getter
-    @Setter
-    public TableCalls calls;
+    private final Long tableId;
 
     @Getter
     @Setter
-    public int numberOfRows;
+    private TableCalls calls;
 
     @Getter
     @Setter
-    public List<AlphabeticStatisticColumn<T>> alphabeticColumn;
+    private int numberOfRows;
 
     @Getter
     @Setter
-    public List<NumericalStatisticColumn<T>> numericalColumn;
+    private List<AlphabeticStatisticColumn<T>> alphabeticColumn;
 
     @Getter
     @Setter
-    public List<TemporalStatisticColumn<T>> temporalColumn;
+    private List<NumericalStatisticColumn<T>> numericalColumn;
+
+    @Getter
+    @Setter
+    private List<TemporalStatisticColumn<T>> temporalColumn;
 
 
     public StatisticTable( Long tableId ) {
@@ -67,6 +68,5 @@ public class StatisticTable<T extends Comparable<T>> {
         numericalColumn = new ArrayList<>();
         temporalColumn = new ArrayList<>();
     }
-
 
 }

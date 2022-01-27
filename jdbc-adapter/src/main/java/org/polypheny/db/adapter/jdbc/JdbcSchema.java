@@ -137,7 +137,10 @@ public class JdbcSchema implements Schema {
     }
 
 
-    public JdbcTable createJdbcTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CatalogPartitionPlacement partitionPlacement ) {
+    public JdbcTable createJdbcTable(
+            CatalogTable catalogTable,
+            List<CatalogColumnPlacement> columnPlacementsOnStore,
+            CatalogPartitionPlacement partitionPlacement ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
         // not a type; before being used, the proto-type will be copied into a real type factory.
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
@@ -169,7 +172,6 @@ public class JdbcSchema implements Schema {
                 partitionPlacement.physicalTableName,
                 physicalColumnNames,
                 catalogTable.id
-
         );
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         physicalToLogicalTableNameMap.put( partitionPlacement.physicalTableName, catalogTable.name );

@@ -40,7 +40,7 @@ public interface MonitoringDataPoint extends Serializable {
         DQL,
         DDL,
         QueryDataPointImpl,
-        QueryPostCostImpl;
+        QueryPostCostImpl
     }
 
 }

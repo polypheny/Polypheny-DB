@@ -37,5 +37,4 @@ public class DdlEvent extends StatementEvent {
         return Arrays.asList( DdlEventAnalyzer.analyze( this ) );
     }
 
-
 }

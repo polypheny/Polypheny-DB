@@ -23,14 +23,12 @@ import lombok.Getter;
 
 
 /**
- * Contains statistics for multiple columns
+ * Contains statistics for multiple columns.
  */
 public class StatisticResult {
 
     @Getter
     private StatisticQueryColumn[] columns;
-    @Getter
-    private String[] columnNames;
 
 
     public StatisticResult() {
@@ -59,7 +57,6 @@ public class StatisticResult {
                 this.columns[i] = new StatisticQueryColumn( queryColumn, rotated[i] );
             }
         }
-
     }
 
 

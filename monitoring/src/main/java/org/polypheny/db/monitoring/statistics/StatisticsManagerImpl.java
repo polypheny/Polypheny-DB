@@ -100,21 +100,21 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private String revalId = null;
 
     @Getter
-    public volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
+    private volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
 
     @Getter
-    public ConcurrentHashMap<Long, StatisticTable<T>> tableStatistic;
+    private final ConcurrentHashMap<Long, StatisticTable<T>> tableStatistic;
 
     //new Additions for additional Information
-    Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
+    private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
 
     @Setter
     @Getter
-    public int numberOfCommits;
+    private int numberOfCommits;
 
     @Setter
     @Getter
-    public int numberOfRollbacks;
+    private int numberOfRollbacks;
 
 
     public StatisticsManagerImpl( StatisticQueryProcessor statisticQueryProcessor ) {
@@ -129,7 +129,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
-    //use relNode to update
+    // Use relNode to update
     @Override
     public void tablesToUpdate( Long tableId ) {
         if ( !tablesToUpdate.contains( tableId ) ) {
@@ -139,7 +139,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
-    //use cache if possible
+    // Use cache if possible
     @Override
     public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId ) {
 
@@ -254,13 +254,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Reset all statistics and reevaluate them
      */
     private void reevaluateAllStatistics() {
-        if ( this.sqlQueryInterface == null ) {
+        if ( sqlQueryInterface == null ) {
             return;
         }
         log.debug( "Resetting StatisticManager." );
         ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
 
-        for ( QueryColumn column : this.sqlQueryInterface.getAllColumns() ) {
+        for ( QueryColumn column : sqlQueryInterface.getAllColumns() ) {
             StatisticColumn<T> col = reevaluateColumn( column );
             if ( col != null ) {
                 put( statisticSchemaMapCopy, column, col );
@@ -285,13 +285,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public void reevaluateTable( Long tableId ) {
-        if ( this.sqlQueryInterface == null ) {
+        if ( sqlQueryInterface == null ) {
             return;
         }
         if ( Catalog.getInstance().checkIfExistsTable( tableId ) ) {
             deleteTable( Catalog.getInstance().getTable( tableId ).schemaId, tableId );
 
-            List<QueryColumn> res = this.sqlQueryInterface.getAllColumns( tableId );
+            List<QueryColumn> res = sqlQueryInterface.getAllColumns( tableId );
 
             for ( QueryColumn column : res ) {
                 StatisticColumn<T> col = reevaluateColumn( column );
@@ -443,7 +443,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
-    private void put( ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy, QueryColumn queryColumn, StatisticColumn<T> statisticColumn ) {
+    private void put(
+            ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy,
+            QueryColumn queryColumn,
+            StatisticColumn<T> statisticColumn ) {
         put( statisticSchemaMapCopy, queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), statisticColumn );
     }
 
@@ -454,7 +457,12 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * @param map which schemaMap should be used
      * @param statisticColumn the Column with its statistics
      */
-    private void put( ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map, Long schemaId, Long tableId, Long columnId, StatisticColumn<T> statisticColumn ) {
+    private void put(
+            ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map,
+            Long schemaId,
+            Long tableId,
+            Long columnId,
+            StatisticColumn<T> statisticColumn ) {
         if ( !map.containsKey( schemaId ) ) {
             map.put( schemaId, new HashMap<>() );
         }
@@ -466,7 +474,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         if ( !tableStatistic.containsKey( tableId ) ) {
             tableStatistic.put( tableId, new StatisticTable( tableId ) );
         }
-
     }
 
 
@@ -476,7 +483,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * @param aggregate the aggregate function to us
      */
     private StatisticQueryColumn getAggregateColumn( QueryColumn queryColumn, String aggregate ) {
-
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
@@ -506,13 +512,12 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 AlgDataType dataType;
                 if ( relDataType.getPolyType() == PolyType.DECIMAL ) {
                     dataType = cluster.getTypeFactory().createTypeWithNullability(
-                            cluster.getTypeFactory().createPolyType(
-                                    relDataType.getPolyType(), relDataType.getPrecision(), relDataType.getScale() ),
+                            cluster.getTypeFactory().createPolyType( relDataType.getPolyType(), relDataType.getPrecision(), relDataType.getScale() ),
                             true );
                 } else {
                     dataType = cluster.getTypeFactory().createTypeWithNullability(
-                            cluster.getTypeFactory().createPolyType(
-                                    relDataType.getPolyType() ), true );
+                            cluster.getTypeFactory().createPolyType( relDataType.getPolyType() ),
+                            true );
                 }
 
                 AggregateCall aggregateCall = AggregateCall.create(
@@ -531,7 +536,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         Collections.singletonList( ImmutableBitSet.of() ),
                         Collections.singletonList( aggregateCall ) );
 
-                return this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                return sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
 
             }
         }
@@ -540,7 +545,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private StatisticQueryColumn getUniqueValues( QueryColumn queryColumn ) {
-
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
@@ -571,7 +575,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         null,
                         new RexLiteral( valuePair.left, rexBuilder.makeInputRef( tableScan, i ).getType(), valuePair.right ) );
 
-                return this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                return sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
             }
         }
         return null;
@@ -583,7 +587,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         try {
             transaction = sqlQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-            e.printStackTrace();
+            throw new RuntimeException( e );
         }
         return transaction;
     }
@@ -635,7 +639,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         Collections.singletonList( ImmutableBitSet.of() ),
                         Collections.singletonList( aggregateCall ) );
 
-                StatisticQueryColumn res = this.sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                StatisticQueryColumn res = sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
 
                 if ( res != null && res.getData() != null && res.getData().length != 0 ) {
                     try {
@@ -661,6 +665,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * Configures and registers the statistics InformationPage for the frontend
      */
+    @Override
     public void displayInformation() {
         InformationManager im = InformationManager.getInstance();
 
@@ -737,11 +742,16 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             rowCountInformation.reset();
             statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                 if ( v instanceof NumericalStatisticColumn ) {
-
                     if ( ((NumericalStatisticColumn<T>) v).getMin() != null && ((NumericalStatisticColumn<T>) v).getMax() != null ) {
-                        numericalInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn<T>) v).getMin().toString(), ((NumericalStatisticColumn<T>) v).getMax().toString() );
+                        numericalInformation.addRow(
+                                v.getQualifiedColumnName(),
+                                ((NumericalStatisticColumn<T>) v).getMin().toString(),
+                                ((NumericalStatisticColumn<T>) v).getMax().toString() );
                         if ( !((NumericalStatisticColumn<T>) v).getMinCache().isEmpty() || !((NumericalStatisticColumn<T>) v).getMaxCache().isEmpty() ) {
-                            cacheInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn<T>) v).getMinCache().toString(), ((NumericalStatisticColumn<T>) v).getMaxCache().toString() );
+                            cacheInformation.addRow(
+                                    v.getQualifiedColumnName(),
+                                    ((NumericalStatisticColumn<T>) v).getMinCache().toString(),
+                                    ((NumericalStatisticColumn<T>) v).getMaxCache().toString() );
                         }
                     } else {
                         numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
@@ -749,9 +759,15 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 }
                 if ( v instanceof TemporalStatisticColumn ) {
                     if ( ((TemporalStatisticColumn<T>) v).getMin() != null && ((TemporalStatisticColumn<T>) v).getMax() != null ) {
-                        temporalInformation.addRow( v.getQualifiedColumnName(), ((TemporalStatisticColumn<T>) v).getMin().toString(), ((TemporalStatisticColumn<T>) v).getMax().toString() );
+                        temporalInformation.addRow(
+                                v.getQualifiedColumnName(),
+                                ((TemporalStatisticColumn<T>) v).getMin().toString(),
+                                ((TemporalStatisticColumn<T>) v).getMax().toString() );
                         if ( !((TemporalStatisticColumn<T>) v).getMinCache().isEmpty() || !((TemporalStatisticColumn<T>) v).getMaxCache().isEmpty() ) {
-                            cacheInformation.addRow( v.getQualifiedColumnName(), ((TemporalStatisticColumn<T>) v).getMinCache().toString(), ((TemporalStatisticColumn<T>) v).getMaxCache().toString() );
+                            cacheInformation.addRow(
+                                    v.getQualifiedColumnName(),
+                                    ((TemporalStatisticColumn<T>) v).getMinCache().toString(),
+                                    ((TemporalStatisticColumn<T>) v).getMaxCache().toString() );
                         }
                     } else {
                         temporalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
@@ -772,11 +788,14 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             } );
 
             tableStatistic.forEach( ( k, v ) -> {
-                tableSelectInformation.addRow( Catalog.getInstance().getTable( k ).name, v.getCalls().getNumberOfSelects(), v.getCalls().getNumberOfInserts(), v.getCalls().getNumberOfDeletes(), v.getCalls().getNumberOfUpdates() );
+                tableSelectInformation.addRow(
+                        Catalog.getInstance().getTable( k ).name,
+                        v.getCalls().getNumberOfSelects(),
+                        v.getCalls().getNumberOfInserts(),
+                        v.getCalls().getNumberOfDeletes(),
+                        v.getCalls().getNumberOfUpdates() );
             } );
-
         } );
-
     }
 
 
@@ -887,7 +906,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     @Override
     public void setTableCalls( Long tableId, String kind ) {
-
         TableCalls calls;
         if ( tableStatistic.containsKey( tableId ) ) {
             if ( tableStatistic.get( tableId ).getCalls() != null ) {
@@ -912,23 +930,43 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
         switch ( kind ) {
             case "SELECT":
-                statisticTable.setCalls( new TableCalls( calls.tableId, calls.numberOfSelects + 1, calls.numberOfInserts, calls.numberOfDeletes, calls.numberOfUpdates ) );
+                statisticTable.setCalls( new TableCalls(
+                        calls.getTableId(),
+                        calls.getNumberOfSelects() + 1,
+                        calls.getNumberOfInserts(),
+                        calls.getNumberOfDeletes(),
+                        calls.getNumberOfUpdates() ) );
                 tableStatistic.put( tableId, statisticTable );
                 break;
             case "INSERT":
-                statisticTable.setCalls( new TableCalls( calls.tableId, calls.numberOfSelects, calls.numberOfInserts + 1, calls.numberOfDeletes, calls.numberOfUpdates ) );
+                statisticTable.setCalls( new TableCalls(
+                        calls.getTableId(),
+                        calls.getNumberOfSelects(),
+                        calls.getNumberOfInserts() + 1,
+                        calls.getNumberOfDeletes(),
+                        calls.getNumberOfUpdates() ) );
                 tableStatistic.put( tableId, statisticTable );
                 break;
             case "DELETE":
-                statisticTable.setCalls( new TableCalls( calls.tableId, calls.numberOfSelects, calls.numberOfInserts, calls.numberOfDeletes + 1, calls.numberOfUpdates ) );
+                statisticTable.setCalls( new TableCalls(
+                        calls.getTableId(),
+                        calls.getNumberOfSelects(),
+                        calls.getNumberOfInserts(),
+                        calls.getNumberOfDeletes() + 1,
+                        calls.getNumberOfUpdates() ) );
                 tableStatistic.put( tableId, statisticTable );
                 break;
             case "UPDATE":
-                statisticTable.setCalls( new TableCalls( calls.tableId, calls.numberOfSelects + 1, calls.numberOfInserts, calls.numberOfDeletes, calls.numberOfUpdates + 1 ) );
+                statisticTable.setCalls( new TableCalls(
+                        calls.getTableId(),
+                        calls.getNumberOfSelects() + 1,
+                        calls.getNumberOfInserts(),
+                        calls.getNumberOfDeletes(),
+                        calls.getNumberOfUpdates() + 1 ) );
                 tableStatistic.put( tableId, statisticTable );
                 break;
             default:
-                System.out.println( "at the time only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
+                log.error( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
         }
     }
 

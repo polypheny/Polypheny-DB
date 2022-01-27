@@ -26,7 +26,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
     public static StatisticsManager<?> INSTANCE = null;
 
 
-    public static StatisticsManager<?> setAndGetInstance( StatisticsManager transaction ) {
+    public static StatisticsManager<?> setAndGetInstance( StatisticsManager<?> transaction ) {
         if ( INSTANCE != null ) {
             throw new RuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
         }
@@ -43,10 +43,10 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
     }
 
 
-    //use relNode to update
+    // Use relNode to update
     public abstract void tablesToUpdate( Long tableId );
 
-    //use cache if possible
+    // Use cache if possible
     public abstract void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId );
 
     protected abstract void reevaluateTable( Long tableId );

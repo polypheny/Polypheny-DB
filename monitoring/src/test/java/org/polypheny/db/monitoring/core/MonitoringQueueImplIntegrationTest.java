@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -32,6 +33,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
+@Slf4j
 class MonitoringQueueImplIntegrationTest {
 
     @Test
@@ -63,7 +65,7 @@ class MonitoringQueueImplIntegrationTest {
         try {
             Thread.sleep( 2000L );
         } catch ( InterruptedException e ) {
-            e.printStackTrace();
+            log.error( "Caught exception test", e );
         }
 
         // -- Assert --

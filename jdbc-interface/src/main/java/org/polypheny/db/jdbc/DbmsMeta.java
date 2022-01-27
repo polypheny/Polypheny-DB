@@ -1264,7 +1264,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 rowsChanged = PolyResult.getRowsChanged( statementHandle.getStatement(), iterator, statementHandle.getStatement().getMonitoringEvent().getMonitoringType() );
             } catch ( Exception e ) {
-                e.printStackTrace();
+                log.error( "Caught exception while retrieving row count", e );
             }
 
             MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, rowsChanged );
