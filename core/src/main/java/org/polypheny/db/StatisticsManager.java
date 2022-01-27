@@ -68,7 +68,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void setRevalId( String revalId );
 
-    public abstract HashMap<?, ?> getStatisticSchemaMap();
+    public abstract ConcurrentHashMap<?, ?> getStatisticSchemaMap();
 
     public abstract Object getTableStatistic( Long schemaId, Long tableId );
 

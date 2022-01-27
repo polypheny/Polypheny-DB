@@ -100,10 +100,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private String revalId = null;
 
     @Getter
-    private volatile HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
+    private volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
 
     @Getter
-    private final HashMap<Long, StatisticTable<T>> tableStatistic;
+    private final ConcurrentHashMap<Long, StatisticTable<T>> tableStatistic;
 
     //new Additions for additional Information
     private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
@@ -119,8 +119,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     public StatisticsManagerImpl( StatisticQueryProcessor statisticQueryProcessor ) {
         this.setQueryInterface( statisticQueryProcessor );
-        this.statisticSchemaMap = new HashMap<>();
-        this.tableStatistic = new HashMap<>();
+        this.statisticSchemaMap = new ConcurrentHashMap<>();
+        this.tableStatistic = new ConcurrentHashMap<>();
         displayInformation();
         registerTaskTracking();
         registerIsFullTracking();
@@ -257,7 +257,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             return;
         }
         log.debug( "Resetting StatisticManager." );
-        HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new HashMap<>();
+        ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
 
         for ( QueryColumn column : sqlQueryInterface.getAllColumns() ) {
             StatisticColumn<T> col = reevaluateColumn( column );
@@ -312,8 +312,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * replace the the tracked statistics with other statistics
      */
-    private synchronized void replaceStatistics( HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map ) {
-        this.statisticSchemaMap = new HashMap<>( map );
+    private synchronized void replaceStatistics( ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map ) {
+        this.statisticSchemaMap = new ConcurrentHashMap<>( map );
     }
 
 
@@ -443,7 +443,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private void put(
-            HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy,
+            ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy,
             QueryColumn queryColumn,
             StatisticColumn<T> statisticColumn ) {
         put( statisticSchemaMapCopy, queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), statisticColumn );
@@ -457,7 +457,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * @param statisticColumn the Column with its statistics
      */
     private void put(
-            HashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map,
+            ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map,
             Long schemaId,
             Long tableId,
             Long columnId,
@@ -847,7 +847,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         switch ( source ) {
             case "INSERT":
                 if ( tableStatistic.containsKey( tableId ) ) {
-                    statisticTable = tableStatistic.remove( tableId );
+                    statisticTable = tableStatistic.get( tableId );
                     int totalRows = statisticTable.getNumberOfRows() + number;
 
                     statisticTable.setNumberOfRows( totalRows );
@@ -858,7 +858,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 break;
             case "DELETE":
                 if ( tableStatistic.containsKey( tableId ) ) {
-                    statisticTable = tableStatistic.remove( tableId );
+                    statisticTable = tableStatistic.get( tableId );
                     int totalRows = statisticTable.getNumberOfRows() - number;
 
                     statisticTable.setNumberOfRows( totalRows );
@@ -869,7 +869,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             case "TRUNCATE":
             case "SOURCE-TABLE-UI":
                 if ( tableStatistic.containsKey( tableId ) ) {
-                    statisticTable = tableStatistic.remove( tableId );
+                    statisticTable = tableStatistic.get( tableId );
                 } else {
                     statisticTable = new StatisticTable( tableId );
                 }
@@ -917,7 +917,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
-    private void updateCalls( Long tableId, String kind, TableCalls calls ) {
+    private synchronized void updateCalls( Long tableId, String kind, TableCalls calls ) {
         StatisticTable statisticTable;
         if ( tableStatistic.containsKey( tableId ) ) {
             statisticTable = tableStatistic.remove( tableId );
@@ -991,8 +991,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     @Override
-    public Integer rowCountPerTable( Long tableId ) {
-        if ( tableStatistic.containsKey( tableId ) ) {
+    public synchronized Integer rowCountPerTable( Long tableId ) {
+        if ( tableId != null && tableStatistic.containsKey( tableId ) ) {
+            log.warn("is there an issue");
             return tableStatistic.get( tableId ).getNumberOfRows();
         } else {
             return null;
