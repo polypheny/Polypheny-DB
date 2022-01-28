@@ -58,7 +58,6 @@ public class CatalogView extends CatalogTable {
             TableType tableType,
             String query,
             Long primaryKey,
-            ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty,
@@ -66,7 +65,7 @@ public class CatalogView extends CatalogTable {
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, placementsByAdapter, dataPlacements, modifiable, partitionProperty, connectedViews );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, dataPlacements, modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
@@ -87,7 +86,6 @@ public class CatalogView extends CatalogTable {
                 tableType,
                 query,
                 primaryKey,
-                placementsByAdapter,
                 dataPlacements,
                 modifiable,
                 partitionProperty,
@@ -111,7 +109,6 @@ public class CatalogView extends CatalogTable {
                 tableType,
                 query,
                 primaryKey,
-                placementsByAdapter,
                 dataPlacements,
                 modifiable,
                 partitionProperty,
@@ -135,7 +132,6 @@ public class CatalogView extends CatalogTable {
                 tableType,
                 query,
                 primaryKey,
-                placementsByAdapter,
                 dataPlacements,
                 modifiable,
                 partitionProperty,

@@ -381,9 +381,10 @@ public class DataMigratorImpl implements DataMigrator {
 
     private List<CatalogColumnPlacement> selectSourcePlacements( CatalogTable table, List<CatalogColumn> columns, int excludingAdapterId ) {
         // Find the adapter with the most column placements
+        Catalog catalog = Catalog.getInstance();
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
+        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -399,10 +400,10 @@ public class DataMigratorImpl implements DataMigrator {
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         for ( long cid : table.columnIds ) {
             if ( columnIds.contains( cid ) ) {
-                if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
-                    placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+                if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
+                    placementList.add( catalog.getColumnPlacement( adapterIdWithMostPlacements, cid ) );
                 } else {
-                    for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacement( cid ) ) {
+                    for ( CatalogColumnPlacement placement : catalog.getColumnPlacement( cid ) ) {
                         if ( placement.adapterId != excludingAdapterId ) {
                             placementList.add( placement );
                             break;

@@ -150,7 +150,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
         StringBuilder builder = new StringBuilder();
-        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogColumn.tableId );
+        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogColumn.tableId );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             builder.append( "ALTER TABLE " )

@@ -1016,7 +1016,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId ) {
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -1168,7 +1168,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
+    protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds ) {
         throw new NotImplementedException();
     }
 

@@ -33,7 +33,7 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
     @Override
     public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
         CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
-        return catalogTable.placementsByAdapter.keySet()
+        return catalogTable.dataPlacements
                 .stream()
                 .map( elem -> AdapterManager.getInstance().getStore( elem ) )
                 .collect( Collectors.toList() );

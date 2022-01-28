@@ -166,7 +166,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     for ( long tableId : tableIds ) {
                         CatalogTable catalogTable = catalog.getTable( tableId );
 
-                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( adapter.getAdapterId(), tableId );
+                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( adapter.getAdapterId(), tableId );
 
                         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
                             Table table = adapter.createTableSchema(

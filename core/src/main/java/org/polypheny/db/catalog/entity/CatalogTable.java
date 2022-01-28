@@ -48,7 +48,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
     public final String ownerName;
     public final TableType tableType;
     public final Long primaryKey;
-    public final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
     public final boolean modifiable;
 
     public final PartitionProperty partitionProperty;
@@ -69,7 +68,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             @NonNull final String ownerName,
             @NonNull final TableType type,
             final Long primaryKey,
-            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty ) {
@@ -82,7 +80,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.ownerName = ownerName;
         this.tableType = type;
         this.primaryKey = primaryKey;
-        this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
 
         this.partitionProperty = partitionProperty;
@@ -106,7 +103,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             @NonNull final String ownerName,
             @NonNull final TableType type,
             final Long primaryKey,
-            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty,
@@ -120,7 +116,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.ownerName = ownerName;
         this.tableType = type;
         this.primaryKey = primaryKey;
-        this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
 
         this.partitionProperty = partitionProperty;
@@ -213,7 +208,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 ownerName,
                 tableType,
                 primaryKey,
-                placementsByAdapter,
                 dataPlacements,
                 modifiable,
                 partitionProperty,
@@ -232,7 +226,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 ownerName,
                 tableType,
                 primaryKey,
-                placementsByAdapter,
                 dataPlacements,
                 modifiable,
                 partitionProperty,
@@ -251,7 +244,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
                 ownerName,
                 tableType,
                 primaryKey,
-                placementsByAdapter,
                 dataPlacements,
                 modifiable,
                 partitionProperty,

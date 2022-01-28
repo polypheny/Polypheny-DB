@@ -122,7 +122,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
         int storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
-        if ( !catalogTable.placementsByAdapter.containsKey( storeId ) ) {
+        if ( !catalogTable.dataPlacements.contains( storeId ) ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );

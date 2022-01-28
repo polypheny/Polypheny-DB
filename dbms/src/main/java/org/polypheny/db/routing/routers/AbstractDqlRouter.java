@@ -161,7 +161,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             } else {
                 // At the moment multiple strategies
-                if ( catalogTable.placementsByAdapter.keySet().size() > 1 ) {
+                if ( catalogTable.dataPlacements.size() > 1 ) {
                     return handleVerticalPartitioningOrReplication( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
                 }
                 return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );

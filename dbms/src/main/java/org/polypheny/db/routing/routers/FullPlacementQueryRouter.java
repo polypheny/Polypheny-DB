@@ -143,7 +143,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         List<Long> usedColumns = queryInformation.getAllColumnsPerTable( catalogTable.id );
 
         // Filter for placements by adapters
-        List<Integer> adapters = catalogTable.placementsByAdapter.entrySet()
+        List<Integer> adapters = catalog.getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
                 .stream()
                 .filter( elem -> elem.getValue().containsAll( usedColumns ) )
                 .map( Entry::getKey )

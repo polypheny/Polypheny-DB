@@ -146,7 +146,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         String tmpColName = columnPlacement.physicalColumnName + "tmp";
         StringBuilder builder;
 
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
 
             // (1) Create a temporary column `alter table tabX add column colXtemp NEW_TYPE;`
             builder = new StringBuilder();

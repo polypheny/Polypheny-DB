@@ -104,7 +104,7 @@ public class SimpleRouter extends AbstractDqlRouter {
         // Find the adapter with the most column placements
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
+        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -114,7 +114,7 @@ public class SimpleRouter extends AbstractDqlRouter {
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         for ( long cid : table.columnIds ) {
-            if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
+            if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
                 placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
             } else {
                 placementList.add( Catalog.getInstance().getColumnPlacement( cid ).get( 0 ) );

@@ -1469,14 +1469,13 @@ public abstract class Catalog {
      *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
-     * @param partitionIds List of partitionIds to add to a specific store for the table
+     * @param partitionGroupIds List of partitionIds to add to a specific store for the table
      */
-    protected abstract void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
+    protected abstract void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds );
 
 
     /**
      * Remove partitions to dataPlacement on a store for a specific table
-     *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
      * @param partitionIds List of partitionIds to remove from a specific store for the table
@@ -1486,7 +1485,6 @@ public abstract class Catalog {
 
     /**
      * Updates and overrides list of associated columnPlacements & partitionPlacements for a given data placement
-     *
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from
      * @param columnIds List of columnIds to be located on a specific store for the table
@@ -1530,6 +1528,7 @@ public abstract class Catalog {
      */
     public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByAdapter( int adapterId );
 
+
     /**
      * Returns a list of all Partition Placements which currently reside on a adapter, for a specific table.
      *
@@ -1537,7 +1536,7 @@ public abstract class Catalog {
      * @param tableId The table for which all partition placements on a adapter should be considered
      * @return A list of all Partition Placements, that are currently located  on that specific store for a individual table
      */
-    public abstract List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId );
+    public abstract List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( int adapterId, long tableId );
 
     /**
      * Returns a list of all Partition Placements which are currently associated with a table.

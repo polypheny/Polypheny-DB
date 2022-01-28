@@ -31,7 +31,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
     @Override
     public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
         CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
-        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.placementsByAdapter.keySet().asList().get( 0 ) ) );
+        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.dataPlacements.get( 0 ) ) );
     }
 
 

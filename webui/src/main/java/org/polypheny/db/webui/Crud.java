@@ -1452,7 +1452,9 @@ public class Crud implements InformationObserver {
     void getExportedColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() ).placementsByAdapter;
+        CatalogTable table = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+
+        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getColumnPlacementsByAdapter( table.id );
         Set<Integer> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
             log.warn( String.format( "The number of DataSources of a Table should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
@@ -2007,7 +2009,7 @@ public class Crud implements InformationObserver {
             }
 
             // Get functional indexes
-            for ( Integer storeId : catalogTable.placementsByAdapter.keySet() ) {
+            for ( Integer storeId : catalogTable.dataPlacements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( storeId );
                 DataStore store;
                 if ( adapter instanceof DataStore ) {

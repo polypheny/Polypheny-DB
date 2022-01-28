@@ -321,7 +321,7 @@ public class CottontailStore extends DataStore {
 
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterPerTable( this.getAdapterId(), catalogTable.id );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
-        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogTable.id );
+        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id );
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
             //Since only one partition is available
@@ -419,7 +419,7 @@ public class CottontailStore extends DataStore {
         placements.removeIf( it -> it.columnId == columnPlacement.columnId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
         final CatalogTable catalogTable = catalog.getTable( placements.get( 0 ).tableId );
-        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogTable.id );
+        final List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogTable.id );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
@@ -571,7 +571,7 @@ public class CottontailStore extends DataStore {
         /* Begin or continue Cottontail DB transaction. */
         final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
 
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), table.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
             /* Prepare TRUNCATE message. */
             final String physicalTableName = partitionPlacement.physicalTableName;
             final TruncateEntityMessage truncate = TruncateEntityMessage.newBuilder()
@@ -591,7 +591,7 @@ public class CottontailStore extends DataStore {
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterSortedByPhysicalPosition( this.getAdapterId(), catalogColumn.tableId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
 
-        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogColumn.tableId );
+        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogColumn.tableId );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 

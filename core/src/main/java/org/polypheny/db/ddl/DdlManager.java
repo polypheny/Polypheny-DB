@@ -231,18 +231,6 @@ public abstract class DdlManager {
 
 
     /**
-     * Adds a new data placements of a table to a specific store
-     *
-     * @param catalogTable the table
-     * @param columnIds the ids of the columns for which to create a new placement
-     * @param partitionGroupIds the ids of the partition groups
-     * @param dataStore the data store on which to create the placement
-     * @param statement the query statement
-     */
-    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
-
-
-    /**
      * Adds a new primary key to a table
      *
      * @param catalogTable the table

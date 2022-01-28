@@ -18,7 +18,6 @@ package org.polypheny.db.webui;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import org.junit.Assert;
@@ -59,7 +58,6 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
                 "hans",
                 TableType.TABLE,
                 23L,
-                ImmutableMap.of(),
                 ImmutableList.of(),
                 true,
                 PartitionProperty.builder().build(),
