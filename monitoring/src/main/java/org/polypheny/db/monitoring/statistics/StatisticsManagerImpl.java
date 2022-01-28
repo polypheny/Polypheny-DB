@@ -265,8 +265,25 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 put( statisticSchemaMapCopy, column, col );
             }
         }
+        reevaluateRowCount();
         replaceStatistics( statisticSchemaMapCopy );
         log.debug( "Finished resetting StatisticManager." );
+    }
+
+
+    private void reevaluateRowCount() {
+        if ( sqlQueryInterface == null ) {
+            return;
+        }
+        log.debug( "Reevaluate Row Count." );
+
+        sqlQueryInterface.getAllTable().forEach( table -> {
+            Integer rowCount =getTableCount(table.getSchemaName(), table.name);
+
+            updateRowCountPerTable( table.id, rowCount, "SET-ROW-COUNT" );
+        } );
+
+
     }
 
 
@@ -343,7 +360,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private StatisticColumn<T> reevaluateNumericalColumn( QueryColumn column ) {
         StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
-        Integer count = this.getCount( column );
+        Integer count = this.getColumnCount( column );
         NumericalStatisticColumn<T> statisticColumn = new NumericalStatisticColumn<>( column );
         if ( min != null ) {
             //noinspection unchecked
@@ -366,7 +383,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private StatisticColumn<T> reevaluateTemporalColumn( QueryColumn column ) {
         StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
-        Integer count = this.getCount( column );
+        Integer count = this.getColumnCount( column );
 
         TemporalStatisticColumn<T> statisticColumn = new TemporalStatisticColumn<>( column );
         if ( min != null ) {
@@ -426,7 +443,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     private StatisticColumn<T> reevaluateAlphabeticalColumn( QueryColumn column ) {
         StatisticQueryColumn unique = this.getUniqueValues( column );
-        Integer count = this.getCount( column );
+        Integer count = this.getColumnCount( column );
 
         AlphabeticStatisticColumn<T> statisticColumn = new AlphabeticStatisticColumn<>( column );
         assignUnique( statisticColumn, unique );
@@ -535,7 +552,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         Collections.singletonList( ImmutableBitSet.of() ),
                         Collections.singletonList( aggregateCall ) );
 
-                return sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                return sqlQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryColumn );
 
             }
         }
@@ -574,7 +591,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         null,
                         new RexLiteral( valuePair.left, rexBuilder.makeInputRef( tableScan, i ).getType(), valuePair.right ) );
 
-                return sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                return sqlQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryColumn );
             }
         }
         return null;
@@ -601,7 +618,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * Gets the amount of entries for a column
      */
-    private Integer getCount( QueryColumn queryColumn ) {
+    private Integer getColumnCount( QueryColumn queryColumn ) {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
@@ -628,7 +645,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         cluster.getTypeFactory().createTypeWithNullability(
                                 cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
                                 false ),
-                        "min-max" );
+                        "rowCount" );
 
                 AlgNode relNode = LogicalAggregate.create(
                         logicalProject,
@@ -636,7 +653,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         Collections.singletonList( ImmutableBitSet.of() ),
                         Collections.singletonList( aggregateCall ) );
 
-                StatisticQueryColumn res = sqlQueryInterface.selectOneStatWithRel( relNode, transaction, statement, queryColumn );
+                StatisticQueryColumn res = sqlQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryColumn );
 
                 if ( res != null && res.getData() != null && res.getData().length != 0 ) {
                     try {
@@ -648,6 +665,41 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             }
         }
         return 0;
+    }
+
+
+    /**
+     * Gets the amount of entries for a column
+     */
+    private Integer getTableCount( String schemaName, String tableName ) {
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+        PolyphenyDbCatalogReader reader = statement.getTransaction().getCatalogReader();
+        AlgBuilder relBuilder = AlgBuilder.create( statement );
+        final RexBuilder rexBuilder = relBuilder.getRexBuilder();
+        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+
+        LogicalTableScan tableScan = getLogicalTableScan( schemaName, tableName, reader, cluster );
+
+        AggregateCall aggregateCall = AggregateCall.create(
+                OperatorRegistry.getAgg( OperatorName.COUNT ),
+                false,
+                false,
+                Collections.singletonList( 0 ),
+                -1,
+                AlgCollations.EMPTY,
+                cluster.getTypeFactory().createTypeWithNullability(
+                        cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
+                        false ),
+                "rowCount" );
+
+        AlgNode relNode = LogicalAggregate.create(
+                tableScan,
+                ImmutableBitSet.of(),
+                Collections.singletonList( ImmutableBitSet.of() ),
+                Collections.singletonList( aggregateCall ) );
+
+        return Integer.valueOf( sqlQueryInterface.selectTableStat(relNode, transaction, statement) );
     }
 
 
@@ -714,12 +766,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         InformationTable tableSelectInformation = new InformationTable( tableSelectGroup, Arrays.asList( "Table Name", "#SELECTS", "#INSERT", "#DELETE", "#UPDATE" ) );
         im.registerInformation( tableSelectInformation );
 
-        InformationGroup cacheGroup = new InformationGroup( page, "Cache Information" );
-        im.addGroup( cacheGroup );
-
-        InformationTable cacheInformation = new InformationTable( cacheGroup, Arrays.asList( "Column Name", "Cache Values Min", "Cache Values Max" ) );
-        im.registerInformation( cacheInformation );
-
         InformationGroup actionGroup = new InformationGroup( page, "Action" );
         im.addGroup( actionGroup );
         Action reevaluateAction = parameters -> {
@@ -730,11 +776,19 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         InformationAction reevaluateAllInfo = new InformationAction( actionGroup, "Recalculate Statistics", reevaluateAction );
         actionGroup.addInformation( reevaluateAllInfo );
         im.registerInformation( reevaluateAllInfo );
+        Action reevaluateRowCount = parameters -> {
+            reevaluateRowCount();
+            page.refresh();
+            return "Reevaluate Row Count";
+        };
+        InformationAction reevaluateRowCountInfo = new InformationAction( actionGroup, "Reevaluate Row Count", reevaluateRowCount );
+        actionGroup.addInformation( reevaluateRowCountInfo );
+        im.registerInformation( reevaluateRowCountInfo );
+
         page.setRefreshFunction( () -> {
             numericalInformation.reset();
             alphabeticalInformation.reset();
             temporalInformation.reset();
-            cacheInformation.reset();
             tableSelectInformation.reset();
             rowCountInformation.reset();
             statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
@@ -744,12 +798,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                                 v.getQualifiedColumnName(),
                                 ((NumericalStatisticColumn<T>) v).getMin().toString(),
                                 ((NumericalStatisticColumn<T>) v).getMax().toString() );
-                        if ( !((NumericalStatisticColumn<T>) v).getMinCache().isEmpty() || !((NumericalStatisticColumn<T>) v).getMaxCache().isEmpty() ) {
-                            cacheInformation.addRow(
-                                    v.getQualifiedColumnName(),
-                                    ((NumericalStatisticColumn<T>) v).getMinCache().toString(),
-                                    ((NumericalStatisticColumn<T>) v).getMaxCache().toString() );
-                        }
                     } else {
                         numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                     }
@@ -760,12 +808,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                                 v.getQualifiedColumnName(),
                                 ((TemporalStatisticColumn<T>) v).getMin().toString(),
                                 ((TemporalStatisticColumn<T>) v).getMax().toString() );
-                        if ( !((TemporalStatisticColumn<T>) v).getMinCache().isEmpty() || !((TemporalStatisticColumn<T>) v).getMaxCache().isEmpty() ) {
-                            cacheInformation.addRow(
-                                    v.getQualifiedColumnName(),
-                                    ((TemporalStatisticColumn<T>) v).getMinCache().toString(),
-                                    ((TemporalStatisticColumn<T>) v).getMaxCache().toString() );
-                        }
                     } else {
                         temporalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
                     }
@@ -866,6 +908,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     statisticTable = new StatisticTable( tableId );
                 }
                 break;
+            case "SET-ROW-COUNT":
             case "TRUNCATE":
             case "SOURCE-TABLE-UI":
                 if ( tableStatistic.containsKey( tableId ) ) {
@@ -993,7 +1036,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Override
     public synchronized Integer rowCountPerTable( Long tableId ) {
         if ( tableId != null && tableStatistic.containsKey( tableId ) ) {
-            log.warn("is there an issue");
             return tableStatistic.get( tableId ).getNumberOfRows();
         } else {
             return null;
