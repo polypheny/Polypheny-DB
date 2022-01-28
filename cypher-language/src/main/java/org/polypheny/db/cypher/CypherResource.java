@@ -16,12 +16,32 @@
 
 package org.polypheny.db.cypher;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherResource extends CypherNode {
 
-    protected CypherResource( ParserPos pos, CypherNode input ) {
+    private final List<String> names;
+    private final ResourceType type;
+
+
+    protected CypherResource( ParserPos pos, ResourceType type ) {
+        this( pos, ImmutableList.of(), type );
+    }
+
+
+    public CypherResource( ParserPos pos, List<String> names, ResourceType type ) {
         super( pos );
+        this.names = names;
+        this.type = type;
+    }
+
+
+    public enum ResourceType {
+        PROPERTIES, LABEL
     }
 
 }

@@ -16,12 +16,24 @@
 
 package org.polypheny.db.cypher;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherDbScope extends CypherNode {
+@Getter
+public class CypherDbScope extends CypherScope {
 
-    protected CypherDbScope( ParserPos pos, CypherNode input ) {
+    private final CypherSimpleEither<String, CypherParameter> name;
+    private final boolean isDefault;
+    private final boolean isHome;
+    private final ScopeType type;
+
+
+    protected CypherDbScope( ParserPos pos, CypherSimpleEither<String, CypherParameter> name, boolean isDefault, boolean isHome, ScopeType type ) {
         super( pos );
+        this.name = name;
+        this.isDefault = isDefault;
+        this.isHome = isHome;
+        this.type = type;
     }
 
 }

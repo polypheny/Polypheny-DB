@@ -16,13 +16,14 @@
 
 package org.polypheny.db.cypher.clause;
 
-import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherUnwind extends CypherClause {
 
-    protected CypherUnwind( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    public CypherUnwind( ParserPos pos, CypherExpression expression, CypherVariable variable ) {
+        super( pos );
     }
 
 }

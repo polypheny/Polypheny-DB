@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherPathLength;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -24,10 +25,29 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherRelPattern extends CypherNode {
 
-    public CypherRelPattern( ParserPos pos, boolean left, boolean right, CypherVariable variable, List<StringPos<ParserPos>> relTypes, CypherPathLength pathLength, CypherExpression properties, CypherExpression predicate, boolean legacyTypeSeparator ) {
+    private final boolean left;
+    private final boolean right;
+    private final CypherVariable variable;
+    private final List<StringPos> relTypes;
+    private final CypherPathLength pathLength;
+    private final CypherExpression properties;
+    private final CypherExpression predicate;
+    private final boolean legacyTypeSeparator;
+
+
+    public CypherRelPattern( ParserPos pos, boolean left, boolean right, CypherVariable variable, List<StringPos> relTypes, CypherPathLength pathLength, CypherExpression properties, CypherExpression predicate, boolean legacyTypeSeparator ) {
         super( pos );
+        this.left = left;
+        this.right = right;
+        this.variable = variable;
+        this.relTypes = relTypes;
+        this.pathLength = pathLength;
+        this.properties = properties;
+        this.predicate = predicate;
+        this.legacyTypeSeparator = legacyTypeSeparator;
     }
 
 }

@@ -16,13 +16,13 @@
 
 package org.polypheny.db.cypher.hint;
 
-import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherScanHint extends CypherHint {
 
-    protected CypherScanHint( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    public CypherScanHint( ParserPos pos, CypherVariable variable, String image ) {
+        super( pos );
     }
 
 }

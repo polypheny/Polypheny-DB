@@ -16,13 +16,21 @@
 
 package org.polypheny.db.cypher.expression;
 
-import org.polypheny.db.cypher.CypherNode;
+import lombok.Getter;
+import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherProperty extends CypherExpression {
 
-    protected CypherProperty( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    private final CypherExpression subject;
+    private final StringPos propKeyName;
+
+
+    public CypherProperty( CypherExpression subject, StringPos propKeyName ) {
+        super( ParserPos.ZERO );
+        this.subject = subject;
+        this.propKeyName = propKeyName;
     }
 
 }

@@ -16,13 +16,17 @@
 
 package org.polypheny.db.cypher.clause;
 
-import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherUseClause extends CypherClause {
 
-    protected CypherUseClause( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    private final CypherExpression expression;
+
+
+    public CypherUseClause( ParserPos pos, CypherExpression expression ) {
+        super( pos );
+        this.expression = expression;
     }
 
 }

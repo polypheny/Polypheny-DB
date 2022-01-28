@@ -17,15 +17,27 @@
 package org.polypheny.db.cypher.query;
 
 import java.util.List;
-import org.polypheny.db.cypher.CypherNode;
+import lombok.Getter;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherPeriodicCommit extends CypherQuery {
 
-    public CypherPeriodicCommit( ParserPos pos, ParserPos pos1, String s, CypherNode input, List<CypherClause> queryBody ) {
-        super( pos, input );
+
+    private final ParserPos commitPos;
+    private final String batchSize;
+    private final CypherClause loadCsv;
+    private final List<CypherClause> queryBody;
+
+
+    public CypherPeriodicCommit( ParserPos pos, ParserPos commitPos, String batchSize, CypherClause loadCsv, List<CypherClause> queryBody ) {
+        super( pos );
+        this.commitPos = commitPos;
+        this.batchSize = batchSize;
+        this.loadCsv = loadCsv;
+        this.queryBody = queryBody;
     }
 
 }

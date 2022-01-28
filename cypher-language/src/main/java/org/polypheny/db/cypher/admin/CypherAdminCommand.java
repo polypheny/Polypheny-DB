@@ -16,13 +16,17 @@
 
 package org.polypheny.db.cypher.admin;
 
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherAdminCommand extends CypherWithGraph {
 
-    protected CypherAdminCommand( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    protected CypherAdminCommand( ParserPos pos ) {
+        super( pos );
+    }
+
+    public enum AccessType {
+        READ_ONLY, READ_WRITE
+
     }
 
 }

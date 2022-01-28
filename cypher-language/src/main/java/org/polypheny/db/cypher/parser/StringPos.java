@@ -20,7 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
-public class StringPos<T> {
+public class StringPos {
 
     private final String image;
     private final ParserPos pos;

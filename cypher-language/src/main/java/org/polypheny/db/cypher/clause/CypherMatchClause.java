@@ -17,15 +17,28 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
-import org.polypheny.db.cypher.CypherNode;
+import lombok.Getter;
 import org.polypheny.db.cypher.hint.CypherHint;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherMatchClause extends CypherClause {
 
-    public CypherMatchClause( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherNode input ) {
-        super( pos, input );
+    private final boolean optional;
+    private final List<CypherPattern> patterns;
+    private final ParserPos pos1;
+    private final List<CypherHint> hints;
+    private final CypherWhere where;
+
+
+    public CypherMatchClause( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where ) {
+        super( pos );
+        this.optional = optional;
+        this.patterns = patterns;
+        this.pos1 = pos1;
+        this.hints = hints;
+        this.where = where;
     }
 
 }

@@ -16,13 +16,20 @@
 
 package org.polypheny.db.cypher.hint;
 
-import org.polypheny.db.cypher.CypherNode;
+import java.util.List;
+import lombok.Getter;
+import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherJoinHint extends CypherHint {
 
-    protected CypherJoinHint( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    private final List<CypherVariable> joinVariables;
+
+
+    public CypherJoinHint( ParserPos pos, List<CypherVariable> joinVariables ) {
+        super( pos );
+        this.joinVariables = joinVariables;
     }
 
 }

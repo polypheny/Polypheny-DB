@@ -16,13 +16,22 @@
 
 package org.polypheny.db.cypher.clause;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherOrderItem extends CypherNode {
 
-    public CypherOrderItem( ParserPos pos, boolean b, CypherNode input ) {
+    private final boolean b;
+    private final CypherExpression expression;
+
+
+    public CypherOrderItem( ParserPos pos, boolean b, CypherExpression expression ) {
         super( pos );
+        this.b = b;
+        this.expression = expression;
     }
 
 }

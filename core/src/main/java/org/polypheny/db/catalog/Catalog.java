@@ -1568,7 +1568,7 @@ public abstract class Catalog {
         @SerializedName("pig")
         PIG( SchemaType.RELATIONAL ),
         @SerializedName("cypher")
-        CYPHER( SchemaType.RELATIONAL );
+        CYPHER( SchemaType.GRAPH );
 
 
         @Getter
@@ -1592,6 +1592,9 @@ public abstract class Catalog {
                     return CQL;
                 case "pig":
                     return PIG;
+                case "opencypher":
+                case "cypher":
+                    return CYPHER;
             }
 
             throw new RuntimeException( "The query language seems not to be supported!" );

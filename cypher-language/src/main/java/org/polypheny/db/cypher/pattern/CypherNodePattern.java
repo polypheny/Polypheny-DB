@@ -17,15 +17,27 @@
 package org.polypheny.db.cypher.pattern;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherNodePattern extends CypherPattern {
 
-    public CypherNodePattern( ParserPos pos, CypherVariable variable, List<StringPos<ParserPos>> labels, CypherExpression properties ) {
+    private final CypherVariable variable;
+    private final List<StringPos> labels;
+    private final CypherExpression properties;
+    private final CypherExpression predicate;
+
+
+    public CypherNodePattern( ParserPos pos, CypherVariable variable, List<StringPos> labels, CypherExpression properties, CypherExpression predicate ) {
         super( pos );
+        this.variable = variable;
+        this.labels = labels;
+        this.properties = properties;
+        this.predicate = predicate;
     }
 
 }

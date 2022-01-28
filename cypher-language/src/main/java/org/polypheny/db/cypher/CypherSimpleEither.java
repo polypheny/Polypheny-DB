@@ -16,13 +16,31 @@
 
 package org.polypheny.db.cypher;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
 // <Map<String, CypherExpression>, CypherParameter>
-public class CypherSimpleEither<T, P extends CypherNode> extends CypherNode {
+@Getter
+public class CypherSimpleEither<T, P> extends CypherNode {
 
-    protected CypherSimpleEither( ParserPos pos, CypherNode input ) {
+    private final T left;
+    private final P right;
+
+
+    protected CypherSimpleEither( ParserPos pos, T left, P right ) {
         super( pos );
+        this.left = left;
+        this.right = right;
+    }
+
+
+    public static <T, P> CypherSimpleEither<T, P> left( T left ) {
+        return new CypherSimpleEither<>( ParserPos.ZERO, left, null );
+    }
+
+
+    public static <T, P> CypherSimpleEither<T, P> right( P param ) {
+        return new CypherSimpleEither<>( ParserPos.ZERO, null, param );
     }
 
 }

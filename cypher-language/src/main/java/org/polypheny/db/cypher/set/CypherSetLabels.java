@@ -17,14 +17,21 @@
 package org.polypheny.db.cypher.set;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
-import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherSetLabels extends CypherSetItem {
 
-    public CypherSetLabels( CypherVariable variable, List<StringPos<ParserPos>> labels ) {
+    private final CypherVariable variable;
+    private final List<StringPos> labels;
 
+
+    public CypherSetLabels( CypherVariable variable, List<StringPos> labels ) {
+
+        this.variable = variable;
+        this.labels = labels;
     }
 
 }

@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.ConstraintType;
 import org.polypheny.db.cypher.ConstraintVersion;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -26,10 +27,33 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherCreateConstraint extends CypherSchemaCommand {
 
-    public CypherCreateConstraint( ParserPos pos, ConstraintType constraintType, boolean replace, boolean ifNotExists, String name, CypherVariable variable, StringPos<ParserPos> parserPosStringPos, List<CypherProperty> properties, CypherSimpleEither options, boolean containsOn, ConstraintVersion constraintVersion ) {
+    private final ConstraintType constraintType;
+    private final boolean replace;
+    private final boolean ifNotExists;
+    private final String name;
+    private final CypherVariable variable;
+    private final StringPos parserPosStringPos;
+    private final List<CypherProperty> properties;
+    private final CypherSimpleEither options;
+    private final boolean containsOn;
+    private final ConstraintVersion constraintVersion;
+
+
+    public CypherCreateConstraint( ParserPos pos, ConstraintType constraintType, boolean replace, boolean ifNotExists, String name, CypherVariable variable, StringPos parserPosStringPos, List<CypherProperty> properties, CypherSimpleEither options, boolean containsOn, ConstraintVersion constraintVersion ) {
         super( pos );
+        this.constraintType = constraintType;
+        this.replace = replace;
+        this.ifNotExists = ifNotExists;
+        this.name = name;
+        this.variable = variable;
+        this.parserPosStringPos = parserPosStringPos;
+        this.properties = properties;
+        this.options = options;
+        this.containsOn = containsOn;
+        this.constraintVersion = constraintVersion;
     }
 
 }

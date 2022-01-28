@@ -17,14 +17,20 @@
 package org.polypheny.db.cypher.remove;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
-import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherRemoveLabels extends CypherRemoveItem {
 
-    public CypherRemoveLabels( CypherVariable pos, List<StringPos<ParserPos>> input ) {
-        super( pos, input );
+    private final CypherVariable variable;
+    private final List<StringPos> labels;
+
+
+    public CypherRemoveLabels( CypherVariable variable, List<StringPos> labels ) {
+        this.variable = variable;
+        this.labels = labels;
     }
 
 }

@@ -18,11 +18,10 @@ package org.polypheny.db.cypher.mapprojection;
 
 import org.polypheny.db.cypher.CypherMapProjectionItem;
 import org.polypheny.db.cypher.parser.StringPos;
-import org.polypheny.db.languages.ParserPos;
 
 public class CypherMPProperty extends CypherMapProjectionItem {
 
-    public CypherMPProperty( StringPos<ParserPos> pos ) {
+    public CypherMPProperty( StringPos pos ) {
         super( pos.getPos() );
     }
 

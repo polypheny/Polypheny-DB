@@ -16,13 +16,20 @@
 
 package org.polypheny.db.cypher.admin;
 
+import lombok.Getter;
+import org.polypheny.db.cypher.ActionType;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherAdminAction extends CypherNode {
 
-    protected CypherAdminAction( ParserPos pos, CypherNode input ) {
-        super( pos );
+    private final ActionType type;
+
+
+    public CypherAdminAction( ActionType type ) {
+        super( ParserPos.ZERO );
+        this.type = type;
     }
 
 }

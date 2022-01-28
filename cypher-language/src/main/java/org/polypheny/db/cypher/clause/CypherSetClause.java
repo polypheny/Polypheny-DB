@@ -23,7 +23,7 @@ import org.polypheny.db.languages.ParserPos;
 public class CypherSetClause extends CypherClause {
 
     public CypherSetClause( ParserPos pos, List<CypherSetItem> input ) {
-        super( pos, input );
+        super( pos );
     }
 
 }

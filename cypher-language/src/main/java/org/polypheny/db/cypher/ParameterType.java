@@ -17,5 +17,5 @@
 package org.polypheny.db.cypher;
 
 public enum ParameterType {
-    ANY
+    STRING, MAP, ANY
 }

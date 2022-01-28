@@ -17,33 +17,55 @@
 package org.polypheny.db.cypher.expression;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherLiteral extends CypherExpression {
 
-    public CypherLiteral( ParserPos pos, Literal literal ) {
+    private final Literal literalType;
+    private List<StringPos> keys;
+    private List<CypherExpression> values;
+    private List<CypherExpression> list;
+    private String image;
+    private boolean negated;
+    private String string;
+
+
+    public CypherLiteral( ParserPos pos, Literal literalType ) {
         super( pos );
+        this.literalType = literalType;
     }
 
 
-    public CypherLiteral( ParserPos pos, Literal literal, List<CypherExpression> list ) {
+    public CypherLiteral( ParserPos pos, Literal literalType, List<CypherExpression> list ) {
         super( pos );
+        this.literalType = literalType;
+        this.list = list;
     }
 
 
-    public CypherLiteral( ParserPos pos, Literal literal, String string ) {
+    public CypherLiteral( ParserPos pos, Literal literalType, String string ) {
         super( pos );
+        this.literalType = literalType;
+        this.string = string;
     }
 
 
-    public CypherLiteral( ParserPos pos, Literal literal, List<StringPos<ParserPos>> keys, List<CypherExpression> values ) {
+    public CypherLiteral( ParserPos pos, Literal literalType, List<StringPos> keys, List<CypherExpression> values ) {
         super( pos );
+        this.literalType = literalType;
+        this.keys = keys;
+        this.values = values;
     }
 
 
-    public CypherLiteral( ParserPos pos, Literal literal, String image, boolean negated ) {
+    public CypherLiteral( ParserPos pos, Literal literalType, String image, boolean negated ) {
         super( pos );
+        this.literalType = literalType;
+        this.image = image;
+        this.negated = negated;
     }
 
 

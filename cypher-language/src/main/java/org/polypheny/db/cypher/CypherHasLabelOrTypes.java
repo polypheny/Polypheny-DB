@@ -17,14 +17,22 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherHasLabelOrTypes extends CypherExpression {
 
-    protected CypherHasLabelOrTypes( CypherExpression subject, List<StringPos<ParserPos>> labels ) {
+    private final CypherExpression subject;
+    private final List<StringPos> labels;
+
+
+    protected CypherHasLabelOrTypes( CypherExpression subject, List<StringPos> labels ) {
         super( ParserPos.ZERO );
+        this.subject = subject;
+        this.labels = labels;
     }
 
 }

@@ -16,12 +16,22 @@
 
 package org.polypheny.db.cypher;
 
+import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherGraphScope extends CypherNode {
+@Getter
+public class CypherGraphScope extends CypherScope {
 
-    protected CypherGraphScope( ParserPos pos, CypherNode input ) {
+
+    private final List<CypherSimpleEither<String, CypherParameter>> names;
+    private final ScopeType scopeType;
+
+
+    public CypherGraphScope( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> names, ScopeType scopeType ) {
         super( pos );
+        this.names = names;
+        this.scopeType = scopeType;
     }
 
 }

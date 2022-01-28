@@ -17,15 +17,34 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.CypherCallResultItem;
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherCall extends CypherClause {
 
-    public CypherCall( ParserPos pos, ParserPos nextPos, ParserPos procedurePos, ParserPos resultPos, List<String> namespace, String name, List<CypherExpression> arguments, boolean yieldAll, List<CypherCallResultItem> items, CypherNode input ) {
+    private final ParserPos nextPos;
+    private final ParserPos procedurePos;
+    private final ParserPos resultPos;
+    private final List<String> namespace;
+    private final String name;
+    private final List<CypherExpression> arguments;
+    private final boolean yieldAll;
+    private final List<CypherCallResultItem> items;
+
+
+    public CypherCall( ParserPos pos, ParserPos nextPos, ParserPos procedurePos, ParserPos resultPos, List<String> namespace, String name, List<CypherExpression> arguments, boolean yieldAll, List<CypherCallResultItem> items, CypherWhere where ) {
         super( pos );
+        this.nextPos = nextPos;
+        this.procedurePos = procedurePos;
+        this.resultPos = resultPos;
+        this.namespace = namespace;
+        this.name = name;
+        this.arguments = arguments;
+        this.yieldAll = yieldAll;
+        this.items = items;
     }
 
 }

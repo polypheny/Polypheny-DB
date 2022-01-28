@@ -16,12 +16,13 @@
 
 package org.polypheny.db.cypher;
 
+import java.util.List;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherPrivilegeQualifier extends CypherNode {
+public class CypherPrivilegeQualifier extends CypherQualifier{
 
-    protected CypherPrivilegeQualifier( ParserPos pos, CypherNode input ) {
-        super( pos );
+    public CypherPrivilegeQualifier( ParserPos pos, List<String> names, QualifierType type ) {
+        super( pos, names, type );
     }
 
 }

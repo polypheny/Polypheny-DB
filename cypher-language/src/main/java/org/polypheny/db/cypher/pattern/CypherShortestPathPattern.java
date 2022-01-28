@@ -16,13 +16,18 @@
 
 package org.polypheny.db.cypher.pattern;
 
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherShortestPathPattern extends CypherPattern {
 
-    public CypherShortestPathPattern( ParserPos pos, CypherNode input, boolean all ) {
-        super( pos, input );
+    private final CypherPattern pathPattern;
+    private final boolean all;
+
+
+    public CypherShortestPathPattern( ParserPos pos, CypherPattern pathPattern, boolean all ) {
+        super( pos );
+        this.pathPattern = pathPattern;
+        this.all = all;
     }
 
 }

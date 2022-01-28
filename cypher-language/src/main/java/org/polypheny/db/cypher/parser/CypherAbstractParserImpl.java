@@ -16,8 +16,12 @@
 
 package org.polypheny.db.cypher.parser;
 
+import java.util.List;
+import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.languages.ParserImpl;
 
-public class CypherAbstractParserImpl implements ParserImpl {
+public abstract class CypherAbstractParserImpl implements ParserImpl {
+
+    public abstract List<CypherStatement> parseExpressionsEof() throws Exception;
 
 }

@@ -22,8 +22,16 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherBinary extends CypherExpression {
 
-    protected CypherBinary( ParserPos pos, OperatorName op, CypherNode left, CypherNode right ) {
-        super( pos, left );
+    private final OperatorName op;
+    private final CypherExpression left;
+    private final CypherExpression right;
+
+
+    protected CypherBinary( ParserPos pos, OperatorName op, CypherExpression left, CypherExpression right ) {
+        super( pos );
+        this.op = op;
+        this.left = left;
+        this.right = right;
     }
 
 }

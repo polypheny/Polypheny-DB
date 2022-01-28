@@ -19,11 +19,10 @@ package org.polypheny.db.cypher.mapprojection;
 import org.polypheny.db.cypher.CypherMapProjectionItem;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.parser.StringPos;
-import org.polypheny.db.languages.ParserPos;
 
 public class CypherMPLiteral extends CypherMapProjectionItem {
 
-    public CypherMPLiteral( StringPos<ParserPos> pos, CypherExpression expression ) {
+    public CypherMPLiteral( StringPos pos, CypherExpression expression ) {
         super( pos, expression );
     }
 

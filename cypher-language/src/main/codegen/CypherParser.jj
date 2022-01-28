@@ -48,26 +48,31 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.google.common.collect.ImmutableList;
+import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.ActionType;
+import org.polypheny.db.cypher.ddl.CypherCreateIndex.IndexType;
+import org.polypheny.db.cypher.ConstraintVersion;
+import org.polypheny.db.cypher.CypherPrivilegeQualifier;
 import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.languages.ParserFactory;
+import org.polypheny.db.cypher.ScopeType;
+import org.polypheny.db.cypher.MergeActionType;
+import org.polypheny.db.cypher.CypherSyntaxException;
 import org.polypheny.db.cypher.CypherResource;
-import org.polypheny.db.cypher.CreateIndexType;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.catalog.Catalog.org.polypheny.db.cypher.ConstraintType;
 import org.polypheny.db.cypher.CypherCallResultItem;
 import org.polypheny.db.cypher.CypherDbScope;
 import org.polypheny.db.cypher.CypherFactory;
-import org.polypheny.db.cypher.CypherGate;
 import org.polypheny.db.cypher.CypherGate.Gate;
 import org.polypheny.db.cypher.CypherGraphScope;
+import org.polypheny.db.cypher.admin.CypherAdminCommand.AccessType;
 import org.polypheny.db.cypher.CypherInTransactionParams;
 import org.polypheny.db.cypher.CypherMapProjectionItem;
 import org.polypheny.db.cypher.CypherParseException;
 import org.polypheny.db.cypher.CypherPathLength;
-import org.polypheny.db.cypher.CypherPrivilegeQualifier;
 import org.polypheny.db.cypher.CypherPrivilegeType;
-import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.cypher.CypherYield;
 import org.polypheny.db.cypher.HintIndexType;
@@ -84,25 +89,15 @@ import org.polypheny.db.cypher.clause.CypherUseClause;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
 import org.polypheny.db.cypher.ddl.CypherSchemaCommand;
 import org.polypheny.db.cypher.clause.CypherReturn;
-import org.polypheny.db.cypher.expression.CypherAllExpression;
 import org.polypheny.db.cypher.CypherParameter;
-import org.polypheny.db.cypher.expression.CypherPatternComprehensionExpression;
 import org.polypheny.db.cypher.expression.CypherProperty;
-import org.polypheny.db.cypher.expression.CypherReduceExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.hint.CypherHint;
-import org.polypheny.db.cypher.hint.CypherJoinHint;
-import org.polypheny.db.cypher.hint.CypherScanHint;
 import org.polypheny.db.cypher.ShowCommandFilterType;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.remove.CypherRemoveItem;
-import org.polypheny.db.cypher.remove.CypherRemoveLabels;
-import org.polypheny.db.cypher.remove.CypherRemoveProperty;
 import org.polypheny.db.cypher.set.CypherSetItem;
-import org.polypheny.db.cypher.set.CypherSetLabels;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.util.AccessType;
-import org.polypheny.db.cypher.clause.CypherReturn;
 import org.polypheny.db.cypher.clause.CypherReturns;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.pattern.CypherNodePattern;
@@ -133,7 +128,7 @@ public class CypherParserImpl extends CypherAbstractParserImpl {
     {
         if ( expected != null && !expected.equals(actual) )
         {
-            throw exceptionFactory.syntaxException( new ParseException(
+            throw new CypherSyntaxException( new ParseException(
                 String.format("Invalid input '%s': expected \"%s\"", t.image, expected ) ), t.beginOffset, t.beginLine, t.beginColumn );
         }
     }
@@ -142,8 +137,12 @@ public class CypherParserImpl extends CypherAbstractParserImpl {
     {
         if ( object != null )
         {
-            throw new SyntaxExpcetion( new ParseException( errorMessage ), token.beginOffset, token.beginLine, token.beginColumn );
+            throw new CypherSyntaxException( new ParseException( errorMessage ), token.beginOffset, token.beginLine, token.beginColumn );
         }
+    }
+
+    public List<CypherStatement> parseExpressionsEof() throws Exception{
+        return Statements();
     }
 }
 
@@ -1350,7 +1349,7 @@ CypherStatement Statement() throws Exception:
 {
     (
         statement=PeriodicCommitQuery()
-        | useClause=UseClause() statement=SingleQueryOrCommandWithUseClause(useClause)
+        | LOOKAHEAD(3) useClause=UseClause() statement=SingleQueryOrCommandWithUseClause(useClause)
         | statement=SingleQueryOrCommand()
     )
     {
@@ -1544,14 +1543,14 @@ CypherReturnClause ReturnBody( Token t ) :
     CypherExpression skip = null;
     CypherExpression limit = null;
     CypherOrderItem o = null;
-    List<CypherReturn> returnItems;
+    CypherReturns returnItems;
 }
 {
     ( LOOKAHEAD( 2 ) <DISTINCT> { distinct = true; } )?
     ( returnItems=ReturnItems() )
     ( orderPos=<ORDER> <BY> o=OrderItem() { order.add( o ); } ( "," o=OrderItem() {order.add( o ); } )* )? ( { skipPosition=token.next; } skip=Skip() )? ( { limitPosition=token.next; } limit=Limit() )?
     {
-        return CypherFactory.createReturn( pos( t ), distinct, returnItems, order, pos( orderPos ), skip, pos( skipPosition ), limit, pos( limitPosition ) );
+        return CypherFactory.createReturn( pos( t ), distinct, returnItems.getReturns(), order, pos( orderPos ), skip, pos( skipPosition ), limit, pos( limitPosition ) );
     }
 }
 
@@ -1581,7 +1580,7 @@ CypherReturns ReturnItems() :
 {
     Token returnItemsPosition;
     CypherReturn x;
-    CypherReturns returnItems = null;
+    List<CypherReturn> returnItems = new ArrayList();
     boolean returnAll = false;
 }
 {
@@ -1692,7 +1691,7 @@ CypherSetItem SetItem() :
     CypherExpression e;
     CypherProperty p;
     CypherVariable v;
-    List<StringPos<ParserPos>> labels;
+    List<StringPos> labels;
 }
 {
     LOOKAHEAD( 2 ) p=PropertyExpression() <EQ> e=Expression() { return CypherFactory.createSetProperty( p, e ); }
@@ -1721,7 +1720,7 @@ CypherRemoveItem RemoveItem() :
     CypherExpression e;
     CypherProperty p;
     CypherVariable v;
-    List<StringPos<ParserPos>> labels;
+    List<StringPos> labels;
 }
 {
     LOOKAHEAD(2) p=PropertyExpression() { return CypherFactory.createRemoveProperty( p ); }
@@ -2076,7 +2075,7 @@ CypherNodePattern NodePattern() :
 {
     Token t;
     CypherVariable v = null;
-    List<StringPos<ParserPos>> labels = new ArrayList();
+    List<StringPos> labels = new ArrayList();
     CypherExpression properties = null;
     CypherExpression predicate = null;
 }
@@ -2092,10 +2091,10 @@ CypherNodePattern NodePattern() :
     }
 }
 
-List<StringPos<ParserPos>> NodeLabels() :
+List<StringPos> NodeLabels() :
 {
     Token label;
-    List<StringPos<ParserPos>> labels = new ArrayList();
+    List<StringPos> labels = new ArrayList();
 }
 {
     ( LOOKAHEAD( 2 ) label=LabelOrRelType() { labels.add( new StringPos( label.image, pos( label ) ) ); } )+
@@ -2106,7 +2105,7 @@ List<StringPos<ParserPos>> NodeLabels() :
 
 CypherExpression HasLabels(CypherExpression subject) :
 {
-    List<StringPos<ParserPos>> labels;
+    List<StringPos> labels;
 }
 {
     labels=NodeLabels()
@@ -2126,10 +2125,10 @@ Token LabelOrRelType() :
     }
 }
 
-List<StringPos<ParserPos>> LabelOrRelTypes() :
+List<StringPos> LabelOrRelTypes() :
 {
-    List<StringPos<ParserPos>> labels = new ArrayList();
-    StringPos<ParserPos> label;
+    List<StringPos> labels = new ArrayList();
+    StringPos label;
 }
 {
     ":" SymbolicNameString() { labels.add( new StringPos( token.image, pos(token) ) ); }
@@ -2160,7 +2159,7 @@ CypherRelPattern RelationshipPattern() :
     boolean left = false;
     boolean right = false;
     CypherVariable v = null;
-    List<StringPos<ParserPos>> relTypes = new ArrayList();
+    List<StringPos> relTypes = new ArrayList();
     boolean legacyTypeSeparator = false;
     CypherPathLength pathLength = null;
     CypherExpression properties = null;
@@ -2168,7 +2167,7 @@ CypherRelPattern RelationshipPattern() :
 }
 {
     ( LeftArrow() { left = true; })? ArrowLine()
-    ( <LBRACKET> ( v=Variable() )?
+    ( <LBRACKET> ( LOOKAHEAD(2) v=Variable() )?
         ( ":" t=SymbolicNameString()
             {
                 relTypes = new ArrayList();
@@ -2313,9 +2312,9 @@ CypherExpression Expression8() :
     e=Expression7() { lhs = e; } (
         LOOKAHEAD( 2 ) t=<EQ>  rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.EQUALS, lhs, rhs)); lhs = rhs; }
         | t=<NEQ> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.NOT_EQUALS, lhs, rhs ) ); lhs = rhs; }
-        | t=<NEQ2> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.NOT_EQUALS2, lhs, rhs ) ); lhs = rhs; }
-        | t=<LE> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.LESS_THAN_EQUAL, lhs, rhs ) ); lhs = rhs; }
-        | t=<GE> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.GREATER_THAN_EQUAL, lhs, rhs ) ); lhs = rhs; }
+        | t=<NEQ2> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.NOT_EQUALS, lhs, rhs ) ); lhs = rhs; }
+        | t=<LE> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.LESS_THAN_OR_EQUAL, lhs, rhs ) ); lhs = rhs; }
+        | t=<GE> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.GREATER_THAN_OR_EQUAL, lhs, rhs ) ); lhs = rhs; }
         | t=<LT> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.LESS_THAN, lhs, rhs ) ); lhs = rhs; }
         | t=<GT> rhs=Expression7() { expressions.add( CypherFactory.createBinary( pos( t ), OperatorName.GREATER_THAN, lhs, rhs ) ); lhs = rhs; }
     )*
@@ -2327,7 +2326,7 @@ CypherExpression Expression8() :
             return expressions.get( 0 );
         }
         else {
-            return CypherFactory.createGate( Gate.AND, expressions, null );
+            return CypherFactory.createGate( Gate.AND, expressions );
         }
     }
 }
@@ -2455,7 +2454,7 @@ CypherExpression PostFix1( CypherExpression subject ) :
 CypherProperty Property( CypherExpression subject ) :
 {
     CypherExpression e;
-    StringPos<ParserPos> propKeyName;
+    StringPos propKeyName;
 }
 {
     <DOT> propKeyName=PropertyKeyName()
@@ -2486,8 +2485,8 @@ CypherExpression Expression1() :
         e=NumberLiteral()
         | e=StringLiteral()
         | e=Parameter( ParameterType.ANY )
-        | t=<TRUE> { e = CypherFactory.newTrueLiteral( pos( t ) ); }
-        | t=<FALSE> { e = CypherFactory.newFalseLiteral( pos( t ) ); }
+        | LOOKAHEAD( 2 ) t=<TRUE> { e = CypherFactory.newTrueLiteral( pos( t ) ); }
+        | LOOKAHEAD( 2 ) t=<FALSE> { e = CypherFactory.newFalseLiteral( pos( t ) ); }
         | LOOKAHEAD( 2 ) t=<NULL> { e = CypherFactory.newNullLiteral( pos( t ) ); }
         | LOOKAHEAD( 3 ) e=CaseExpression()
         | LOOKAHEAD( 3 ) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = CypherFactory.newCountStar( pos( t ) ); }
@@ -2697,7 +2696,7 @@ CypherExpression MapProjection() :
 CypherMapProjectionItem MapProjectionItem() :
 {
     Token t;
-    StringPos<ParserPos> p;
+    StringPos p;
     CypherExpression e;
     CypherVariable v;
 }
@@ -2731,12 +2730,12 @@ CypherExpression Literal() :
         e=NumberLiteral()
         | e=StringLiteral()
         | e=Parameter( ParameterType.ANY )
-        | t=<TRUE> { e = CypherFactory.newTrueLiteral( pos( t ) ); }
-        | t=<FALSE> { e = CypherFactory.newFalseLiteral( pos( t ) ); }
+        | LOOKAHEAD( 2 ) t=<TRUE> { e = CypherFactory.newTrueLiteral( pos( t ) ); }
+        | LOOKAHEAD( 2 ) t=<FALSE> { e = CypherFactory.newFalseLiteral( pos( t ) ); }
         | LOOKAHEAD( 2 ) t=<NULL> { e = CypherFactory.newNullLiteral( pos( t ) ); }
         | e=ListLiteralOfLiterals()
         | e=MapLiteralOfLiterals()
-        | e=FunctionInvocation() // for spatial and temporal constructors
+        | LOOKAHEAD( 2 ) e=FunctionInvocation() // for spatial and temporal constructors
     )
     {
         return e;
@@ -2759,9 +2758,9 @@ CypherExpression ListLiteralOfLiterals() :
 CypherExpression MapLiteralOfLiterals() :
 {
     Token t;
-    StringPos<ParserPos> key;
+    StringPos key;
     CypherExpression value;
-    List<StringPos<ParserPos>> keys = new ArrayList();
+    List<StringPos> keys = new ArrayList();
     List<CypherExpression> values = new ArrayList();
 }
 {
@@ -2827,9 +2826,9 @@ CypherExpression ListLiteral() :
 CypherExpression MapLiteral() :
 {
     Token t;
-    StringPos<ParserPos> key;
+    StringPos key;
     CypherExpression value;
-    List<StringPos<ParserPos>> keys = new ArrayList();
+    List<StringPos> keys = new ArrayList();
     List<CypherExpression> values = new ArrayList();
 }
 {
@@ -2840,14 +2839,14 @@ CypherExpression MapLiteral() :
     }
 }
 
-StringPos<ParserPos> PropertyKeyName() :
+StringPos PropertyKeyName() :
 {
     Token t;
 }
 {
     t=SymbolicNameString()
     {
-        return new StringPos<ParserPos>( t.image,  pos( t ) );
+        return new StringPos( t.image,  pos( t ) );
     }
 }
 
@@ -3614,8 +3613,8 @@ CypherSchemaCommand CreateConstraint( Token start, boolean replace ) throws Exce
                         constraintType = org.polypheny.db.cypher.ConstraintType.UNIQUE ;
                         if ( !isNode )
                         {
-                            throw exceptionFactory.syntaxException(
-                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                            throw new CypherSyntaxException(
+                                new ParseException( CypherSyntaxException.relationshipPatternNotAllowed( constraintType ) ),
                                 errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                         }
                      }
@@ -3626,8 +3625,8 @@ CypherSchemaCommand CreateConstraint( Token start, boolean replace ) throws Exce
                         constraintType = org.polypheny.db.cypher.ConstraintType.NODE_KEY;
                         if ( !isNode )
                         {
-                            throw exceptionFactory.syntaxException(
-                                new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                            throw new CypherSyntaxException(
+                                new ParseException( CypherSyntaxException.relationshipPatternNotAllowed( constraintType ) ),
                                 errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                         }
                     }
@@ -3643,10 +3642,10 @@ CypherSchemaCommand CreateConstraint( Token start, boolean replace ) throws Exce
             )
         )
     )
-    ( <OPTIONS> options=MapOrParameter() )?
+    ( <OPTIONS> optionz=MapOrParameter() )?
     {
         return CypherFactory.createConstraint( pos( start ), constraintType, replace, ifNotExists, name, variable,
-        new StringPos<ParserPos>( label.image, pos( label ) ), properties, optionz, containsOn, constraintVersion );
+        new StringPos( label.image, pos( label ) ), properties, optionz, containsOn, constraintVersion );
     }
 }
 
@@ -3685,8 +3684,8 @@ CypherSchemaCommand DropConstraint( Token start ) throws Exception:
                           constraintType = org.polypheny.db.cypher.ConstraintType.UNIQUE;
                           if ( !isNode )
                           {
-                              throw exceptionFactory.syntaxException(
-                                  new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                              throw new CypherSyntaxException(
+                                  new ParseException( CypherSyntaxException.relationshipPatternNotAllowed( constraintType ) ),
                                   errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                           }
                       }
@@ -3696,8 +3695,8 @@ CypherSchemaCommand DropConstraint( Token start ) throws Exception:
                           constraintType = org.polypheny.db.cypher.ConstraintType.NODE_KEY ;
                           if ( !isNode )
                           {
-                              throw exceptionFactory.syntaxException(
-                                  new ParseException( ASTExceptionFactory.relationshipPattternNotAllowed( constraintType ) ),
+                              throw new CypherSyntaxException(
+                                  new ParseException( CypherSyntaxException.relationshipPatternNotAllowed( constraintType ) ),
                                   errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                           }
                       }
@@ -3707,7 +3706,7 @@ CypherSchemaCommand DropConstraint( Token start ) throws Exception:
               )
         )
         {
-            return CypherFactory.dropConstraint( pos( start ), constraintType, variable, new StringPos<ParserPos>( label.image, pos( label ) ),
+            return CypherFactory.dropConstraint( pos( start ), constraintType, variable, new StringPos( label.image, pos( label ) ),
                 properties );
         }
     |   //DROP CONSTRAINT name IF EXISTS
@@ -3726,15 +3725,15 @@ CypherSchemaCommand CreateIndex( Token start, boolean replace ) throws Exception
 }
 {
     (
-        <BTREE> <INDEX> command=createIndex( start, replace, CreateIndexType.BTREE )
-        | <RANGE> <INDEX> command=createIndex( start, replace, CreateIndexType.RANGE )
+        <BTREE> <INDEX> command=createIndex( start, replace, IndexType.BTREE )
+        | <RANGE> <INDEX> command=createIndex( start, replace, IndexType.RANGE )
         | <FULLTEXT> <INDEX> command=createFulltextIndex( start, replace )
-        | <TEXT> <INDEX> command=createIndex( start, replace, CreateIndexType.TEXT )
-        | <POINT> <INDEX> command=createIndex( start, replace, CreateIndexType.POINT )
+        | <TEXT> <INDEX> command=createIndex( start, replace, IndexType.TEXT )
+        | <POINT> <INDEX> command=createIndex( start, replace, IndexType.POINT )
         | <LOOKUP> <INDEX> command=createLookupIndex( start, replace )
         | <INDEX> (
             LOOKAHEAD(<ON> ":") <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
-            | command=createIndex( start, replace, CreateIndexType.DEFAULT )
+            | command=createIndex( start, replace, IndexType.DEFAULT )
         )
     )
     {
@@ -3745,7 +3744,7 @@ CypherSchemaCommand CreateIndex( Token start, boolean replace ) throws Exception
 CypherSchemaCommand oldCreateIndex(Token start, boolean replace ) throws Exception:
 {
     Token nodeLabel;
-    List<StringPos<ParserPos>> properties;
+    List<StringPos> properties;
 }
 {
     //CREATE INDEX ON :nodeLabel(prop1, prop2)
@@ -3753,13 +3752,13 @@ CypherSchemaCommand oldCreateIndex(Token start, boolean replace ) throws Excepti
     <LPAREN> properties = SymbolicNamePositions() <RPAREN>
     {
         if (replace) {
-            throw exceptionFactory.syntaxException( new ParseException("'REPLACE' is not allowed for this index syntax"), start.beginOffset, start.beginLine, start.beginColumn );
+            throw new CypherSyntaxException( new ParseException("'REPLACE' is not allowed for this index syntax"), start.beginOffset, start.beginLine, start.beginColumn );
         }
         return CypherFactory.createIndexWithOldSyntax( pos(start), new StringPos(nodeLabel.image, pos(nodeLabel) ), properties );
     }
 }
 
-CypherSchemaCommand createIndex( Token start, boolean replace, CreateIndexType indexType ) throws Exception:
+CypherSchemaCommand createIndex( Token start, boolean replace, IndexType indexType ) throws Exception:
 {
     boolean ifNotExists = false;
     boolean isNode = false;
@@ -3801,7 +3800,7 @@ CypherSchemaCommand createFulltextIndex( Token start, boolean replace):
     CypherVariable variable = null;
     CypherVariable propName = null;
     CypherProperty p = null;
-    List<StringPos<ParserPos>> labels = new ArrayList();
+    List<StringPos> labels = new ArrayList();
     List<CypherProperty> properties= new ArrayList();
     CypherSimpleEither optionz = null;
 }
@@ -3838,7 +3837,7 @@ CypherSchemaCommand createLookupIndex( Token start, boolean replace ):
     boolean isNode = false;
     String indexName = null;
     CypherVariable variable = null;
-    StringPos<ParserPos> funcName = null;
+    StringPos funcName = null;
     CypherVariable funcParam = variable;
     CypherSimpleEither optionz = null;
 }
@@ -3858,7 +3857,7 @@ CypherSchemaCommand createLookupIndex( Token start, boolean replace ):
         <LBRACKET> variable=Variable() <RBRACKET>
         ArrowLine() ( RightArrow() )? <LPAREN> <RPAREN> <ON> (LOOKAHEAD(<EACH>) <EACH>)?
     )
-    SymbolicNameString() { funcName = new StringPos<ParserPos>( token.image, pos(token) ); } <LPAREN> funcParam=Variable() <RPAREN>
+    SymbolicNameString() { funcName = new StringPos( token.image, pos(token) ); } <LPAREN> funcParam=Variable() <RPAREN>
     ( <OPTIONS> optionz=MapOrParameter() )?
     {
         return CypherFactory.createLookupIndex( pos(start), replace, ifNotExists, isNode, indexName, variable, funcName, funcParam, optionz );
@@ -3868,7 +3867,7 @@ CypherSchemaCommand createLookupIndex( Token start, boolean replace ):
 CypherSchemaCommand DropIndex( Token start ):
 {
     Token nodeLabel;
-    List<StringPos<ParserPos>> properties;
+    List<StringPos> properties;
     Token name;
     boolean ifExists = false;
 }
@@ -4178,7 +4177,7 @@ CypherExpression SetPassword( Token start, CypherExpression password ) throws Ex
     newPassword=passwordExpression()
     {
         if ( password != null ) {
-            throw exceptionFactory.syntaxException( new ParseException( errorMessage ), start.beginOffset, start.beginLine, start.beginColumn );
+            throw new CypherSyntaxException( new ParseException( errorMessage ), start.beginOffset, start.beginLine, start.beginColumn );
         }
         return newPassword;
     }
@@ -4347,8 +4346,8 @@ CypherWithGraph ShowUserPrivileges( Token start, CypherUseClause useClause ):
     (
         // The lookahead is needed to distinguish 'SHOW USER[S] privilege[, ..] PRIVILEGE[S] ...' and 'SHOW USER[S] PRIVILEGE[S] ...'
         LOOKAHEAD(( <PRIVILEGE> | <PRIVILEGES> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
-        | ( <PRIVILEGE> | <PRIVILEGES> )
-        | (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
+        | LOOKAHEAD(2) ( <PRIVILEGE> | <PRIVILEGES> )
+        | LOOKAHEAD(2) (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
     )
     (
         <AS>
@@ -4616,7 +4615,7 @@ CypherPrivilegeType setPrivilege(Token start):
                 | <DATABASE> <ACCESS> { action = CypherFactory.privilegeAction( ActionType.SET_DATABASE_ACCESS); }
             ) <ON> <DBMS> { privilege = CypherFactory.dbmsPrivilege( pos(start), action, CypherFactory.allQualifier() ); }
         ) | (
-            ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = CypherFactory.graphPrivilege( pos(start), CypherFactory.privilegeAction( ActionType.GRAPH_LABEL_SET ), graphs, resource, List.of( CypherFactory.allLabelsQualifier( pos(start) ) ) ); } )
+            ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = CypherFactory.graphPrivilege( pos(start), CypherFactory.privilegeAction( ActionType.GRAPH_LABEL_SET ), graphs, resource, CypherFactory.allLabelsQualifier( pos(start) ) ); } )
             | ( <PROPERTY> resource=propertyResource() <ON> graphs=graphScopeList() qualifier=graphQualifier() { privilege = CypherFactory.graphPrivilege( pos(start), CypherFactory.privilegeAction( ActionType.GRAPH_PROPERTY_SET ), graphs, resource, qualifier ); } )
         )
     ) { return privilege; }
@@ -4637,7 +4636,7 @@ CypherPrivilegeType removePrivilege(Token start):
                 <PRIVILEGE> { action = CypherFactory.privilegeAction( ActionType.PRIVILEGE_REMOVE ); }
                 | <ROLE> { action = CypherFactory.privilegeAction( ActionType.ROLE_REMOVE ); }
             ) <ON> <DBMS> { privilege = CypherFactory.dbmsPrivilege( pos(start), action, CypherFactory.allQualifier() ); }
-        ) | ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = CypherFactory.graphPrivilege( pos(start), CypherFactory.privilegeAction( ActionType.GRAPH_LABEL_REMOVE ), graphs, resource, List.of( CypherFactory.allLabelsQualifier( pos(start) ) ) ); } )
+        ) | ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = CypherFactory.graphPrivilege( pos(start), CypherFactory.privilegeAction( ActionType.GRAPH_LABEL_REMOVE ), graphs, resource, CypherFactory.allLabelsQualifier( pos(start) ) ); } )
     ) { return privilege; }
 }
 
@@ -4649,7 +4648,7 @@ CypherPrivilegeType writePrivilege(Token start):
 {
     <WRITE> <ON> graphs=graphScopeList()
     {
-        return CypherFactory.graphPrivilege( pos(start), CypherFactory.privilegeAction( ActionType.GRAPH_WRITE ), graphs, null, List.of( CypherFactory.allElementsQualifier( pos(start) ) ) );
+        return CypherFactory.graphPrivilege( pos(start), CypherFactory.privilegeAction( ActionType.GRAPH_WRITE ), graphs, null, CypherFactory.allElementsQualifier( pos(start) ) );
     }
 }
 
@@ -5023,7 +5022,7 @@ List<CypherGraphScope> graphScopeList():
         | start=<HOME> <GRAPH> { type = ScopeType.HOME; }
     )
     {
-        return CypherFactory.graphScopes( pos( start ), names, type );
+        return ImmutableList.of( CypherFactory.graphScopes( pos( start ), names, type ) );
     }
 }
 
@@ -5240,9 +5239,9 @@ Map<String, CypherExpression> Map():
     }
 }
 
-List<StringPos<ParserPos>> SymbolicNamePositions():
+List<StringPos> SymbolicNamePositions():
 {
-    List<StringPos<ParserPos>> names = new ArrayList();
+    List<StringPos> names = new ArrayList();
 }
 {
     SymbolicNameString() { names.add( new StringPos( token.image, pos( token ) ) ); }

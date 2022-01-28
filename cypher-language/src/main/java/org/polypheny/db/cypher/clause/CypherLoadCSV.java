@@ -16,14 +16,26 @@
 
 package org.polypheny.db.cypher.clause;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherLoadCSV extends CypherClause {
+
+    private final boolean headers;
+    private final CypherExpression expression;
+    private final CypherVariable variable;
+    private final String seperator;
+
 
     public CypherLoadCSV( ParserPos pos, boolean headers, CypherExpression expression, CypherVariable variable, String seperator ) {
         super( pos );
+        this.headers = headers;
+        this.expression = expression;
+        this.variable = variable;
+        this.seperator = seperator;
     }
 
 }

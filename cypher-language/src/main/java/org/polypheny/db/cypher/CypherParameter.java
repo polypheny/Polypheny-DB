@@ -16,12 +16,30 @@
 
 package org.polypheny.db.cypher;
 
+import lombok.Getter;
+import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherParameter extends CypherNode {
+@Getter
+public class CypherParameter extends CypherExpression {
 
-    protected CypherParameter( ParserPos pos ) {
+    private CypherVariable variable;
+    private final ParameterType type;
+    private String name;
+
+
+    protected CypherParameter( ParserPos pos, CypherVariable variable, ParameterType type ) {
         super( pos );
+        this.variable = variable;
+        this.type = type;
+    }
+
+    protected CypherParameter( ParserPos pos, String name, ParameterType type ) {
+        super( pos );
+        this.variable = variable;
+        this.name = name;
+        this.type = type;
     }
 
 }

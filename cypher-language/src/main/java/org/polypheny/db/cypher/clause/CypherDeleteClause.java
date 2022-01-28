@@ -17,14 +17,22 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherDeleteClause extends CypherClause {
 
 
-    public CypherDeleteClause( ParserPos pos, boolean detach, List<CypherExpression> list ) {
+    private final boolean detach;
+    private final List<CypherExpression> expressions;
+
+
+    public CypherDeleteClause( ParserPos pos, boolean detach, List<CypherExpression> expressions ) {
         super( pos );
+        this.detach = detach;
+        this.expressions = expressions;
     }
 
 }

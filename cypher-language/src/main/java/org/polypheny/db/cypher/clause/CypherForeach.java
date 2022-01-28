@@ -17,14 +17,24 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherForeach extends CypherClause {
+
+    private final CypherVariable variable;
+    private final CypherExpression expression;
+    private final List<CypherClause> clauses;
+
 
     public CypherForeach( ParserPos pos, CypherVariable variable, CypherExpression expression, List<CypherClause> clauses ) {
         super( pos );
+        this.variable = variable;
+        this.expression = expression;
+        this.clauses = clauses;
     }
 
 }

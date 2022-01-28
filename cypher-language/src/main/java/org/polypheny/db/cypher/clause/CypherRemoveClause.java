@@ -22,8 +22,8 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherRemoveClause extends CypherClause {
 
-    public CypherRemoveClause( ParserPos pos, List<CypherRemoveItem> input ) {
-        super( pos, input );
+    public CypherRemoveClause( ParserPos pos, List<CypherRemoveItem> items ) {
+        super( pos);
     }
 
 }

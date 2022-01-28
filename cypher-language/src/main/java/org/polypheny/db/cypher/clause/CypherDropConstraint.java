@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.ConstraintType;
 import org.polypheny.db.cypher.ddl.CypherSchemaCommand;
 import org.polypheny.db.cypher.expression.CypherProperty;
@@ -24,10 +25,30 @@ import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherDropConstraint extends CypherSchemaCommand {
 
-    public CypherDropConstraint( ParserPos pos, ConstraintType constraintType, CypherVariable variable, StringPos<ParserPos> parserPosStringPos, List<CypherProperty> properties ) {
+    private String name;
+    private boolean ifExists;
+    private ConstraintType constraintType;
+    private CypherVariable variable;
+    private StringPos parserPosStringPos;
+    private List<CypherProperty> properties;
+
+
+    public CypherDropConstraint( ParserPos pos, ConstraintType constraintType, CypherVariable variable, StringPos parserPosStringPos, List<CypherProperty> properties ) {
         super( pos );
+        this.constraintType = constraintType;
+        this.variable = variable;
+        this.parserPosStringPos = parserPosStringPos;
+        this.properties = properties;
+    }
+
+
+    public CypherDropConstraint( ParserPos pos, String name, boolean ifExists ) {
+        super( pos );
+        this.name = name;
+        this.ifExists = ifExists;
     }
 
 }

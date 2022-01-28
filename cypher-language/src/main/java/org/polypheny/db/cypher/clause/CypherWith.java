@@ -16,13 +16,18 @@
 
 package org.polypheny.db.cypher.clause;
 
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherWith extends CypherClause {
 
-    public CypherWith( ParserPos pos, CypherNode input, CypherWhere where ) {
-        super( pos, input );
+    private final CypherReturnClause returnClause;
+    private final CypherWhere where;
+
+
+    public CypherWith( ParserPos pos, CypherReturnClause returnClause, CypherWhere where ) {
+        super( pos );
+        this.returnClause = returnClause;
+        this.where = where;
     }
 
 }

@@ -16,14 +16,21 @@
 
 package org.polypheny.db.cypher.query;
 
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherUnion extends CypherQuery {
 
-    public CypherUnion( ParserPos pos, CypherNode input, CypherQuery rhs, boolean all ) {
-        super( pos, input );
+    private final CypherQuery left;
+    private final CypherQuery right;
+    private final boolean all;
+
+
+    public CypherUnion( ParserPos pos, CypherQuery left, CypherQuery right, boolean all ) {
+        super( pos);
+        this.left = left;
+        this.right = right;
+        this.all = all;
     }
 
 }

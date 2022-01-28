@@ -16,13 +16,20 @@
 
 package org.polypheny.db.cypher.clause;
 
-import org.polypheny.db.cypher.CypherNode;
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherWaitClause extends CypherClause {
 
-    protected CypherWaitClause( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    private final boolean wait;
+    private final long nanos;
+
+
+    public CypherWaitClause( boolean wait, long nanos ) {
+        super( ParserPos.ZERO );
+        this.wait = wait;
+        this.nanos = nanos;
     }
 
 }

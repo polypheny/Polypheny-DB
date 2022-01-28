@@ -22,7 +22,7 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherMapProjectionItem extends CypherNode {
 
-    protected CypherMapProjectionItem( StringPos<ParserPos> pos, CypherExpression expression ) {
+    protected CypherMapProjectionItem( StringPos pos, CypherExpression expression ) {
         super( pos.getPos() );
     }
 

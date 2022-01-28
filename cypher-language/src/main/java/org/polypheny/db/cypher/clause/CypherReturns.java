@@ -17,13 +17,28 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherReturns extends CypherClause {
 
+    private final boolean returnAll;
+    private final List<CypherReturn> returns;
 
-    public CypherReturns( ParserPos pos, boolean returnAll, List<CypherReturn> returnItems ) {
+
+    public CypherReturns( ParserPos pos, boolean returnAll, List<CypherReturn> returns ) {
         super( pos );
+        this.returnAll = returnAll;
+        this.returns = returns;
+    }
+
+    public void add( CypherReturn cReturn ) {
+        this.returns.add( cReturn );
+    }
+
+    public List<CypherReturn> getReturns() {
+        return returns;
     }
 
 }

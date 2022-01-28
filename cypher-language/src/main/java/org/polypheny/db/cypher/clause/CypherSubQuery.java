@@ -16,13 +16,13 @@
 
 package org.polypheny.db.cypher.clause;
 
-import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.CypherInTransactionParams;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherSubQuery extends CypherClause {
 
-    protected CypherSubQuery( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    public CypherSubQuery( ParserPos pos, CypherQuery query, CypherInTransactionParams inTransactionsParams ) {
+        super( pos );
     }
 
 }

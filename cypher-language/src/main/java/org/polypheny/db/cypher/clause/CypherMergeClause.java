@@ -17,14 +17,26 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.ArrayList;
+import lombok.Getter;
 import org.polypheny.db.cypher.MergeActionType;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherMergeClause extends CypherClause {
+
+    private final CypherPattern pattern;
+    private final ArrayList<CypherSetClause> clauses;
+    private final ArrayList<MergeActionType> actionTypes;
+    private final ArrayList<ParserPos> positions;
+
 
     public CypherMergeClause( ParserPos pos, CypherPattern pattern, ArrayList<CypherSetClause> clauses, ArrayList<MergeActionType> actionTypes, ArrayList<ParserPos> positions ) {
         super( pos );
+        this.pattern = pattern;
+        this.clauses = clauses;
+        this.actionTypes = actionTypes;
+        this.positions = positions;
     }
 
 }

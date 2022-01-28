@@ -17,5 +17,5 @@
 package org.polypheny.db.cypher;
 
 public enum ConstraintType {
-    REL_EXISTS, NODE_KEY, NODE_IS_NOT_NULL, REL_IS_NOT_NULL, NODE_EXISTS
+    REL_EXISTS, NODE_KEY, NODE_IS_NOT_NULL, REL_IS_NOT_NULL, UNIQUE, NODE_EXISTS
 }

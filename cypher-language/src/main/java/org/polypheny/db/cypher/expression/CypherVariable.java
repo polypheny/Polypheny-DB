@@ -20,8 +20,8 @@ import org.polypheny.db.languages.ParserPos;
 
 public class CypherVariable extends CypherExpression {
 
-    public CypherVariable( ParserPos pos, String input ) {
-        super( pos, input );
+    public CypherVariable( ParserPos pos, String image ) {
+        super( pos );
     }
 
 }

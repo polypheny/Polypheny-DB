@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.ddl;
 
-public enum CreateIndexType {
-    RANGE, TEXT, POINT, DEFAULT, BTREE
+import org.polypheny.db.cypher.admin.CypherAdminCommand;
+import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.languages.ParserPos;
+
+public class CypherSetOwnPassword extends CypherAdminCommand {
+
+    private final CypherExpression currentPassword;
+    private final CypherExpression newPassword;
+
+
+    public CypherSetOwnPassword( ParserPos pos, CypherExpression currentPassword, CypherExpression newPassword ) {
+        super( pos );
+        this.currentPassword = currentPassword;
+        this.newPassword = newPassword;
+    }
+
 }

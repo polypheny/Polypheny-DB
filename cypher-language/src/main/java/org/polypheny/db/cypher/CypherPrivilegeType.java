@@ -16,12 +16,32 @@
 
 package org.polypheny.db.cypher;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import lombok.Getter;
+import org.polypheny.db.cypher.admin.CypherAdminAction;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherPrivilegeType extends CypherNode {
 
-    protected CypherPrivilegeType( ParserPos pos, CypherNode input ) {
+    private final List<CypherAdminAction> privilegeActions;
+    private final List<? extends CypherScope> graphScopes;
+    private final CypherResource resource;
+    private final List<CypherPrivilegeQualifier> qualifiers;
+
+
+    protected CypherPrivilegeType( ParserPos pos, List<CypherAdminAction> privilegeActions, List<? extends CypherScope> graphScopes, CypherResource resource, List<CypherPrivilegeQualifier> qualifiers ) {
         super( pos );
+        this.privilegeActions = privilegeActions;
+        this.graphScopes = graphScopes;
+        this.resource = resource;
+        this.qualifiers = qualifiers;
+    }
+
+
+    public CypherPrivilegeType( ParserPos pos, CypherAdminAction action, List<CypherPrivilegeQualifier> qualifiers ) {
+        this( pos, ImmutableList.of( action ), null, null, qualifiers );
     }
 
 }

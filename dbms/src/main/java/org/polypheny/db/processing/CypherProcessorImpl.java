@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgRoot;
@@ -33,7 +34,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.SourceStringReader;
 
 @Slf4j
 public class CypherProcessorImpl extends Processor {
@@ -54,14 +54,14 @@ public class CypherProcessorImpl extends Processor {
             log.debug( "Parsing PolyMQL statement ..." );
         }
         stopWatch.start();
-        CypherNode parsed;
+        List<? extends CypherNode> parsed;
         if ( log.isDebugEnabled() ) {
             log.debug( "CYPHER: {}", query );
         }
 
         try {
-            final CypherParser parser = CypherParser.create( new SourceStringReader( query ), parserConfig );
-            parsed = parser.parseStmt();
+            final CypherParser parser = CypherParser.create( query, parserConfig );
+            parsed = parser.parseStmts();
         } catch ( NodeParseException e ) {
             log.error( "Caught exception", e );
             throw new RuntimeException( e );
@@ -73,7 +73,7 @@ public class CypherProcessorImpl extends Processor {
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyCypher statement ... done. [{}]", stopWatch );
         }
-        return parsed;
+        return parsed.get( 0 );
     }
 
 

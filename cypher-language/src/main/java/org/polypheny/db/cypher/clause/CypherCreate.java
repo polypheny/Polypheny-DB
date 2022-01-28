@@ -17,13 +17,19 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherCreate extends CypherClause {
 
-    public CypherCreate( ParserPos pos, List<CypherPattern> input ) {
-        super( pos, input );
+    private final List<CypherPattern> patterns;
+
+
+    public CypherCreate( ParserPos pos, List<CypherPattern> patterns ) {
+        super( pos );
+        this.patterns = patterns;
     }
 
 }

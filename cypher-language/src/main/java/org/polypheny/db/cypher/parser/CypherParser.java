@@ -16,14 +16,14 @@
 
 package org.polypheny.db.cypher.parser;
 
+import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.util.SourceStringReader;
 
 public class CypherParser implements Parser {
 
@@ -35,8 +35,8 @@ public class CypherParser implements Parser {
     }
 
 
-    public static CypherParser create( SourceStringReader reader, CypherParserConfig parserConfig ) {
-        ParserImpl parser = parserConfig.parserFactory().getParser( reader );
+    public static CypherParser create( String query, CypherParserConfig parserConfig ) {
+        ParserImpl parser = parserConfig.parserFactory().getParser( query );
 
         return new CypherParser( (CypherAbstractParserImpl) parser );
     }
@@ -55,8 +55,18 @@ public class CypherParser implements Parser {
 
 
     @Override
-    public CypherNode parseStmt() throws NodeParseException {
+    public Node parseStmt() throws NodeParseException {
         return null;
+    }
+
+
+    @Override
+    public List<CypherStatement> parseStmts() throws NodeParseException {
+        try {
+            return parser.parseExpressionsEof();
+        } catch ( Exception e ) {
+            throw new NodeParseException( e.getMessage(), null, null, null, e );
+        }
     }
 
 

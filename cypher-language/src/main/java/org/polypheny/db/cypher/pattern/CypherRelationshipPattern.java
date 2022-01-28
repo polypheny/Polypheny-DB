@@ -16,13 +16,12 @@
 
 package org.polypheny.db.cypher.pattern;
 
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherRelationshipPattern extends CypherPattern {
 
-    protected CypherRelationshipPattern( ParserPos pos, CypherNode input ) {
-        super( pos, input );
+    protected CypherRelationshipPattern( ParserPos pos ) {
+        super( pos );
     }
 
 }

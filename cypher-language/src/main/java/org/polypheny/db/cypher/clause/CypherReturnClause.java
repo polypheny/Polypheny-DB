@@ -17,14 +17,13 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
 public class CypherReturnClause extends CypherClause {
 
-    public CypherReturnClause( ParserPos pos, boolean distinct, List<CypherReturn> returnItems, List<CypherOrderItem> order, ParserPos pos1, CypherNode skip, ParserPos pos2, CypherExpression limit, ParserPos pos3 ) {
-        super( pos, null );
+    public CypherReturnClause( ParserPos pos, boolean distinct, List<CypherReturn> returnItems, List<CypherOrderItem> order, ParserPos pos1, CypherExpression skip, ParserPos pos2, CypherExpression limit, ParserPos pos3 ) {
+        super( pos );
     }
 
 }
