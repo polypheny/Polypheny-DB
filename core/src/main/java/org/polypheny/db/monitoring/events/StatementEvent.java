@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,11 +52,16 @@ public abstract class StatementEvent extends BaseEvent {
     protected int rowCount;
     protected boolean isAnalyze;
     protected boolean isSubQuery;
+    protected boolean isCommitted;
     protected String durations;
     protected Map<Long, Set<Long>> accessedPartitions;
     protected LogicalQueryInformation logicalQueryInformation;
     protected String algCompareString;
     protected String physicalQueryClass;
+    protected HashMap<Long, List<Object>> changedValues;
+    protected Integer indexSize = null;
+    protected long tableId;
+    protected long schemaId;
 
 
     @Override

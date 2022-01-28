@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
+import org.polypheny.db.PolyResult;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -1259,24 +1260,11 @@ public class DbmsMeta implements ProtobufMeta {
             commit( connection.getHandle() );
         } else if ( statementHandle.getSignature().statementType == StatementType.IS_DML ) {
             Iterator<?> iterator = statementHandle.getSignature().enumerable( statementHandle.getStatement().getDataContext() ).iterator();
-            Object object = null;
             int rowsChanged = -1;
-            while ( iterator.hasNext() ) {
-                object = iterator.next();
-                int num;
-                if ( object == null ) {
-                    throw new NullPointerException();
-                } else if ( object.getClass().isArray() ) {
-                    num = ((Number) ((Object[]) object)[0]).intValue();
-                } else {
-                    num = ((Number) object).intValue();
-                }
-                rowsChanged = num;
-            }
-
-            // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
-            if ( rowsChanged < 0 ) {
-                rowsChanged = 0;
+            try {
+                rowsChanged = PolyResult.getRowsChanged( statementHandle.getStatement(), iterator, statementHandle.getStatement().getMonitoringEvent().getMonitoringType() );
+            } catch ( Exception e ) {
+                log.error( "Caught exception while retrieving row count", e );
             }
 
             MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, rowsChanged );

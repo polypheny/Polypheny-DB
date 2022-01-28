@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.persistence;
+package org.polypheny.db.monitoring.repository;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -26,19 +26,12 @@ import org.polypheny.db.monitoring.events.QueryPostCost;
 /**
  * Interface for writing monitoring jobs to repository.
  */
-public interface MonitoringRepository {
+public interface PersistentMonitoringRepository extends MonitoringRepository {
 
     /**
      * Initialized the repository, might need some configuration beforehand.
      */
     void initialize( boolean resetRepository );
-
-    /**
-     * Persist given monitoring metric.
-     *
-     * @param dataPoint to be persisted in repository backend
-     */
-    void persistDataPoint( MonitoringDataPoint dataPoint );
 
     /**
      * Get all data for given monitoring persistent type.
@@ -95,4 +88,5 @@ public interface MonitoringRepository {
      * Removes all aggregates post costs from cache.
      */
     void resetQueryPostCosts();
+
 }

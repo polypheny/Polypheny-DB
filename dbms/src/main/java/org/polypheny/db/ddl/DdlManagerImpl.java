@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -106,6 +107,8 @@ import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
+import org.polypheny.db.monitoring.events.DdlEvent;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -2389,7 +2392,7 @@ public class DdlManagerImpl extends DdlManager {
     public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type VIEW
         if ( catalogView.tableType == TableType.VIEW ) {
-            //empty on purpose
+            // Empty on purpose
         } else {
             throw new NotViewException();
         }
@@ -2406,6 +2409,9 @@ public class DdlManagerImpl extends DdlManager {
 
         // Delete the view
         catalog.deleteTable( catalogView.id );
+
+        // Monitor dropTables for statistics
+        prepareMonitoring( statement, Kind.DROP_MATERIALIZED_VIEW, catalogView );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -2426,6 +2432,9 @@ public class DdlManagerImpl extends DdlManager {
         catalog.deleteViewDependencies( (CatalogView) materializedView );
 
         dropTable( materializedView, statement );
+
+        // Monitor dropTables for statistics
+        prepareMonitoring( statement, Kind.DROP_VIEW, materializedView );
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -2534,6 +2543,9 @@ public class DdlManagerImpl extends DdlManager {
         // Delete the table
         catalog.deleteTable( catalogTable.id );
 
+        // Monitor dropTables for statistics
+        prepareMonitoring( statement, Kind.DROP_TABLE, catalogTable );
+
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -2546,10 +2558,26 @@ public class DdlManagerImpl extends DdlManager {
             throw new RuntimeException( "Unable to modify a read-only table!" );
         }
 
+        // Monitor truncate for rowCount
+        prepareMonitoring( statement, Kind.TRUNCATE, catalogTable );
+
         //  Execute truncate on all placements
         catalogTable.dataPlacements.forEach( adapterId -> {
             AdapterManager.getInstance().getAdapter( adapterId ).truncate( statement.getPrepareContext(), catalogTable );
         } );
+    }
+
+
+    private void prepareMonitoring( Statement statement, Kind kind, CatalogTable catalogTable ) {
+        // Initialize Monitoring
+        if ( statement.getMonitoringEvent() == null ) {
+            StatementEvent event = new DdlEvent();
+
+            event.setMonitoringType( kind.name() );
+            event.setTableId( catalogTable.id );
+            event.setSchemaId( catalogTable.schemaId );
+            statement.setMonitoringEvent( event );
+        }
     }
 
 

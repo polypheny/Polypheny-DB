@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -48,8 +49,11 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     private String description;
     private long executionTime;
     private boolean isSubQuery;
+    protected boolean isCommitted;
     private int rowCount;
     private List<String> fieldNames;
+    protected Integer indexSize;
+    protected Map<Long, Long> availableColumnsWithTable;
 
 
     @Override
@@ -61,6 +65,12 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     @Override
     public Timestamp timestamp() {
         return this.recordedTimestamp;
+    }
+
+
+    @Override
+    public DataPointType getDataPointType() {
+        return DataPointType.DQL;
     }
 
 }

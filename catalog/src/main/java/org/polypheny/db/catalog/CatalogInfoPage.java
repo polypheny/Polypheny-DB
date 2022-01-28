@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.partitionInformation = addCatalogInformationTable( page, "Partitions", 8, Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ) );
 
         this.debugInformation = addCatalogInformationTable( page, "Debug", 10, Arrays.asList( "Time", "Message" ) );
+        this.debugInformation.setLimit( 100 );
 
         addPersistentInfo( page );
 

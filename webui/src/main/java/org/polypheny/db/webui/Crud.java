@@ -61,7 +61,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -69,7 +68,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -142,8 +140,6 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.config.Config;
-import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -154,7 +150,6 @@ import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
-import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -162,13 +157,13 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -185,6 +180,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
@@ -237,9 +233,9 @@ public class Crud implements InformationObserver {
     private final String databaseName;
     @Getter
     private final String userName;
-    private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
+
     public final LanguageCrud languageCrud;
-    private boolean isActiveTracking = false;
+    public final StatisticCrud statisticCrud;
     private final Catalog catalog = Catalog.getInstance();
 
 
@@ -253,34 +249,7 @@ public class Crud implements InformationObserver {
         this.databaseName = databaseName;
         this.userName = userName;
         this.languageCrud = new LanguageCrud( this );
-        registerStatisticObserver();
-    }
-
-
-    /**
-     * Ensures that changes in the ConfigManger toggle the statistics correctly
-     */
-    private void registerStatisticObserver() {
-        this.isActiveTracking = RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
-        ConfigListener observer = new ConfigListener() {
-            @Override
-            public void onConfigChange( Config c ) {
-                setConfig( c );
-            }
-
-
-            @Override
-            public void restart( Config c ) {
-                setConfig( c );
-            }
-
-
-            private void setConfig( Config c ) {
-                isActiveTracking = c.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
-            }
-        };
-        RuntimeConfig.ACTIVE_TRACKING.addObserver( observer );
-        RuntimeConfig.DYNAMIC_QUERYING.addObserver( observer );
+        this.statisticCrud = new StatisticCrud( this );
     }
 
 
@@ -925,18 +894,6 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Return all available statistics to the client
-     */
-    void getStatistics( final Context ctx, Gson gsonExpose ) {
-        if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-            ctx.result( gsonExpose.toJson( statisticsManager.getStatisticSchemaMap() ) );
-        } else {
-            ctx.json( new ConcurrentHashMap<>() );
-        }
-    }
-
-
-    /**
      * Gets the classified Data from User
      * return possibly interesting Data to User
      */
@@ -1210,7 +1167,7 @@ public class Crud implements InformationObserver {
         builder.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( t[0], t[1], request.data ) );
         try {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
-            if ( isActiveTracking ) {
+            if ( statisticCrud.isActiveTracking ) {
                 transaction.addChangedTable( tableId );
             }
 
@@ -1283,7 +1240,7 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( statement, transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
-                if ( isActiveTracking ) {
+                if ( statisticCrud.isActiveTracking ) {
                     transaction.addChangedTable( tableId );
                 }
                 transaction.commit();
@@ -3109,8 +3066,8 @@ public class Crud implements InformationObserver {
      * Send updates to the UI if Information objects in the query analyzer change.
      */
     @Override
-    public void observeInfos( final Information info, final String analyzerId, final Session session ) {
-        WebSocket.sendMessage( session, info.asJson() );
+    public void observeInfos( final String infoAsJson, final String analyzerId, final Session session ) {
+        WebSocket.sendMessage( session, infoAsJson );
     }
 
 
@@ -3473,7 +3430,7 @@ public class Crud implements InformationObserver {
 
 
     void getFile( final Context ctx ) {
-        String fileName = ctx.req.getParameter( "file" );
+        String fileName = ctx.pathParam( "file" );
         File f = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + fileName );
         if ( !f.exists() ) {
             ctx.status( 404 );
@@ -3903,42 +3860,10 @@ public class Crud implements InformationObserver {
             }
 
         }
-
-        if ( Kind.DDL.contains( result.getKind() ) ) {
-            return 1;
-        } else if ( Kind.DML.contains( result.getKind() ) ) {
-            int rowsChanged = -1;
-            try {
-                Iterator<?> iterator = result.enumerable( statement.getDataContext() ).iterator();
-                Object object;
-                while ( iterator.hasNext() ) {
-                    object = iterator.next();
-                    int num;
-                    if ( object != null && object.getClass().isArray() ) {
-                        Object[] o = (Object[]) object;
-                        num = ((Number) o[0]).intValue();
-                    } else if ( object != null ) {
-                        num = ((Number) object).intValue();
-                    } else {
-                        throw new QueryExecutionException( "Result is null" );
-                    }
-                    // Check if num is equal for all adapters
-                    if ( rowsChanged != -1 && rowsChanged != num ) {
-                        //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
-                    }
-                    rowsChanged = num;
-                }
-            } catch ( RuntimeException e ) {
-                if ( e.getCause() != null ) {
-                    throw new QueryExecutionException( e.getCause().getMessage(), e );
-                } else {
-                    throw new QueryExecutionException( e.getMessage(), e );
-                }
-            }
-
-            return rowsChanged;
-        } else {
-            throw new QueryExecutionException( "Unknown result type: " + result.getKind() );
+        try {
+            return result.getRowsChanged( statement );
+        } catch ( Exception e ) {
+            throw new QueryExecutionException( e );
         }
     }
 
@@ -3953,11 +3878,16 @@ public class Crud implements InformationObserver {
         if ( request.filter != null ) {
             query += " " + filterTable( request.filter );
         }
-        Result result = executeSqlSelect( transaction.createStatement(), request, query );
+        Statement statement = transaction.createStatement();
+        Result result = executeSqlSelect( statement, request, query );
         // We expect the result to be in the first column of the first row
         if ( result.getData().length == 0 ) {
             return 0;
         } else {
+            if ( statement.getMonitoringEvent() != null ) {
+                StatementEvent eventData = statement.getMonitoringEvent();
+                eventData.setRowCount( Integer.parseInt( result.getData()[0][0] ) );
+            }
             return Integer.parseInt( result.getData()[0][0] );
         }
     }
@@ -4090,7 +4020,7 @@ public class Crud implements InformationObserver {
      * it is running correctly when using the provided settings
      */
     public void testDockerInstance( final Context ctx ) {
-        String dockerId = ctx.req.getParameter( "dockerId" );
+        String dockerId = ctx.pathParam( "dockerId" );
         ctx.result( String.valueOf( DockerManager.getInstance().testDockerRunning( Integer.parseInt( dockerId ) ) ) );
     }
 

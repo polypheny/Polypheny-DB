@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ public class CottontailFilterRule extends CottontailConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        Filter filter = (Filter) alg;
-        final AlgTraitSet traitSet = filter.getTraitSet().replace( out );
+        final Filter filter = (Filter) alg;
+        final AlgTraitSet traitSet = ((Filter) alg).getTraitSet().replace( out );
 
         return new CottontailFilter(
                 filter.getCluster(),

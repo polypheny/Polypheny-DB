@@ -38,11 +38,11 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
-
 @Slf4j
-public class MapDbRepository implements MonitoringRepository {
+public class MapDbRepository implements PersistentMonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
@@ -58,7 +58,7 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public void persistDataPoint( @NonNull MonitoringDataPoint dataPoint ) {
+    public void dataPoint( @NonNull MonitoringDataPoint dataPoint ) {
         BTreeMap table = this.data.get( dataPoint.getClass() );
         if ( table == null ) {
             this.createPersistentTable( dataPoint.getClass() );
