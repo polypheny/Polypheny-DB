@@ -19,14 +19,22 @@ package org.polypheny.db.processing;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.ExplainFormat;
+import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.cypher.CypherStatement;
+import org.polypheny.db.cypher.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
@@ -85,17 +93,18 @@ public class CypherProcessorImpl extends Processor {
 
     @Override
     public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
-        /*
+
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
         }
         stopWatch.start();
 
+        final AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
         final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
-        final CypherToAlgConverter cypherToAlgConverter = new CypherToAlgConverter( this, statement.getTransaction().getCatalogReader(), cluster );
+        final CypherToAlgConverter cypherToAlgConverter = new CypherToAlgConverter( statement, builder, cluster );
         AlgRoot logicalRoot = cypherToAlgConverter.convert( query, parameters );
 
         // Decorrelate
@@ -111,8 +120,6 @@ public class CypherProcessorImpl extends Processor {
         }
 
         return logicalRoot;
-         */
-        return null;
     }
 
 

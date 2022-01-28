@@ -47,6 +47,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.cql.Cql2RelConverter;
 import org.polypheny.db.cql.CqlQuery;
 import org.polypheny.db.cql.parser.CqlParser;
+import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.QueryParameters;
@@ -431,10 +432,40 @@ public class LanguageCrud {
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
-        List<? extends Node> parsed = cypherProcessor.parse( query );
+        List<? extends Node> statements = cypherProcessor.parse( query );
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().stop( "Parsing" );
         }
+
+        for ( Node node : statements ) {
+            CypherStatement stmt = (CypherStatement) node;
+            if ( stmt.isDDL() ) {
+                cypherProcessor.prepareDdl( statement, node, parameters );
+                Result result = new Result( 1 ).setGeneratedQuery( query ).setXid( transaction.getXid().toString() );
+                results.add( result );
+            } else {
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().start( "Translation" );
+                }
+                AlgRoot logicalRoot = cypherProcessor.translate( statement, stmt, parameters );
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().stop( "Translation" );
+                }
+
+                // Prepare
+                PolyResult polyResult = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().start( "Execution" );
+                }
+                results.add( getResult( QueryLanguage.CYPHER, statement, request, query, polyResult, noLimit ) );
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().stop( "Execution" );
+                }
+                //}
+            }
+        }
+
 
             /*
             if ( parsed instanceof MqlUseDatabase ) {

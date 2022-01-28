@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cypher;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
@@ -29,6 +31,8 @@ public abstract class CypherNode implements Node {
 
     @Getter
     public final ParserPos pos;
+
+    public static final List<CypherKind> DDL = ImmutableList.of( CypherKind.CREATE, CypherKind.DROP );
 
 
     protected CypherNode( ParserPos pos ) {
@@ -72,6 +76,11 @@ public abstract class CypherNode implements Node {
     @Override
     public <R> R accept( NodeVisitor<R> visitor ) {
         return null;
+    }
+
+
+    public boolean isDDL() {
+        return DDL.contains( getCypherKind() );
     }
 
 
