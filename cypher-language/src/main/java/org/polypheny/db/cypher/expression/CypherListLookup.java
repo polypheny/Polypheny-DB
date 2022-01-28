@@ -16,13 +16,21 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherListLookup extends CypherExpression {
+
+
+    private final CypherExpression subject;
+    private final CypherExpression list;
 
 
     public CypherListLookup( CypherExpression subject, CypherExpression list ) {
         super( ParserPos.ZERO );
+        this.subject = subject;
+        this.list = list;
     }
 
 }

@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.google.common.collect.ImmutableList;
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.ActionType;
 import org.polypheny.db.cypher.ddl.CypherCreateIndex.IndexType;
 import org.polypheny.db.cypher.ConstraintVersion;
@@ -62,14 +61,14 @@ import org.polypheny.db.cypher.CypherSyntaxException;
 import org.polypheny.db.cypher.CypherResource;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.cypher.mapprojection.CypherMPItem;
 import org.polypheny.db.cypher.CypherCallResultItem;
-import org.polypheny.db.cypher.CypherDbScope;
+import org.polypheny.db.cypher.scope.CypherDbScope;
 import org.polypheny.db.cypher.CypherFactory;
-import org.polypheny.db.cypher.CypherGate.Gate;
-import org.polypheny.db.cypher.CypherGraphScope;
+import org.polypheny.db.cypher.expression.CypherGate.Gate;
+import org.polypheny.db.cypher.scope.CypherGraphScope;
 import org.polypheny.db.cypher.admin.CypherAdminCommand.AccessType;
-import org.polypheny.db.cypher.CypherInTransactionParams;
-import org.polypheny.db.cypher.CypherMapProjectionItem;
+import org.polypheny.db.cypher.query.CypherInTransactionParams;
 import org.polypheny.db.cypher.CypherParseException;
 import org.polypheny.db.cypher.CypherPathLength;
 import org.polypheny.db.cypher.CypherPrivilegeType;
@@ -82,7 +81,7 @@ import org.polypheny.db.cypher.admin.CypherWithGraph;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.clause.CypherQuery;
-import org.polypheny.db.cypher.clause.CypherRelPattern;
+import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
 import org.polypheny.db.cypher.clause.CypherSetClause;
 import org.polypheny.db.cypher.clause.CypherUseClause;
@@ -2683,8 +2682,8 @@ CypherExpression MapProjection() :
 {
     Token t;
     CypherVariable v;
-    CypherMapProjectionItem x;
-    List<CypherMapProjectionItem> items = new ArrayList();
+    CypherMPItem x;
+    List<CypherMPItem> items = new ArrayList();
 }
 {
     v=Variable() t=<LCURLY> ( x=MapProjectionItem() { items.add( x ); } )? ( "," x=MapProjectionItem() { items.add( x ); } )* <RCURLY>
@@ -2693,7 +2692,7 @@ CypherExpression MapProjection() :
     }
 }
 
-CypherMapProjectionItem MapProjectionItem() :
+CypherMPItem MapProjectionItem() :
 {
     Token t;
     StringPos p;

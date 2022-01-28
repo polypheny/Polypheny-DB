@@ -16,10 +16,9 @@
 
 package org.polypheny.db.cypher.mapprojection;
 
-import org.polypheny.db.cypher.CypherMapProjectionItem;
 import org.polypheny.db.cypher.parser.StringPos;
 
-public class CypherMPProperty extends CypherMapProjectionItem {
+public class CypherMPProperty extends CypherMPItem {
 
     public CypherMPProperty( StringPos pos ) {
         super( pos.getPos() );

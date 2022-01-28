@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherPrivilegeResource extends CypherNode {
+@Getter
+public class CypherBinary extends CypherExpression {
 
-    protected CypherPrivilegeResource( ParserPos pos, CypherNode input ) {
+    private final OperatorName op;
+    private final CypherExpression left;
+    private final CypherExpression right;
+
+
+    public CypherBinary( ParserPos pos, OperatorName op, CypherExpression left, CypherExpression right ) {
         super( pos );
+        this.op = op;
+        this.left = left;
+        this.right = right;
     }
 
 }

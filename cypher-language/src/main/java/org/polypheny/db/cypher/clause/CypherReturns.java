@@ -33,12 +33,20 @@ public class CypherReturns extends CypherClause {
         this.returns = returns;
     }
 
+
     public void add( CypherReturn cReturn ) {
         this.returns.add( cReturn );
     }
 
+
     public List<CypherReturn> getReturns() {
         return returns;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.RETURN;
     }
 
 }

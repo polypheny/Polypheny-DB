@@ -18,7 +18,7 @@ package org.polypheny.db.cypher;
 
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherStatement extends CypherNode {
+public abstract class CypherStatement extends CypherNode {
 
     protected CypherStatement( ParserPos pos ) {
         super( pos );

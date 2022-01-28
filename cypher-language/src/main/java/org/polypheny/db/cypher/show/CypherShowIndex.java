@@ -14,39 +14,37 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.show;
 
 import lombok.Getter;
+import org.polypheny.db.cypher.ShowCommandFilterType;
+import org.polypheny.db.cypher.clause.CypherClause;
+import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
 
-// <Map<String, CypherExpression>, CypherParameter>
 @Getter
-public class CypherSimpleEither<T, P> extends CypherNode {
+public class CypherShowIndex extends CypherClause {
 
-    private final T left;
-    private final P right;
+    private ShowCommandFilterType indexType;
+    private boolean brief;
+    private boolean verbose;
+    private CypherWhere where;
+    private boolean yield;
 
 
-    protected CypherSimpleEither( ParserPos pos, T left, P right ) {
+    public CypherShowIndex( ParserPos pos, ShowCommandFilterType indexType, boolean brief, boolean verbose, CypherWhere where, boolean yield ) {
         super( pos );
-        this.left = left;
-        this.right = right;
-    }
-
-
-    public static <T, P> CypherSimpleEither<T, P> left( T left ) {
-        return new CypherSimpleEither<>( ParserPos.ZERO, left, null );
-    }
-
-
-    public static <T, P> CypherSimpleEither<T, P> right( P param ) {
-        return new CypherSimpleEither<>( ParserPos.ZERO, null, param );
+        this.indexType = indexType;
+        this.brief = brief;
+        this.verbose = verbose;
+        this.where = where;
+        this.yield = yield;
     }
 
 
     @Override
     public CypherKind getCypherKind() {
-        return CypherKind.EITHER;
+        return CypherKind.SHOW;
     }
 
 }

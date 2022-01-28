@@ -17,14 +17,28 @@
 package org.polypheny.db.cypher.hint;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.HintIndexType;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherIndexHint extends CypherHint {
+
+    private final CypherVariable variable;
+    private final String labelOrRelType;
+    private final List<String> propNames;
+    private final boolean seek;
+    private final HintIndexType indexType;
+
 
     public CypherIndexHint( ParserPos pos, CypherVariable variable, String labelOrRelType, List<String> propNames, boolean seek, HintIndexType indexType ) {
         super( pos );
+        this.variable = variable;
+        this.labelOrRelType = labelOrRelType;
+        this.propNames = propNames;
+        this.seek = seek;
+        this.indexType = indexType;
     }
 
 }

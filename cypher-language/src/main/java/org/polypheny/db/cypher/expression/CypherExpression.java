@@ -16,29 +16,51 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherExpression extends CypherNode {
+
+    private final ExpressionType type;
+    private CypherVariable variable;
+    private CypherExpression expression;
+    private CypherExpression where;
+    private CypherPattern pattern;
+
 
     public CypherExpression( ParserPos pos ) {
         super( pos );
+        this.type = ExpressionType.DEFAULT;
     }
 
 
-    public CypherExpression( ParserPos pos, Expression type, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.EXPRESSION;
+    }
+
+
+    public CypherExpression( ParserPos pos, ExpressionType type, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
         super( pos );
+        this.type = type;
+        this.variable = variable;
+        this.expression = expression;
+        this.where = where;
     }
 
 
-    public CypherExpression( ParserPos pos, Expression type, CypherPattern pattern ) {
+    public CypherExpression( ParserPos pos, ExpressionType type, CypherPattern pattern ) {
         super( pos );
+        this.type = type;
+        this.pattern = pattern;
     }
 
 
-    public enum Expression {
-        ALL, NONE, SINGLE, PATTERN, ANY
+    public enum ExpressionType {
+        ALL, NONE, SINGLE, PATTERN, ANY, DEFAULT
     }
 
 }

@@ -40,6 +40,12 @@ public class CypherResource extends CypherNode {
     }
 
 
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.RESOURCE;
+    }
+
+
     public enum ResourceType {
         PROPERTIES, LABEL
     }

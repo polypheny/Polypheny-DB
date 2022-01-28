@@ -25,4 +25,11 @@ public class CypherQuery extends CypherStatement {
         super( pos );
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.QUERY;
+    }
+
+
 }

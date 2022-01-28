@@ -24,14 +24,20 @@ import org.polypheny.db.languages.ParserPos;
 @Getter
 public class CypherOrderItem extends CypherNode {
 
-    private final boolean b;
+    private final boolean asc;
     private final CypherExpression expression;
 
 
-    public CypherOrderItem( ParserPos pos, boolean b, CypherExpression expression ) {
+    public CypherOrderItem( ParserPos pos, boolean asc, CypherExpression expression ) {
         super( pos );
-        this.b = b;
+        this.asc = asc;
         this.expression = expression;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.ORDER_ITEM;
     }
 
 }

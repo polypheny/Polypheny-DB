@@ -25,4 +25,10 @@ public class CypherSetItem extends CypherNode {
         super( ParserPos.ZERO );
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.SET_ITEM;
+    }
+
 }

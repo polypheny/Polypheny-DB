@@ -27,10 +27,6 @@ import org.polypheny.db.util.Litmus;
 
 public abstract class CypherNode implements Node {
 
-    protected final static CypherNode EMPTY_CYPHER = new EmptyNode();
-
-    protected final static CypherNode STAR = new StarNode();
-
     @Getter
     public final ParserPos pos;
 
@@ -44,6 +40,9 @@ public abstract class CypherNode implements Node {
     public Kind getKind() {
         return Kind.OTHER;
     }
+
+
+    public abstract CypherKind getCypherKind();
 
 
     @Override
@@ -76,44 +75,8 @@ public abstract class CypherNode implements Node {
     }
 
 
-    public boolean isStar() {
-        return false;
-    }
-
-
-    public boolean isEmpty() {
-        return false;
-    }
-
-
-    private static class EmptyNode extends CypherNode {
-
-
-        protected EmptyNode() {
-            super( ParserPos.ZERO );
-        }
-
-
-        @Override
-        public boolean isEmpty() {
-            return true;
-        }
-
-    }
-
-
-    private static class StarNode extends CypherNode {
-
-        protected StarNode() {
-            super( ParserPos.ZERO );
-        }
-
-
-        @Override
-        public boolean isStar() {
-            return true;
-        }
-
+    public enum CypherKind {
+        SCOPE, REMOVE, ADMIN_COMMAND, QUERY, PATTERN, EXPRESSION, WITH_GRAPH, CALL, CASE, CREATE, SCHEMA_COMMAND, ADMIN_ACTION, DELETE, DROP, FOR_EACH, LOAD_CSV, MATCH, MERGE, ORDER_ITEM, RETURN, SET, SHOW, TRANSACTION, UNWIND, USE, WAIT, WHERE, WITH, MAP_PROJECTION, YIELD, EITHER, RESOURCE, PRIVILEGE, PATH_LENGTH, CALL_RESULT, HINT, SET_ITEM
     }
 
 }

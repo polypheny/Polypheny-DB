@@ -14,14 +14,34 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.show;
 
+import lombok.Getter;
+import org.polypheny.db.cypher.clause.CypherClause;
+import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherScope extends CypherNode{
+@Getter
+public class CypherShowProcedure extends CypherClause {
 
-    protected CypherScope( ParserPos pos ) {
+    private boolean currentUser;
+    private String user;
+    private CypherWhere where;
+    private boolean yield;
+
+
+    public CypherShowProcedure( ParserPos pos, boolean currentUser, String user, CypherWhere where, boolean yield ) {
         super( pos );
+        this.currentUser = currentUser;
+        this.user = user;
+        this.where = where;
+        this.yield = yield;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.SHOW;
     }
 
 }

@@ -32,4 +32,10 @@ public class CypherWaitClause extends CypherClause {
         this.nanos = nanos;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.WAIT;
+    }
+
 }

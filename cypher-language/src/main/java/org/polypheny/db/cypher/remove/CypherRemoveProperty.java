@@ -16,12 +16,18 @@
 
 package org.polypheny.db.cypher.remove;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherProperty;
 
+@Getter
 public class CypherRemoveProperty extends CypherRemoveItem {
+
+    private final CypherProperty property;
+
 
     public CypherRemoveProperty( CypherProperty property ) {
 
+        this.property = property;
     }
 
 }

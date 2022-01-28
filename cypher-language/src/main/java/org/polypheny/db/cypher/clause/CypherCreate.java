@@ -32,4 +32,10 @@ public class CypherCreate extends CypherClause {
         this.patterns = patterns;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.CREATE;
+    }
+
 }

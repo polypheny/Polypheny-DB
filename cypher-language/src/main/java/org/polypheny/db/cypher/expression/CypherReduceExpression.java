@@ -16,12 +16,26 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherReduceExpression extends CypherExpression {
+
+    private final CypherExpression expr;
+    private final CypherExpression accExpr;
+    private final CypherVariable variable;
+    private final CypherExpression varExpr;
+    private final CypherExpression innerExpr;
+
 
     public CypherReduceExpression( ParserPos pos, CypherExpression expr, CypherExpression accExpr, CypherVariable variable, CypherExpression varExpr, CypherExpression innerExpr ) {
         super( pos );
+        this.expr = expr;
+        this.accExpr = accExpr;
+        this.variable = variable;
+        this.varExpr = varExpr;
+        this.innerExpr = innerExpr;
     }
 
 }

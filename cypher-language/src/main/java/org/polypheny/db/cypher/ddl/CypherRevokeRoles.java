@@ -17,11 +17,13 @@
 package org.polypheny.db.cypher.ddl;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherRevokeRoles extends CypherAdminCommand {
 
     private final List<CypherSimpleEither<String, CypherParameter>> roles;

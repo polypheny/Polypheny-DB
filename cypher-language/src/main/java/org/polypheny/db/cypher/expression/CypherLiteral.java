@@ -16,7 +16,11 @@
 
 package org.polypheny.db.cypher.expression;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Streams;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
@@ -25,47 +29,51 @@ import org.polypheny.db.languages.ParserPos;
 public class CypherLiteral extends CypherExpression {
 
     private final Literal literalType;
-    private List<StringPos> keys;
-    private List<CypherExpression> values;
-    private List<CypherExpression> list;
-    private String image;
-    private boolean negated;
-    private String string;
+    private final Object value;
 
 
     public CypherLiteral( ParserPos pos, Literal literalType ) {
         super( pos );
         this.literalType = literalType;
+        this.value = null;
     }
 
 
     public CypherLiteral( ParserPos pos, Literal literalType, List<CypherExpression> list ) {
         super( pos );
         this.literalType = literalType;
-        this.list = list;
+        assert literalType == Literal.LIST;
+        this.value = list;
     }
 
 
     public CypherLiteral( ParserPos pos, Literal literalType, String string ) {
         super( pos );
         this.literalType = literalType;
-        this.string = string;
+        assert literalType == Literal.STRING;
+        this.value = string;
     }
 
 
     public CypherLiteral( ParserPos pos, Literal literalType, List<StringPos> keys, List<CypherExpression> values ) {
         super( pos );
         this.literalType = literalType;
-        this.keys = keys;
-        this.values = values;
+        assert keys.size() == values.size();
+        //noinspection UnstableApiUsage
+        this.value = Streams.zip( keys.stream(), values.stream(), Maps::immutableEntry ).collect( Collectors.toMap( k -> k.getKey().getImage(), Entry::getValue ) );
     }
 
 
     public CypherLiteral( ParserPos pos, Literal literalType, String image, boolean negated ) {
         super( pos );
         this.literalType = literalType;
-        this.image = image;
-        this.negated = negated;
+        if ( literalType == Literal.DECIMAL ) {
+            this.value = Float.parseFloat( image ) * (negated ? -1 : 1);
+        } else if ( (literalType == Literal.DOUBLE) ) {
+            this.value = Double.parseDouble( image ) * (negated ? -1 : 1);
+        } else {
+            throw new RuntimeException( "Could not use provided format to creat cypher literal." );
+        }
     }
 
 

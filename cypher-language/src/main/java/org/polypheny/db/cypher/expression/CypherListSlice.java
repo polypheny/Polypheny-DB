@@ -16,13 +16,23 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherListSlice extends CypherExpression {
+
+    private final CypherExpression subject;
+    private final CypherExpression from;
+    private final CypherExpression to;
+
 
     // 1..3
     public CypherListSlice( ParserPos pos, CypherExpression subject, CypherExpression from, CypherExpression to ) {
         super( pos );
+        this.subject = subject;
+        this.from = from;
+        this.to = to;
     }
 
 }

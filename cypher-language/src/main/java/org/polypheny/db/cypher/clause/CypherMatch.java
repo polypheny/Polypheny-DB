@@ -23,7 +23,7 @@ import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
-public class CypherMatchClause extends CypherClause {
+public class CypherMatch extends CypherClause {
 
     private final boolean optional;
     private final List<CypherPattern> patterns;
@@ -32,13 +32,19 @@ public class CypherMatchClause extends CypherClause {
     private final CypherWhere where;
 
 
-    public CypherMatchClause( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where ) {
+    public CypherMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where ) {
         super( pos );
         this.optional = optional;
         this.patterns = patterns;
         this.pos1 = pos1;
         this.hints = hints;
         this.where = where;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.MATCH;
     }
 
 }

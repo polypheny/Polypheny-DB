@@ -19,6 +19,7 @@ package org.polypheny.db.processing;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Setter;
@@ -104,7 +105,7 @@ public class SqlProcessorImpl extends Processor {
 
 
     @Override
-    public Node parse( String query ) {
+    public List<? extends Node> parse( String query ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolySQL statement ..." );
@@ -129,7 +130,7 @@ public class SqlProcessorImpl extends Processor {
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
         }
-        return parsed;
+        return ImmutableList.of( parsed );
     }
 
 

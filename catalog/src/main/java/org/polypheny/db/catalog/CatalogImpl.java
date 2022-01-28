@@ -457,7 +457,7 @@ public class CatalogImpl extends Catalog {
                 switch ( language ) {
                     case SQL:
                         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-                        Node sqlNode = sqlProcessor.parse( query );
+                        Node sqlNode = sqlProcessor.parse( query ).get( 0 );
                         AlgRoot algRoot = sqlProcessor.translate(
                                 statement,
                                 sqlProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left,
@@ -484,7 +484,7 @@ public class CatalogImpl extends Catalog {
 
                     case MONGO_QL:
                         Processor mqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.MONGO_QL );
-                        Node mqlNode = mqlProcessor.parse( query );
+                        Node mqlNode = mqlProcessor.parse( query ).get( 0 );
 
                         AlgRoot mqlRel = mqlProcessor.translate(
                                 statement,

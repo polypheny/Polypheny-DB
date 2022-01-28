@@ -80,7 +80,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
         super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
         if ( partitionColumn.type.getFamily() != PolyTypeFamily.NUMERIC ) {
-            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected Expression: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
+            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected ExpressionType: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
         }
 
         for ( List<String> partitionQualifiers : partitionGroupQualifiers ) {

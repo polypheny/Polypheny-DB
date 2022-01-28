@@ -17,14 +17,26 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherTerminateTransaction extends CypherClause {
+
+    private CypherSimpleEither<List<String>, CypherParameter> idEither;
+
 
     public CypherTerminateTransaction( ParserPos pos, CypherSimpleEither<List<String>, CypherParameter> idEither ) {
         super( pos );
+        this.idEither = idEither;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.TRANSACTION;
     }
 
 }

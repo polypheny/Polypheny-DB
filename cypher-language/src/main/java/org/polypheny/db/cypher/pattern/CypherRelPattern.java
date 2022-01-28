@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.clause;
+package org.polypheny.db.cypher.pattern;
 
 import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherPathLength;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
@@ -26,7 +25,7 @@ import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
-public class CypherRelPattern extends CypherNode {
+public class CypherRelPattern extends CypherPattern {
 
     private final boolean left;
     private final boolean right;

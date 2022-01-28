@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.mapprojection;
 
-import org.polypheny.db.algebra.operators.OperatorName;
+import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherBinary extends CypherExpression {
+@Getter
+public class CypherMapProjection extends CypherExpression {
 
-    private final OperatorName op;
-    private final CypherExpression left;
-    private final CypherExpression right;
+    private final CypherVariable variable;
+    private final List<CypherMPItem> items;
 
 
-    protected CypherBinary( ParserPos pos, OperatorName op, CypherExpression left, CypherExpression right ) {
+    public CypherMapProjection( ParserPos pos, CypherVariable variable, List<CypherMPItem> items ) {
         super( pos );
-        this.op = op;
-        this.left = left;
-        this.right = right;
+        this.variable = variable;
+        this.items = items;
     }
 
 }

@@ -25,4 +25,10 @@ public class CypherHint extends CypherNode {
         super( pos );
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.HINT;
+    }
+
 }

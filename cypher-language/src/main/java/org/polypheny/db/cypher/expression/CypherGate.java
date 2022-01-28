@@ -17,13 +17,38 @@
 package org.polypheny.db.cypher.expression;
 
 import java.util.List;
-import org.polypheny.db.cypher.CypherMapProjectionItem;
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherMapProjection extends CypherExpression {
+@Getter
+public class CypherGate extends CypherExpression {
 
-    public CypherMapProjection( ParserPos pos, CypherVariable variable, List<CypherMapProjectionItem> items ) {
+    private final Gate gate;
+    private List<CypherExpression> expressions;
+    private CypherExpression left;
+    private CypherExpression right;
+
+
+    public CypherGate( ParserPos pos, Gate gate, CypherExpression left, CypherExpression right ) {
         super( pos );
+        this.gate = gate;
+        this.left = left;
+        this.right = right;
+    }
+
+
+    public CypherGate( Gate gate, List<CypherExpression> expressions ) {
+        super( ParserPos.ZERO );
+        this.gate = gate;
+        this.expressions = expressions;
+    }
+
+
+    public enum Gate {
+        OR,
+        AND,
+        XOR,
+        NOT
     }
 
 }

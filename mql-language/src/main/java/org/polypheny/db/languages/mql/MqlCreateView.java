@@ -67,7 +67,8 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
         Node mqlNode = statement.getTransaction()
                 .getProcessor( QueryLanguage.MONGO_QL )
-                .parse( buildQuery() );
+                .parse( buildQuery() )
+                .get( 0 );
 
         AlgRoot algRoot = statement.getTransaction()
                 .getProcessor( QueryLanguage.MONGO_QL )

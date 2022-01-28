@@ -14,15 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.clause;
+package org.polypheny.db.cypher.query;
 
-import org.polypheny.db.cypher.ShowCommandFilterType;
+import lombok.Getter;
+import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherShowFunction extends CypherClause {
+@Getter
+public class CypherInTransactionParams extends CypherNode {
 
-    public CypherShowFunction( ParserPos pos, ShowCommandFilterType functionType, boolean currentUser, String user, CypherWhere where, boolean yield ) {
+    private CypherExpression batchSize;
+
+
+    public CypherInTransactionParams( ParserPos pos, CypherExpression batchSize ) {
         super( pos );
+        this.batchSize = batchSize;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.TRANSACTION;
     }
 
 }

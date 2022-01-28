@@ -16,13 +16,37 @@
 
 package org.polypheny.db.cypher.expression;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+import lombok.Getter;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherFunctionInvocation extends CypherExpression {
+
+    private final ParserPos namePos;
+    private final List<String> namespace;
+    private final boolean distinct;
+    private final List<CypherExpression> arguments;
+
+    private static final List<String> operatorNames = Arrays.stream( OperatorName.values() ).map( Enum::name ).collect( Collectors.toList() );
+    private final OperatorName op;
+
 
     public CypherFunctionInvocation( ParserPos beforePos, ParserPos namePos, List<String> namespace, String image, boolean distinct, List<CypherExpression> arguments ) {
         super( beforePos );
+        this.namePos = namePos;
+        this.namespace = namespace;
+        if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
+            this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
+        } else {
+            throw new RuntimeException( "Used function is not supported!" );
+        }
+        this.distinct = distinct;
+        this.arguments = arguments;
     }
 
 }

@@ -16,8 +16,10 @@
 
 package org.polypheny.db.cypher.clause;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherWith extends CypherClause {
 
     private final CypherReturnClause returnClause;
@@ -28,6 +30,12 @@ public class CypherWith extends CypherClause {
         super( pos );
         this.returnClause = returnClause;
         this.where = where;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.WITH;
     }
 
 }

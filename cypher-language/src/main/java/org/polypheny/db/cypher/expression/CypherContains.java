@@ -16,12 +16,20 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherContains extends CypherExpression {
+
+    private CypherExpression left;
+    private CypherExpression right;
+
 
     public CypherContains( ParserPos pos, CypherExpression left, CypherExpression right ) {
         super( pos );
+        this.left = left;
+        this.right = right;
     }
 
 }

@@ -16,13 +16,21 @@
 
 package org.polypheny.db.cypher.hint;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherScanHint extends CypherHint {
+
+    private final CypherVariable variable;
+    private final String image;
+
 
     public CypherScanHint( ParserPos pos, CypherVariable variable, String image ) {
         super( pos );
+        this.variable = variable;
+        this.image = image;
     }
 
 }

@@ -19,10 +19,16 @@ package org.polypheny.db.cypher.remove;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherRemoveItem extends CypherNode {
+public abstract class CypherRemoveItem extends CypherNode {
 
     protected CypherRemoveItem() {
         super( ParserPos.ZERO );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.REMOVE;
     }
 
 }

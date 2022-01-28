@@ -16,12 +16,24 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherListComprehension extends CypherExpression {
+
+    private final CypherVariable variable;
+    private final CypherExpression list;
+    private final CypherExpression where;
+    private final CypherExpression projection;
+
 
     public CypherListComprehension( ParserPos pos, CypherVariable variable, CypherExpression list, CypherExpression where, CypherExpression projection ) {
         super( pos );
+        this.variable = variable;
+        this.list = list;
+        this.where = where;
+        this.projection = projection;
     }
 
 }

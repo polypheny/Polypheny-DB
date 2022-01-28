@@ -19,7 +19,7 @@ package org.polypheny.db.cypher.clause;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherClause extends CypherNode {
+public abstract class CypherClause extends CypherNode {
 
     protected CypherClause( ParserPos pos ) {
         super( pos );

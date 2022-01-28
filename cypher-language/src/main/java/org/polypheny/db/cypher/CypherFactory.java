@@ -22,8 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.cypher.CypherGate.Gate;
-import org.polypheny.db.cypher.CypherQualifier.QualifierType;
 import org.polypheny.db.cypher.CypherResource.ResourceType;
 import org.polypheny.db.cypher.admin.CypherAdminAction;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
@@ -52,26 +50,20 @@ import org.polypheny.db.cypher.clause.CypherCase;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.clause.CypherCreateConstraint;
-import org.polypheny.db.cypher.clause.CypherDeleteClause;
+import org.polypheny.db.cypher.clause.CypherDelete;
 import org.polypheny.db.cypher.clause.CypherDropConstraint;
 import org.polypheny.db.cypher.clause.CypherForeach;
 import org.polypheny.db.cypher.clause.CypherLoadCSV;
-import org.polypheny.db.cypher.clause.CypherMatchClause;
-import org.polypheny.db.cypher.clause.CypherMergeClause;
+import org.polypheny.db.cypher.clause.CypherMatch;
+import org.polypheny.db.cypher.clause.CypherMerge;
 import org.polypheny.db.cypher.clause.CypherOrderItem;
 import org.polypheny.db.cypher.clause.CypherQuery;
-import org.polypheny.db.cypher.clause.CypherRelPattern;
-import org.polypheny.db.cypher.clause.CypherRemoveClause;
+import org.polypheny.db.cypher.clause.CypherRemove;
 import org.polypheny.db.cypher.clause.CypherReturn;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
 import org.polypheny.db.cypher.clause.CypherReturnItem;
 import org.polypheny.db.cypher.clause.CypherReturns;
 import org.polypheny.db.cypher.clause.CypherSetClause;
-import org.polypheny.db.cypher.clause.CypherShowConstraint;
-import org.polypheny.db.cypher.clause.CypherShowFunction;
-import org.polypheny.db.cypher.clause.CypherShowIndex;
-import org.polypheny.db.cypher.clause.CypherShowProcedure;
-import org.polypheny.db.cypher.clause.CypherShowTransactions;
 import org.polypheny.db.cypher.clause.CypherSubQuery;
 import org.polypheny.db.cypher.clause.CypherTerminateTransaction;
 import org.polypheny.db.cypher.clause.CypherUnwind;
@@ -93,18 +85,20 @@ import org.polypheny.db.cypher.ddl.CypherRevokeRoles;
 import org.polypheny.db.cypher.ddl.CypherSchemaCommand;
 import org.polypheny.db.cypher.ddl.CypherSetOwnPassword;
 import org.polypheny.db.cypher.ddl.CypherShowRoles;
+import org.polypheny.db.cypher.expression.CypherBinary;
 import org.polypheny.db.cypher.expression.CypherComparison;
 import org.polypheny.db.cypher.expression.CypherExistSubQuery;
 import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.expression.CypherExpression.Expression;
+import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherFormula;
 import org.polypheny.db.cypher.expression.CypherFunctionInvocation;
+import org.polypheny.db.cypher.expression.CypherGate;
+import org.polypheny.db.cypher.expression.CypherGate.Gate;
 import org.polypheny.db.cypher.expression.CypherListComprehension;
 import org.polypheny.db.cypher.expression.CypherListLookup;
 import org.polypheny.db.cypher.expression.CypherListSlice;
 import org.polypheny.db.cypher.expression.CypherLiteral;
 import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
-import org.polypheny.db.cypher.expression.CypherMapProjection;
 import org.polypheny.db.cypher.expression.CypherPasswordExpression;
 import org.polypheny.db.cypher.expression.CypherPatternComprehension;
 import org.polypheny.db.cypher.expression.CypherProperty;
@@ -117,25 +111,36 @@ import org.polypheny.db.cypher.hint.CypherIndexHint;
 import org.polypheny.db.cypher.hint.CypherJoinHint;
 import org.polypheny.db.cypher.hint.CypherScanHint;
 import org.polypheny.db.cypher.mapprojection.CypherMPAll;
+import org.polypheny.db.cypher.mapprojection.CypherMPItem;
 import org.polypheny.db.cypher.mapprojection.CypherMPLiteral;
 import org.polypheny.db.cypher.mapprojection.CypherMPProperty;
 import org.polypheny.db.cypher.mapprojection.CypherMPVariable;
+import org.polypheny.db.cypher.mapprojection.CypherMapProjection;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.cypher.pattern.CypherNamedPattern;
 import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
+import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.cypher.pattern.CypherShortestPathPattern;
+import org.polypheny.db.cypher.query.CypherInTransactionParams;
 import org.polypheny.db.cypher.query.CypherPeriodicCommit;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.cypher.query.CypherUnion;
 import org.polypheny.db.cypher.remove.CypherRemoveItem;
 import org.polypheny.db.cypher.remove.CypherRemoveLabels;
 import org.polypheny.db.cypher.remove.CypherRemoveProperty;
+import org.polypheny.db.cypher.scope.CypherDbScope;
+import org.polypheny.db.cypher.scope.CypherGraphScope;
 import org.polypheny.db.cypher.set.CypherSetItem;
 import org.polypheny.db.cypher.set.CypherSetLabels;
 import org.polypheny.db.cypher.set.CypherSetProperty;
 import org.polypheny.db.cypher.set.CypherSetVariable;
+import org.polypheny.db.cypher.show.CypherShowConstraint;
+import org.polypheny.db.cypher.show.CypherShowFunction;
+import org.polypheny.db.cypher.show.CypherShowIndex;
+import org.polypheny.db.cypher.show.CypherShowProcedure;
+import org.polypheny.db.cypher.show.CypherShowTransactions;
 import org.polypheny.db.languages.ParserPos;
 
 public interface CypherFactory {
@@ -172,8 +177,8 @@ public interface CypherFactory {
         return new CypherReturns( pos, returnAll, returnItems );
     }
 
-    static CypherOrderItem createOrderItem( ParserPos pos, boolean b, CypherExpression expression ) {
-        return new CypherOrderItem( pos, b, expression );
+    static CypherOrderItem createOrderItem( ParserPos pos, boolean asc, CypherExpression expression ) {
+        return new CypherOrderItem( pos, asc, expression );
     }
 
     static CypherWhere createWhere( ParserPos pos, CypherExpression expression ) {
@@ -205,7 +210,7 @@ public interface CypherFactory {
     }
 
     static CypherClause createRemove( ParserPos pos, List<CypherRemoveItem> items ) {
-        return new CypherRemoveClause( pos, items );
+        return new CypherRemove( pos, items );
     }
 
     static CypherRemoveItem createRemoveProperty( CypherProperty property ) {
@@ -217,11 +222,11 @@ public interface CypherFactory {
     }
 
     static CypherClause createDelete( ParserPos pos, boolean detach, List<CypherExpression> list ) {
-        return new CypherDeleteClause( pos, detach, list );
+        return new CypherDelete( pos, detach, list );
     }
 
     static CypherClause createMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where ) {
-        return new CypherMatchClause( pos, optional, patterns, pos1, hints, where );
+        return new CypherMatch( pos, optional, patterns, pos1, hints, where );
     }
 
     static CypherHint createIndexHint( ParserPos pos, CypherVariable variable, String labelOrRelType, List<String> propNames, boolean seek, HintIndexType indexType ) {
@@ -229,7 +234,7 @@ public interface CypherFactory {
     }
 
     static CypherClause createMerge( ParserPos pos, CypherPattern pattern, ArrayList<CypherSetClause> clauses, ArrayList<MergeActionType> actionTypes, ArrayList<ParserPos> positions ) {
-        return new CypherMergeClause( pos, pattern, clauses, actionTypes, positions );
+        return new CypherMerge( pos, pattern, clauses, actionTypes, positions );
     }
 
     static CypherClause createCall( ParserPos pos, ParserPos nextPos, ParserPos procedurePos, ParserPos resultPos, List<String> namespace, String name, List<CypherExpression> arguments, boolean yieldAll, List<CypherCallResultItem> items, CypherWhere where ) {
@@ -394,42 +399,42 @@ public interface CypherFactory {
     }
 
     static CypherExpression allExpression( ParserPos pos, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
-        return new CypherExpression( pos, Expression.ALL, variable, expression, where );
+        return new CypherExpression( pos, ExpressionType.ALL, variable, expression, where );
     }
 
     static CypherExpression anyExpression( ParserPos pos, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
-        return new CypherExpression( pos, Expression.ANY, variable, expression, where );
+        return new CypherExpression( pos, ExpressionType.ANY, variable, expression, where );
     }
 
     static CypherExpression noneExpression( ParserPos pos, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
-        return new CypherExpression( pos, Expression.NONE, variable, expression, where );
+        return new CypherExpression( pos, ExpressionType.NONE, variable, expression, where );
     }
 
     static CypherExpression singleExpression( ParserPos pos, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
-        return new CypherExpression( pos, Expression.SINGLE, variable, expression, where );
+        return new CypherExpression( pos, ExpressionType.SINGLE, variable, expression, where );
     }
 
     static CypherExpression patternExpression( ParserPos pos, CypherPattern pattern ) {
-        return new CypherExpression( pos, Expression.PATTERN, pattern );
+        return new CypherExpression( pos, ExpressionType.PATTERN, pattern );
     }
 
-    static CypherExpression mapProjection( ParserPos pos, CypherVariable variable, List<CypherMapProjectionItem> items ) {
+    static CypherExpression mapProjection( ParserPos pos, CypherVariable variable, List<CypherMPItem> items ) {
         return new CypherMapProjection( pos, variable, items );
     }
 
-    static CypherMapProjectionItem mapProjectionLiteralEntry( StringPos pos, CypherExpression expression ) {
+    static CypherMPItem mapProjectionLiteralEntry( StringPos pos, CypherExpression expression ) {
         return new CypherMPLiteral( pos, expression );
     }
 
-    static CypherMapProjectionItem mapProjectionProperty( StringPos pos ) {
+    static CypherMPItem mapProjectionProperty( StringPos pos ) {
         return new CypherMPProperty( pos );
     }
 
-    static CypherMapProjectionItem mapProjectionVariable( CypherVariable variable ) {
+    static CypherMPItem mapProjectionVariable( CypherVariable variable ) {
         return new CypherMPVariable( variable );
     }
 
-    static CypherMapProjectionItem mapProjectionAll( ParserPos pos ) {
+    static CypherMPItem mapProjectionAll( ParserPos pos ) {
         return new CypherMPAll( pos );
     }
 
@@ -630,15 +635,15 @@ public interface CypherFactory {
     }
 
     static List<CypherPrivilegeQualifier> allQualifier() {
-        return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), QualifierType.ALL ) );
+        return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL ) );
     }
 
     static List<CypherPrivilegeQualifier> allDatabasesQualifier() {
-        return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), QualifierType.ALL_DATABASES ) );
+        return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL_DATABASES ) );
     }
 
     static List<CypherPrivilegeQualifier> allUsersQualifier() {
-        return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), QualifierType.ALL_USERS ) );
+        return ImmutableList.of( new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL_USERS ) );
     }
 
     static CypherGraphScope graphScopes( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> names, ScopeType scopeType ) {
@@ -675,23 +680,23 @@ public interface CypherFactory {
     }
 
     static CypherPrivilegeQualifier allRelationshipsQualifier( ParserPos pos ) {
-        return new CypherPrivilegeQualifier( pos, ImmutableList.of(), QualifierType.ALL_RELATIONSHIP );
+        return new CypherPrivilegeQualifier( pos, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL_RELATIONSHIP );
     }
 
     static CypherPrivilegeQualifier relationshipQualifier( ParserPos pos, String image ) {
-        return new CypherPrivilegeQualifier( pos, Collections.singletonList( image ), QualifierType.RELATIONSHIP );
+        return new CypherPrivilegeQualifier( pos, Collections.singletonList( image ), CypherPrivilegeQualifier.QualifierType.RELATIONSHIP );
     }
 
     static CypherPrivilegeQualifier labelQualifier( ParserPos pos, String image ) {
-        return new CypherPrivilegeQualifier( pos, ImmutableList.of( image ), QualifierType.LABEL );
+        return new CypherPrivilegeQualifier( pos, ImmutableList.of( image ), CypherPrivilegeQualifier.QualifierType.LABEL );
     }
 
     static CypherPrivilegeQualifier allElementsQualifier( ParserPos pos ) {
-        return new CypherPrivilegeQualifier( pos, ImmutableList.of(), QualifierType.ALL_ELEMENTS );
+        return new CypherPrivilegeQualifier( pos, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL_ELEMENTS );
     }
 
     static CypherPrivilegeQualifier elementQualifier( ParserPos pos, String image ) {
-        return new CypherPrivilegeQualifier( pos, ImmutableList.of( image ), QualifierType.ELEMENT );
+        return new CypherPrivilegeQualifier( pos, ImmutableList.of( image ), CypherPrivilegeQualifier.QualifierType.ELEMENT );
     }
 
     static CypherWaitClause wait( boolean wait, long nanos ) {
@@ -743,7 +748,7 @@ public interface CypherFactory {
     }
 
     static List<CypherPrivilegeQualifier> functionQualifier( ParserPos pos, List<String> executables ) {
-        return executables.stream().map( e -> new CypherPrivilegeQualifier( pos, ImmutableList.of( e ), QualifierType.ALL ) ).collect( Collectors.toList() );
+        return executables.stream().map( e -> new CypherPrivilegeQualifier( pos, ImmutableList.of( e ), CypherPrivilegeQualifier.QualifierType.ALL ) ).collect( Collectors.toList() );
     }
 
     static List<CypherPrivilegeQualifier> procedureQualifier( ParserPos pos, List<String> executables ) {
@@ -764,7 +769,7 @@ public interface CypherFactory {
     }
 
     static List<CypherPrivilegeQualifier> userQualifier( List<CypherSimpleEither<String, CypherParameter>> qualifiers ) {
-        return qualifiers.stream().map( q -> new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of( q.getLeft() ), QualifierType.USER ) ).collect( Collectors.toList() );
+        return qualifiers.stream().map( q -> new CypherPrivilegeQualifier( ParserPos.ZERO, ImmutableList.of( q.getLeft() ), CypherPrivilegeQualifier.QualifierType.USER ) ).collect( Collectors.toList() );
     }
 
     static CypherHint createJoinHint( ParserPos pos, List<CypherVariable> joinVariables ) {
@@ -797,7 +802,7 @@ public interface CypherFactory {
 
 
     static CypherPrivilegeQualifier allLabelsQualifier( ParserPos pos ) {
-        return new CypherPrivilegeQualifier( pos, ImmutableList.of(), QualifierType.ALL_LABELS );
+        return new CypherPrivilegeQualifier( pos, ImmutableList.of(), CypherPrivilegeQualifier.QualifierType.ALL_LABELS );
     }
 
     static CypherSchemaCommand createIndexWithOldSyntax( ParserPos pos, StringPos stringPos, List<StringPos> properties ) {

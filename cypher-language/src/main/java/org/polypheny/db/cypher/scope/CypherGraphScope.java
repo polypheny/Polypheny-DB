@@ -14,22 +14,27 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.scope;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.cypher.CypherParameter;
+import org.polypheny.db.cypher.CypherSimpleEither;
+import org.polypheny.db.cypher.ScopeType;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
-public class CypherList<T> extends CypherNode {
-
-    private final List<T> inputs;
+public class CypherGraphScope extends CypherScope {
 
 
-    protected CypherList( ParserPos pos, List<T> inputs ) {
+    private final List<CypherSimpleEither<String, CypherParameter>> names;
+    private final ScopeType scopeType;
+
+
+    public CypherGraphScope( ParserPos pos, List<CypherSimpleEither<String, CypherParameter>> names, ScopeType scopeType ) {
         super( pos );
-        this.inputs = inputs;
+        this.names = names;
+        this.scopeType = scopeType;
     }
-
 
 }

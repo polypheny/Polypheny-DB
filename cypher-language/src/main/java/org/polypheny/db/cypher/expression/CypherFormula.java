@@ -16,13 +16,24 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherFormula extends CypherExpression {
 
-    public CypherFormula( ParserPos pos, OperatorName plus, CypherExpression left, CypherExpression right ) {
+
+    private final OperatorName op;
+    private final CypherExpression left;
+    private final CypherExpression right;
+
+
+    public CypherFormula( ParserPos pos, OperatorName operatorName, CypherExpression left, CypherExpression right ) {
         super( pos );
+        op = operatorName;
+        this.left = left;
+        this.right = right;
     }
 
 }

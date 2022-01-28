@@ -16,13 +16,27 @@
 
 package org.polypheny.db.cypher.clause;
 
-import org.polypheny.db.cypher.CypherInTransactionParams;
+import lombok.Getter;
+import org.polypheny.db.cypher.query.CypherInTransactionParams;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherSubQuery extends CypherClause {
+
+    private CypherQuery query;
+    private CypherInTransactionParams inTransactionsParams;
+
 
     public CypherSubQuery( ParserPos pos, CypherQuery query, CypherInTransactionParams inTransactionsParams ) {
         super( pos );
+        this.query = query;
+        this.inTransactionsParams = inTransactionsParams;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.QUERY;
     }
 
 }

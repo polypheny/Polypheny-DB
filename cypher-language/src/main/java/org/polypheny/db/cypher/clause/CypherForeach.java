@@ -37,4 +37,10 @@ public class CypherForeach extends CypherClause {
         this.clauses = clauses;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.FOR_EACH;
+    }
+
 }

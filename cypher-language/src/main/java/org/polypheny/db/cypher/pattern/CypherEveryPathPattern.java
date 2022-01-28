@@ -17,13 +17,35 @@
 package org.polypheny.db.cypher.pattern;
 
 import java.util.List;
-import org.polypheny.db.cypher.clause.CypherRelPattern;
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherEveryPathPattern extends CypherPattern {
 
+    private final List<CypherNodePattern> nodes;
+    private final List<CypherRelPattern> relationships;
+
+
+    /**
+     * collections:
+     * <code>
+     * nodes[n0, n1, n2]
+     * rel[r0, r1]
+     * </code>
+     *
+     * resulting path:
+     * <code>
+     * [n0] - [r0] - [n1] - [r1] - [n2]
+     * </code>
+     *
+     * @param nodes all nodes included in path
+     * @param relationships all relationship connections included in the path
+     */
     public CypherEveryPathPattern( List<CypherNodePattern> nodes, List<CypherRelPattern> relationships ) {
         super( ParserPos.ZERO );
+        this.nodes = nodes;
+        this.relationships = relationships;
     }
 
 }

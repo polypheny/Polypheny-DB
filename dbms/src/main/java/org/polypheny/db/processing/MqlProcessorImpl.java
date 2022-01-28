@@ -16,7 +16,9 @@
 
 package org.polypheny.db.processing;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgDecorrelator;
@@ -65,7 +67,7 @@ public class MqlProcessorImpl extends MqlProcessor {
 
 
     @Override
-    public Node parse( String mql ) {
+    public List<? extends Node> parse( String mql ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyMQL statement ..." );
@@ -90,7 +92,7 @@ public class MqlProcessorImpl extends MqlProcessor {
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyMQL statement ... done. [{}]", stopWatch );
         }
-        return parsed;
+        return ImmutableList.of( parsed );
     }
 
 

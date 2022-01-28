@@ -16,14 +16,19 @@
 
 package org.polypheny.db.cypher.mapprojection;
 
-import org.polypheny.db.cypher.CypherMapProjectionItem;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherMPVariable extends CypherMapProjectionItem {
+@Getter
+public class CypherMPVariable extends CypherMPItem {
+
+    private final CypherExpression expression;
+
 
     public CypherMPVariable( CypherExpression expression ) {
         super( ParserPos.ZERO );
+        this.expression = expression;
     }
 
 }

@@ -16,12 +16,18 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherVariable extends CypherExpression {
 
-    public CypherVariable( ParserPos pos, String image ) {
+    private final String name;
+
+
+    public CypherVariable( ParserPos pos, String name ) {
         super( pos );
+        this.name = name;
     }
 
 }

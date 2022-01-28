@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import java.util.List;
 import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -32,8 +33,8 @@ public class JsonRelProcessorImpl extends Processor {
 
 
     @Override
-    public Node parse( String query ) {
-        throw new RuntimeException( "JsonProcessor does not support PigNode representation!" );
+    public List<? extends Node> parse( String query ) {
+        throw new RuntimeException( "JsonProcessor does not support string representation!" );
     }
 
 

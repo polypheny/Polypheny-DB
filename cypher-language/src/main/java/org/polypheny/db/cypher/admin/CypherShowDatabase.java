@@ -17,10 +17,10 @@
 package org.polypheny.db.cypher.admin;
 
 import lombok.Getter;
-import org.polypheny.db.cypher.CypherDbScope;
 import org.polypheny.db.cypher.CypherYield;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
 import org.polypheny.db.cypher.clause.CypherWhere;
+import org.polypheny.db.cypher.scope.CypherDbScope;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter

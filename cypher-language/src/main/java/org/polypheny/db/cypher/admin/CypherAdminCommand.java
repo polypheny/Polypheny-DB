@@ -24,9 +24,15 @@ public class CypherAdminCommand extends CypherWithGraph {
         super( pos );
     }
 
+
     public enum AccessType {
         READ_ONLY, READ_WRITE
+    }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.ADMIN_COMMAND;
     }
 
 }

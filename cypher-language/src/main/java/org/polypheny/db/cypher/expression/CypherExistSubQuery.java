@@ -17,13 +17,21 @@
 package org.polypheny.db.cypher.expression;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherExistSubQuery extends CypherExpression {
+
+    private List<CypherPattern> patterns;
+    private CypherExpression where;
+
 
     public CypherExistSubQuery( ParserPos pos, List<CypherPattern> patterns, CypherExpression where ) {
         super( pos );
+        this.patterns = patterns;
+        this.where = where;
     }
 
 }

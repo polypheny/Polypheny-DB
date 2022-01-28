@@ -23,7 +23,7 @@ import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
-public class CypherMergeClause extends CypherClause {
+public class CypherMerge extends CypherClause {
 
     private final CypherPattern pattern;
     private final ArrayList<CypherSetClause> clauses;
@@ -31,12 +31,18 @@ public class CypherMergeClause extends CypherClause {
     private final ArrayList<ParserPos> positions;
 
 
-    public CypherMergeClause( ParserPos pos, CypherPattern pattern, ArrayList<CypherSetClause> clauses, ArrayList<MergeActionType> actionTypes, ArrayList<ParserPos> positions ) {
+    public CypherMerge( ParserPos pos, CypherPattern pattern, ArrayList<CypherSetClause> clauses, ArrayList<MergeActionType> actionTypes, ArrayList<ParserPos> positions ) {
         super( pos );
         this.pattern = pattern;
         this.clauses = clauses;
         this.actionTypes = actionTypes;
         this.positions = positions;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.MERGE;
     }
 
 }

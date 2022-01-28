@@ -271,7 +271,7 @@ public class PlannerTest extends SqlLanguagelDependant {
             validate = planner.validate( parse );
             fail( "expected exception, got " + validate );
         } catch ( ValidationException e ) {
-            assertThat( e.getCause().getCause().getMessage(), containsString( "Expression 'deptno' is not being grouped" ) );
+            assertThat( e.getCause().getCause().getMessage(), containsString( "ExpressionType 'deptno' is not being grouped" ) );
         }
     }
 

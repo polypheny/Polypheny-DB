@@ -16,12 +16,26 @@
 
 package org.polypheny.db.cypher;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherCallResultItem extends CypherNode {
+
+    private final String expression;
+    private final CypherNode input;
+
 
     protected CypherCallResultItem( ParserPos pos, String expression, CypherNode input ) {
         super( pos );
+        this.expression = expression;
+        this.input = input;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.CALL_RESULT;
     }
 
 }

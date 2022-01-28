@@ -16,14 +16,22 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.admin.CypherWithGraph;
 import org.polypheny.db.cypher.clause.CypherUseClause;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherUseGraph extends CypherWithGraph {
+
+    private final CypherWithGraph statement;
+    private final CypherUseClause useClause;
+
 
     public CypherUseGraph( CypherWithGraph statement, CypherUseClause useClause ) {
         super( ParserPos.ZERO );
+        this.statement = statement;
+        this.useClause = useClause;
     }
 
 }

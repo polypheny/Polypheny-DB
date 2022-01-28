@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.clause;
 
-import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.parser.StringPos;
+import java.util.List;
+import org.polypheny.db.cypher.remove.CypherRemoveItem;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherMapProjectionItem extends CypherNode {
+public class CypherRemove extends CypherClause {
 
-    protected CypherMapProjectionItem( StringPos pos, CypherExpression expression ) {
-        super( pos.getPos() );
+    private final List<CypherRemoveItem> items;
+
+
+    public CypherRemove( ParserPos pos, List<CypherRemoveItem> items ) {
+        super( pos );
+        this.items = items;
     }
 
 
-    protected CypherMapProjectionItem( ParserPos pos ) {
-        super( pos );
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.REMOVE;
     }
 
 }

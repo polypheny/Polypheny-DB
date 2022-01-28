@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherOrderItem;
 import org.polypheny.db.cypher.clause.CypherReturn;
@@ -24,10 +25,29 @@ import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherYield extends CypherClause {
+
+    private final boolean returnAll;
+    private final List<CypherReturn> returnItems;
+    private final ParserPos nextPos;
+    private final List<CypherOrderItem> orders;
+    private final ParserPos skipPos;
+
 
     protected CypherYield( ParserPos pos, boolean returnAll, List<CypherReturn> returnItems, ParserPos nextPos, List<CypherOrderItem> orders, ParserPos skipPos, CypherExpression skip, ParserPos limitPos, CypherExpression limit, ParserPos wherePos, CypherWhere where ) {
         super( pos );
+        this.returnAll = returnAll;
+        this.returnItems = returnItems;
+        this.nextPos = nextPos;
+        this.orders = orders;
+        this.skipPos = skipPos;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.YIELD;
     }
 
 }

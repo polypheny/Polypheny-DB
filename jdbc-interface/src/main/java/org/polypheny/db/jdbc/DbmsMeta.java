@@ -964,7 +964,7 @@ public class DbmsMeta implements ProtobufMeta {
             Transaction transaction = connection.getCurrentOrCreateNewTransaction();
             Processor sqlProcessor = transaction.getProcessor( QueryLanguage.SQL );
 
-            Node parsed = sqlProcessor.parse( sql );
+            Node parsed = sqlProcessor.parse( sql ).get( 0 );
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
             // JDBC driver would expect more parameter fields than there actually are in the query.
             Pair<Node, AlgDataType> validated = sqlProcessor.validate( transaction, parsed, false );
@@ -1229,7 +1229,7 @@ public class DbmsMeta implements ProtobufMeta {
         PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
         Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.SQL );
 
-        Node parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
 
         PolyphenyDbSignature<?> signature;
         if ( parsed.isA( Kind.DDL ) ) {

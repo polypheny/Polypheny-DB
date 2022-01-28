@@ -17,13 +17,25 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.set.CypherSetItem;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherSetClause extends CypherClause {
+
+    private List<CypherSetItem> input;
+
 
     public CypherSetClause( ParserPos pos, List<CypherSetItem> input ) {
         super( pos );
+        this.input = input;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.SET;
     }
 
 }

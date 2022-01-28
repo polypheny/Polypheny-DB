@@ -16,9 +16,11 @@
 
 package org.polypheny.db.cypher.clause;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherWhere extends CypherClause {
 
     private final CypherExpression expression;
@@ -27,6 +29,12 @@ public class CypherWhere extends CypherClause {
     public CypherWhere( ParserPos pos, CypherExpression expression ) {
         super( pos );
         this.expression = expression;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.WHERE;
     }
 
 }

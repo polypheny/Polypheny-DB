@@ -47,4 +47,10 @@ public class CypherCall extends CypherClause {
         this.items = items;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.CALL;
+    }
+
 }

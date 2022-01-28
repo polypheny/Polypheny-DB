@@ -16,13 +16,21 @@
 
 package org.polypheny.db.cypher.pattern;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherNamedPattern extends CypherPattern {
+
+    private final CypherVariable variable;
+    private final CypherPattern anonymousPattern;
+
 
     public CypherNamedPattern( CypherVariable variable, CypherPattern anonymousPattern ) {
         super( ParserPos.ZERO );
+        this.variable = variable;
+        this.anonymousPattern = anonymousPattern;
     }
 
 }

@@ -25,7 +25,7 @@ import java.util.Map;
 public class UIRequest {
 
     /**
-     * Expression of a request, e.g. QueryRequest or RelAlgRequest
+     * ExpressionType of a request, e.g. QueryRequest or RelAlgRequest
      */
     public String requestType;
 

@@ -14,15 +14,34 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.clause;
+package org.polypheny.db.cypher.mapprojection;
 
-import org.polypheny.db.cypher.ShowCommandFilterType;
+import lombok.Getter;
+import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherShowIndex extends CypherClause {
+@Getter
+public class CypherMPItem extends CypherNode {
 
-    public CypherShowIndex( ParserPos pos, ShowCommandFilterType indexType, boolean brief, boolean verbose, CypherWhere where, boolean yield ) {
+    private CypherExpression expression;
+
+
+    protected CypherMPItem( StringPos pos, CypherExpression expression ) {
+        super( pos.getPos() );
+        this.expression = expression;
+    }
+
+
+    protected CypherMPItem( ParserPos pos ) {
         super( pos );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.MAP_PROJECTION;
     }
 
 }

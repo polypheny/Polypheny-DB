@@ -271,7 +271,7 @@ public class StatisticQueryProcessor {
 
     private PolyResult processQuery( Statement statement, String sql ) {
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-        Node parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
 
         if ( parsed.isA( Kind.DDL ) ) {
             // statistics module should not execute any ddls

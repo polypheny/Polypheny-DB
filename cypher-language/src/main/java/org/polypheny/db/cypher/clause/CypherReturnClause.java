@@ -17,13 +17,39 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherReturnClause extends CypherClause {
+
+    private final boolean distinct;
+    private final List<CypherReturn> returnItems;
+    private final List<CypherOrderItem> order;
+    private final ParserPos pos1;
+    private final CypherExpression skip;
+    private final ParserPos pos2;
+    private final CypherExpression limit;
+    private final ParserPos pos3;
+
 
     public CypherReturnClause( ParserPos pos, boolean distinct, List<CypherReturn> returnItems, List<CypherOrderItem> order, ParserPos pos1, CypherExpression skip, ParserPos pos2, CypherExpression limit, ParserPos pos3 ) {
         super( pos );
+        this.distinct = distinct;
+        this.returnItems = returnItems;
+        this.order = order;
+        this.pos1 = pos1;
+        this.skip = skip;
+        this.pos2 = pos2;
+        this.limit = limit;
+        this.pos3 = pos3;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.RETURN;
     }
 
 }

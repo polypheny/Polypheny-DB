@@ -164,7 +164,7 @@ public class ExploreQueryProcessor {
         PolyResult result;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
 
-        Node parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
 
         if ( parsed.isA( Kind.DDL ) ) {
             // explore by example should not execute any ddls

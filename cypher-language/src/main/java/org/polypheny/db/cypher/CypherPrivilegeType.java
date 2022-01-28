@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.cypher.admin.CypherAdminAction;
+import org.polypheny.db.cypher.scope.CypherScope;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
@@ -42,6 +43,12 @@ public class CypherPrivilegeType extends CypherNode {
 
     public CypherPrivilegeType( ParserPos pos, CypherAdminAction action, List<CypherPrivilegeQualifier> qualifiers ) {
         this( pos, ImmutableList.of( action ), null, null, qualifiers );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.PRIVILEGE;
     }
 
 }

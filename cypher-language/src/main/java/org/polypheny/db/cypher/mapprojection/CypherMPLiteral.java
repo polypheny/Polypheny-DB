@@ -16,11 +16,10 @@
 
 package org.polypheny.db.cypher.mapprojection;
 
-import org.polypheny.db.cypher.CypherMapProjectionItem;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.parser.StringPos;
 
-public class CypherMPLiteral extends CypherMapProjectionItem {
+public class CypherMPLiteral extends CypherMPItem {
 
     public CypherMPLiteral( StringPos pos, CypherExpression expression ) {
         super( pos, expression );

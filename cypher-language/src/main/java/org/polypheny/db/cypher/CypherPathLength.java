@@ -16,14 +16,31 @@
 
 package org.polypheny.db.cypher;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherPathLength extends CypherNode {
+
+
+    private ParserPos fromPos;
+    private ParserPos toPos;
+    private String from;
+    private String to;
 
 
     public CypherPathLength( ParserPos pos, ParserPos fromPos, ParserPos toPos, String from, String to ) {
         super( pos );
+        this.fromPos = fromPos;
+        this.toPos = toPos;
+        this.from = from;
+        this.to = to;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.PATH_LENGTH;
+    }
 
 }

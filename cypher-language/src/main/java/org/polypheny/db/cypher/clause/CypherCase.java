@@ -38,4 +38,10 @@ public class CypherCase extends CypherExpression {
         this.elseCase = elseCase;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.CASE;
+    }
+
 }

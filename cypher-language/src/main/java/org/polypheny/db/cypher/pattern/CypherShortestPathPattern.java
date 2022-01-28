@@ -16,8 +16,10 @@
 
 package org.polypheny.db.cypher.pattern;
 
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherShortestPathPattern extends CypherPattern {
 
     private final CypherPattern pathPattern;

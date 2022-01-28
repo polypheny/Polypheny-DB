@@ -97,7 +97,7 @@ public class Result {
     private String generatedQuery;
 
     /**
-     * Expression of the result: if the data is from a table/view/arbitrary query
+     * ExpressionType of the result: if the data is from a table/view/arbitrary query
      */
     private ResultType type;
 

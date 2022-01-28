@@ -16,10 +16,12 @@
 
 package org.polypheny.db.cypher.ddl;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherSetOwnPassword extends CypherAdminCommand {
 
     private final CypherExpression currentPassword;

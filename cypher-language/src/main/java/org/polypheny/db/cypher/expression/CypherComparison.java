@@ -16,13 +16,23 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherComparison extends CypherExpression {
+
+    private OperatorName contains;
+    private CypherExpression left;
+    private CypherExpression right;
+
 
     public CypherComparison( ParserPos pos, OperatorName contains, CypherExpression left, CypherExpression right ) {
         super( pos );
+        this.contains = contains;
+        this.left = left;
+        this.right = right;
     }
 
 }

@@ -14,15 +14,37 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.clause;
+package org.polypheny.db.cypher.show;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.ShowCommandFilterType;
+import org.polypheny.db.cypher.clause.CypherClause;
+import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherShowConstraint extends CypherClause {
+
+    private ShowCommandFilterType constraintType;
+    private boolean brief;
+    private boolean verbose;
+    private CypherWhere where;
+    private boolean yield;
+
 
     public CypherShowConstraint( ParserPos pos, ShowCommandFilterType constraintType, boolean brief, boolean verbose, CypherWhere where, boolean yield ) {
         super( pos );
+        this.constraintType = constraintType;
+        this.brief = brief;
+        this.verbose = verbose;
+        this.where = where;
+        this.yield = yield;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.SHOW;
     }
 
 }

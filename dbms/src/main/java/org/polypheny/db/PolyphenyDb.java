@@ -101,10 +101,10 @@ public class PolyphenyDb {
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
 
-    @Option(name = { "-defaultStore" }, description = "Expression of default store")
+    @Option(name = { "-defaultStore" }, description = "ExpressionType of default store")
     public String defaultStoreName = "hsqldb";
 
-    @Option(name = { "-defaultSource" }, description = "Expression of default source")
+    @Option(name = { "-defaultSource" }, description = "ExpressionType of default source")
     public String defaultSourceName = "csv";
 
     @Option(name = { "-c", "--config" }, description = "Path to the configuration file", type = OptionType.GLOBAL)

@@ -32,4 +32,10 @@ public class CypherAdminAction extends CypherNode {
         this.type = type;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.ADMIN_ACTION;
+    }
+
 }

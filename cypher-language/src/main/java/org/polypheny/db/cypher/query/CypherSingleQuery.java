@@ -17,10 +17,12 @@
 package org.polypheny.db.cypher.query;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherSingleQuery extends CypherQuery {
 
     private final List<CypherClause> clauses;

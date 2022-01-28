@@ -14,39 +14,35 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.show;
 
+import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.cypher.CypherParameter;
+import org.polypheny.db.cypher.CypherSimpleEither;
+import org.polypheny.db.cypher.clause.CypherClause;
+import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
 
-// <Map<String, CypherExpression>, CypherParameter>
 @Getter
-public class CypherSimpleEither<T, P> extends CypherNode {
+public class CypherShowTransactions extends CypherClause {
 
-    private final T left;
-    private final P right;
+    private CypherSimpleEither<List<String>, CypherParameter> idEither;
+    private CypherWhere where;
+    private boolean yield;
 
 
-    protected CypherSimpleEither( ParserPos pos, T left, P right ) {
+    public CypherShowTransactions( ParserPos pos, CypherSimpleEither<List<String>, CypherParameter> idEither, CypherWhere where, boolean yield ) {
         super( pos );
-        this.left = left;
-        this.right = right;
-    }
-
-
-    public static <T, P> CypherSimpleEither<T, P> left( T left ) {
-        return new CypherSimpleEither<>( ParserPos.ZERO, left, null );
-    }
-
-
-    public static <T, P> CypherSimpleEither<T, P> right( P param ) {
-        return new CypherSimpleEither<>( ParserPos.ZERO, null, param );
+        this.idEither = idEither;
+        this.where = where;
+        this.yield = yield;
     }
 
 
     @Override
     public CypherKind getCypherKind() {
-        return CypherKind.EITHER;
+        return CypherKind.SHOW;
     }
 
 }

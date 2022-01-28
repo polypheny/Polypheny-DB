@@ -16,14 +16,28 @@
 
 package org.polypheny.db.cypher.clause;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherUnwind extends CypherClause {
+
+    private CypherExpression expression;
+    private CypherVariable variable;
+
 
     public CypherUnwind( ParserPos pos, CypherExpression expression, CypherVariable variable ) {
         super( pos );
+        this.expression = expression;
+        this.variable = variable;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.UNWIND;
     }
 
 }

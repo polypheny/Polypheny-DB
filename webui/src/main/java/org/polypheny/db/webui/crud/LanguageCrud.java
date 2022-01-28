@@ -47,7 +47,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.cql.Cql2RelConverter;
 import org.polypheny.db.cql.CqlQuery;
 import org.polypheny.db.cql.parser.CqlParser;
-import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.QueryParameters;
@@ -154,7 +153,7 @@ public class LanguageCrud {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Parsing" );
             }
-            Node parsed = processor.parse( query );
+            Node parsed = processor.parse( query ).get( 0 );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Parsing" );
             }
@@ -432,7 +431,7 @@ public class LanguageCrud {
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
-        CypherNode parsed = (CypherNode) cypherProcessor.parse( query );
+        List<? extends Node> parsed = cypherProcessor.parse( query );
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().stop( "Parsing" );
         }

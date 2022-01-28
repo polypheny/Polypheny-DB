@@ -318,7 +318,7 @@ public class TestHelper {
             data.addProperty( "database", "test" );
 
             return Unirest.post( "{protocol}://{host}:{port}/mongo" )
-                    .header( "Content-Expression", "application/json" )
+                    .header( "Content-ExpressionType", "application/json" )
                     .body( data );
 
         }

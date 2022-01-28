@@ -16,19 +16,38 @@
 
 package org.polypheny.db.cypher.clause;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherReturnItem extends CypherReturn {
+
+    private final CypherExpression expression;
+    private CypherVariable variable;
+    private int beginOffset;
+    private int endOffset;
+
 
     public CypherReturnItem( ParserPos pos, CypherExpression expression, CypherVariable variable ) {
         super( pos );
+        this.expression = expression;
+        this.variable = variable;
     }
 
 
     public CypherReturnItem( ParserPos pos, CypherExpression expression, int beginOffset, int endOffset ) {
         super( pos );
+        this.expression = expression;
+        this.beginOffset = beginOffset;
+        this.endOffset = endOffset;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.RETURN;
     }
 
 }

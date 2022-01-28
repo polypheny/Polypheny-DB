@@ -16,13 +16,27 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherPatternComprehension extends CypherExpression {
+
+    private final ParserPos patternPos;
+    private final CypherPattern pattern;
+    private final CypherVariable variable;
+    private final CypherExpression where;
+    private final CypherExpression projection;
+
 
     public CypherPatternComprehension( ParserPos pos, ParserPos patternPos, CypherPattern pattern, CypherVariable variable, CypherExpression where, CypherExpression projection ) {
         super( pos );
+        this.patternPos = patternPos;
+        this.pattern = pattern;
+        this.variable = variable;
+        this.where = where;
+        this.projection = projection;
     }
 
 }

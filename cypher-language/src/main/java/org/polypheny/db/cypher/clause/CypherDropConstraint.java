@@ -51,4 +51,10 @@ public class CypherDropConstraint extends CypherSchemaCommand {
         this.ifExists = ifExists;
     }
 
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.DROP;
+    }
+
 }

@@ -19,10 +19,16 @@ package org.polypheny.db.cypher.admin;
 import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherWithGraph extends CypherStatement {
+public abstract class CypherWithGraph extends CypherStatement {
 
     protected CypherWithGraph( ParserPos pos ) {
         super( pos );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.WITH_GRAPH;
     }
 
 }

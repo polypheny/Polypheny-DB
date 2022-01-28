@@ -16,13 +16,21 @@
 
 package org.polypheny.db.cypher.expression;
 
+import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherUnary extends CypherExpression {
+
+    private final OperatorName unaryPlus;
+    private final CypherExpression expression;
+
 
     public CypherUnary( ParserPos pos, OperatorName unaryPlus, CypherExpression expression ) {
         super( pos );
+        this.unaryPlus = unaryPlus;
+        this.expression = expression;
     }
 
 }

@@ -27,15 +27,21 @@ public class CypherLoadCSV extends CypherClause {
     private final boolean headers;
     private final CypherExpression expression;
     private final CypherVariable variable;
-    private final String seperator;
+    private final String separator;
 
 
-    public CypherLoadCSV( ParserPos pos, boolean headers, CypherExpression expression, CypherVariable variable, String seperator ) {
+    public CypherLoadCSV( ParserPos pos, boolean headers, CypherExpression expression, CypherVariable variable, String separator ) {
         super( pos );
         this.headers = headers;
         this.expression = expression;
         this.variable = variable;
-        this.seperator = seperator;
+        this.separator = separator;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.LOAD_CSV;
     }
 
 }

@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
 import org.polypheny.db.languages.NodeParseException;
@@ -48,13 +48,13 @@ public class CypherProcessorImpl extends Processor {
 
 
     @Override
-    public Node parse( String query ) {
+    public List<CypherStatement> parse( String query ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyMQL statement ..." );
         }
         stopWatch.start();
-        List<? extends CypherNode> parsed;
+        List<CypherStatement> parsed;
         if ( log.isDebugEnabled() ) {
             log.debug( "CYPHER: {}", query );
         }
@@ -73,7 +73,7 @@ public class CypherProcessorImpl extends Processor {
         if ( log.isDebugEnabled() ) {
             log.debug( "Parsing PolyCypher statement ... done. [{}]", stopWatch );
         }
-        return parsed.get( 0 );
+        return parsed;
     }
 
 

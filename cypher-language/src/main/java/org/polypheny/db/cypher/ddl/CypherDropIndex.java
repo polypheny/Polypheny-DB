@@ -18,9 +18,11 @@ package org.polypheny.db.cypher.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherDropIndex extends CypherSchemaCommand {
 
     private final String name;

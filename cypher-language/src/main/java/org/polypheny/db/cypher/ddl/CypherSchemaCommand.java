@@ -19,10 +19,16 @@ package org.polypheny.db.cypher.ddl;
 import org.polypheny.db.cypher.admin.CypherWithGraph;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherSchemaCommand extends CypherWithGraph {
+public abstract class CypherSchemaCommand extends CypherWithGraph {
 
     protected CypherSchemaCommand( ParserPos pos ) {
         super( pos );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.SCHEMA_COMMAND;
     }
 
 }

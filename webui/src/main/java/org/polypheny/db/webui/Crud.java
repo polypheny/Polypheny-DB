@@ -2233,7 +2233,7 @@ public class Crud implements InformationObserver {
                     type = FieldType.LABEL;
                     break;
                 default:
-                    throw new RuntimeException( "Unknown Field Expression: " + currentColumn.getFieldType() );
+                    throw new RuntimeException( "Unknown Field ExpressionType: " + currentColumn.getFieldType() );
             }
 
             if ( type.equals( FieldType.LIST ) ) {
@@ -3559,7 +3559,7 @@ public class Crud implements InformationObserver {
 
 
     void getDirectory( File dir, Context ctx ) {
-        ctx.header( "Content-Expression", "application/zip" );
+        ctx.header( "Content-ExpressionType", "application/zip" );
         ctx.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
         String zipFileName = UUID.randomUUID().toString() + ".zip";
         File zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + zipFileName );
@@ -3847,7 +3847,7 @@ public class Crud implements InformationObserver {
             statement.getOverviewDuration().start( "Parsing" );
         }
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.SQL );
-        Node parsed = sqlProcessor.parse( sql );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
         if ( isAnalyze ) {
             statement.getOverviewDuration().stop( "Parsing" );
         }
@@ -4043,7 +4043,7 @@ public class Crud implements InformationObserver {
      *
      * @param schemaName name of the schema
      * @param tableName name of the table
-     * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Expression (java.sql.Types).
+     * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql ExpressionType (java.sql.Types).
      */
     private Map<String, CatalogColumn> getCatalogColumns( String schemaName, String tableName ) {
         Map<String, CatalogColumn> dataTypes = new HashMap<>();

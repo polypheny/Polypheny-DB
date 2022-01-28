@@ -29,7 +29,6 @@ public class CypherSetLabels extends CypherSetItem {
 
 
     public CypherSetLabels( CypherVariable variable, List<StringPos> labels ) {
-
         this.variable = variable;
         this.labels = labels;
     }

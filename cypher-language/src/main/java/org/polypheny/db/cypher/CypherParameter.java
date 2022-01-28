@@ -25,21 +25,21 @@ import org.polypheny.db.languages.ParserPos;
 public class CypherParameter extends CypherExpression {
 
     private CypherVariable variable;
-    private final ParameterType type;
+    private final ParameterType parameterType;
     private String name;
 
 
-    protected CypherParameter( ParserPos pos, CypherVariable variable, ParameterType type ) {
+    protected CypherParameter( ParserPos pos, CypherVariable variable, ParameterType parameterType ) {
         super( pos );
         this.variable = variable;
-        this.type = type;
+        this.parameterType = parameterType;
     }
 
-    protected CypherParameter( ParserPos pos, String name, ParameterType type ) {
+
+    protected CypherParameter( ParserPos pos, String name, ParameterType parameterType ) {
         super( pos );
-        this.variable = variable;
         this.name = name;
-        this.type = type;
+        this.parameterType = parameterType;
     }
 
 }

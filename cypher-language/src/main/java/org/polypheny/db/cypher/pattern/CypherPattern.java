@@ -19,10 +19,16 @@ package org.polypheny.db.cypher.pattern;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherPattern extends CypherNode {
+public abstract class CypherPattern extends CypherNode {
 
     protected CypherPattern( ParserPos pos ) {
         super( pos );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.PATTERN;
     }
 
 }

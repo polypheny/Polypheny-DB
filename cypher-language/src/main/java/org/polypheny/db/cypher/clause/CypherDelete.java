@@ -14,15 +14,31 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.clause;
 
+import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherInTransactionParams extends CypherNode {
+@Getter
+public class CypherDelete extends CypherClause {
 
-    protected CypherInTransactionParams( ParserPos pos, CypherExpression batchSize ) {
+
+    private final boolean detach;
+    private final List<CypherExpression> expressions;
+
+
+    public CypherDelete( ParserPos pos, boolean detach, List<CypherExpression> expressions ) {
         super( pos );
+        this.detach = detach;
+        this.expressions = expressions;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.DELETE;
     }
 
 }

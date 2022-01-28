@@ -16,12 +16,20 @@
 
 package org.polypheny.db.cypher.set;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherProperty;
 
+@Getter
 public class CypherSetProperty extends CypherSetItem {
 
-    public CypherSetProperty( CypherProperty p, CypherExpression e ) {
+    private final CypherProperty property;
+    private final CypherExpression expression;
+
+
+    public CypherSetProperty( CypherProperty property, CypherExpression expression ) {
+        this.property = property;
+        this.expression = expression;
     }
 
 }

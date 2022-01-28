@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher.clause;
+package org.polypheny.db.cypher.scope;
 
-import java.util.List;
-import org.polypheny.db.cypher.CypherParameter;
-import org.polypheny.db.cypher.CypherSimpleEither;
+import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherShowTransactions extends CypherClause {
+public class CypherScope extends CypherNode {
 
-    public CypherShowTransactions( ParserPos pos, CypherSimpleEither<List<String>, CypherParameter> idEither, CypherWhere where, boolean yield ) {
+    protected CypherScope( ParserPos pos ) {
         super( pos );
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.SCOPE;
     }
 
 }

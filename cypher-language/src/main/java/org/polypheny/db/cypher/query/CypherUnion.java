@@ -16,9 +16,11 @@
 
 package org.polypheny.db.cypher.query;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.languages.ParserPos;
 
+@Getter
 public class CypherUnion extends CypherQuery {
 
     private final CypherQuery left;

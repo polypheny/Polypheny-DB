@@ -16,13 +16,23 @@
 
 package org.polypheny.db.cypher.set;
 
+import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 
+@Getter
 public class CypherSetVariable extends CypherSetItem {
 
-    public CypherSetVariable( CypherVariable v, CypherExpression e, boolean b ) {
+    private CypherVariable variable;
+    private CypherExpression expression;
+    private boolean increment;
 
+
+    public CypherSetVariable( CypherVariable variable, CypherExpression expression, boolean increment ) {
+
+        this.variable = variable;
+        this.expression = expression;
+        this.increment = increment;
     }
 
 }

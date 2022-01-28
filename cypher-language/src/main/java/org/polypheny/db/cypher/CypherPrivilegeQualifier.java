@@ -17,12 +17,31 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.languages.ParserPos;
 
-public class CypherPrivilegeQualifier extends CypherQualifier{
+@Getter
+public class CypherPrivilegeQualifier extends CypherNode {
+
+    private final List<String> names;
+    private final QualifierType type;
+
 
     public CypherPrivilegeQualifier( ParserPos pos, List<String> names, QualifierType type ) {
-        super( pos, names, type );
+        super( pos );
+        this.names = names;
+        this.type = type;
+    }
+
+
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.PRIVILEGE;
+    }
+
+
+    public enum QualifierType {
+        ALL, RELATIONSHIP, LABEL, ALL_ELEMENTS, ELEMENT, USER, ALL_LABELS, ALL_DATABASES, ALL_USERS, ALL_RELATIONSHIP
     }
 
 }
