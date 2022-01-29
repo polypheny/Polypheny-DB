@@ -300,4 +300,60 @@ public class VerticalPartitioningTest {
         }
     }
 
+
+    @Test
+    public void dataDistributionTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE verticalDataPlacementTest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+                    CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
+
+                    CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
+
+                    // ADD adapter
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    // ADD FullPlacement
+                    statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
+
+                    statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tinteger) ON STORE anotherstore" );
+
+                    // By executing the following statement, technically the column tprimary would not be present
+                    // on any DataPlacement anymore. Therefore, it has to fail and all placements should remain
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE hsqldb" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+                    statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary,tvarchar) ON STORE hsqldb" );
+
+                    failed = false;
+                    try {
+                        statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" DROP PLACEMENT ON STORE anotherstore" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+
+                } finally {
+                    // Drop tables and stores
+                    statement.executeUpdate( "DROP TABLE IF EXISTS verticalDataPlacementTest" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP anotherstore" );
+                }
+            }
+        }
+    }
+
 }

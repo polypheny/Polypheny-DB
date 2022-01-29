@@ -358,18 +358,6 @@ public abstract class DdlManager {
      */
     public abstract void dropDefaultValue( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException;
 
-
-    /**
-     * Modifies an existing data placement of a table on a specific store
-     *
-     * @param catalogTable the table
-     * @param columnIds the ids of the columns for which to create a new placement
-     * @param partitionGroupIds the ids of the partitions of the column
-     * @param dataStore the data store on which to create the placement
-     * @param statement the query statement
-     */
-    public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
-
     /**
      * Modify the placement of a table on a specified data store. This method compares the specified list of column ids with
      * the currently placed columns. If a column currently present on the data store is not specified in the columnIds list,
@@ -385,7 +373,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+    public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -396,7 +384,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store on which the partition placements should be altered
      * @param statement the used statement
      */
-    public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement );
+    public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) throws LastPlacementException;
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of

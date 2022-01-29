@@ -1341,6 +1341,30 @@ public abstract class Catalog {
     public abstract List<CatalogDataPlacement> getDataPlacements( long tableId );
 
     /**
+     * Returns a list of all DataPlacements that contain all columns as well as all partitions
+     *
+     * @param tableId table to retrieve the list from
+     * @return list of all full DataPlacements
+     */
+    public abstract List<CatalogDataPlacement> getAllFullDataPlacements( long tableId );
+
+    /**
+     * Returns a list of all DataPlacements that contain all columns
+     *
+     * @param tableId table to retrieve the list from
+     * @return list of all full DataPlacements
+     */
+    public abstract List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId );
+
+    /**
+     * Returns a list of all DataPlacements that contain all partitions
+     *
+     * @param tableId table to retrieve the list from
+     * @return list of all full DataPlacements
+     */
+    public abstract List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId );
+
+    /**
      * Returns all DataPlacements of a given table that are associated with a given role.
      *
      * @param tableId table to retrieve the placements from
@@ -1348,6 +1372,17 @@ public abstract class Catalog {
      * @return List of all DataPlacements for the table that are associated with a specific role
      */
     public abstract List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role );
+
+    /**
+     * Checks if the planned changes are allowed in term sof placements that need to be present
+     *
+     * @param tableId Table to be checked
+     * @param adapterId Adapter to be checked
+     * @param columnIdsToBeRemoved columns that shall be removed
+     * @param partitionsIdsToBeRemoved partitions that shall be removed
+     * @return true if these changes can be made to the data placement, false if not
+     */
+    public abstract boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved );
 
     /**
      * Flags the table for deletion.

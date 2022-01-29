@@ -1201,4 +1201,28 @@ public abstract class MockCatalog extends Catalog {
     public ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId ) {
         return null;
     }
+
+
+    @Override
+    public boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getAllFullDataPlacements( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId ) {
+        throw new NotImplementedException();
+    }
 }

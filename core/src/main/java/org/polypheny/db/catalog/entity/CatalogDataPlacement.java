@@ -80,6 +80,24 @@ public class CatalogDataPlacement implements CatalogEntity {
     }
 
 
+    public boolean hasFullPlacement() {
+        if ( hasColumnFullPlacement() && hasPartitionFullPlacement() ) {
+            return true;
+        }
+        return false;
+    }
+
+
+    public boolean hasColumnFullPlacement() {
+        return Catalog.getInstance().getTable( this.tableId ).columnIds.size() == columnPlacementsOnAdapter.size();
+    }
+
+
+    public boolean hasPartitionFullPlacement() {
+        return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == partitionPlacementsOnAdapter.size();
+    }
+
+
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];

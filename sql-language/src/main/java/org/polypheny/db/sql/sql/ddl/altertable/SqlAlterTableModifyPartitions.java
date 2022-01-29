@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -171,12 +172,16 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             return;
         }
         // Update
-        DdlManager.getInstance().modifyPartitionPlacement(
-                catalogTable,
-                tempPartitionList,
-                storeInstance,
-                statement
-        );
+        try {
+            DdlManager.getInstance().modifyPartitionPlacement(
+                    catalogTable,
+                    tempPartitionList,
+                    storeInstance,
+                    statement
+            );
+        } catch ( LastPlacementException e ) {
+            e.printStackTrace();
+        }
     }
 
 }

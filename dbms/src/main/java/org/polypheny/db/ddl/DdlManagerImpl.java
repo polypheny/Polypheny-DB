@@ -62,6 +62,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
@@ -976,14 +977,21 @@ public class DdlManagerImpl extends DdlManager {
             throw new PlacementNotExistsException();
         }
 
+        CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
+        if ( !catalog.validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(),
+                dataPlacement.columnPlacementsOnAdapter, dataPlacement.partitionPlacementsOnAdapter ) ) {
+
+            throw new LastPlacementException();
+        }
+
         // Check if there are is another placement for every column on this store
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) ) {
+      /*  for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) ) {
             List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( placement.columnId );
             if ( existingPlacements.size() < 2 ) {
                 throw new LastPlacementException();
             }
         }
-
+*/
         // Drop all indexes on this store
         for ( CatalogIndex index : catalog.getIndexes( catalogTable.id, false ) ) {
             if ( index.location == storeInstance.getAdapterId() ) {
@@ -1177,23 +1185,8 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    /**
-     * Modifies an existing data placement of a table on a specific store
-     *
-     * @param catalogTable the table
-     * @param columnIds the ids of the columns for which to create a new placement
-     * @param partitionGroupIds the ids of the partitions of the column
-     * @param dataStore the data store on which to create the placement
-     * @param statement the query statement
-     */
     @Override
-    public void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
-
-    }
-
-
-    @Override
-    public void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement )
+    public void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement )
             throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException {
 
         // Check whether this placement already exists
@@ -1203,6 +1196,8 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check if views are dependent from this view
         checkViewDependencies( catalogTable );
+
+        List<Long> columnsToRemove = new ArrayList<>();
 
         // Checks before physically removing of placement that the partition distribution is still valid and sufficient
         // Identifies which columns need to be removed
@@ -1227,17 +1222,21 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 } else {
                     // It is not a primary key. Remove the column
-                    // Check if there are is another placement for this column
-                    List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( placement.columnId );
-                    if ( existingPlacements.size() < 2 ) {
-                        throw new LastPlacementException();
-                    }
-                    // Drop Column on store
-                    storeInstance.dropColumn( statement.getPrepareContext(), catalog.getColumnPlacement( storeInstance.getAdapterId(), placement.columnId ) );
-                    // Drop column placement
-                    catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId, false );
+                    columnsToRemove.add( placement.columnId );
                 }
             }
+        }
+
+        if ( !catalog.validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(), columnsToRemove, new ArrayList<>() ) ) {
+            throw new LastPlacementException();
+        }
+
+        // Remove columns physically
+        for ( long columnId : columnsToRemove ) {
+            // Drop Column on store
+            storeInstance.dropColumn( statement.getPrepareContext(), catalog.getColumnPlacement( storeInstance.getAdapterId(), columnId ) );
+            // Drop column placement
+            catalog.deleteColumnPlacement( storeInstance.getAdapterId(), columnId, false );
         }
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
@@ -1332,7 +1331,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) {
+    public void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) throws LastPlacementException {
         int storeId = storeInstance.getAdapterId();
         List<Long> newPartitions = new ArrayList<>();
         List<Long> removedPartitions = new ArrayList<>();
@@ -1345,6 +1344,10 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.getPartitions( partitionGroupId ).forEach( p -> removedPartitions.add( p.id ) );
 
             }
+        }
+
+        if ( !catalog.validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(), new ArrayList<>(), removedPartitions ) ) {
+            throw new LastPlacementException();
         }
 
         // Get PartitionGroups that have been newly added
@@ -1493,11 +1496,17 @@ public class DdlManagerImpl extends DdlManager {
                 throw new IndexPreventsRemovalException( index.name, columnName );
             }
         }
-        // Check if there are is another placement for this column
-        List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( catalogColumn.id );
+        // Check if there  is another placement for this column for all existing partitions
+        /*List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( catalogColumn.id );
         if ( existingPlacements.size() < 2 ) {
             throw new LastPlacementException();
+        }*/
+
+        // TODO @HENNLO Substitute with placement above
+        if ( !catalog.validateDataPlacementsConstraints( catalogColumn.tableId, storeInstance.getAdapterId(), Arrays.asList( catalogColumn.id ), new ArrayList<>() ) ) {
+            throw new LastPlacementException();
         }
+
         // Check whether the column to drop is a primary key
         CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
         if ( primaryKey.columnIds.contains( catalogColumn.id ) ) {

@@ -1736,9 +1736,6 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
 
-            // Remove all placement containers along with all placements
-            //table.dataPlacements.forEach( adapterId -> removeDataPlacement(adapterId, tableId) );
-
             if ( table.partitionProperty.reliesOnPeriodicChecks ) {
                 removeTableFromPeriodicProcessing( tableId );
             }
@@ -1752,6 +1749,9 @@ public class CatalogImpl extends Catalog {
             for ( Long columnId : Objects.requireNonNull( tableChildren.get( tableId ) ) ) {
                 deleteColumn( columnId );
             }
+
+            // Remove all placement containers along with all placements
+            table.dataPlacements.forEach( adapterId -> removeDataPlacement( adapterId, tableId ) );
 
             tableChildren.remove( tableId );
             tables.remove( tableId );
@@ -4267,10 +4267,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
-        List<Long> tempPartitionIds = new ArrayList<>();
-        // Get all PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
-        // getPartitionGroupsOnDataPlacement( adapterId, tableId ).forEach( pgId -> getPartitionGroup( pgId ).partitionIds.forEach( tempPartitionIds::add ) );
-
         return getDataPlacement( adapterId, tableId ).partitionPlacementsOnAdapter;
     }
 
@@ -4380,6 +4376,66 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Returns a list of all DataPlacements that contain all columns as well as all partitions
+     *
+     * @param tableId table to retrieve the list from
+     * @return list of all full DataPlacements
+     */
+    @Override
+    public List<CatalogDataPlacement> getAllFullDataPlacements( long tableId ) {
+        List<CatalogDataPlacement> dataPlacements = new ArrayList<>();
+        List<CatalogDataPlacement> allDataPlacements = getDataPlacements( tableId );
+
+        for ( CatalogDataPlacement dataPlacement : allDataPlacements ) {
+            if ( dataPlacement.hasFullPlacement() ) {
+                dataPlacements.add( dataPlacement );
+            }
+        }
+        return dataPlacements;
+    }
+
+
+    /**
+     * Returns a list of all DataPlacements that contain all columns
+     *
+     * @param tableId table to retrieve the list from
+     * @return list of all full DataPlacements
+     */
+    @Override
+    public List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId ) {
+        List<CatalogDataPlacement> dataPlacements = new ArrayList<>();
+        List<CatalogDataPlacement> allDataPlacements = getDataPlacements( tableId );
+
+        for ( CatalogDataPlacement dataPlacement : allDataPlacements ) {
+            if ( dataPlacement.hasColumnFullPlacement() ) {
+                dataPlacements.add( dataPlacement );
+            }
+        }
+        return dataPlacements;
+    }
+
+
+    /**
+     * Returns a list of all DataPlacements that contain all partitions
+     *
+     * @param tableId table to retrieve the list from
+     * @return list of all full DataPlacements
+     */
+    @Override
+    public List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId ) {
+        List<CatalogDataPlacement> dataPlacements = new ArrayList<>();
+        List<CatalogDataPlacement> allDataPlacements = getDataPlacements( tableId );
+
+        for ( CatalogDataPlacement dataPlacement : allDataPlacements ) {
+            if ( dataPlacement.hasPartitionFullPlacement() ) {
+                dataPlacements.add( dataPlacement );
+            }
+        }
+        return dataPlacements;
+    }
+
+
+    /**
      * Returns all DataPlacements of a given table that are associated with a given role.
      *
      * @param tableId table to retrieve the placements from
@@ -4399,6 +4455,76 @@ public class CatalogImpl extends Catalog {
         return catalogDataPlacements;
         */
         throw new RuntimeException( "Operation not yet supported" );
+    }
+
+
+    /**
+     * Checks if the planned changes are allowed in terms of placements that need to be present.
+     * Each column must be present for all partitions somewhere
+     *
+     * @param tableId Table to be checked
+     * @param adapterId Adapter where Ids will be removed from
+     * @param columnIdsToBeRemoved columns that shall be removed
+     * @param partitionsIdsToBeRemoved partitions that shall be removed
+     * @return true if these changes can be made to the data placement, false if not
+     */
+    @Override
+    public boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
+
+        if ( (columnIdsToBeRemoved.isEmpty() && partitionsIdsToBeRemoved.isEmpty()) || isTableFlaggedForDeletion( tableId ) ) {
+            log.warn( "Invoked validation with two empty lists of columns and partitions to be revoked. Is therefore always true..." );
+            return true;
+        }
+
+        // ToDO @HENNLO Change this to obtain the new distribution not only the removed.
+
+        CatalogTable table = getTable( tableId );
+        List<CatalogDataPlacement> dataPlacements = getDataPlacements( tableId );
+
+        for ( long columnId : table.columnIds ) {
+
+            List<Long> partitionsToBeCheckedForColumn = table.partitionProperty.partitionIds.stream().collect( Collectors.toList() );
+
+            // Check for every column if it has every partition
+            for ( CatalogDataPlacement dataPlacement : dataPlacements ) {
+                // Can instantly return because we still have a full placement somewhere
+                if ( dataPlacement.hasFullPlacement() && dataPlacement.adapterId != adapterId ) {
+                    return true;
+                }
+
+                List<Long> effectiveColumnsOnStore = dataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toList() );
+                List<Long> effectivePartitionsOnStore = dataPlacement.partitionPlacementsOnAdapter.stream().collect( Collectors.toList() );
+                ;
+
+                // Remove columns and partitions from store to not evaluate them
+                if ( dataPlacement.adapterId == adapterId ) {
+
+                    if ( columnIdsToBeRemoved.contains( columnId ) ) {
+                        continue;
+                    }
+
+                    effectiveColumnsOnStore.removeAll( columnIdsToBeRemoved );
+                    effectivePartitionsOnStore.removeAll( partitionsIdsToBeRemoved );
+                }
+
+                if ( effectiveColumnsOnStore.contains( columnId ) ) {
+                    partitionsToBeCheckedForColumn.removeAll( effectivePartitionsOnStore );
+                } else {
+                    continue;
+                }
+
+                // Found all partitions for column, continue with next column
+                if ( partitionsToBeCheckedForColumn.isEmpty() ) {
+                    break;
+                }
+            }
+
+            if ( !partitionsToBeCheckedForColumn.isEmpty() ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 
@@ -4558,6 +4684,9 @@ public class CatalogImpl extends Catalog {
         if ( log.isDebugEnabled() ) {
             log.debug( "Removing DataPlacement on adapter '{}' for entity '{}'", getAdapter( adapterId ), getTable( tableId ) );
         }
+
+        // Make sure that all columnPlacements and partitionPlacements are correctly dropped.
+        // Although, they should've been dropped earlier.
 
         // Recursively removing columns that exist on this placement
         for ( Long columnId : dataPlacement.columnPlacementsOnAdapter ) {
