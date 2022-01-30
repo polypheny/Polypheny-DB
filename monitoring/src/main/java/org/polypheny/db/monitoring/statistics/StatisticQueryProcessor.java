@@ -74,12 +74,18 @@ public class StatisticQueryProcessor {
      *
      * @return result of the query
      */
-    public StatisticQueryColumn selectOneStatWithRel( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
-        StatisticResult res = this.executeAlg( node, transaction, statement, queryColumn );
+    public StatisticQueryColumn selectOneColumnStat( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
+        StatisticResult res = this.executeColStat( node, transaction, statement, queryColumn );
         if ( res.getColumns() != null && res.getColumns().length == 1 ) {
             return res.getColumns()[0];
         }
         return null;
+    }
+
+
+
+    public String selectTableStat( AlgNode node, Transaction transaction, Statement statement ) {
+        return this.executeOneTableStat(node, transaction, statement);
     }
 
 
@@ -126,6 +132,21 @@ public class StatisticQueryProcessor {
         return catalogColumns.stream()
                 .map( c -> new QueryColumn( c.schemaId, c.tableId, c.id, c.type ) )
                 .collect( Collectors.toList() );
+
+    }
+
+
+    /**
+     * Gets all tables in the database
+     *
+     * @return all the tables ids
+     */
+    public List<CatalogTable> getAllTable() {
+        Catalog catalog = Catalog.getInstance();
+        return catalog.getTables(
+                new Pattern( databaseName ),
+                null,
+                null );
     }
 
 
@@ -142,11 +163,11 @@ public class StatisticQueryProcessor {
     }
 
 
-    private StatisticResult executeAlg( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
+    private StatisticResult executeColStat( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
         StatisticResult result = new StatisticResult();
 
         try {
-            result = executeAlg( statement, node, queryColumn );
+            result = executeColStat( statement, node, queryColumn );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
@@ -159,6 +180,21 @@ public class StatisticQueryProcessor {
         return result;
     }
 
+    private String executeOneTableStat( AlgNode node, Transaction transaction, Statement statement ) {
+        String result = "";
+        try {
+            result = executeOneTableStat( statement, node);
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Caught exception while executing a query from the console", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
+        }
+        return result;
+    }
 
     private Transaction getTransaction() {
         try {
@@ -173,7 +209,7 @@ public class StatisticQueryProcessor {
     // -----------------------------------------------------------------------
 
 
-    private StatisticResult executeAlg( Statement statement, AlgNode node, QueryColumn queryColumn ) throws QueryExecutionException {
+    private StatisticResult executeColStat( Statement statement, AlgNode node, QueryColumn queryColumn ) throws QueryExecutionException {
         PolyResult result;
         List<List<Object>> rows;
 
@@ -203,6 +239,38 @@ public class StatisticQueryProcessor {
 
         return new StatisticResult( queryColumn, d );
 
+    }
+
+
+    private String executeOneTableStat( Statement statement, AlgNode node ) throws QueryExecutionException {
+        PolyResult result;
+        List<List<Object>> rows;
+
+        try {
+            result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), true );
+            rows = result.getRows( statement, getPageSize() );
+        } catch ( Throwable t ) {
+            throw new QueryExecutionException( t );
+        }
+
+        List<String[]> data = new ArrayList<>();
+        for ( List<Object> row : rows ) {
+            String[] temp = new String[row.size()];
+            int counter = 0;
+            for ( Object o : row ) {
+                if ( o == null ) {
+                    temp[counter] = null;
+                } else {
+                    temp[counter] = o.toString();
+                }
+                counter++;
+            }
+            data.add( temp );
+        }
+
+        String[][] d = data.toArray( new String[0][] );
+
+        return d[0][0];
     }
 
 
