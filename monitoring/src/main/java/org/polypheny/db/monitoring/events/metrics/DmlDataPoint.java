@@ -42,6 +42,7 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
 
     private static final long serialVersionUID = 2312903042511293177L;
 
+    @Builder.Default
     private final List<String> tables = new ArrayList<>();
     private final HashMap<String, Object> dataElements = new HashMap<>();
     private UUID Id;
@@ -56,8 +57,10 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private List<Long> accessedPartitions;
     private String queryClass;
     private String physicalQueryClass;
-    protected HashMap<Long, List<Object>> changedValues;
-    protected Map<Long, Long> availableColumnsWithTable;
+    @Builder.Default
+    private final HashMap<Long, List<Object>> changedValues = new HashMap<>();
+    @Builder.Default
+    private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 
 
     @Override

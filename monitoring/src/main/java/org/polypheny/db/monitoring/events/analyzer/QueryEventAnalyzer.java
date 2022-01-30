@@ -32,6 +32,7 @@ public class QueryEventAnalyzer {
         QueryDataPointImpl metric = QueryDataPointImpl
                 .builder()
                 .Id( queryEvent.getId() )
+                .tables(queryEvent.getLogicalQueryInformation().getTables() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
@@ -45,7 +46,6 @@ public class QueryEventAnalyzer {
                 .availableColumnsWithTable( queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
                 .indexSize( queryEvent.getIndexSize() )
                 .build();
-        metric.getTables().addAll( queryEvent.getLogicalQueryInformation().getTables() );
         if ( queryEvent.getAccessedPartitions() != null ) {
             metric.setAccessedPartitions( queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) );
         } else {

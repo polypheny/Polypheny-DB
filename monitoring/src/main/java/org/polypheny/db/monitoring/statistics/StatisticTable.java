@@ -16,11 +16,15 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.entity.CatalogTable;
 
 
 /**
@@ -37,6 +41,15 @@ public class StatisticTable<T extends Comparable<T>> {
     @Getter
     @Setter
     private TableCalls calls;
+
+    @Getter
+    private SchemaType schemaType;
+
+    @Getter
+    private ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
+
+    @Getter
+    private String owner;
 
     @Getter
     @Setter
@@ -60,7 +73,11 @@ public class StatisticTable<T extends Comparable<T>> {
 
         Catalog catalog = Catalog.getInstance();
         if ( catalog.checkIfExistsTable( tableId ) ) {
-            this.table = catalog.getTable( tableId ).name;
+            CatalogTable catalogTable = catalog.getTable( tableId );
+            this.table = catalogTable.name;
+            this.schemaType = catalogTable.getSchemaType();
+            this.placementsByAdapter = catalogTable.placementsByAdapter;
+            this.owner = catalogTable.ownerName;
         }
 
         this.numberOfRows = 0;

@@ -174,7 +174,10 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 // Sends all extracted metrics to subscribers
                 for ( MonitoringDataPoint dataPoint : dataPoints ) {
                     this.persistentRepository.dataPoint( dataPoint );
-                    this.statisticRepository.dataPoint( dataPoint );
+                    //Statistics are only collected if Active Tracking is switched on
+                    if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
+                        this.statisticRepository.dataPoint( dataPoint );
+                    }
                 }
 
                 countEvents++;

@@ -42,6 +42,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
 
     private static final long serialVersionUID = 2312903042511293177L;
 
+    @Builder.Default
     private final List<String> tables = new ArrayList<>();
     private final HashMap<String, Object> dataElements = new HashMap<>();
     private UUID Id;
@@ -54,11 +55,12 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private int rowCount;
     private List<String> fieldNames;
     private List<Long> accessedPartitions;
-    protected String algCompareString;
-    protected String queryClass;
-    protected String physicalQueryClass;
-    protected Integer indexSize;
-    protected Map<Long, Long> availableColumnsWithTable;
+    private String algCompareString;
+    private String queryClass;
+    private String physicalQueryClass;
+    private Integer indexSize;
+    @Builder.Default
+    private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 
 
     @Override

@@ -113,7 +113,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 }
             }
             AlgNode input = modify.getInput();
-            if ( input instanceof LogicalValues && !(input instanceof LogicalDocuments) ) { //todo dl: handle documents differently
+            if ( input instanceof LogicalValues ) { //todo dl: handle documents differently
                 List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
                 HashMap<Integer, Integer> idxMapping = new HashMap<>();
