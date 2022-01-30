@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.cypher;
+package org.polypheny.db.cypher.cypher2alg;
 
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.languages.QueryParameters;

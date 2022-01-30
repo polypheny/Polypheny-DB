@@ -321,7 +321,7 @@ public class LanguageCrud {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Parsing" );
             }
-            MqlNode parsed = (MqlNode) mqlProcessor.parse( query );
+            MqlNode parsed = (MqlNode) mqlProcessor.parse( query ).get( 0 );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Parsing" );
             }

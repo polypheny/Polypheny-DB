@@ -410,6 +410,47 @@ public class TestHelper {
     }
 
 
+    public static class CypherConnection {
+
+        static Gson gson = new Gson();
+
+
+        private static HttpResponse<String> execute( String query ) {
+            HttpRequest<?> request = MongoConnection.buildQuery( query );
+            request.basicAuth( "pa", "" );
+            request.routeParam( "protocol", "http" );
+            request.routeParam( "host", "127.0.0.1" );
+            request.routeParam( "port", "13137" );
+            return request.asString();
+        }
+
+
+        public static Result executeGetResponse( String query ) {
+            return getBody( execute( query ) );
+        }
+
+
+        private static Result getBody( HttpResponse<String> res ) {
+            try {
+                Result[] result = gson.fromJson( res.getBody(), Result[].class );
+                if ( result.length == 1 ) {
+                    return gson.fromJson( res.getBody(), Result[].class )[0];
+                } else if ( result.length == 0 ) {
+                    return new Result();
+                }
+                fail( "There was more than one result in the response!" );
+                throw new RuntimeException( "This cannot happen" );
+
+            } catch ( JsonSyntaxException e ) {
+                log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
+                fail();
+                throw new RuntimeException( "This cannot happen" );
+            }
+        }
+
+    }
+
+
     public static class JdbcConnection implements AutoCloseable {
 
         private final static String dbHost = "localhost";

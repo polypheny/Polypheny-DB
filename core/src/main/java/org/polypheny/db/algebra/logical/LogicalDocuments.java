@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.logical;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
@@ -97,12 +98,12 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> values ) {
         List<AlgDataTypeField> fields = new ArrayList<>();
         fields.add( new AlgDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
-        fields.add( new AlgDataTypeFieldImpl( "_data", 1, typeFactory.createPolyType( PolyType.JSON ) ) );
+        fields.add( new AlgDataTypeFieldImpl( "_data", 1, typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), typeFactory.createPolyType( PolyType.ANY ) ) ) );
         AlgDataType defaultRowType = new AlgRecordType( fields );
 
         //ImmutableList<ImmutableList<RexLiteral>> normalizedTuples = normalize( tuples, rowTypes, defaultRowType );
 
-        return create( cluster, getOrAddId( values ), defaultRowType, normalize( values, cluster.getRexBuilder() ) );
+        return create( cluster, getOrAddId( values ), defaultRowType, normalizeToMap( values, defaultRowType, cluster.getRexBuilder() ) );
     }
 
 
@@ -231,6 +232,23 @@ public class LogicalDocuments extends LogicalValues implements Documents {
             docs.add( document );
         }
         return ImmutableList.copyOf( docs );
+    }
+
+
+    private static ImmutableList<ImmutableList<RexLiteral>> normalizeToMap( List<BsonValue> tuples, AlgDataType rowType, RexBuilder rexBuilder ) {
+        List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
+
+        for ( BsonValue tuple : tuples ) {
+            List<RexLiteral> normalizedTuple = new ArrayList<>();
+            normalizedTuple.add( 0, rexBuilder.makeLiteral( ObjectId.get().toString() ) );
+
+            Map<String, BsonValue> parsed = tuple.asDocument();
+            normalizedTuple.add( 1, rexBuilder.makeMapFromBson( rowType.getFieldList().get( 1 ).getType(), parsed ) );
+            normalized.add( ImmutableList.copyOf( normalizedTuple ) );
+        }
+
+        return ImmutableList.copyOf( normalized );
+
     }
 
 

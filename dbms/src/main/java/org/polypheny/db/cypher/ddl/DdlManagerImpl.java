@@ -1922,7 +1922,7 @@ public class DdlManagerImpl extends DdlManager {
 
             // Add _data column if necessary
             if ( !names.contains( "_data" ) ) {
-                ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.JSON, PolyType.JSON, 1024, null, null, null, false );
+                ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.ANY, PolyType.MAP, null, null, null, null, false );
                 columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
             }
         }

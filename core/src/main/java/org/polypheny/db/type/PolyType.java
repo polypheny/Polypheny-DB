@@ -289,6 +289,18 @@ public enum PolyType {
             Types.OTHER,
             PolyTypeFamily.MAP ),
 
+    PATH(
+            PrecScale.NO_NO,
+            true,
+            Types.JAVA_OBJECT,
+            PolyTypeFamily.PATH ),
+
+    GRAPH(
+            PrecScale.NO_NO,
+            true,
+            Types.JAVA_OBJECT,
+            PolyTypeFamily.GRAPH ),
+
     DISTINCT(
             PrecScale.NO_NO,
             false,
@@ -417,6 +429,14 @@ public enum PolyType {
     public static final List<PolyType> STRING_TYPES = combine( CHAR_TYPES, BINARY_TYPES );
 
     public static final List<PolyType> DATETIME_TYPES = ImmutableList.of( DATE, TIME, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP, TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+
+    public static final List<PolyType> DOCUMENT_TYPES = ImmutableList.of( MAP, ARRAY );
+
+    public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, PATH, MAP, ARRAY );
+
+    public static final List<PolyType> COLLECTION_TYPES = ImmutableList.of( ARRAY );
+
+    public static final List<PolyType> OBJECT_TYPES = ImmutableList.of( MAP, GRAPH, PATH );
 
     public static final Set<PolyType> YEAR_INTERVAL_TYPES =
             Sets.immutableEnumSet(

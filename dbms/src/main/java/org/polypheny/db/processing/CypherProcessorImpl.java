@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.cypher.CypherStatement;
-import org.polypheny.db.cypher.CypherToAlgConverter;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
 import org.polypheny.db.languages.NodeParseException;

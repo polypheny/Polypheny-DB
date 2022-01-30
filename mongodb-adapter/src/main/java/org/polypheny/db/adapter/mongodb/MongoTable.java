@@ -229,16 +229,16 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             // prepared
             preOps.stream()
                     .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket(), dataContext ) )
-                    .forEach( util -> list.add( util.insert( parameterValues ) ) );
+                    .forEach( util -> list.add( util.insert( parameterValues, dataContext ) ) );
 
             if ( !filter.isEmpty() ) {
                 MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket(), dataContext );
-                list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
+                list.add( new BsonDocument( "$match", util.insert( parameterValues, dataContext ) ) );
             }
 
             for ( String operation : operations ) {
                 MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket(), dataContext );
-                list.add( opUtil.insert( parameterValues ) );
+                list.add( opUtil.insert( parameterValues, dataContext ) );
             }
 
         }
@@ -453,12 +453,12 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                             if ( onlyOne ) {
                                 changes += mongoTable
                                         .getCollection()
-                                        .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                        .updateOne( session, filterUtil.insert( parameterValue, dataContext ), Collections.singletonList( docUtil.insert( parameterValue, dataContext ) ) )
                                         .getModifiedCount();
                             } else {
                                 changes += mongoTable
                                         .getCollection()
-                                        .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                        .updateMany( session, filterUtil.insert( parameterValue, dataContext ), Collections.singletonList( docUtil.insert( parameterValue, dataContext ) ) )
                                         .getModifiedCount();
                             }
                         }
