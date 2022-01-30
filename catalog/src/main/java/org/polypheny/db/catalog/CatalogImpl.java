@@ -1575,6 +1575,7 @@ public class CatalogImpl extends Catalog {
 
         PartitionProperty partitionProperty = PartitionProperty.builder()
                 .partitionType( PartitionType.NONE )
+                .isPartitioned( false )
                 .partitionGroupIds( ImmutableList.copyOf( partitionGroupIds ) )
                 .partitionIds( ImmutableList.copyOf( defaultUnpartitionedGroup.partitionIds ) )
                 .reliesOnPeriodicChecks( false )
@@ -1777,21 +1778,45 @@ public class CatalogImpl extends Catalog {
     public void setTableOwner( long tableId, int ownerId ) {
         CatalogTable old = getTable( tableId );
         CatalogUser user = getUser( ownerId );
+        CatalogTable table;
 
-        CatalogTable table = new CatalogTable(
-                old.id,
-                old.name,
-                old.columnIds,
-                old.schemaId,
-                old.databaseId,
-                ownerId,
-                user.name,
-                old.tableType,
-                old.primaryKey,
-                old.dataPlacements,
-                old.modifiable,
-                old.partitionProperty,
-                old.connectedViews );
+        if ( old instanceof CatalogMaterializedView ) {
+            table = new CatalogMaterializedView(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    ownerId,
+                    user.name,
+                    old.tableType,
+                    ((CatalogMaterializedView) old).getQuery(),
+                    old.primaryKey,
+                    old.dataPlacements,
+                    old.modifiable,
+                    old.partitionProperty,
+                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    old.connectedViews,
+                    ((CatalogMaterializedView) old).getUnderlyingTables(),
+                    ((CatalogMaterializedView) old).getLanguage(),
+                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                    ((CatalogMaterializedView) old).isOrdered() );
+        } else {
+            table = new CatalogTable(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    ownerId,
+                    user.name,
+                    old.tableType,
+                    old.primaryKey,
+                    old.dataPlacements,
+                    old.modifiable,
+                    old.partitionProperty,
+                    old.connectedViews );
+        }
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -1902,17 +1927,6 @@ public class CatalogImpl extends Catalog {
             addColumnsToDataPlacement( adapterId, column.tableId, Arrays.asList( columnId ) );
 
             CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
-            //Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
-            Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( getColumnPlacementsByAdapter( column.tableId ) );
-            if ( placementsByStore.containsKey( adapterId ) ) {
-                List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
-                placements.add( columnId );
-                placementsByStore.replace( adapterId, ImmutableList.copyOf( placements ) );
-            } else {
-                placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
-
-            }
-
 
             // If table is partitioned and no concrete partitions are defined place all partitions on columnPlacement
             if ( partitionGroupIds == null ) {
@@ -2732,20 +2746,45 @@ public class CatalogImpl extends Catalog {
         List<Long> columnIds = new ArrayList<>( old.columnIds );
         columnIds.remove( columnId );
 
-        CatalogTable table = new CatalogTable(
-                old.id,
-                old.name,
-                ImmutableList.copyOf( columnIds ),
-                old.schemaId,
-                old.databaseId,
-                old.ownerId,
-                old.ownerName,
-                old.tableType,
-                old.primaryKey,
-                old.dataPlacements,
-                old.modifiable,
-                old.partitionProperty, old.connectedViews );
-
+        CatalogTable table;
+        if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
+            table = new CatalogMaterializedView(
+                    old.id,
+                    old.name,
+                    ImmutableList.copyOf( columnIds ),
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    ((CatalogMaterializedView) old).getQuery(),
+                    old.primaryKey,
+                    old.dataPlacements,
+                    old.modifiable,
+                    old.partitionProperty,
+                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    old.connectedViews,
+                    ((CatalogMaterializedView) old).getUnderlyingTables(),
+                    ((CatalogMaterializedView) old).getLanguage(),
+                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                    ((CatalogMaterializedView) old).isOrdered()
+            );
+        } else {
+            table = new CatalogTable(
+                    old.id,
+                    old.name,
+                    ImmutableList.copyOf( columnIds ),
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    old.primaryKey,
+                    old.dataPlacements,
+                    old.modifiable,
+                    old.partitionProperty,
+                    old.connectedViews );
+        }
         synchronized ( this ) {
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
             tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
@@ -4481,6 +4520,7 @@ public class CatalogImpl extends Catalog {
         CatalogTable table = getTable( tableId );
         List<CatalogDataPlacement> dataPlacements = getDataPlacements( tableId );
 
+        // Checks for every column on every DataPlacement if each column is placed with all partitions
         for ( long columnId : table.columnIds ) {
 
             List<Long> partitionsToBeCheckedForColumn = table.partitionProperty.partitionIds.stream().collect( Collectors.toList() );
@@ -4494,11 +4534,12 @@ public class CatalogImpl extends Catalog {
 
                 List<Long> effectiveColumnsOnStore = dataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toList() );
                 List<Long> effectivePartitionsOnStore = dataPlacement.partitionPlacementsOnAdapter.stream().collect( Collectors.toList() );
-                ;
+
 
                 // Remove columns and partitions from store to not evaluate them
                 if ( dataPlacement.adapterId == adapterId ) {
 
+                    //
                     if ( columnIdsToBeRemoved.contains( columnId ) ) {
                         continue;
                     }
@@ -4755,7 +4796,7 @@ public class CatalogImpl extends Catalog {
      * Updates the list of data placements on a table
      *
      * @param tableId table to be updated
-     * @param newDataPlacements list of new DataPlaceements that shall replace the old ones
+     * @param newDataPlacements list of new DataPlacements that shall replace the old ones
      */
     public void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements ) {
         CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
@@ -4797,7 +4838,8 @@ public class CatalogImpl extends Catalog {
                     old.primaryKey,
                     ImmutableList.copyOf( newDataPlacements ),
                     old.modifiable,
-                    old.partitionProperty, old.connectedViews );
+                    old.partitionProperty,
+                    old.connectedViews );
         }
 
         synchronized ( this ) {

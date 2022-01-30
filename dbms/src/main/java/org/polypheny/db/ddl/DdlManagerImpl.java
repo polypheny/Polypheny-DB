@@ -2409,6 +2409,7 @@ public class DdlManagerImpl extends DdlManager {
         // Check if views are dependent from this view
         checkViewDependencies( catalogView );
 
+        catalog.flagTableForDeletion( catalogView.id, true );
         catalog.deleteViewDependencies( (CatalogView) catalogView );
 
         // Delete columns
@@ -2437,6 +2438,8 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Check if views are dependent from this view
         checkViewDependencies( materializedView );
+
+        catalog.flagTableForDeletion( materializedView.id, true );
 
         catalog.deleteViewDependencies( (CatalogView) materializedView );
 
