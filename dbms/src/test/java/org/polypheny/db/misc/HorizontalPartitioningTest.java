@@ -1018,7 +1018,6 @@ public class HorizontalPartitioningTest {
                             Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId , table.id ).size() );
                             Assert.assertEquals( 4, Catalog.getInstance().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
-
                     }
 
                     // After MERGE should only hold one partition

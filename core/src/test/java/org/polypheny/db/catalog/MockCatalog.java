@@ -820,12 +820,6 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updatePartitionGroupsOnDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
     public List<Long> getPartitionGroupsOnDataPlacement( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
@@ -833,18 +827,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public void deletePartitionGroupsOnDataPlacement( int storeId, long tableId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold ) {
         throw new NotImplementedException();
     }
 
@@ -1223,6 +1205,12 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public Long getPartitionGroupByPartition( long partitionId ) {
         throw new NotImplementedException();
     }
 }

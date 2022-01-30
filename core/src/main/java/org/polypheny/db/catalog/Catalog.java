@@ -566,6 +566,8 @@ public abstract class Catalog {
 
     public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId );
 
+    public abstract Long getPartitionGroupByPartition( long partitionId );
+
     public abstract List<CatalogKey> getKeys();
 
     public abstract List<CatalogKey> getTableKeys( long tableId );
@@ -1267,14 +1269,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
 
-    /**
-     * Updates the reference which partitions reside on which DataPlacement (identified by adapterId and tableId)
-     *
-     * @param adapterId The unique id of the adapter
-     * @param tableId The unique id of the table
-     * @param partitionGroupIds List of partitionsIds to be updated
-     */
-    public abstract void updatePartitionGroupsOnDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds );
 
     /**
      * Get all partitions of a DataPlacement (identified by adapterId and tableId)
@@ -1303,25 +1297,6 @@ public abstract class Catalog {
      */
     public abstract List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId );
 
-    /**
-     * Mostly needed if a placement is dropped from a store.
-     *
-     * @param storeId Placement to be updated with new partitions
-     * @param tableId List of partitions which the placement should hold
-     */
-    public abstract void deletePartitionGroupsOnDataPlacement( int storeId, long tableId );
-
-    /**
-     * Checks depending on the current partition distribution and partitionType
-     * if the distribution would be sufficient. Basically a passthrough method to simplify the code
-     *
-     * @param adapterId The id of the adapter to be checked
-     * @param tableId The id of the table to be checked
-     * @param columnId The id of the column to be checked
-     * @param threshold Accepted toleration threshold for new setup of how many placements must remain after new partitionGroup distribution
-     * @return If its correctly distributed or not
-     */
-    public abstract boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold );
 
     /**
      * Returns a specific DataPlacement of a given table.

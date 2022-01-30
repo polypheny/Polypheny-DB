@@ -16,6 +16,7 @@
 
 package org.polypheny.db.ddl;
 
+
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +69,6 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -984,14 +984,6 @@ public class DdlManagerImpl extends DdlManager {
             throw new LastPlacementException();
         }
 
-        // Check if there are is another placement for every column on this store
-      /*  for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id ) ) {
-            List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( placement.columnId );
-            if ( existingPlacements.size() < 2 ) {
-                throw new LastPlacementException();
-            }
-        }
-*/
         // Drop all indexes on this store
         for ( CatalogIndex index : catalog.getIndexes( catalogTable.id, false ) ) {
             if ( index.location == storeInstance.getAdapterId() ) {
@@ -1011,14 +1003,6 @@ public class DdlManagerImpl extends DdlManager {
         }
         // Physically delete the data from the store
         storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
-        // Delete placement in the catalog
-        // List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapterPerTable( storeInstance.getAdapterId(), catalogTable.id );
-        // for ( CatalogColumnPlacement placement : placements ) {
-        //    catalog.deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId, false );
-        // }
-
-        // Remove All
-        catalog.deletePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
 
         // TODO @HENNLO ultimately only this should be called in this method to clean up anything catalog related
         // Remove physical stores afterwards
@@ -1236,7 +1220,7 @@ public class DdlManagerImpl extends DdlManager {
             // Drop Column on store
             storeInstance.dropColumn( statement.getPrepareContext(), catalog.getColumnPlacement( storeInstance.getAdapterId(), columnId ) );
             // Drop column placement
-            catalog.deleteColumnPlacement( storeInstance.getAdapterId(), columnId, false );
+            catalog.deleteColumnPlacement( storeInstance.getAdapterId(), columnId, true );
         }
 
         List<Long> tempPartitionGroupList = new ArrayList<>();
@@ -1250,13 +1234,13 @@ public class DdlManagerImpl extends DdlManager {
                 for ( int partitionGroupId : partitionGroupIds ) {
                     // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                     try {
-                        tempPartitionGroupList.add( catalogTable.partitionProperty.partitionGroupIds.get( partitionGroupId ) );
+                        int index = catalogTable.partitionProperty.partitionGroupIds.indexOf( partitionGroupId );
+                        tempPartitionGroupList.add( catalogTable.partitionProperty.partitionGroupIds.get( index ) );
                     } catch ( IndexOutOfBoundsException e ) {
                         throw new RuntimeException( "Specified Partition-Index: '" + partitionGroupId + "' is not part of table '"
                                 + catalogTable.name + "', has only " + catalogTable.partitionProperty.partitionGroupIds.size() + " partitions" );
                     }
                 }
-                catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionGroupList );
             }
             // If name partitions are specified
             else if ( !partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
@@ -1275,7 +1259,6 @@ public class DdlManagerImpl extends DdlManager {
                                 + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getPartitionGroupNames( tableId ) ) );
                     }
                 }
-                catalog.updatePartitionGroupsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionGroupList );
             } else if ( partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
                 // If nothing has been explicitly specified keep current placement of partitions.
                 // Since it's impossible to have a placement without any partitions anyway
@@ -1319,6 +1302,11 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+        Set<Long> newColumnIdsOnDataPlacement = new HashSet<>();
+        newColumnIdsOnDataPlacement.addAll( columnIds );
+        newColumnIdsOnDataPlacement.addAll( catalog.getPrimaryKey( catalogTable.primaryKey ).columnIds );
+        catalog.updateDataPlacement( storeInstance.getAdapterId(), catalogTable.id, newColumnIdsOnDataPlacement.stream().collect( Collectors.toList() ), partitionIds );
+
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( addedColumns.size() > 0 ) {
@@ -1342,7 +1330,6 @@ public class DdlManagerImpl extends DdlManager {
         for ( long partitionGroupId : currentPartitionGroupsOnStore ) {
             if ( !partitionGroupIds.contains( partitionGroupId ) ) {
                 catalog.getPartitions( partitionGroupId ).forEach( p -> removedPartitions.add( p.id ) );
-
             }
         }
 
@@ -1357,30 +1344,6 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        // Check for the specified columnId if we still have a ColumnPlacement for every partitionGroup
-        // Check for removed partitions if every CCP  still has all partitions somewhere
-        for ( long partitionId : removedPartitions ) {
-            List<Long> tempIds = new ArrayList<>( catalogTable.columnIds );
-            boolean partitionChecked = false;
-
-            for ( CatalogPartitionPlacement cpp : catalog.getPartitionPlacements( partitionId ) ) {
-                if ( cpp.adapterId == storeId ) {
-                    continue;
-                }
-                catalog.getColumnPlacementsOnAdapter( cpp.adapterId ).forEach( ccp -> tempIds.remove( ccp.columnId ) );
-                if ( tempIds.isEmpty() ) {
-                    partitionChecked = true;
-                    break;
-                }
-            }
-
-            if ( partitionChecked == false ) {
-                throw new RuntimeException( "Invalid partition distribution" );
-            }
-        }
-
-        // Update
-        catalog.updatePartitionGroupsOnDataPlacement( storeId, catalogTable.id, partitionGroupIds );
 
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -2171,7 +2134,6 @@ public class DdlManagerImpl extends DdlManager {
         }
         List<CatalogColumnPlacement> catalogColumnPlacements = catalog.getColumnPlacement( pkColumn.id );
         for ( CatalogColumnPlacement ccp : catalogColumnPlacements ) {
-            catalog.updatePartitionGroupsOnDataPlacement( ccp.adapterId, ccp.tableId, partitionGroupIds );
             if ( fillStores ) {
                 // Ask router on which store(s) the table should be placed
                 Adapter adapter = AdapterManager.getInstance().getAdapter( ccp.adapterId );
