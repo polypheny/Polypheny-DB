@@ -109,7 +109,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Getter
     private volatile Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> statisticSchemaMap;
 
-    //all Tables that need to be updated
     private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
 
 
@@ -188,7 +187,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Reset all statistics and reevaluate them.
      */
     private void reevaluateAllStatistics() {
-        log.warn( "Recalculate Statistics" );
         if ( sqlQueryInterface == null ) {
             return;
         }
