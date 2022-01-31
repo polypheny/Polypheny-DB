@@ -16,8 +16,8 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -46,7 +46,7 @@ public class StatisticTable<T extends Comparable<T>> {
     private SchemaType schemaType;
 
     @Getter
-    private ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
+    private ImmutableList<Integer> dataPlacements;
 
     @Getter
     private String owner;
@@ -76,7 +76,7 @@ public class StatisticTable<T extends Comparable<T>> {
             CatalogTable catalogTable = catalog.getTable( tableId );
             this.table = catalogTable.name;
             this.schemaType = catalogTable.getSchemaType();
-            this.placementsByAdapter = catalogTable.placementsByAdapter;
+            this.dataPlacements = catalogTable.dataPlacements;
             this.owner = catalogTable.ownerName;
         }
 
