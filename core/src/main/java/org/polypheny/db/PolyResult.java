@@ -320,6 +320,18 @@ public class PolyResult {
             rowsChanged = num;
         }
 
+        addMonitoringInformation( statement, kind, rowsChanged );
+
+        // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
+        if ( rowsChanged < 0 ) {
+            rowsChanged = 0;
+        }
+
+        return rowsChanged;
+    }
+
+
+    public static void addMonitoringInformation( Statement statement, String kind, int rowsChanged ) {
         StatementEvent eventData = statement.getMonitoringEvent();
         if ( rowsChanged > 0 ) {
             eventData.setRowCount( rowsChanged );
@@ -341,19 +353,13 @@ public class PolyResult {
                 } );
             }
 
-            eventData.setChangedValues( ordered );
+            eventData.getChangedValues().putAll( ordered );
             if ( Kind.INSERT.name().equals( kind ) ) {
                 if ( rowsChanged >= 0 ) {
                     eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
                 }
             }
         }
-        // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
-        if ( rowsChanged < 0 ) {
-            rowsChanged = 0;
-        }
-
-        return rowsChanged;
     }
 
 }

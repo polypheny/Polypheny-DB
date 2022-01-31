@@ -32,6 +32,7 @@ public class DmlEventAnalyzer {
         DmlDataPoint metric = DmlDataPoint
                 .builder()
                 .Id( dmlEvent.getId() )
+                .tables( dmlEvent.getLogicalQueryInformation().getTables() )
                 .fieldNames( dmlEvent.getFieldNames() )
                 .executionTime( dmlEvent.getExecutionTime() )
                 .rowCount( dmlEvent.getRowCount() )
@@ -44,7 +45,6 @@ public class DmlEventAnalyzer {
                 .availableColumnsWithTable( dmlEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
                 .changedValues( dmlEvent.getChangedValues() )
                 .build();
-        metric.getTables().addAll( dmlEvent.getLogicalQueryInformation().getTables() );
 
         if ( dmlEvent.getAccessedPartitions() != null ) {
             metric.setAccessedPartitions( dmlEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) );

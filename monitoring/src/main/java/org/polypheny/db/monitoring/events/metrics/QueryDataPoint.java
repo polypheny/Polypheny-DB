@@ -53,7 +53,7 @@ public class QueryDataPoint implements MonitoringDataPoint, Serializable {
     private int rowCount;
     private List<String> fieldNames;
     protected Integer indexSize;
-    protected Map<Long, Long> availableColumnsWithTable;
+    protected final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 
 
     @Override

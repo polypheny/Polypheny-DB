@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -100,21 +101,15 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private String revalId = null;
 
     @Getter
-    private volatile ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMap;
+    private final StatisticPolypheny polyphenyStatistic;
 
     @Getter
-    private final ConcurrentHashMap<Long, StatisticTable<T>> tableStatistic;
+    private final Map<Long, StatisticTable<T>> tableStatistic;
 
-    //new Additions for additional Information
+    @Getter
+    private volatile Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> statisticSchemaMap;
+
     private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
-
-    @Setter
-    @Getter
-    private int numberOfCommits;
-
-    @Setter
-    @Getter
-    private int numberOfRollbacks;
 
 
     public StatisticsManagerImpl( StatisticQueryProcessor statisticQueryProcessor ) {
@@ -124,101 +119,33 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         displayInformation();
         registerTaskTracking();
         registerIsFullTracking();
+        this.polyphenyStatistic = new StatisticPolypheny();
 
         this.listeners.addPropertyChangeListener( this );
     }
 
 
-    // Use relNode to update
-    @Override
-    public void tablesToUpdate( Long tableId ) {
-        if ( !tablesToUpdate.contains( tableId ) ) {
-            tablesToUpdate.add( tableId );
-            listeners.firePropertyChange( "tablesToUpdate", null, tableId );
+    private Transaction getTransaction() {
+        Transaction transaction = null;
+        try {
+            transaction = sqlQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
+        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+            throw new RuntimeException( e );
         }
+        return transaction;
     }
 
 
-    // Use cache if possible
-    @Override
-    public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId ) {
-        if ( type.equals( "INSERT" ) ) {
-            Catalog catalog = Catalog.getInstance();
-            CatalogTable catalogTable = catalog.getTable( tableId );
-            List<Long> columns = catalogTable.columnIds;
-            if ( this.statisticSchemaMap.get( schemaId ) != null ) {
-                if ( this.statisticSchemaMap.get( schemaId ).get( tableId ) != null ) {
-                    for ( int i = 0; i < columns.size(); i++ ) {
-                        PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
-                        QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, columns.get( i ), polyType );
-                        if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( columns.get( i ) ) != null ) {
-                            StatisticColumn<T> statisticColumn = this.statisticSchemaMap.get( schemaId ).get( tableId ).get( columns.get( i ) );
-
-                            if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
-                                ((NumericalStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
-                                put( queryColumn, statisticColumn );
-                            } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                                ((AlphabeticStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
-                                put( queryColumn, statisticColumn );
-                            } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-                                ((TemporalStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
-                                put( queryColumn, statisticColumn );
-                            }
-                        }
-                    }
-                } else {
-                    addDataStatistics( changedValues, catalog, catalogTable, columns );
-                }
-            } else {
-                addDataStatistics( changedValues, catalog, catalogTable, columns );
-            }
-        } else if ( type.equals( "TRUNCATE" ) ) {
-            Catalog catalog = Catalog.getInstance();
-            CatalogTable catalogTable = catalog.getTable( tableId );
-            for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
-                PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
-                QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
-                if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
-                    if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
-                        NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
-                        put( queryColumn, numericalStatisticColumn );
-                    } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                        AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
-                        put( queryColumn, alphabeticStatisticColumn );
-                    } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-                        TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
-                        put( queryColumn, temporalStatisticColumn );
-                    }
-                }
-            }
-        }
-    }
-
-
-    private void addDataStatistics( HashMap<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
-        for ( int i = 0; i < columns.size(); i++ ) {
-            PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
-            QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
-
-            if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
-                NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
-                numericalStatisticColumn.insert( changedValues.get( (long) i ) );
-                put( queryColumn, numericalStatisticColumn );
-            } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
-                alphabeticStatisticColumn.insert( changedValues.get( (long) i ) );
-                put( queryColumn, alphabeticStatisticColumn );
-            } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-                TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
-                temporalStatisticColumn.insert( changedValues.get( (long) i ) );
-                put( queryColumn, temporalStatisticColumn );
-            }
+    public void setQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
+        sqlQueryInterface = statisticQueryProcessor;
+        if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
+            this.asyncReevaluateAllStatistics();
         }
     }
 
 
     /**
-     * Registers if on configChange statistics are tracked and displayed or not
+     * Registers if on configChange statistics are tracked and displayed or not.
      */
     private void registerTaskTracking() {
         TrackingListener listener = new TrackingListener();
@@ -228,7 +155,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * Registers the isFull reevaluation on config change
+     * Registers the isFull reevaluation on config change.
      */
     private void registerIsFullTracking() {
         ConfigListener listener = new ConfigListener() {
@@ -249,15 +176,22 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    private void resetAllIsFull() {
+        this.statisticSchemaMap.values().forEach( s -> s.values().forEach( t -> t.values().forEach( c -> {
+            assignUnique( c, this.getUniqueValues( new QueryColumn( c.getSchemaId(), c.getTableId(), c.getColumnId(), c.getType() ) ) );
+        } ) ) );
+    }
+
+
     /**
-     * Reset all statistics and reevaluate them
+     * Reset all statistics and reevaluate them.
      */
     private void reevaluateAllStatistics() {
         if ( sqlQueryInterface == null ) {
             return;
         }
         log.debug( "Resetting StatisticManager." );
-        ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
+        Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> statisticSchemaMapCopy = new ConcurrentHashMap<>();
 
         for ( QueryColumn column : sqlQueryInterface.getAllColumns() ) {
             StatisticColumn<T> col = reevaluateColumn( column );
@@ -271,6 +205,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    /**
+     * Update the row count for all tables.
+     */
     private void reevaluateRowCount() {
         if ( sqlQueryInterface == null ) {
             return;
@@ -278,8 +215,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         log.debug( "Reevaluate Row Count." );
 
         sqlQueryInterface.getAllTable().forEach( table -> {
-            Integer rowCount =getTableCount(table.getSchemaName(), table.name);
-
+            Integer rowCount = getTableCount( table.getSchemaName(), table.name );
             updateRowCountPerTable( table.id, rowCount, "SET-ROW-COUNT" );
         } );
 
@@ -287,15 +223,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
-    private void resetAllIsFull() {
-        this.statisticSchemaMap.values().forEach( s -> s.values().forEach( t -> t.values().forEach( c -> {
-            assignUnique( c, this.getUniqueValues( new QueryColumn( c.getSchemaId(), c.getTableId(), c.getColumnId(), c.getType() ) ) );
-        } ) ) );
-    }
-
-
     /**
-     * Gets a columns of a table and reevaluates them
+     * Gets a columns of a table and reevaluates them.
      *
      * @param tableId id of table
      */
@@ -327,9 +256,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * replace the the tracked statistics with other statistics
+     * Replace the tracked statistics with new statistics.
      */
-    private synchronized void replaceStatistics( ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map ) {
+    private synchronized void replaceStatistics( Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> map ) {
         this.statisticSchemaMap = new ConcurrentHashMap<>( map );
     }
 
@@ -338,11 +267,11 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn<T> reevaluateColumn( QueryColumn column ) {
-        /*
-        if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
+
+        if ( !Catalog.getInstance().checkIfExistsColumn( column.getTableId(), column.getColumn() ) ) {
             return null;
         }
-         */
+
         if ( column.getType().getFamily() == PolyTypeFamily.NUMERIC ) {
             return this.reevaluateNumericalColumn( column );
         } else if ( column.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
@@ -355,7 +284,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * Reevaluates a numerical column, with the configured statistics
+     * Reevaluates a numerical column, with the configured statistics.
      */
     private StatisticColumn<T> reevaluateNumericalColumn( QueryColumn column ) {
         StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
@@ -380,6 +309,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    /**
+     * Reevaluates a temporal column.
+     */
     private StatisticColumn<T> reevaluateTemporalColumn( QueryColumn column ) {
         StatisticQueryColumn min = this.getAggregateColumn( column, "MIN" );
         StatisticQueryColumn max = this.getAggregateColumn( column, "MAX" );
@@ -407,9 +339,11 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         }
 
         StatisticQueryColumn unique = this.getUniqueValues( column );
-        for ( int idx = 0; idx < unique.getData().length; idx++ ) {
-            if ( unique.getData()[idx] != null ) {
-                unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString( Long.parseLong( unique.getData()[idx] ), column.getType() );
+        if ( unique != null ) {
+            for ( int idx = 0; idx < unique.getData().length; idx++ ) {
+                if ( unique.getData()[idx] != null ) {
+                    unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString( Long.parseLong( unique.getData()[idx] ), column.getType() );
+                }
             }
         }
 
@@ -455,26 +389,31 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private void put( QueryColumn queryColumn, StatisticColumn<T> statisticColumn ) {
-        put( this.statisticSchemaMap, queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), statisticColumn );
+        put( this.statisticSchemaMap,
+                queryColumn.getSchemaId(),
+                queryColumn.getTableId(),
+                queryColumn.getColumnId(),
+                statisticColumn );
     }
 
 
     private void put(
-            ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> statisticSchemaMapCopy,
+            Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> statisticSchemaMapCopy,
             QueryColumn queryColumn,
             StatisticColumn<T> statisticColumn ) {
-        put( statisticSchemaMapCopy, queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), statisticColumn );
+        put( statisticSchemaMapCopy,
+                queryColumn.getSchemaId(),
+                queryColumn.getTableId(),
+                queryColumn.getColumnId(),
+                statisticColumn );
     }
 
 
     /**
-     * Places a column at the correct position in the schemaMap
-     *
-     * @param map which schemaMap should be used
-     * @param statisticColumn the Column with its statistics
+     * Places a column at the correct position in the schemaMap.
      */
     private void put(
-            ConcurrentHashMap<Long, HashMap<Long, HashMap<Long, StatisticColumn<T>>>> map,
+            Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> map,
             Long schemaId,
             Long tableId,
             Long columnId,
@@ -494,9 +433,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * Queries the database with a aggregate query
-     *
-     * @param aggregate the aggregate function to us
+     * Queries the database with an aggregate query, to get the min value or max value.
      */
     private StatisticQueryColumn getAggregateColumn( QueryColumn queryColumn, String aggregate ) {
         Transaction transaction = getTransaction();
@@ -598,17 +535,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
-    private Transaction getTransaction() {
-        Transaction transaction = null;
-        try {
-            transaction = sqlQueryInterface.getTransactionManager().startTransaction( "pa", "APP", false, "Statistic Manager" );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-            throw new RuntimeException( e );
-        }
-        return transaction;
-    }
-
-
+    /**
+     * Gets a tableScan for a given table.
+     */
     private LogicalTableScan getLogicalTableScan( String schema, String table, CatalogReader reader, AlgOptCluster cluster ) {
         AlgOptTable relOptTable = reader.getTable( Arrays.asList( schema, table ) );
         return LogicalTableScan.create( cluster, relOptTable );
@@ -669,7 +598,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * Gets the amount of entries for a column
+     * Gets the amount of entries for a table.
      */
     private Integer getTableCount( String schemaName, String tableName ) {
         Transaction transaction = getTransaction();
@@ -699,20 +628,12 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 Collections.singletonList( ImmutableBitSet.of() ),
                 Collections.singletonList( aggregateCall ) );
 
-        return Integer.valueOf( sqlQueryInterface.selectTableStat(relNode, transaction, statement) );
-    }
-
-
-    public void setQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
-        sqlQueryInterface = statisticQueryProcessor;
-        if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
-            this.asyncReevaluateAllStatistics();
-        }
+        return Integer.valueOf( sqlQueryInterface.selectTableStat( relNode, transaction, statement ) );
     }
 
 
     /**
-     * Configures and registers the statistics InformationPage for the frontend
+     * Configures and registers the statistics InformationPage for the frontend.
      */
     @Override
     public void displayInformation() {
@@ -721,19 +642,11 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         InformationPage page = new InformationPage( "Statistics" );
         im.addPage( page );
 
-        InformationGroup contentGroup = new InformationGroup( page, "Column Statistic Status" );
+        InformationGroup contentGroup = new InformationGroup( page, "Column Information" );
         im.addGroup( contentGroup );
 
-        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type", "Count" ) );
-
+        InformationTable statisticsInformation = new InformationTable( contentGroup, Arrays.asList( "Column Name", "Type" ) );
         im.registerInformation( statisticsInformation );
-
-        page.setRefreshFunction( () -> {
-            statisticsInformation.reset();
-            statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                statisticsInformation.addRow( v.getQualifiedColumnName(), v.getType().name(), v.getCount() );
-            } ) ) );
-        } );
 
         InformationGroup alphabeticalGroup = new InformationGroup( page, "Alphabetical Statistics" );
         im.addGroup( alphabeticalGroup );
@@ -754,17 +667,17 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         im.registerInformation( numericalInformation );
         im.registerInformation( alphabeticalInformation );
 
-        InformationGroup rowCountGroup = new InformationGroup( page, "Row Count" );
-        im.addGroup( rowCountGroup );
-
-        InformationTable rowCountInformation = new InformationTable( rowCountGroup, Arrays.asList( "Table Name", "Row Count" ) );
-        im.registerInformation( rowCountInformation );
-
         InformationGroup tableSelectGroup = new InformationGroup( page, "Calls per Table" );
         im.addGroup( tableSelectGroup );
 
         InformationTable tableSelectInformation = new InformationTable( tableSelectGroup, Arrays.asList( "Table Name", "#SELECTS", "#INSERT", "#DELETE", "#UPDATE" ) );
         im.registerInformation( tableSelectInformation );
+
+        InformationGroup tableInformationGroup = new InformationGroup( page, "Table Information" );
+        im.addGroup( tableInformationGroup );
+
+        InformationTable tableInformation = new InformationTable( tableInformationGroup, Arrays.asList( "Table Name", "Schema Type", "Row Count" ) );
+        im.registerInformation( tableInformation );
 
         InformationGroup actionGroup = new InformationGroup( page, "Action" );
         im.addGroup( actionGroup );
@@ -790,7 +703,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             alphabeticalInformation.reset();
             temporalInformation.reset();
             tableSelectInformation.reset();
-            rowCountInformation.reset();
+            tableInformation.reset();
+            statisticsInformation.reset();
             statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
                 if ( v instanceof NumericalStatisticColumn ) {
                     if ( ((NumericalStatisticColumn<T>) v).getMin() != null && ((NumericalStatisticColumn<T>) v).getMax() != null ) {
@@ -818,60 +732,46 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     } else {
                         alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );
                     }
-
                 }
+                statisticsInformation.addRow( v.getQualifiedColumnName(), v.getType().name() );
 
             } ) ) );
-            tableStatistic.forEach( ( k, v ) -> {
-                rowCountInformation.addRow( Catalog.getInstance().getTable( k ).name, v.getNumberOfRows() );
-            } );
 
             tableStatistic.forEach( ( k, v ) -> {
-                tableSelectInformation.addRow(
-                        Catalog.getInstance().getTable( k ).name,
-                        v.getCalls().getNumberOfSelects(),
-                        v.getCalls().getNumberOfInserts(),
-                        v.getCalls().getNumberOfDeletes(),
-                        v.getCalls().getNumberOfUpdates() );
+                tableInformation.addRow( v.getTable(), v.getSchemaType(), v.getNumberOfRows() );
+
+                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() ) {
+                    tableSelectInformation.addRow(
+                            v.getTable(),
+                            v.getCalls().getNumberOfSelects(),
+                            v.getCalls().getNumberOfInserts(),
+                            v.getCalls().getNumberOfDeletes(),
+                            v.getCalls().getNumberOfUpdates() );
+                }
             } );
         } );
     }
 
 
+    /**
+     * Reevaluates all statistics that can be updated using nodes.
+     */
     @Override
     public void asyncReevaluateAllStatistics() {
         threadPool.execute( this::reevaluateAllStatistics );
     }
 
 
-    /**
-     * Reevaluates all tables which received changes impacting their statistic data
-     *
-     * all tables which got changed in a transaction
-     */
-     /*
-    public void apply( List<String> changedTables ) {
-        threadPool.execute( () -> changedTables.forEach( this::reevaluateTable ) );
-    }
-    public void applyTable( String changedQualifiedTable ) {
-        this.reevaluateTable( changedQualifiedTable );
-    }
-
-      */
     @Override
     public void propertyChange( PropertyChangeEvent evt ) {
         threadPool.execute( this::workQueue );
     }
 
 
-    @Override
-    public void deleteTableToUpdate( Long tableId, Long schemaId ) {
-        statisticSchemaMap.get( schemaId ).remove( tableId );
-        tableStatistic.remove( tableId );
-        this.tablesToUpdate.remove( tableId );
-    }
-
-
+    /**
+     * All tables that need to be updated (for example after a demolition in a table)
+     * are reevaluated with this method.
+     */
     private void workQueue() {
         while ( !this.tablesToUpdate.isEmpty() ) {
             Long tableId = this.tablesToUpdate.poll();
@@ -883,6 +783,132 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    /**
+     * Tables that needs an update with the help of a node are added to {@link StatisticsManagerImpl#tablesToUpdate}.
+     *
+     * @param tableId of table
+     */
+    @Override
+    public void tablesToUpdate( Long tableId ) {
+        if ( !tablesToUpdate.contains( tableId ) ) {
+            tablesToUpdate.add( tableId );
+            listeners.firePropertyChange( "tablesToUpdate", null, tableId );
+        }
+    }
+
+
+    /**
+     * Updates the StatisticColumn (min, max, uniqueValues and temporalStatistics).
+     * After an insert the inserted values are added to the Statistics if necessary.
+     * After a truncate all values are deleted.
+     * Method is not used if rows are deleted because it wouldn't be accurate anymore.
+     *
+     * @param tableId of tables
+     * @param changedValues of the table
+     * @param type of change on the table
+     * @param schemaId of the table
+     */
+    @Override
+    public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId ) {
+        if ( type.equals( "INSERT" ) ) {
+            Catalog catalog = Catalog.getInstance();
+            CatalogTable catalogTable = catalog.getTable( tableId );
+            List<Long> columns = catalogTable.columnIds;
+            if ( this.statisticSchemaMap.get( schemaId ) != null ) {
+                if ( this.statisticSchemaMap.get( schemaId ).get( tableId ) != null ) {
+                    for ( int i = 0; i < columns.size(); i++ ) {
+                        PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
+                        QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, columns.get( i ), polyType );
+                        if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( columns.get( i ) ) != null ) {
+                            StatisticColumn<T> statisticColumn = this.statisticSchemaMap.get( schemaId ).get( tableId ).get( columns.get( i ) );
+
+                            if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                                ((NumericalStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
+                                put( queryColumn, statisticColumn );
+                            } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                                ((AlphabeticStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
+                                put( queryColumn, statisticColumn );
+                            } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                                ((TemporalStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
+                                put( queryColumn, statisticColumn );
+                            }
+                        }
+                    }
+                } else {
+                    addDataStatistics( changedValues, catalog, catalogTable, columns );
+                }
+            } else {
+                addDataStatistics( changedValues, catalog, catalogTable, columns );
+            }
+        } else if ( type.equals( "TRUNCATE" ) ) {
+            Catalog catalog = Catalog.getInstance();
+            CatalogTable catalogTable = catalog.getTable( tableId );
+            for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
+                PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
+                QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
+                if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
+                    if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                        NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
+                        put( queryColumn, numericalStatisticColumn );
+                    } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                        AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
+                        put( queryColumn, alphabeticStatisticColumn );
+                    } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                        TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
+                        put( queryColumn, temporalStatisticColumn );
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Creates new StatisticColumns and inserts the values.
+     */
+    private void addDataStatistics( HashMap<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
+        for ( int i = 0; i < columns.size(); i++ ) {
+            PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
+            QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
+
+            if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
+                numericalStatisticColumn.insert( changedValues.get( (long) i ) );
+                put( queryColumn, numericalStatisticColumn );
+            } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
+                alphabeticStatisticColumn.insert( changedValues.get( (long) i ) );
+                put( queryColumn, alphabeticStatisticColumn );
+            } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
+                temporalStatisticColumn.insert( changedValues.get( (long) i ) );
+                put( queryColumn, temporalStatisticColumn );
+            }
+        }
+    }
+
+
+    /**
+     * Removes statistics from a given table.
+     */
+    @Override
+    public void deleteTableToUpdate( Long tableId, Long schemaId ) {
+        statisticSchemaMap.get( schemaId ).remove( tableId );
+        tableStatistic.remove( tableId );
+        this.tablesToUpdate.remove( tableId );
+    }
+
+
+    /**
+     * This method updates the rowCount of a given table, depending on the information source.
+     * For inserts, the rowCount is increased by the number of inserted rows.
+     * For deletes, the rowCount is decreased by the number of deleted rows.
+     * Truncate sets the row count to 0 and Set-row-count is used to set the rowCount to a specific amount.
+     *
+     * @param tableId of the table
+     * @param number of changed rows or explicit number for the rowCount
+     * @param source of the rowCount information
+     */
     @Override
     public void updateRowCountPerTable( Long tableId, Integer number, String source ) {
         StatisticTable statisticTable;
@@ -910,7 +936,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 break;
             case "SET-ROW-COUNT":
             case "TRUNCATE":
-            case "SOURCE-TABLE-UI":
                 if ( tableStatistic.containsKey( tableId ) ) {
                     statisticTable = tableStatistic.get( tableId );
                 } else {
@@ -926,6 +951,12 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    /**
+     * The index size is used to update the rowCount of a table.
+     *
+     * @param tableId of the table
+     * @param indexSize of the table
+     */
     @Override
     public void setIndexSize( Long tableId, int indexSize ) {
         if ( tableStatistic.containsKey( tableId ) ) {
@@ -944,6 +975,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    /**
+     * Updates how many times a DML (SELECT, INSERT, DELETE, UPDATE) was used on a table
+     * checks if the {@link StatisticsManagerImpl#tableStatistic} already holds information about the tableCalls and if not creates a new TableCall.
+     *
+     * @param tableId of the table
+     * @param kind of DML
+     */
     @Override
     public void setTableCalls( Long tableId, String kind ) {
         TableCalls calls;
@@ -960,6 +998,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    /**
+     * Updates the TableCalls.
+     */
     private synchronized void updateCalls( Long tableId, String kind, TableCalls calls ) {
         StatisticTable statisticTable;
         if ( tableStatistic.containsKey( tableId ) ) {
@@ -1011,6 +1052,30 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    /**
+     * Updates how many transactions where committed and roll backed.
+     *
+     * @param committed true if it is committed and false if it was roll backed
+     */
+    @Override
+    public void updateCommitRollback( boolean committed ) {
+        if ( committed ) {
+            int numberOfCommits = polyphenyStatistic.getNumberOfCommits();
+            polyphenyStatistic.setNumberOfCommits( numberOfCommits + 1 );
+        } else {
+            int numberOfRollbacks = polyphenyStatistic.getNumberOfRollbacks();
+            polyphenyStatistic.setNumberOfRollbacks( numberOfRollbacks + 1 );
+        }
+    }
+
+
+    /**
+     * Returns all statistic of a given table, used for table information in the UI.
+     *
+     * @param schemaId of the table
+     * @param tableId ot the table
+     * @return an Objet with all available table statistics
+     */
     @Override
     public Object getTableStatistic( Long schemaId, Long tableId ) {
         StatisticTable<T> statisticTable = tableStatistic.get( tableId );
@@ -1033,6 +1098,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     }
 
 
+    /**
+     * This method returns the number of rows for a given table, which is used in
+     * {@link org.polypheny.db.schema.impl.AbstractTable#getStatistic()} to update the statistics.
+     *
+     * @param tableId of the table
+     * @return the number of rows of a given table
+     */
     @Override
     public synchronized Integer rowCountPerTable( Long tableId ) {
         if ( tableId != null && tableStatistic.containsKey( tableId ) ) {
@@ -1044,7 +1116,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * This class reevaluates if background tracking should be stopped or restarted depending on the state of the ConfigManager
+     * This class reevaluates if background tracking should be stopped or restarted depending on the state of the {@link org.polypheny.db.config.ConfigManager}.
      */
     class TrackingListener implements Config.ConfigListener {
 

@@ -58,9 +58,11 @@ public abstract class StatementEvent extends BaseEvent {
     protected LogicalQueryInformation logicalQueryInformation;
     protected String algCompareString;
     protected String physicalQueryClass;
-    protected HashMap<Long, List<Object>> changedValues;
+    protected final HashMap<Long, List<Object>> changedValues = new HashMap<>();
     protected Integer indexSize = null;
+    //only used for ddl events
     protected long tableId;
+    //only used for ddl events
     protected long schemaId;
 
 

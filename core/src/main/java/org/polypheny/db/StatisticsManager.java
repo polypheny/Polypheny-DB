@@ -19,6 +19,7 @@ package org.polypheny.db;
 import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -68,18 +69,12 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void setRevalId( String revalId );
 
-    public abstract ConcurrentHashMap<?, ?> getStatisticSchemaMap();
+    public abstract Map<?, ?> getStatisticSchemaMap();
 
     public abstract Object getTableStatistic( Long schemaId, Long tableId );
 
-    public abstract int getNumberOfCommits();
-
-    public abstract int getNumberOfRollbacks();
-
-    public abstract void setNumberOfCommits( int numberOfCommits );
-
-    public abstract void setNumberOfRollbacks( int numberOfRollbacks );
-
     public abstract Integer rowCountPerTable( Long tableId );
+
+    public abstract void updateCommitRollback( boolean committed );
 
 }
