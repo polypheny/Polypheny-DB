@@ -101,7 +101,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private String revalId = null;
 
     @Getter
-    private final StatisticPolypheny polyphenyStatistic;
+    private final DashboardInformation dashboardInformation;
 
     @Getter
     private final Map<Long, StatisticTable<T>> tableStatistic;
@@ -119,8 +119,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         displayInformation();
         registerTaskTracking();
         registerIsFullTracking();
-        this.polyphenyStatistic = new StatisticPolypheny();
-
+        this.dashboardInformation = new DashboardInformation();
         this.listeners.addPropertyChangeListener( this );
     }
 
@@ -1060,12 +1059,19 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Override
     public void updateCommitRollback( boolean committed ) {
         if ( committed ) {
-            int numberOfCommits = polyphenyStatistic.getNumberOfCommits();
-            polyphenyStatistic.setNumberOfCommits( numberOfCommits + 1 );
+            int numberOfCommits = dashboardInformation.getNumberOfCommits();
+            dashboardInformation.setNumberOfCommits( numberOfCommits + 1 );
         } else {
-            int numberOfRollbacks = polyphenyStatistic.getNumberOfRollbacks();
-            polyphenyStatistic.setNumberOfRollbacks( numberOfRollbacks + 1 );
+            int numberOfRollbacks = dashboardInformation.getNumberOfRollbacks();
+            dashboardInformation.setNumberOfRollbacks( numberOfRollbacks + 1 );
         }
+    }
+
+
+    @Override
+    public Object getDashboardInformation() {
+        dashboardInformation.updatePolyphenyStatistic();
+        return dashboardInformation;
     }
 
 

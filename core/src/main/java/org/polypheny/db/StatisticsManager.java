@@ -77,4 +77,6 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract void updateCommitRollback( boolean committed );
 
+    public abstract Object getDashboardInformation();
+
 }

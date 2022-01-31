@@ -221,7 +221,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getTableStatistics", crud.statisticCrud::getTableStatistics );
 
-        webuiServer.post( "/getDmlInformation", crud.statisticCrud::getDmlInformation );
+        webuiServer.post( "/getDashboardInformation", crud.statisticCrud::getDashboardInformation );
+
+        webuiServer.post( "/getDashboardDiagram", crud.statisticCrud::getDashboardDiagram );
 
         webuiServer.post( "/getColumns", crud::getColumns );
 
