@@ -322,7 +322,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds ) {
+    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
         throw new NotImplementedException();
     }
 
@@ -1150,7 +1150,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds ) {
+    protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
         throw new NotImplementedException();
     }
 

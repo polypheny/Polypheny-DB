@@ -259,8 +259,8 @@ public class DdlManagerImpl extends DdlManager {
                             PlacementType.STATIC,
                             exportedColumn.physicalSchemaName,
                             exportedColumn.physicalTableName,
-                            exportedColumn.physicalColumnName,
-                            null ); // Not a valid partitionGroupID --> placeholder
+                            exportedColumn.physicalColumnName
+                    ); // Not a valid partitionGroupID --> placeholder
                     catalog.updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), columnId, exportedColumn.physicalPosition );
                     if ( exportedColumn.primary ) {
                         primaryKeyColIds.add( columnId );
@@ -449,8 +449,8 @@ public class DdlManagerImpl extends DdlManager {
                 PlacementType.STATIC,
                 exportedColumn.physicalSchemaName,
                 exportedColumn.physicalTableName,
-                exportedColumn.physicalColumnName,
-                null );//Not a valid partitionID --> placeholder
+                exportedColumn.physicalColumnName
+        );//Not a valid partitionID --> placeholder
 
         // Set column position
         catalog.updateColumnPlacementPhysicalPosition( adapterId, columnId, exportedColumn.physicalPosition );
@@ -523,8 +523,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null, // Will be set later
                     null, // Will be set later
-                    null, // Will be set later
-                    null );//Not a valid partitionID --> placeholder
+                    null // Will be set later
+            );//Not a valid partitionID --> placeholder
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
         }
 
@@ -661,14 +661,12 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Select partitions to create on this placement
-        // if ( catalogTable.isPartitioned ) {
         boolean isDataPlacementPartitioned = false;
         long tableId = catalogTable.id;
         // Needed to ensure that column placements on the same store contain all the same partitions
         // Check if this column placement is the first on the data placement
         // If this returns null this means that this is the first placement and partition list can therefore be specified
-        List<Long> currentPartList = new ArrayList<>();
-        currentPartList = catalog.getPartitionGroupsOnDataPlacement( dataStore.getAdapterId(), catalogTable.id );
+        List<Long> currentPartList = catalog.getPartitionGroupsOnDataPlacement( dataStore.getAdapterId(), catalogTable.id );
 
         isDataPlacementPartitioned = !currentPartList.isEmpty();
 
@@ -742,8 +740,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    null,
-                    tempPartitionGroupList );
+                    null
+            );
             addedColumns.add( catalog.getColumn( cid ) );
         }
         // Check if placement includes primary key columns
@@ -756,8 +754,8 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        null,
-                        tempPartitionGroupList );
+                        null
+                );
                 addedColumns.add( catalog.getColumn( cid ) );
             }
         }
@@ -816,8 +814,8 @@ public class DdlManagerImpl extends DdlManager {
                                 PlacementType.AUTOMATIC,
                                 null, // Will be set later
                                 null, // Will be set later
-                                null, // Will be set later
-                                null );
+                                null // Will be set later
+                        );
                         AdapterManager.getInstance().getStore( ccp.adapterId ).addColumn(
                                 statement.getPrepareContext(),
                                 catalog.getTable( ccp.tableId ),
@@ -1004,7 +1002,6 @@ public class DdlManagerImpl extends DdlManager {
         // Physically delete the data from the store
         storeInstance.dropTable( statement.getPrepareContext(), catalogTable, catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id ) );
 
-        // TODO @HENNLO ultimately only this should be called in this method to clean up anything catalog related
         // Remove physical stores afterwards
         catalog.removeDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
 
@@ -1293,8 +1290,8 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.MANUAL,
                         null,
                         null,
-                        null,
-                        tempPartitionGroupList );
+                        null
+                );
                 // Add column on store
                 storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalog.getColumn( cid ) );
                 // Add to list of columns for which we need to copy data
@@ -1305,6 +1302,7 @@ public class DdlManagerImpl extends DdlManager {
         Set<Long> newColumnIdsOnDataPlacement = new HashSet<>();
         newColumnIdsOnDataPlacement.addAll( columnIds );
         newColumnIdsOnDataPlacement.addAll( catalog.getPrimaryKey( catalogTable.primaryKey ).columnIds );
+
         catalog.updateDataPlacement( storeInstance.getAdapterId(), catalogTable.id, newColumnIdsOnDataPlacement.stream().collect( Collectors.toList() ), partitionIds );
 
         // Copy the data to the newly added column placements
@@ -1422,8 +1420,8 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL,
                     null,
                     null,
-                    null,
-                    null );
+                    null
+            );
             // Add column on store
             storeInstance.addColumn( statement.getPrepareContext(), catalogTable, catalogColumn );
             // Copy the data to the newly added column placements
@@ -1459,13 +1457,7 @@ public class DdlManagerImpl extends DdlManager {
                 throw new IndexPreventsRemovalException( index.name, columnName );
             }
         }
-        // Check if there  is another placement for this column for all existing partitions
-        /*List<CatalogColumnPlacement> existingPlacements = catalog.getColumnPlacement( catalogColumn.id );
-        if ( existingPlacements.size() < 2 ) {
-            throw new LastPlacementException();
-        }*/
 
-        // TODO @HENNLO Substitute with placement above
         if ( !catalog.validateDataPlacementsConstraints( catalogColumn.tableId, storeInstance.getAdapterId(), Arrays.asList( catalogColumn.id ), new ArrayList<>() ) ) {
             throw new LastPlacementException();
         }
@@ -1662,8 +1654,8 @@ public class DdlManagerImpl extends DdlManager {
                         placementType,
                         null,
                         null,
-                        null,
-                        null );
+                        null
+                );
 
                 List<CatalogColumn> catalogColumns;
                 if ( addedColumns.containsKey( adapterId ) ) {
@@ -2225,7 +2217,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-        boolean firstIteration = true;
+
         // For merge create only full placements on the used stores. Otherwise partition constraints might not hold
         for ( DataStore store : stores ) {
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
@@ -2306,8 +2298,8 @@ public class DdlManagerImpl extends DdlManager {
                     placementType,
                     null,
                     null,
-                    null,
-                    null );
+                    null
+            );
         }
     }
 

@@ -860,10 +860,10 @@ public class CatalogImpl extends Catalog {
                 filename += ".gz";
             }
 
-            addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, filename, table.name, name, null );
+            addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, filename, table.name, name );
             updateColumnPlacementPhysicalPosition( csv.id, colId, position );
 
-            long partitionId = getPartitionsOnDataPlacement( csv.id, table.id ).get( 0 );
+            long partitionId = table.partitionProperty.partitionIds.get( 0 );
             addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name );
         }
     }
@@ -872,7 +872,7 @@ public class CatalogImpl extends Catalog {
     private void addDefaultColumn( CatalogAdapter adapter, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
         if ( !checkIfExistsColumn( table.id, name ) ) {
             long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
-            addColumnPlacement( adapter.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name, null );
+            addColumnPlacement( adapter.id, colId, PlacementType.AUTOMATIC, "col" + colId, table.name, name );
             updateColumnPlacementPhysicalPosition( adapter.id, colId, position );
         }
     }
@@ -1892,16 +1892,11 @@ public class CatalogImpl extends Catalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      * @param physicalColumnName The column name on the adapter
-     * @param partitionGroupIds List of partitions to place on this column placement (may be null)
      */
     @Override
-    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds ) {
+    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
         CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
         CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
-
-        // Make sure the Data Placement container exists before adding childs to it.
-        // This is usually only necessary when a new placement is added to an already existing table
-        CatalogDataPlacement dataPlacement = addDataPlacementIfNotExists( adapterId, column.tableId );
 
         CatalogColumnPlacement columnPlacement = new CatalogColumnPlacement(
                 column.tableId,
@@ -2017,7 +2012,7 @@ public class CatalogImpl extends Catalog {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Is flagged for deletion {}", isTableFlaggedForDeletion( oldTable.id ) );
             }
-            // TODO @HENNLO check if even required or replace with validateDataPlacementsConstraints()
+
             if ( oldTable.partitionProperty.isPartitioned ) {
                 if ( !isTableFlaggedForDeletion( oldTable.id ) ) {
                     if ( !columnOnly ) {
@@ -4357,8 +4352,6 @@ public class CatalogImpl extends Catalog {
             return true;
         }
 
-        // ToDO @HENNLO Change this to obtain the new distribution not only the removed.
-
         CatalogTable table = getTable( tableId );
         List<CatalogDataPlacement> dataPlacements = getDataPlacements( tableId );
 
@@ -4381,11 +4374,12 @@ public class CatalogImpl extends Catalog {
                 // Remove columns and partitions from store to not evaluate them
                 if ( dataPlacement.adapterId == adapterId ) {
 
-                    //
+                    // Skips columns that shall be removed
                     if ( columnIdsToBeRemoved.contains( columnId ) ) {
                         continue;
                     }
 
+                    // Only process those parts that shall be present after change
                     effectiveColumnsOnStore.removeAll( columnIdsToBeRemoved );
                     effectivePartitionsOnStore.removeAll( partitionsIdsToBeRemoved );
                 }
@@ -4701,7 +4695,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     protected void addColumnsToDataPlacement( int adapterId, long tableId, List<Long> columnIds ) {
-        CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
+        CatalogDataPlacement oldDataPlacement = addDataPlacementIfNotExists( adapterId, tableId );
 
         Set<Long> columnPlacementsOnAdapter = oldDataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toSet() );
 
@@ -4760,15 +4754,15 @@ public class CatalogImpl extends Catalog {
      *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
-     * @param partitionGroupIds List of partitionGroupIds to add to a specific store for the table
+     * @param partitionIds List of partitionIds to add to a specific store for the table
      */
     @Override
-    protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds ) {
+    protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
 
-        CatalogDataPlacement oldDataPlacement = getDataPlacement( adapterId, tableId );
+        CatalogDataPlacement oldDataPlacement = addDataPlacementIfNotExists( adapterId, tableId );
 
         Set<Long> partitionPlacementsOnAdapter = oldDataPlacement.partitionPlacementsOnAdapter.stream().collect( Collectors.toSet() );
-        partitionPlacementsOnAdapter.addAll( partitionGroupIds );
+        partitionPlacementsOnAdapter.addAll( partitionIds );
 
         CatalogDataPlacement newDataPlacement = new CatalogDataPlacement(
                 oldDataPlacement.tableId,
@@ -4781,7 +4775,7 @@ public class CatalogImpl extends Catalog {
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "Added partitions: {} of table {}, to placement on adapter {}.", partitionGroupIds, tableId, adapterId );
+            log.debug( "Added partitions: {} of table {}, to placement on adapter {}.", partitionIds, tableId, adapterId );
         }
     }
 

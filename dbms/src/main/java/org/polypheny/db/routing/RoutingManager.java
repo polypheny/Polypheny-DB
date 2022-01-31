@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,17 +47,17 @@ public class RoutingManager {
 
     public static final ConfigDouble PRE_COST_POST_COST_RATIO = new ConfigDouble(
             "routing/preCostPostCostRatio",
-            "The ratio between how much post cost are considered. 0 means post cost are ignored, 1 means pre cost are ignored. Value most be between 0 and 1.",
+            "The ratio between how much post cost are considered. 0 means post cost are ignored, 1 means pre cost are ignored. Value must be between 0 and 1.",
             0 );
 
     public static final ConfigBoolean POST_COST_AGGREGATION_ACTIVE = new ConfigBoolean(
             "routing/postCostAggregationActive",
-            "Determines whether the post cost aggregation is active or not. If active, system should be in single thread mode, otherwise costs hard to compare.",
+            "Determines whether the post cost aggregation is active or not. If active, system should be in single thread mode, otherwise costs are hard to compare.",
             true );
 
     public static final ConfigEnum PLAN_SELECTION_STRATEGY = new ConfigEnum(
             "routing/planSelectionStrategy",
-            "Defines whether the best plan will be returned or the plan based on percentage calculated for each plan orderd by costs",
+            "Defines whether the best plan will be returned or the plan based on percentage calculated for each plan ordered by costs",
             RouterPlanSelectionStrategy.class,
             RouterPlanSelectionStrategy.BEST );
 

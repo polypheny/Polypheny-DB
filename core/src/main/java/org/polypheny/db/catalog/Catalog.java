@@ -497,9 +497,8 @@ public abstract class Catalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      * @param physicalColumnName The column name on the adapter
-     * @param partitionGroupIds List of partitions to place on this column placement (may be null)
      */
-    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds );
+    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName );
 
 
     /**
@@ -1479,9 +1478,9 @@ public abstract class Catalog {
      *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
-     * @param partitionGroupIds List of partitionIds to add to a specific store for the table
+     * @param partitionIds List of partitionIds to add to a specific store for the table
      */
-    protected abstract void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds );
+    protected abstract void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
 
 
     /**
