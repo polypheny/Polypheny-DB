@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -572,6 +573,11 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createTimestamp( literal.getValueAs( TimestampString.class ), literal.getType().getPrecision(), POS );
                         case BINARY:
                             return SqlLiteral.createBinaryString( literal.getValueAs( byte[].class ), POS );
+                        case MAP:
+                            return SqlLiteral.transformMapToBson( literal.getValueAs( Map.class ), POS );
+                        case ARRAY:
+                            List<SqlNode> array = literal.getRexList().stream().map( e -> toSql( program, e ) ).collect( Collectors.toList() );
+                            return SqlLiteral.createArray( array, literal.getType(), POS );
                         case ANY:
                         case NULL:
                             switch ( literal.getTypeName() ) {

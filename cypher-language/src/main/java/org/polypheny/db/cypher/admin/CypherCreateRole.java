@@ -20,9 +20,10 @@ import lombok.Getter;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
 @Getter
-public class CypherCreateRole extends CypherAdminCommand {
+public class CypherCreateRole extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
     private final boolean replace;
     private final CypherSimpleEither<String, CypherParameter> roleName;
@@ -31,7 +32,7 @@ public class CypherCreateRole extends CypherAdminCommand {
 
 
     public CypherCreateRole( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> roleName, CypherSimpleEither<String, CypherParameter> sourceRoleName, boolean ifNotExists ) {
-        super(pos);
+        super( pos );
         this.replace = replace;
         this.roleName = roleName;
         this.sourceRoleName = sourceRoleName;

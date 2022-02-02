@@ -24,9 +24,10 @@ import org.polypheny.db.cypher.CypherYield;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
 @Getter
-public class CypherShowUserPrivileges extends CypherWithGraph {
+public class CypherShowUserPrivileges extends CypherWithGraph implements UnsupportedExecutableStatement {
 
     private final List<CypherSimpleEither<String, CypherParameter>> users;
     private final boolean asCommand;

@@ -21,6 +21,8 @@ import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnitRange;
@@ -33,6 +35,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
@@ -41,6 +44,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BitString;
+import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DateString;
@@ -201,6 +205,16 @@ public class SqlLiteral extends SqlNode implements Literal {
             default:
                 throw Util.unexpected( typeName );
         }
+    }
+
+
+    public static SqlNode transformMapToBson( Map<RexLiteral, RexLiteral> map, ParserPos pos ) {
+        return createCharString( BsonUtil.transformToBsonString( map ), pos );
+    }
+
+
+    public static SqlNode createArray( List<SqlNode> array, AlgDataType type, ParserPos pos ) {
+        return new SqlArrayLiteral( array, type, pos );
     }
 
 

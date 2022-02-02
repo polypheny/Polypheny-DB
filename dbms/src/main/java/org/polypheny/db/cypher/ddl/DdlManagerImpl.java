@@ -193,19 +193,23 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createSchema( String name, long databaseId, SchemaType type, int userId, boolean ifNotExists, boolean replace ) throws SchemaAlreadyExistsException {
+    public long createSchema( String name, long databaseId, SchemaType type, int userId, boolean ifNotExists, boolean replace ) throws SchemaAlreadyExistsException {
         // Check if there is already a schema with this name
         if ( catalog.checkIfExistsSchema( databaseId, name ) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
-                return;
+                try {
+                    return catalog.getSchema( Catalog.defaultDatabaseId, name ).id;
+                } catch ( UnknownSchemaException e ) {
+                    throw new RuntimeException( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
+                }
             } else if ( replace ) {
                 throw new RuntimeException( "Replacing schema is not yet supported." );
             } else {
                 throw new SchemaAlreadyExistsException();
             }
         } else {
-            long id = catalog.addSchema( name, databaseId, userId, type );
+            return catalog.addSchema( name, databaseId, userId, type );
         }
     }
 

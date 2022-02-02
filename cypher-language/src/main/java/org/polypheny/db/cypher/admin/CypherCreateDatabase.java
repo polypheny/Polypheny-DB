@@ -16,17 +16,26 @@
 
 package org.polypheny.db.cypher.admin;
 
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
+import org.polypheny.db.cypher.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.prepare.Context;
+import org.polypheny.db.transaction.Statement;
 
 @Getter
-public class CypherCreateDatabase extends CypherAdminCommand {
+public class CypherCreateDatabase extends CypherAdminCommand implements ExecutableStatement {
 
     private final boolean replace;
-    private final CypherSimpleEither<String, CypherParameter> databaseName;
+    private final String databaseName;
     private final boolean ifNotExists;
     private final CypherWaitClause wait;
     private final CypherSimpleEither options;
@@ -35,10 +44,34 @@ public class CypherCreateDatabase extends CypherAdminCommand {
     public CypherCreateDatabase( ParserPos pos, boolean replace, CypherSimpleEither<String, CypherParameter> databaseName, boolean ifNotExists, CypherWaitClause wait, CypherSimpleEither options ) {
         super( pos );
         this.replace = replace;
-        this.databaseName = databaseName;
+        if ( databaseName.getLeft() != null ) {
+            this.databaseName = databaseName.getLeft();
+        } else {
+            this.databaseName = databaseName.getRight().getName();
+        }
         this.ifNotExists = ifNotExists;
         this.wait = wait;
         this.options = options;
+    }
+
+
+    @Override
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+        if ( wait != null && wait.isWait() ) {
+            try {
+                Thread.sleep( TimeUnit.MILLISECONDS.convert( wait.getNanos(), TimeUnit.NANOSECONDS ) );
+            } catch ( InterruptedException e ) {
+                throw new UnsupportedOperationException( "While waiting to create the database the operation was interrupted." );
+            }
+        }
+
+        try {
+            // todo dl ddlManager should create entities relationships & nodes directly
+            DdlManager.getInstance().createSchema( databaseName, Catalog.defaultDatabaseId, SchemaType.GRAPH, Catalog.defaultUserId, ifNotExists, replace );
+        } catch ( SchemaAlreadyExistsException e ) {
+            throw new RuntimeException( "The PolyNamespace already exists." );
+        }
+
     }
 
 }

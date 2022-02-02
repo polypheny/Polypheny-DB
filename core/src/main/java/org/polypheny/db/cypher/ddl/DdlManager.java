@@ -128,7 +128,7 @@ public abstract class DdlManager {
      * @param ifNotExists whether to silently ignore if the schema does already exist
      * @param replace whether the replace a existing schema
      */
-    public abstract void createSchema( String name, long databaseId, SchemaType type, int userId, boolean ifNotExists, boolean replace ) throws SchemaAlreadyExistsException;
+    public abstract long createSchema( String name, long databaseId, SchemaType type, int userId, boolean ifNotExists, boolean replace ) throws SchemaAlreadyExistsException;
 
     /**
      * Adds a new adapter (data store or data source)

@@ -1202,5 +1202,11 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 ? 1 : -1;
     }
 
+
+    public List<RexLiteral> getRexList() {
+        assert value instanceof PolyList;
+        return (List<RexLiteral>) value;
+    }
+
 }
 

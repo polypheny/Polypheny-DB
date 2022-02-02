@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Queue;
@@ -48,6 +49,7 @@ import org.bson.BsonString;
 import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.bson.Document;
+import org.bson.json.JsonWriterSettings;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -781,6 +783,23 @@ public class BsonUtil {
             default:
                 return factory.createPolyType( PolyType.ANY );
         }
+    }
+
+
+    public static String transformToBsonString( Map<RexLiteral, RexLiteral> map ) {
+        return transformToBson( map ).toJson( JsonWriterSettings.builder()/*.outputMode( JsonMode.EXTENDED )*/.build() );
+    }
+
+
+    public static Document transformToBson( Map<RexLiteral, RexLiteral> map ) {
+        Document doc = new Document();
+
+        for ( Entry<RexLiteral, RexLiteral> entry : map.entrySet() ) {
+            assert entry.getKey().getTypeName() == PolyType.CHAR;
+            doc.put( entry.getKey().getValueAs( String.class ), getAsBson( entry.getValue(), null ) );
+        }
+        return doc;
+
     }
 
 }

@@ -26,9 +26,13 @@ import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.ExecutableStatement;
+import org.polypheny.db.prepare.Context;
+import org.polypheny.db.transaction.Statement;
 
 @Getter
-public class CypherCreateConstraint extends CypherSchemaCommand {
+public class CypherCreateConstraint extends CypherSchemaCommand implements ExecutableStatement {
 
     private final ConstraintType constraintType;
     private final boolean replace;
@@ -54,6 +58,16 @@ public class CypherCreateConstraint extends CypherSchemaCommand {
         this.options = options;
         this.containsOn = containsOn;
         this.constraintVersion = constraintVersion;
+    }
+
+
+    @Override
+    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+        if ( constraintType != ConstraintType.UNIQUE ) {
+            throw new UnsupportedOperationException( "Only unique constraints are supported at the moment." );
+        }
+
+        //DdlManager.getInstance().addConstraint(  );
     }
 
 }

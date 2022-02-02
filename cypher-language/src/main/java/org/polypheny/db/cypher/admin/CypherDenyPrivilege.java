@@ -22,9 +22,10 @@ import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherPrivilegeType;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.UnsupportedExecutableStatement;
 
 @Getter
-public class CypherDenyPrivilege extends CypherAdminCommand {
+public class CypherDenyPrivilege extends CypherAdminCommand implements UnsupportedExecutableStatement {
 
     private final List<CypherSimpleEither<String, CypherParameter>> roles;
     private final CypherPrivilegeType privilege;

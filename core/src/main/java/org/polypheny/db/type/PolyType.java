@@ -289,6 +289,12 @@ public enum PolyType {
             Types.OTHER,
             PolyTypeFamily.MAP ),
 
+    DOCUMENT(
+            PrecScale.NO_NO,
+            false,
+            Types.OTHER,
+            PolyTypeFamily.DOCUMENT ),
+
     PATH(
             PrecScale.NO_NO,
             true,
