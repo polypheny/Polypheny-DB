@@ -37,6 +37,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
     @Override
     public List<DataStore> getDataStoresForNewTable() {
+
         /*
          Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
         return PolicyManager.getInstance().checkTableStoreOptions(availableStores, true);

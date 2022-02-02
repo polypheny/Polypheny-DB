@@ -374,14 +374,6 @@ public enum RuntimeConfig {
             ConfigType.INSTANCE_LIST,
             "dockerGroup" ),
 
-    POLICY(
-            "policy/usePolicy",
-            "Policies are information that are used to adapt Polypheny on its one.",
-            Collections.singletonList( new ConfigPolicy( "availability", "polypheny" ) ),
-            ConfigType.POLICY_LIST,
-            "policyGroup"
-    ),
-
     FILE_HANDLE_CACHE_SIZE(
             "runtime/fileHandleCacheSize",
             "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
@@ -473,17 +465,6 @@ public enum RuntimeConfig {
         statisticSettingsGroup.withTitle( "Statistics Settings" );
         configManager.registerWebUiPage( queryStatisticsPage );
         configManager.registerWebUiGroup( statisticSettingsGroup );
-
-        //Policy
-        final WebUiPage policyPage = new WebUiPage(
-                "policy",
-                "Policy",
-                "Policy Settings." );
-        //queryStatisticsPage.withIcon( "fa fa-percent" );
-        final WebUiGroup policyGroup = new WebUiGroup( "policyGroup", policyPage.getId() );
-        policyGroup.withTitle( "Policy Settings" );
-        configManager.registerWebUiPage( policyPage );
-        configManager.registerWebUiGroup( policyGroup );
 
         // Docker Settings
         final WebUiPage dockerPage = new WebUiPage(
@@ -626,10 +607,6 @@ public enum RuntimeConfig {
                 config = new ConfigList( key, (List<?>) defaultValue, ConfigDocker.class );
                 break;
 
-            case POLICY_LIST:
-                config = new ConfigList( key, (List<?>) defaultValue, ConfigPolicy.class);
-                break;
-
             default:
                 throw new RuntimeException( "Unknown config type: " + configType.name() );
         }
@@ -753,7 +730,7 @@ public enum RuntimeConfig {
 
 
     public enum ConfigType {
-        BOOLEAN, DECIMAL, DOUBLE, INTEGER, LONG, STRING, ENUM, BOOLEAN_TABLE, DECIMAL_TABLE, DOUBLE_TABLE, INTEGER_TABLE, LONG_TABLE, STRING_TABLE, BOOLEAN_ARRAY, DECIMAL_ARRAY, DOUBLE_ARRAY, INTEGER_ARRAY, LONG_ARRAY, STRING_ARRAY, STRING_LIST, INSTANCE_LIST, POLICY_LIST
+        BOOLEAN, DECIMAL, DOUBLE, INTEGER, LONG, STRING, ENUM, BOOLEAN_TABLE, DECIMAL_TABLE, DOUBLE_TABLE, INTEGER_TABLE, LONG_TABLE, STRING_TABLE, BOOLEAN_ARRAY, DECIMAL_ARRAY, DOUBLE_ARRAY, INTEGER_ARRAY, LONG_ARRAY, STRING_ARRAY, STRING_LIST, INSTANCE_LIST
     }
 
 }

@@ -27,8 +27,7 @@ public enum WebUiFormType {
     SELECT( "select" ),
     CHECKBOXES( "checkboxes" ),
     LIST( "list" ),
-    DOCKER_INSTANCE( "docker" ),
-    POLICY("policy");
+    DOCKER_INSTANCE( "docker" );
 
     private final String type;
 
