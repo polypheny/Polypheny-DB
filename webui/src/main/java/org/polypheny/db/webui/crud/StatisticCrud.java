@@ -131,15 +131,12 @@ public class StatisticCrud {
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
         boolean notInserted;
         Timestamp startTime;
-        Timestamp endTime;
+        Timestamp endTime = new Timestamp(System.currentTimeMillis());;
         if ( queryData.size() > 0 && dmlData.size() > 0 ) {
-            endTime = (queryData.get( 0 ).getRecordedTimestamp().getTime() > dmlData.get( 0 ).getRecordedTimestamp().getTime()) ? queryData.get( 0 ).getRecordedTimestamp() : dmlData.get( 0 ).getRecordedTimestamp();
             startTime = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
         } else if ( dmlData.size() > 0 ) {
-            endTime = dmlData.get( 0 ).getRecordedTimestamp();
             startTime = dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
         } else if ( queryData.size() > 0 ) {
-            endTime = queryData.get( 0 ).getRecordedTimestamp();
             startTime = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
         } else {
             throw new RuntimeException( "No Data available for Dashboard Diagram" );

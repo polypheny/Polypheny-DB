@@ -39,11 +39,16 @@ public class DashboardInformation {
     @Getter
     private int numberOfRollbacks;
 
+    @Setter
     @Getter
-    private final Map<String, AdapterType> availableAdapter = new HashMap<>();
+    private int numberOfQueries;
+
+    @Setter
+    @Getter
+    private int numberOfWorkloads;
 
     @Getter
-    private final Map<Long, String> availableDatabases = new HashMap<>();
+    private final Map<String, AdapterType> availableAdapter = new HashMap<>();
 
     @Getter
     private final Map<Long, Pair<String, SchemaType>> availableSchemas = new HashMap<>();
@@ -51,24 +56,28 @@ public class DashboardInformation {
     @Getter
     private boolean catalogPersistent;
 
-    public DashboardInformation(){
+
+    public DashboardInformation() {
         this.numberOfCommits = 0;
         this.numberOfRollbacks = 0;
+        this.numberOfQueries = 0;
+        this.numberOfWorkloads = 0;
 
         updatePolyphenyStatistic();
     }
 
-    public void updatePolyphenyStatistic(){
+
+    public void updatePolyphenyStatistic() {
         Catalog catalog = Catalog.getInstance();
         this.catalogPersistent = catalog.isPersistent;
 
+        this.numberOfQueries = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class ).size();
+        this.numberOfWorkloads = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class ).size();
+
         catalog.getAdapters().forEach( v -> {
-            this.availableAdapter.put( v.uniqueName, v.type  );
+            this.availableAdapter.put( v.uniqueName, v.type );
         } );
-        catalog.getDatabases( null ).forEach( v -> {
-            availableDatabases.put( v.id, v.name );
-        });
-        catalog.getSchemas(  null, null).forEach( v -> {
+        catalog.getSchemas( null, null ).forEach( v -> {
             availableSchemas.put( v.id, new Pair<>( v.name, v.schemaType ) );
         } );
     }
