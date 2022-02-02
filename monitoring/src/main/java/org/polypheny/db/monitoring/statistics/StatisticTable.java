@@ -49,6 +49,9 @@ public class StatisticTable<T extends Comparable<T>> {
     private ImmutableList<Integer> dataPlacements;
 
     @Getter
+    private final List<Integer> availableAdapters = new ArrayList<>();
+
+    @Getter
     private String owner;
 
     @Getter

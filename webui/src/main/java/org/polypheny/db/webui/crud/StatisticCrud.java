@@ -20,10 +20,12 @@ import com.google.gson.Gson;
 import io.javalin.http.Context;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -33,11 +35,12 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
-import org.polypheny.db.monitoring.events.metrics.QueryDataPoint;
-import org.polypheny.db.monitoring.statistics.StatisticTable;
+import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
+@Slf4j
 public class StatisticCrud {
 
     @Getter
@@ -90,10 +93,9 @@ public class StatisticCrud {
             schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
             tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
 
-            StatisticTable test = (StatisticTable) statisticsManager.getTableStatistic( schemaId, tableId );
-            ctx.json( test );
+            ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
         } catch ( UnknownTableException | UnknownSchemaException e ) {
-            throw new RuntimeException("Schema: " + request.tableId.split( "\\." )[0] + " or Table: " + request.tableId.split( "\\." )[1] + "is unknown.");
+            throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: " + request.tableId.split( "\\." )[1] + "is unknown." );
         }
     }
 
@@ -110,34 +112,80 @@ public class StatisticCrud {
     }
 
 
-    public void getMonitoringInformation( final Context ctx ) {
-        ctx.json( "result" );
-        List<QueryDataPoint> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPoint.class );
-        List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
+    /**
+     *General information for the UI dashboard.
+     */
+    public void getDashboardInformation( Context ctx ) {
+
+        ctx.json( statisticsManager.getDashboardInformation() );
     }
 
 
-    public void getDmlInformation( final Context ctx ) {
+    /**
+     *Information for diagram shown on the UI dashboard.
+     */
+    public void getDashboardDiagram( final Context ctx ) {
+        TreeMap<Timestamp, Pair<Integer, Integer>> info = new TreeMap<>();
+        TreeMap<Timestamp, Pair<Integer, Integer>> dashboardInfo = new TreeMap<>();
+        List<QueryDataPointImpl> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class );
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
-        TreeMap<Timestamp, Integer> infoRow = new TreeMap<>();
-        Timestamp lastTimestamp = null;
-        for ( DmlDataPoint dmlDataPoint : dmlData ) {
-            Timestamp time = dmlDataPoint.getRecordedTimestamp();
-            if ( infoRow.isEmpty() ) {
-                infoRow.put( time, 1 );
-                lastTimestamp = time;
-            } else {
-                if ( (lastTimestamp.getTime() - time.getTime()) < TimeUnit.SECONDS.toMillis( 30 ) ) {
-                    int num = infoRow.remove( lastTimestamp );
-                    infoRow.put( lastTimestamp, num + 1 );
-                } else {
-                    infoRow.put( time, 1 );
-                    lastTimestamp = time;
+        boolean notInserted;
+        Timestamp startTime;
+        Timestamp endTime = new Timestamp(System.currentTimeMillis());;
+        if ( queryData.size() > 0 && dmlData.size() > 0 ) {
+            startTime = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
+        } else if ( dmlData.size() > 0 ) {
+            startTime = dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
+        } else if ( queryData.size() > 0 ) {
+            startTime = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
+        } else {
+            throw new RuntimeException( "No Data available for Dashboard Diagram" );
+        }
+
+        long interval = calculateInterval(startTime, endTime);
+
+        Timestamp time = startTime;
+        while ( endTime.getTime() - time.getTime() >= 0 ) {
+            info.put( time, new Pair<>( 0, 0 ) );
+            time = new Timestamp( time.getTime() + interval );
+        }
+
+        dashboardInfo.putAll( info );
+
+        for ( QueryDataPointImpl queryDataPoint : queryData ) {
+            notInserted = true;
+            Timestamp queryTime = queryDataPoint.getRecordedTimestamp();
+            for ( Entry<Timestamp, Pair<Integer, Integer>> timestampInfo : dashboardInfo.entrySet() ) {
+                if ( timestampInfo.getKey().getTime() + interval - queryTime.getTime() > 0 && notInserted ) {
+                    Pair<Integer, Integer> num = info.remove( timestampInfo.getKey() );
+                    info.put( timestampInfo.getKey(), new Pair<>( num.left + 1, num.right ) );
+                    notInserted = false;
                 }
             }
-
         }
-        ctx.json( infoRow );
+
+        dashboardInfo.clear();
+        dashboardInfo.putAll( info );
+        for ( DmlDataPoint dmlDataPoint : dmlData ) {
+            notInserted = true;
+            Timestamp dmlTime = dmlDataPoint.getRecordedTimestamp();
+            for ( Entry<Timestamp, Pair<Integer, Integer>> timestampInfo : dashboardInfo.entrySet() ) {
+                if ( timestampInfo.getKey().getTime() + interval - dmlTime.getTime() > 0 && notInserted ) {
+                    Pair<Integer, Integer> num = info.remove( timestampInfo.getKey() );
+                    info.put( timestampInfo.getKey(), new Pair<>( num.left, num.right + 1 ) );
+                    notInserted = false;
+                }
+            }
+        }
+
+        ctx.json( info );
     }
+
+
+    private long calculateInterval( Timestamp startTime, Timestamp endTime ) {
+        long interval = (endTime.getTime() - startTime.getTime()) / 10;
+        return interval;
+    }
+
 
 }
