@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -739,7 +740,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             tableStatistic.forEach( ( k, v ) -> {
                 tableInformation.addRow( v.getTable(), v.getSchemaType(), v.getNumberOfRows() );
 
-                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() ) {
+                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getTableType() != TableType.MATERIALIZED_VIEW) {
                     tableSelectInformation.addRow(
                             v.getTable(),
                             v.getCalls().getNumberOfSelects(),
