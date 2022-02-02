@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jdbc;
+package org.polypheny.db.avatica;
 
 
 import com.google.common.collect.ImmutableList;
@@ -136,7 +136,7 @@ public class DbmsMeta implements ProtobufMeta {
     private final MonitoringPage monitoringPage;
 
     /**
-     * Generates ids for statements. The ids are unique across all connections created by this JdbcMeta.
+     * Generates ids for statements. The ids are unique across all connections created by this DbmsMeta.
      */
     private final AtomicInteger statementIdGenerator = new AtomicInteger();
 
@@ -1393,7 +1393,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         // Create transaction
-        Transaction transaction = transactionManager.startTransaction( user, null, null, false, "JDBC Interface" );
+        Transaction transaction = transactionManager.startTransaction( user, null, null, false, "AVATICA Interface" );
 
         // Check database access
         final CatalogDatabase database;
@@ -1633,7 +1633,7 @@ public class DbmsMeta implements ProtobufMeta {
         public MonitoringPage( String uniqueName ) {
             InformationManager im = InformationManager.getInstance();
 
-            informationPage = new InformationPage( uniqueName, "JDBC Interface" ).fullWidth().setLabel( "Interfaces" );
+            informationPage = new InformationPage( uniqueName, "AVATICA Interface" ).fullWidth().setLabel( "Interfaces" );
             informationGroupConnection = new InformationGroup( informationPage, "Connections" );
 
             im.addPage( informationPage );

@@ -762,7 +762,7 @@ public class CatalogImpl extends Catalog {
             Map<String, String> jdbcSettings = new HashMap<>();
             jdbcSettings.put( "port", "20591" );
             jdbcSettings.put( "serialization", "PROTOBUF" );
-            addQueryInterface( "jdbc", "org.polypheny.db.jdbc.JdbcInterface", jdbcSettings );
+            addQueryInterface( "avatica", "org.polypheny.db.avatica.AvaticaInterface", jdbcSettings );
 
             // Add REST interface
             Map<String, String> restSettings = new HashMap<>();

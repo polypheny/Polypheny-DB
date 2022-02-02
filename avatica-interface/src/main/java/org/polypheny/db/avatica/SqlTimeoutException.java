@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jdbc;
+package org.polypheny.db.avatica;
 
-import java.util.Iterator;
-import org.apache.calcite.avatica.Meta;
-import org.polypheny.db.prepare.Context;
+
+import java.sql.SQLException;
 
 
 /**
- * Statement within a Polypheny-DB server.
+ * Indicates that an operation timed out. This is not an error; you can retry the operation.
  */
-public interface PolyphenyDbServerStatement {
+public class SqlTimeoutException extends SQLException {
 
-    /**
-     * Creates a context for preparing a statement for execution.
-     */
-    Context createPrepareContext();
-
-    void setSignature( Meta.Signature signature );
-
-    Meta.Signature getSignature();
-
-    Iterator<Object> getResultSet();
-
-    void setResultSet( Iterator<Object> resultSet );
+    SqlTimeoutException() {
+        // SQLException(reason, SQLState, vendorCode)
+        // REVIEW mb: Is there a standard SQLState?
+        super( "timeout", null, 0 );
+    }
 
 }
 

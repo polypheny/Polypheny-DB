@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.jdbc.PolyphenyDbServerStatement;
+import org.polypheny.db.avatica.PolyphenyDbServerStatement;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptAbstractTable;
 import org.polypheny.db.plan.AlgOptCluster;

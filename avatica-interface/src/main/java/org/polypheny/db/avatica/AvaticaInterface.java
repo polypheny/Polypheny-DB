@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.jdbc;
+package org.polypheny.db.avatica;
 
 
 import com.google.common.collect.ImmutableList;
@@ -36,12 +36,12 @@ import org.polypheny.db.util.Util;
 
 
 @Slf4j
-public class JdbcInterface extends QueryInterface {
+public class AvaticaInterface extends QueryInterface {
 
     @SuppressWarnings("WeakerAccess")
-    public static final String INTERFACE_NAME = "JDBC Interface";
+    public static final String INTERFACE_NAME = "AVATICA Interface";
     @SuppressWarnings("WeakerAccess")
-    public static final String INTERFACE_DESCRIPTION = "JDBC-SQL query interface with configurable SQL dialect.";
+    public static final String INTERFACE_DESCRIPTION = "AVATICA-SQL query interface with configurable SQL dialect.";
     @SuppressWarnings("WeakerAccess")
     public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new QueryInterfaceSettingInteger( "port", false, true, false, 20591 ),
@@ -57,7 +57,7 @@ public class JdbcInterface extends QueryInterface {
     private final HttpServerDispatcher httpServerDispatcher;
 
 
-    public JdbcInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+    public AvaticaInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
         super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
         metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
         metricsSystem = NoopMetricsSystem.getInstance();
@@ -77,7 +77,7 @@ public class JdbcInterface extends QueryInterface {
         try {
             httpServerDispatcher = new HttpServerDispatcher( port, handler );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Exception while starting JDBC interface", e );
+            throw new RuntimeException( "Exception while starting " + INTERFACE_NAME, e );
         }
     }
 
@@ -87,7 +87,7 @@ public class JdbcInterface extends QueryInterface {
         try {
             httpServerDispatcher.start();
         } catch ( Exception e ) {
-            log.error( "Exception while starting JDBC interface", e );
+            log.error( "Exception while starting " + INTERFACE_NAME, e );
         }
 
         StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
@@ -106,7 +106,7 @@ public class JdbcInterface extends QueryInterface {
             httpServerDispatcher.stop();
             meta.shutdown();
         } catch ( Exception e ) {
-            log.error( "Exception while shutdown of a JDBC query interface!", e );
+            log.error( "Exception during shutdown of an " + INTERFACE_NAME + "!", e );
         }
         log.info( "{} stopped.", INTERFACE_NAME );
     }
