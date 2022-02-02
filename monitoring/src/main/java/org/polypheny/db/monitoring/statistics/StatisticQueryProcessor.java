@@ -129,10 +129,14 @@ public class StatisticQueryProcessor {
                 null,
                 null,
                 null );
-        return catalogColumns.stream()
-                .map( c -> new QueryColumn( c.schemaId, c.tableId, c.id, c.type ) )
-                .collect( Collectors.toList() );
+        List<QueryColumn> allColumns = new ArrayList<>();
 
+        for ( CatalogColumn catalogColumn : catalogColumns ) {
+            if(catalog.getTable(  catalogColumn.tableId).tableType != TableType.VIEW) {
+                allColumns.add( new QueryColumn( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ));
+            }
+        }
+        return allColumns;
     }
 
 
@@ -143,10 +147,18 @@ public class StatisticQueryProcessor {
      */
     public List<CatalogTable> getAllTable() {
         Catalog catalog = Catalog.getInstance();
-        return catalog.getTables(
+        List<CatalogTable> catalogTables = catalog.getTables(
                 new Pattern( databaseName ),
                 null,
                 null );
+        List<CatalogTable> allTables = new ArrayList<>();
+
+        for ( CatalogTable catalogTable : catalogTables ) {
+            if(catalogTable.tableType != TableType.VIEW) {
+                allTables.add( catalogTable );
+            }
+        }
+        return allTables;
     }
 
 
