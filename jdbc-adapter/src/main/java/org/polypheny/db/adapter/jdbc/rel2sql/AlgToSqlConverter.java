@@ -61,9 +61,9 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Match;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -271,7 +271,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * @see #dispatch
      */
-    public Result visit( TableScan e ) {
+    public Result visit( Scan e ) {
         //final SqlIdentifier identifier = getPhysicalTableName( e.getTable().getQualifiedName() );
         return result(
                 new SqlIdentifier( e.getTable().getQualifiedName(), ParserPos.ZERO ),

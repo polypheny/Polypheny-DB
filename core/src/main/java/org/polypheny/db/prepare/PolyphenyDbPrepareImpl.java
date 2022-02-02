@@ -92,21 +92,21 @@ import org.polypheny.db.algebra.rules.AggregateValuesRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
-import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.FilterScanRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
 import org.polypheny.db.algebra.rules.JoinPushExpressionsRule;
 import org.polypheny.db.algebra.rules.JoinPushThroughJoinRule;
 import org.polypheny.db.algebra.rules.ProjectFilterTransposeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
-import org.polypheny.db.algebra.rules.ProjectTableScanRule;
+import org.polypheny.db.algebra.rules.ProjectScanRule;
 import org.polypheny.db.algebra.rules.ProjectWindowTransposeRule;
 import org.polypheny.db.algebra.rules.ReduceExpressionsRule;
+import org.polypheny.db.algebra.rules.ScanRule;
 import org.polypheny.db.algebra.rules.SortJoinTransposeRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SortRemoveConstantKeysRule;
 import org.polypheny.db.algebra.rules.SortUnionTransposeRule;
-import org.polypheny.db.algebra.rules.TableScanRule;
 import org.polypheny.db.algebra.rules.ValuesReduceRule;
 import org.polypheny.db.algebra.stream.StreamRules;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -222,11 +222,11 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
-                    TableScanRule.INSTANCE,
+                    ScanRule.INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
-                    FilterTableScanRule.INSTANCE,
+                    FilterScanRule.INSTANCE,
                     ProjectFilterTransposeRule.INSTANCE,
                     FilterProjectTransposeRule.INSTANCE,
                     FilterJoinRule.FILTER_ON_JOIN,
@@ -425,8 +425,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             }
         }
         planner.addRule( Bindables.BINDABLE_TABLE_SCAN_RULE );
-        planner.addRule( ProjectTableScanRule.INSTANCE );
-        planner.addRule( ProjectTableScanRule.INTERPRETER );
+        planner.addRule( ProjectScanRule.INSTANCE );
+        planner.addRule( ProjectScanRule.INTERPRETER );
 
         if ( ENABLE_ENUMERABLE ) {
             for ( AlgOptRule rule : ENUMERABLE_RULES ) {

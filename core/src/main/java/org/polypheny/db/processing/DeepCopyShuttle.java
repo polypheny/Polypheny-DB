@@ -20,8 +20,8 @@ import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
@@ -33,8 +33,8 @@ import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -50,9 +50,9 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
+    public AlgNode visit( Scan scan ) {
         final AlgNode node = super.visit( scan );
-        return new LogicalTableScan( node.getCluster(), copy( node.getTraitSet() ), node.getTable() );
+        return new LogicalScan( node.getCluster(), copy( node.getTraitSet() ), node.getTable() );
     }
 
 

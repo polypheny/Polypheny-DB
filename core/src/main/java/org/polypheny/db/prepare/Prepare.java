@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -149,7 +149,7 @@ public abstract class Prepare {
         final AlgVisitor visitor = new AlgVisitor() {
             @Override
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
-                if ( node instanceof TableScan ) {
+                if ( node instanceof Scan ) {
                     final AlgOptCluster cluster = node.getCluster();
                     final ToAlgContext context = () -> cluster;
                     final AlgNode r = node.getTable().toAlg( context );

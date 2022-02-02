@@ -58,9 +58,9 @@ import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalSortExchange;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
@@ -111,7 +111,7 @@ public class AlgFactories {
 
     public static final ValuesFactory DEFAULT_VALUES_FACTORY = new ValuesFactoryImpl();
 
-    public static final TableScanFactory DEFAULT_TABLE_SCAN_FACTORY = new TableScanFactoryImpl();
+    public static final ScanFactory DEFAULT_TABLE_SCAN_FACTORY = new ScanFactoryImpl();
 
     public static final DocumentsFactory DEFAULT_DOCUMENTS_FACTORY = new DocumentsFactoryImpl();
 
@@ -537,12 +537,12 @@ public class AlgFactories {
 
 
     /**
-     * Can create a {@link TableScan} of the appropriate type for a rule's calling convention.
+     * Can create a {@link Scan} of the appropriate type for a rule's calling convention.
      */
-    public interface TableScanFactory {
+    public interface ScanFactory {
 
         /**
-         * Creates a {@link TableScan}.
+         * Creates a {@link Scan}.
          */
         AlgNode createScan( AlgOptCluster cluster, AlgOptTable table );
 
@@ -550,14 +550,14 @@ public class AlgFactories {
 
 
     /**
-     * Implementation of {@link TableScanFactory} that returns a {@link LogicalTableScan}.
+     * Implementation of {@link ScanFactory} that returns a {@link LogicalScan}.
      */
-    private static class TableScanFactoryImpl implements TableScanFactory {
+    private static class ScanFactoryImpl implements ScanFactory {
 
         @Override
         public AlgNode createScan( AlgOptCluster cluster, AlgOptTable table ) {
 
-            // Check if RelOptTable contains a View, in this case a LogicalViewTableScan needs to be created
+            // Check if RelOptTable contains a View, in this case a LogicalViewScan needs to be created
             if ( (((AlgOptTableImpl) table).getTable()) instanceof LogicalTable ) {
                 Catalog catalog = Catalog.getInstance();
                 long idLogical = ((LogicalTable) ((AlgOptTableImpl) table).getTable()).getTableId();
@@ -565,10 +565,10 @@ public class AlgFactories {
                 if ( catalogTable.tableType == TableType.VIEW ) {
                     return LogicalViewScan.create( cluster, table );
                 } else {
-                    return LogicalTableScan.create( cluster, table );
+                    return LogicalScan.create( cluster, table );
                 }
             } else {
-                return LogicalTableScan.create( cluster, table );
+                return LogicalScan.create( cluster, table );
             }
         }
 
@@ -576,20 +576,20 @@ public class AlgFactories {
 
 
     /**
-     * Creates a {@link TableScanFactory} that can expand {@link TranslatableTable} instances.
+     * Creates a {@link ScanFactory} that can expand {@link TranslatableTable} instances.
      *
-     * @param tableScanFactory Factory for non-translatable tables
+     * @param scanFactory Factory for non-translatable tables
      * @return Table scan factory
      */
     @Nonnull
-    public static TableScanFactory expandingScanFactory( @Nonnull TableScanFactory tableScanFactory ) {
+    public static ScanFactory expandingScanFactory( @Nonnull ScanFactory scanFactory ) {
         return ( cluster, table ) -> {
             final TranslatableTable translatableTable = table.unwrap( TranslatableTable.class );
             if ( translatableTable != null ) {
                 final ToAlgContext toAlgContext = () -> cluster;
                 return translatableTable.toAlg( toAlgContext, table );
             }
-            return tableScanFactory.createScan( cluster, table );
+            return scanFactory.createScan( cluster, table );
         };
     }
 

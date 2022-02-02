@@ -42,7 +42,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
@@ -148,7 +148,7 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
-        return new EnumerableTableScan( context.getCluster(), context.getCluster().traitSetOf( EnumerableConvention.INSTANCE ), algOptTable, (Class) getElementType() );
+        return new EnumerableScan( context.getCluster(), context.getCluster().traitSetOf( EnumerableConvention.INSTANCE ), algOptTable, (Class) getElementType() );
     }
 
 }

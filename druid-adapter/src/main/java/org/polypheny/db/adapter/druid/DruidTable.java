@@ -49,7 +49,7 @@ import org.joda.time.chrono.ISOChronology;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -241,8 +241,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        // ViewTableScan needed for Views
-        final LogicalTableScan scan = LogicalTableScan.create( cluster, algOptTable );
+        // ViewScan needed for Views
+        final LogicalScan scan = LogicalScan.create( cluster, algOptTable );
         return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), algOptTable, this, ImmutableList.of( scan ) );
     }
 

@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -411,7 +411,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguagelDependant {
 
             @Override
             public AlgNode toAlg( ToAlgContext context ) {
-                return LogicalTableScan.create( context.getCluster(), this );
+                return LogicalScan.create( context.getCluster(), this );
             }
 
 
@@ -525,7 +525,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguagelDependant {
 
         @Override
         public AlgNode toAlg( ToAlgContext context ) {
-            return LogicalTableScan.create( context.getCluster(), this );
+            return LogicalScan.create( context.getCluster(), this );
         }
 
 

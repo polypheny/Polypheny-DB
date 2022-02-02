@@ -214,7 +214,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
-        return new JdbcTableScan( context.getCluster(), algOptTable, this, jdbcSchema.getConvention() );
+        return new JdbcScan( context.getCluster(), algOptTable, this, jdbcSchema.getConvention() );
     }
 
 

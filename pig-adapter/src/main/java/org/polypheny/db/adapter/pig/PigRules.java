@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -53,7 +53,7 @@ import org.polypheny.db.plan.Convention;
  */
 public class PigRules {
 
-    public static final List<ConverterRule> ALL_PIG_OPT_RULES = ImmutableList.of( PigFilterRule.INSTANCE, PigTableScanRule.INSTANCE, PigProjectRule.INSTANCE, PigAggregateRule.INSTANCE, PigJoinRule.INSTANCE );
+    public static final List<ConverterRule> ALL_PIG_OPT_RULES = ImmutableList.of( PigFilterRule.INSTANCE, PigScanRule.INSTANCE, PigProjectRule.INSTANCE, PigAggregateRule.INSTANCE, PigJoinRule.INSTANCE );
 
 
     // prevent instantiation
@@ -85,23 +85,23 @@ public class PigRules {
 
 
     /**
-     * Rule to convert a {@link LogicalTableScan} to a {@link PigTableScan}.
+     * Rule to convert a {@link LogicalScan} to a {@link PigScan}.
      */
-    private static class PigTableScanRule extends ConverterRule {
+    private static class PigScanRule extends ConverterRule {
 
-        private static final PigTableScanRule INSTANCE = new PigTableScanRule();
+        private static final PigScanRule INSTANCE = new PigScanRule();
 
 
-        private PigTableScanRule() {
-            super( LogicalTableScan.class, Convention.NONE, PigAlg.CONVENTION, "PigTableScanRule" );
+        private PigScanRule() {
+            super( LogicalScan.class, Convention.NONE, PigAlg.CONVENTION, "PigScanRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final LogicalTableScan scan = (LogicalTableScan) alg;
+            final LogicalScan scan = (LogicalScan) alg;
             final AlgTraitSet traitSet = scan.getTraitSet().replace( PigAlg.CONVENTION );
-            return new PigTableScan( alg.getCluster(), traitSet, scan.getTable() );
+            return new PigScan( alg.getCluster(), traitSet, scan.getTable() );
         }
 
     }

@@ -63,7 +63,7 @@ import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.QueryableTable;
@@ -118,7 +118,7 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
             if ( table instanceof TranslatableTable ) {
                 return ((TranslatableTable) table).toAlg( translator.toAlgContext(), algOptTable );
             } else {
-                return LogicalTableScan.create( translator.cluster, algOptTable );
+                return LogicalScan.create( translator.cluster, algOptTable );
             }
         }
         return translator.translate( queryable.getExpression() );

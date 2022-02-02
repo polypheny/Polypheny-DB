@@ -31,55 +31,57 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.cassandra;
+package org.polypheny.db.adapter.mongodb;
 
 
 import java.util.List;
-import org.polypheny.db.adapter.cassandra.CassandraAlg.CassandraImplementContext.Type;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Relational expression representing a scan of a Cassandra collection.
+ * Relational expression representing a scan of a MongoDB collection.
+ *
+ * Additional operations might be applied, using the "find" or "aggregate" methods.</p>
  */
-public class CassandraTableScan extends TableScan implements CassandraAlg {
+public class MongoScan extends Scan implements MongoAlg {
 
-    public final CassandraTable cassandraTable;
+    final MongoTable mongoTable;
     final AlgDataType projectRowType;
 
 
     /**
-     * Creates a CassandraTableScan.
+     * Creates a MongoScan.
      *
      * @param cluster Cluster
      * @param traitSet Traits
      * @param table Table
-     * @param cassandraTable Cassandra table
+     * @param mongoTable MongoDB table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    protected CassandraTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, CassandraTable cassandraTable, AlgDataType projectRowType ) {
+    protected MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, MongoTable mongoTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
-        this.cassandraTable = cassandraTable;
+        this.mongoTable = mongoTable;
         this.projectRowType = projectRowType;
 
-        assert cassandraTable != null;
-        // TODO JS: Check this
-//        assert getConvention() == CONVENTION;
+        assert mongoTable != null;
+        assert getConvention() == CONVENTION;
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new CassandraTableScan( getCluster(), traitSet, this.table, this.cassandraTable, this.projectRowType );
+        return this;
     }
 
 
@@ -90,27 +92,27 @@ public class CassandraTableScan extends TableScan implements CassandraAlg {
 
 
     @Override
-    public void register( AlgOptPlanner planner ) {
-        getConvention().register( planner );
-    }
-
-
-    @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( CassandraConvention.COST_MULTIPLIER );
+        // scans with a small project list are cheaper
+        final float f = projectRowType == null ? 1f : (float) projectRowType.getFieldCount() / 100f;
+        return super.computeSelfCost( planner, mq ).multiplyBy( .1 * f );
     }
 
 
     @Override
-    public void implement( CassandraImplementContext context ) {
-        context.cassandraTable = cassandraTable;
-        context.table = table;
-
-        if ( context.type != null ) {
-            return;
+    public void register( AlgOptPlanner planner ) {
+        for ( AlgOptRule rule : MongoRules.RULES ) {
+            planner.addRule( rule );
         }
+    }
 
-        context.type = Type.SELECT;
+
+    @Override
+    public void implement( Implementor implementor ) {
+        implementor.mongoTable = mongoTable;
+        implementor.table = table;
+        implementor.setStaticRowType( (AlgRecordType) rowType );
+        implementor.physicalMapper.addAll( rowType.getFieldNames() );
     }
 
 }

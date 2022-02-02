@@ -65,7 +65,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
 import org.polypheny.db.adapter.enumerable.EnumerableFilter;
 import org.polypheny.db.adapter.enumerable.EnumerableJoin;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
@@ -78,10 +78,10 @@ import org.polypheny.db.algebra.logical.LogicalIntersect;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalWindow;
@@ -143,7 +143,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         LogicalSort.class,
                         LogicalTableFunctionScan.class,
                         LogicalTableModify.class,
-                        LogicalTableScan.class,
+                        LogicalScan.class,
                         LogicalUnion.class,
                         LogicalValues.class,
                         LogicalWindow.class,
@@ -154,7 +154,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         EnumerableFilter.class,
                         EnumerableProject.class,
                         EnumerableJoin.class,
-                        EnumerableTableScan.class ) );
+                        EnumerableScan.class ) );
     }
 
 

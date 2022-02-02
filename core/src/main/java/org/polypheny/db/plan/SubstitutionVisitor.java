@@ -63,7 +63,7 @@ import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.mutable.Holder;
 import org.polypheny.db.algebra.mutable.MutableAggregate;
@@ -121,7 +121,7 @@ import org.slf4j.Logger;
  * Uses a bottom-up matching algorithm. Nodes do not need to be identical. At each level, returns the residue.
  *
  * The inputs must only include the core relational operators:
- * {@link LogicalTableScan},
+ * {@link LogicalScan},
  * {@link LogicalFilter},
  * {@link LogicalProject},
  * {@link LogicalJoin},
@@ -956,7 +956,7 @@ public class SubstitutionVisitor {
     /**
      * Implementation of {@link UnifyRule} that matches if the query is already equal to the target.
      *
-     * Matches scans to the same table, because these will be {@link MutableScan}s with the same {@link org.polypheny.db.algebra.logical.LogicalTableScan} instance.
+     * Matches scans to the same table, because these will be {@link MutableScan}s with the same {@link LogicalScan} instance.
      */
     private static class TrivialRule extends AbstractUnifyRule {
 
@@ -980,7 +980,7 @@ public class SubstitutionVisitor {
 
 
     /**
-     * Implementation of {@link UnifyRule} that matches {@link org.polypheny.db.algebra.logical.LogicalTableScan}.
+     * Implementation of {@link UnifyRule} that matches {@link LogicalScan}.
      */
     private static class ScanToProjectUnifyRule extends AbstractUnifyRule {
 

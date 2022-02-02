@@ -42,8 +42,8 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -156,7 +156,7 @@ public class AlgMdMinRowCount implements MetadataHandler<BuiltInMetadata.MinRowC
     }
 
 
-    public Double getMinRowCount( TableScan alg, AlgMetadataQuery mq ) {
+    public Double getMinRowCount( Scan alg, AlgMetadataQuery mq ) {
         return 0D;
     }
 

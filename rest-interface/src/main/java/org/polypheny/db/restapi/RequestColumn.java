@@ -63,7 +63,7 @@ public class RequestColumn {
     }
 
 
-    public int getTableScanIndex() {
+    public int getScanIndex() {
         return tableScanIndex;
     }
 

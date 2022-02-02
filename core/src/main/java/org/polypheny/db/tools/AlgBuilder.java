@@ -72,6 +72,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
@@ -80,9 +81,9 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Match;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -158,7 +159,7 @@ public class AlgBuilder {
     private final AlgFactories.SemiJoinFactory semiJoinFactory;
     private final AlgFactories.CorrelateFactory correlateFactory;
     private final AlgFactories.ValuesFactory valuesFactory;
-    private final AlgFactories.TableScanFactory scanFactory;
+    private final ScanFactory scanFactory;
     private final AlgFactories.MatchFactory matchFactory;
     private final AlgFactories.DocumentsFactory documentsFactory;
     private final Deque<Frame> stack = new ArrayDeque<>();
@@ -219,7 +220,7 @@ public class AlgBuilder {
                         AlgFactories.DEFAULT_VALUES_FACTORY );
         this.scanFactory =
                 Util.first(
-                        context.unwrap( AlgFactories.TableScanFactory.class ),
+                        context.unwrap( ScanFactory.class ),
                         AlgFactories.DEFAULT_TABLE_SCAN_FACTORY );
         this.matchFactory =
                 Util.first(
@@ -1276,7 +1277,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a {@link TableScan} of the table with a given name.
+     * Creates a {@link Scan} of the table with a given name.
      *
      * Throws if the table does not exist.
      *
@@ -1298,7 +1299,7 @@ public class AlgBuilder {
 
 
     /**
-     * Creates a {@link TableScan} of the table with a given name.
+     * Creates a {@link Scan} of the table with a given name.
      *
      * Throws if the table does not exist.
      *
@@ -2802,7 +2803,7 @@ public class AlgBuilder {
 
 
         private static String deriveAlias( AlgNode alg ) {
-            if ( alg instanceof TableScan ) {
+            if ( alg instanceof Scan ) {
                 final List<String> names = alg.getTable().getQualifiedName();
                 if ( !names.isEmpty() ) {
                     return Util.last( names );

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -56,7 +56,7 @@ public class CachedPlanRouter extends BaseRouter {
             builder = buildCachedSelect( node.getInput( i ), builder, statement, cluster, cachedPlan );
         }
 
-        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
+        if ( node instanceof LogicalScan && node.getTable() != null ) {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
             if ( !(table.getTable() instanceof LogicalTable) ) {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
@@ -75,7 +75,7 @@ public class CachedPlanRouter extends BaseRouter {
                 }
             }
 
-            return builder.push( super.buildJoinedTableScan( statement, cluster, placement ) );
+            return builder.push( super.buildJoinedScan( statement, cluster, placement ) );
         } else if ( node instanceof LogicalValues ) {
             return super.handleValues( (LogicalValues) node, builder );
         } else {

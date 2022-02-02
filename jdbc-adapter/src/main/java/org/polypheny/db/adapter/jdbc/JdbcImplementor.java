@@ -63,7 +63,7 @@ public class JdbcImplementor extends AlgToSqlConverter {
     /**
      * @see #dispatch
      */
-    public Result visit( JdbcTableScan scan ) {
+    public Result visit( JdbcScan scan ) {
         return result( scan.jdbcTable.physicalTableName(), ImmutableList.of( Clause.FROM ), scan, null );
     }
 

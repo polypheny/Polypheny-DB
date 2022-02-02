@@ -342,7 +342,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     }
 
     /**
-     * To check if a RelNode includes a ViewTableScan
+     * To check if a RelNode includes a ViewScan
      */
     default boolean hasView() {
         return false;
@@ -350,7 +350,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
     /**
      * Expands node
-     * If a part of RelNode is a LogicalViewTableScan it is replaced
+     * If a part of RelNode is a LogicalViewScan it is replaced
      * Else recursively hands call down if view in deeper level
      */
     default void tryExpandView( AlgNode input ) {

@@ -657,7 +657,7 @@ public interface PolyphenyDbResource {
     ExInst<PolyphenyDbException> filterableTableInventedFilter( String s );
 
     @BaseMessage("FilterableTable.scan must not return null")
-    ExInst<PolyphenyDbException> filterableTableScanReturnedNull();
+    ExInst<PolyphenyDbException> filterableScanReturnedNull();
 
     @BaseMessage("Cannot convert table ''{0}'' to stream")
     ExInst<ValidatorException> cannotConvertToStream( String tableName );

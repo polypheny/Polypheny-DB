@@ -269,7 +269,7 @@ public class GeodeRules {
 
 
         private GeodeFilterRule() {
-            super( operand( LogicalFilter.class, operand( GeodeTableScan.class, none() ) ), "GeodeFilterRule" );
+            super( operand( LogicalFilter.class, operand( GeodeScan.class, none() ) ), "GeodeFilterRule" );
         }
 
 
@@ -363,7 +363,7 @@ public class GeodeRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             LogicalFilter filter = call.alg( 0 );
-            GeodeTableScan scan = call.alg( 1 );
+            GeodeScan scan = call.alg( 1 );
             if ( filter.getTraitSet().contains( Convention.NONE ) ) {
                 final AlgNode converted = convert( filter, scan );
                 call.transformTo( converted );
@@ -371,7 +371,7 @@ public class GeodeRules {
         }
 
 
-        private AlgNode convert( LogicalFilter filter, GeodeTableScan scan ) {
+        private AlgNode convert( LogicalFilter filter, GeodeScan scan ) {
             final AlgTraitSet traitSet = filter.getTraitSet().replace( GeodeAlg.CONVENTION );
             return new GeodeFilter( filter.getCluster(), traitSet, convert( filter.getInput(), GeodeAlg.CONVENTION ), filter.getCondition() );
         }

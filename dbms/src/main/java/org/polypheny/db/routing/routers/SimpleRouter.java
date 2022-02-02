@@ -62,7 +62,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placements );
-        builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placements ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placements ) );
 
         return builders;
     }
@@ -82,7 +82,7 @@ public class SimpleRouter extends AbstractDqlRouter {
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );
-        builders.get( 0 ).push( super.buildJoinedTableScan( statement, cluster, placementDistribution ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placementDistribution ) );
 
         return builders;
     }

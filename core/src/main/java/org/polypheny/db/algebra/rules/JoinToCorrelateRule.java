@@ -61,7 +61,7 @@ import org.polypheny.db.util.Util;
  *
  * <blockquote><code>select * from emp join dept on emp.deptno = dept.deptno</code></blockquote>
  *
- * becomes a Correlator which restarts LogicalTableScan("DEPT") for each row read from LogicalTableScan("EMP").
+ * becomes a Correlator which restarts LogicalScan("DEPT") for each row read from LogicalScan("EMP").
  *
  * This rule is not applicable if for certain types of outer join. For example,
  *

@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalProject;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
@@ -139,7 +139,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     continue;
                 }
                 // Enforce uniqueness between the already existing values and the new values
-                final AlgNode scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
+                final AlgNode scan = LogicalScan.create( root.getCluster(), root.getTable() );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 //
                 // TODO: Here we get issues with batch queries
@@ -243,7 +243,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final AlgOptSchema algOptSchema = root.getCatalogReader();
                 final AlgOptTable algOptTable = algOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
-                final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), algOptTable );
+                final LogicalScan scan = LogicalScan.create( root.getCluster(), algOptTable );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
                 builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );

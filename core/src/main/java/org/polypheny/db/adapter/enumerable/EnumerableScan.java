@@ -51,7 +51,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.interpreter.Row;
@@ -68,19 +68,19 @@ import org.polypheny.db.util.BuiltInMethod;
 
 
 /**
- * Implementation of {@link TableScan} in {@link EnumerableConvention enumerable calling convention}.
+ * Implementation of {@link Scan} in {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableTableScan extends TableScan implements EnumerableAlg {
+public class EnumerableScan extends Scan implements EnumerableAlg {
 
     private final Class elementType;
 
 
     /**
-     * Creates an EnumerableTableScan.
+     * Creates an EnumerableScan.
      *
      * Use {@link #create} unless you know what you are doing.
      */
-    public EnumerableTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, Class elementType ) {
+    public EnumerableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, Class elementType ) {
         super( cluster, traitSet, table );
         assert getConvention() instanceof EnumerableConvention;
         this.elementType = elementType;
@@ -88,11 +88,11 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
 
 
     /**
-     * Creates an EnumerableTableScan.
+     * Creates an EnumerableScan.
      */
-    public static EnumerableTableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
+    public static EnumerableScan create( AlgOptCluster cluster, AlgOptTable algOptTable ) {
         final Table table = algOptTable.unwrap( Table.class );
-        Class elementType = EnumerableTableScan.deduceElementType( table );
+        Class elementType = EnumerableScan.deduceElementType( table );
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
                         .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> {
@@ -101,15 +101,15 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
                             }
                             return ImmutableList.of();
                         } );
-        return new EnumerableTableScan( cluster, traitSet, algOptTable, elementType );
+        return new EnumerableScan( cluster, traitSet, algOptTable, elementType );
     }
 
 
     @Override
     public boolean equals( Object obj ) {
         return obj == this
-                || obj instanceof EnumerableTableScan
-                && table.equals( ((EnumerableTableScan) obj).table );
+                || obj instanceof EnumerableScan
+                && table.equals( ((EnumerableScan) obj).table );
     }
 
 
@@ -120,7 +120,7 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
 
 
     /**
-     * Returns whether EnumerableTableScan can generate code to handle a particular variant of the Table SPI.
+     * Returns whether EnumerableScan can generate code to handle a particular variant of the Table SPI.
      */
     public static boolean canHandle( Table table ) {
         // FilterableTable and ProjectableFilterableTable cannot be handled in/ enumerable convention because they might reject filters and those filters would need to be handled dynamically.
@@ -261,7 +261,7 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableTableScan( getCluster(), traitSet, table, elementType );
+        return new EnumerableScan( getCluster(), traitSet, table, elementType );
     }
 
 

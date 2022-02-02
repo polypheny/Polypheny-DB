@@ -48,17 +48,17 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableModify.Operation;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -272,7 +272,7 @@ public class MqlToAlgConverter {
         if ( table instanceof AlgOptTableImpl && table.getTable() instanceof LogicalView ) {
             node = LogicalViewScan.create( cluster, table );
         } else {
-            node = LogicalTableScan.create( cluster, table );
+            node = LogicalScan.create( cluster, table );
         }
 
         if ( table.getTable() == null || table.getTable().getSchemaType() == SchemaType.DOCUMENT ) {
@@ -497,7 +497,7 @@ public class MqlToAlgConverter {
      * @param key the left associated parent key
      * @param mergedUpdates collection, which combines all performed update steps according to the operation
      * @param rowType the default rowtype at this point
-     * @param node the transformed operation up to this step e.g. {@link TableScan} or {@link LogicalAggregate}
+     * @param node the transformed operation up to this step e.g. {@link Scan} or {@link LogicalAggregate}
      * @param table the active table
      * @return the unified UPDATE AlgNode
      */

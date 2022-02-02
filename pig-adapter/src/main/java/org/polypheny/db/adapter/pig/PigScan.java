@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.pig.data.DataType;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -50,14 +50,14 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 
 
 /**
- * Implementation of {@link TableScan} in {@link PigAlg#CONVENTION Pig calling convention}.
+ * Implementation of {@link Scan} in {@link PigAlg#CONVENTION Pig calling convention}.
  */
-public class PigTableScan extends TableScan implements PigAlg {
+public class PigScan extends Scan implements PigAlg {
 
     /**
-     * Creates a PigTableScan.
+     * Creates a PigScan.
      */
-    public PigTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
+    public PigScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
         super( cluster, traitSet, table );
         assert getConvention() == CONVENTION;
     }

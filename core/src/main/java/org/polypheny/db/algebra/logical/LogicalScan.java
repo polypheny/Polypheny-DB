@@ -39,7 +39,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -48,7 +48,7 @@ import org.polypheny.db.schema.Table;
 
 
 /**
- * A <code>LogicalTableScan</code> reads all the rows from a {@link AlgOptTable}.
+ * A <code>LogicalScan</code> reads all the rows from a {@link AlgOptTable}.
  *
  * If the table is a <code>net.sf.saffron.ext.JdbcTable</code>, then this is literally possible. But for other kinds of tables,
  * there may be many ways to read the data from the table. For some kinds of table, it may not even be possible to read all of
@@ -68,23 +68,23 @@ import org.polypheny.db.schema.Table;
  *
  * can. It is the optimizer's responsibility to find these ways, by applying transformation rules.
  */
-public final class LogicalTableScan extends TableScan {
+public final class LogicalScan extends Scan {
 
 
     /**
-     * Creates a LogicalTableScan.
+     * Creates a LogicalScan.
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
+    public LogicalScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
         super( cluster, traitSet, table );
     }
 
 
     /**
-     * Creates a LogicalTableScan by parsing serialized output.
+     * Creates a LogicalScan by parsing serialized output.
      */
-    public LogicalTableScan( AlgInput input ) {
+    public LogicalScan( AlgInput input ) {
         super( input );
     }
 
@@ -98,12 +98,12 @@ public final class LogicalTableScan extends TableScan {
 
 
     /**
-     * Creates a LogicalTableScan.
+     * Creates a LogicalScan.
      *
      * @param cluster Cluster
      * @param algOptTable Table
      */
-    public static LogicalTableScan create( AlgOptCluster cluster, final AlgOptTable algOptTable ) {
+    public static LogicalScan create( AlgOptCluster cluster, final AlgOptTable algOptTable ) {
         final Table table = algOptTable.unwrap( Table.class );
 
         final AlgTraitSet traitSet =
@@ -117,7 +117,7 @@ public final class LogicalTableScan extends TableScan {
                                     return ImmutableList.of();
                                 } );
 
-        return new LogicalTableScan( cluster, traitSet, algOptTable );
+        return new LogicalScan( cluster, traitSet, algOptTable );
     }
 
 }

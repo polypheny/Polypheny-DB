@@ -34,8 +34,8 @@
 package org.polypheny.db.algebra;
 
 
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.logical.LogicalValues;
  */
 public interface AlgShuttle {
 
-    AlgNode visit( TableScan scan );
+    AlgNode visit( Scan scan );
 
     AlgNode visit( TableFunctionScan scan );
 

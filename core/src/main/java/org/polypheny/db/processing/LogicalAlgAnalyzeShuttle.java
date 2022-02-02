@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalExchange;
@@ -38,8 +38,8 @@ import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -56,8 +56,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     protected final LogicalAlgAnalyzeRexShuttle rexShuttle;
     @Getter
-    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (TableScanId) -> List partitionsValue
-    protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (TableScanId) -> (logical tableId -> List partitionsValue)
+    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (ScanId) -> List partitionsValue
+    protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (ScanId) -> (logical tableId -> List partitionsValue)
     @Getter
     protected final HashSet<String> hashBasis = new HashSet<>();
     @Getter
@@ -127,8 +127,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
-        hashBasis.add( "TableScan#" + scan.getTable().getQualifiedName() );
+    public AlgNode visit( Scan scan ) {
+        hashBasis.add( "Scan#" + scan.getTable().getQualifiedName() );
         // get available columns for every table scan
         this.getAvailableColumns( scan );
 
@@ -166,7 +166,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalJoin join ) {
-        if ( join.getLeft() instanceof LogicalTableScan && join.getRight() instanceof LogicalTableScan ) {
+        if ( join.getLeft() instanceof LogicalScan && join.getRight() instanceof LogicalScan ) {
             hashBasis.add( "LogicalJoin#" + join.getLeft().getTable().getQualifiedName() + "#" + join.getRight().getTable().getQualifiedName() );
         }
 
@@ -222,7 +222,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void getAvailableColumns( TableScan scan ) {
+    private void getAvailableColumns( Scan scan ) {
         this.tables.addAll( scan.getTable().getQualifiedName() );
         final Table table = scan.getTable().getTable();
         LogicalTable logicalTable = (table instanceof LogicalTable) ? (LogicalTable) table : null;

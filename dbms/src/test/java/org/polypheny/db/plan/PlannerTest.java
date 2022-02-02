@@ -54,7 +54,7 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.adapter.enumerable.EnumerableRules;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.JdbcAlg;
@@ -71,7 +71,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Lex;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -151,7 +151,7 @@ public class PlannerTest extends SqlLanguagelDependant {
 
                 "LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
                         + "  LogicalFilter(condition=[LIKE($2, '%e%')])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                        + "    EnumerableScan(table=[[hr, emps]])\n" );
     }
 
 
@@ -184,7 +184,7 @@ public class PlannerTest extends SqlLanguagelDependant {
 
                 "LogicalSort(sort0=[$1], dir0=[ASC], offset=[10])\n"
                         + "  LogicalProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                        + "    EnumerableScan(table=[[hr, emps]])\n" );
     }
 
 
@@ -425,7 +425,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableScan(table=[[hr, emps]])\n" ) );
     }
 
 
@@ -445,7 +445,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                 toString( transform ),
                 equalTo( "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                        + "    EnumerableScan(table=[[hr, emps]])\n" ) );
     }
 
 
@@ -478,9 +478,9 @@ public class PlannerTest extends SqlLanguagelDependant {
                         + "    EnumerableJoin(condition=[=($1, $5)], joinType=[left])\n"
                         + "      EnumerableLimit(fetch=[10])\n"
                         + "        EnumerableSort(sort0=[$1], dir0=[ASC])\n"
-                        + "          EnumerableTableScan(table=[[hr, emps]])\n"
+                        + "          EnumerableScan(table=[[hr, emps]])\n"
                         + "      EnumerableProject(deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
-                        + "        EnumerableTableScan(table=[[hr, depts]])\n" ) );
+                        + "        EnumerableScan(table=[[hr, depts]])\n" ) );
     }
 
 
@@ -494,7 +494,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                 "select empid from ( select * from emps order by emps.deptno) order by deptno",
                 "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(empid=[$0], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                        + "    EnumerableScan(table=[[hr, emps]])\n" );
     }
 
 
@@ -508,7 +508,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                 "select empid+deptno from ( select empid, deptno from emps order by emps.deptno) order by deptno",
                 "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                        + "    EnumerableScan(table=[[hr, emps]])\n" );
     }
 
 
@@ -518,7 +518,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                 "select empid+deptno from ( select empid, deptno from emps order by empid) order by deptno",
                 "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                        + "    EnumerableScan(table=[[hr, emps]])\n" );
     }
 
 
@@ -538,7 +538,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                 "EnumerableSort(sort0=[$2], dir0=[ASC])\n"
                         + "  EnumerableProject(emp_cnt=[$5], EXPR$1=[+($0, $1)], deptno=[$1])\n"
                         + "    EnumerableWindow(window#0=[window(partition {1} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
-                        + "      EnumerableTableScan(table=[[hr, emps]])\n" );
+                        + "      EnumerableScan(table=[[hr, emps]])\n" );
     }
 
 
@@ -554,7 +554,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                         + "order by deptno",
                 "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(EXPR$0=[+($0, $1)], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" );
+                        + "    EnumerableScan(table=[[hr, emps]])\n" );
     }
 
 
@@ -598,7 +598,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                 toString( transform ),
                 equalTo( "EnumerableSort(sort0=[$1], dir0=[ASC])\n"
                         + "  EnumerableProject(empid=[$0], deptno=[$1])\n"
-                        + "    EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                        + "    EnumerableScan(table=[[hr, emps]])\n" ) );
     }
 
 
@@ -621,7 +621,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform = planner.transform( 0, traitSet, convert );
         assertThat(
                 toString( transform ),
-                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableScan(table=[[hr, emps]])\n" ) );
     }
 
 
@@ -640,7 +640,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform2 = planner.transform( 0, traitSet, transform );
         assertThat(
                 toString( transform2 ),
-                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableScan(table=[[hr, emps]])\n" ) );
     }
 
 
@@ -687,7 +687,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform2 = planner.transform( 1, traitSet, transform );
         assertThat(
                 toString( transform2 ),
-                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n  EnumerableScan(table=[[hr, emps]])\n" ) );
     }
 
 
@@ -732,7 +732,7 @@ public class PlannerTest extends SqlLanguagelDependant {
         AlgNode transform2 = planner.transform( 1, traitSet1, transform );
         assertThat(
                 toString( transform2 ),
-                equalTo( "JdbcProject(name=[$2])\n  MockJdbcTableScan(table=[[hr, emps]])\n" ) );
+                equalTo( "JdbcProject(name=[$2])\n  MockJdbcScan(table=[[hr, emps]])\n" ) );
     }
 
 
@@ -811,11 +811,11 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
                 + "  EnumerableProject(empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
                 + "    EnumerableJoin(condition=[=($0, $2)], joinType=[inner])\n"
-                + "      EnumerableTableScan(table=[[hr, dependents]])\n"
+                + "      EnumerableScan(table=[[hr, dependents]])\n"
                 + "      EnumerableJoin(condition=[=($1, $5)], joinType=[left])\n"
-                + "        EnumerableTableScan(table=[[hr, emps]])\n"
+                + "        EnumerableScan(table=[[hr, emps]])\n"
                 + "        EnumerableProject(deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
-                + "          EnumerableTableScan(table=[[hr, depts]])";
+                + "          EnumerableScan(table=[[hr, depts]])";
         checkHeuristic( sql, expected );
     }
 
@@ -832,12 +832,12 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
                 + "  EnumerableProject(empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
                 + "    EnumerableJoin(condition=[=($0, $2)], joinType=[inner])\n"
-                + "      EnumerableTableScan(table=[[hr, dependents]])\n"
+                + "      EnumerableScan(table=[[hr, dependents]])\n"
                 + "      EnumerableProject(empid=[$5], deptno=[$6], name=[$7], salary=[$8], commission=[$9], deptno0=[$0], name0=[$1], employees=[$2], x=[$3], y=[$4])\n"
                 + "        EnumerableJoin(condition=[=($0, $6)], joinType=[left])\n"
                 + "          EnumerableProject(deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
-                + "            EnumerableTableScan(table=[[hr, depts]])\n"
-                + "          EnumerableTableScan(table=[[hr, emps]])";
+                + "            EnumerableScan(table=[[hr, depts]])\n"
+                + "          EnumerableScan(table=[[hr, emps]])";
         checkHeuristic( sql, expected );
     }
 
@@ -854,11 +854,11 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "EnumerableProject(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4], deptno0=[$5], name0=[$6], employees=[$7], location=[$8], location9=[$9], empid0=[$10], name1=[$11])\n"
                 + "  EnumerableProject(empid=[$2], deptno=[$3], name=[$4], salary=[$5], commission=[$6], deptno0=[$7], name0=[$8], employees=[$9], x=[$10], y=[$11], empid0=[$0], name1=[$1])\n"
                 + "    EnumerableJoin(condition=[=($0, $2)], joinType=[left])\n"
-                + "      EnumerableTableScan(table=[[hr, dependents]])\n"
+                + "      EnumerableScan(table=[[hr, dependents]])\n"
                 + "      EnumerableJoin(condition=[=($1, $5)], joinType=[inner])\n"
-                + "        EnumerableTableScan(table=[[hr, emps]])\n"
+                + "        EnumerableScan(table=[[hr, emps]])\n"
                 + "        EnumerableProject(deptno=[$0], name=[$1], employees=[$2], x=[$3.x], y=[$3.y])\n"
-                + "          EnumerableTableScan(table=[[hr, depts]])";
+                + "          EnumerableScan(table=[[hr, depts]])";
         checkHeuristic( sql, expected );
     }
 
@@ -892,11 +892,11 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "  EnumerableProject(product_id0=[$44], time_id=[$45], customer_id0=[$46], promotion_id=[$47], store_id=[$48], store_sales=[$49], store_cost=[$50], unit_sales=[$51], customer_id=[$0], account_num=[$1], lname=[$2], fname=[$3], mi=[$4], address1=[$5], address2=[$6], address3=[$7], address4=[$8], city=[$9], state_province=[$10], postal_code=[$11], country=[$12], customer_region_id=[$13], phone1=[$14], phone2=[$15], birthdate=[$16], marital_status=[$17], yearly_income=[$18], gender=[$19], total_children=[$20], num_children_at_home=[$21], education=[$22], date_accnt_opened=[$23], member_card=[$24], occupation=[$25], houseowner=[$26], num_cars_owned=[$27], fullname=[$28], product_class_id=[$29], product_id=[$30], brand_name=[$31], product_name=[$32], SKU=[$33], SRP=[$34], gross_weight=[$35], net_weight=[$36], recyclable_package=[$37], low_fat=[$38], units_per_case=[$39], cases_per_pallet=[$40], shelf_width=[$41], shelf_height=[$42], shelf_depth=[$43])\n"
                 + "    EnumerableJoin(condition=[=($0, $46)], joinType=[inner])\n"
                 + "      EnumerableFilter(condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
-                + "        EnumerableTableScan(table=[[foodmart, customer]])\n"
+                + "        EnumerableScan(table=[[foodmart, customer]])\n"
                 + "      EnumerableJoin(condition=[=($1, $15)], joinType=[inner])\n"
                 + "        EnumerableFilter(condition=[=(CAST($2):VARCHAR, 'Washington')])\n"
-                + "          EnumerableTableScan(table=[[foodmart, product]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n";
+                + "          EnumerableScan(table=[[foodmart, product]])\n"
+                + "        EnumerableScan(table=[[foodmart, sales_fact_1997]])\n";
         checkBushy( sql, expected );
     }
 
@@ -928,12 +928,12 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "    EnumerableJoin(condition=[=($1, $49)], joinType=[inner])\n"
                 + "      EnumerableJoin(condition=[=($0, $15)], joinType=[inner])\n"
                 + "        EnumerableFilter(condition=[=(CAST($2):VARCHAR, 'Washington')])\n"
-                + "          EnumerableTableScan(table=[[foodmart, product]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, product_class]])\n"
+                + "          EnumerableScan(table=[[foodmart, product]])\n"
+                + "        EnumerableScan(table=[[foodmart, product_class]])\n"
                 + "      EnumerableJoin(condition=[=($0, $31)], joinType=[inner])\n"
                 + "        EnumerableFilter(condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
-                + "          EnumerableTableScan(table=[[foodmart, customer]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n";
+                + "          EnumerableScan(table=[[foodmart, customer]])\n"
+                + "        EnumerableScan(table=[[foodmart, sales_fact_1997]])\n";
         checkBushy( sql, expected );
     }
 
@@ -960,14 +960,14 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "  EnumerableProject(product_id=[$29], time_id=[$30], customer_id0=[$31], promotion_id=[$32], store_id=[$33], store_sales=[$34], store_cost=[$35], unit_sales=[$36], customer_id=[$0], account_num=[$1], lname=[$2], fname=[$3], mi=[$4], address1=[$5], address2=[$6], address3=[$7], address4=[$8], city=[$9], state_province=[$10], postal_code=[$11], country=[$12], customer_region_id=[$13], phone1=[$14], phone2=[$15], birthdate=[$16], marital_status=[$17], yearly_income=[$18], gender=[$19], total_children=[$20], num_children_at_home=[$21], education=[$22], date_accnt_opened=[$23], member_card=[$24], occupation=[$25], houseowner=[$26], num_cars_owned=[$27], fullname=[$28], product_class_id=[$61], product_id0=[$62], brand_name=[$63], product_name=[$64], SKU=[$65], SRP=[$66], gross_weight=[$67], net_weight=[$68], recyclable_package=[$69], low_fat=[$70], units_per_case=[$71], cases_per_pallet=[$72], shelf_width=[$73], shelf_height=[$74], shelf_depth=[$75], product_class_id0=[$76], product_subcategory=[$77], product_category=[$78], product_department=[$79], product_family=[$80], store_id0=[$37], store_type=[$38], region_id=[$39], store_name=[$40], store_number=[$41], store_street_address=[$42], store_city=[$43], store_state=[$44], store_postal_code=[$45], store_country=[$46], store_manager=[$47], store_phone=[$48], store_fax=[$49], first_opened_date=[$50], last_remodel_date=[$51], store_sqft=[$52], grocery_sqft=[$53], frozen_sqft=[$54], meat_sqft=[$55], coffee_bar=[$56], video_store=[$57], salad_bar=[$58], prepared_food=[$59], florist=[$60])\n"
                 + "    EnumerableJoin(condition=[=($0, $31)], joinType=[inner])\n"
                 + "      EnumerableFilter(condition=[=(CAST($9):VARCHAR, 'San Francisco')])\n"
-                + "        EnumerableTableScan(table=[[foodmart, customer]])\n"
+                + "        EnumerableScan(table=[[foodmart, customer]])\n"
                 + "      EnumerableJoin(condition=[=($0, $33)], joinType=[inner])\n"
                 + "        EnumerableJoin(condition=[=($4, $8)], joinType=[inner])\n"
-                + "          EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n"
-                + "          EnumerableTableScan(table=[[foodmart, store]])\n"
+                + "          EnumerableScan(table=[[foodmart, sales_fact_1997]])\n"
+                + "          EnumerableScan(table=[[foodmart, store]])\n"
                 + "        EnumerableJoin(condition=[=($0, $15)], joinType=[inner])\n"
-                + "          EnumerableTableScan(table=[[foodmart, product]])\n"
-                + "          EnumerableTableScan(table=[[foodmart, product_class]])\n";
+                + "          EnumerableScan(table=[[foodmart, product]])\n"
+                + "          EnumerableScan(table=[[foodmart, product_class]])\n";
         checkBushy( sql, expected );
     }
 
@@ -985,10 +985,10 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "EnumerableProject(product_id=[$0], time_id=[$1], customer_id=[$2], promotion_id=[$3], store_id=[$4], store_sales=[$5], store_cost=[$6], unit_sales=[$7], customer_id0=[$8], account_num=[$9], lname=[$10], fname=[$11], mi=[$12], address1=[$13], address2=[$14], address3=[$15], address4=[$16], city=[$17], state_province=[$18], postal_code=[$19], country=[$20], customer_region_id=[$21], phone1=[$22], phone2=[$23], birthdate=[$24], marital_status=[$25], yearly_income=[$26], gender=[$27], total_children=[$28], num_children_at_home=[$29], education=[$30], date_accnt_opened=[$31], member_card=[$32], occupation=[$33], houseowner=[$34], num_cars_owned=[$35], fullname=[$36], department_id=[$37], department_description=[$38])\n"
                 + "  EnumerableProject(product_id=[$2], time_id=[$3], customer_id=[$4], promotion_id=[$5], store_id=[$6], store_sales=[$7], store_cost=[$8], unit_sales=[$9], customer_id0=[$10], account_num=[$11], lname=[$12], fname=[$13], mi=[$14], address1=[$15], address2=[$16], address3=[$17], address4=[$18], city=[$19], state_province=[$20], postal_code=[$21], country=[$22], customer_region_id=[$23], phone1=[$24], phone2=[$25], birthdate=[$26], marital_status=[$27], yearly_income=[$28], gender=[$29], total_children=[$30], num_children_at_home=[$31], education=[$32], date_accnt_opened=[$33], member_card=[$34], occupation=[$35], houseowner=[$36], num_cars_owned=[$37], fullname=[$38], department_id=[$0], department_description=[$1])\n"
                 + "    EnumerableJoin(condition=[true], joinType=[inner])\n"
-                + "      EnumerableTableScan(table=[[foodmart, department]])\n"
+                + "      EnumerableScan(table=[[foodmart, department]])\n"
                 + "      EnumerableJoin(condition=[=($2, $8)], joinType=[inner])\n"
-                + "        EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, customer]])\n";
+                + "        EnumerableScan(table=[[foodmart, sales_fact_1997]])\n"
+                + "        EnumerableScan(table=[[foodmart, customer]])\n";
         checkBushy( sql, expected );
     }
 
@@ -1009,11 +1009,11 @@ public class PlannerTest extends SqlLanguagelDependant {
                 + "  EnumerableProject(product_id=[$19], time_id=[$20], customer_id=[$21], promotion_id=[$22], store_id0=[$23], store_sales=[$24], store_cost=[$25], unit_sales=[$26], customer_id0=[$27], account_num=[$28], lname=[$29], fname=[$30], mi=[$31], address1=[$32], address2=[$33], address3=[$34], address4=[$35], city=[$36], state_province=[$37], postal_code=[$38], country=[$39], customer_region_id=[$40], phone1=[$41], phone2=[$42], birthdate=[$43], marital_status0=[$44], yearly_income=[$45], gender0=[$46], total_children=[$47], num_children_at_home=[$48], education=[$49], date_accnt_opened=[$50], member_card=[$51], occupation=[$52], houseowner=[$53], num_cars_owned=[$54], fullname=[$55], department_id=[$0], department_description=[$1], employee_id=[$2], full_name=[$3], first_name=[$4], last_name=[$5], position_id=[$6], position_title=[$7], store_id=[$8], department_id0=[$9], birth_date=[$10], hire_date=[$11], end_date=[$12], salary=[$13], supervisor_id=[$14], education_level=[$15], marital_status=[$16], gender=[$17], management_role=[$18])\n"
                 + "    EnumerableJoin(condition=[true], joinType=[inner])\n"
                 + "      EnumerableJoin(condition=[=($0, $9)], joinType=[inner])\n"
-                + "        EnumerableTableScan(table=[[foodmart, department]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, employee]])\n"
+                + "        EnumerableScan(table=[[foodmart, department]])\n"
+                + "        EnumerableScan(table=[[foodmart, employee]])\n"
                 + "      EnumerableJoin(condition=[=($2, $8)], joinType=[inner])\n"
-                + "        EnumerableTableScan(table=[[foodmart, sales_fact_1997]])\n"
-                + "        EnumerableTableScan(table=[[foodmart, customer]])\n";
+                + "        EnumerableScan(table=[[foodmart, sales_fact_1997]])\n"
+                + "        EnumerableScan(table=[[foodmart, customer]])\n";
         checkBushy( sql, expected );
     }
 
@@ -1078,19 +1078,19 @@ public class PlannerTest extends SqlLanguagelDependant {
 
 
     /**
-     * Rule to convert a {@link EnumerableTableScan} to an {@link MockJdbcTableScan}.
+     * Rule to convert a {@link EnumerableScan} to an {@link MockJdbcScan}.
      */
     private class MockJdbcTableRule extends ConverterRule {
 
         private MockJdbcTableRule( JdbcConvention out ) {
-            super( EnumerableTableScan.class, EnumerableConvention.INSTANCE, out, "MockJdbcTableRule" );
+            super( EnumerableScan.class, EnumerableConvention.INSTANCE, out, "MockJdbcTableRule" );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final EnumerableTableScan scan = (EnumerableTableScan) alg;
-            return new MockJdbcTableScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
+            final EnumerableScan scan = (EnumerableScan) alg;
+            return new MockJdbcScan( scan.getCluster(), scan.getTable(), (JdbcConvention) getOutConvention() );
         }
 
     }
@@ -1099,16 +1099,16 @@ public class PlannerTest extends SqlLanguagelDependant {
     /**
      * Relational expression representing a "mock" scan of a table in a JDBC data source.
      */
-    private static class MockJdbcTableScan extends TableScan implements JdbcAlg {
+    private static class MockJdbcScan extends Scan implements JdbcAlg {
 
-        MockJdbcTableScan( AlgOptCluster cluster, AlgOptTable table, JdbcConvention jdbcConvention ) {
+        MockJdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );
         }
 
 
         @Override
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new MockJdbcTableScan( getCluster(), table, (JdbcConvention) getConvention() );
+            return new MockJdbcScan( getCluster(), table, (JdbcConvention) getConvention() );
         }
 
 
@@ -1255,7 +1255,7 @@ public class PlannerTest extends SqlLanguagelDependant {
                 plan,
                 equalTo( "LogicalSort(sort0=[$0], dir0=[ASC])\n"
                         + "  LogicalProject(psPartkey=[$0])\n"
-                        + "    EnumerableTableScan(table=[[tpch, partsupp]])\n" ) );
+                        + "    EnumerableScan(table=[[tpch, partsupp]])\n" ) );
     }
 
 

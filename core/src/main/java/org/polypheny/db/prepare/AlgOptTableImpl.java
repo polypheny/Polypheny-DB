@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.function.Function;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
@@ -52,7 +52,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -300,18 +300,18 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
         }
         final AlgOptCluster cluster = context.getCluster();
         if ( Hook.ENABLE_BINDABLE.get( false ) ) {
-            return LogicalTableScan.create( cluster, this );
+            return LogicalScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE && table instanceof QueryableTable ) {
-            return EnumerableTableScan.create( cluster, this );
+            return EnumerableScan.create( cluster, this );
         }
         if ( table instanceof ScannableTable
                 || table instanceof FilterableTable
                 || table instanceof ProjectableFilterableTable ) {
-            return LogicalTableScan.create( cluster, this );
+            return LogicalScan.create( cluster, this );
         }
         if ( PolyphenyDbPrepareImpl.ENABLE_ENUMERABLE ) {
-            return EnumerableTableScan.create( cluster, this );
+            return EnumerableScan.create( cluster, this );
         }
         throw new AssertionError();
     }

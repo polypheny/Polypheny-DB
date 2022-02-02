@@ -437,7 +437,7 @@ public class Rest {
         List<String> aliases = new ArrayList<>();
 
         for ( RequestColumn column : columns ) {
-            RexNode inputRef = rexBuilder.makeInputRef( baseNode, column.getTableScanIndex() );
+            RexNode inputRef = rexBuilder.makeInputRef( baseNode, column.getScanIndex() );
             inputRefs.add( inputRef );
             aliases.add( column.getAlias() );
         }

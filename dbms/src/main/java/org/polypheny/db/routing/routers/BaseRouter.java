@@ -54,7 +54,7 @@ import org.polypheny.db.transaction.Statement;
 @Slf4j
 public abstract class BaseRouter {
 
-    public static final Cache<Integer, AlgNode> joinedTableScanCache = CacheBuilder.newBuilder()
+    public static final Cache<Integer, AlgNode> joinedScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
 
@@ -77,7 +77,7 @@ public abstract class BaseRouter {
     }
 
 
-    public RoutedAlgBuilder handleTableScan(
+    public RoutedAlgBuilder handleScan(
             RoutedAlgBuilder builder,
             long tableId,
             String storeUniqueName,
@@ -132,11 +132,11 @@ public abstract class BaseRouter {
     }
 
 
-    public AlgNode buildJoinedTableScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
+    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, Map<Long, List<CatalogColumnPlacement>> placements ) {
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            AlgNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
+            AlgNode cachedNode = joinedScanCache.getIfPresent( placements.hashCode() );
             if ( cachedNode != null ) {
                 return cachedNode;
             }
@@ -159,7 +159,7 @@ public abstract class BaseRouter {
                 CatalogColumnPlacement ccp = ccps.get( 0 );
                 CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
 
-                builder = handleTableScan(
+                builder = handleScan(
                         builder,
                         ccp.tableId,
                         ccp.adapterUniqueName,
@@ -206,7 +206,7 @@ public abstract class BaseRouter {
                     CatalogColumnPlacement ccp = ccps.get( 0 );
                     CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
 
-                    handleTableScan(
+                    handleScan(
                             builder,
                             ccp.tableId,
                             ccp.adapterUniqueName,
@@ -259,7 +259,7 @@ public abstract class BaseRouter {
 
         AlgNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            joinedTableScanCache.put( placements.hashCode(), node );
+            joinedScanCache.put( placements.hashCode(), node );
         }
         return node;
     }

@@ -43,16 +43,16 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
@@ -83,8 +83,8 @@ public class StreamRules {
                     new DeltaSortTransposeRule( AlgFactories.LOGICAL_BUILDER ),
                     new DeltaUnionTransposeRule( AlgFactories.LOGICAL_BUILDER ),
                     new DeltaJoinTransposeRule( AlgFactories.LOGICAL_BUILDER ),
-                    new DeltaTableScanRule( AlgFactories.LOGICAL_BUILDER ),
-                    new DeltaTableScanToEmptyRule( AlgFactories.LOGICAL_BUILDER ) );
+                    new DeltaScanRule( AlgFactories.LOGICAL_BUILDER ),
+                    new DeltaScanToEmptyRule( AlgFactories.LOGICAL_BUILDER ) );
 
 
     /**
@@ -244,20 +244,20 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that pushes a {@link Delta} into a {@link TableScan} of a {@link StreamableTable}.
+     * Planner rule that pushes a {@link Delta} into a {@link Scan} of a {@link StreamableTable}.
      *
      * Very likely, the stream was only represented as a table for uniformity with the other relations in the system. The Delta disappears and the stream can be implemented directly.
      */
-    public static class DeltaTableScanRule extends AlgOptRule {
+    public static class DeltaScanRule extends AlgOptRule {
 
         /**
-         * Creates a DeltaTableScanRule.
+         * Creates a DeltaScanRule.
          *
          * @param algBuilderFactory Builder for relational expressions
          */
-        public DeltaTableScanRule( AlgBuilderFactory algBuilderFactory ) {
+        public DeltaScanRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( Delta.class, operand( TableScan.class, none() ) ),
+                    operand( Delta.class, operand( Scan.class, none() ) ),
                     algBuilderFactory, null );
         }
 
@@ -265,7 +265,7 @@ public class StreamRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
-            final TableScan scan = call.alg( 1 );
+            final Scan scan = call.alg( 1 );
             final AlgOptCluster cluster = delta.getCluster();
             final AlgOptTable algOptTable = scan.getTable();
             final StreamableTable streamableTable = algOptTable.unwrap( StreamableTable.class );
@@ -277,7 +277,7 @@ public class StreamRules {
                                 ImmutableList.<String>builder()
                                         .addAll( algOptTable.getQualifiedName() )
                                         .add( "(STREAM)" ).build() );
-                final LogicalTableScan newScan = LogicalTableScan.create( cluster, algOptTable2 );
+                final LogicalScan newScan = LogicalScan.create( cluster, algOptTable2 );
                 call.transformTo( newScan );
             }
         }
@@ -286,18 +286,18 @@ public class StreamRules {
 
 
     /**
-     * Planner rule that converts {@link Delta} over a {@link TableScan} of a table other than {@link StreamableTable} to an empty {@link Values}.
+     * Planner rule that converts {@link Delta} over a {@link Scan} of a table other than {@link StreamableTable} to an empty {@link Values}.
      */
-    public static class DeltaTableScanToEmptyRule extends AlgOptRule {
+    public static class DeltaScanToEmptyRule extends AlgOptRule {
 
         /**
-         * Creates a DeltaTableScanToEmptyRule.
+         * Creates a DeltaScanToEmptyRule.
          *
          * @param algBuilderFactory Builder for relational expressions
          */
-        public DeltaTableScanToEmptyRule( AlgBuilderFactory algBuilderFactory ) {
+        public DeltaScanToEmptyRule( AlgBuilderFactory algBuilderFactory ) {
             super(
-                    operand( Delta.class, operand( TableScan.class, none() ) ),
+                    operand( Delta.class, operand( Scan.class, none() ) ),
                     algBuilderFactory, null );
         }
 
@@ -305,7 +305,7 @@ public class StreamRules {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final Delta delta = call.alg( 0 );
-            final TableScan scan = call.alg( 1 );
+            final Scan scan = call.alg( 1 );
             final AlgOptTable algOptTable = scan.getTable();
             final StreamableTable streamableTable = algOptTable.unwrap( StreamableTable.class );
             final AlgBuilder builder = call.builder();

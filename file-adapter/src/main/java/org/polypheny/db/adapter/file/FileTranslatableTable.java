@@ -27,7 +27,7 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.file.algebra.FileTableScan;
+import org.polypheny.db.adapter.file.algebra.FileScan;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableModify;
@@ -107,7 +107,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
-        return new FileTableScan( context.getCluster(), algOptTable, this );
+        return new FileScan( context.getCluster(), algOptTable, this );
     }
 
 

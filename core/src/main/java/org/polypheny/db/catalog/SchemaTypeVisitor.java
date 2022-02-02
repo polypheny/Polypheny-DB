@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -46,7 +46,7 @@ public class SchemaTypeVisitor extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
+    public AlgNode visit( Scan scan ) {
         try {
             List<String> names = scan.getTable().getQualifiedName();
             CatalogSchema schema;

@@ -321,13 +321,13 @@ public enum RuntimeConfig {
             "queryParameterizationGroup" ),
 
     JOINED_TABLE_SCAN_CACHE(
-            "runtime/joinedTableScanCache",
+            "runtime/joinedScanCache",
             "Whether to use the joined table scan caching.",
             false,
             ConfigType.BOOLEAN ),
 
     JOINED_TABLE_SCAN_CACHE_SIZE(
-            "runtime/joinedTableScanCacheSize",
+            "runtime/joinedScanCacheSize",
             "Size of the joined table scan cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER ),

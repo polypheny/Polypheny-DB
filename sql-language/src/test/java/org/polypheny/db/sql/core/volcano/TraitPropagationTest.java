@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Properties;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollation;
@@ -148,7 +148,7 @@ public class TraitPropagationTest {
                 }
             };
 
-            final AlgNode rt1 = EnumerableTableScan.create( cluster, t1 );
+            final AlgNode rt1 = EnumerableScan.create( cluster, t1 );
 
             // project s column
             AlgNode project = LogicalProject.create(
@@ -276,13 +276,13 @@ public class TraitPropagationTest {
 
 
         private PhysTableRule() {
-            super( anyChild( EnumerableTableScan.class ), "PhysScan" );
+            super( anyChild( EnumerableScan.class ), "PhysScan" );
         }
 
 
         @Override
         public void onMatch( AlgOptRuleCall call ) {
-            EnumerableTableScan alg = call.alg( 0 );
+            EnumerableScan alg = call.alg( 0 );
             call.transformTo( new PhysTable( alg.getCluster() ) );
         }
 

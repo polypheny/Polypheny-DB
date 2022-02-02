@@ -151,7 +151,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new MongoTableScan( cluster, cluster.traitSetOf( MongoAlg.CONVENTION ), algOptTable, this, null );
+        return new MongoScan( cluster, cluster.traitSetOf( MongoAlg.CONVENTION ), algOptTable, this, null );
     }
 
 

@@ -31,41 +31,49 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.rules;
+package org.polypheny.db.adapter.jdbc;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Planner rule that converts a {@link org.polypheny.db.algebra.logical.LogicalTableScan} to the result of calling {@link AlgOptTable#toAlg}.
+ * Relational expression representing a scan of a table in a JDBC data source.
  */
-public class TableScanRule extends AlgOptRule {
+public class JdbcScan extends Scan implements JdbcAlg {
 
-    public static final TableScanRule INSTANCE = new TableScanRule( AlgFactories.LOGICAL_BUILDER );
+    protected final JdbcTable jdbcTable;
 
 
-    /**
-     * Creates a TableScanRule.
-     *
-     * @param algBuilderFactory Builder for relational expressions
-     */
-    public TableScanRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( LogicalTableScan.class, any() ), algBuilderFactory, null );
+    protected JdbcScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
+        super( cluster, cluster.traitSetOf( jdbcConvention ), table );
+        this.jdbcTable = jdbcTable;
+        assert jdbcTable != null;
     }
 
 
     @Override
-    public void onMatch( AlgOptRuleCall call ) {
-        final LogicalTableScan oldRel = call.alg( 0 );
-        AlgNode newRel = oldRel.getTable().toAlg( oldRel::getCluster );
-        call.transformTo( newRel );
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        assert inputs.isEmpty();
+        return new JdbcScan( getCluster(), table, jdbcTable, (JdbcConvention) getConvention() );
+    }
+
+
+    @Override
+    public Result implement( JdbcImplementor implementor ) {
+        return implementor.result(
+                jdbcTable.physicalTableName(),
+                ImmutableList.of( JdbcImplementor.Clause.FROM ),
+                this,
+                null );
     }
 
 }
+

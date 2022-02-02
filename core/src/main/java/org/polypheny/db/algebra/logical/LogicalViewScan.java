@@ -23,7 +23,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -38,7 +38,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
 
-public class LogicalViewScan extends TableScan {
+public class LogicalViewScan extends Scan {
 
     @Getter
     private final AlgNode algNode;

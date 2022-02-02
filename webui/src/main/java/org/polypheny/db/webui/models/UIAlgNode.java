@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 public class UIAlgNode {
 
     /**
-     * ExpressionType of the AlgNode, e.g. TableScan
+     * ExpressionType of the AlgNode, e.g. Scan
      */
     public String type;
 

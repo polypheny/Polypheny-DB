@@ -103,10 +103,10 @@ import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
@@ -2113,7 +2113,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         } else if ( table instanceof AlgOptTableImpl && (((AlgOptTableImpl) table).getTable()) instanceof LogicalView ) {
             tableRel = LogicalViewScan.create( cluster, table );
         } else {
-            tableRel = LogicalTableScan.create( cluster, table );
+            tableRel = LogicalScan.create( cluster, table );
         }
         bb.setRoot( tableRel, true );
         if ( usedDataset[0] ) {

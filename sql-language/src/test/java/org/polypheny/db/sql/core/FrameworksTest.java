@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
-import org.polypheny.db.adapter.enumerable.EnumerableTableScan;
+import org.polypheny.db.adapter.enumerable.EnumerableScan;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
@@ -125,7 +125,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
                     // "SELECT * FROM myTable"
                     final AlgOptAbstractTable algOptTable = new AlgOptAbstractTable( algOptSchema, "myTable", table.getRowType( typeFactory ) ) {
                     };
-                    final EnumerableTableScan tableRel = EnumerableTableScan.create( cluster, algOptTable );
+                    final EnumerableScan tableRel = EnumerableScan.create( cluster, algOptTable );
 
                     // "WHERE i > 1"
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -149,7 +149,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
         String s = AlgOptUtil.dumpPlan( "", x, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
         assertThat(
                 Util.toLinux( s ),
-                equalTo( "EnumerableFilter(condition=[>($1, 1)])\n  EnumerableTableScan(table=[[myTable]])\n" ) );
+                equalTo( "EnumerableFilter(condition=[>($1, 1)])\n  EnumerableScan(table=[[myTable]])\n" ) );
     }
 
 

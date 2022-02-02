@@ -34,8 +34,8 @@
 package org.polypheny.db.algebra;
 
 
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalExchange;
@@ -68,7 +68,7 @@ public class AlgHomogeneousShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
+    public AlgNode visit( Scan scan ) {
         return visit( (AlgNode) scan );
     }
 

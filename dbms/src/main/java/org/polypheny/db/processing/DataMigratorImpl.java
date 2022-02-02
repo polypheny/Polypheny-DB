@@ -374,7 +374,7 @@ public class DataMigratorImpl implements DataMigrator {
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
 
-        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedTableScan( statement, cluster, placementDistribution );
+        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, placementDistribution );
         return AlgRoot.of( node, Kind.SELECT );
     }
 

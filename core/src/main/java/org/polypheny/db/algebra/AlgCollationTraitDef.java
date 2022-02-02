@@ -46,7 +46,7 @@ import org.polypheny.db.plan.AlgTraitSet;
  *
  * Ordering is a physical property (i.e. a trait) because it can be changed without loss of information. The converter to do this is the {@link Sort} operator.
  *
- * Unlike other current traits, a {@link AlgNode} can have more than one value of this trait simultaneously. For example, <code>LogicalTableScan(table=TIME_BY_DAY)</code> might be sorted by
+ * Unlike other current traits, a {@link AlgNode} can have more than one value of this trait simultaneously. For example, <code>LogicalScan(table=TIME_BY_DAY)</code> might be sorted by
  * <code>{the_year, the_month, the_date}</code> and also by <code>{time_id}</code>. We have to allow a {@link AlgNode} to belong to more than one RelSubset (these RelSubsets are always in the same set).
  */
 public class AlgCollationTraitDef extends AlgTraitDef<AlgCollation> {

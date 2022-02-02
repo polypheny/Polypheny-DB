@@ -45,23 +45,23 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that projects from a {@link CsvTableScan} scan just the columns needed to satisfy a projection. If the projection's expressions are trivial, the projection is removed.
+ * Planner rule that projects from a {@link CsvScan} scan just the columns needed to satisfy a projection. If the projection's expressions are trivial, the projection is removed.
  */
-public class CsvProjectTableScanRule extends AlgOptRule {
+public class CsvProjectScanRule extends AlgOptRule {
 
-    public static final CsvProjectTableScanRule INSTANCE = new CsvProjectTableScanRule( AlgFactories.LOGICAL_BUILDER );
+    public static final CsvProjectScanRule INSTANCE = new CsvProjectScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
     /**
-     * Creates a CsvProjectTableScanRule.
+     * Creates a CsvProjectScanRule.
      *
      * @param algBuilderFactory Builder for relational expressions
      */
-    public CsvProjectTableScanRule( AlgBuilderFactory algBuilderFactory ) {
+    public CsvProjectScanRule( AlgBuilderFactory algBuilderFactory ) {
         super(
-                operand( LogicalProject.class, operand( CsvTableScan.class, none() ) ),
+                operand( LogicalProject.class, operand( CsvScan.class, none() ) ),
                 algBuilderFactory,
-                "CsvProjectTableScanRule"
+                "CsvProjectScanRule"
         );
     }
 
@@ -69,14 +69,14 @@ public class CsvProjectTableScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalProject project = call.alg( 0 );
-        final CsvTableScan scan = call.alg( 1 );
+        final CsvScan scan = call.alg( 1 );
         int[] fields = getProjectFields( project.getProjects() );
         if ( fields == null ) {
             // Project contains expressions more complex than just field references.
             return;
         }
         call.transformTo(
-                new CsvTableScan( scan.getCluster(), scan.getTable(), scan.csvTable, fields ) );
+                new CsvScan( scan.getCluster(), scan.getTable(), scan.csvTable, fields ) );
     }
 
 

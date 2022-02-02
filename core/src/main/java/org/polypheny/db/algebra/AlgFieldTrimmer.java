@@ -34,13 +34,13 @@ import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -867,9 +867,9 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
 
 
     /**
-     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalTableScan}.
+     * Variant of {@link #trimFields(AlgNode, ImmutableBitSet, Set)} for {@link LogicalScan}.
      */
-    public TrimResult trimFields( final TableScan tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
+    public TrimResult trimFields( final Scan tableAccessRel, ImmutableBitSet fieldsUsed, Set<AlgDataTypeField> extraFields ) {
         final int fieldCount = tableAccessRel.getRowType().getFieldCount();
         if ( fieldsUsed.equals( ImmutableBitSet.range( fieldCount ) ) && extraFields.isEmpty() ) {
             // If there is nothing to project or if we are projecting everything then no need to introduce another AlgNode

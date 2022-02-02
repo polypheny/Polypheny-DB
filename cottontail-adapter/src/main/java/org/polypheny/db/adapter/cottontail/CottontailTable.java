@@ -22,7 +22,7 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.cottontail.algebra.CottontailTableScan;
+import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -164,7 +164,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
-        return new CottontailTableScan( context.getCluster(), algOptTable, this, this.cottontailSchema.getConvention() );
+        return new CottontailScan( context.getCluster(), algOptTable, this, this.cottontailSchema.getConvention() );
     }
 
 

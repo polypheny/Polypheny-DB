@@ -38,8 +38,8 @@ import java.util.function.Predicate;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Table;
@@ -49,31 +49,31 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 /**
  * Planner rule that converts a {@link LogicalTableFunctionScan} relational expression {@link EnumerableConvention enumerable calling convention}.
  */
-public class EnumerableTableScanRule extends ConverterRule {
+public class EnumerableScanRule extends ConverterRule {
 
     /**
-     * Creates an EnumerableTableScanRule.
+     * Creates an EnumerableScanRule.
      *
      * @param algBuilderFactory Builder for relational expressions
      */
-    public EnumerableTableScanRule( AlgBuilderFactory algBuilderFactory ) {
-        super( LogicalTableScan.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableTableScanRule" );
+    public EnumerableScanRule( AlgBuilderFactory algBuilderFactory ) {
+        super( LogicalScan.class, (Predicate<AlgNode>) r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableScanRule" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalTableScan scan = (LogicalTableScan) alg;
+        LogicalScan scan = (LogicalScan) alg;
         final AlgOptTable algOptTable = scan.getTable();
         final Table table = algOptTable.unwrap( Table.class );
-        if ( !EnumerableTableScan.canHandle( table ) ) {
+        if ( !EnumerableScan.canHandle( table ) ) {
             return null;
         }
         final Expression expression = algOptTable.getExpression( Object.class );
         if ( expression == null ) {
             return null;
         }
-        return EnumerableTableScan.create( scan.getCluster(), algOptTable );
+        return EnumerableScan.create( scan.getCluster(), algOptTable );
     }
 
 }

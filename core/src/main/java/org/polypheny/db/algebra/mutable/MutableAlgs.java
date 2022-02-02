@@ -51,11 +51,11 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sample;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
@@ -323,8 +323,8 @@ public abstract class MutableAlgs {
             return toMutable(
                     Util.first( ((AlgSubset) alg).getBest(), ((AlgSubset) alg).getOriginal() ) );
         }
-        if ( alg instanceof TableScan ) {
-            return MutableScan.of( (TableScan) alg );
+        if ( alg instanceof Scan ) {
+            return MutableScan.of( (Scan) alg );
         }
         if ( alg instanceof Values ) {
             return MutableValues.of( (Values) alg );

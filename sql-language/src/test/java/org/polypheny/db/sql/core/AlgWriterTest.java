@@ -37,7 +37,7 @@ import org.polypheny.db.algebra.externalize.AlgJsonReader;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
@@ -78,7 +78,7 @@ public class AlgWriterTest extends SqlLanguagelDependant {
             + "        \"inputs\": [\n"
             + "          {\n"
             + "            \"id\": \"0\",\n"
-            + "            \"relOp\": \"LogicalTableScan\",\n"
+            + "            \"relOp\": \"LogicalScan\",\n"
             + "            \"table\": \"[hr, emps]\",\n"
             + "            \"rowcount\": 100.0,\n"
             + "            \"rows cost\": 100.0,\n"
@@ -101,8 +101,8 @@ public class AlgWriterTest extends SqlLanguagelDependant {
         String s =
                 Frameworks.withPlanner( ( cluster, algOptSchema, rootSchema ) -> {
                     rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ), SchemaType.RELATIONAL );
-                    LogicalTableScan scan =
-                            LogicalTableScan.create(
+                    LogicalScan scan =
+                            LogicalScan.create(
                                     cluster,
                                     algOptSchema.getTableForMember( Arrays.asList( "hr", "emps" ) ) );
                     final RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -150,7 +150,7 @@ public class AlgWriterTest extends SqlLanguagelDependant {
                 s,
                 Matchers.isLinux( "LogicalAggregate(group=[{0}], agg#0=[COUNT(DISTINCT $1)], agg#1=[COUNT()])\n"
                         + "  LogicalFilter(condition=[=($1, 10)])\n"
-                        + "    LogicalTableScan(table=[[hr, emps]])\n" ) );
+                        + "    LogicalScan(table=[[hr, emps]])\n" ) );
     }
 
 }

@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
-import org.polypheny.db.algebra.rules.FilterTableScanRule;
+import org.polypheny.db.algebra.rules.FilterScanRule;
 import org.polypheny.db.algebra.rules.FilterToCalcRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
@@ -68,10 +68,10 @@ import org.polypheny.db.algebra.rules.MultiJoinOptimizeBushyRule;
 import org.polypheny.db.algebra.rules.ProjectCalcMergeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
+import org.polypheny.db.algebra.rules.ScanRule;
 import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
 import org.polypheny.db.algebra.rules.SubQueryRemoveRule;
-import org.polypheny.db.algebra.rules.TableScanRule;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.NoneToBindableConverterRule;
@@ -141,11 +141,11 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     SemiJoinRule.PROJECT,
                     SemiJoinRule.JOIN,
-                    TableScanRule.INSTANCE,
+                    ScanRule.INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
-                    FilterTableScanRule.INSTANCE,
+                    FilterScanRule.INSTANCE,
                     FilterProjectTransposeRule.INSTANCE,
                     FilterJoinRule.FILTER_ON_JOIN,
                     AggregateExpandDistinctAggregatesRule.INSTANCE,

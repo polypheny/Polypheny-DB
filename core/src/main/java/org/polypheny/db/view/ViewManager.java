@@ -27,8 +27,8 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
@@ -39,8 +39,8 @@ import org.polypheny.db.algebra.logical.LogicalJoin;
 import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
@@ -117,7 +117,7 @@ public class ViewManager {
 
 
         @Override
-        public AlgNode visit( TableScan scan ) {
+        public AlgNode visit( Scan scan ) {
             if ( depth == 0 ) {
                 return checkNode( scan );
             }
@@ -244,7 +244,7 @@ public class ViewManager {
         public AlgNode checkNode( AlgNode other ) {
             if ( other instanceof LogicalViewScan ) {
                 return expandViewNode( other );
-            } else if ( doesSubstituteOrderBy && other instanceof LogicalTableScan ) {
+            } else if ( doesSubstituteOrderBy && other instanceof LogicalScan ) {
                 if ( other.getTable() instanceof AlgOptTableImpl ) {
                     if ( other.getTable().getTable() instanceof LogicalTable ) {
                         long tableId = ((LogicalTable) ((AlgOptTableImpl) other.getTable()).getTable()).getTableId();
@@ -262,13 +262,13 @@ public class ViewManager {
 
         /**
          * This method sends the visitor of into the {@link AlgNode} to replace
-         * <code>LogicalViewTableScan</code> with <code>LogicalTableScan</code>
+         * <code>LogicalViewScan</code> with <code>LogicalScan</code>
          *
          * As there is the possibility for the root {@link AlgNode} to be already be a view
          * it has to start with the AlgRoot and replace the initial AlgNode
          *
          * @param logicalRoot the AlgRoot before the transformation
-         * @return the AlgRoot after replacing all <code>LogicalViewTableScan</code>s
+         * @return the AlgRoot after replacing all <code>LogicalViewScan</code>s
          */
         public AlgRoot startSubstitution( AlgRoot logicalRoot ) {
             if ( logicalRoot.alg instanceof LogicalViewScan ) {

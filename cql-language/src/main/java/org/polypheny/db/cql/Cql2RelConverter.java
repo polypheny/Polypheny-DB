@@ -75,7 +75,7 @@ public class Cql2RelConverter {
      * @return {@link AlgRoot}.
      */
     public AlgRoot convert2Rel( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
-        algBuilder = generateTableScan( algBuilder, rexBuilder );
+        algBuilder = generateScan( algBuilder, rexBuilder );
         if ( cqlQuery.filters != null ) {
             algBuilder = generateProjections( algBuilder, rexBuilder );
             algBuilder = generateFilters( algBuilder, rexBuilder );
@@ -85,7 +85,7 @@ public class Cql2RelConverter {
             }
         } else {
             if ( cqlQuery.projections.exists() ) {
-                setTableScanColumnOrdinalities();
+                setScanColumnOrdinalities();
                 if ( cqlQuery.projections.hasAggregations() ) {
                     algBuilder = cqlQuery.projections
                             .convert2Rel( tableScanColumnOrdinalities, algBuilder, rexBuilder );
@@ -115,7 +115,7 @@ public class Cql2RelConverter {
     }
 
 
-    private void setTableScanColumnOrdinalities() {
+    private void setScanColumnOrdinalities() {
         cqlQuery.queryRelation.traverse( TraversalType.INORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE && treeNode.isLeaf() ) {
                 TableIndex tableIndex = treeNode.getExternalNode();
@@ -136,7 +136,7 @@ public class Cql2RelConverter {
      * @param rexBuilder {@link RexBuilder}.
      * @return {@link AlgBuilder}.
      */
-    private AlgBuilder generateTableScan( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+    private AlgBuilder generateScan( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         log.debug( "Generating table scan." );
         Tree<Combiner, TableIndex> tableOperations = cqlQuery.queryRelation;
         AtomicReference<AlgBuilder> algBuilderAtomicReference = new AtomicReference<>( algBuilder );

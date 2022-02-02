@@ -598,7 +598,7 @@ public class DruidRules {
             filter = LogicalFilter.create( scan, filterNode );
 
             boolean addNewFilter = !filter.getCondition().isAlwaysTrue() && allHaveFilters;
-            // Assumes that Filter nodes are always right after TableScan nodes (which are always present)
+            // Assumes that Filter nodes are always right after Scan nodes (which are always present)
             int startIndex = containsFilter && addNewFilter ? 2 : 1;
 
             List<AlgNode> newNodes = constructNewNodes( query.algs, addNewFilter, startIndex, filter, project, aggregate );

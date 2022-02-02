@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.BiAlg;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -1784,7 +1784,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private Map<Long, List<Long>> findUnderlyingTablesOfView( AlgNode algNode, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList ) {
-        if ( algNode instanceof LogicalTableScan ) {
+        if ( algNode instanceof LogicalScan ) {
             List<Long> underlyingColumns = getUnderlyingColumns( algNode, fieldList );
             underlyingTables.put( ((LogicalTable) algNode.getTable().getTable()).getTableId(), underlyingColumns );
         } else if ( algNode instanceof LogicalViewScan ) {

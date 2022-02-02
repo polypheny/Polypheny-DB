@@ -31,49 +31,41 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.jdbc;
+package org.polypheny.db.algebra.rules;
 
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.logical.LogicalScan;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptTable;
-import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Relational expression representing a scan of a table in a JDBC data source.
+ * Planner rule that converts a {@link LogicalScan} to the result of calling {@link AlgOptTable#toAlg}.
  */
-public class JdbcTableScan extends TableScan implements JdbcAlg {
+public class ScanRule extends AlgOptRule {
 
-    protected final JdbcTable jdbcTable;
+    public static final ScanRule INSTANCE = new ScanRule( AlgFactories.LOGICAL_BUILDER );
 
 
-    protected JdbcTableScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
-        super( cluster, cluster.traitSetOf( jdbcConvention ), table );
-        this.jdbcTable = jdbcTable;
-        assert jdbcTable != null;
+    /**
+     * Creates a ScanRule.
+     *
+     * @param algBuilderFactory Builder for relational expressions
+     */
+    public ScanRule( AlgBuilderFactory algBuilderFactory ) {
+        super( operand( LogicalScan.class, any() ), algBuilderFactory, null );
     }
 
 
     @Override
-    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        assert inputs.isEmpty();
-        return new JdbcTableScan( getCluster(), table, jdbcTable, (JdbcConvention) getConvention() );
-    }
-
-
-    @Override
-    public Result implement( JdbcImplementor implementor ) {
-        return implementor.result(
-                jdbcTable.physicalTableName(),
-                ImmutableList.of( JdbcImplementor.Clause.FROM ),
-                this,
-                null );
+    public void onMatch( AlgOptRuleCall call ) {
+        final LogicalScan oldRel = call.alg( 0 );
+        AlgNode newRel = oldRel.getTable().toAlg( oldRel::getCluster );
+        call.transformTo( newRel );
     }
 
 }
-

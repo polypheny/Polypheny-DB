@@ -67,7 +67,7 @@ import org.polypheny.db.util.mapping.Mappings;
  * RelRoot: {
  * rel: Sort($1 DESC)
  * Project(name, empno)
- * TableScan(EMP)
+ * Scan(EMP)
  * fields: [0]
  * collation: [1 DESC]
  * }
@@ -84,7 +84,7 @@ import org.polypheny.db.util.mapping.Mappings;
  * <blockquote><code>
  * RelRoot: {
  * rel: Project(name, empno)
- * TableScan(EMP)
+ * Scan(EMP)
  * fields: [(0, "n"), (0, "n2"), (1, "n")]
  * collation: []
  * }

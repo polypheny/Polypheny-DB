@@ -22,7 +22,7 @@ import org.polypheny.db.adapter.file.FileAlg;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileTranslatableTable;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -32,12 +32,12 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 
 
-public class FileTableScan extends TableScan implements FileAlg {
+public class FileScan extends Scan implements FileAlg {
 
     private final FileTranslatableTable fileTable;
 
 
-    public FileTableScan( AlgOptCluster cluster, AlgOptTable table, FileTranslatableTable fileTable ) {
+    public FileScan( AlgOptCluster cluster, AlgOptTable table, FileTranslatableTable fileTable ) {
         //convention was: EnumerableConvention.INSTANCE
         super( cluster, cluster.traitSetOf( fileTable.getFileSchema().getConvention() ), table );
         this.fileTable = fileTable;
@@ -46,7 +46,7 @@ public class FileTableScan extends TableScan implements FileAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new FileTableScan( getCluster(), table, fileTable );
+        return new FileScan( getCluster(), table, fileTable );
     }
 
 

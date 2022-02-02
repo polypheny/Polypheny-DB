@@ -39,8 +39,8 @@ import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -735,7 +735,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
 
-        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
+        if ( node instanceof LogicalScan && node.getTable() != null ) {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
 
             if ( table.getTable() instanceof LogicalTable ) {
@@ -745,7 +745,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     // return buildSelect( node, builder, statement, cluster );
                 }
 
-                builder = super.handleTableScan(
+                builder = super.handleScan(
                         builder,
                         placements.get( 0 ).tableId,
                         placements.get( 0 ).adapterUniqueName,

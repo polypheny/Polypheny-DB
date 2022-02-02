@@ -60,7 +60,7 @@ import org.polypheny.db.util.ImmutableIntList;
 /**
  * Relational operator that returns the contents of a table.
  */
-public abstract class TableScan extends AbstractAlgNode {
+public abstract class Scan extends AbstractAlgNode {
 
     /**
      * The table definition.
@@ -68,7 +68,7 @@ public abstract class TableScan extends AbstractAlgNode {
     protected final AlgOptTable table;
 
 
-    protected TableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
+    protected Scan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table ) {
         super( cluster, traitSet );
         this.table = table;
         if ( table.getRelOptSchema() != null ) {
@@ -78,9 +78,9 @@ public abstract class TableScan extends AbstractAlgNode {
 
 
     /**
-     * Creates a TableScan by parsing serialized output.
+     * Creates a Scan by parsing serialized output.
      */
-    protected TableScan( AlgInput input ) {
+    protected Scan( AlgInput input ) {
         this( input.getCluster(), input.getTraitSet(), input.getTable( "table" ) );
     }
 

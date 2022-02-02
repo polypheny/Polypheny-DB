@@ -45,7 +45,7 @@ import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
-import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -62,13 +62,13 @@ import org.polypheny.db.plan.AlgTraitSet;
  *
  * Like any table scan, it serves as a leaf node of a query tree.
  */
-public class CsvTableScan extends TableScan implements EnumerableAlg {
+public class CsvScan extends Scan implements EnumerableAlg {
 
     final CsvTranslatableTable csvTable;
     final int[] fields;
 
 
-    protected CsvTableScan( AlgOptCluster cluster, AlgOptTable table, CsvTranslatableTable csvTable, int[] fields ) {
+    protected CsvScan( AlgOptCluster cluster, AlgOptTable table, CsvTranslatableTable csvTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.csvTable = csvTable;
         this.fields = fields;
@@ -80,7 +80,7 @@ public class CsvTableScan extends TableScan implements EnumerableAlg {
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
-        return new CsvTableScan( getCluster(), table, csvTable, fields );
+        return new CsvScan( getCluster(), table, csvTable, fields );
     }
 
 
@@ -103,7 +103,7 @@ public class CsvTableScan extends TableScan implements EnumerableAlg {
 
     @Override
     public void register( AlgOptPlanner planner ) {
-        planner.addRule( CsvProjectTableScanRule.INSTANCE );
+        planner.addRule( CsvProjectScanRule.INSTANCE );
     }
 
 

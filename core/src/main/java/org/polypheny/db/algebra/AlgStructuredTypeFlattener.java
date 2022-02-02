@@ -34,8 +34,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Collect;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Sample;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalCalc;
@@ -98,7 +98,7 @@ import org.polypheny.db.util.mapping.Mappings;
  *
  * <blockquote><pre><code>
  * LogicalProject(C2=[$1], A2=[$0.A2])
- *   LogicalTableScan(table=[T])
+ *   LogicalScan(table=[T])
  * </code></pre></blockquote>
  * <p>
  * After flattening, the resulting tree looks like
@@ -656,7 +656,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( TableScan alg ) {
+    public void rewriteRel( Scan alg ) {
         AlgNode newRel = alg.getTable().toAlg( toAlgContext );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();

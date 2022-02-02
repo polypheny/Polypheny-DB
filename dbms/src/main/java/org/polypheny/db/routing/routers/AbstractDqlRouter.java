@@ -25,8 +25,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.SetOp;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -123,7 +123,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     @Override
     public void resetCaches() {
-        joinedTableScanCache.invalidateAll();
+        joinedScanCache.invalidateAll();
     }
 
 
@@ -145,7 +145,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             builders = this.buildDql( node.getInput( i ), builders, statement, cluster, queryInformation );
         }
 
-        if ( node instanceof LogicalTableScan && node.getTable() != null ) {
+        if ( node instanceof LogicalScan && node.getTable() != null ) {
             AlgOptTableImpl table = (AlgOptTableImpl) node.getTable();
 
             if ( !(table.getTable() instanceof LogicalTable) ) {

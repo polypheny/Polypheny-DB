@@ -39,8 +39,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
@@ -107,7 +107,7 @@ public class AlgShuttleImpl implements AlgShuttle {
 
 
     @Override
-    public AlgNode visit( TableScan scan ) {
+    public AlgNode visit( Scan scan ) {
         return scan;
     }
 

@@ -59,7 +59,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 /**
  * Relational expression that modifies a table.
  *
- * It is similar to {@link org.polypheny.db.algebra.core.TableScan}, but represents a request to modify a table rather than read from it.
+ * It is similar to {@link Scan}, but represents a request to modify a table rather than read from it.
  * It takes one child which produces the modified rows. Those rows are:
  *
  * <ul>

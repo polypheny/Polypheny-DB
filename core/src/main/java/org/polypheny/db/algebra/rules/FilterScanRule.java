@@ -35,110 +35,108 @@ package org.polypheny.db.algebra.rules;
 
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.interpreter.Bindables;
-import org.polypheny.db.interpreter.Bindables.BindableTableScan;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.interpreter.Bindables.BindableScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
-import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
 
 /**
- * Planner rule that converts a {@link Project}
- * on a {@link TableScan}
- * of a {@link ProjectableFilterableTable}
- * to a {@link BindableTableScan}.
+ * Planner rule that converts
+ * a {@link Filter}
+ * on a {@link Scan}
+ * of a {@link FilterableTable}
+ * or a {@link ProjectableFilterableTable}
+ * to a {@link BindableScan}.
  *
- * The {@link #INTERPRETER} variant allows an intervening {@link EnumerableInterpreter}.
+ * The {@link #INTERPRETER} variant allows an intervening {@link org.polypheny.db.adapter.enumerable.EnumerableInterpreter}.
  *
- * @see FilterTableScanRule
+ * @see ProjectScanRule
  */
-public abstract class ProjectTableScanRule extends AlgOptRule {
-
+public abstract class FilterScanRule extends AlgOptRule {
 
     /**
-     * Rule that matches Project on TableScan.
+     * Rule that matches Filter on Scan.
      */
-    public static final ProjectTableScanRule INSTANCE =
-            new ProjectTableScanRule(
-                    operand( Project.class, operandJ( TableScan.class, null, ProjectTableScanRule::test, none() ) ),
+    public static final FilterScanRule INSTANCE =
+            new FilterScanRule(
+                    operand( Filter.class, operandJ( Scan.class, null, FilterScanRule::test, none() ) ),
                     AlgFactories.LOGICAL_BUILDER,
-                    "ProjectScanRule" ) {
+                    "FilterScanRule" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    final Project project = call.alg( 0 );
-                    final TableScan scan = call.alg( 1 );
-                    apply( call, project, scan );
+                    final Filter filter = call.alg( 0 );
+                    final Scan scan = call.alg( 1 );
+                    apply( call, filter, scan );
                 }
             };
 
     /**
-     * Rule that matches Project on EnumerableInterpreter on TableScan.
+     * Rule that matches Filter on EnumerableInterpreter on Scan.
      */
-    public static final ProjectTableScanRule INTERPRETER =
-            new ProjectTableScanRule(
-                    operand( Project.class, operand( EnumerableInterpreter.class, operandJ( TableScan.class, null, ProjectTableScanRule::test, none() ) ) ),
+    public static final FilterScanRule INTERPRETER =
+            new FilterScanRule(
+                    operand(
+                            Filter.class,
+                            operand(
+                                    EnumerableInterpreter.class,
+                                    operandJ(
+                                            Scan.class,
+                                            null, FilterScanRule::test, none() ) ) ),
                     AlgFactories.LOGICAL_BUILDER,
-                    "ProjectScanRule:interpreter" ) {
+                    "FilterScanRule:interpreter" ) {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
-                    final Project project = call.alg( 0 );
-                    final TableScan scan = call.alg( 2 );
-                    apply( call, project, scan );
+                    final Filter filter = call.alg( 0 );
+                    final Scan scan = call.alg( 2 );
+                    apply( call, filter, scan );
                 }
             };
 
 
     /**
-     * Creates a ProjectTableScanRule.
+     * Creates a FilterScanRule.
      */
-    public ProjectTableScanRule( AlgOptRuleOperand operand, AlgBuilderFactory algBuilderFactory, String description ) {
+    protected FilterScanRule( AlgOptRuleOperand operand, AlgBuilderFactory algBuilderFactory, String description ) {
         super( operand, algBuilderFactory, description );
     }
 
 
-    protected static boolean test( TableScan scan ) {
-        // We can only push projects into a ProjectableFilterableTable.
+    public static boolean test( Scan scan ) {
+        // We can only push filters into a FilterableTable or ProjectableFilterableTable.
         final AlgOptTable table = scan.getTable();
-        return table.unwrap( ProjectableFilterableTable.class ) != null;
+        return table.unwrap( FilterableTable.class ) != null || table.unwrap( ProjectableFilterableTable.class ) != null;
     }
 
 
-    protected void apply( AlgOptRuleCall call, Project project, TableScan scan ) {
-        final AlgOptTable table = scan.getTable();
-        assert table.unwrap( ProjectableFilterableTable.class ) != null;
-
-        final TargetMapping mapping = project.getMapping();
-        if ( mapping == null || Mappings.isIdentity( mapping ) ) {
-            return;
-        }
-
+    protected void apply( AlgOptRuleCall call, Filter filter, Scan scan ) {
         final ImmutableIntList projects;
-        final ImmutableList<RexNode> filters;
-        if ( scan instanceof BindableTableScan ) {
-            final BindableTableScan bindableScan = (BindableTableScan) scan;
-            filters = bindableScan.filters;
+        final ImmutableList.Builder<RexNode> filters = ImmutableList.builder();
+        if ( scan instanceof BindableScan ) {
+            final BindableScan bindableScan = (BindableScan) scan;
+            filters.addAll( bindableScan.filters );
             projects = bindableScan.projects;
         } else {
-            filters = ImmutableList.of();
             projects = scan.identity();
         }
 
-        final List<Integer> projects2 = Mappings.apply( (Mapping) mapping, projects );
-        call.transformTo( Bindables.BindableTableScan.create( scan.getCluster(), scan.getTable(), filters, projects2 ) );
+        final Mapping mapping = Mappings.target( projects, scan.getTable().getRowType().getFieldCount() );
+        filters.add( RexUtil.apply( mapping, filter.getCondition() ) );
+
+        call.transformTo( BindableScan.create( scan.getCluster(), scan.getTable(), filters.build(), projects ) );
     }
 
 }
-

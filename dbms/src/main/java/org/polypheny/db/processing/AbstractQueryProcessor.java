@@ -64,8 +64,8 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalProject;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -283,7 +283,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // Check if the relRoot includes Views or Materialized Views and replaces what necessary
-        // View: replace LogicalViewTableScan with underlying information
+        // View: replace LogicalViewScan with underlying information
         // Materialized View: add order by if Materialized View includes Order by
         ViewVisitor viewVisitor = new ViewVisitor( false );
         logicalRoot = viewVisitor.startSubstitution( logicalRoot );
@@ -910,9 +910,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             @Override
             public AlgNode visit( LogicalProject project ) {
-                if ( project.getInput() instanceof LogicalTableScan ) {
+                if ( project.getInput() instanceof LogicalScan ) {
                     // Figure out the original column names required for index lookup
-                    final LogicalTableScan scan = (LogicalTableScan) project.getInput();
+                    final LogicalScan scan = (LogicalScan) project.getInput();
                     final String table = scan.getTable().getQualifiedName().get( scan.getTable().getQualifiedName().size() - 1 );
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
                     final List<AlgDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
@@ -1241,7 +1241,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Get partitions of logical information
         Map<Integer, Set<String>> partitionValueFilterPerScan = analyzeRelShuttle.getPartitionValueFilterPerScan();
-        Map<Integer, List<Long>> accessedPartitionMap = this.getAccessedPartitionsPerTableScan( logicalRoot.alg, partitionValueFilterPerScan );
+        Map<Integer, List<Long>> accessedPartitionMap = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
 
         // Build queryClass from query-name and partitions.
         String queryClass = analyzeRelShuttle.getQueryName();// + accessedPartitionMap;
@@ -1264,18 +1264,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      * Traverses all TablesScans used during execution and identifies for the corresponding table all
      * associated partitions that needs to be accessed, on the basis of the provided partitionValues identified in a LogicalFilter
      *
-     * It is necessary to associate the partitionIds again with the TableScanId and not with the table itself. Because a table could be present
+     * It is necessary to associate the partitionIds again with the ScanId and not with the table itself. Because a table could be present
      * multiple times within one query. The aggregation per table would lead to data loss
      *
      * @param alg AlgNode to be processed
-     * @param aggregatedPartitionValues Mapping of TableScan Ids to identified partition Values
-     * @return Mapping of TableScan Ids to identified partition Ids
+     * @param aggregatedPartitionValues Mapping of Scan Ids to identified partition Values
+     * @return Mapping of Scan Ids to identified partition Ids
      */
-    private Map<Integer, List<Long>> getAccessedPartitionsPerTableScan( AlgNode alg, Map<Integer, Set<String>> aggregatedPartitionValues ) {
+    private Map<Integer, List<Long>> getAccessedPartitionsPerScan( AlgNode alg, Map<Integer, Set<String>> aggregatedPartitionValues ) {
         Map<Integer, List<Long>> accessedPartitionList = new HashMap<>(); // tableId  -> partitionIds
-        if ( !(alg instanceof LogicalTableScan) ) {
+        if ( !(alg instanceof LogicalScan) ) {
             for ( int i = 0; i < alg.getInputs().size(); i++ ) {
-                Map<Integer, List<Long>> result = getAccessedPartitionsPerTableScan( alg.getInput( i ), aggregatedPartitionValues );
+                Map<Integer, List<Long>> result = getAccessedPartitionsPerScan( alg.getInput( i ), aggregatedPartitionValues );
                 if ( !result.isEmpty() ) {
                     for ( Map.Entry<Integer, List<Long>> elem : result.entrySet() ) {
                         accessedPartitionList.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );

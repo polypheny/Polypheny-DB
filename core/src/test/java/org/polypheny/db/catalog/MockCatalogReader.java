@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
-import org.polypheny.db.algebra.logical.LogicalTableScan;
+import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeComparability;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -468,7 +468,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
         @Override
         public AlgNode toAlg( ToAlgContext context ) {
-            return LogicalTableScan.create( context.getCluster(), this );
+            return LogicalScan.create( context.getCluster(), this );
         }
 
 

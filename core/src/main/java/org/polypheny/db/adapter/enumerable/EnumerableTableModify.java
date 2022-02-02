@@ -100,7 +100,7 @@ public class EnumerableTableModify extends TableModify implements EnumerableAlg 
         Expression convertedChildExp;
         if ( !getInput().getRowType().equals( getRowType() ) ) {
             final JavaTypeFactory typeFactory = (JavaTypeFactory) getCluster().getTypeFactory();
-            final JavaRowFormat format = EnumerableTableScan.deduceFormat( table );
+            final JavaRowFormat format = EnumerableScan.deduceFormat( table );
             PhysType physType = PhysTypeImpl.of( typeFactory, table.getRowType(), format );
             List<Expression> expressionList = new ArrayList<>();
             final PhysType childPhysType = result.physType;

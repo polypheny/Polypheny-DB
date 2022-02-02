@@ -31,18 +31,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.elasticsearch;
+package org.polypheny.db.adapter.geode.algebra;
 
 
 import java.util.List;
-import java.util.Objects;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableScan;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
+import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptTable;
@@ -50,32 +46,30 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * Relational expression representing a scan of an Elasticsearch type.
- *
- * <p> Additional operations might be applied,
- * using the "find" method.</p>
+ * Relational expression representing a scan of a Geode collection.
  */
-public class ElasticsearchTableScan extends TableScan implements ElasticsearchRel {
+public class GeodeScan extends Scan implements GeodeAlg {
 
-    private final ElasticsearchTable elasticsearchTable;
-    private final AlgDataType projectRowType;
+    final GeodeTable geodeTable;
+    final AlgDataType projectRowType;
 
 
     /**
-     * Creates an ElasticsearchTableScan.
+     * Creates a GeodeScan.
      *
      * @param cluster Cluster
-     * @param traitSet Trait set
+     * @param traitSet Traits
      * @param table Table
-     * @param elasticsearchTable Elasticsearch table
+     * @param geodeTable Geode table
      * @param projectRowType Fields and types to project; null to project raw row
      */
-    ElasticsearchTableScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, ElasticsearchTable elasticsearchTable, AlgDataType projectRowType ) {
+    GeodeScan( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, GeodeTable geodeTable, AlgDataType projectRowType ) {
         super( cluster, traitSet, table );
-        this.elasticsearchTable = Objects.requireNonNull( elasticsearchTable, "elasticsearchTable" );
+        this.geodeTable = geodeTable;
         this.projectRowType = projectRowType;
 
-        assert getConvention() == ElasticsearchRel.CONVENTION;
+        assert geodeTable != null;
+        assert getConvention() == GeodeAlg.CONVENTION;
     }
 
 
@@ -93,28 +87,19 @@ public class ElasticsearchTableScan extends TableScan implements ElasticsearchRe
 
 
     @Override
-    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        final float f = projectRowType == null ? 1f : (float) projectRowType.getFieldCount() / 100f;
-        return super.computeSelfCost( planner, mq ).multiplyBy( .1 * f );
-    }
-
-
-    @Override
     public void register( AlgOptPlanner planner ) {
-        planner.addRule( ElasticsearchToEnumerableConverterRule.INSTANCE );
-        for ( AlgOptRule rule : ElasticsearchRules.RULES ) {
+        planner.addRule( GeodeToEnumerableConverterRule.INSTANCE );
+        for ( AlgOptRule rule : GeodeRules.RULES ) {
             planner.addRule( rule );
         }
-
-        // remove this rule otherwise elastic can't correctly interpret approx_count_distinct() it is converted to cardinality aggregation in Elastic
-        planner.removeRule( AggregateExpandDistinctAggregatesRule.INSTANCE );
     }
 
 
     @Override
-    public void implement( Implementor implementor ) {
-        implementor.elasticsearchTable = elasticsearchTable;
-        implementor.table = table;
+    public void implement( GeodeImplementContext geodeImplementContext ) {
+        // Note: Scan is the leaf and we do NOT visit its inputs
+        geodeImplementContext.geodeTable = geodeTable;
+        geodeImplementContext.table = table;
     }
 
 }

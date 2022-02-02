@@ -77,7 +77,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builders.get( 0 ) );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
         } else {
@@ -114,7 +114,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( super.buildJoinedTableScan( statement, cluster, currentPlacementDistribution ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, currentPlacementDistribution ) );
                 newBuilders.add( newBuilder );
             }
         }
