@@ -948,14 +948,14 @@ public abstract class MockCatalog extends Catalog {
 
     /**
      * Adds a placement for a partition.
-     *
-     * @param adapterId The adapter on which the table should be placed on
+     *  @param adapterId The adapter on which the table should be placed on
      * @param placementType The type of placement
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
+     * @param role
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName, DataPlacementRole role ) {
         throw new NotImplementedException();
     }
 
@@ -1094,6 +1094,8 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByRole( long tableId, DataPlacementRole role ){ throw new NotImplementedException(); }
 
     @Override
     public void addDataPlacement( int adapterId, long tableId ) {
@@ -1211,6 +1213,11 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public Long getPartitionGroupByPartition( long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByIdAndRole( long tableId, long partitionId, DataPlacementRole role ) {
         throw new NotImplementedException();
     }
 }

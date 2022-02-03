@@ -180,7 +180,7 @@ public class VerticalPartitioningTest {
                     Assert.assertEquals( table.columnIds.size(), dataPlacement.columnPlacementsOnAdapter.size() );
 
                     // Check how many partitionPlacements are added to the one DataPlacement
-                    Assert.assertEquals( 1, dataPlacement.partitionPlacementsOnAdapter.size() );
+                    Assert.assertEquals( 1, dataPlacement.getAllPartitionIds().size() );
 
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"

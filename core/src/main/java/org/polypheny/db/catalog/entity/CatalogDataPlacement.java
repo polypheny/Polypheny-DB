@@ -18,8 +18,15 @@ package org.polypheny.db.catalog.entity;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import lombok.Data;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -46,7 +53,9 @@ public class CatalogDataPlacement implements CatalogEntity {
     public final DataPlacementRole dataPlacementRole;
 
     public final ImmutableList<Long> columnPlacementsOnAdapter;
-    public final ImmutableList<Long> partitionPlacementsOnAdapter;
+
+    // Serves as a pre-aggregation to apply filters more easily. In that case reads are more important and frequent than writes
+    public final ImmutableMap<DataPlacementRole,ImmutableList<Long>> partitionPlacementsOnAdapterByRole;
 
 
     // The newest commit timestamp when any partitions inside this placement has been updated or refreshed
@@ -71,7 +80,7 @@ public class CatalogDataPlacement implements CatalogEntity {
         this.placementType = placementType;
         this.dataPlacementRole = dataPlacementRole;
         this.columnPlacementsOnAdapter = columnPlacementsOnAdapter;
-        this.partitionPlacementsOnAdapter = partitionPlacementsOnAdapter;
+        this.partitionPlacementsOnAdapterByRole = structurizeDataPlacements( partitionPlacementsOnAdapter );
 
     }
 
@@ -102,12 +111,59 @@ public class CatalogDataPlacement implements CatalogEntity {
 
 
     public boolean hasPartitionFullPlacement() {
-        return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == partitionPlacementsOnAdapter.size();
+        return Catalog.getInstance().getTable( this.tableId ).partitionProperty.partitionIds.size() == getAllPartitionIds().size();
     }
 
+    public List<Long> getAllPartitionIds(){
+        return partitionPlacementsOnAdapterByRole.values()
+                .stream()
+                .flatMap(List::stream)
+                .collect( Collectors.toList() );
+    }
 
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];
+    }
+
+
+    private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final ImmutableList<Long> unsortedPartitionIds ) {
+
+        // Since this shall only be called after initialization of dataPlacement object,
+        // we need to clear the contents of partitionPlacementsOnAdapterByRole
+        Map<DataPlacementRole,ImmutableList<Long>> partitionsPerRole = new HashMap<>();
+
+        try {
+            Catalog catalog = Catalog.getInstance();
+
+            if ( !unsortedPartitionIds.isEmpty() ) {
+
+                CatalogPartitionPlacement partitionPlacement;
+
+                for ( long partitionId : unsortedPartitionIds ) {
+                    partitionPlacement = catalog.getPartitionPlacement( this.adapterId, partitionId );
+                    DataPlacementRole role = partitionPlacement.role;
+
+                    List<Long> partitions = new ArrayList<>();
+                    if ( partitionsPerRole.containsKey( role ) ) {
+                        // Get contents of List and add partition to it
+                        partitions = new ArrayList<>( partitionsPerRole.get( role ) );
+                    } else {
+                        partitionsPerRole.put( role, ImmutableList.copyOf( new ArrayList<>() ) );
+                    }
+                    partitions.add( partitionId );
+                    partitionsPerRole.replace( role, ImmutableList.copyOf( partitions ) );
+                }
+            }
+        }catch (RuntimeException e){
+            // Catalog is not ready assume
+            // Happens only for defaultColumns during setAndGetInstance
+            // Just assume UPTODATE for all.
+            partitionsPerRole.put( DataPlacementRole.UPTODATE, ImmutableList.copyOf( unsortedPartitionIds ) );
+        }
+
+
+        // Finally, overwrite entire partitionPlacementsOnAdapterByRole at Once
+        return ImmutableMap.copyOf( partitionsPerRole );
     }
 }

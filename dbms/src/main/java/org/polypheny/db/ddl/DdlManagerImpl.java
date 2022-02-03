@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
@@ -275,7 +276,8 @@ public class DdlManagerImpl extends DdlManager {
                             catalogTable.partitionProperty.partitionIds.get( 0 ),
                             PlacementType.AUTOMATIC,
                             null,
-                            null );
+                            null,
+                            DataPlacementRole.UPTODATE);
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
                 }
@@ -760,6 +762,12 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+
+        // TODO @HENNLO change siganture of this method to receive the placementrole.
+        // addPartitionPlacements based on this received placement role
+        // Remove this hardcoded configuration
+        DataPlacementRole desiredPlacementRole = DataPlacementRole.UPTODATE;
+
         // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
         for ( long partitionId : partitionIds ) {
             catalog.addPartitionPlacement(
@@ -768,7 +776,8 @@ public class DdlManagerImpl extends DdlManager {
                     partitionId,
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    desiredPlacementRole);
         }
 
         // Make sure that the stores have created the schema
@@ -977,7 +986,7 @@ public class DdlManagerImpl extends DdlManager {
 
         CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
         if ( !catalog.validateDataPlacementsConstraints( catalogTable.id, storeInstance.getAdapterId(),
-                dataPlacement.columnPlacementsOnAdapter, dataPlacement.partitionPlacementsOnAdapter ) ) {
+                dataPlacement.columnPlacementsOnAdapter, dataPlacement.getAllPartitionIds() ) ) {
 
             throw new LastPlacementException();
         }
@@ -1303,7 +1312,24 @@ public class DdlManagerImpl extends DdlManager {
         newColumnIdsOnDataPlacement.addAll( columnIds );
         newColumnIdsOnDataPlacement.addAll( catalog.getPrimaryKey( catalogTable.primaryKey ).columnIds );
 
-        catalog.updateDataPlacement( storeInstance.getAdapterId(), catalogTable.id, newColumnIdsOnDataPlacement.stream().collect( Collectors.toList() ), partitionIds );
+
+        List<Long> newPartitionIdsOnDataPlacement = partitionIds.stream().collect( Collectors.toList());
+        // Get all partitionIds that are currently on that placement and remove them to get the newly added
+        newPartitionIdsOnDataPlacement.removeAll( catalog.getDataPlacement( storeInstance.getAdapterId(),catalogTable.id ).getAllPartitionIds() );
+
+
+        newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
+                storeInstance.getAdapterId(),
+                catalogTable.id,
+                partitionId,
+                PlacementType.MANUAL,
+                null,
+                null,
+                DataPlacementRole.UPTODATE )
+        );
+
+        storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
+
 
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -1354,7 +1380,8 @@ public class DdlManagerImpl extends DdlManager {
                         partitionId,
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE);
             }
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
@@ -1681,7 +1708,8 @@ public class DdlManagerImpl extends DdlManager {
                     catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    DataPlacementRole.UPTODATE);
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
@@ -1867,7 +1895,8 @@ public class DdlManagerImpl extends DdlManager {
                         catalogTable.partitionProperty.partitionIds.get( 0 ),
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE);
 
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
             }
@@ -2146,7 +2175,8 @@ public class DdlManagerImpl extends DdlManager {
                         partitionId,
                         PlacementType.AUTOMATIC,
                         null,
-                        null );
+                        null,
+                        DataPlacementRole.UPTODATE);
             }
 
             // First create new tables
@@ -2227,7 +2257,8 @@ public class DdlManagerImpl extends DdlManager {
                     mergedTable.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
-                    null );
+                    null,
+                    DataPlacementRole.UPTODATE);
 
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );

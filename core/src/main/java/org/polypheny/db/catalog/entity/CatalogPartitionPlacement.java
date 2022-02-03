@@ -45,8 +45,11 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     // If false, nodes are considered refreshable and can be lazily replicated
     // This attribute is derived from an effective data placement (table entity on a store)
     // This means that the store is not entirely considered a primary and can therefore be different on another table
-    // TODO @HENNLO remove default role
-    public final DataPlacementRole role = DataPlacementRole.UPTODATE;
+    // Is present at the DataPlacement && the PartitionPlacement
+    // Although, partitionPlacements are those that get effectively updated
+    // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
+    // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.
+    public final DataPlacementRole role;
     public Timestamp updateTimestamp;
 
 
@@ -57,7 +60,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
-            final long partitionId ) {
+            final long partitionId, DataPlacementRole role ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;
@@ -65,6 +68,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
         this.partitionId = partitionId;
+        this.role = role;
     }
 
 
