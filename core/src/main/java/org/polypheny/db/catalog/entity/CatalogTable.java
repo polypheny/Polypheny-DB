@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,7 +27,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -266,38 +264,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         public final String refGeneration;
         public final String owner;
 
-    }
-
-
-    private ImmutableMap<DataPlacementRole, ImmutableList<Long>> structurizeDataPlacements( @NonNull final ImmutableList<CatalogDataPlacement> unsortedDataPlacements ) {
-
-      /*  // Since this shall only be called after initialization of table object,
-        // we need to clear the contents of dataPlacements
-        Map<DataPlacementRole,ImmutableList<Long>> adaptersPerRole = new HashMap<>();
-
-        for ( CatalogDataPlacement dataPlacement : unsortedDataPlacements ){
-
-            DataPlacementRole role = dataPlacement.role;
-            long adapterId = dataPlacement.adapterId;
-
-            List<Long> adapters = new ArrayList<>();
-
-            if ( dataPlacementsByRole.containsKey( role ) ){
-                // Get contents of List and add adapter to it
-                adapters = new ArrayList<>( adaptersPerRole.get( role ) );
-            }
-            else{
-                adaptersPerRole.put( role, ImmutableList.copyOf(new ArrayList<>()) );
-            }
-            adapters.add( adapterId );
-            adaptersPerRole.replace( role, ImmutableList.copyOf( adapters ) );
-        }
-
-        // Finally, overwrite entire dataPlacements at Once
-        return ImmutableMap.copyOf( adaptersPerRole );
-
-       */
-        return null;
     }
 
 }

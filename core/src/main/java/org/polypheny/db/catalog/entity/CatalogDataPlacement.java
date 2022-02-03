@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
@@ -38,6 +39,11 @@ public class CatalogDataPlacement implements CatalogEntity {
 
     public final PlacementType placementType;
 
+    // Is present at the DataPlacement && the PartitionPlacement
+    // Although, partitionPlacements are those that get effectively updated
+    // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
+    // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.
+    public final DataPlacementRole dataPlacementRole;
 
     public final ImmutableList<Long> columnPlacementsOnAdapter;
     public final ImmutableList<Long> partitionPlacementsOnAdapter;
@@ -56,12 +62,14 @@ public class CatalogDataPlacement implements CatalogEntity {
             long tableId,
             int adapterId,
             PlacementType placementType,
+            DataPlacementRole dataPlacementRole,
             @NonNull final ImmutableList columnPlacementsOnAdapter,
             @NonNull final ImmutableList partitionPlacementsOnAdapter ) {
 
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;
+        this.dataPlacementRole = dataPlacementRole;
         this.columnPlacementsOnAdapter = columnPlacementsOnAdapter;
         this.partitionPlacementsOnAdapter = partitionPlacementsOnAdapter;
 

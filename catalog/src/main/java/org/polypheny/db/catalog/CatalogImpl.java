@@ -4320,17 +4320,15 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
-        /*
+
         List<CatalogDataPlacement> catalogDataPlacements = new ArrayList<>();
 
-        List<Long> adaptersWithTable= getTable( tableId ).dataPlacementsByRole.get( role );
-
-        adaptersWithTable.forEach( adapterId ->
-                catalogDataPlacements.add( dataPlacements.get( new Object[]{ adapterId, tableId } ) ) );
-
+        for ( CatalogDataPlacement dataPlacement : getDataPlacements( tableId ) ) {
+            if ( dataPlacement.dataPlacementRole.equals( role ) ) {
+                catalogDataPlacements.add( dataPlacement );
+            }
+        }
         return catalogDataPlacements;
-        */
-        throw new RuntimeException( "Operation not yet supported" );
     }
 
 
@@ -4490,9 +4488,9 @@ public class CatalogImpl extends Catalog {
             CatalogDataPlacement dataPlacement = new CatalogDataPlacement( tableId,
                     adapterId,
                     PlacementType.AUTOMATIC,
+                    DataPlacementRole.UPTODATE,
                     ImmutableList.of(),
-                    ImmutableList.of()
-            );
+                    ImmutableList.of() );
 
             synchronized ( this ) {
                 dataPlacements.put( new Object[]{ adapterId, tableId }, dataPlacement );
@@ -4706,9 +4704,9 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
+                oldDataPlacement.dataPlacementRole,
                 ImmutableList.copyOf( columnPlacementsOnAdapter.stream().collect( Collectors.toList() ) ),
-                oldDataPlacement.partitionPlacementsOnAdapter
-        );
+                oldDataPlacement.partitionPlacementsOnAdapter );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
@@ -4732,14 +4730,13 @@ public class CatalogImpl extends Catalog {
         Set<Long> columnPlacementsOnAdapter = oldDataPlacement.columnPlacementsOnAdapter.stream().collect( Collectors.toSet() );
         columnPlacementsOnAdapter.removeAll( columnIds );
 
-
         CatalogDataPlacement newDataPlacement = new CatalogDataPlacement(
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
+                oldDataPlacement.dataPlacementRole,
                 ImmutableList.copyOf( columnPlacementsOnAdapter.stream().collect( Collectors.toList() ) ),
-                oldDataPlacement.partitionPlacementsOnAdapter
-        );
+                oldDataPlacement.partitionPlacementsOnAdapter );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
@@ -4768,9 +4765,9 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
+                oldDataPlacement.dataPlacementRole,
                 oldDataPlacement.columnPlacementsOnAdapter,
-                ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) )
-        );
+                ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
@@ -4798,9 +4795,9 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
+                oldDataPlacement.dataPlacementRole,
                 oldDataPlacement.columnPlacementsOnAdapter,
-                ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) )
-        );
+                ImmutableList.copyOf( partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
@@ -4825,9 +4822,9 @@ public class CatalogImpl extends Catalog {
                 oldDataPlacement.tableId,
                 oldDataPlacement.adapterId,
                 oldDataPlacement.placementType,
+                oldDataPlacement.dataPlacementRole,
                 ImmutableList.copyOf( columnIds ),
-                ImmutableList.copyOf( partitionIds )
-        );
+                ImmutableList.copyOf( partitionIds ) );
 
         modifyDataPlacement( adapterId, tableId, newDataPlacement );
 
