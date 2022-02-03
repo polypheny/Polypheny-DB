@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
 
@@ -55,6 +56,9 @@ public class StatisticTable<T extends Comparable<T>> {
     private String owner;
 
     @Getter
+    private TableType tableType;
+
+    @Getter
     @Setter
     private int numberOfRows;
 
@@ -81,6 +85,7 @@ public class StatisticTable<T extends Comparable<T>> {
             this.schemaType = catalogTable.getSchemaType();
             this.dataPlacements = catalogTable.dataPlacements;
             this.owner = catalogTable.ownerName;
+            this.tableType = catalogTable.tableType;
         }
 
         this.numberOfRows = 0;
