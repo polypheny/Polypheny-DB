@@ -838,7 +838,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             }
         } else if ( type.equals( "TRUNCATE" ) ) {
             Catalog catalog = Catalog.getInstance();
-            if(catalog.checkIfExistsTable( tableId )){
+            if ( catalog.checkIfExistsTable( tableId ) ) {
                 CatalogTable catalogTable = catalog.getTable( tableId );
                 for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
                     PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
@@ -891,14 +891,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public void deleteTableToUpdate( Long tableId, Long schemaId ) {
-        if(statisticSchemaMap.containsKey( schemaId ) && statisticSchemaMap.get( schemaId ).containsKey( tableId )){
+        if ( statisticSchemaMap.containsKey( schemaId ) && statisticSchemaMap.get( schemaId ).containsKey( tableId ) ) {
             statisticSchemaMap.get( schemaId ).remove( tableId );
         }
         tableStatistic.remove( tableId );
-       if(tablesToUpdate.contains( tableId )){
-           this.tablesToUpdate.remove( tableId );
-       }
-
+        if ( tablesToUpdate.contains( tableId ) ) {
+            this.tablesToUpdate.remove( tableId );
+        }
     }
 
 
