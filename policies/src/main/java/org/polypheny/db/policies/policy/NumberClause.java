@@ -25,7 +25,7 @@ public class NumberClause extends Clause {
 
     private final int value;
 
-    HashMap<Category, Pair<Integer, Integer>> categoryRange;
+    private final HashMap<Category, Pair<Integer, Integer>> categoryRange;
 
 
     public NumberClause( String clauseName, int defaultValue, HashMap<Category, Pair<Integer, Integer>> categoryRange ) {

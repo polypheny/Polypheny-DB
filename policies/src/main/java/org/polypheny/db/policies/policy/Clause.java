@@ -47,7 +47,7 @@ public abstract class Clause {
 
 
     private void addClauseToPolicy() {
-        Policy.clauses.put( id, this );
+        Policy.getClauses().put( id, this );
         if(Policy.getClausesByCategories().get( getCategory() ).isEmpty()){
             Policy.getClausesByCategories().put( getCategory(), Collections.singletonList( id ) );
         }else{

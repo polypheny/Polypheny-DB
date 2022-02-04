@@ -31,29 +31,29 @@ public class Policy {
     public static final long TARGET_POLYPHENY = -1;
 
     @Getter
-    public final int id;
+    private final int id;
 
     /**
      * for what is this PolicyCategory: table, Store polypheny
      */
     @Getter
-    public final Target target;
+    private final Target target;
 
     /**
      * either the table or store id for which the policy is created
      */
     @Getter
-    public final long targetId;
+    private final long targetId;
 
 
     /**
      * all different clauses
      */
     @Getter
-    public static final Map<Integer, Clause> clauses = new HashMap<>();
+    private static final Map<Integer, Clause> clauses = new HashMap<>();
 
     @Getter
-    public static final Map<Category, List<Integer>> clausesByCategories = new HashMap<>();
+    private static final Map<Category, List<Integer>> clausesByCategories = new HashMap<>();
 
 
     /**
@@ -75,6 +75,7 @@ public class Policy {
 
     public Policy() {
         this( Target.POLYPHENY, TARGET_POLYPHENY );
+
         List<Integer> name = PolicyManager.getInstance().makeDecision( int.class, Action.CREATE_TABLE, null );
     }
 
