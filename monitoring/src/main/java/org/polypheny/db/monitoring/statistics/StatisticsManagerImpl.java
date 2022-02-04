@@ -740,7 +740,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             tableStatistic.forEach( ( k, v ) -> {
                 tableInformation.addRow( v.getTable(), v.getSchemaType(), v.getNumberOfRows() );
 
-                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getTableType() != TableType.MATERIALIZED_VIEW) {
+                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getTableType() != TableType.MATERIALIZED_VIEW ) {
                     tableSelectInformation.addRow(
                             v.getTable(),
                             v.getCalls().getNumberOfSelects(),

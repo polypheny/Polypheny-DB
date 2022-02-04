@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
@@ -113,7 +112,7 @@ public class StatisticCrud {
 
 
     /**
-     *General information for the UI dashboard.
+     * General information for the UI dashboard.
      */
     public void getDashboardInformation( Context ctx ) {
 
@@ -122,7 +121,7 @@ public class StatisticCrud {
 
 
     /**
-     *Information for diagram shown on the UI dashboard.
+     * Information for diagram shown on the UI dashboard.
      */
     public void getDashboardDiagram( final Context ctx ) {
         TreeMap<Timestamp, Pair<Integer, Integer>> info = new TreeMap<>();
@@ -131,7 +130,8 @@ public class StatisticCrud {
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
         boolean notInserted;
         Timestamp startTime;
-        Timestamp endTime = new Timestamp(System.currentTimeMillis());;
+        Timestamp endTime = new Timestamp( System.currentTimeMillis() );
+        ;
         if ( queryData.size() > 0 && dmlData.size() > 0 ) {
             startTime = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
         } else if ( dmlData.size() > 0 ) {
@@ -142,7 +142,7 @@ public class StatisticCrud {
             throw new RuntimeException( "No Data available for Dashboard Diagram" );
         }
 
-        long interval = calculateInterval(startTime, endTime);
+        long interval = calculateInterval( startTime, endTime );
 
         Timestamp time = startTime;
         while ( endTime.getTime() - time.getTime() >= 0 ) {

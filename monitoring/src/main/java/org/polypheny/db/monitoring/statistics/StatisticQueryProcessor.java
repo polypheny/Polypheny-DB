@@ -19,7 +19,6 @@ package org.polypheny.db.monitoring.statistics;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyResult;
@@ -83,9 +82,8 @@ public class StatisticQueryProcessor {
     }
 
 
-
     public String selectTableStat( AlgNode node, Transaction transaction, Statement statement ) {
-        return this.executeOneTableStat(node, transaction, statement);
+        return this.executeOneTableStat( node, transaction, statement );
     }
 
 
@@ -132,8 +130,8 @@ public class StatisticQueryProcessor {
         List<QueryColumn> allColumns = new ArrayList<>();
 
         for ( CatalogColumn catalogColumn : catalogColumns ) {
-            if(catalog.getTable(  catalogColumn.tableId).tableType != TableType.VIEW) {
-                allColumns.add( new QueryColumn( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ));
+            if ( catalog.getTable( catalogColumn.tableId ).tableType != TableType.VIEW ) {
+                allColumns.add( new QueryColumn( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ) );
             }
         }
         return allColumns;
@@ -154,7 +152,7 @@ public class StatisticQueryProcessor {
         List<CatalogTable> allTables = new ArrayList<>();
 
         for ( CatalogTable catalogTable : catalogTables ) {
-            if(catalogTable.tableType != TableType.VIEW) {
+            if ( catalogTable.tableType != TableType.VIEW ) {
                 allTables.add( catalogTable );
             }
         }
@@ -192,10 +190,11 @@ public class StatisticQueryProcessor {
         return result;
     }
 
+
     private String executeOneTableStat( AlgNode node, Transaction transaction, Statement statement ) {
         String result = "";
         try {
-            result = executeOneTableStat( statement, node);
+            result = executeOneTableStat( statement, node );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
@@ -207,6 +206,7 @@ public class StatisticQueryProcessor {
         }
         return result;
     }
+
 
     private Transaction getTransaction() {
         try {

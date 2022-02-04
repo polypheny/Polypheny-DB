@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.javalin.http.Context;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -368,7 +367,7 @@ public class LanguageCrud {
                 }
 
                 //Add statistic information about mongo queries to monitoring.
-                PolyResult.addMonitoringInformation(statement, logicalRoot.kind.name(), statement.getDataContext().getParameterValues().size());
+                PolyResult.addMonitoringInformation( statement, logicalRoot.kind.name(), statement.getDataContext().getParameterValues().size() );
             }
         }
 
@@ -401,7 +400,7 @@ public class LanguageCrud {
     public static Result getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyResult result, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
-        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger());
+        List<List<Object>> rows = result.getRows( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         boolean hasMoreRows = result.hasMoreRows();
 
         CatalogTable catalogTable = null;

@@ -34,12 +34,13 @@ public class StatisticRepository implements MonitoringRepository {
 
     /**
      * This method uses monitoring information to update the statistics.
+     *
      * @param dataPoint to be processed
      */
     @Override
     public void dataPoint( MonitoringDataPoint dataPoint ) {
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-        statisticsManager.updateCommitRollback(dataPoint.isCommitted());
+        statisticsManager.updateCommitRollback( dataPoint.isCommitted() );
 
         if ( dataPoint.getDataPointType() == DataPointType.DML ) {
 
