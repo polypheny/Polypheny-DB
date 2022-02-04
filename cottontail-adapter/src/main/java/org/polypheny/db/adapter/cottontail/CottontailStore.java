@@ -177,6 +177,7 @@ public class CottontailStore extends DataStore {
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = null;
         String physicalTableName = null;
+        Long tableId = combinedTable.id;
 
         if ( physicalSchemaName == null ) {
             physicalSchemaName = partitionPlacement.physicalTableName != null
@@ -208,7 +209,8 @@ public class CottontailStore extends DataStore {
                 AlgDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
                 physicalTableName,
-                physicalColumnNames
+                physicalColumnNames,
+                tableId
         );
 
         return table;

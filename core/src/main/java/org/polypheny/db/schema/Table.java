@@ -76,6 +76,11 @@ public interface Table {
     Statistic getStatistic();
 
     /**
+     * Returns the tableId of this table.
+     */
+    Long getTableId();
+
+    /**
      * Type of table.
      */
     Schema.TableType getJdbcTableType();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.statistic;
+package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
+import java.util.List;
+import java.util.TreeSet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.type.PolyType;
 
 
 /**
- * Stores the available statistic data of a specific column
- * Responsible to validate if data should be changed
+ * Stores the available statistic data of a specific column.
+ * Responsible to validate if data should be changed.
  */
 @Slf4j
 public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
-
-    @Expose
-    private final String columnType = "temporal";
 
     @Expose
     @Getter
@@ -50,16 +48,15 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
     @Setter
     private String temporalType;
 
+    @Getter
+    public TreeSet<T> minCache = new TreeSet<>();
+    @Getter
+    public TreeSet<T> maxCache = new TreeSet<>();
 
-    public TemporalStatisticColumn( String schema, String table, String column, PolyType type ) {
-        super( schema, table, column, type );
-        temporalType = type.getFamily().name();
-    }
 
-
-    public TemporalStatisticColumn( String[] splitColumn, PolyType type ) {
-        super( splitColumn, type );
-        temporalType = type.getFamily().name();
+    public TemporalStatisticColumn( QueryColumn column ) {
+        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
+        temporalType = column.getType().getFamily().name();
     }
 
 
@@ -68,9 +65,11 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
                 uniqueValues.add( val );
+                minCache.add( val );
+                maxCache.add( val );
             }
         } else {
-            isFull = true;
+            full = true;
         }
         if ( min == null ) {
             min = val;
@@ -79,6 +78,28 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
             this.min = val;
         } else if ( val.compareTo( max ) > 0 ) {
             this.max = val;
+        }
+
+        if ( minCache.last().compareTo( val ) > 0 ) {
+            if ( minCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
+                minCache.remove( minCache.last() );
+            }
+            minCache.add( val );
+        }
+
+        if ( maxCache.first().compareTo( val ) < 0 ) {
+            if ( maxCache.size() > RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
+                maxCache.remove( maxCache.first() );
+            }
+            maxCache.add( val );
+        }
+    }
+
+
+    @Override
+    public void insert( List<T> values ) {
+        for ( T val : values ) {
+            insert( val );
         }
     }
 

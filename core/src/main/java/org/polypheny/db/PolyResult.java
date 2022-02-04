@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -37,6 +39,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.interpreter.BindableConvention;
+import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
@@ -46,6 +49,7 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.LimitIterator;
+
 
 @Getter
 public class PolyResult {
@@ -109,11 +113,6 @@ public class PolyResult {
 
     public static <T> Enumerable<T> enumerable( Bindable<T> bindable, DataContext dataContext ) {
         return bindable.bind( dataContext );
-    }
-
-
-    public List<List<Object>> getRows( Statement statement, int size ) {
-        return getRows( statement, size, false, false );
     }
 
 
@@ -184,7 +183,17 @@ public class PolyResult {
     }
 
 
+    public List<List<Object>> getRows( Statement statement, int size ) {
+        return getRows( statement, size, false, false );
+    }
+
+
     public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed ) {
+        return getRows( statement, size, isTimed, isAnalyzed, null, false );
+    }
+
+
+    public List<List<Object>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent, boolean isIndex ) {
         Iterator<Object> iterator = null;
         StopWatch stopWatch = null;
         try {
@@ -205,8 +214,13 @@ public class PolyResult {
                 stopWatch.stop();
                 executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
             }
-            return res;
 
+            // Only if it is an index
+            if ( statementEvent != null && isIndex ) {
+                statementEvent.setIndexSize( res.size() );
+            }
+
+            return res;
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
@@ -260,6 +274,92 @@ public class PolyResult {
 
     public StatementType getStatementType() {
         return toStatementType( this.kind );
+    }
+
+
+    public int getRowsChanged( Statement statement ) throws Exception {
+        if ( Kind.DDL.contains( getKind() ) ) {
+            return 1;
+        } else if ( Kind.DML.contains( getKind() ) ) {
+            int rowsChanged;
+            try {
+                Iterator<?> iterator = enumerable( statement.getDataContext() ).iterator();
+                rowsChanged = getRowsChanged( statement, iterator, getKind().name() );
+            } catch ( RuntimeException e ) {
+                if ( e.getCause() != null ) {
+                    throw new Exception( e.getCause().getMessage(), e );
+                } else {
+                    throw new Exception( e.getMessage(), e );
+                }
+            }
+            return rowsChanged;
+        } else {
+            throw new Exception( "Unknown result type: " + getKind() );
+        }
+    }
+
+
+    public static int getRowsChanged( Statement statement, Iterator<?> iterator, String kind ) throws Exception {
+        int rowsChanged = -1;
+        Object object;
+        while ( iterator.hasNext() ) {
+            object = iterator.next();
+            int num;
+            if ( object != null && object.getClass().isArray() ) {
+                Object[] o = (Object[]) object;
+                num = ((Number) o[0]).intValue();
+            } else if ( object != null ) {
+                num = ((Number) object).intValue();
+            } else {
+                throw new Exception( "Result is null" );
+            }
+            // Check if num is equal for all adapters
+            if ( rowsChanged != -1 && rowsChanged != num ) {
+                //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+            }
+            rowsChanged = num;
+        }
+
+        addMonitoringInformation( statement, kind, rowsChanged );
+
+        // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)
+        if ( rowsChanged < 0 ) {
+            rowsChanged = 0;
+        }
+
+        return rowsChanged;
+    }
+
+
+    public static void addMonitoringInformation( Statement statement, String kind, int rowsChanged ) {
+        StatementEvent eventData = statement.getMonitoringEvent();
+        if ( rowsChanged > 0 ) {
+            eventData.setRowCount( rowsChanged );
+        }
+        if ( Kind.INSERT.name().equals( kind ) || Kind.DELETE.name().equals( kind ) ) {
+
+            HashMap<Long, List<Object>> ordered = new HashMap<>();
+
+            List<Map<Long, Object>> values = statement.getDataContext().getParameterValues();
+            if ( values.size() > 0 ) {
+                for ( long i = 0; i < statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
+                    ordered.put( i, new ArrayList<>() );
+                }
+            }
+
+            for ( Map<Long, Object> longObjectMap : statement.getDataContext().getParameterValues() ) {
+                longObjectMap.forEach( ( k, v ) -> {
+                    ordered.get( k ).add( v );
+                } );
+            }
+
+            eventData.getChangedValues().putAll( ordered );
+            if ( Kind.INSERT.name().equals( kind ) ) {
+                if ( rowsChanged >= 0 ) {
+                    eventData.setRowCount( statement.getDataContext().getParameterValues().size() );
+                }
+            }
+        }
     }
 
 }

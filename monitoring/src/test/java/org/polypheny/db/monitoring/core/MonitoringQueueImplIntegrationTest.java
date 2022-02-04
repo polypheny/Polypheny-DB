@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -32,6 +33,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
+@Slf4j
 class MonitoringQueueImplIntegrationTest {
 
     @Test
@@ -41,17 +43,18 @@ class MonitoringQueueImplIntegrationTest {
         RuntimeConfig.QUEUE_PROCESSING_INTERVAL.setEnum( TaskSchedulingType.EVERY_SECOND );
 
         // Initialize mock repository
-        TestMapDbRepository repo = new TestMapDbRepository();
-        repo.initialize( true ); // will delete the file
+        TestMapDbRepository persistentRepo = new TestMapDbRepository();
+        TestMapDbRepository statisticRepo = new TestMapDbRepository();
+        persistentRepo.initialize( true ); // will delete the file
 
         // Mock ui service, not really needed for testing
         MonitoringServiceUi uiService = Mockito.mock( MonitoringServiceUi.class );
 
         // Create monitoring service with dependencies
-        MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( repo );
+        MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo );
 
         // Initialize the monitoringService
-        MonitoringService sut = new MonitoringServiceImpl( queueWriteService, repo, uiService );
+        MonitoringService sut = new MonitoringServiceImpl( queueWriteService, persistentRepo, uiService );
 
         Assertions.assertNotNull( sut );
 
@@ -62,7 +65,7 @@ class MonitoringQueueImplIntegrationTest {
         try {
             Thread.sleep( 2000L );
         } catch ( InterruptedException e ) {
-            e.printStackTrace();
+            log.error( "Caught exception test", e );
         }
 
         // -- Assert --

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -39,8 +40,9 @@ import org.polypheny.db.monitoring.events.QueryDataPoint;
 @AllArgsConstructor(access = AccessLevel.MODULE)
 public class QueryDataPointImpl implements QueryDataPoint, Serializable {
 
-    private static final long serialVersionUID = 2312903042511293177L;
+    private static final long serialVersionUID = 4389301720141941770L;
 
+    @Builder.Default
     private final List<String> tables = new ArrayList<>();
     private final HashMap<String, Object> dataElements = new HashMap<>();
     private UUID Id;
@@ -49,12 +51,16 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private String description;
     private long executionTime;
     private boolean isSubQuery;
+    protected boolean isCommitted;
     private int rowCount;
     private List<String> fieldNames;
     private List<Long> accessedPartitions;
-    protected String algCompareString;
-    protected String queryClass;
-    protected String physicalQueryClass;
+    private String algCompareString;
+    private String queryClass;
+    private String physicalQueryClass;
+    private Integer indexSize;
+    @Builder.Default
+    private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 
 
     @Override
@@ -66,6 +72,12 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     @Override
     public Timestamp timestamp() {
         return this.recordedTimestamp;
+    }
+
+
+    @Override
+    public DataPointType getDataPointType() {
+        return DataPointType.QueryDataPointImpl;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,11 +52,18 @@ public abstract class StatementEvent extends BaseEvent {
     protected int rowCount;
     protected boolean isAnalyze;
     protected boolean isSubQuery;
+    protected boolean isCommitted;
     protected String durations;
     protected Map<Long, Set<Long>> accessedPartitions;
     protected LogicalQueryInformation logicalQueryInformation;
     protected String algCompareString;
     protected String physicalQueryClass;
+    protected final HashMap<Long, List<Object>> changedValues = new HashMap<>();
+    protected Integer indexSize = null;
+    // Only used for ddl events
+    protected long tableId;
+    // Only used for ddl events
+    protected long schemaId;
 
 
     @Override
@@ -74,7 +81,7 @@ public abstract class StatementEvent extends BaseEvent {
 
 
     /**
-     * Is used to updated the partitions which have been used within a transaction.
+     * Is used to update the partitions which have been used within a transaction.
      * This method merges existing accesses with new ones
      *
      * @param updatedPartitionsList partitions per table that have been accessed and should be added to the overall statistics

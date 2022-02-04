@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,6 @@ import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 @Getter
 @Setter
 public class DmlEvent extends StatementEvent {
-
-    private String eventType = "DML EVENT";
-
 
     @Override
     public <T extends MonitoringDataPoint> List<Class<T>> getMetrics() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package org.polypheny.db.information;
 
 
+import com.google.common.collect.EvictingQueue;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 
 
@@ -27,7 +29,7 @@ public class InformationTable extends InformationHtml {
     @SuppressWarnings({ "unused" })
     private List<String> labels;
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
-    private List<List<String>> rows = new LinkedList<>();
+    private Queue<List<String>> rows = new LinkedList<>();
 
 
     /**
@@ -62,6 +64,12 @@ public class InformationTable extends InformationHtml {
     public InformationTable( String id, String groupId, List<String> labels ) {
         super( id, groupId, "" );
         this.labels = labels;
+    }
+
+
+    public void setLimit( int limit ) {
+        this.rows.clear();
+        this.rows = EvictingQueue.create( limit );
     }
 
 
