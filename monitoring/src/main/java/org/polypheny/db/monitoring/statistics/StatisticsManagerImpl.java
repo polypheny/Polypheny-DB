@@ -838,20 +838,22 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             }
         } else if ( type.equals( "TRUNCATE" ) ) {
             Catalog catalog = Catalog.getInstance();
-            CatalogTable catalogTable = catalog.getTable( tableId );
-            for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
-                PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
-                QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
-                if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
-                    if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
-                        NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
-                        put( queryColumn, numericalStatisticColumn );
-                    } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                        AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
-                        put( queryColumn, alphabeticStatisticColumn );
-                    } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-                        TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
-                        put( queryColumn, temporalStatisticColumn );
+            if(catalog.checkIfExistsTable( tableId )){
+                CatalogTable catalogTable = catalog.getTable( tableId );
+                for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
+                    PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
+                    QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
+                    if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
+                        if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                            NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
+                            put( queryColumn, numericalStatisticColumn );
+                        } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                            AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
+                            put( queryColumn, alphabeticStatisticColumn );
+                        } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                            TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
+                            put( queryColumn, temporalStatisticColumn );
+                        }
                     }
                 }
             }
@@ -889,9 +891,14 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public void deleteTableToUpdate( Long tableId, Long schemaId ) {
-        statisticSchemaMap.get( schemaId ).remove( tableId );
+        if(statisticSchemaMap.containsKey( schemaId ) && statisticSchemaMap.get( schemaId ).containsKey( tableId )){
+            statisticSchemaMap.get( schemaId ).remove( tableId );
+        }
         tableStatistic.remove( tableId );
-        this.tablesToUpdate.remove( tableId );
+       if(tablesToUpdate.contains( tableId )){
+           this.tablesToUpdate.remove( tableId );
+       }
+
     }
 
 

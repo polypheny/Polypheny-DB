@@ -64,9 +64,7 @@ public class StatisticRepository implements MonitoringRepository {
                     dataPoint.getMonitoringType(),
                     dataPoint.getSchemaId() );
         }
-        if ( dataPoint.getMonitoringType().equals( "DROP_TABLE" )
-                || dataPoint.getMonitoringType().equals( "DROP_VIEW" )
-                || dataPoint.getMonitoringType().equals( "DROP_MATERIALIZED_VIEW" ) ) {
+        if ( dataPoint.getMonitoringType().equals( "DROP_TABLE" ) ) {
             statisticsManager.deleteTableToUpdate( dataPoint.getTableId(), dataPoint.getSchemaId() );
         }
     }
