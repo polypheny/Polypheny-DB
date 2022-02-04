@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 /**
  * Stores the available statistic data of a specific table.
  */
-public class StatisticTable<T extends Comparable<T>> {
+public class StatisticTable {
 
     @Getter
     private String table;
@@ -64,15 +64,15 @@ public class StatisticTable<T extends Comparable<T>> {
 
     @Getter
     @Setter
-    private List<AlphabeticStatisticColumn<T>> alphabeticColumn;
+    private List<AlphabeticStatisticColumn<?>> alphabeticColumn;
 
     @Getter
     @Setter
-    private List<NumericalStatisticColumn<T>> numericalColumn;
+    private List<NumericalStatisticColumn<?>> numericalColumn;
 
     @Getter
     @Setter
-    private List<TemporalStatisticColumn<T>> temporalColumn;
+    private List<TemporalStatisticColumn<?>> temporalColumn;
 
 
     public StatisticTable( Long tableId ) {

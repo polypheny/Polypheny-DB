@@ -105,7 +105,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private final DashboardInformation dashboardInformation;
 
     @Getter
-    private final Map<Long, StatisticTable<T>> tableStatistic;
+    private final Map<Long, StatisticTable> tableStatistic;
 
     @Getter
     private volatile Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> statisticSchemaMap;
@@ -1085,10 +1085,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public Object getTableStatistic( Long schemaId, Long tableId ) {
-        StatisticTable<T> statisticTable = tableStatistic.get( tableId );
-        List<NumericalStatisticColumn<T>> numericInfo = new ArrayList<>();
-        List<AlphabeticStatisticColumn<T>> alphabeticInfo = new ArrayList<>();
-        List<TemporalStatisticColumn<T>> temporalInfo = new ArrayList<>();
+        StatisticTable statisticTable = tableStatistic.get( tableId );
+        List<NumericalStatisticColumn<?>> numericInfo = new ArrayList<>();
+        List<AlphabeticStatisticColumn<?>> alphabeticInfo = new ArrayList<>();
+        List<TemporalStatisticColumn<?>> temporalInfo = new ArrayList<>();
         statisticSchemaMap.get( schemaId ).get( tableId ).forEach( ( k, v ) -> {
             if ( v.getType().getFamily() == PolyTypeFamily.NUMERIC ) {
                 numericInfo.add( (NumericalStatisticColumn<T>) v );
