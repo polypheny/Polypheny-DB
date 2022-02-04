@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,18 +31,18 @@ import org.polypheny.db.monitoring.core.MonitoringQueue;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
-import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 
 
 @Slf4j
 public class MonitoringServiceUiImpl implements MonitoringServiceUi {
 
-    private final MonitoringRepository repo;
+    private final PersistentMonitoringRepository repo;
     private final MonitoringQueue queue;
     private InformationPage informationPage;
 
 
-    public MonitoringServiceUiImpl( @NonNull MonitoringRepository repo, @NonNull MonitoringQueue queue ) {
+    public MonitoringServiceUiImpl( @NonNull PersistentMonitoringRepository repo, @NonNull MonitoringQueue queue ) {
         this.repo = repo;
         this.queue = queue;
 
@@ -85,6 +85,7 @@ public class MonitoringServiceUiImpl implements MonitoringServiceUi {
         informationGroup.setRefreshFunction( () -> this.updateWorkloadInformationTable( informationTable ) );
 
         addInformationGroupTUi( informationGroup, Arrays.asList( informationTable ) );
+        initializeQueueInformationTable();
         //updateWorkloadInformationTable(informationTable);
     }
 

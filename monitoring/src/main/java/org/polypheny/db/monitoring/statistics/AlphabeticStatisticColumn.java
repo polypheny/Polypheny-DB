@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.statistic;
+package org.polypheny.db.monitoring.statistics;
 
 
-import com.google.gson.annotations.Expose;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -30,17 +31,13 @@ import org.polypheny.db.type.PolyType;
 @Slf4j
 public class AlphabeticStatisticColumn<T extends Comparable<T>> extends StatisticColumn<T> {
 
-    @Expose
-    private final String columnType = "alphabetic";
+    @Getter
+    public List<T> uniqueValuesCache = new ArrayList<>();
+    boolean cacheFull;
 
 
-    public AlphabeticStatisticColumn( String schema, String table, String column, PolyType type ) {
-        super( schema, table, column, type );
-    }
-
-
-    public AlphabeticStatisticColumn( String[] splitColumn, PolyType type ) {
-        super( splitColumn[0], splitColumn[1], splitColumn[2], type );
+    public AlphabeticStatisticColumn( QueryColumn column ) {
+        super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
     }
 
 
@@ -51,7 +48,20 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
                 uniqueValues.add( val );
             }
         } else {
-            isFull = true;
+            full = true;
+            if ( uniqueValuesCache.size() < (RuntimeConfig.STATISTIC_BUFFER.getInteger() * 2) ) {
+                uniqueValuesCache.add( val );
+            } else {
+                cacheFull = true;
+            }
+        }
+    }
+
+
+    @Override
+    public void insert( List<T> values ) {
+        for ( T val : values ) {
+            insert( val );
         }
     }
 

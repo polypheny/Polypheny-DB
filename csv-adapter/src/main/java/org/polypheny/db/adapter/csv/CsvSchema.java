@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public class CsvSchema extends AbstractSchema {
             throw new RuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        CsvTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource );
+        CsvTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource, catalogTable.id );
         tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
         return table;
     }
@@ -122,14 +122,14 @@ public class CsvSchema extends AbstractSchema {
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
-    private CsvTable createTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+    private CsvTable createTable( Source source, AlgProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource, Long tableId ) {
         switch ( flavor ) {
             case TRANSLATABLE:
-                return new CsvTranslatableTable( source, protoRowType, fieldTypes, fields, csvSource );
+                return new CsvTranslatableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
             case SCANNABLE:
-                return new CsvScannableTable( source, protoRowType, fieldTypes, fields, csvSource );
+                return new CsvScannableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
             case FILTERABLE:
-                return new CsvFilterableTable( source, protoRowType, fieldTypes, fields, csvSource );
+                return new CsvFilterableTable( source, protoRowType, fieldTypes, fields, csvSource, tableId );
             default:
                 throw new AssertionError( "Unknown flavor " + this.flavor );
         }

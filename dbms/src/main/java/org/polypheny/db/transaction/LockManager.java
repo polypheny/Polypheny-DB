@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.polypheny.db.util.DeadlockException;
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
-    public static final TableIdentifier GLOBAL_LOCK = new TableIdentifier( -1 ); // For locking whole schema
+    public static final TableIdentifier GLOBAL_LOCK = new TableIdentifier( -1L ); // For locking whole schema
 
     private final ConcurrentHashMap<TableIdentifier, Lock> lockTable;
     @Getter

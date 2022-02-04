@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     private final File rootDir;
     @Getter
     private final String tableName;
-    private final long tableId;
     @Getter
     private final long partitionId;
     @Getter
@@ -75,7 +74,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     public FileTranslatableTable(
             final FileSchema fileSchema,
             final String tableName,
-            final long tableId,
+            final Long tableId,
             final long partitionId,
             final List<Long> columnIds,
             final ArrayList<PolyType> columnTypes,

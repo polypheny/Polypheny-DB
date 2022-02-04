@@ -50,8 +50,6 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private final String logicalSchemaName;
     @Getter
     private final String logicalTableName;
-    @Getter
-    private final long tableId;
 
     @Getter
     private final List<Long> columnIds;
@@ -60,7 +58,7 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
 
 
     protected LogicalTable(
-            long tableId,
+            Long tableId,
             String logicalSchemaName,
             String logicalTableName,
             List<Long> columnIds,
@@ -134,5 +132,6 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     public AlgNode toAlg( ToAlgContext context, AlgOptTable algOptTable ) {
         throw new RuntimeException( "toAlg() is not implemented for Logical Tables!" );
     }
+
 
 }

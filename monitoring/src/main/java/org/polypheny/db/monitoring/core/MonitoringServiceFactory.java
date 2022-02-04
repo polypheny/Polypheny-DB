@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
+import org.polypheny.db.monitoring.statistics.StatisticRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;
 
@@ -27,17 +28,18 @@ public class MonitoringServiceFactory {
 
     public static MonitoringServiceImpl createMonitoringService( boolean resetRepository ) {
         // Create mapDB repository
-        MapDbRepository repo = new MapDbRepository();
+        MapDbRepository persistentRepo = new MapDbRepository();
+        StatisticRepository statisticRepo = new StatisticRepository();
 
         // Initialize the mapDB repo and open connection
-        repo.initialize( resetRepository );
+        persistentRepo.initialize( resetRepository );
 
         // Create monitoring service with dependencies
-        MonitoringQueue queueWriteService = new MonitoringQueueImpl( repo );
-        MonitoringServiceUi uiService = new MonitoringServiceUiImpl( repo, queueWriteService );
+        MonitoringQueue queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo );
+        MonitoringServiceUi uiService = new MonitoringServiceUiImpl( persistentRepo, queueWriteService );
 
         // Initialize the monitoringService
-        MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, repo, uiService );
+        MonitoringServiceImpl monitoringService = new MonitoringServiceImpl( queueWriteService, persistentRepo, uiService );
 
         return monitoringService;
     }

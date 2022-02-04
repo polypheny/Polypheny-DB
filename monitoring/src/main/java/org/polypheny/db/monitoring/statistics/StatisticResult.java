@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.statistic;
-
+package org.polypheny.db.monitoring.statistics;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import lombok.Getter;
-import org.polypheny.db.type.PolyType;
 
 
 /**
- * Contains statistics for multiple columns
+ * Contains statistics for multiple columns.
  */
 public class StatisticResult {
 
     @Getter
     private StatisticQueryColumn[] columns;
-    @Getter
-    private String[] columnNames;
 
 
     public StatisticResult() {
@@ -49,7 +44,7 @@ public class StatisticResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatisticResult( List<String> names, List<PolyType> type, String[][] data ) {
+    public StatisticResult( QueryColumn queryColumn, String[][] data ) {
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatisticQueryColumn[0];
         } else {
@@ -58,10 +53,9 @@ public class StatisticResult {
             String[][] rotated = rotate2dArray( data );
 
             for ( int i = 0; i < rotated.length; i++ ) {
-                this.columns[i] = new StatisticQueryColumn( names.get( i ), type.get( i ), rotated[i] );
+                this.columns[i] = new StatisticQueryColumn( queryColumn, rotated[i] );
             }
         }
-
     }
 
 
