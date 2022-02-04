@@ -71,6 +71,8 @@ public abstract class PolicyManager {
 
     public abstract <T> List<T> makeDecision( Class<T> clazz, Action action, T preSelection, int returnAmount );
 
+    public abstract void updatePolicies();
+
 
     enum Action {
         CREATE_TABLE;

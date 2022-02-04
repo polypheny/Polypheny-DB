@@ -219,6 +219,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/allStatistics", ( ctx ) -> crud.getStatistics( ctx, gsonExpose ) );
 
+        webuiServer.post( "updatePolicies", (ctx) -> crud.policyCrud.updatePolicies(ctx, gsonExpose));
+
+        webuiServer.post( "getPolicies", crud.policyCrud::getPolicies);
+
         webuiServer.post( "/getColumns", crud::getColumns );
 
         webuiServer.post( "/getDataSourceColumns", crud::getDataSourceColumns );
