@@ -61,17 +61,18 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
 
     @Expose
     @Setter
-    boolean isFull;
+    @Getter
+    protected boolean full;
 
     @Expose
     @Getter
     @Setter
-    public List<T> uniqueValues = new ArrayList<>();
+    protected List<T> uniqueValues = new ArrayList<>();
 
     @Expose
     @Getter
     @Setter
-    public int count;
+    protected int count;
 
 
     public StatisticColumn( Long schemaId, Long tableId, Long columnId, PolyType type ) {

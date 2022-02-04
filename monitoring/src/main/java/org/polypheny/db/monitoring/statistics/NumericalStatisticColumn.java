@@ -44,9 +44,9 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     private T max;
 
     @Getter
-    public TreeSet<T> minCache = new TreeSet<>();
+    private final TreeSet<T> minCache = new TreeSet<>();
     @Getter
-    public TreeSet<T> maxCache = new TreeSet<>();
+    private final TreeSet<T> maxCache = new TreeSet<>();
 
 
     public NumericalStatisticColumn( QueryColumn column ) {
@@ -71,7 +71,7 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
                 maxCache.add( val );
             }
         } else {
-            isFull = true;
+            full = true;
         }
         if ( min == null ) {
             min = val;

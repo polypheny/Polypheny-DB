@@ -34,67 +34,68 @@ public class StatisticRepository implements MonitoringRepository {
 
     /**
      * This method uses monitoring information to update the statistics.
+     *
      * @param dataPoint to be processed
      */
     @Override
     public void dataPoint( MonitoringDataPoint dataPoint ) {
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
-        statisticsManager.updateCommitRollback(dataPoint.isCommitted());
+        statisticsManager.updateCommitRollback( dataPoint.isCommitted() );
 
         if ( dataPoint.getDataPointType() == DataPointType.DML ) {
-
             updateDmlStatistics( (DmlDataPoint) dataPoint, statisticsManager );
-
         } else if ( dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl ) {
-
             updateQueryStatistics( (QueryDataPointImpl) dataPoint, statisticsManager );
-
         } else if ( dataPoint.getDataPointType() == DataPointType.DDL ) {
-
             updateDdlStatistics( (DdlDataPoint) dataPoint, statisticsManager );
-
         }
-
     }
 
 
     private void updateDdlStatistics( DdlDataPoint dataPoint, StatisticsManager<?> statisticsManager ) {
-        DdlDataPoint ddlDataPoint = dataPoint;
-        if ( ddlDataPoint.getMonitoringType().equals( "TRUNCATE" ) ) {
-            statisticsManager.updateRowCountPerTable( ddlDataPoint.getTableId(), 0, ddlDataPoint.getMonitoringType() );
-            statisticsManager.tablesToUpdate( ddlDataPoint.getTableId(), null, ddlDataPoint.getMonitoringType(), ddlDataPoint.getSchemaId() );
+        if ( dataPoint.getMonitoringType().equals( "TRUNCATE" ) ) {
+            statisticsManager.updateRowCountPerTable(
+                    dataPoint.getTableId(),
+                    0,
+                    dataPoint.getMonitoringType() );
+            statisticsManager.tablesToUpdate(
+                    dataPoint.getTableId(),
+                    null,
+                    dataPoint.getMonitoringType(),
+                    dataPoint.getSchemaId() );
         }
-        if ( ddlDataPoint.getMonitoringType().equals( "DROP_TABLE" ) || ddlDataPoint.getMonitoringType().equals( "DROP_VIEW" ) || ddlDataPoint.getMonitoringType().equals( "DROP_MATERIALIZED_VIEW" ) ) {
-            statisticsManager.deleteTableToUpdate( ddlDataPoint.getTableId(), ddlDataPoint.getSchemaId() );
+        if ( dataPoint.getMonitoringType().equals( "DROP_TABLE" )
+                || dataPoint.getMonitoringType().equals( "DROP_VIEW" )
+                || dataPoint.getMonitoringType().equals( "DROP_MATERIALIZED_VIEW" ) ) {
+            statisticsManager.deleteTableToUpdate( dataPoint.getTableId(), dataPoint.getSchemaId() );
         }
     }
 
 
     private void updateQueryStatistics( QueryDataPointImpl dataPoint, StatisticsManager<?> statisticsManager ) {
-        QueryDataPointImpl dqlDataPoint = dataPoint;
-        if ( !dqlDataPoint.getAvailableColumnsWithTable().isEmpty() ) {
-            Set<Long> values = new HashSet<>( dqlDataPoint.getAvailableColumnsWithTable().values() );
+        if ( !dataPoint.getAvailableColumnsWithTable().isEmpty() ) {
+            Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
             boolean isOneTable = values.size() == 1;
             Catalog catalog = Catalog.getInstance();
 
             if ( isOneTable ) {
                 Long tableId = values.stream().findFirst().get();
                 if ( catalog.checkIfExistsTable( tableId ) ) {
-                    statisticsManager.setTableCalls( tableId, dqlDataPoint.getMonitoringType() );
+                    statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
                     // RowCount from UI is only used if there is no other possibility
                     if ( statisticsManager.rowCountPerTable( tableId ) == null || statisticsManager.rowCountPerTable( tableId ) == 0 ) {
-                        statisticsManager.updateRowCountPerTable( tableId, dqlDataPoint.getRowCount(), "SET-ROW-COUNT" );
+                        statisticsManager.updateRowCountPerTable( tableId, dataPoint.getRowCount(), "SET-ROW-COUNT" );
                     }
 
-                    if ( dqlDataPoint.getIndexSize() != null ) {
-                        statisticsManager.setIndexSize( tableId, dqlDataPoint.getIndexSize() );
+                    if ( dataPoint.getIndexSize() != null ) {
+                        statisticsManager.setIndexSize( tableId, dataPoint.getIndexSize() );
                     }
                 }
             } else {
                 for ( Long id : values ) {
                     if ( catalog.checkIfExistsTable( id ) ) {
-                        statisticsManager.setTableCalls( id, dqlDataPoint.getMonitoringType() );
+                        statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
                 }
             }
@@ -103,34 +104,36 @@ public class StatisticRepository implements MonitoringRepository {
 
 
     private void updateDmlStatistics( DmlDataPoint dataPoint, StatisticsManager<?> statisticsManager ) {
-        DmlDataPoint dmlDataPoint = dataPoint;
-        if ( dmlDataPoint.getChangedValues() != null ) {
-            Set<Long> values = new HashSet<>( dmlDataPoint.getAvailableColumnsWithTable().values() );
+        if ( dataPoint.getChangedValues() != null ) {
+            Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
             boolean isOneTable = values.size() == 1;
 
             Catalog catalog = Catalog.getInstance();
             if ( isOneTable ) {
                 Long tableId = values.stream().findFirst().get();
-                statisticsManager.setTableCalls( tableId, dmlDataPoint.getMonitoringType() );
+                statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
                 if ( catalog.checkIfExistsTable( tableId ) ) {
-                    statisticsManager.tablesToUpdate( tableId, dmlDataPoint.getChangedValues(), dmlDataPoint.getMonitoringType(), catalog.getTable( tableId ).schemaId );
+                    statisticsManager.tablesToUpdate(
+                            tableId,
+                            dataPoint.getChangedValues(),
+                            dataPoint.getMonitoringType(),
+                            catalog.getTable( tableId ).schemaId );
 
-                    if ( dmlDataPoint.getMonitoringType().equals( "INSERT" ) ) {
-                        int added = dmlDataPoint.getRowCount();
-                        statisticsManager.updateRowCountPerTable( tableId, added, dmlDataPoint.getMonitoringType() );
-                    } else if ( dmlDataPoint.getMonitoringType().equals( "DELETE" ) ) {
-                        int deleted = dmlDataPoint.getRowCount();
-                        statisticsManager.updateRowCountPerTable( tableId, deleted, dmlDataPoint.getMonitoringType() );
-                        //after a delete it is not clear what exactly was deleted, so the statistics are updated
+                    if ( dataPoint.getMonitoringType().equals( "INSERT" ) ) {
+                        int added = dataPoint.getRowCount();
+                        statisticsManager.updateRowCountPerTable( tableId, added, dataPoint.getMonitoringType() );
+                    } else if ( dataPoint.getMonitoringType().equals( "DELETE" ) ) {
+                        int deleted = dataPoint.getRowCount();
+                        statisticsManager.updateRowCountPerTable( tableId, deleted, dataPoint.getMonitoringType() );
+                        // After a delete, it is not clear what exactly was deleted, so the statistics are updated
                         statisticsManager.tablesToUpdate( tableId );
                     }
-
                 }
             } else {
                 for ( Long id : values ) {
                     if ( catalog.checkIfExistsTable( id ) ) {
-                        statisticsManager.setTableCalls( id, dmlDataPoint.getMonitoringType() );
+                        statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
 
                 }

@@ -60,9 +60,9 @@ public abstract class StatementEvent extends BaseEvent {
     protected String physicalQueryClass;
     protected final HashMap<Long, List<Object>> changedValues = new HashMap<>();
     protected Integer indexSize = null;
-    //only used for ddl events
+    // Only used for ddl events
     protected long tableId;
-    //only used for ddl events
+    // Only used for ddl events
     protected long schemaId;
 
 
@@ -81,7 +81,7 @@ public abstract class StatementEvent extends BaseEvent {
 
 
     /**
-     * Is used to updated the partitions which have been used within a transaction.
+     * Is used to update the partitions which have been used within a transaction.
      * This method merges existing accesses with new ones
      *
      * @param updatedPartitionsList partitions per table that have been accessed and should be added to the overall statistics

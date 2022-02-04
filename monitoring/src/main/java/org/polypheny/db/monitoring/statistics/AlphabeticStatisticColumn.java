@@ -48,7 +48,7 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
                 uniqueValues.add( val );
             }
         } else {
-            isFull = true;
+            full = true;
             if ( uniqueValuesCache.size() < (RuntimeConfig.STATISTIC_BUFFER.getInteger() * 2) ) {
                 uniqueValuesCache.add( val );
             } else {

@@ -39,7 +39,7 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 @AllArgsConstructor(access = AccessLevel.MODULE)
 public class QueryDataPoint implements MonitoringDataPoint, Serializable {
 
-    private static final long serialVersionUID = 2312903042511293177L;
+    private static final long serialVersionUID = 9063080671064507812L;
 
     private final List<String> tables = new ArrayList<>();
     private final HashMap<String, Object> dataElements = new HashMap<>();

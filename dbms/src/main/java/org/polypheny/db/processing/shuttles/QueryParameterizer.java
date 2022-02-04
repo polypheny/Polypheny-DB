@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.LogicalProject;
@@ -113,7 +112,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 }
             }
             AlgNode input = modify.getInput();
-            if ( input instanceof LogicalValues ) { //todo dl: handle documents differently
+            if ( input instanceof LogicalValues ) {
                 List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
                 HashMap<Integer, Integer> idxMapping = new HashMap<>();
