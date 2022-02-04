@@ -17,7 +17,6 @@
 package org.polypheny.db;
 
 import java.beans.PropertyChangeListener;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +47,7 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
     public abstract void tablesToUpdate( Long tableId );
 
     // Use cache if possible
-    public abstract void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId );
+    public abstract void tablesToUpdate( Long tableId, Map<Long, List<Object>> changedValues, String type, Long schemaId );
 
     protected abstract void reevaluateTable( Long tableId );
 

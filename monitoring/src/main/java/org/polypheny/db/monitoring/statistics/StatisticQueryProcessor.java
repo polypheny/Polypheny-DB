@@ -175,7 +175,6 @@ public class StatisticQueryProcessor {
 
     private StatisticResult executeColStat( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
         StatisticResult result = new StatisticResult();
-
         try {
             result = executeColStat( statement, node, queryColumn );
             transaction.commit();
@@ -250,7 +249,6 @@ public class StatisticQueryProcessor {
         String[][] d = data.toArray( new String[0][] );
 
         return new StatisticResult( queryColumn, d );
-
     }
 
 

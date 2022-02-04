@@ -35,7 +35,7 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 @AllArgsConstructor(access = AccessLevel.MODULE)
 public class DdlDataPoint implements MonitoringDataPoint, Serializable {
 
-    private static final long serialVersionUID = -6310411473807934258L;
+    private static final long serialVersionUID = 268576586444646401L;
     private UUID Id;
     private Timestamp recordedTimestamp;
     protected boolean isCommitted;

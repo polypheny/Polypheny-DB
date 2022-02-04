@@ -218,8 +218,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             Integer rowCount = getTableCount( table.getSchemaName(), table.name );
             updateRowCountPerTable( table.id, rowCount, "SET-ROW-COUNT" );
         } );
-
-
     }
 
 
@@ -348,7 +346,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         }
 
         assignUnique( statisticColumn, unique );
-
         statisticColumn.setCount( count );
 
         return statisticColumn;
@@ -384,7 +381,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         statisticColumn.setCount( count );
 
         return statisticColumn;
-
     }
 
 
@@ -727,7 +723,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     }
                 } else {
                     String values = v.getUniqueValues().toString();
-                    if ( !v.isFull ) {
+                    if ( !v.isFull() ) {
                         alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
                     } else {
                         alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );
@@ -809,7 +805,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * @param schemaId of the table
      */
     @Override
-    public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId ) {
+    public void tablesToUpdate( Long tableId, Map<Long, List<Object>> changedValues, String type, Long schemaId ) {
         if ( type.equals( "INSERT" ) ) {
             Catalog catalog = Catalog.getInstance();
             CatalogTable catalogTable = catalog.getTable( tableId );
@@ -866,7 +862,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * Creates new StatisticColumns and inserts the values.
      */
-    private void addDataStatistics( HashMap<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
+    private void addDataStatistics( Map<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
         for ( int i = 0; i < columns.size(); i++ ) {
             PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
             QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
@@ -962,7 +958,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         if ( tableStatistic.containsKey( tableId ) ) {
             int numberOfRows = tableStatistic.remove( tableId ).getNumberOfRows();
             if ( numberOfRows != indexSize ) {
-                // use indexSize because it should be correct
+                // Use indexSize because it should be correct
                 StatisticTable statisticTable = tableStatistic.get( tableId );
                 statisticTable.setNumberOfRows( indexSize );
                 tableStatistic.put( tableId, statisticTable );
@@ -1123,7 +1119,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * This class reevaluates if background tracking should be stopped or restarted depending on the state of the {@link org.polypheny.db.config.ConfigManager}.
+     * This class reevaluates if background tracking should be stopped or restarted depending on the state of
+     * the {@link org.polypheny.db.config.ConfigManager}.
      */
     class TrackingListener implements Config.ConfigListener {
 

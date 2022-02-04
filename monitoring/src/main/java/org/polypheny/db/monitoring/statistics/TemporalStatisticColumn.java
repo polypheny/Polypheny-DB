@@ -69,7 +69,7 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
                 maxCache.add( val );
             }
         } else {
-            isFull = true;
+            full = true;
         }
         if ( min == null ) {
             min = val;

@@ -40,11 +40,11 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 @AllArgsConstructor(access = AccessLevel.MODULE)
 public class DmlDataPoint implements MonitoringDataPoint, Serializable {
 
-    private static final long serialVersionUID = 2312903042511293177L;
+    private static final long serialVersionUID = 8159995420459385039L;
 
     @Builder.Default
     private final List<String> tables = new ArrayList<>();
-    private final HashMap<String, Object> dataElements = new HashMap<>();
+    private final Map<String, Object> dataElements = new HashMap<>();
     private UUID Id;
     private Timestamp recordedTimestamp;
     private String monitoringType;
@@ -58,7 +58,7 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private String queryClass;
     private String physicalQueryClass;
     @Builder.Default
-    private final HashMap<Long, List<Object>> changedValues = new HashMap<>();
+    private final Map<Long, List<Object>> changedValues = new HashMap<>();
     @Builder.Default
     private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 
