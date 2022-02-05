@@ -73,9 +73,11 @@ public abstract class PolicyManager {
 
     public abstract void updatePolicies();
 
+    public abstract void registerClause(final Clause clause);
 
-    enum Action {
-        CREATE_TABLE;
+
+    public enum Action {
+        CREATE_TABLE, DEFAULT;
 
     }
 
