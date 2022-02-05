@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,15 +32,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
-import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.repository.MonitoringRepository;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 /**
- * MonitoringQueue implementation which stores the monitoring jobs in a
- * concurrentQueue and will process them with a background worker task.
+ * MonitoringQueue implementation which stores the monitoring jobs in a concurrent queue and processes them with a
+ * background worker task.
  */
 @Slf4j
 public class MonitoringQueueImpl implements MonitoringQueue {
@@ -50,7 +51,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
     private final Set<UUID> queueIds = Sets.newConcurrentHashSet();
     private final Lock processingQueueLock = new ReentrantLock();
-    private final MonitoringRepository repository;
+    private final PersistentMonitoringRepository persistentRepository;
+    private final MonitoringRepository statisticRepository;
 
     private String backgroundTaskId;
 
@@ -66,8 +68,12 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      *
      * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
      */
-    public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull MonitoringRepository repository ) {
-        this.repository = repository;
+    public MonitoringQueueImpl(
+            boolean startBackGroundTask,
+            @NonNull PersistentMonitoringRepository persistentRepository,
+            @NonNull MonitoringRepository statisticRepository ) {
+        this.persistentRepository = persistentRepository;
+        this.statisticRepository = statisticRepository;
 
         if ( startBackGroundTask ) {
             this.startBackgroundTask();
@@ -78,8 +84,10 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * Ctor will automatically start the background task for consuming the queue.
      */
-    public MonitoringQueueImpl( @NonNull MonitoringRepository repository ) {
-        this( true, repository );
+    public MonitoringQueueImpl(
+            @NonNull PersistentMonitoringRepository persistentRepository,
+            @NonNull MonitoringRepository statisticRepository ) {
+        this( true, persistentRepository, statisticRepository );
     }
 
 
@@ -131,7 +139,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         if ( all ) {
             return processedEventsTotal;
         }
-        //returns only processed events since last restart
+        // Returns only processed events since last restart
         return processedEvents;
     }
 
@@ -155,14 +163,14 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         MonitoringEvent event;
 
         try {
-            // while there are jobs to consume:
+            // While there are jobs to consume:
             int countEvents = 0;
             while ( (event = this.getNextJob()) != null && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "get new monitoring job {}", event.getId().toString() );
                 }
 
-                // returns list of metrics which was produced by this particular event
+                // Returns list of metrics which was produced by this particular event
                 final List<MonitoringDataPoint> dataPoints = event.analyze();
                 if ( dataPoints.isEmpty() ) {
                     continue;
@@ -170,7 +178,11 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
                 // Sends all extracted metrics to subscribers
                 for ( MonitoringDataPoint dataPoint : dataPoints ) {
-                    this.repository.persistDataPoint( dataPoint );
+                    this.persistentRepository.dataPoint( dataPoint );
+                    // Statistics are only collected if Active Tracking is switched on
+                    if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
+                        this.statisticRepository.dataPoint( dataPoint );
+                    }
                 }
 
                 countEvents++;

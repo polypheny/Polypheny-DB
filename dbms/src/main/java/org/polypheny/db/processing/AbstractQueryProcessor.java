@@ -85,7 +85,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -1366,6 +1365,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             event.setAnalyze( isAnalyze );
             event.setSubQuery( isSubquery );
             event.setLogicalQueryInformation( queryInformation );
+            event.setMonitoringType( logicalRoot.kind.name() );
             statement.setMonitoringEvent( event );
         }
     }
@@ -1377,7 +1377,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             eventData.setAlgCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
             if ( selectedPlan.getPhysicalQueryClass() != null ) {
                 eventData.setPhysicalQueryClass( selectedPlan.getPhysicalQueryClass() );
-                eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateRowCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
+                //eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateRowCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
             }
 
             if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {
@@ -1387,7 +1387,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
             finalizeAccessedPartitions( eventData );
-            MonitoringServiceProvider.getInstance().monitorEvent( eventData );
         }
     }
 

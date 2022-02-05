@@ -23,6 +23,8 @@ dependencies {
     implementation project(":monitoring")
     implementation project(":statistic")
     implementation project(":explore-by-example")
+    implementation project(":policies")
+
 
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 

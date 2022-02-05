@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -278,7 +278,7 @@ public class CottontailTypeUtil {
             // TODO js(ct): add list.size() == 0 handling
             // Check whether the decimal array should be converted to a double array (i.e. when we are not comparing to a column of
             // type decimal (which is encoded as string since cottontail does not support the data type decimal))
-            if ( parameterComponentType != null && parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && ((List) value).get( 0 ) instanceof BigDecimal ) {
+            if ( parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && ((List) value).get( 0 ) instanceof BigDecimal ) {
                 ArrayList<Double> arrayList = new ArrayList<>( ((List) value).size() );
                 ((List) value).forEach( e -> arrayList.add( ((BigDecimal) e).doubleValue() ) );
                 value = arrayList;
@@ -615,7 +615,6 @@ public class CottontailTypeUtil {
      *
      * @param node {@link RexNode} to convert
      * @param physicalColumnNames List of physical column names
-     * @param dynamicParamMap
      * @return {@link Expression}
      */
     private static Expression knnCallTargetColumn( RexNode node, List<String> physicalColumnNames, ParameterExpression dynamicParamMap ) {
@@ -635,7 +634,6 @@ public class CottontailTypeUtil {
      * Converts the given {@link RexNode} to an {@link Expression} for the query vector for a distance function invocation.
      *
      * @param node {@link RexNode} to convert
-     * @param dynamicParamMap
      * @param actualType The {@link PolyType} of the array elements. Required for proper conversion!
      * @return {@link Expression}
      */
@@ -657,7 +655,6 @@ public class CottontailTypeUtil {
      * Converts the given {@link RexNode} to an {@link Expression} for the name of the distance function.
      *
      * @param node {@link RexNode} to convert
-     * @param dynamicParamMap
      * @return {@link Expression}
      */
     private static Expression knnCallDistance( RexNode node, ParameterExpression dynamicParamMap ) {

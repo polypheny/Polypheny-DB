@@ -39,5 +39,5 @@ jobs:
                 uses: nick-invision/retry@v2
                 with:
                     max_attempts: 2
-                    timeout_minutes: 35
+                    timeout_minutes: 40
                     command: ./gradlew check
