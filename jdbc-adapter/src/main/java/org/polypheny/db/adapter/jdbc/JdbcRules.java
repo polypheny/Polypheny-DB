@@ -62,13 +62,11 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -1155,45 +1153,10 @@ public class JdbcRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             Converter converter = (Converter) alg;
-            if ( converter.getClazz() == LogicalValues.class ) {
-                return converter.getConvertedInput();
-            } else if ( converter.getOriginal() instanceof Scan ) {
-                return converter.getConvertedScan();
-            } else {
-                throw new RuntimeException( "Converter was inserted without an appropriate class" );
-            }
+
+            return converter.getTransformed();
         }
 
-    }
-
-
-    private static class JdbcConverter extends Converter implements JdbcAlg {
-
-        /**
-         * Creates a <code>SingleRel</code>.
-         *
-         * @param cluster Cluster this relational expression belongs to
-         * @param traits
-         * @param input Input relational expression
-         * @param rowType
-         */
-        protected JdbcConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, AlgDataType rowType ) {
-            super( cluster, traits, input );
-            this.rowType = rowType;
-        }
-
-
-        @Override
-        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new JdbcConverter( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 0 ).getRowType() );
-        }
-
-
-        @Override
-        public Result implement( JdbcImplementor implementor ) {
-            Values values = this.getConvertedInput();
-            return implementor.implement( values );
-        }
 
     }
 

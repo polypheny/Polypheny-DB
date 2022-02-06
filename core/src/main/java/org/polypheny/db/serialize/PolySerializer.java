@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,9 @@ import java.util.zip.InflaterInputStream;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.Collation.Coercibility;
+import org.polypheny.db.util.NlsString;
 
 public class PolySerializer {
 
@@ -49,8 +53,11 @@ public class PolySerializer {
         kryo.register( ImmutableList.class, immutableListSerializer );
         kryo.register( ImmutableList.of().getClass(), immutableListSerializer );
         kryo.register( ImmutableList.of( "-" ).getClass(), immutableListSerializer );
+        kryo.register( NlsString.class, new NlsStringSerializer() );
         kryo.register( ArrayList.class );
         kryo.register( List.class );
+        kryo.register( PolyMap.class );
+        kryo.register( BigDecimal.class );
     }
 
 
@@ -68,8 +75,8 @@ public class PolySerializer {
 
 
     @SuppressWarnings("unused")
-    public static Map<?, ?> deserializeMap( ByteString in ) {
-        return deserializeAndCompress( in.getBytes(), Map.class );
+    public static Map<?, ?> deserializeMap( String in ) {
+        return deserializeAndCompress( ByteString.parseBase64( in ), PolyMap.class );
     }
 
 
@@ -106,6 +113,27 @@ public class PolySerializer {
                     .build();
 
             return builder.build();
+        }
+
+    }
+
+
+    public static class NlsStringSerializer extends Serializer<NlsString> {
+
+        @Override
+        public void write( Kryo kryo, Output output, NlsString value ) {
+            output.writeString( value.getValue() );
+            output.writeString( value.getCharsetName() );
+            output.writeString( value.getCollation().getCoercibility().name() );
+        }
+
+
+        @Override
+        public NlsString read( Kryo kryo, Input input, Class<? extends NlsString> type ) {
+            String value = input.readString();
+            String charsetName = input.readString();
+            String coercibility = input.readString();
+            return new NlsString( value, charsetName, new Collation( Coercibility.valueOf( coercibility ) ) );
         }
 
     }

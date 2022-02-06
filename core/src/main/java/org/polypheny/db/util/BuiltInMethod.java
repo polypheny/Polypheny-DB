@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -432,7 +431,7 @@ public enum BuiltInMethod {
     DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class ),
     DOC_JSONIZE( MqlFunctions.class, "docJsonize", Object.class ),
     DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class ),
-    DESERIALIZE( PolySerializer.class, "deserializeMap", ByteString.class );
+    DESERIALIZE( PolySerializer.class, "deserializeMap", String.class );
 
     public final Method method;
     public final Constructor constructor;

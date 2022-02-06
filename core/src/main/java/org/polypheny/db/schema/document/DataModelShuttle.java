@@ -54,6 +54,10 @@ public class DataModelShuttle extends AlgShuttleImpl {
                 builder.push( input );
                 builder.converter();
                 modify.replaceInput( 0, builder.build() );
+            } else if ( modify.isDelete() && containsType( modify.getInput().getRowType(), PolyType.MAP ) ) {
+                builder.push( modify );
+                builder.converter();
+                return builder.build();
             }
             return super.visit( other );
         }

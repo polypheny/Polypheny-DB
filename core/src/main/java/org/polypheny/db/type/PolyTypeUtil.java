@@ -640,6 +640,11 @@ public abstract class PolyTypeUtil {
                 return true;
             }
         }
+        if ( PolyType.DOCUMENT_TYPES.contains( toType.getPolyType() ) ) {
+            if ( PolyType.DOCUMENT_TYPES.contains( fromType.getPolyType() ) ) {
+                return true;
+            }
+        }
 
         if ( areCharacterSetsMismatched( toType, fromType ) ) {
             return false;

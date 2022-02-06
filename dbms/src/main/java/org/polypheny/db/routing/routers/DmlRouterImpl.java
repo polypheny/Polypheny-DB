@@ -762,7 +762,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
         } else if ( node instanceof LogicalConverter ) {
-            return handleConverter( (LogicalConverter) node, builder );
+            if ( ((LogicalConverter) node).isScan() ) {
+                //buildDml( ((LogicalConverter) node).getOriginal(), builder, catalogTable, placements, partitionPlacement, statement, cluster, remapParameterValues, parameterValues );
+                builder.converter();
+                return builder;
+            } else {
+                return handleConverter( (LogicalConverter) node, builder );
+
+            }
         } else if ( node instanceof LogicalValues ) {
             if ( node.getModel() == SchemaType.DOCUMENT ) {
                 return handleDocuments( (LogicalDocuments) node, builder );

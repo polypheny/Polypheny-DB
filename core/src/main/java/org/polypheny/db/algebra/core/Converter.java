@@ -27,9 +27,11 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.logical.LogicalScan;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -52,14 +54,20 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Collation;
+import org.polypheny.db.util.NlsString;
 
 @Getter
 public class Converter extends AbstractAlgNode {
 
     private final AlgDataTypeFactory factory;
-    private final AlgDataType binaryType;
     protected AlgNode original;
     private final Class<? extends AlgNode> clazz;
+
+    // BINARY would be better, but is not supported by most SQL based stores,
+    // which again would require substitution, maybe change later
+    public static final PolyType substitutionType = PolyType.VARCHAR;
+    public static final int substitutionLength = 2024;
 
 
     /**
@@ -73,7 +81,6 @@ public class Converter extends AbstractAlgNode {
         super( cluster, traits );
         this.original = original;
         this.factory = new JavaTypeFactoryImpl();
-        this.binaryType = factory.createPolyType( PolyType.BINARY );
         this.clazz = original.getClass();
     }
 
@@ -89,16 +96,20 @@ public class Converter extends AbstractAlgNode {
     }
 
 
-    public Values getConvertedInput() {
-        Values values = (Values) this.getOriginal();
-
-        List<Integer> replace = getReplacedFields( values.getRowType() );
-
-        return LogicalValues.create( this.getCluster(), getRowType(), convertTuples( values.tuples, replace ) );
+    public AlgNode getTransformed() {
+        return getOriginal().accept( new Transformer( factory, getRowType() ) );
     }
 
 
-    private List<Integer> getReplacedFields( AlgDataType rowType ) {
+    public static Values getConvertedInput( Values values, AlgDataType targetRowType, AlgDataTypeFactory factory ) {
+
+        List<Integer> replace = getReplacedFields( values.getRowType() );
+
+        return LogicalValues.create( values.getCluster(), targetRowType, convertTuples( factory, values.tuples, replace ) );
+    }
+
+
+    private static List<Integer> getReplacedFields( AlgDataType rowType ) {
         List<Integer> replace = new ArrayList<>();
         int i = 0;
         for ( AlgDataTypeField field : rowType.getFieldList() ) {
@@ -111,7 +122,7 @@ public class Converter extends AbstractAlgNode {
     }
 
 
-    private ImmutableList<ImmutableList<RexLiteral>> convertTuples( ImmutableList<ImmutableList<RexLiteral>> tuples, List<Integer> replace ) {
+    private static ImmutableList<ImmutableList<RexLiteral>> convertTuples( AlgDataTypeFactory factory, ImmutableList<ImmutableList<RexLiteral>> tuples, List<Integer> replace ) {
         Builder<ImmutableList<RexLiteral>> builder = ImmutableList.builder();
         for ( ImmutableList<RexLiteral> tuple : tuples ) {
             Builder<RexLiteral> line = ImmutableList.builder();
@@ -119,7 +130,7 @@ public class Converter extends AbstractAlgNode {
             for ( RexLiteral literal : tuple ) {
                 if ( replace.contains( i ) ) {
                     byte[] compressed = PolySerializer.serializeAndCompress( literal.getValue() );
-                    line.add( new RexLiteral( new ByteString( compressed ), factory.createPolyType( PolyType.BINARY, compressed.length ), PolyType.BINARY ) );
+                    line.add( new RexLiteral( new NlsString( new ByteString( compressed ).toBase64String(), "UTF8", Collation.IMPLICIT ), factory.createPolyType( substitutionType, compressed.length ), PolyType.CHAR ) );
                 } else {
                     line.add( literal );
                 }
@@ -136,19 +147,9 @@ public class Converter extends AbstractAlgNode {
 
     public AlgNode getConvertedScan() {
         Scan scan = (Scan) original;
-        AlgOptTable algOptTable = original.getTable();
         RexBuilder rexBuilder = scan.getCluster().getRexBuilder();
         List<Integer> replaced = getReplacedFields( scan.getRowType() );
-        AlgDataType rowType = new AlgRecordType( algOptTable.getRowType().getFieldList().stream().map( e -> {
-            if ( e.getType().getPolyType() == PolyType.MAP ) {
-                return new AlgDataTypeFieldImpl( e.getName(), e.getPhysicalName(), e.getIndex(), factory.createPolyType( PolyType.BINARY, 2024 ) );
-            }
-            return e;
-        } ).collect( Collectors.toList() ) );
-        AlgOptTable substitutionTable = AlgOptTableImpl.create( algOptTable.getRelOptSchema(), rowType, algOptTable.getTable(), ImmutableList.copyOf( algOptTable.getQualifiedName() ) );
-
-        assert algOptTable.getTable() instanceof TranslatableTable : "Table to substitute needs to implement TranslatableTable";
-        AlgNode newScan = ((TranslatableTable) algOptTable.getTable()).toAlg( scan::getCluster, substitutionTable );
+        AlgNode newScan = createSubstitutedScan( scan, factory );
 
         // create mapping where necessary
         List<RexNode> mappings = new ArrayList<>();
@@ -166,6 +167,21 @@ public class Converter extends AbstractAlgNode {
         }
 
         return EnumerableProject.create( EnumerableProject.create( newScan, first, newScan.getRowType() ), mappings, scan.getRowType() );
+    }
+
+
+    private static AlgNode createSubstitutedScan( Scan scan, AlgDataTypeFactory factory ) {
+        AlgOptTable algOptTable = scan.getTable();
+        AlgDataType rowType = new AlgRecordType( algOptTable.getRowType().getFieldList().stream().map( e -> {
+            if ( e.getType().getPolyType() == PolyType.MAP ) {
+                return new AlgDataTypeFieldImpl( e.getName(), e.getPhysicalName(), e.getIndex(), factory.createPolyType( substitutionType, substitutionLength ) );
+            }
+            return e;
+        } ).collect( Collectors.toList() ) );
+        AlgOptTable substitutionTable = ((AlgOptTableImpl) scan.getTable()).copy( rowType );
+
+        assert algOptTable.getTable() instanceof TranslatableTable : "Table to substitute needs to implement TranslatableTable";
+        return ((TranslatableTable) algOptTable.getTable()).toAlg( scan::getCluster, substitutionTable );
     }
 
 
@@ -197,7 +213,7 @@ public class Converter extends AbstractAlgNode {
             // we map from unsupported value supported one for Values intern: RowType[ MAP ] -> extern: RowType[ BINARY(2024) ]
             return new AlgRecordType( getOriginal().getRowType().getFieldList().stream().map( f -> {
                 if ( f.getType().getPolyType() == PolyType.MAP ) {
-                    return new AlgDataTypeFieldImpl( f.getName(), f.getIndex(), getFactory().createPolyType( PolyType.BINARY, 2024 ) );
+                    return new AlgDataTypeFieldImpl( f.getName(), f.getIndex(), getFactory().createPolyType( substitutionType, substitutionLength ) );
                 }
                 return f;
             } ).collect( Collectors.toList() ) );
@@ -209,7 +225,7 @@ public class Converter extends AbstractAlgNode {
 
     @Override
     public void register( AlgOptPlanner planner ) {
-        getOriginal().getConvention().register( planner );
+        getOriginal().accept( new SubstitutionRegisterer( planner ) );
     }
 
 
@@ -221,6 +237,67 @@ public class Converter extends AbstractAlgNode {
 
     public boolean isScan() {
         return getOriginal() instanceof Scan;
+    }
+
+
+    public enum SubstitutionType {
+        SCAN,
+        VALUES
+    }
+
+
+    private static class SubstitutionRegisterer extends AlgShuttleImpl {
+
+        private final AlgOptPlanner planner;
+
+
+        public SubstitutionRegisterer( AlgOptPlanner planner ) {
+            this.planner = planner;
+        }
+
+
+        @Override
+        public AlgNode visit( Scan scan ) {
+            scan.getConvention().register( planner );
+            return super.visit( scan );
+        }
+
+    }
+
+
+    private static class Transformer extends AlgShuttleImpl {
+
+        private final AlgDataTypeFactory factory;
+        private final AlgDataType targetRowType;
+
+
+        public Transformer( AlgDataTypeFactory factory, AlgDataType targetRowType ) {
+            this.factory = factory;
+            this.targetRowType = targetRowType;
+        }
+
+
+        @Override
+        public AlgNode visit( LogicalValues values ) {
+            return getConvertedInput( values, targetRowType, factory );
+        }
+
+
+        @Override
+        public AlgNode visit( Scan scan ) {
+            return createSubstitutedScan( scan, factory );
+        }
+
+
+        @Override
+        public AlgNode visit( AlgNode other ) {
+            TableModify node = (TableModify) super.visit( other );
+            if ( other instanceof TableModify ) {
+                return LogicalTableModify.create( node.getInput().getTable(), node.getCatalogReader(), node.getInput(), node.getOperation(), node.getUpdateColumnList(), node.getSourceExpressionList(), node.isFlattened() );
+            }
+            return node;
+        }
+
     }
 
 }

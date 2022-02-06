@@ -744,7 +744,7 @@ public class MqlToAlgConverter {
      * @return the modified AlgNode
      */
     private LogicalTableModify convertInsert( MqlInsert query, AlgOptTable table ) {
-        LogicalTableModify modify = LogicalTableModify.create(
+        return LogicalTableModify.create(
                 table,
                 catalogReader,
                 convertMultipleValues( query.getValues(), table.getRowType() ),
@@ -752,7 +752,6 @@ public class MqlToAlgConverter {
                 null,
                 null,
                 false );
-        return modify;
     }
 
 
