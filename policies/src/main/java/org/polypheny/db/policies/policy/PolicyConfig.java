@@ -17,68 +17,91 @@
 package org.polypheny.db.policies.policy;
 
 
+import java.util.Collections;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.policies.policy.Clause.Category;
+import org.polypheny.db.policies.policy.Clause.PolicyListener;
 import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.PolicyManager.Action;
 
+@Slf4j
 public enum PolicyConfig {
 
-    PERSISTENCE (
-            "persistence",
+    PERSISTENCE(
+            Category.PERSISTENT,
             "Policy to ensure only persistence stores are used.",
             false,
             Action.CREATE_TABLE,
-            Target.POLYPHENY),
+            Target.POLYPHENY,
+            Collections.singletonList( 1L ) ),
 
-    NON_PERSISTENCE (
-            "nonPersistence",
+    NON_PERSISTENCE(
+            Category.NON_PERSISTENT,
             "Policy to ensure only not persistence stores are used.",
-            false,
+            true,
             Action.CREATE_TABLE,
-            Target.POLYPHENY),
-
+            Target.POLYPHENY,
+            Collections.singletonList( 1L ) );
+/*
     PERFORMANCE(
-            "performance",
+            Category.PERFORMANCE,
             "Policy to ensure good performance.",
             false,
             Action.DEFAULT,
-            Target.POLYPHENY),
+            Target.POLYPHENY,
+            Collections.singletonList( 1L ) ),
 
     TWO_PHASE_COMMIT(
-            "twoPhaseCommit",
+            Category.TWO_PHASE_COMMIT,
             "Policy to ensure two phase commit is used.",
             false,
             Action.DEFAULT,
-            Target.POLYPHENY);
+            Target.POLYPHENY,
+            Collections.singletonList( 1L ) );
 
-    private final String key;
+ */
+
+    private final Category category;
+    private final Action action;
     private final String description;
+    private final List<Long> targetIds;
 
     private final PolicyManager policyManager = PolicyManager.getInstance();
 
-    PolicyConfig(final String key, final String description, final Object defaultValue, final Action action, Target target  ){
-        this.key = key;
+
+    PolicyConfig( final Category category, final String description, final Object defaultValue, final Action action, Target target, List<Long> targetIds ) {
+        this.category = category;
         this.description = description;
+        this.targetIds = targetIds;
+        this.action = action;
 
         final Clause clause;
 
-        switch ( key ){
-            case "persistence":
+        switch ( category ) {
+            case PERSISTENT:
                 clause = new BooleanClause( action.name(), (Boolean) defaultValue, Category.PERFORMANCE, Category.NON_PERSISTENT );
                 break;
-            case "nonPersistence":
+            case NON_PERSISTENT:
                 clause = new BooleanClause( action.name(), (Boolean) defaultValue, Category.NON_PERSISTENT, Category.PERFORMANCE );
                 break;
-
             default:
-                throw new RuntimeException("Unknown action of policy: " + action.name());
+                throw new RuntimeException( "Unknown action of policy: " + action.name() );
 
         }
 
+        // add Clauses to policies, policies are created on start up / creation
+        policyManager.registerClause( clause, target, targetIds );
+    }
 
 
-        policyManager.registerClause( clause );
+    public void addObserver( final PolicyListener listener ) {
+        policyManager.getClause( action.name() ).addObserver( listener );
+    }
 
+
+    public void removeObserver( final PolicyListener listener ) {
+        policyManager.getClause( action.name() ).removeObserver( listener );
     }
 
 }

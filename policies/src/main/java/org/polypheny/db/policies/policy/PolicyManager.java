@@ -16,11 +16,15 @@
 
 package org.polypheny.db.policies.policy;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.StatisticsManager;
+import org.polypheny.db.policies.policy.Clause.Category;
+import org.polypheny.db.policies.policy.Policy.Target;
 
 public abstract class PolicyManager {
 
@@ -44,7 +48,7 @@ public abstract class PolicyManager {
     @Getter
     @Setter
     //polyphenyPolicy -> id
-    public int polyphenyPolicy = NO_POLYPHENY_POLICY;
+    public int polyphenyPolicyId = NO_POLYPHENY_POLICY;
 
     @Getter
     // map <storeId -> policyId>
@@ -73,7 +77,11 @@ public abstract class PolicyManager {
 
     public abstract void updatePolicies();
 
-    public abstract void registerClause(final Clause clause);
+    public abstract void registerClause(final Clause clause, final Target target, final List<Long> targetIds );
+
+    public abstract Clause getClause( String actionName);
+
+    public abstract void setDefaultPolicies();
 
 
     public enum Action {

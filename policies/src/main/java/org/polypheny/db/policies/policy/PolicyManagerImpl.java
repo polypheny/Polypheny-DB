@@ -19,15 +19,66 @@ package org.polypheny.db.policies.policy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.policies.policy.Clause.Category;
+import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 
+@Slf4j
 public class PolicyManagerImpl extends PolicyManager {
 
-    public PolicyManagerImpl() {
+    private final ConcurrentMap<String, Clause> clauses;
 
+
+    public PolicyManagerImpl() {
+        this.clauses = new ConcurrentHashMap<>();
+    }
+
+
+    public void setDefaultPolicies() {
+        if ( RuntimeConfig.POLICY.getBoolean() ) {
+            createDefaultPolicies();
+            addPolicyListener();
+        }
+    }
+
+
+    private void createDefaultPolicies() {
+        Catalog catalog = Catalog.getInstance();
+
+        // Policy for Polypheny
+        getPolicies().put( getPolyphenyPolicyId(), new Policy() );
+
+        // Policy for schemas
+        List<CatalogSchema> schemas = catalog.getSchemas( 1, null );
+        for ( CatalogSchema schema : schemas ) {
+            Policy schemaPolicy = new Policy( Target.STORE, schema.id );
+            storePolicies.put( schema.id, schemaPolicy.getId() );
+            getPolicies().put( schemaPolicy.getId(), schemaPolicy );
+            // Policy for
+            List<CatalogTable> childTables = catalog.getTables( schema.id, null );
+            for ( CatalogTable childTable : childTables ) {
+                Policy tablePolicy = new Policy( Target.STORE, childTable.id );
+                storePolicies.put( childTable.id, tablePolicy.getId() );
+                getPolicies().put( tablePolicy.getId(), tablePolicy );
+            }
+        }
+    }
+
+
+    private void addPolicyListener() {
+        TrackingListener listener = new TrackingListener();
+        PolicyConfig.NON_PERSISTENCE.addObserver( listener );
+        PolicyConfig.PERSISTENCE.addObserver( listener );
+        //PolicyConfig.TWO_PHASE_COMMIT.addObserver( listener );
     }
 
 
@@ -54,10 +105,10 @@ public class PolicyManagerImpl extends PolicyManager {
                 Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
 
                 // 1. get PolphenyPolyicyId -> only the polypheny policy is interesting
-                if ( polyphenyPolicy != NO_POLYPHENY_POLICY ) {
+                if ( polyphenyPolicyId != NO_POLYPHENY_POLICY ) {
                     //2. get all clauses of interest
-                    List<Integer> interestingPersistentClauses = policies.get( polyphenyPolicy ).getClausesByCategories().get( Category.PERSISTENT );
-                    List<Integer> interestingNonPersistentClauses = policies.get( polyphenyPolicy ).getClausesByCategories().get( Category.NON_PERSISTENT );
+                    List<Integer> interestingPersistentClauses = policies.get( polyphenyPolicyId ).getClausesByCategories().get( Category.PERSISTENT );
+                    List<Integer> interestingNonPersistentClauses = policies.get( polyphenyPolicyId ).getClausesByCategories().get( Category.NON_PERSISTENT );
 
                     //3. fixed persistent or fixed not?
 
@@ -76,10 +127,7 @@ public class PolicyManagerImpl extends PolicyManager {
                         }
                     }
                 }
-
-
                 return (List<T>) possibleStores;
-
             default:
                 throw new PolicyRuntimeException( "Not implemented action was used to make a Decision" );
         }
@@ -94,7 +142,45 @@ public class PolicyManagerImpl extends PolicyManager {
 
 
     @Override
-    public void registerClause( Clause clause ) {
+    public void registerClause( Clause clause, Target target, List<Long> targetIds ) {
+        Policy policy;
+
+        if ( target == Target.POLYPHENY ) {
+            policy = getPolicies().remove( getPolyphenyPolicyId() );
+            policy.getClauses().put( clause.getId(), clause );
+            getPolicies().put( getPolyphenyPolicyId(), policy );
+            clauses.put( clause.getClauseName(), clause );
+
+        } else if ( target == Target.STORE || target == Target.TABLE ) {
+            for ( Long targetId : targetIds ) {
+                policy = getPolicies().remove( clause.getId() );
+                policy.getClauses().put( clause.getId(), clause );
+                getPolicies().put( clause.getId(), policy );
+                storePolicies.put( targetId, clause.getId() );
+                clauses.put( clause.getClauseName(), clause );
+            }
+        }
+    }
+
+
+    @Override
+    public Clause getClause( String actionName ) {
+        return clauses.get( actionName );
+    }
+
+
+    class TrackingListener implements Clause.PolicyListener {
+
+        @Override
+        public void onConfigChange( Clause c ) {
+            registerTrackingToggle();
+        }
+
+
+        private void registerTrackingToggle() {
+            log.warn( "Tracking Listener for Policy" );
+        }
+
 
     }
 

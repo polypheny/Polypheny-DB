@@ -21,10 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.policies.policy.Clause.Category;
-import org.polypheny.db.policies.policy.PolicyManager.Action;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 
+@Slf4j
 public class Policy {
 
     private final AtomicInteger atomicId = new AtomicInteger();
@@ -50,7 +51,7 @@ public class Policy {
      * all different clauses
      */
     @Getter
-    private static final Map<Integer, Clause> clauses = new HashMap<>();
+    private final Map<Integer, Clause> clauses = new HashMap<>();
 
     @Getter
     private static final Map<Category, List<Integer>> clausesByCategories = new HashMap<>();
@@ -69,24 +70,22 @@ public class Policy {
         this.targetId = targetId;
 
         addPolicy();
-
     }
 
 
     public Policy() {
         this( Target.POLYPHENY, TARGET_POLYPHENY );
 
-        List<Integer> name = PolicyManager.getInstance().makeDecision( int.class, Action.CREATE_TABLE, null );
+        //List<Integer> name = PolicyManager.getInstance().makeDecision( int.class, Action.CREATE_TABLE, null );
     }
 
 
     private void addPolicy() {
-
         switch ( target ) {
             case POLYPHENY:
-                int polyphenyPolicyId = PolicyManager.getInstance().getPolyphenyPolicy();
+                int polyphenyPolicyId = PolicyManager.getInstance().getPolyphenyPolicyId();
                 if ( polyphenyPolicyId == -1 ) {
-                    PolicyManager.getInstance().setPolyphenyPolicy( id );
+                    PolicyManager.getInstance().setPolyphenyPolicyId( id );
                 } else {
                     throw new PolicyRuntimeException( "There is already a Polypheny Policy with id: " + polyphenyPolicyId + ", it is not possible to create a second one." );
                 }

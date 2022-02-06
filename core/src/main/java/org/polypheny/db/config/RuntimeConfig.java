@@ -186,6 +186,13 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
 
+    POLICY(
+            "statistics/policy",
+            "Enable or disable policies on start up.",
+            true,
+            ConfigType.BOOLEAN,
+            "policySettingsGroup" ),
+
     UNIQUE_VALUES(
             "statistics/maxCharUniqueVal",
             "Maximum character of unique values",
@@ -463,8 +470,11 @@ public enum RuntimeConfig {
         //queryStatisticsPage.withIcon( "fa fa-percent" );
         final WebUiGroup statisticSettingsGroup = new WebUiGroup( "statisticSettingsGroup", queryStatisticsPage.getId() );
         statisticSettingsGroup.withTitle( "Statistics Settings" );
+        final WebUiGroup policySettingsGroup = new WebUiGroup( "policySettingsGroup", queryStatisticsPage.getId() );
+        policySettingsGroup.withTitle( "Policy Settings" );
         configManager.registerWebUiPage( queryStatisticsPage );
         configManager.registerWebUiGroup( statisticSettingsGroup );
+        configManager.registerWebUiGroup( policySettingsGroup );
 
         // Docker Settings
         final WebUiPage dockerPage = new WebUiPage(

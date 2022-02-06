@@ -17,8 +17,13 @@
 package org.polypheny.db.policies.policy;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
 
 public abstract class Clause {
 
@@ -26,12 +31,19 @@ public abstract class Clause {
     /**
      * Name of clause.
      */
+    @Getter
     private final String clauseName;
 
     /**
      * Unique id of clause.
      */
+    @Getter
     private final int id;
+
+    /**
+     * List of observers.
+     */
+    private final Map<Integer, PolicyListener> listeners = new HashMap<>();
 
 
     /**
@@ -42,10 +54,10 @@ public abstract class Clause {
     protected Clause( String clauseName ) {
         this.id = atomicId.getAndIncrement();
         this.clauseName = clauseName;
-        addClauseToPolicy();
+
     }
 
-
+/*
     private void addClauseToPolicy() {
         Policy.getClauses().put( id, this );
         if(Policy.getClausesByCategories().get( getCategory() ).isEmpty()){
@@ -57,15 +69,51 @@ public abstract class Clause {
         }
     }
 
+ */
+
 
     public abstract Category getCategory();
 
 
     /**
+     * Add an observer for this config element.
+     *
+     * @param listener Observer to add
+     * @return Clause
+     */
+    public Clause addObserver( final PolicyListener listener ) {
+
+        this.listeners.put( listener.hashCode(), listener );
+        return this;
+    }
+
+    public Clause removeObserver( final PolicyListener listener ) {
+        this.listeners.remove( listener.hashCode() );
+        return this;
+    }
+
+
+    /**
+     * Notify observers
+     */
+    protected void notifyConfigListeners() {
+        for ( PolicyListener listener : listeners.values() ) {
+            listener.onConfigChange( this );
+        }
+    }
+
+
+    /**
      * different Categories are used to describe the different policies used in Polypheny
      */
-    enum Category {
-        AVAILABILITY, PERFORMANCE, REDUNDANCY, PERSISTENT, NON_PERSISTENT
+    public enum Category {
+        AVAILABILITY, PERFORMANCE, REDUNDANCY, PERSISTENT, NON_PERSISTENT, TWO_PHASE_COMMIT
+    }
+
+    public interface PolicyListener {
+
+        void onConfigChange( Clause c );
+
     }
 
 
