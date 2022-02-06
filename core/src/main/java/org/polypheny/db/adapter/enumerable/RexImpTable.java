@@ -310,6 +310,7 @@ public class RexImpTable {
         defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_ARRAY ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_ARRAY.method ) ), false );
         defineImplementor( OperatorRegistry.get( OperatorName.IS_NOT_JSON_SCALAR ), NullPolicy.NONE, NotImplementor.of( new MethodImplementor( BuiltInMethod.IS_JSON_SCALAR.method ) ), false );
 
+        defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.DESERIALIZE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DESERIALIZE.method ), false );
         defineBinary( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
         defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_EQ.method ), false );
         defineImplementor( OperatorRegistry.get( QueryLanguage.MONGO_QL, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.DOC_GT.method ), false );

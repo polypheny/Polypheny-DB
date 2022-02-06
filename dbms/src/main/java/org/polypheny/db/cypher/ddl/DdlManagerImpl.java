@@ -237,7 +237,7 @@ public class DdlManagerImpl extends DdlManager {
                     tableName += i;
                 }
 
-                long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
+                long tableId = catalog.addEntity( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
                 List<Long> primaryKeyColIds = new ArrayList<>();
                 int colPos = 1;
                 for ( ExportedColumn exportedColumn : entry.getValue() ) {
@@ -525,7 +525,8 @@ public class DdlManagerImpl extends DdlManager {
                     null, // Will be set later
                     null, // Will be set later
                     null );//Not a valid partitionID --> placeholder
-            AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), catalogTable, addedColumn );
+            AdapterManager.getInstance().getStore( store.getAdapterId() )
+                    .addColumn( statement.getPrepareContext(), catalogTable, addedColumn.substituteUnsupportedTypes( store.getUnsupportedTypes() ) );
         }
 
         // Reset plan cache implementation cache & routing cache
@@ -655,7 +656,7 @@ public class DdlManagerImpl extends DdlManager {
                 throw new PlacementAlreadyExistsException();
             }
         }
-        // Check whether the list is empty (this is a short hand for a full placement)
+        // Check whether the list is empty (this is a shorthand for a full placement)
         if ( columnIds.size() == 0 ) {
             columnIds = ImmutableList.copyOf( catalogTable.columnIds );
         }
@@ -1547,7 +1548,7 @@ public class DdlManagerImpl extends DdlManager {
 
         AlgDataType fieldList = algNode.getRowType();
 
-        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList );
+        List<FieldInformation> columns = getColumnInformation( projectedColumns, fieldList );
 
         Map<Long, List<Long>> underlyingTables = new HashMap<>();
 
@@ -1570,7 +1571,7 @@ public class DdlManagerImpl extends DdlManager {
                 language
         );
 
-        for ( ColumnInformation column : columns ) {
+        for ( FieldInformation column : columns ) {
             catalog.addColumn(
                     column.name,
                     tableId,
@@ -1637,12 +1638,12 @@ public class DdlManagerImpl extends DdlManager {
         );
 
         // Creates a list with all columns, tableId is needed to creat the primary key
-        List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
+        List<FieldInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
 
         List<Long> columnIds = new ArrayList<>();
 
-        for ( ColumnInformation column : columns ) {
+        for ( FieldInformation column : columns ) {
             long columnId = catalog.addColumn(
                     column.name,
                     tableId,
@@ -1726,13 +1727,13 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList ) {
+    private List<FieldInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList ) {
         return getColumnInformation( projectedColumns, fieldList, false, 0 );
     }
 
 
-    private List<ColumnInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList, boolean addPrimary, long tableId ) {
-        List<ColumnInformation> columns = new ArrayList<>();
+    private List<FieldInformation> getColumnInformation( List<String> projectedColumns, AlgDataType fieldList, boolean addPrimary, long tableId ) {
+        List<FieldInformation> columns = new ArrayList<>();
 
         int position = 1;
         for ( AlgDataTypeField alg : fieldList.getFieldList() ) {
@@ -1745,7 +1746,7 @@ public class DdlManagerImpl extends DdlManager {
                 colName = projectedColumns.get( position - 1 );
             }
 
-            columns.add( new ColumnInformation(
+            columns.add( new FieldInformation(
                     colName.toLowerCase().replaceAll( "[^A-Za-z0-9]", "_" ),
                     new ColumnTypeInformation(
                             type.getPolyType(),
@@ -1764,7 +1765,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( addPrimary ) {
             String primaryName = "_matid_" + tableId;
-            columns.add( new ColumnInformation(
+            columns.add( new FieldInformation(
                     primaryName,
                     new ColumnTypeInformation(
                             PolyType.INTEGER,
@@ -1818,10 +1819,10 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException {
+    public void createEntity( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException {
         try {
-            // Check if there is already a table with this name
-            if ( catalog.checkIfExistsTable( schemaId, tableName ) ) {
+            // Check if there is already an entity with this name
+            if ( catalog.checkIfExistsTable( schemaId, name ) ) {
                 if ( ifNotExists ) {
                     // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                     return;
@@ -1830,7 +1831,10 @@ public class DdlManagerImpl extends DdlManager {
                 }
             }
 
-            checkDocumentModel( schemaId, columns, constraints );
+            fields = new ArrayList<>( fields );
+            constraints = new ArrayList<>( constraints );
+
+            checkDocumentModel( schemaId, fields, constraints );
 
             boolean foundPk = false;
             for ( ConstraintInformation constraintInformation : constraints ) {
@@ -1851,15 +1855,15 @@ public class DdlManagerImpl extends DdlManager {
                 stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
             }
 
-            long tableId = catalog.addTable(
-                    tableName,
+            long tableId = catalog.addEntity(
+                    name,
                     schemaId,
                     statement.getPrepareContext().getCurrentUserId(),
                     TableType.TABLE,
                     true );
 
-            for ( ColumnInformation column : columns ) {
-                addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
+            for ( FieldInformation information : fields ) {
+                addField( information.name, information.typeInformation, information.collation, information.defaultValue, tableId, information.position, stores, placementType );
             }
 
             for ( ConstraintInformation constraint : constraints ) {
@@ -1890,7 +1894,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void checkDocumentModel( long schemaId, List<ColumnInformation> columns, List<ConstraintInformation> constraints ) {
+    private void checkDocumentModel( long schemaId, List<FieldInformation> columns, List<ConstraintInformation> constraints ) {
         if ( catalog.getSchema( schemaId ).schemaType == SchemaType.DOCUMENT ) {
             List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
 
@@ -1904,7 +1908,7 @@ public class DdlManagerImpl extends DdlManager {
             // Add _id column if necessary
             if ( !names.contains( "_id" ) ) {
                 ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.VARCHAR, PolyType.VARCHAR, 24, null, null, null, false );
-                columns.add( new ColumnInformation( "_id", typeInformation, Collation.CASE_INSENSITIVE, null, 0 ) );
+                columns.add( new FieldInformation( "_id", typeInformation, Collation.CASE_INSENSITIVE, null, 0 ) );
 
             }
 
@@ -1927,7 +1931,7 @@ public class DdlManagerImpl extends DdlManager {
             // Add _data column if necessary
             if ( !names.contains( "_data" ) ) {
                 ColumnTypeInformation typeInformation = new ColumnTypeInformation( PolyType.ANY, PolyType.MAP, null, null, null, null, false );
-                columns.add( new ColumnInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
+                columns.add( new FieldInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
             }
         }
     }
@@ -2278,7 +2282,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
+    private void addField( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
         long addedColumnId = catalog.addColumn(
                 columnName,
                 tableId,

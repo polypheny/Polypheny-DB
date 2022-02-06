@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.logical.LogicalConverter;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -104,6 +105,12 @@ public abstract class BaseRouter {
 
     protected RoutedAlgBuilder handleDocuments( LogicalDocuments node, RoutedAlgBuilder builder ) {
         return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
+    }
+
+
+    protected RoutedAlgBuilder handleConverter( LogicalConverter node, RoutedAlgBuilder builder ) {
+        handleValues( (LogicalValues) node.getOriginal(), builder );
+        return builder.converter();
     }
 
 

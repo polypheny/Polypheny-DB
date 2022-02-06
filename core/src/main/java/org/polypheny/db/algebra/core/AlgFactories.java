@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConverter;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalExchange;
@@ -117,6 +118,8 @@ public class AlgFactories {
 
     public static final ConditionalExecuteFactory DEFAULT_CONDITIONAL_EXECUTE_FACTORY = new ConditionalExecuteFactoryImpl();
 
+    public static final ConverterFactory DEFAULT_CONVERTER_FACTORY = new ConverterFactoryImpl();
+
     /**
      * A {@link AlgBuilderFactory} that creates a {@link AlgBuilder} that will create logical relational expressions for everything.
      */
@@ -135,7 +138,8 @@ public class AlgFactories {
                             DEFAULT_SET_OP_FACTORY,
                             DEFAULT_VALUES_FACTORY,
                             DEFAULT_TABLE_SCAN_FACTORY,
-                            DEFAULT_CONDITIONAL_EXECUTE_FACTORY ) );
+                            DEFAULT_CONDITIONAL_EXECUTE_FACTORY,
+                            DEFAULT_CONVERTER_FACTORY ) );
 
 
     private AlgFactories() {
@@ -316,6 +320,25 @@ public class AlgFactories {
                 ImmutableList<ImmutableBitSet> groupSets,
                 List<AggregateCall> aggCalls ) {
             return LogicalAggregate.create( input, indicator, groupSet, groupSets, aggCalls );
+        }
+
+    }
+
+
+    public interface ConverterFactory {
+
+        AlgNode createConverter(
+                AlgNode input
+        );
+
+    }
+
+
+    public static class ConverterFactoryImpl implements ConverterFactory {
+
+        @Override
+        public AlgNode createConverter( AlgNode input ) {
+            return LogicalConverter.create( input );
         }
 
     }

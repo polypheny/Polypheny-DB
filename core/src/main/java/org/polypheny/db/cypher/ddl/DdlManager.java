@@ -446,7 +446,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void createEntity( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
      * Create a new view
@@ -563,7 +563,7 @@ public abstract class DdlManager {
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
-    public static class ColumnInformation {
+    public static class FieldInformation {
 
         public final String name;
         public final ColumnTypeInformation typeInformation;
@@ -572,7 +572,7 @@ public abstract class DdlManager {
         public final int position;
 
 
-        public ColumnInformation( String name, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, int position ) {
+        public FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, int position ) {
             this.name = name;
             this.typeInformation = typeInformation;
             this.collation = collation;

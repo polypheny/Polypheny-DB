@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
 import java.util.ArrayList;
@@ -24,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -32,7 +35,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
-
+@Slf4j
 public abstract class DataStore extends Adapter {
 
     @Getter
@@ -46,6 +49,15 @@ public abstract class DataStore extends Adapter {
         this.persistent = persistent;
 
         informationPage.setLabel( "Stores" );
+    }
+
+
+    public abstract List<PolyType> getUnsupportedTypes();
+
+
+    public List<SchemaType> getSupportedSchemaType() {
+        log.info( "Using default SchemaType support." );
+        return ImmutableList.of( SchemaType.RELATIONAL );
     }
 
 

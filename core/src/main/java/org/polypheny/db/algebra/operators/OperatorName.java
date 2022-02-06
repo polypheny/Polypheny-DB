@@ -1364,7 +1364,9 @@ public enum OperatorName {
 
     STARTS_WITH( LangFunctionOperator.class ),
 
-    ENDS_WITH( LangFunctionOperator.class );
+    ENDS_WITH( LangFunctionOperator.class ),
+
+    DESERIALIZE( LangFunctionOperator.class );
 
 
     private final Class<? extends Operator> clazz;

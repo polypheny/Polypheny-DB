@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConverter;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
@@ -760,6 +761,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
+        } else if ( node instanceof LogicalConverter ) {
+            return handleConverter( (LogicalConverter) node, builder );
         } else if ( node instanceof LogicalValues ) {
             if ( node.getModel() == SchemaType.DOCUMENT ) {
                 return handleDocuments( (LogicalDocuments) node, builder );

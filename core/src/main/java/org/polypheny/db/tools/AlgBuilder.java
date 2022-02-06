@@ -150,6 +150,7 @@ public class AlgBuilder {
     protected final AlgOptSchema algOptSchema;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
+    private final AlgFactories.ConverterFactory converterFactory;
     private final AlgFactories.AggregateFactory aggregateFactory;
     private final AlgFactories.SortFactory sortFactory;
     private final AlgFactories.ExchangeFactory exchangeFactory;
@@ -230,6 +231,12 @@ public class AlgBuilder {
                 Util.first(
                         context.unwrap( AlgFactories.DocumentsFactory.class ),
                         AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
+
+        this.converterFactory =
+                Util.first(
+                        context.unwrap( AlgFactories.ConverterFactory.class ),
+                        AlgFactories.DEFAULT_CONVERTER_FACTORY );
+
         final RexExecutor executor =
                 Util.first(
                         context.unwrap( RexExecutor.class ),
@@ -238,6 +245,7 @@ public class AlgBuilder {
                                 RexUtil.EXECUTOR ) );
         final AlgOptPredicateList predicates = AlgOptPredicateList.EMPTY;
         this.simplifier = new RexSimplify( cluster.getRexBuilder(), predicates, executor );
+
     }
 
 
@@ -2474,6 +2482,13 @@ public class AlgBuilder {
      */
     public void clear() {
         stack.clear();
+    }
+
+
+    public AlgBuilder converter() {
+        stack.push( new Frame( converterFactory.createConverter( this.stack.pop().alg ) ) );
+
+        return this;
     }
 
 

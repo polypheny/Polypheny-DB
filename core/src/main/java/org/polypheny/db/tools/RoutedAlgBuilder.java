@@ -98,6 +98,12 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
+    public RoutedAlgBuilder converter() {
+        super.converter();
+        return this;
+    }
+
+
     public void addPhysicalInfo( Map<Long, List<CatalogColumnPlacement>> physicalPlacements ) {
         final Map<Long, List<Pair<Integer, Long>>> map = physicalPlacements.entrySet().stream()
                 .collect( Collectors.toMap( Map.Entry::getKey, entry -> map( entry.getValue() ) ) );

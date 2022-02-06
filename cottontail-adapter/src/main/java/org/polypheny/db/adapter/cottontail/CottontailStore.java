@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
@@ -112,6 +113,9 @@ public class CottontailStore extends DataStore {
     private CottontailSchema currentSchema;
     @Expose(serialize = false, deserialize = false)
     private final transient CottontailWrapper wrapper;
+
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
     public CottontailStore( int storeId, String uniqueName, Map<String, String> settings ) {

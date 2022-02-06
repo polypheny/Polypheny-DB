@@ -787,11 +787,11 @@ public class MqlToAlgConverter {
      */
     private AlgNode convertMultipleValues( BsonArray array, AlgDataType rowType ) {
         LogicalDocuments docs = (LogicalDocuments) LogicalDocuments.create( cluster, ImmutableList.copyOf( array.asArray() ) );
-        if ( usesDocumentModel ) {
+        /*if ( usesDocumentModel ) {
             return docs;
-        } else {
+        } else {*/
             return LogicalValues.create( cluster, rowType, docs.getTuples() );
-        }
+        //}
 
     }
 

@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalCalc;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConverter;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalIntersect;
@@ -332,13 +333,25 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalConditionalExecute alg ) {
+    public void rewriteAlg( LogicalConditionalExecute alg ) {
         LogicalConditionalExecute newRel = LogicalConditionalExecute.create( alg.getLeft(), alg.getRight(), alg );
         setNewForOldRel( alg, newRel );
     }
 
 
-    public void rewriteRel( LogicalTableModify alg ) {
+    public void rewriteAlg( LogicalConverter alg ) {
+        /*if ( alg.getClazz() == LogicalValues.class ){
+            this.rewriteAlg( (LogicalValues) alg.getOriginal() );
+        }else if( alg.getClazz() == LogicalScan.class ){
+            this.rewriteAlg( (LogicalScan) alg.getOriginal() );
+        }*/
+
+        LogicalConverter newAlg = LogicalConverter.create( getNewForOldRel( alg.getOriginal() ) );
+        setNewForOldRel( alg, newAlg );
+    }
+
+
+    public void rewriteAlg( LogicalTableModify alg ) {
         LogicalTableModify newRel =
                 LogicalTableModify.create(
                         alg.getTable(),
@@ -352,7 +365,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalAggregate alg ) {
+    public void rewriteAlg( LogicalAggregate alg ) {
         AlgDataType inputType = alg.getInput().getRowType();
         for ( AlgDataTypeField field : inputType.getFieldList() ) {
             if ( field.getType().isStruct() ) {
@@ -365,7 +378,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( Sort alg ) {
+    public void rewriteAlg( Sort alg ) {
         AlgCollation oldCollation = alg.getCollation();
         final AlgNode oldChild = alg.getInput();
         final AlgNode newChild = getNewForOldRel( oldChild );
@@ -386,7 +399,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalFilter alg ) {
+    public void rewriteAlg( LogicalFilter alg ) {
         AlgNode newRel =
                 alg.copy(
                         alg.getTraitSet(),
@@ -396,7 +409,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalJoin alg ) {
+    public void rewriteAlg( LogicalJoin alg ) {
         LogicalJoin newRel =
                 LogicalJoin.create(
                         getNewForOldRel( alg.getLeft() ),
@@ -408,7 +421,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalCorrelate alg ) {
+    public void rewriteAlg( LogicalCorrelate alg ) {
         Builder newPos = ImmutableBitSet.builder();
         for ( int pos : alg.getRequiredColumns() ) {
             AlgDataType corrFieldType = alg.getLeft().getRowType().getFieldList().get( pos ).getType();
@@ -428,54 +441,54 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( Collect alg ) {
+    public void rewriteAlg( Collect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( Uncollect alg ) {
+    public void rewriteAlg( Uncollect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalIntersect alg ) {
+    public void rewriteAlg( LogicalIntersect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalMinus alg ) {
+    public void rewriteAlg( LogicalMinus alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalUnion alg ) {
+    public void rewriteAlg( LogicalUnion alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalModifyCollect alg ) {
+    public void rewriteAlg( LogicalModifyCollect alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalValues alg ) {
+    public void rewriteAlg( LogicalValues alg ) {
         // NOTE: UDT instances require invocation of a constructor method, which can't be represented by
         // the tuples stored in a LogicalValues, so we don't have to worry about them here.
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalTableFunctionScan alg ) {
+    public void rewriteAlg( LogicalTableFunctionScan alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( Sample alg ) {
+    public void rewriteAlg( Sample alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalProject alg ) {
+    public void rewriteAlg( LogicalProject alg ) {
         final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
         flattenProjections(
                 new RewriteRexShuttle(),
@@ -492,7 +505,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalCalc alg ) {
+    public void rewriteAlg( LogicalCalc alg ) {
         // Translate the child.
         final AlgNode newInput = getNewForOldRel( alg.getInput() );
 
@@ -539,7 +552,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( SelfFlatteningRel alg ) {
+    public void rewriteAlg( SelfFlatteningRel alg ) {
         alg.flattenRel( this );
     }
 
@@ -656,7 +669,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( Scan alg ) {
+    public void rewriteAlg( Scan alg ) {
         AlgNode newRel = alg.getTable().toAlg( toAlgContext );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
@@ -672,17 +685,17 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteRel( LogicalDelta alg ) {
+    public void rewriteAlg( LogicalDelta alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalChi alg ) {
+    public void rewriteAlg( LogicalChi alg ) {
         rewriteGeneric( alg );
     }
 
 
-    public void rewriteRel( LogicalMatch alg ) {
+    public void rewriteAlg( LogicalMatch alg ) {
         rewriteGeneric( alg );
     }
 
@@ -730,7 +743,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             super.visit( p, ordinal, parent );
 
             currentRel = p;
-            final String visitMethodName = "rewriteRel";
+            final String visitMethodName = "rewriteAlg";
             boolean found =
                     dispatcher.invokeVisitor(
                             AlgStructuredTypeFlattener.this,

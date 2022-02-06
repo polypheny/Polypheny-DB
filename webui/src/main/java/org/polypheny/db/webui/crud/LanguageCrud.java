@@ -110,6 +110,7 @@ public class LanguageCrud {
                 break;
             case CYPHER:
                 results = anyCypherQuery( session, request, transactionManager, userName, databaseName, observer );
+                break;
             default:
                 return Collections.singletonList( new Result( "The used language seems not to be supported!" ) );
         }

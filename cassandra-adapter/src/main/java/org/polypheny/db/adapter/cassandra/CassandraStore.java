@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
@@ -99,6 +100,10 @@ public class CassandraStore extends DataStore {
 
     private final CqlSession session;
     private CassandraSchema currentSchema;
+
+    @Getter
+    // apparently this cannot be static according to lombok even if it should create a non-static getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
     public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {

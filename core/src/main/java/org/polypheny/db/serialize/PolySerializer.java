@@ -1,0 +1,113 @@
+/*
+ * Copyright 2019-2022 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.serialize;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.Lists;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
+import org.apache.calcite.avatica.util.ByteString;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.runtime.PolyCollections.PolyMap;
+
+public class PolySerializer {
+
+    public static final Kryo kryo = new Kryo();
+
+
+    static {
+        kryo.setRegistrationRequired( false );
+        kryo.setWarnUnregisteredClasses( true );
+
+        // utility
+        ImmutableListSerializer immutableListSerializer = new ImmutableListSerializer();
+        kryo.register( ImmutableList.class, immutableListSerializer );
+        kryo.register( ImmutableList.of().getClass(), immutableListSerializer );
+        kryo.register( ImmutableList.of( "-" ).getClass(), immutableListSerializer );
+        kryo.register( ArrayList.class );
+        kryo.register( List.class );
+    }
+
+
+    public static byte[] serializeAndCompress( Object object ) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        DeflaterOutputStream deflate = new DeflaterOutputStream( out );
+
+        Output output = new Output( deflate );
+        kryo.writeObject( output, object );
+
+        output.flush();
+        output.close();
+        return out.toByteArray();
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Map<?, ?> deserializeMap( ByteString in ) {
+        return deserializeAndCompress( in.getBytes(), Map.class );
+    }
+
+
+    public static <T> T deserializeAndCompress( byte[] in, Class<T> clazz ) {
+        ByteArrayInputStream inp = new ByteArrayInputStream( in );
+        InflaterInputStream inflate = new InflaterInputStream( inp );
+
+        Input input = new Input( inflate );
+
+        return kryo.readObject( input, clazz );
+    }
+
+
+    public static byte[] serializeAndCompress( PolyMap<RexLiteral, RexLiteral> map ) {
+        Map<?, ?> obj = map.entrySet().stream().collect( Collectors.toMap( e -> e.getKey().getValue2(), e -> e.getValue().getValue() ) );
+
+        return serializeAndCompress( obj );
+    }
+
+
+    public static class ImmutableListSerializer extends Serializer<ImmutableList<?>> {
+
+        @Override
+        public void write( Kryo kryo, Output output, ImmutableList<?> object ) {
+            kryo.writeClassAndObject( output, Lists.newArrayList( object ) );
+        }
+
+
+        @Override
+        public ImmutableList<?> read( Kryo kryo, Input input, Class<? extends ImmutableList<?>> type ) {
+            Builder<?> builder = ImmutableList.builder();
+            builder
+                    .addAll( (List) kryo.readClassAndObject( input ) )
+                    .build();
+
+            return builder.build();
+        }
+
+    }
+
+}

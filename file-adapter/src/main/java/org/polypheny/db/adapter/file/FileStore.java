@@ -70,6 +70,9 @@ public class FileStore extends DataStore {
 
     private final File WAL; // A folder containing the write ahead log
 
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
+
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );

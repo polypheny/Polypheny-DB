@@ -16,7 +16,7 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.ArrayList;
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
@@ -85,11 +85,11 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
                     .stream()
                     .map( store -> (DataStore) adapterManager.getAdapter( store ) )
                     .collect( Collectors.toList() );
-            DdlManager.getInstance().createTable(
+            DdlManager.getInstance().createEntity(
                     schemaId,
                     name,
-                    new ArrayList<>(),
-                    new ArrayList<>(),
+                    ImmutableList.of(),
+                    ImmutableList.of(),
                     true,
                     dataStores.size() == 0 ? null : dataStores,
                     placementType,

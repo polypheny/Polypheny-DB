@@ -59,6 +59,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CompositeList;
@@ -788,6 +789,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case DATE:
             case TIMESTAMP:
                 return getValueAs( Calendar.class );
+            case MAP:
+                return new PolyMap<Comparable<?>, Comparable<?>>( ((Map<RexLiteral, RexLiteral>) value).entrySet().stream().collect( Collectors.toMap( e -> e.getKey().getValue(), e -> e.getValue().getValue() ) ) );
             default:
                 return value;
         }

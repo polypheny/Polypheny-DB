@@ -58,6 +58,8 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
+import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.type.PolyType;
 
 
@@ -744,9 +746,11 @@ public class BsonUtil {
             case BOOLEAN:
                 return value.asBoolean().getValue();
             case ARRAY:
-                return (Comparable<?>) value.asArray().stream().map( BsonUtil::getUnderlyingValue ).collect( Collectors.toList() );
+                return value.asArray().stream().map( BsonUtil::getUnderlyingValue ).collect( Collectors.toCollection( PolyList::new ) );
             case DOCUMENT:
-                return (Comparable<?>) value.asDocument().entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> getUnderlyingValue( e.getValue() ) ) );
+                PolyMap<String, Comparable<?>> map = new PolyMap<>();
+                value.asDocument().forEach( ( key, val ) -> map.put( key, getUnderlyingValue( val ) ) );
+                return map;
             case DATE_TIME:
                 return value.asDateTime().getValue();
             case TIMESTAMP:

@@ -37,9 +37,9 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.cypher.ddl.DdlManager;
-import org.polypheny.db.cypher.ddl.DdlManager.ColumnInformation;
 import org.polypheny.db.cypher.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.cypher.ddl.DdlManager.ConstraintInformation;
+import org.polypheny.db.cypher.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.cypher.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.cypher.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.cypher.ddl.exception.PartitionGroupNamesNotUniqueException;
@@ -226,17 +226,17 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
         PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
-        List<ColumnInformation> columns = null;
+        List<FieldInformation> columns = null;
         List<ConstraintInformation> constraints = null;
 
         if ( columnList != null ) {
-            Pair<List<ColumnInformation>, List<ConstraintInformation>> columnsConstraints = separateColumnList();
+            Pair<List<FieldInformation>, List<ConstraintInformation>> columnsConstraints = separateColumnList();
             columns = columnsConstraints.left;
             constraints = columnsConstraints.right;
         }
 
         try {
-            DdlManager.getInstance().createTable(
+            DdlManager.getInstance().createEntity(
                     schemaId,
                     tableName,
                     columns,
@@ -276,8 +276,8 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
     }
 
 
-    private Pair<List<ColumnInformation>, List<ConstraintInformation>> separateColumnList() {
-        List<ColumnInformation> columnInformation = new ArrayList<>();
+    private Pair<List<FieldInformation>, List<ConstraintInformation>> separateColumnList() {
+        List<FieldInformation> fieldInformation = new ArrayList<>();
         List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
         int position = 1;
@@ -287,8 +287,8 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
                 String defaultValue = columnDeclaration.getExpression() == null ? null : columnDeclaration.getExpression().toString();
 
-                columnInformation.add(
-                        new ColumnInformation(
+                fieldInformation.add(
+                        new FieldInformation(
                                 columnDeclaration.getName().getSimple(),
                                 ColumnTypeInformation.fromDataTypeSpec( columnDeclaration.getDataType() ),
                                 columnDeclaration.getCollation(),
@@ -313,7 +313,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             position++;
         }
 
-        return new Pair<>( columnInformation, constraintInformation );
+        return new Pair<>( fieldInformation, constraintInformation );
 
     }
 

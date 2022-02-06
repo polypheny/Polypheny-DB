@@ -68,6 +68,7 @@ import org.polypheny.db.algebra.rules.MultiJoinOptimizeBushyRule;
 import org.polypheny.db.algebra.rules.ProjectCalcMergeRule;
 import org.polypheny.db.algebra.rules.ProjectMergeRule;
 import org.polypheny.db.algebra.rules.ProjectToCalcRule;
+import org.polypheny.db.algebra.rules.ScanConverterRule;
 import org.polypheny.db.algebra.rules.ScanRule;
 import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.rules.SortProjectTransposeRule;
@@ -138,6 +139,7 @@ public class Programs {
                     EnumerableRules.ENUMERABLE_MINUS_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_MODIFICATION_RULE,
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
+                    EnumerableRules.ENUMERABLE_CONVERTER_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     SemiJoinRule.PROJECT,
                     SemiJoinRule.JOIN,
@@ -154,7 +156,8 @@ public class Programs {
                     JoinCommuteRule.INSTANCE,
                     JoinPushThroughJoinRule.RIGHT,
                     JoinPushThroughJoinRule.LEFT,
-                    SortProjectTransposeRule.INSTANCE );
+                    SortProjectTransposeRule.INSTANCE,
+                    ScanConverterRule.INSTANCE );
 
 
     // private constructor for utility class

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.bson.BsonBinary;
@@ -55,6 +56,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Adapter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -93,6 +95,15 @@ public class MongoStore extends DataStore {
     private transient MongoSchema currentSchema;
     private String currentUrl;
     private final int dockerInstanceId;
+
+    @Getter
+    private final List<PolyType> unsupportedTypes = ImmutableList.of();
+
+
+    @Override
+    public List<SchemaType> getSupportedSchemaType() {
+        return ImmutableList.of( SchemaType.RELATIONAL, SchemaType.DOCUMENT );
+    }
 
 
     public MongoStore( int adapterId, String uniqueName, Map<String, String> settings ) {

@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +103,8 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
         }
         if ( collectionsType == PolyType.ARRAY ) {
             return typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+        } else if ( collectionsType == PolyType.MAP ) {
+            return typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), elementType );
         } else {
             return elementType;
         }
@@ -209,6 +212,15 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
 
         public final String collation;
 
+    }
+
+
+    public CatalogColumn substituteUnsupportedTypes( List<PolyType> unsupportedTypes ) {
+        if ( unsupportedTypes.contains( type ) ) {
+            return new CatalogColumn( id, name, tableId, schemaId, databaseId, position, PolyType.BINARY, collectionsType, 2024, null, null, cardinality, nullable, collation, defaultValue );
+        } else {
+            return this;
+        }
     }
 
 }

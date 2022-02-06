@@ -595,6 +595,9 @@ public class SqlDialect {
                     //        : null,
                     null,
                     ParserPos.ZERO );
+        } else if ( type.getPolyType() == PolyType.MAP ) {
+            //int precision = 2024;
+            type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.BINARY );
         }
         return (SqlNode) PolyTypeUtil.convertTypeToSpec( type );
     }

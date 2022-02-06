@@ -387,7 +387,7 @@ public abstract class Catalog {
      * @param modifiable Whether the content of the table can be modified
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable );
+    public abstract long addEntity( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable );
 
     /**
      * Adds a view to a specified schema.

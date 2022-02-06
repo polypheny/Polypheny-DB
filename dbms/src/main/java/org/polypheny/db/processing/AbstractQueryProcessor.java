@@ -258,7 +258,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             logicalRoot = logicalRoot.tryExpandView();
         }
 
-        logicalRoot.alg.accept( new DataModelShuttle() );
+         logicalRoot = AlgRoot.of( logicalRoot.alg.accept( new DataModelShuttle( AlgBuilder.create( statement ) ) ), logicalRoot.validatedRowType, logicalRoot.kind );
 
         // Analyze step
         if ( isAnalyze ) {

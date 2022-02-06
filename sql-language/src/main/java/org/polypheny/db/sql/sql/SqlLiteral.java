@@ -36,6 +36,7 @@ import org.polypheny.db.nodes.Literal;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.sql.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.sql.validate.SqlValidator;
@@ -44,7 +45,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BitString;
-import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.DateString;
@@ -208,8 +208,9 @@ public class SqlLiteral extends SqlNode implements Literal {
     }
 
 
+    //transformMapToBson
     public static SqlNode transformMapToBson( Map<RexLiteral, RexLiteral> map, ParserPos pos ) {
-        return createCharString( BsonUtil.transformToBsonString( map ), pos );
+        return createBinaryString( PolySerializer.serializeAndCompress( map ), pos );
     }
 
 

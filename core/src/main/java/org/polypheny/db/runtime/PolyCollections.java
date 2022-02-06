@@ -100,6 +100,11 @@ public class PolyCollections {
         }
 
 
+        public PolyMap() {
+            super();
+        }
+
+
         public static PolyMap<RexLiteral, RexLiteral> ofMap( Map<RexNode, RexNode> map ) {
             Map<RexLiteral, RexLiteral> checked = map.entrySet()
                     .stream()

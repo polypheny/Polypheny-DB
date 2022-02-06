@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -128,6 +129,7 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.serialize.PolySerializer;
 import org.polypheny.db.type.PolyType;
 
 
@@ -429,7 +431,8 @@ public enum BuiltInMethod {
     DOC_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", Object.class, List.class, List.class ),
     DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class ),
     DOC_JSONIZE( MqlFunctions.class, "docJsonize", Object.class ),
-    DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class );
+    DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class ),
+    DESERIALIZE( PolySerializer.class, "deserializeMap", ByteString.class );
 
     public final Method method;
     public final Constructor constructor;

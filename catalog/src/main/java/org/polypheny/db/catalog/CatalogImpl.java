@@ -741,16 +741,16 @@ public class CatalogImpl extends Catalog {
             CatalogAdapter csv = getAdapter( "hr" );
             if ( !testMode ) {
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-                    addTable( "depts", schemaId, systemId, TableType.SOURCE, false );
+                    addEntity( "depts", schemaId, systemId, TableType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-                    addTable( "emps", schemaId, systemId, TableType.SOURCE, false );
+                    addEntity( "emps", schemaId, systemId, TableType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
-                    addTable( "emp", schemaId, systemId, TableType.SOURCE, false );
+                    addEntity( "emp", schemaId, systemId, TableType.SOURCE, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
-                    addTable( "work", schemaId, systemId, TableType.SOURCE, false );
+                    addEntity( "work", schemaId, systemId, TableType.SOURCE, false );
                     addDefaultCsvColumns( csv );
                 }
             }
@@ -1418,7 +1418,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable ) {
+    public long addEntity( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );

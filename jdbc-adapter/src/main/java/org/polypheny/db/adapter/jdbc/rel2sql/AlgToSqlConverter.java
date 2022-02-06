@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.constant.JoinType;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.core.Converter;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
@@ -441,6 +442,11 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
             x = builder.result();
         }
         return x;
+    }
+
+
+    public Result visit( Converter converter ) {
+        return visit( converter.getConvertedInput() );
     }
 
 
