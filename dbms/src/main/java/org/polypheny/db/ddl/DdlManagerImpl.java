@@ -127,6 +127,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -1303,13 +1304,30 @@ public class DdlManagerImpl extends DdlManager {
         newColumnIdsOnDataPlacement.addAll( columnIds );
         newColumnIdsOnDataPlacement.addAll( catalog.getPrimaryKey( catalogTable.primaryKey ).columnIds );
 
-        catalog.updateDataPlacement( storeInstance.getAdapterId(), catalogTable.id, newColumnIdsOnDataPlacement.stream().collect( Collectors.toList() ), partitionIds );
+        List<Long> newPartitionIdsOnDataPlacement = partitionIds.stream().collect( Collectors.toList() );
+        List<Long> removedPartitionIdsFromDataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id ).partitionPlacementsOnAdapter.stream().collect( Collectors.toList() );
+        // Get all partitionIds that are currently on that placement and remove them to get the newly added
+        newPartitionIdsOnDataPlacement.removeAll( catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id ).partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) );
+        removedPartitionIdsFromDataPlacement.removeAll( ImmutableIntList.copyOf( partitionIds ) );
+
+        newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
+                storeInstance.getAdapterId(),
+                catalogTable.id,
+                partitionId,
+                PlacementType.MANUAL,
+                null,
+                null )
+        );
+
+        storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
 
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( addedColumns.size() > 0 ) {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, partitionIds );
         }
+
+        storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitionIdsFromDataPlacement );
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
