@@ -40,7 +40,7 @@ import org.polypheny.db.monitoring.events.QueryDataPoint;
 @AllArgsConstructor(access = AccessLevel.MODULE)
 public class QueryDataPointImpl implements QueryDataPoint, Serializable {
 
-    private static final long serialVersionUID = 2312903042511293177L;
+    private static final long serialVersionUID = 4389301720141941770L;
 
     @Builder.Default
     private final List<String> tables = new ArrayList<>();

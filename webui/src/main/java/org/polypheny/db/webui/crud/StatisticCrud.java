@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatisticsManager;
@@ -46,7 +45,7 @@ public class StatisticCrud {
     @Getter
     private static Crud crud;
     @Getter
-    public boolean isActiveTracking = false;
+    private boolean activeTracking = false;
     private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
 
 
@@ -60,7 +59,7 @@ public class StatisticCrud {
      * Ensures that changes in the ConfigManger toggle the correctly
      */
     private void registerStatisticObserver() {
-        this.isActiveTracking = RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
+        this.activeTracking = RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
         ConfigListener observer = new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
@@ -75,7 +74,7 @@ public class StatisticCrud {
 
 
             private void setConfig( Config c ) {
-                isActiveTracking = c.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
+                activeTracking = c.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean();
             }
         };
         RuntimeConfig.ACTIVE_TRACKING.addObserver( observer );
@@ -85,17 +84,16 @@ public class StatisticCrud {
 
     public void getTableStatistics( Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
-
-        Long tableId;
-        Long schemaId;
-
+        long tableId;
+        long schemaId;
         try {
             schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
             tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
 
             ctx.json( statisticsManager.getTableStatistic( schemaId, tableId ) );
         } catch ( UnknownTableException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: " + request.tableId.split( "\\." )[1] + "is unknown." );
+            throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
+                    + request.tableId.split( "\\." )[1] + "is unknown." );
         }
     }
 
@@ -113,16 +111,15 @@ public class StatisticCrud {
 
 
     /**
-     *General information for the UI dashboard.
+     * General information for the UI dashboard.
      */
     public void getDashboardInformation( Context ctx ) {
-
         ctx.json( statisticsManager.getDashboardInformation() );
     }
 
 
     /**
-     *Information for diagram shown on the UI dashboard.
+     * Information for diagram shown on the UI dashboard.
      */
     public void getDashboardDiagram( final Context ctx ) {
         TreeMap<Timestamp, Pair<Integer, Integer>> info = new TreeMap<>();
@@ -131,7 +128,8 @@ public class StatisticCrud {
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
         boolean notInserted;
         Timestamp startTime;
-        Timestamp endTime = new Timestamp(System.currentTimeMillis());;
+        Timestamp endTime = new Timestamp( System.currentTimeMillis() );
+
         if ( queryData.size() > 0 && dmlData.size() > 0 ) {
             startTime = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
         } else if ( dmlData.size() > 0 ) {
@@ -142,7 +140,7 @@ public class StatisticCrud {
             throw new RuntimeException( "No Data available for Dashboard Diagram" );
         }
 
-        long interval = calculateInterval(startTime, endTime);
+        long interval = calculateInterval( startTime, endTime );
 
         Timestamp time = startTime;
         while ( endTime.getTime() - time.getTime() >= 0 ) {
@@ -183,9 +181,7 @@ public class StatisticCrud {
 
 
     private long calculateInterval( Timestamp startTime, Timestamp endTime ) {
-        long interval = (endTime.getTime() - startTime.getTime()) / 10;
-        return interval;
+        return (endTime.getTime() - startTime.getTime()) / 10;
     }
-
 
 }

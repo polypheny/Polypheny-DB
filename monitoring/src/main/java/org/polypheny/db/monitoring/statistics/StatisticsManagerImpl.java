@@ -105,7 +105,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private final DashboardInformation dashboardInformation;
 
     @Getter
-    private final Map<Long, StatisticTable<T>> tableStatistic;
+    private final Map<Long, StatisticTable> tableStatistic;
 
     @Getter
     private volatile Map<Long, Map<Long, Map<Long, StatisticColumn<T>>>> statisticSchemaMap;
@@ -218,8 +218,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             Integer rowCount = getTableCount( table.getSchemaName(), table.name );
             updateRowCountPerTable( table.id, rowCount, "SET-ROW-COUNT" );
         } );
-
-
     }
 
 
@@ -348,7 +346,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         }
 
         assignUnique( statisticColumn, unique );
-
         statisticColumn.setCount( count );
 
         return statisticColumn;
@@ -384,7 +381,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         statisticColumn.setCount( count );
 
         return statisticColumn;
-
     }
 
 
@@ -727,7 +723,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     }
                 } else {
                     String values = v.getUniqueValues().toString();
-                    if ( !v.isFull ) {
+                    if ( !v.isFull() ) {
                         alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
                     } else {
                         alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );
@@ -740,7 +736,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             tableStatistic.forEach( ( k, v ) -> {
                 tableInformation.addRow( v.getTable(), v.getSchemaType(), v.getNumberOfRows() );
 
-                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getTableType() != TableType.MATERIALIZED_VIEW) {
+                if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getTableType() != TableType.MATERIALIZED_VIEW ) {
                     tableSelectInformation.addRow(
                             v.getTable(),
                             v.getCalls().getNumberOfSelects(),
@@ -809,7 +805,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * @param schemaId of the table
      */
     @Override
-    public void tablesToUpdate( Long tableId, HashMap<Long, List<Object>> changedValues, String type, Long schemaId ) {
+    public void tablesToUpdate( Long tableId, Map<Long, List<Object>> changedValues, String type, Long schemaId ) {
         if ( type.equals( "INSERT" ) ) {
             Catalog catalog = Catalog.getInstance();
             CatalogTable catalogTable = catalog.getTable( tableId );
@@ -842,20 +838,22 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             }
         } else if ( type.equals( "TRUNCATE" ) ) {
             Catalog catalog = Catalog.getInstance();
-            CatalogTable catalogTable = catalog.getTable( tableId );
-            for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
-                PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
-                QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
-                if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
-                    if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
-                        NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
-                        put( queryColumn, numericalStatisticColumn );
-                    } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                        AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
-                        put( queryColumn, alphabeticStatisticColumn );
-                    } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-                        TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
-                        put( queryColumn, temporalStatisticColumn );
+            if ( catalog.checkIfExistsTable( tableId ) ) {
+                CatalogTable catalogTable = catalog.getTable( tableId );
+                for ( int i = 0; i < catalogTable.columnIds.size(); i++ ) {
+                    PolyType polyType = catalog.getColumn( catalogTable.columnIds.get( i ) ).type;
+                    QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
+                    if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
+                        if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+                            NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
+                            put( queryColumn, numericalStatisticColumn );
+                        } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+                            AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
+                            put( queryColumn, alphabeticStatisticColumn );
+                        } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+                            TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
+                            put( queryColumn, temporalStatisticColumn );
+                        }
                     }
                 }
             }
@@ -866,7 +864,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     /**
      * Creates new StatisticColumns and inserts the values.
      */
-    private void addDataStatistics( HashMap<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
+    private void addDataStatistics( Map<Long, List<Object>> changedValues, Catalog catalog, CatalogTable catalogTable, List<Long> columns ) {
         for ( int i = 0; i < columns.size(); i++ ) {
             PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
             QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
@@ -893,9 +891,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public void deleteTableToUpdate( Long tableId, Long schemaId ) {
-        statisticSchemaMap.get( schemaId ).remove( tableId );
+        if ( statisticSchemaMap.containsKey( schemaId ) && statisticSchemaMap.get( schemaId ).containsKey( tableId ) ) {
+            statisticSchemaMap.get( schemaId ).remove( tableId );
+        }
         tableStatistic.remove( tableId );
-        this.tablesToUpdate.remove( tableId );
+        if ( tablesToUpdate.contains( tableId ) ) {
+            this.tablesToUpdate.remove( tableId );
+        }
     }
 
 
@@ -962,7 +964,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         if ( tableStatistic.containsKey( tableId ) ) {
             int numberOfRows = tableStatistic.remove( tableId ).getNumberOfRows();
             if ( numberOfRows != indexSize ) {
-                // use indexSize because it should be correct
+                // Use indexSize because it should be correct
                 StatisticTable statisticTable = tableStatistic.get( tableId );
                 statisticTable.setNumberOfRows( indexSize );
                 tableStatistic.put( tableId, statisticTable );
@@ -1085,10 +1087,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public Object getTableStatistic( Long schemaId, Long tableId ) {
-        StatisticTable<T> statisticTable = tableStatistic.get( tableId );
-        List<NumericalStatisticColumn<T>> numericInfo = new ArrayList<>();
-        List<AlphabeticStatisticColumn<T>> alphabeticInfo = new ArrayList<>();
-        List<TemporalStatisticColumn<T>> temporalInfo = new ArrayList<>();
+        StatisticTable statisticTable = tableStatistic.get( tableId );
+        List<NumericalStatisticColumn<?>> numericInfo = new ArrayList<>();
+        List<AlphabeticStatisticColumn<?>> alphabeticInfo = new ArrayList<>();
+        List<TemporalStatisticColumn<?>> temporalInfo = new ArrayList<>();
         statisticSchemaMap.get( schemaId ).get( tableId ).forEach( ( k, v ) -> {
             if ( v.getType().getFamily() == PolyTypeFamily.NUMERIC ) {
                 numericInfo.add( (NumericalStatisticColumn<T>) v );
@@ -1123,7 +1125,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * This class reevaluates if background tracking should be stopped or restarted depending on the state of the {@link org.polypheny.db.config.ConfigManager}.
+     * This class reevaluates if background tracking should be stopped or restarted depending on the state of
+     * the {@link org.polypheny.db.config.ConfigManager}.
      */
     class TrackingListener implements Config.ConfigListener {
 

@@ -127,7 +127,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -1213,6 +1212,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new LastPlacementException();
         }
 
+        boolean adjustPartitions = true;
         // Remove columns physically
         for ( long columnId : columnsToRemove ) {
             // Drop Column on store
@@ -1268,10 +1268,10 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // All internal partitions placed on this store
-        List<Long> partitionIds = new ArrayList<>();
+        List<Long> intendedPartitionIds = new ArrayList<>();
 
         // Gather all partitions relevant to add depending on the specified partitionGroup
-        tempPartitionGroupList.forEach( pg -> catalog.getPartitions( pg ).forEach( p -> partitionIds.add( p.id ) ) );
+        tempPartitionGroupList.forEach( pg -> catalog.getPartitions( pg ).forEach( p -> intendedPartitionIds.add( p.id ) ) );
 
         // Which columns to add
         List<CatalogColumn> addedColumns = new LinkedList<>();
@@ -1300,34 +1300,46 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        Set<Long> newColumnIdsOnDataPlacement = new HashSet<>();
-        newColumnIdsOnDataPlacement.addAll( columnIds );
-        newColumnIdsOnDataPlacement.addAll( catalog.getPrimaryKey( catalogTable.primaryKey ).columnIds );
+        CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
+        List<Long> removedPartitionIdsFromDataPlacement = new ArrayList<>();
+        // Removed Partition Ids
+        for ( long partitionId : dataPlacement.partitionPlacementsOnAdapter ) {
+            if ( !intendedPartitionIds.contains( partitionId ) ) {
+                removedPartitionIdsFromDataPlacement.add( partitionId );
+            }
+        }
 
-        List<Long> newPartitionIdsOnDataPlacement = partitionIds.stream().collect( Collectors.toList() );
-        List<Long> removedPartitionIdsFromDataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id ).partitionPlacementsOnAdapter.stream().collect( Collectors.toList() );
-        // Get all partitionIds that are currently on that placement and remove them to get the newly added
-        newPartitionIdsOnDataPlacement.removeAll( catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id ).partitionPlacementsOnAdapter.stream().collect( Collectors.toList() ) );
-        removedPartitionIdsFromDataPlacement.removeAll( ImmutableIntList.copyOf( partitionIds ) );
+        List<Long> newPartitionIdsOnDataPlacement = new ArrayList<>();
+        // Added Partition Ids
+        for ( long partitionId : intendedPartitionIds ) {
+            if ( !dataPlacement.partitionPlacementsOnAdapter.contains( partitionId ) ) {
+                newPartitionIdsOnDataPlacement.add( partitionId );
+            }
+        }
 
-        newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
-                storeInstance.getAdapterId(),
-                catalogTable.id,
-                partitionId,
-                PlacementType.MANUAL,
-                null,
-                null )
-        );
+        if ( newPartitionIdsOnDataPlacement.size() > 0 ) {
 
-        storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
+            newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
+                    storeInstance.getAdapterId(),
+                    catalogTable.id,
+                    partitionId,
+                    PlacementType.MANUAL,
+                    null,
+                    null )
+            );
+
+            storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
+        }
 
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( addedColumns.size() > 0 ) {
-            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, partitionIds );
+            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, intendedPartitionIds );
         }
 
-        storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitionIdsFromDataPlacement );
+        if ( removedPartitionIdsFromDataPlacement.size() > 0 ) {
+            storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitionIdsFromDataPlacement );
+        }
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();

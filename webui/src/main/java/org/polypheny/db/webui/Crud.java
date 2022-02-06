@@ -1167,7 +1167,7 @@ public class Crud implements InformationObserver {
         builder.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( t[0], t[1], request.data ) );
         try {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
-            if ( statisticCrud.isActiveTracking ) {
+            if ( statisticCrud.isActiveTracking() ) {
                 transaction.addChangedTable( tableId );
             }
 
@@ -1240,7 +1240,7 @@ public class Crud implements InformationObserver {
             int numOfRows = executeSqlUpdate( statement, transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
-                if ( statisticCrud.isActiveTracking ) {
+                if ( statisticCrud.isActiveTracking() ) {
                     transaction.addChangedTable( tableId );
                 }
                 transaction.commit();

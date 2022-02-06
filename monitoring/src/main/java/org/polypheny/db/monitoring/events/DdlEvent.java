@@ -21,6 +21,7 @@ import java.util.List;
 import org.polypheny.db.monitoring.events.analyzer.DdlEventAnalyzer;
 import org.polypheny.db.monitoring.events.metrics.DdlDataPoint;
 
+
 public class DdlEvent extends StatementEvent {
 
     @Override

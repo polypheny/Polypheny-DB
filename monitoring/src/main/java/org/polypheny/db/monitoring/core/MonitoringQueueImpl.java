@@ -40,8 +40,8 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 /**
- * MonitoringQueue implementation which stores the monitoring jobs in a
- * concurrentQueue and will process them with a background worker task.
+ * MonitoringQueue implementation which stores the monitoring jobs in a concurrent queue and processes them with a
+ * background worker task.
  */
 @Slf4j
 public class MonitoringQueueImpl implements MonitoringQueue {
@@ -68,7 +68,10 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      *
      * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
      */
-    public MonitoringQueueImpl( boolean startBackGroundTask, @NonNull PersistentMonitoringRepository persistentRepository, @NonNull MonitoringRepository statisticRepository ) {
+    public MonitoringQueueImpl(
+            boolean startBackGroundTask,
+            @NonNull PersistentMonitoringRepository persistentRepository,
+            @NonNull MonitoringRepository statisticRepository ) {
         this.persistentRepository = persistentRepository;
         this.statisticRepository = statisticRepository;
 
@@ -81,7 +84,9 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     /**
      * Ctor will automatically start the background task for consuming the queue.
      */
-    public MonitoringQueueImpl( @NonNull PersistentMonitoringRepository persistentRepository, @NonNull MonitoringRepository statisticRepository ) {
+    public MonitoringQueueImpl(
+            @NonNull PersistentMonitoringRepository persistentRepository,
+            @NonNull MonitoringRepository statisticRepository ) {
         this( true, persistentRepository, statisticRepository );
     }
 
@@ -134,7 +139,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         if ( all ) {
             return processedEventsTotal;
         }
-        //returns only processed events since last restart
+        // Returns only processed events since last restart
         return processedEvents;
     }
 
@@ -158,14 +163,14 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         MonitoringEvent event;
 
         try {
-            // while there are jobs to consume:
+            // While there are jobs to consume:
             int countEvents = 0;
             while ( (event = this.getNextJob()) != null && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "get new monitoring job {}", event.getId().toString() );
                 }
 
-                // returns list of metrics which was produced by this particular event
+                // Returns list of metrics which was produced by this particular event
                 final List<MonitoringDataPoint> dataPoints = event.analyze();
                 if ( dataPoints.isEmpty() ) {
                     continue;
@@ -174,7 +179,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 // Sends all extracted metrics to subscribers
                 for ( MonitoringDataPoint dataPoint : dataPoints ) {
                     this.persistentRepository.dataPoint( dataPoint );
-                    //Statistics are only collected if Active Tracking is switched on
+                    // Statistics are only collected if Active Tracking is switched on
                     if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
                         this.statisticRepository.dataPoint( dataPoint );
                     }
