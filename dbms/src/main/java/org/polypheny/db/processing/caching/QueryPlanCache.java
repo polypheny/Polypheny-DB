@@ -72,6 +72,7 @@ public class QueryPlanCache {
 
 
     public void reset() {
+        ImplementationCache.INSTANCE.reset();
         planCache.invalidateAll();
         hitsCounter.set( 0 );
         missesCounter.set( 0 );
