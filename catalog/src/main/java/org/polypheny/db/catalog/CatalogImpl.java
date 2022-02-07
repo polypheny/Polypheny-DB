@@ -2016,7 +2016,7 @@ public class CatalogImpl extends Catalog {
             if ( oldTable.partitionProperty.isPartitioned ) {
                 if ( !isTableFlaggedForDeletion( oldTable.id ) ) {
                     if ( !columnOnly ) {
-                        if ( !validateDataPlacementsConstraints( adapterId, oldTable.id, Arrays.asList( columnId ), new ArrayList<>() ) ) {
+                        if ( !validateDataPlacementsConstraints( oldTable.id, adapterId, Arrays.asList( columnId ), new ArrayList<>() ) ) {
                             throw new RuntimeException( "Partition Distribution failed" );
                         }
                     }
@@ -4351,7 +4351,7 @@ public class CatalogImpl extends Catalog {
         }
 
         // TODO @HENNLO Focus on PartitionPlacements that are labeled as UPTODATE nodes. The outdated nodes do not need
-        //  necessairly need placement constriants
+        //  necessairly need placement constraints
 
         CatalogTable table = getTable( tableId );
         List<CatalogDataPlacement> dataPlacements = getDataPlacements( tableId );
