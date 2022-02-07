@@ -390,7 +390,9 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
 
         // Make sure that the table is of table type SOURCE
-        checkIfDdlPossible( catalogTable.tableType );
+        if ( catalogTable.tableType != TableType.SOURCE ) {
+            throw new RuntimeException( "Illegal operation on table of type " + catalogTable.tableType );
+        }
 
         // Make sure there is only one adapter
         if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
