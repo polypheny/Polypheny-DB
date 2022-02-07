@@ -102,7 +102,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     private String revalId = null;
 
     @Getter
-    private final DashboardInformation dashboardInformation;
+    private DashboardInformation dashboardInformation;
 
     @Getter
     private final Map<Long, StatisticTable> tableStatistic;
@@ -117,11 +117,21 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         this.setQueryInterface( statisticQueryProcessor );
         this.statisticSchemaMap = new ConcurrentHashMap<>();
         this.tableStatistic = new ConcurrentHashMap<>();
+
+        this.listeners.addPropertyChangeListener( this );
+    }
+
+
+    @Override
+    public void initializeStatisticSettings() {
+        this.dashboardInformation = new DashboardInformation();
         displayInformation();
         registerTaskTracking();
         registerIsFullTracking();
-        this.dashboardInformation = new DashboardInformation();
-        this.listeners.addPropertyChangeListener( this );
+
+        if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
+            this.asyncReevaluateAllStatistics();
+        }
     }
 
 
@@ -138,9 +148,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
     public void setQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
         sqlQueryInterface = statisticQueryProcessor;
-        if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
-            this.asyncReevaluateAllStatistics();
-        }
     }
 
 
