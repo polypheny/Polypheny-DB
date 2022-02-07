@@ -28,7 +28,6 @@ import org.mockito.Mockito;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
-import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
@@ -47,14 +46,11 @@ class MonitoringQueueImplIntegrationTest {
         TestMapDbRepository statisticRepo = new TestMapDbRepository();
         persistentRepo.initialize( true ); // will delete the file
 
-        // Mock ui service, not really needed for testing
-        MonitoringServiceUi uiService = Mockito.mock( MonitoringServiceUi.class );
-
         // Create monitoring service with dependencies
         MonitoringQueueImpl queueWriteService = new MonitoringQueueImpl( persistentRepo, statisticRepo );
 
         // Initialize the monitoringService
-        MonitoringService sut = new MonitoringServiceImpl( queueWriteService, persistentRepo, uiService );
+        MonitoringService sut = new MonitoringServiceImpl( queueWriteService, persistentRepo );
 
         Assertions.assertNotNull( sut );
 
