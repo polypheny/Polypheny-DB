@@ -17,6 +17,7 @@
 package org.polypheny.db.schema;
 
 
+import com.google.common.collect.ImmutableList;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.HashMap;
@@ -173,6 +174,12 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                                     catalogTable,
                                     Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ),
                                     partitionPlacement );
+
+                            // we store the substitution information in the tables for later retrieval
+                            if ( !catalogAdapter.unsupportedTypes.isEmpty() ) {
+                                table.setSubstitutionType( catalogAdapter.substitutionType );
+                                table.setUnsupportedTypes( ImmutableList.copyOf( catalogAdapter.unsupportedTypes ) );
+                            }
 
                             physicalTables.put( catalog.getTable( tableId ).name + "_" + partitionPlacement.partitionId, table );
 

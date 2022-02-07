@@ -41,7 +41,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 
 
 /**
- * A relational expression implements the interface <code>Converter</code> to indicate that it converts a physical attribute, or {@link AlgTrait trait},
+ * A relational expression implements the interface <code>Transformer</code> to indicate that it converts a physical attribute, or {@link AlgTrait trait},
  * of a relational expression from one value to another.
  *
  * Sometimes this conversion is expensive; for example, to convert a non-distinct to a distinct object stream, we have to clone every object in the input.

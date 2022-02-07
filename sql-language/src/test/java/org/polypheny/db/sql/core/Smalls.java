@@ -299,6 +299,42 @@ public class Smalls {
             public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
                 return true;
             }
+
+
+            @Override
+            public List<PolyType> getUnsupportedTypes() {
+                return null;
+            }
+
+
+            @Override
+            public void setUnsupportedTypes( ImmutableList<PolyType> types ) {
+
+            }
+
+
+            @Override
+            public PolyType getSubstitutionType() {
+                return null;
+            }
+
+
+            @Override
+            public void setSubstitutionType( PolyType polyType ) {
+
+            }
+
+
+            @Override
+            public boolean needsTypeSubstitution() {
+                return false;
+            }
+
+
+            @Override
+            public AlgDataType getSubstitutedRowType() {
+                return null;
+            }
         };
     }
 

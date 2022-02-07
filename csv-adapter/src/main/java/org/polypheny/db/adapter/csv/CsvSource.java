@@ -44,7 +44,9 @@ import org.reflections.scanners.ResourcesScanner;
 @AdapterProperties(
         name = "CSV",
         description = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.",
-        usedModes = DeployMode.EMBEDDED)
+        usedModes = DeployMode.EMBEDDED,
+        unsupportedTypes = {},
+        substitutionType = PolyType.BINARY)
 @AdapterSettingDirectory(name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 1)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")

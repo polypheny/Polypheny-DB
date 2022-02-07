@@ -49,7 +49,6 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalConverter;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalExchange;
@@ -62,6 +61,7 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalSortExchange;
+import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.logical.LogicalViewScan;
@@ -80,6 +80,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -118,7 +119,7 @@ public class AlgFactories {
 
     public static final ConditionalExecuteFactory DEFAULT_CONDITIONAL_EXECUTE_FACTORY = new ConditionalExecuteFactoryImpl();
 
-    public static final ConverterFactory DEFAULT_CONVERTER_FACTORY = new ConverterFactoryImpl();
+    public static final TransformerFactory DEFAULT_CONVERTER_FACTORY = new TransformerFactoryImpl();
 
     /**
      * A {@link AlgBuilderFactory} that creates a {@link AlgBuilder} that will create logical relational expressions for everything.
@@ -325,20 +326,20 @@ public class AlgFactories {
     }
 
 
-    public interface ConverterFactory {
+    public interface TransformerFactory {
 
-        AlgNode createConverter(
-                AlgNode input
-        );
+        AlgNode createTransformer(
+                AlgNode input,
+                List<PolyType> unsupportedTypes, PolyType substituteType );
 
     }
 
 
-    public static class ConverterFactoryImpl implements ConverterFactory {
+    public static class TransformerFactoryImpl implements TransformerFactory {
 
         @Override
-        public AlgNode createConverter( AlgNode input ) {
-            return LogicalConverter.create( input );
+        public AlgNode createTransformer( AlgNode input, List<PolyType> unsupportedTypes, PolyType substituteType ) {
+            return LogicalTransformer.create( input, unsupportedTypes, substituteType );
         }
 
     }

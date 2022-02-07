@@ -124,7 +124,6 @@ import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.schema.document.DataModelShuttle;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
@@ -257,8 +256,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         if ( logicalRoot.alg.hasView() ) {
             logicalRoot = logicalRoot.tryExpandView();
         }
-
-         logicalRoot = AlgRoot.of( logicalRoot.alg.accept( new DataModelShuttle( AlgBuilder.create( statement ) ) ), logicalRoot.validatedRowType, logicalRoot.kind );
 
         // Analyze step
         if ( isAnalyze ) {
@@ -980,7 +977,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private List<ProposedRoutingPlan> route( AlgRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
         final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
         if ( logicalRoot.alg instanceof LogicalTableModify ) {
-            AlgNode routedDml = dmlRouter.routeDml( logicalRoot.alg, statement );
+            AlgNode routedDml = dmlRouter.routeDml( (LogicalTableModify) logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, statement, queryInformation );

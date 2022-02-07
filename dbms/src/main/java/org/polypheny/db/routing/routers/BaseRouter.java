@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
-import org.polypheny.db.algebra.logical.LogicalConverter;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -87,9 +86,16 @@ public abstract class BaseRouter {
             String physicalSchemaName,
             String physicalTableName,
             long partitionId ) {
-        return builder.scan( ImmutableList.of(
+        AlgNode node = builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
-                logicalTableName + "_" + partitionId ) );
+                logicalTableName + "_" + partitionId ) ).build();
+
+        builder.push( node );
+        if ( node.getTable().getTable() != null && node.getTable().getTable().needsTypeSubstitution() ) {
+            builder.transformer( node.getTable().getTable().getUnsupportedTypes(), node.getTable().getTable().getSubstitutionType() );
+        }
+
+        return builder;
     }
 
 
@@ -107,11 +113,6 @@ public abstract class BaseRouter {
         return builder.documents( node.getDocumentTuples(), node.getRowType(), node.getTuples() );
     }
 
-
-    protected RoutedAlgBuilder handleConverter( LogicalConverter node, RoutedAlgBuilder builder ) {
-        handleValues( (LogicalValues) node.getOriginal(), builder );
-        return builder.converter();
-    }
 
 
     public RoutedAlgBuilder handleGeneric( AlgNode node, RoutedAlgBuilder builder ) {

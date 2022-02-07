@@ -18,8 +18,6 @@ package org.polypheny.db.schema.document;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.Scan;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.tools.AlgBuilder;
@@ -45,39 +43,9 @@ public class DataModelShuttle extends AlgShuttleImpl {
     }
 
 
-    @Override
-    public AlgNode visit( AlgNode other ) {
-        if ( other instanceof TableModify ) {
-            TableModify modify = (TableModify) other;
-            if ( modify.isInsert() && containsType( modify.getInput().getRowType(), PolyType.MAP ) ) {
-                AlgNode input = modify.getInput();
-                builder.push( input );
-                builder.converter();
-                modify.replaceInput( 0, builder.build() );
-            } else if ( modify.isDelete() && containsType( modify.getInput().getRowType(), PolyType.MAP ) ) {
-                builder.push( modify );
-                builder.converter();
-                return builder.build();
-            }
-            return super.visit( other );
-        }
-        return super.visit( other );
-    }
-
-
     private static boolean containsType( AlgDataType rowType, PolyType type ) {
         return rowType.getFieldList().stream().anyMatch( f -> f.getType().getPolyType() == type );
     }
 
-
-    @Override
-    public AlgNode visit( Scan scan ) {
-        if ( containsType( scan.getRowType(), PolyType.MAP ) ) {
-            builder.push( scan );
-            builder.converter();
-            return builder.build();
-        }
-        return super.visit( scan );
-    }
 
 }

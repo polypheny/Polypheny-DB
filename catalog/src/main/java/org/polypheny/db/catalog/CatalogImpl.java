@@ -1926,7 +1926,10 @@ public class CatalogImpl extends Catalog {
                 placementType,
                 physicalSchemaName,
                 physicalColumnName,
-                physicalPositionBuilder.getAndIncrement() );
+                physicalPositionBuilder.getAndIncrement(),
+                store.unsupportedTypes.contains( column.type )
+                        || (column.collectionsType != null && store.unsupportedTypes.contains( column.collectionsType ))
+                        ? store.substitutionType : null );
 
         synchronized ( this ) {
             columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
@@ -2377,7 +2380,8 @@ public class CatalogImpl extends Catalog {
                     placementType,
                     old.physicalSchemaName,
                     old.physicalColumnName,
-                    old.physicalPosition );
+                    old.physicalPosition,
+                    old.substitutionType );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
@@ -2409,7 +2413,8 @@ public class CatalogImpl extends Catalog {
                     old.placementType,
                     old.physicalSchemaName,
                     old.physicalColumnName,
-                    position );
+                    position,
+                    old.substitutionType );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
@@ -2441,7 +2446,8 @@ public class CatalogImpl extends Catalog {
                     old.placementType,
                     old.physicalSchemaName,
                     old.physicalColumnName,
-                    physicalPositionBuilder.getAndIncrement() );
+                    physicalPositionBuilder.getAndIncrement(),
+                    old.substitutionType );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
@@ -2475,7 +2481,8 @@ public class CatalogImpl extends Catalog {
                     old.placementType,
                     physicalSchemaName,
                     physicalColumnName,
-                    updatePhysicalColumnPosition ? physicalPositionBuilder.getAndIncrement() : old.physicalPosition );
+                    updatePhysicalColumnPosition ? physicalPositionBuilder.getAndIncrement() : old.physicalPosition,
+                    old.substitutionType );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }

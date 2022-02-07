@@ -21,8 +21,11 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.type.PolyType;
 
 
 @EqualsAndHashCode
@@ -40,6 +43,7 @@ public class CatalogColumnPlacement implements CatalogEntity {
 
     public final String physicalSchemaName;
     public final String physicalColumnName;
+    public final PolyType substitutionType;
 
 
     public CatalogColumnPlacement(
@@ -50,7 +54,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalColumnName,
-            final long physicalPosition ) {
+            final long physicalPosition,
+            final PolyType substitutionType ) {
         this.tableId = tableId;
         this.columnId = columnId;
         this.adapterId = adapterId;
@@ -59,6 +64,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
         this.physicalSchemaName = physicalSchemaName;
         this.physicalColumnName = physicalColumnName;
         this.physicalPosition = physicalPosition;
+        // if null, no substitution is necessary
+        this.substitutionType = substitutionType;
     }
 
 
@@ -86,6 +93,11 @@ public class CatalogColumnPlacement implements CatalogEntity {
     }
 
 
+    public boolean needsSubstitution() {
+        return this.substitutionType != null;
+    }
+
+
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
@@ -95,6 +107,18 @@ public class CatalogColumnPlacement implements CatalogEntity {
                 placementType.name(),
                 physicalSchemaName,
                 physicalColumnName };
+    }
+
+
+    public AlgDataType getSubstitutionAlgType( AlgDataTypeFactory factory ) {
+
+        switch ( substitutionType ) {
+            case VARCHAR:
+            case BINARY:
+                return factory.createPolyType( substitutionType, 2024 );
+            default:
+                throw new RuntimeException( "Error while substituting unsupported type." );
+        }
     }
 
 }

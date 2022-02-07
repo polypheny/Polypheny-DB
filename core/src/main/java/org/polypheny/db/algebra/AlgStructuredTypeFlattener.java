@@ -40,7 +40,6 @@ import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalCalc;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
-import org.polypheny.db.algebra.logical.LogicalConverter;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalIntersect;
@@ -52,6 +51,7 @@ import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
 import org.polypheny.db.algebra.logical.LogicalTableFunctionScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
+import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -339,14 +339,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    public void rewriteAlg( LogicalConverter alg ) {
-        /*if ( alg.getClazz() == LogicalValues.class ){
-            this.rewriteAlg( (LogicalValues) alg.getOriginal() );
-        }else if( alg.getClazz() == LogicalScan.class ){
-            this.rewriteAlg( (LogicalScan) alg.getOriginal() );
-        }*/
-
-        LogicalConverter newAlg = LogicalConverter.create( getNewForOldRel( alg.getOriginal() ) );
+    public void rewriteAlg( LogicalTransformer alg ) {
+        LogicalTransformer newAlg = LogicalTransformer.create( alg.getInput(), alg.getUnsupportedTypes(), alg.getSubstituteType() );
         setNewForOldRel( alg, newAlg );
     }
 

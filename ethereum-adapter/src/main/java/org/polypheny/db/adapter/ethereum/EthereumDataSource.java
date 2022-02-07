@@ -50,7 +50,9 @@ import org.web3j.protocol.http.HttpService;
 @AdapterProperties(
         name = "Ethereum",
         description = "An adapter for querying the Ethereum blockchain. It uses the ethereum JSON-RPC API. Currently, this adapter only supports read operations.",
-        usedModes = DeployMode.REMOTE)
+        usedModes = DeployMode.REMOTE,
+        unsupportedTypes = { PolyType.MAP, PolyType.DOCUMENT },
+        substitutionType = PolyType.VARCHAR)
 @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
 @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
 @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)

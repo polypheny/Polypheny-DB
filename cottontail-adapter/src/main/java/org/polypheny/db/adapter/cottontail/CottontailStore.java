@@ -93,7 +93,9 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 @AdapterProperties(
         name = "Cottontail-DB",
         description = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.",
-        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE })
+        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE },
+        unsupportedTypes = { PolyType.MAP, PolyType.DOCUMENT },
+        substitutionType = PolyType.BINARY)
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1)
 @AdapterSettingInteger(name = "port", defaultValue = 1865, position = 2)
 @AdapterSettingString(name = "database", defaultValue = "cottontail", position = 3)

@@ -54,7 +54,6 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
-import org.polypheny.db.algebra.core.Converter;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
@@ -65,6 +64,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
@@ -134,8 +134,7 @@ public class JdbcRules {
                 new JdbcIntersectRule( out, algBuilderFactory ),
                 new JdbcMinusRule( out, algBuilderFactory ),
                 new JdbcTableModificationRule( out, algBuilderFactory ),
-                new JdbcValuesRule( out, algBuilderFactory ),
-                new JdbcConverterRulee( out, algBuilderFactory ) );
+                new JdbcValuesRule( out, algBuilderFactory ) );
     }
 
 
@@ -433,7 +432,7 @@ public class JdbcRules {
                                     && !multimediaFunctionInProject( project )
                                     && !DocumentRules.containsJson( project )
                                     && !DocumentRules.containsDocument( project )
-                                    && !Converter.containsDeserialize( project )
+                                    && !Transformer.containsDeserialize( project )
                                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project )),
                     Convention.NONE, out, algBuilderFactory, "JdbcProjectRule." + out );
         }
@@ -1139,24 +1138,6 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
-
-    }
-
-
-    private static class JdbcConverterRulee extends JdbcConverterRule {
-
-        public JdbcConverterRulee( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Converter.class, r -> !r.isScan(), Convention.NONE, out, algBuilderFactory, "JdbcConverterRule." + out );
-        }
-
-
-        @Override
-        public AlgNode convert( AlgNode alg ) {
-            Converter converter = (Converter) alg;
-
-            return converter.getTransformed();
-        }
-
 
     }
 

@@ -35,6 +35,7 @@ import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 
@@ -98,8 +99,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
-    public RoutedAlgBuilder converter() {
-        super.converter();
+    public RoutedAlgBuilder transformer( List<PolyType> unsupportedTypes, PolyType substituteType ) {
+        super.transformer( unsupportedTypes, substituteType );
         return this;
     }
 

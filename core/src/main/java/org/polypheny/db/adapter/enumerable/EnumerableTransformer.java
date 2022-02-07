@@ -16,16 +16,18 @@
 
 package org.polypheny.db.adapter.enumerable;
 
+import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Converter;
+import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
-public class EnumerableConverter extends Converter implements EnumerableAlg {
+public class EnumerableTransformer extends Transformer implements EnumerableAlg {
 
     /**
      * Creates a <code>SingleRel</code>.
@@ -34,15 +36,15 @@ public class EnumerableConverter extends Converter implements EnumerableAlg {
      * @param traits
      * @param input Input relational expression
      */
-    protected EnumerableConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input ) {
-        super( cluster, traits, input );
+    protected EnumerableTransformer( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<PolyType> unsupportedTypes, PolyType substituteType ) {
+        super( cluster, traits, input, unsupportedTypes, substituteType );
     }
 
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final BlockBuilder builder = new BlockBuilder();
-        Result orig = implementor.visitChild( this, 0, (EnumerableAlg) getConvertedScan(), pref );
+        Result orig = null;//implementor.visitChild( this, 0, (EnumerableAlg) getConvertedScan(), pref );
 
         Expression childExp = builder.append( builder.newName( "child_" + System.nanoTime() ), orig.block );
 

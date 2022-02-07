@@ -34,6 +34,14 @@
 package org.polypheny.db.schema.impl;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.Setter;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.schema.Schema;
@@ -42,6 +50,7 @@ import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -51,7 +60,24 @@ import org.polypheny.db.schema.Wrapper;
  * their table can potentially contain rolled up values. This information is used by the validator to check for illegal uses
  * of these columns.
  */
+@Getter
 public abstract class AbstractTable implements Table, Wrapper {
+
+    @Setter
+    private boolean substitutionNeeded = false;
+
+    @Setter
+    private ImmutableList<PolyType> unsupportedTypes = ImmutableList.of();
+
+    @Setter
+    private PolyType substitutionType;
+
+    private Boolean needsTypeSubstitution = null;
+
+    private final HashMap<Integer, AlgDataType> replacedTypes = new HashMap<>();
+
+    private AlgRecordType substitutedRowType;
+
 
     protected AbstractTable() {
     }
@@ -88,6 +114,45 @@ public abstract class AbstractTable implements Table, Wrapper {
     @Override
     public boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent ) {
         return true;
+    }
+
+
+    @Override
+    public boolean needsTypeSubstitution() {
+        if ( needsTypeSubstitution != null ) {
+            return needsTypeSubstitution;
+        }
+
+        if ( getRowType( getTypeFactory() )
+                .getFieldList()
+                .stream()
+                .anyMatch( f -> unsupportedTypes.contains( f.getType().getPolyType() ) ) ) {
+
+            buildSubstitutedRowType();
+            needsTypeSubstitution = true;
+            return true;
+
+        }
+        needsTypeSubstitution = false;
+        return false;
+    }
+
+
+    private void buildSubstitutedRowType() {
+        AlgDataType rowType = getRowType( getTypeFactory() );
+        rowType.getFieldList().forEach( f -> {
+            if ( unsupportedTypes.contains( f.getType().getPolyType() ) ) {
+                replacedTypes.put( f.getIndex(), f.getType() );
+            }
+        } );
+
+        this.substitutedRowType = new AlgRecordType( rowType.getFieldList().stream().map( f -> {
+            if ( replacedTypes.containsKey( f.getIndex() ) ) {
+                return new AlgDataTypeFieldImpl( f.getName(), f.getPhysicalName(), f.getIndex(), getTypeFactory().createPolyType( substitutionType, 2024 ) );
+            }
+            return f;
+        } ).collect( Collectors.toList() ) );
+
     }
 
 }

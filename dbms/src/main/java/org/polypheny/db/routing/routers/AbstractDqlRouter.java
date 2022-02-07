@@ -25,7 +25,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.SetOp;
-import org.polypheny.db.algebra.logical.LogicalConverter;
 import org.polypheny.db.algebra.logical.LogicalScan;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
@@ -170,13 +169,6 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
         } else if ( node instanceof LogicalValues ) {
             return Lists.newArrayList( super.handleValues( (LogicalValues) node, builders ) );
-        } else if ( node instanceof LogicalConverter ) {
-            builders = buildDql( ((LogicalConverter) node).getOriginal(), builders, statement, cluster, queryInformation );
-            if ( !cancelQuery ) {
-                builders.forEach( RoutedAlgBuilder::converter );
-            }
-
-            return builders;
         } else {
             return Lists.newArrayList( super.handleGeneric( node, builders ) );
         }

@@ -52,9 +52,6 @@ public abstract class DataStore extends Adapter {
     }
 
 
-    public abstract List<PolyType> getUnsupportedTypes();
-
-
     public List<SchemaType> getSupportedSchemaType() {
         log.info( "Using default SchemaType support." );
         return ImmutableList.of( SchemaType.RELATIONAL );

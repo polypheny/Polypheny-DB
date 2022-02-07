@@ -20,26 +20,27 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.Converter;
+import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.type.PolyType;
 
-public class LogicalConverter extends Converter {
+public class LogicalTransformer extends Transformer {
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalConverter( getOriginal().getCluster(), traitSet, getOriginal() );
+        return new LogicalTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getUnsupportedTypes(), getSubstituteType() );
     }
 
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return getOriginal().computeSelfCost( planner, mq );
+        return input.computeSelfCost( planner, mq );
     }
 
 
@@ -49,13 +50,15 @@ public class LogicalConverter extends Converter {
      * @param cluster Cluster this relational expression belongs to
      * @param traits
      * @param original Input relational expression
+     * @param unsupportedTypes
+     * @param substituteType
      */
-    protected LogicalConverter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode original ) {
-        super( cluster, traits, original );
+    protected LogicalTransformer( AlgOptCluster cluster, AlgTraitSet traits, AlgNode original, List<PolyType> unsupportedTypes, PolyType substituteType ) {
+        super( cluster, traits, original, unsupportedTypes, substituteType );
     }
 
 
-    public static LogicalConverter create( AlgNode input ) {
+    public static LogicalTransformer create( AlgNode input, List<PolyType> unsupportedTypes, PolyType substituteType ) {
 
         final AlgTraitSet traitSet =
                 input.getCluster().traitSetOf( Convention.NONE )
@@ -63,7 +66,7 @@ public class LogicalConverter extends Converter {
                                 AlgCollationTraitDef.INSTANCE,
                                 ImmutableList::of );
         // add trait switch here
-        return new LogicalConverter( input.getCluster(), traitSet, input );
+        return new LogicalTransformer( input.getCluster(), traitSet, input, unsupportedTypes, substituteType );
     }
 
 }

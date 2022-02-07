@@ -51,7 +51,9 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterProperties(
         name = "File",
         description = "An adapter that stores all data as files. It is especially suitable for multimedia collections.",
-        usedModes = DeployMode.EMBEDDED)
+        usedModes = DeployMode.EMBEDDED,
+        unsupportedTypes = { PolyType.MAP, PolyType.DOCUMENT },
+        substitutionType = PolyType.VARCHAR)
 public class FileStore extends DataStore {
 
     // Standards

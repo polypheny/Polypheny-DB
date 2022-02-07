@@ -73,6 +73,7 @@ import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
+import org.polypheny.db.algebra.core.AlgFactories.TransformerFactory;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
@@ -150,7 +151,7 @@ public class AlgBuilder {
     protected final AlgOptSchema algOptSchema;
     private final AlgFactories.FilterFactory filterFactory;
     private final AlgFactories.ProjectFactory projectFactory;
-    private final AlgFactories.ConverterFactory converterFactory;
+    private final TransformerFactory transformerFactory;
     private final AlgFactories.AggregateFactory aggregateFactory;
     private final AlgFactories.SortFactory sortFactory;
     private final AlgFactories.ExchangeFactory exchangeFactory;
@@ -232,9 +233,9 @@ public class AlgBuilder {
                         context.unwrap( AlgFactories.DocumentsFactory.class ),
                         AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
 
-        this.converterFactory =
+        this.transformerFactory =
                 Util.first(
-                        context.unwrap( AlgFactories.ConverterFactory.class ),
+                        context.unwrap( TransformerFactory.class ),
                         AlgFactories.DEFAULT_CONVERTER_FACTORY );
 
         final RexExecutor executor =
@@ -2485,8 +2486,8 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder converter() {
-        stack.push( new Frame( converterFactory.createConverter( this.stack.pop().alg ) ) );
+    public AlgBuilder transformer( List<PolyType> unsupportedTypes, PolyType substituteType ) {
+        stack.push( new Frame( transformerFactory.createTransformer( this.stack.pop().alg, unsupportedTypes, substituteType ) ) );
 
         return this;
     }

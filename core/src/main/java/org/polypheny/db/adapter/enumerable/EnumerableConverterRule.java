@@ -18,26 +18,26 @@ package org.polypheny.db.adapter.enumerable;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.core.Converter;
-import org.polypheny.db.algebra.logical.LogicalConverter;
+import org.polypheny.db.algebra.core.Transformer;
+import org.polypheny.db.algebra.logical.LogicalTransformer;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 public class EnumerableConverterRule extends ConverterRule {
 
     public EnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
-        super( LogicalConverter.class, Converter::isScan, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableConverter" );
+        super( LogicalTransformer.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableTransformer" );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        Converter converter = (Converter) alg;
-        return converter.getConvertedScan();
-        /*AlgNode orig = convert( converter.getOriginal(), converter.getOriginal().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        Transformer transformer = (Transformer) alg;
+        return transformer;
+        /*AlgNode orig = convert( transformer.getOriginal(), transformer.getOriginal().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
-        final AlgTraitSet traitSet = converter.getTraitSet().replace( out );
-        return new EnumerableConverter( converter.getCluster(), traitSet, orig )*/
+        final AlgTraitSet traitSet = transformer.getTraitSet().replace( out );
+        return new EnumerableTransformer( transformer.getCluster(), traitSet, orig )*/
     }
 
 }

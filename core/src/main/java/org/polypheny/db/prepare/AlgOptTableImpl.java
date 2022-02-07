@@ -154,6 +154,11 @@ public class AlgOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
 
+    public AlgOptTableImpl substitutedCopy() {
+        return copy( getTable().getSubstitutedRowType() );
+    }
+
+
     private static Function<Class, Expression> getClassExpressionFunction( PolyphenyDbSchema.TableEntry tableEntry, Table table ) {
         return getClassExpressionFunction( tableEntry.schema.plus(), tableEntry.name, table );
     }

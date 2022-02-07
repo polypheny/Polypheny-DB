@@ -47,6 +47,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -66,11 +67,16 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.PolyType;
 
+@Getter
 public abstract class Adapter {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
+    private final List<SchemaType> supportedSchemaTypes;
+    private final PolyType substitutionType;
+    private final List<PolyType> unsupportedTypes;
 
 
     @Target(ElementType.TYPE)
@@ -82,6 +88,12 @@ public abstract class Adapter {
         String description();
 
         DeployMode[] usedModes();
+
+        PolyType[] unsupportedTypes();
+
+        PolyType substitutionType();
+
+        SchemaType[] supportedSchemaTypes() default { SchemaType.RELATIONAL };
 
     }
 
@@ -275,6 +287,10 @@ public abstract class Adapter {
         if ( !settings.containsKey( "mode" ) ) {
             throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
         }
+
+        this.unsupportedTypes = Arrays.asList( properties.unsupportedTypes() );
+        this.substitutionType = properties.substitutionType();
+        this.supportedSchemaTypes = Arrays.asList( properties.supportedSchemaTypes() );
 
         this.deployMode = DeployMode.fromString( settings.get( "mode" ) );
 
