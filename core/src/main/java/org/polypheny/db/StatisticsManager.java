@@ -77,4 +77,6 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract Object getDashboardInformation();
 
+    public abstract void initializeStatisticSettings();
+
 }
