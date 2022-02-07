@@ -23,7 +23,7 @@ import java.util.UUID;
 
 public class InformationKeyValue extends Information {
 
-    HashMap<String, String> keyValuePairs = new HashMap<>();
+    private final HashMap<String, String> keyValuePairs = new HashMap<>();
 
 
     /**

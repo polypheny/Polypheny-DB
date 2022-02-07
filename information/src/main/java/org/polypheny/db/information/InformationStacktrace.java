@@ -28,7 +28,7 @@ import java.util.UUID;
 
 public class InformationStacktrace extends Information {
 
-    Throwable exception;
+    private Throwable exception;
 
 
     /**

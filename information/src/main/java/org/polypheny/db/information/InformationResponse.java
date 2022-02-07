@@ -16,7 +16,6 @@
 
 package org.polypheny.db.information;
 
-
 import lombok.NoArgsConstructor;
 
 
@@ -26,8 +25,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InformationResponse {
 
-    String errorMsg;
-    String successMsg;
+    @SuppressWarnings("FieldCanBeLocal")
+    private String errorMsg;
+    @SuppressWarnings("FieldCanBeLocal")
+    private String successMsg;
 
 
     public InformationResponse message( final String message ) {
@@ -40,4 +41,5 @@ public class InformationResponse {
         this.errorMsg = error;
         return this;
     }
+
 }
