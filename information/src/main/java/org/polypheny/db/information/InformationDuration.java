@@ -34,7 +34,7 @@ public class InformationDuration extends Information {
     /**
      * Duration in NanoSeconds
      */
-    long duration = 0L;
+    private long duration = 0L;
 
 
     /**

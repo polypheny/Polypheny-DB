@@ -20,6 +20,7 @@ package org.polypheny.db.information;
 import com.google.gson.annotations.SerializedName;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -32,7 +33,7 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 @Accessors(chain = true, fluent = true)
 public class InformationGraph extends Information {
 
-    private HashMap<String, GraphData<? extends Number>> data = new HashMap<>();
+    private final Map<String, GraphData<? extends Number>> data = new HashMap<>();
     @SuppressWarnings("unused")
     @SerializedName("labels")
     private String[] xLabels;

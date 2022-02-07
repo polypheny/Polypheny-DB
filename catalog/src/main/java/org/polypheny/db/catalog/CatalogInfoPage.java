@@ -58,17 +58,16 @@ public class CatalogInfoPage implements PropertyChangeListener {
         InformationPage page = new InformationPage( "Catalog" );
         infoManager.addPage( page );
 
-        this.adapterInformation = addCatalogInformationTable( page, "Adapters", 5, Arrays.asList( "ID", "Name", "Type" ) );
-        this.databaseInformation = addCatalogInformationTable( page, "Databases", 1, Arrays.asList( "ID", "Name", "Default SchemaID" ) );
-        this.schemaInformation = addCatalogInformationTable( page, "Schemas", 2, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
-        this.tableInformation = addCatalogInformationTable( page, "Tables", 3, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "Type", "PartitionType", "PartitionGroups" ) );
-        this.columnInformation = addCatalogInformationTable( page, "Columns", 4, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID", "Placements" ) );
-        this.indexInformation = addCatalogInformationTable( page, "Indexes", 6, Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
-        this.partitionGroupInformation = addCatalogInformationTable( page, "Partition Groups", 7, Arrays.asList( "ID", "Name", "TableID", "# Partitions" ) );
-        this.partitionInformation = addCatalogInformationTable( page, "Partitions", 8, Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ) );
+        this.adapterInformation = addCatalogInformationTable( page, "Adapters", 5, Arrays.asList( "ID", "Name", "Type" ), 0 );
+        this.databaseInformation = addCatalogInformationTable( page, "Databases", 1, Arrays.asList( "ID", "Name", "Default SchemaID" ), 0 );
+        this.schemaInformation = addCatalogInformationTable( page, "Schemas", 2, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ), 0 );
+        this.tableInformation = addCatalogInformationTable( page, "Tables", 3, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "Type", "PartitionType", "PartitionGroups" ), 0 );
+        this.columnInformation = addCatalogInformationTable( page, "Columns", 4, Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID", "Placements" ), 0 );
+        this.indexInformation = addCatalogInformationTable( page, "Indexes", 6, Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ), 0 );
+        this.partitionGroupInformation = addCatalogInformationTable( page, "Partition Groups", 7, Arrays.asList( "ID", "Name", "TableID", "# Partitions" ), 0 );
+        this.partitionInformation = addCatalogInformationTable( page, "Partitions", 8, Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ), 0 );
 
-        this.debugInformation = addCatalogInformationTable( page, "Debug", 10, Arrays.asList( "Time", "Message" ) );
-        this.debugInformation.setLimit( 100 );
+        this.debugInformation = addCatalogInformationTable( page, "Debug", 10, Arrays.asList( "Time", "Message" ), 100 );
 
         addPersistentInfo( page );
 
@@ -77,11 +76,11 @@ public class CatalogInfoPage implements PropertyChangeListener {
     }
 
 
-    private InformationTable addCatalogInformationTable( InformationPage page, String name, int order, List<String> titles ) {
+    private InformationTable addCatalogInformationTable( InformationPage page, String name, int order, List<String> titles, int limit ) {
         InformationGroup catalogGroup = new InformationGroup( page, name );
         catalogGroup.setOrder( order );
         infoManager.addGroup( catalogGroup );
-        InformationTable table = new InformationTable( catalogGroup, titles );
+        InformationTable table = new InformationTable( catalogGroup, titles, limit );
         infoManager.registerInformation( table );
         return table;
     }

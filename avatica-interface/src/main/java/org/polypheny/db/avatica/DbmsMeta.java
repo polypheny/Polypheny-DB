@@ -1626,43 +1626,86 @@ public class DbmsMeta implements ProtobufMeta {
     private class MonitoringPage {
 
         private final InformationPage informationPage;
-        private final InformationGroup informationGroupConnection;
+        private final InformationGroup informationGroupConnectionStatistics;
         private final InformationTable connectionNumberTable;
+
+        private final InformationGroup informationGroupConnectionList;
+        private final InformationTable connectionListTable;
 
 
         public MonitoringPage( String uniqueName ) {
             InformationManager im = InformationManager.getInstance();
 
             informationPage = new InformationPage( uniqueName, "AVATICA Interface" ).fullWidth().setLabel( "Interfaces" );
-            informationGroupConnection = new InformationGroup( informationPage, "Connections" );
+            informationGroupConnectionStatistics = new InformationGroup( informationPage, "Connection Statistics" );
 
             im.addPage( informationPage );
-            im.addGroup( informationGroupConnection );
+            im.addGroup( informationGroupConnectionStatistics );
 
+            //// connectionNumberTable
             connectionNumberTable = new InformationTable(
-                    informationGroupConnection,
+                    informationGroupConnectionStatistics,
                     Arrays.asList( "Attribute", "Value" ) );
+            connectionNumberTable.setOrder( 1 );
             im.registerInformation( connectionNumberTable );
+            //
 
-            informationPage.setRefreshFunction( () -> {
+            //// connectionListTable
+            informationGroupConnectionList = new InformationGroup( informationPage, "Connections" );
+            im.addGroup( informationGroupConnectionList );
+            connectionListTable = new InformationTable(
+                    informationGroupConnectionList,
+                    Arrays.asList( "Connection ID", "User", "Driver", "TX", "Auto Commit", "Client IP" ) );
+            connectionListTable.setOrder( 2 );
+            im.registerInformation( connectionListTable );
+            //
 
-            } );
-
-            informationGroupConnection.setRefreshFunction( this::update );
+            informationPage.setRefreshFunction( this::update );
         }
 
 
-        public void update() {
+        public void updateConnectionNumberTable() {
             connectionNumberTable.reset();
             connectionNumberTable.addRow( "Open Statements", "" + openStatements.size() );
             connectionNumberTable.addRow( "Open Connections", "" + openStatements.size() );
         }
 
 
+        public void updateConnectionListTable() {
+            connectionListTable.reset();
+
+            for ( Entry<String, PolyphenyDbConnectionHandle> entry : openConnections.entrySet() ) {
+                String connectionId = entry.getKey();
+                PolyphenyDbConnectionHandle connectionHandle = entry.getValue();
+                Transaction currentTx = connectionHandle.getCurrentTransaction();
+                String txId = "-";
+                if ( currentTx != null ) {
+                    txId = String.valueOf( currentTx.getId() );
+                }
+
+                connectionListTable.addRow(
+                        connectionId,
+                        connectionHandle.getUser().name,
+                        "N/A",
+                        txId,
+                        connectionHandle.isAutoCommit(),
+                        "N/A"
+                );
+            }
+        }
+
+
+        public void update() {
+            updateConnectionNumberTable();
+            updateConnectionListTable();
+        }
+
+
         public void remove() {
             InformationManager im = InformationManager.getInstance();
             im.removeInformation( connectionNumberTable );
-            im.removeGroup( informationGroupConnection );
+            im.removeInformation( connectionListTable );
+            im.removeGroup( informationGroupConnectionStatistics );
             im.removePage( informationPage );
         }
 

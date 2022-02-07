@@ -29,7 +29,7 @@ public class InformationTable extends InformationHtml {
     @SuppressWarnings({ "unused" })
     private List<String> labels;
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
-    private Queue<List<String>> rows = new LinkedList<>();
+    private final Queue<List<String>> rows;
 
 
     /**
@@ -39,7 +39,19 @@ public class InformationTable extends InformationHtml {
      * @param labels The labels
      */
     public InformationTable( InformationGroup group, List<String> labels ) {
-        this( group.getId(), labels );
+        this( group, labels, 0 );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param group The information group this element belongs to
+     * @param labels The labels
+     * @param limit Limit the number of rows; FIFO, O means no limit
+     */
+    public InformationTable( InformationGroup group, List<String> labels, int limit ) {
+        this( group.getId(), labels, limit );
     }
 
 
@@ -49,8 +61,8 @@ public class InformationTable extends InformationHtml {
      * @param groupId The id of the information group this element belongs to
      * @param labels The labels
      */
-    public InformationTable( String groupId, List<String> labels ) {
-        this( UUID.randomUUID().toString(), groupId, labels );
+    public InformationTable( String groupId, List<String> labels, int limit ) {
+        this( UUID.randomUUID().toString(), groupId, labels, limit );
     }
 
 
@@ -61,15 +73,14 @@ public class InformationTable extends InformationHtml {
      * @param groupId The id of the information group this element belongs to
      * @param labels The labels
      */
-    public InformationTable( String id, String groupId, List<String> labels ) {
+    public InformationTable( String id, String groupId, List<String> labels, int limit ) {
         super( id, groupId, "" );
         this.labels = labels;
-    }
-
-
-    public void setLimit( int limit ) {
-        this.rows.clear();
-        this.rows = EvictingQueue.create( limit );
+        if ( limit > 0 ) {
+            rows = EvictingQueue.create( limit );
+        } else {
+            this.rows = new LinkedList<>();
+        }
     }
 
 
@@ -112,7 +123,7 @@ public class InformationTable extends InformationHtml {
 
 
     public void reset() {
-        rows = new LinkedList<>();
+        rows.clear();
         notifyManager();
     }
 
