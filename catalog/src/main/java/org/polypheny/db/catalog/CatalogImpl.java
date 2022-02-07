@@ -4350,6 +4350,9 @@ public class CatalogImpl extends Catalog {
             return true;
         }
 
+        // TODO @HENNLO Focus on PartitionPlacements that are labeled as UPTODATE nodes. The outdated nodes do not need
+        //  necessairly need placement constriants
+
         CatalogTable table = getTable( tableId );
         List<CatalogDataPlacement> dataPlacements = getDataPlacements( tableId );
 

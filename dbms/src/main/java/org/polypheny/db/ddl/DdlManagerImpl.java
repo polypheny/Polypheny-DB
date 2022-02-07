@@ -1317,6 +1317,10 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+        if ( removedPartitionIdsFromDataPlacement.size() > 0 ) {
+            storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitionIdsFromDataPlacement );
+        }
+
         if ( newPartitionIdsOnDataPlacement.size() > 0 ) {
 
             newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
@@ -1335,10 +1339,6 @@ public class DdlManagerImpl extends DdlManager {
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( addedColumns.size() > 0 ) {
             dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, intendedPartitionIds );
-        }
-
-        if ( removedPartitionIdsFromDataPlacement.size() > 0 ) {
-            storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitionIdsFromDataPlacement );
         }
 
         // Reset query plan cache, implementation cache & routing cache
