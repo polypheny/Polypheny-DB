@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -48,6 +49,8 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -130,6 +133,52 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
         if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
             this.asyncReevaluateAllStatistics();
+        }
+    }
+
+
+    @Override
+    public void updateColumnName( CatalogColumn catalogColumn, String newName ) {
+        if ( statisticSchemaMap.containsKey( catalogColumn.schemaId )
+                &&  statisticSchemaMap.get( catalogColumn.schemaId ).containsKey( catalogColumn.tableId )
+                && statisticSchemaMap.get( catalogColumn.schemaId ).get( catalogColumn.tableId ).containsKey( catalogColumn.id ) ) {
+            StatisticColumn<T> statisticColumn = statisticSchemaMap.get( catalogColumn.schemaId ).get( catalogColumn.tableId ).get( catalogColumn.id );
+            statisticColumn.updateColumnName( newName );
+            statisticSchemaMap.get( catalogColumn.schemaId ).get( catalogColumn.tableId ).put( catalogColumn.id, statisticColumn );
+        }
+    }
+
+
+    @Override
+    public void updateTableName( CatalogTable catalogTable, String newName ) {
+        if ( statisticSchemaMap.containsKey( catalogTable.schemaId ) && statisticSchemaMap.get( catalogTable.schemaId ).containsKey( catalogTable.id ) ) {
+            Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogTable.schemaId ).get( catalogTable.id );
+            for ( Entry<Long, StatisticColumn<T>> columnInfo : columnsInformation.entrySet() ) {
+                StatisticColumn<T> statisticColumn = columnInfo.getValue();
+                statisticColumn.updateTableName( newName );
+                statisticSchemaMap.get( catalogTable.schemaId ).get( catalogTable.id ).put( columnInfo.getKey(), statisticColumn );
+            }
+        }
+        if ( tableStatistic.containsKey( catalogTable.id ) ) {
+            StatisticTable<?> tableStatistics = tableStatistic.get( catalogTable.id );
+            tableStatistics.updateTableName( newName );
+            tableStatistic.put( catalogTable.id, tableStatistics );
+        }
+    }
+
+
+    @Override
+    public void updateSchemaName( CatalogSchema catalogSchema, String newName ) {
+        if ( statisticSchemaMap.containsKey( catalogSchema.id ) ) {
+            Map<Long, Map<Long, StatisticColumn<T>>> tableInformation = statisticSchemaMap.get( catalogSchema.id );
+            for ( Long tableId : tableInformation.keySet() ) {
+                Map<Long, StatisticColumn<T>> columnsInformation = statisticSchemaMap.get( catalogSchema.id ).remove( tableId );
+                for ( Entry<Long, StatisticColumn<T>> columnInfo : columnsInformation.entrySet() ) {
+                    StatisticColumn<T> statisticColumn = columnInfo.getValue();
+                    statisticColumn.updateSchemaName( newName );
+                    statisticSchemaMap.get( catalogSchema.id ).get( tableId ).put( columnInfo.getKey(), statisticColumn );
+                }
+            }
         }
     }
 
@@ -272,7 +321,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     private StatisticColumn<T> reevaluateColumn( QueryColumn column ) {
 
-        if ( !Catalog.getInstance().checkIfExistsColumn( column.getTableId(), column.getColumn() ) ) {
+        if ( !Catalog.getInstance().checkIfExistsTable( column.getTableId() )
+                && !Catalog.getInstance().checkIfExistsColumn( column.getTableId(), column.getColumn() ) ) {
             return null;
         }
 
@@ -867,7 +917,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             }
         } else if ( type.equals( "DROP_COLUMN" ) ) {
             Catalog catalog = Catalog.getInstance();
-            if ( catalog.checkIfExistsTable( tableId ) ) {
+            if (  this.statisticSchemaMap.get( schemaId ) != null
+                    && this.statisticSchemaMap.get( schemaId ).get( tableId ) != null
+                    && catalog.checkIfExistsTable( tableId ) ) {
                 this.statisticSchemaMap.get( schemaId ).get( tableId ).remove( changedValues.keySet().stream().findFirst().get() );
             }
         }

@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
@@ -377,6 +378,9 @@ public class DdlManagerImpl extends DdlManager {
         }
         CatalogSchema catalogSchema = catalog.getSchema( databaseId, oldName );
         catalog.renameSchema( catalogSchema.id, newName );
+
+        // Update Name in statistics
+        StatisticsManager.getInstance().updateSchemaName(catalogSchema, newName);
     }
 
 
@@ -1527,6 +1531,9 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.renameTable( catalogTable.id, newTableName );
 
+        // Update Name in statistics
+        StatisticsManager.getInstance().updateTableName(catalogTable, newTableName);
+
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -1543,6 +1550,9 @@ public class DdlManagerImpl extends DdlManager {
         checkViewDependencies( catalogTable );
 
         catalog.renameColumn( catalogColumn.id, newColumnName );
+
+        // Update Name in statistics
+        StatisticsManager.getInstance().updateColumnName(catalogColumn, newColumnName);
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();

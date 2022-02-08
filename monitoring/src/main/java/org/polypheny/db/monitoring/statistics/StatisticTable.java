@@ -94,4 +94,9 @@ public class StatisticTable<T extends Comparable<T>> {
         temporalColumn = new ArrayList<>();
     }
 
+
+    public void updateTableName( String tableName ) {
+        this.table = tableName;
+    }
+
 }

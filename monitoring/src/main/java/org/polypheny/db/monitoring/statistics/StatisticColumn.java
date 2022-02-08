@@ -33,15 +33,15 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
 
     @Expose
     @Getter
-    private final String schema;
+    private String schema;
 
     @Expose
     @Getter
-    private final String table;
+    private String table;
 
     @Expose
     @Getter
-    private final String column;
+    private String column;
 
     @Getter
     private final Long schemaId;
@@ -54,10 +54,6 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
 
     @Getter
     private final PolyType type;
-
-    @Expose
-    @Getter
-    private final String qualifiedColumnName;
 
     @Expose
     @Setter
@@ -85,9 +81,12 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
         this.schema = catalog.getSchema( schemaId ).name;
         this.table = catalog.getTable( tableId ).name;
         this.column = catalog.getColumn( columnId ).name;
-        this.qualifiedColumnName = this.schema + "." + this.table + "." + this.column;
     }
 
+
+    public String getQualifiedColumnName() {
+        return this.schema + "." + this.table + "." + this.column;
+    }
 
     public String getQualifiedTableName() {
         return this.schema + "." + this.table;
@@ -100,4 +99,16 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
 
     public abstract String toString();
 
+
+    public void updateColumnName( String columnName ) {
+        this.column = columnName;
+    }
+
+    public void updateTableName( String tableName ) {
+        this.table = tableName;
+    }
+
+    public void updateSchemaName( String schemaName ){
+        this.schema = schemaName;
+    }
 }
