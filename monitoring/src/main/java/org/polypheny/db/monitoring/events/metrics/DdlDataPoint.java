@@ -42,6 +42,7 @@ public class DdlDataPoint implements MonitoringDataPoint, Serializable {
     private long tableId;
     private String monitoringType;
     private long schemaId;
+    private long columnId;
 
 
     @Override

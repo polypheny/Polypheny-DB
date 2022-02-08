@@ -101,7 +101,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Getter
     private String revalId = null;
 
-    @Getter
     private DashboardInformation dashboardInformation;
 
     @Getter
@@ -835,6 +834,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                                 ((TemporalStatisticColumn) statisticColumn).insert( changedValues.get( (long) i ) );
                                 put( queryColumn, statisticColumn );
                             }
+                        } else {
+                            addNewColumnStatistics( changedValues, i, polyType, queryColumn );
                         }
                     }
                 } else {
@@ -864,6 +865,11 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     }
                 }
             }
+        } else if ( type.equals( "DROP_COLUMN" ) ) {
+            Catalog catalog = Catalog.getInstance();
+            if ( catalog.checkIfExistsTable( tableId ) ) {
+                this.statisticSchemaMap.get( schemaId ).get( tableId ).remove( changedValues.keySet().stream().findFirst().get() );
+            }
         }
     }
 
@@ -875,20 +881,24 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         for ( int i = 0; i < columns.size(); i++ ) {
             PolyType polyType = catalog.getColumn( columns.get( i ) ).type;
             QueryColumn queryColumn = new QueryColumn( catalogTable.schemaId, catalogTable.id, columns.get( i ), polyType );
+            addNewColumnStatistics( changedValues, i, polyType, queryColumn );
+        }
+    }
 
-            if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
-                NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
-                numericalStatisticColumn.insert( changedValues.get( (long) i ) );
-                put( queryColumn, numericalStatisticColumn );
-            } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
-                alphabeticStatisticColumn.insert( changedValues.get( (long) i ) );
-                put( queryColumn, alphabeticStatisticColumn );
-            } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
-                TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
-                temporalStatisticColumn.insert( changedValues.get( (long) i ) );
-                put( queryColumn, temporalStatisticColumn );
-            }
+
+    private void addNewColumnStatistics( Map<Long, List<Object>> changedValues, long i, PolyType polyType, QueryColumn queryColumn ) {
+        if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
+            NumericalStatisticColumn numericalStatisticColumn = new NumericalStatisticColumn<>( queryColumn );
+            numericalStatisticColumn.insert( changedValues.get( i ) );
+            put( queryColumn, numericalStatisticColumn );
+        } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+            AlphabeticStatisticColumn alphabeticStatisticColumn = new AlphabeticStatisticColumn<T>( queryColumn );
+            alphabeticStatisticColumn.insert( changedValues.get( i ) );
+            put( queryColumn, alphabeticStatisticColumn );
+        } else if ( PolyType.DATETIME_TYPES.contains( polyType ) ) {
+            TemporalStatisticColumn temporalStatisticColumn = new TemporalStatisticColumn<T>( queryColumn );
+            temporalStatisticColumn.insert( changedValues.get( i ) );
+            put( queryColumn, temporalStatisticColumn );
         }
     }
 
@@ -1098,6 +1108,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         List<NumericalStatisticColumn<?>> numericInfo = new ArrayList<>();
         List<AlphabeticStatisticColumn<?>> alphabeticInfo = new ArrayList<>();
         List<TemporalStatisticColumn<?>> temporalInfo = new ArrayList<>();
+        statisticTable.setNumericalColumn( numericInfo );
+        statisticTable.setAlphabeticColumn( alphabeticInfo );
+        statisticTable.setTemporalColumn( temporalInfo );
         statisticSchemaMap.get( schemaId ).get( tableId ).forEach( ( k, v ) -> {
             if ( v.getType().getFamily() == PolyTypeFamily.NUMERIC ) {
                 numericInfo.add( (NumericalStatisticColumn<T>) v );
@@ -1105,7 +1118,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             } else if ( v.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
                 alphabeticInfo.add( (AlphabeticStatisticColumn<T>) v );
                 statisticTable.setAlphabeticColumn( alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( v.getType().getFamily() ) ) {
+            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.getInstance().getColumn( k ).type ) ) {
                 temporalInfo.add( (TemporalStatisticColumn<T>) v );
                 statisticTable.setTemporalColumn( temporalInfo );
             }

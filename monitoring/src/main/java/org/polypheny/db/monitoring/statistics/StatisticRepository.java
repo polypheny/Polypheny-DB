@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,13 @@ public class StatisticRepository implements MonitoringRepository {
         }
         if ( dataPoint.getMonitoringType().equals( "DROP_TABLE" ) ) {
             statisticsManager.deleteTableToUpdate( dataPoint.getTableId(), dataPoint.getSchemaId() );
+        }
+        if ( dataPoint.getMonitoringType().equals( "DROP_COLUMN" ) ) {
+            statisticsManager.tablesToUpdate(
+                    dataPoint.getTableId(),
+                    Collections.singletonMap( dataPoint.getColumnId(), null ),
+                    dataPoint.getMonitoringType(),
+                    dataPoint.getSchemaId() );
         }
     }
 

@@ -897,6 +897,9 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+        // Monitor dropColumn for statistics
+        prepareMonitoring( statement, Kind.DROP_COLUMN, catalogTable, column );
+
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -2404,9 +2407,6 @@ public class DdlManagerImpl extends DdlManager {
         // Delete the view
         catalog.deleteTable( catalogView.id );
 
-        // Monitor dropTables for statistics
-        prepareMonitoring( statement, Kind.DROP_MATERIALIZED_VIEW, catalogView );
-
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -2428,9 +2428,6 @@ public class DdlManagerImpl extends DdlManager {
         catalog.deleteViewDependencies( (CatalogView) materializedView );
 
         dropTable( materializedView, statement );
-
-        // Monitor dropTables for statistics
-        prepareMonitoring( statement, Kind.DROP_VIEW, materializedView );
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -2565,13 +2562,20 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void prepareMonitoring( Statement statement, Kind kind, CatalogTable catalogTable ) {
+        prepareMonitoring( statement, kind, catalogTable, null );
+    }
+
+
+    private void prepareMonitoring( Statement statement, Kind kind, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         // Initialize Monitoring
         if ( statement.getMonitoringEvent() == null ) {
             StatementEvent event = new DdlEvent();
-
             event.setMonitoringType( kind.name() );
             event.setTableId( catalogTable.id );
             event.setSchemaId( catalogTable.schemaId );
+            if(kind == Kind.DROP_COLUMN){
+                event.setColumnId(catalogColumn.id);
+            }
             statement.setMonitoringEvent( event );
         }
     }
