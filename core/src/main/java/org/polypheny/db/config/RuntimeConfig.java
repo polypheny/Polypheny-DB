@@ -381,17 +381,24 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "processingExecutionGroup" ),
 
-    QUEUE_PROCESSING_INTERVAL(
-            "runtime/queueProcessingInterval",
-            "Rate of passive tracking of statistics.",
-            TaskSchedulingType.EVERY_SECOND,
-            ConfigType.ENUM,
+    CORE_POOL_SIZE(
+            "runtime/corePoolSize",
+            "The number of threads to keep in the pool, even if they are idle.",
+            2,
+            ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 
-    QUEUE_PROCESSING_ELEMENTS(
-            "runtime/queueProcessingElements",
-            "Number of elements in workload queue to process per time.",
+    MAXIMUM_POOL_SIZE(
+            "runtime/maximumPoolSize",
+            "The maximum number of threads to allow in the pool.",
             5000,
+            ConfigType.INTEGER,
+            "monitoringSettingsQueueGroup" ),
+
+    KEEP_ALIVE_TIME(
+            "runtime/keepAliveTime",
+            "When the number of threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.",
+            10,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 

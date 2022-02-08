@@ -45,6 +45,6 @@ public interface MonitoringQueue {
 
     List<HashMap<String, String>> getInformationOnElementsInQueue();
 
-    long getNumberOfProcessedEvents( boolean all );
+    long getNumberOfProcessedEvents();
 
 }

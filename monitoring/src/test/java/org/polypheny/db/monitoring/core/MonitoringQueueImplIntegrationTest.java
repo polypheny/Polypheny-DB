@@ -25,11 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 @Slf4j
@@ -38,8 +36,6 @@ class MonitoringQueueImplIntegrationTest {
     @Test
     public void queuedEventsAreProcessed() {
         //  -- Arrange --
-        // Set background task timer
-        RuntimeConfig.QUEUE_PROCESSING_INTERVAL.setEnum( TaskSchedulingType.EVERY_SECOND );
 
         // Initialize mock repository
         TestMapDbRepository persistentRepo = new TestMapDbRepository();

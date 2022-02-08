@@ -686,9 +686,7 @@ public class HorizontalPartitioningTest {
                 // Sets the background processing of Workload Monitoring an Temperature monitoring to one second to get immediate results
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
-                Config c2 = cm.getConfig( "runtime/queueProcessingInterval" );
                 c1.setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
-                c2.setEnum( TaskSchedulingType.EVERY_SECOND );
 
                 statement.executeUpdate( "CREATE TABLE temperaturetest( "
                         + "tprimary INTEGER NOT NULL, "
