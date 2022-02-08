@@ -1134,6 +1134,11 @@ public enum Kind {
     DROP_TABLE,
 
     /**
+     * {@code ALTER TABLE xxx DROP COLUMN} DDL statement.
+     */
+    DROP_COLUMN,
+
+    /**
      * {@code CREATE VIEW} DDL statement.
      */
     CREATE_VIEW,
