@@ -61,7 +61,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -125,7 +124,6 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -1411,52 +1409,42 @@ public class Crud implements InformationObserver {
     void getAvailableSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
-        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( catalogTable.id ).placementsByAdapter;
+        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( databaseName, request.getSchemaName(), request.getTableName() ).placementsByAdapter;
         Set<Integer> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
-            log.warn( String.format( "The number of sources per entity should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
-        }
-        int adapterId = adapterIds.iterator().next();
-        List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
-        Set<String> presentColumnsByPhysicalName = new HashSet<>();
-        List<CatalogPartitionPlacement> cpps = catalog.getPartitionPlacementByTable( adapterId, catalogTable.id );
-        if ( cpps.size() != 1 ) {
-            throw new RuntimeException( "This does not support partitioned source tables!" );
-        }
-        String physicalTableName = cpps.iterator().next().physicalTableName;
-        for ( CatalogColumn cc : columns ) {
-            CatalogColumnPlacement ccp = catalog.getColumnPlacement( adapterId, cc.id );
-            presentColumnsByPhysicalName.add( ccp.physicalColumnName.toLowerCase() );
+            log.warn( String.format( "The number of sources of an entity should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
         }
         List<Result> exportedColumns = new ArrayList<>();
-        Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
-        if ( adapter instanceof DataSource ) {
-            DataSource dataSource = (DataSource) adapter;
-            List<ExportedColumn> exported = dataSource.getExportedColumns().get( physicalTableName );
-            List<DbColumn> columnList = new ArrayList<>();
-            for ( ExportedColumn col : exported ) {
-                String logicalName;
-                if ( !presentColumnsByPhysicalName.contains( col.physicalColumnName.toLowerCase() ) ) {
-                    DbColumn dbCol = new DbColumn(
-                            col.physicalColumnName,
-                            col.type.getName(),
-                            col.collectionsType == null ? "" : col.collectionsType.getName(),
-                            col.nullable,
-                            col.length,
-                            col.scale,
-                            col.dimension,
-                            col.cardinality,
-                            col.primary,
-                            null ).setPhysicalName( col.physicalColumnName );
-                    columnList.add( dbCol );
+        for ( int adapterId : adapterIds ) {
+            Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
+            if ( adapter instanceof DataSource ) {
+                DataSource dataSource = (DataSource) adapter;
+                for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
+                    List<DbColumn> columnList = new ArrayList<>();
+                    for ( ExportedColumn col : entry.getValue() ) {
+                        DbColumn dbCol = new DbColumn(
+                                col.name,
+                                col.type.getName(),
+                                col.collectionsType == null ? "" : col.collectionsType.getName(),
+                                col.nullable,
+                                col.length,
+                                col.scale,
+                                col.dimension,
+                                col.cardinality,
+                                col.primary,
+                                null ).setPhysicalName( col.physicalColumnName );
+                        columnList.add( dbCol );
+                    }
+                    exportedColumns.add( new Result( columnList.toArray( new DbColumn[0] ), null ).setTable( entry.getKey() ) );
+                    columnList.clear();
                 }
+                ctx.json( exportedColumns.toArray( new Result[0] ) );
+                return;
             }
-            exportedColumns.add( new Result( columnList.toArray( new DbColumn[0] ), null ).setTable( catalogTable.name ) );
-            ctx.json( exportedColumns.toArray( new Result[0] ) );
-            return;
+
         }
-        ctx.json( new Result( "Could not retrieve available source columns for table " + catalogTable.name + "." ) );
+
+        ctx.json( new Result( "Could not retrieve exported source fields." ) );
     }
 
 
