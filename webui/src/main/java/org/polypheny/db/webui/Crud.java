@@ -1454,6 +1454,7 @@ public class Crud implements InformationObserver {
             }
             exportedColumns.add( new Result( columnList.toArray( new DbColumn[0] ), null ).setTable( catalogTable.name ) );
             ctx.json( exportedColumns.toArray( new Result[0] ) );
+            return;
         }
         ctx.json( new Result( "Could not retrieve available source columns for table " + catalogTable.name + "." ) );
     }
