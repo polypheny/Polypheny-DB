@@ -790,10 +790,16 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case TIMESTAMP:
                 return getValueAs( Calendar.class );
             case MAP:
-                return new PolyMap<Comparable<?>, Comparable<?>>( ((Map<RexLiteral, RexLiteral>) value).entrySet().stream().collect( Collectors.toMap( e -> e.getKey().getValue(), e -> e.getValue().getValue() ) ) );
+                return getValueAsPolyMap();
             default:
                 return value;
         }
+    }
+
+
+    private PolyMap<Comparable<?>, Comparable<?>> getValueAsPolyMap() {
+        return new PolyMap<Comparable<?>, Comparable<?>>( ((Map<RexLiteral, RexLiteral>) value).entrySet().stream()
+                .collect( Collectors.toMap( e -> e.getKey().getValueForQueryParameterizer(), e -> e.getValue().getValueForQueryParameterizer() ) ) );
     }
 
 
@@ -834,7 +840,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 return getValueAs( Double.class );
             case ARRAY:
                 return ((List<RexLiteral>) value).stream().map( RexLiteral::getValueForQueryParameterizer ).collect( Collectors.toCollection( PolyList::new ) );
-
+            case MAP:
+                return getValueAsPolyMap();
             /*case BINARY:
             case VARBINARY:
                 break;

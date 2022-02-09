@@ -431,7 +431,9 @@ public enum BuiltInMethod {
     DOC_GET_ARRAY( MqlFunctions.class, "docGetArray", Object.class ),
     DOC_JSONIZE( MqlFunctions.class, "docJsonize", Object.class ),
     DOC_EXISTS( MqlFunctions.class, "docExists", Object.class, List.class ),
-    DESERIALIZE( PolySerializer.class, "deserializeEnumerable", Object.class );
+    DESERIALIZE( PolySerializer.class, "deserializeEnumerable", Object.class ),
+    DESERIALIZE_DECOMPRESS_STRING( PolySerializer.class, "deserializeAndCompress", String.class, Class.class ),
+    DESERIALIZE_DECOMPRESS_BYTE_ARRAY( PolySerializer.class, "deserializeAndCompress", byte[].class, Class.class );
 
     public final Method method;
     public final Constructor constructor;

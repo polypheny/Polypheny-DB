@@ -38,10 +38,6 @@ public class EnumerableTransformerRule extends ConverterRule {
         final AlgNode input = AlgOptRule.convert( transformer.getInput(), transformer.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final AlgTraitSet traitSet = transformer.getTraitSet().replace( EnumerableConvention.INSTANCE );
         return EnumerableTransformer.create( transformer, traitSet, input );
-        /*AlgNode orig = convert( transformer.getOriginal(), transformer.getOriginal().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        final EnumerableConvention out = EnumerableConvention.INSTANCE;
-        final AlgTraitSet traitSet = transformer.getTraitSet().replace( out );
-        return new EnumerableTransformer( transformer.getCluster(), traitSet, orig )*/
     }
 
 }

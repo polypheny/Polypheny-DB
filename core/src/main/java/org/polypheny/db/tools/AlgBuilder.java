@@ -2501,7 +2501,6 @@ public class AlgBuilder {
         stack.clear();
         assert node.getTable() instanceof AlgOptTableImpl;
         scan( ((AlgOptTableImpl) node.getTable()).substitutedCopy() );
-        ;
 
         stack.push( new Frame( transformerFactory.createTransformer( this.stack.pop().alg, node.getRowType(), unsupportedTypes, substituteType ) ) );
 

@@ -87,6 +87,7 @@ public class PolySerializer {
     }
 
 
+    @SuppressWarnings("unused")
     public static <T> T deserializeAndCompress( String in, Class<T> clazz ) {
         return deserializeAndCompress( ByteString.parseBase64( in ), clazz );
     }

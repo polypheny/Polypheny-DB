@@ -148,6 +148,7 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
@@ -169,6 +170,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      * either way. At some point this will become a preference, or we will run multiple phases: first disabled, then enabled.
      */
     private static final boolean ENABLE_COLLATION_TRAIT = true;
+
+    private static final boolean ENABLE_MODEL_TRAIT = true;
 
     /**
      * Whether the bindable convention should be the root convention of any plan. If not, enumerable convention is the default.
@@ -416,6 +419,11 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
             planner.registerAbstractRelationalRules();
         }
+        if ( ENABLE_MODEL_TRAIT ) {
+            planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
+            planner.registerModelRules();
+        }
+
         AlgOptUtil.registerAbstractAlgs( planner );
         for ( AlgOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );

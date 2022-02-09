@@ -138,7 +138,7 @@ public class MqlProcessorImpl extends MqlProcessor {
         stopWatch.start();
 
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
-        final AlgOptCluster cluster = AlgOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        final AlgOptCluster cluster = AlgOptCluster.createDocument( statement.getQueryProcessor().getPlanner(), rexBuilder );
 
         final MqlToAlgConverter mqlToAlgConverter = new MqlToAlgConverter( this, statement.getTransaction().getCatalogReader(), cluster );
         AlgRoot logicalRoot = mqlToAlgConverter.convert( mql, parameters );

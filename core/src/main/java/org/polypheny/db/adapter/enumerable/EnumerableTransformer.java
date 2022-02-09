@@ -17,11 +17,17 @@
 package org.polypheny.db.adapter.enumerable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import javax.annotation.Nullable;
+import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
@@ -36,21 +42,47 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.runtime.PolyCollections.PolyList;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
-import org.polypheny.db.serialize.PolySerializer;
+import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
+@Getter
 public class EnumerableTransformer extends Transformer implements EnumerableAlg {
+
+    private static final Map<PolyType, Pair<PolyType, Method>> DOCUMENT_TO_RELATIONAL_MAPPING;
+
+
+    static {
+        Builder<PolyType, Pair<PolyType, Method>> docToRelMap = ImmutableMap.builder();
+        docToRelMap.put( PolyType.MAP, Pair.of( PolyType.JSON, BuiltInMethod.DOC_JSONIZE.method ) );
+        docToRelMap.put( PolyType.DOCUMENT, Pair.of( PolyType.JSON, BuiltInMethod.DOC_JSONIZE.method ) );
+        DOCUMENT_TO_RELATIONAL_MAPPING = docToRelMap.build();
+    }
+
+
+    // transformation is used to map from one schema to another
+    private final Map<PolyType, Pair<PolyType, Method>> transformLookupMap;
+    private final ModelTrait fromTrait;
+    private final ModelTrait toTrait;
+
+    // substitution is used to allow storing of unsupported types via serialization in stores
+    private final Map<PolyType, Pair<Method, Class<?>>> substitutionLookupMap;
+    private final Method substitutionMethod;
+
 
     /**
      * Creates a <code>SingleRel</code>.
      *
      * @param cluster Cluster this relational expression belongs to
-     * @param traits
+     * @param traits Set of traits, which this transformer produces,
+     * these either are the same as its input (substitution) or a transformed set (transformation)
      * @param input Input relational expression
      */
     protected EnumerableTransformer(
@@ -59,8 +91,55 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             AlgDataType rowType,
             AlgNode input,
             List<PolyType> unsupportedTypes,
-            PolyType substituteType ) {
+            @Nullable PolyType substituteType, // null defines no substitution needed
+            ModelTrait fromTrait,
+            ModelTrait toTrait ) {
         super( cluster, traits, rowType, input, unsupportedTypes, substituteType );
+        this.fromTrait = fromTrait;
+        this.toTrait = toTrait;
+
+        if ( fromTrait != toTrait ) {
+            this.transformLookupMap = getMapping( fromTrait.getDataModel(), toTrait.getDataModel() );
+        } else {
+            this.transformLookupMap = ImmutableMap.of();
+        }
+
+        if ( substituteType == null ) {
+            this.substitutionMethod = null;
+            this.substitutionLookupMap = ImmutableMap.of();
+            return;
+        }
+
+        this.substitutionMethod = getSubstitutionsMethod( substituteType );
+
+        // define for a serialized original PolyType, which method with the appropriate end class has to be called
+        Builder<PolyType, Pair<Method, Class<?>>> substitutionBuilder = ImmutableMap.builder();
+        for ( PolyType unsupportedType : unsupportedTypes ) {
+            substitutionBuilder.put( unsupportedType, Pair.of( substitutionMethod, getSubstitutionClass( unsupportedType ) ) );
+        }
+        this.substitutionLookupMap = substitutionBuilder.build();
+
+    }
+
+
+    private Map<PolyType, Pair<PolyType, Method>> getMapping( SchemaType from, SchemaType to ) {
+
+        if ( from == SchemaType.DOCUMENT && to == SchemaType.RELATIONAL ) {
+            return DOCUMENT_TO_RELATIONAL_MAPPING;
+        }
+        throw new UnsupportedOperationException( "The mapping from the data model: " + from + " to: " + to + " is not yet supported." );
+    }
+
+
+    private static Method getSubstitutionsMethod( PolyType substituteType ) {
+        switch ( substituteType ) {
+            case VARCHAR:
+                return BuiltInMethod.DESERIALIZE_DECOMPRESS_STRING.method;
+            case BINARY:
+                return BuiltInMethod.DESERIALIZE_DECOMPRESS_BYTE_ARRAY.method;
+            default:
+                throw new UnsupportedOperationException( "For the substituted type no deserialize method was provided." );
+        }
     }
 
 
@@ -68,13 +147,16 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             Transformer transformer,
             AlgTraitSet traits,
             AlgNode input ) {
+
         return new EnumerableTransformer(
                 transformer.getCluster(),
                 traits,
                 transformer.getRowType(),
                 input,
                 transformer.getUnsupportedTypes(),
-                transformer.getSubstituteType() );
+                transformer.getSubstituteType(),
+                transformer.getInput().getTraitSet().getTrait( ModelTraitDef.INSTANCE ),
+                transformer.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) );
     }
 
 
@@ -96,6 +178,11 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         List<Integer> replacedIndexes = getReplacedFields( getRowType() );
 
+        if ( replacedIndexes.isEmpty() && transformLookupMap.isEmpty() ) {
+            // we need no transformation of fields and can directly return the child
+            return orig;
+        }
+
         InputGetterImpl getter = new InputGetterImpl( Collections.singletonList( Pair.of( input, orig.physType ) ) );
 
         final BlockBuilder builder2 = new BlockBuilder();
@@ -105,9 +192,18 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         for ( AlgDataTypeField field : getRowType().getFieldList() ) {
 
             Expression exp = getter.field( builder2, field.getIndex(), null );
-            if ( replacedIndexes.contains( field.getIndex() ) ) {
-                exp = Expressions.call( PolySerializer.class, "deserializeAndCompress", exp, Expressions.constant( PolyMap.class ) );
+
+            // do we need to transform from the serialized form
+            if ( substitutionLookupMap.containsKey( field.getType().getPolyType() ) ) {
+                Pair<Method, Class<?>> subInfo = substitutionLookupMap.get( field.getType().getPolyType() );
+                exp = Expressions.call( subInfo.left, exp, Expressions.constant( subInfo.right ) );
             }
+
+            // do we have to handle the transformation between models special
+            if ( transformLookupMap.containsKey( field.getType().getPolyType() ) ) {
+                exp = Expressions.call( transformLookupMap.get( field.getType().getPolyType() ).right, exp );
+            }
+
             expressions.add( exp );
         }
 
@@ -143,8 +239,6 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
                                 EnumUtils.NO_PARAMS,
                                 currentBody ) ) );
 
-        //Expression call = Expressions.call( PolySerializer.class, "deserializeEnumerable", childExp );
-
         builder.add(
                 Expressions.return_(
                         null,
@@ -158,9 +252,23 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
     }
 
 
+    // maybe move to PolyType or RexLiteral
+    private static Class<?> getSubstitutionClass( PolyType type ) {
+        switch ( type ) {
+            case MAP:
+            case DOCUMENT:
+                return PolyMap.class;
+            case ARRAY:
+                return PolyList.class;
+            default:
+                throw new RuntimeException( "The provided type is not supported for substitution." );
+        }
+    }
+
+
     @Override
     public EnumerableTransformer copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), traitSet, getRowType(), inputs.get( 0 ), getUnsupportedTypes(), getSubstituteType() );
+        return new EnumerableTransformer( inputs.get( 0 ).getCluster(), traitSet, getRowType(), inputs.get( 0 ), getUnsupportedTypes(), getSubstituteType(), fromTrait, toTrait );
     }
 
 }

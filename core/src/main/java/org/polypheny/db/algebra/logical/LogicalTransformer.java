@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
@@ -28,9 +29,24 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.type.PolyType;
 
 public class LogicalTransformer extends Transformer {
+
+
+    public static AlgNode createDocumentToRelational( AlgNode node ) {
+        /*AlgDataTypeFactory factory = node.getCluster().getTypeFactory();
+        AlgRecordType substitutedRowType = new AlgRecordType( node.getRowType().getFieldList().stream().map( f -> {
+            if ( f.getType().getPolyType() == PolyType.DOCUMENT ) {
+                return new AlgDataTypeFieldImpl( f.getName(), f.getPhysicalName(), f.getIndex(), factory.createPolyType( PolyType.VARCHAR, 2024 ) );
+            }
+            return f;
+        } ).collect( Collectors.toList() ) );*/
+
+        return new LogicalTransformer( node.getCluster(), node.getTraitSet().replace( ModelTrait.RELATIONAL ), node, node.getRowType(), Collections.emptyList(), null );
+
+    }
 
 
     @Override

@@ -17,6 +17,7 @@
 package org.polypheny.db.runtime;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,6 +40,12 @@ import org.polypheny.db.util.Pair;
  * Repository class, which defines different functions used, when handling the document model
  */
 public class MqlFunctions {
+
+
+    public static final Gson GSON = new GsonBuilder()
+            .enableComplexMapKeySerialization()
+            .create();
+
 
     /**
      * This method extracts the provided the filter from the input.
@@ -116,11 +123,9 @@ public class MqlFunctions {
         if ( input instanceof BsonDocument ) {
             return ((BsonDocument) input).toJson();
         } else if ( input instanceof Map ) {
-            Gson gson = new Gson();
-            return gson.toJson( input );
+            return GSON.toJson( input );
         } else if ( input instanceof List ) {
-            Gson gson = new Gson();
-            return gson.toJson( input );
+            return GSON.toJson( input );
         } else {
             return input;
         }

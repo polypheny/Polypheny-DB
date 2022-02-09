@@ -124,6 +124,7 @@ import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
@@ -151,6 +152,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
     protected static final boolean ENABLE_ENUMERABLE = true;
+    protected static final boolean ENABLE_MODEL_TRAIT = true;
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
     private final Statement statement;
@@ -1098,6 +1100,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         final AlgTraitSet desiredTraits = logicalPlan.getTraitSet()
                 .replace( resultConvention )
+                .replace( ModelTrait.RELATIONAL )
                 .replace( algCollation( logicalPlan ) )
                 .simplify();
 

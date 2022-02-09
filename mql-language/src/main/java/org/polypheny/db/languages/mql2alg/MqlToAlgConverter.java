@@ -218,6 +218,7 @@ public class MqlToAlgConverter {
     private String defaultDatabase;
     private boolean notActive = false;
     private boolean usesDocumentModel;
+    private MqlQueryParameters parameters;
 
 
     public MqlToAlgConverter( Processor mqlProcessor, PolyphenyDbCatalogReader catalogReader, AlgOptCluster cluster ) {
@@ -246,6 +247,7 @@ public class MqlToAlgConverter {
 
     public AlgRoot convert( Node query, QueryParameters parameters ) {
         resetDefaults();
+        this.parameters = (MqlQueryParameters) parameters;
         this.defaultDatabase = ((MqlQueryParameters) parameters).getDatabase();
         if ( query instanceof MqlCollectionStatement ) {
             return convert( (MqlCollectionStatement) query );
@@ -293,7 +295,8 @@ public class MqlToAlgConverter {
                 root = AlgRoot.of( count, count.getRowType(), Kind.SELECT );
                 break;
             case AGGREGATE:
-                root = AlgRoot.of( convertAggregate( (MqlAggregate) query, table.getRowType(), node ), Kind.SELECT );
+                AlgNode aggregate = convertAggregate( (MqlAggregate) query, table.getRowType(), node );
+                root = AlgRoot.of( aggregate, Kind.SELECT );
                 break;
             /// dmls
             case INSERT:
@@ -789,7 +792,7 @@ public class MqlToAlgConverter {
         /*if ( usesDocumentModel ) {
             return docs;
         } else {*/
-            return LogicalValues.create( cluster, rowType, docs.getTuples() );
+        return LogicalValues.create( cluster, rowType, docs.getTuples() );
         //}
 
     }

@@ -98,7 +98,7 @@ public class LogicalDocuments extends LogicalValues implements Documents {
     public static AlgNode create( AlgOptCluster cluster, ImmutableList<BsonValue> values ) {
         List<AlgDataTypeField> fields = new ArrayList<>();
         fields.add( new AlgDataTypeFieldImpl( "_id", 0, typeFactory.createPolyType( PolyType.VARCHAR, 24 ) ) );
-        fields.add( new AlgDataTypeFieldImpl( "_data", 1, typeFactory.createMapType( typeFactory.createPolyType( PolyType.ANY ), typeFactory.createPolyType( PolyType.ANY ) ) ) );
+        fields.add( new AlgDataTypeFieldImpl( "_data", 1, typeFactory.createMapType( typeFactory.createPolyType( PolyType.VARCHAR, 2024 ), typeFactory.createPolyType( PolyType.ANY ) ) ) );
         AlgDataType defaultRowType = new AlgRecordType( fields );
 
         //ImmutableList<ImmutableList<RexLiteral>> normalizedTuples = normalize( tuples, rowTypes, defaultRowType );

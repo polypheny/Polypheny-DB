@@ -68,7 +68,13 @@ public class Transformer extends SingleAlg {
      * @param unsupportedTypes
      * @param substituteType
      */
-    protected Transformer( AlgOptCluster cluster, AlgTraitSet traits, AlgDataType rowType, AlgNode input, List<PolyType> unsupportedTypes, PolyType substituteType ) {
+    protected Transformer(
+            AlgOptCluster cluster,
+            AlgTraitSet traits,
+            AlgDataType rowType,
+            AlgNode input,
+            List<PolyType> unsupportedTypes,
+            PolyType substituteType ) {
         super( cluster, traits, input );
         this.factory = new JavaTypeFactoryImpl();
         this.unsupportedTypes = unsupportedTypes;

@@ -74,6 +74,7 @@ import org.polypheny.db.algebra.rules.CalcRemoveRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.JoinAssociateRule;
 import org.polypheny.db.algebra.rules.JoinCommuteRule;
+import org.polypheny.db.algebra.rules.ModelTransformerRule;
 import org.polypheny.db.algebra.rules.SemiJoinRule;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
@@ -811,6 +812,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             }
         }
         return litmus.succeed();
+    }
+
+
+    public void registerModelRules() {
+        addRule( ModelTransformerRule.DOCUMENT_TO_RELATIONAL );
+        //addRule( ModelTransformerRule.GRAPH_TO_RELATIONAL );
     }
 
 
