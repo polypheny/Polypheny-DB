@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.algebra.AlgNode;
@@ -31,8 +30,6 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -67,14 +64,16 @@ public class Transformer extends SingleAlg {
      *
      * @param cluster Cluster this relational expression belongs to
      * @param traits
+     * @param rowType
      * @param unsupportedTypes
      * @param substituteType
      */
-    protected Transformer( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<PolyType> unsupportedTypes, PolyType substituteType ) {
+    protected Transformer( AlgOptCluster cluster, AlgTraitSet traits, AlgDataType rowType, AlgNode input, List<PolyType> unsupportedTypes, PolyType substituteType ) {
         super( cluster, traits, input );
         this.factory = new JavaTypeFactoryImpl();
         this.unsupportedTypes = unsupportedTypes;
         this.substituteType = substituteType;
+        this.rowType = rowType;
     }
 
 
@@ -97,7 +96,7 @@ public class Transformer extends SingleAlg {
     }
 
 
-    private static List<Integer> getReplacedFields( AlgDataType rowType ) {
+    protected static List<Integer> getReplacedFields( AlgDataType rowType ) {
         List<Integer> replace = new ArrayList<>();
         int i = 0;
         for ( AlgDataTypeField field : rowType.getFieldList() ) {
@@ -136,18 +135,6 @@ public class Transformer extends SingleAlg {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw ).item( "converter", input );
-    }
-
-
-    @Override
-    protected AlgDataType deriveRowType() {
-        // we map from unsupported value supported one for Values intern: RowType[ MAP ] -> extern: RowType[ BINARY(2024) ]
-        return new AlgRecordType( input.getRowType().getFieldList().stream().map( f -> {
-            if ( f.getType().getPolyType() == PolyType.MAP ) {
-                return new AlgDataTypeFieldImpl( f.getName(), f.getIndex(), getFactory().createPolyType( substituteType, substitutionLength ) );
-            }
-            return f;
-        } ).collect( Collectors.toList() ) );
     }
 
 

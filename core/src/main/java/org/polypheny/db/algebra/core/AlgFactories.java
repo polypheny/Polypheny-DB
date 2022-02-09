@@ -330,7 +330,9 @@ public class AlgFactories {
 
         AlgNode createTransformer(
                 AlgNode input,
-                List<PolyType> unsupportedTypes, PolyType substituteType );
+                AlgDataType rowType,
+                List<PolyType> unsupportedTypes,
+                PolyType substituteType );
 
     }
 
@@ -338,8 +340,12 @@ public class AlgFactories {
     public static class TransformerFactoryImpl implements TransformerFactory {
 
         @Override
-        public AlgNode createTransformer( AlgNode input, List<PolyType> unsupportedTypes, PolyType substituteType ) {
-            return LogicalTransformer.create( input, unsupportedTypes, substituteType );
+        public AlgNode createTransformer(
+                AlgNode input,
+                AlgDataType rowType,
+                List<PolyType> unsupportedTypes,
+                PolyType substituteType ) {
+            return LogicalTransformer.create( input, rowType, unsupportedTypes, substituteType );
         }
 
     }

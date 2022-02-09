@@ -105,6 +105,7 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -1307,6 +1308,14 @@ public class AlgBuilder {
     }
 
 
+    public AlgBuilder scan( @Nonnull AlgOptTable algOptTable ) {
+        final AlgNode scan = scanFactory.createScan( cluster, algOptTable );
+        push( scan );
+        rename( algOptTable.getRowType().getFieldNames() );
+        return this;
+    }
+
+
     /**
      * Creates a {@link Scan} of the table with a given name.
      *
@@ -2487,7 +2496,14 @@ public class AlgBuilder {
 
 
     public AlgBuilder transformer( List<PolyType> unsupportedTypes, PolyType substituteType ) {
-        stack.push( new Frame( transformerFactory.createTransformer( this.stack.pop().alg, unsupportedTypes, substituteType ) ) );
+        AlgNode node = this.stack.pop().alg;
+        assert node instanceof Scan;
+        stack.clear();
+        assert node.getTable() instanceof AlgOptTableImpl;
+        scan( ((AlgOptTableImpl) node.getTable()).substitutedCopy() );
+        ;
+
+        stack.push( new Frame( transformerFactory.createTransformer( this.stack.pop().alg, node.getRowType(), unsupportedTypes, substituteType ) ) );
 
         return this;
     }

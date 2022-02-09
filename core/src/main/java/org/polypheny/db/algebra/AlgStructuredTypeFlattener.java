@@ -340,8 +340,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteAlg( LogicalTransformer alg ) {
-        LogicalTransformer newAlg = LogicalTransformer.create( alg.getInput(), alg.getUnsupportedTypes(), alg.getSubstituteType() );
-        setNewForOldRel( alg, newAlg );
+        rewriteGeneric( alg );
     }
 
 

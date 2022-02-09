@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.calcite.avatica.util.ByteString;
+import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
 import org.polypheny.db.util.Collation;
@@ -77,6 +78,17 @@ public class PolySerializer {
     @SuppressWarnings("unused")
     public static Map<?, ?> deserializeMap( String in ) {
         return deserializeAndCompress( ByteString.parseBase64( in ), PolyMap.class );
+    }
+
+
+    public static Enumerable<?> deserializeEnumerable( Object obj ) {
+        System.out.println( "hi" );
+        return null;
+    }
+
+
+    public static <T> T deserializeAndCompress( String in, Class<T> clazz ) {
+        return deserializeAndCompress( ByteString.parseBase64( in ), clazz );
     }
 
 

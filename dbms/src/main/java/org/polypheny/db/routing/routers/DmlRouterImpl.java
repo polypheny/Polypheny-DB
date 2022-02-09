@@ -77,6 +77,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -772,13 +773,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             LogicalValues values = (LogicalValues) node;
             if ( placements.stream().anyMatch( CatalogColumnPlacement::needsSubstitution ) ) {
                 final AlgDataTypeFactory factory = builder.getRexBuilder().getTypeFactory();
+                PolyType substitutionType = placements.stream().filter( f -> f.substitutionType != null ).findAny().orElseThrow( RuntimeException::new ).substitutionType;
                 values = Transformer.getConvertedInput( values, new AlgRecordType( Pair.zip( node.getRowType().getFieldList(), placements ).stream().map( e -> {
                     if ( e.right.needsSubstitution() ) {
                         return new AlgDataTypeFieldImpl( e.left.getName(), e.left.getPhysicalName(), e.left.getIndex(), e.right.getSubstitutionAlgType( factory ) );
                     }
                     return e.left;
 
-                } ).collect( Collectors.toList() ) ), placements.get( 0 ).substitutionType, factory );
+                } ).collect( Collectors.toList() ) ), substitutionType, factory );
             }
 
             builder = super.handleValues( values, builder );

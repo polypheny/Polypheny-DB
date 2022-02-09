@@ -22,6 +22,7 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -34,7 +35,7 @@ public class LogicalTransformer extends Transformer {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getUnsupportedTypes(), getSubstituteType() );
+        return new LogicalTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), rowType, getUnsupportedTypes(), getSubstituteType() );
     }
 
 
@@ -50,15 +51,16 @@ public class LogicalTransformer extends Transformer {
      * @param cluster Cluster this relational expression belongs to
      * @param traits
      * @param original Input relational expression
+     * @param rowType
      * @param unsupportedTypes
      * @param substituteType
      */
-    protected LogicalTransformer( AlgOptCluster cluster, AlgTraitSet traits, AlgNode original, List<PolyType> unsupportedTypes, PolyType substituteType ) {
-        super( cluster, traits, original, unsupportedTypes, substituteType );
+    protected LogicalTransformer( AlgOptCluster cluster, AlgTraitSet traits, AlgNode original, AlgDataType rowType, List<PolyType> unsupportedTypes, PolyType substituteType ) {
+        super( cluster, traits, rowType, original, unsupportedTypes, substituteType );
     }
 
 
-    public static LogicalTransformer create( AlgNode input, List<PolyType> unsupportedTypes, PolyType substituteType ) {
+    public static LogicalTransformer create( AlgNode input, AlgDataType rowType, List<PolyType> unsupportedTypes, PolyType substituteType ) {
 
         final AlgTraitSet traitSet =
                 input.getCluster().traitSetOf( Convention.NONE )
@@ -66,7 +68,7 @@ public class LogicalTransformer extends Transformer {
                                 AlgCollationTraitDef.INSTANCE,
                                 ImmutableList::of );
         // add trait switch here
-        return new LogicalTransformer( input.getCluster(), traitSet, input, unsupportedTypes, substituteType );
+        return new LogicalTransformer( input.getCluster(), traitSet, input, rowType, unsupportedTypes, substituteType );
     }
 
 }

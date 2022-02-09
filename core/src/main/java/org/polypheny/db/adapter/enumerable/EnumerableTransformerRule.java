@@ -20,12 +20,14 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.logical.LogicalTransformer;
+import org.polypheny.db.plan.AlgOptRule;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
-public class EnumerableConverterRule extends ConverterRule {
+public class EnumerableTransformerRule extends ConverterRule {
 
-    public EnumerableConverterRule( AlgBuilderFactory algBuilderFactory ) {
+    public EnumerableTransformerRule( AlgBuilderFactory algBuilderFactory ) {
         super( LogicalTransformer.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, algBuilderFactory, "EnumerableTransformer" );
     }
 
@@ -33,7 +35,9 @@ public class EnumerableConverterRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         Transformer transformer = (Transformer) alg;
-        return transformer;
+        final AlgNode input = AlgOptRule.convert( transformer.getInput(), transformer.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        final AlgTraitSet traitSet = transformer.getTraitSet().replace( EnumerableConvention.INSTANCE );
+        return EnumerableTransformer.create( transformer, traitSet, input );
         /*AlgNode orig = convert( transformer.getOriginal(), transformer.getOriginal().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
         final AlgTraitSet traitSet = transformer.getTraitSet().replace( out );
