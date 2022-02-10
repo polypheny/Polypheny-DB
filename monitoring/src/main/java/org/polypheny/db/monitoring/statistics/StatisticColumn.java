@@ -68,7 +68,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     @Expose
     @Getter
     @Setter
-    protected int count;
+    protected Integer count;
 
 
     public StatisticColumn( Long schemaId, Long tableId, Long columnId, PolyType type ) {
@@ -78,9 +78,11 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
         this.type = type;
 
         Catalog catalog = Catalog.getInstance();
-        this.schema = catalog.getSchema( schemaId ).name;
-        this.table = catalog.getTable( tableId ).name;
-        this.column = catalog.getColumn( columnId ).name;
+        if ( catalog.checkIfExistsTable( tableId ) ) {
+            this.schema = catalog.getSchema( schemaId ).name;
+            this.table = catalog.getTable( tableId ).name;
+            this.column = catalog.getColumn( columnId ).name;
+        }
     }
 
 

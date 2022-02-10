@@ -60,8 +60,10 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
     @Override
     public void insert( List<T> values ) {
-        for ( T val : values ) {
-            insert( val );
+        if ( values != null ) {
+            for ( T val : values ) {
+                insert( val );
+            }
         }
     }
 

@@ -56,8 +56,10 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
 
     @Override
     public void insert( List<T> values ) {
-        for ( T val : values ) {
-            insert( val );
+        if ( values != null ) {
+            for ( T val : values ) {
+                insert( val );
+            }
         }
     }
 
@@ -66,7 +68,9 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     public void insert( T val ) {
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
-                uniqueValues.add( val );
+                if ( !uniqueValues.isEmpty() ) {
+                    uniqueValues.add( val );
+                }
                 minCache.add( val );
                 maxCache.add( val );
             }
