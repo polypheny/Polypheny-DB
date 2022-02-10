@@ -19,6 +19,8 @@ package org.polypheny.db.algebra.logical;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Transformer;
@@ -46,6 +48,21 @@ public class LogicalTransformer extends Transformer {
 
         return new LogicalTransformer( node.getCluster(), node.getTraitSet().replace( ModelTrait.RELATIONAL ), node, node.getRowType(), Collections.emptyList(), null );
 
+    }
+
+
+    public static LogicalTransformer merge( LogicalTransformer parent, LogicalTransformer child ) {
+        if ( parent.getSubstituteType() != child.getSubstituteType() && parent.getSubstituteType() != null ) {
+            // we do not have compatible transformations and no transformation -> substitution
+            return null;
+        }
+        return new LogicalTransformer(
+                parent.getCluster(),
+                parent.getTraitSet(),
+                child.input,
+                parent.getRowType(),
+                Stream.concat( parent.getUnsupportedTypes().stream(), child.getUnsupportedTypes().stream() ).collect( Collectors.toList() ),
+                child.getSubstituteType() );
     }
 
 

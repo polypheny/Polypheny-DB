@@ -63,6 +63,8 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.ModelTraitDef;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -321,6 +323,10 @@ public abstract class AbstractAlgNode implements AlgNode {
      * @return Plan writer for fluent-explain pattern
      */
     public AlgWriter explainTerms( AlgWriter pw ) {
+        ModelTrait trait = getTraitSet().getTrait( ModelTraitDef.INSTANCE );
+        if ( trait != null ) {
+            return pw.item( "model", trait.getDataModel().name() );
+        }
         return pw;
     }
 

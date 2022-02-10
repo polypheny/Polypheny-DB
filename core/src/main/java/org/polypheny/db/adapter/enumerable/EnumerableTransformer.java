@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
@@ -39,6 +40,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.enumerable.RexToLixTranslator.InputGetterImpl;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -75,6 +77,8 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
     // substitution is used to allow storing of unsupported types via serialization in stores
     private final Map<PolyType, Pair<Method, Class<?>>> substitutionLookupMap;
     private final Method substitutionMethod;
+    private String substitutionDesc;
+    private String mappingDesc;
 
 
     /**
@@ -119,12 +123,19 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         }
         this.substitutionLookupMap = substitutionBuilder.build();
 
+        // description
+        if ( !substitutionLookupMap.isEmpty() ) {
+            this.substitutionDesc = String.format(
+                    "[%s]->%s",
+                    unsupportedTypes.stream().map( Enum::name ).collect( Collectors.joining( "," ) ), substituteType.name() );
+        }
     }
 
 
     private Map<PolyType, Pair<PolyType, Method>> getMapping( SchemaType from, SchemaType to ) {
 
         if ( from == SchemaType.DOCUMENT && to == SchemaType.RELATIONAL ) {
+            this.mappingDesc = "DOCUMENT_TO_RELATIONAL";
             return DOCUMENT_TO_RELATIONAL_MAPPING;
         }
         throw new UnsupportedOperationException( "The mapping from the data model: " + from + " to: " + to + " is not yet supported." );
@@ -263,6 +274,25 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             default:
                 throw new RuntimeException( "The provided type is not supported for substitution." );
         }
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw ).item( "transformation", getTransformationDesc() );
+    }
+
+
+    private String getTransformationDesc() {
+        List<String> descriptions = new ArrayList<>();
+        if ( mappingDesc != null ) {
+            descriptions.add( mappingDesc );
+        }
+        if ( substitutionDesc != null ) {
+            descriptions.add( substitutionDesc );
+        }
+
+        return String.join( " & ", descriptions );
     }
 
 
