@@ -16,10 +16,10 @@
 
 package org.polypheny.db.webui.crud;
 
-import com.google.gson.Gson;
 import io.javalin.http.Context;
 import lombok.Getter;
 import org.polypheny.db.policies.policy.PolicyManager;
+import org.polypheny.db.policies.policy.models.PolicyChangedRequest;
 import org.polypheny.db.webui.Crud;
 
 public class PolicyCrud {
@@ -36,13 +36,20 @@ public class PolicyCrud {
 
 
 
-    public void updatePolicies(final Context ctx, Gson gsonExpose){
+    public void getDefaultPolicies(final Context ctx){
 
-        policyManager.updatePolicies();
+       ctx.json( policyManager.getDefaultPolicies());
     }
 
 
     public void getPolicies(final Context ctx  ) {
+    }
+
+
+    public void setPolicies( Context ctx ) {
+
+        policyManager.updatePolicies( ctx.bodyAsClass( PolicyChangedRequest.class ));
+
     }
 
 }

@@ -17,6 +17,7 @@
 package org.polypheny.db.routing.strategies;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
@@ -24,6 +25,8 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.policies.policy.PolicyManager;
+import org.polypheny.db.policies.policy.PolicyManager.Action;
 
 
 public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
@@ -38,16 +41,24 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
     @Override
     public List<DataStore> getDataStoresForNewTable() {
 
-        /*
-         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
-        return PolicyManager.getInstance().checkTableStoreOptions(availableStores, true);
-         */
+        List<Integer> storeIds = PolicyManager.getInstance().makeDecision(Integer.class, Action.CREATE_TABLE);
+        if(storeIds.isEmpty()){
+            throw new RuntimeException("Not possible to create Table because there is no persistent Datastore available.");
+        }else{
+            for ( Integer id : storeIds ) {
+                return ImmutableList.of( AdapterManager.getInstance().getStore( id ) );
+            }
+        }
 
+        throw new RuntimeException( "No suitable data store found" );
+        /*
         Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
         for ( DataStore store : availableStores.values() ) {
             return ImmutableList.of( store );
         }
         throw new RuntimeException( "No suitable data store found" );
+
+         */
     }
 
 }

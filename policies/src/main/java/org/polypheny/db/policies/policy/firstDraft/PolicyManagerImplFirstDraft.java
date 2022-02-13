@@ -13,37 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+package org.polypheny.db.policies.policy.firstDraft;
 
-package org.polypheny.db.policies.policy;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.policies.policy.Clause.Category;
-import org.polypheny.db.policies.policy.Policy.Target;
-import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
+
+import org.polypheny.db.policies.policy.firstDraft.ClauseFirstDraft;
+import org.polypheny.db.policies.policy.firstDraft.PolicyConfigFirstDraft;
+import org.polypheny.db.policies.policy.firstDraft.PolicyFirstDraft.Target;
+import org.polypheny.db.policies.policy.firstDraft.PolicyManagerFirstDraft;
 
 @Slf4j
-public class PolicyManagerImpl extends PolicyManager {
+public class PolicyManagerImplFirstDraft extends PolicyManagerFirstDraft {
 
-    private final ConcurrentMap<String, Clause> clauses;
+    private final ConcurrentMap<String, ClauseFirstDraft> clauses;
 
 
-    public PolicyManagerImpl() {
+    public PolicyManagerImplFirstDraft() {
         this.clauses = new ConcurrentHashMap<>();
     }
 
 
-    public void setDefaultPolicies() {
+    public void initialize() {
         if ( RuntimeConfig.POLICY.getBoolean() ) {
             createDefaultPolicies();
             addPolicyListener();
@@ -55,19 +53,19 @@ public class PolicyManagerImpl extends PolicyManager {
         Catalog catalog = Catalog.getInstance();
 
         // Policy for Polypheny
-        getPolicies().put( getPolyphenyPolicyId(), new Policy() );
+        getPolicies().put( getPolyphenyPolicyId(), new PolicyFirstDraft() );
 
         // Policy for schemas
         List<CatalogSchema> schemas = catalog.getSchemas( 1, null );
         for ( CatalogSchema schema : schemas ) {
-            Policy schemaPolicy = new Policy( Target.STORE, schema.id );
-            storePolicies.put( schema.id, schemaPolicy.getId() );
+            PolicyFirstDraft schemaPolicy = new PolicyFirstDraft( Target.NAMESPACE, schema.id );
+            getSchemaPolicies().put( schema.id, schemaPolicy.getId() );
             getPolicies().put( schemaPolicy.getId(), schemaPolicy );
-            // Policy for
+            // Policy for entities
             List<CatalogTable> childTables = catalog.getTables( schema.id, null );
             for ( CatalogTable childTable : childTables ) {
-                Policy tablePolicy = new Policy( Target.STORE, childTable.id );
-                storePolicies.put( childTable.id, tablePolicy.getId() );
+                PolicyFirstDraft tablePolicy = new PolicyFirstDraft( Target.ENTITY, childTable.id );
+                getSchemaPolicies().put( childTable.id, tablePolicy.getId() );
                 getPolicies().put( tablePolicy.getId(), tablePolicy );
             }
         }
@@ -76,8 +74,8 @@ public class PolicyManagerImpl extends PolicyManager {
 
     private void addPolicyListener() {
         TrackingListener listener = new TrackingListener();
-        PolicyConfig.NON_PERSISTENCE.addObserver( listener );
-        PolicyConfig.PERSISTENCE.addObserver( listener );
+        PolicyConfigFirstDraft.NON_PERSISTENCE.addObserver( listener );
+        PolicyConfigFirstDraft.PERSISTENCE.addObserver( listener );
         //PolicyConfig.TWO_PHASE_COMMIT.addObserver( listener );
     }
 
@@ -90,7 +88,8 @@ public class PolicyManagerImpl extends PolicyManager {
 
     @Override
     public <T> List<T> makeDecision( Class<T> clazz, Action action, T preSelection ) {
-        return makeDecision( clazz, action, preSelection, 1 );
+        return null;
+        //return makeDecision( clazz, action, preSelection, 1 );
     }
 
 
@@ -107,8 +106,8 @@ public class PolicyManagerImpl extends PolicyManager {
                 // 1. get PolphenyPolyicyId -> only the polypheny policy is interesting
                 if ( polyphenyPolicyId != NO_POLYPHENY_POLICY ) {
                     //2. get all clauses of interest
-                    List<Integer> interestingPersistentClauses = policies.get( polyphenyPolicyId ).getClausesByCategories().get( Category.PERSISTENT );
-                    List<Integer> interestingNonPersistentClauses = policies.get( polyphenyPolicyId ).getClausesByCategories().get( Category.NON_PERSISTENT );
+                   List<Integer> interestingPersistentClauses = getPolicies().get( polyphenyPolicyId ).getClausesByCategories().get( Category.PERSISTENT );
+                    List<Integer> interestingNonPersistentClauses = getPolicies().get( polyphenyPolicyId ).getClausesByCategories().get( Category.NON_PERSISTENT );
 
                     //3. fixed persistent or fixed not?
 
@@ -135,6 +134,8 @@ public class PolicyManagerImpl extends PolicyManager {
     }
 
 
+
+
     @Override
     public void updatePolicies() {
 
@@ -142,8 +143,8 @@ public class PolicyManagerImpl extends PolicyManager {
 
 
     @Override
-    public void registerClause( Clause clause, Target target, List<Long> targetIds ) {
-        Policy policy;
+    public void registerClause( ClauseFirstDraft clause, Target target, List<Long> targetIds ) {
+        PolicyFirstDraft policy;
 
         if ( target == Target.POLYPHENY ) {
             policy = getPolicies().remove( getPolyphenyPolicyId() );
@@ -151,12 +152,12 @@ public class PolicyManagerImpl extends PolicyManager {
             getPolicies().put( getPolyphenyPolicyId(), policy );
             clauses.put( clause.getClauseName(), clause );
 
-        } else if ( target == Target.STORE || target == Target.TABLE ) {
+        } else if ( target == Target.NAMESPACE || target == Target.ENTITY ) {
             for ( Long targetId : targetIds ) {
                 policy = getPolicies().remove( clause.getId() );
                 policy.getClauses().put( clause.getId(), clause );
                 getPolicies().put( clause.getId(), policy );
-                storePolicies.put( targetId, clause.getId() );
+                getSchemaPolicies().put( targetId, clause.getId() );
                 clauses.put( clause.getClauseName(), clause );
             }
         }
@@ -164,15 +165,15 @@ public class PolicyManagerImpl extends PolicyManager {
 
 
     @Override
-    public Clause getClause( String actionName ) {
+    public ClauseFirstDraft getClause( String actionName ) {
         return clauses.get( actionName );
     }
 
 
-    class TrackingListener implements Clause.PolicyListener {
+    class TrackingListener implements ClauseFirstDraft.PolicyListener {
 
         @Override
-        public void onConfigChange( Clause c ) {
+        public void onConfigChange( ClauseFirstDraft c ) {
             registerTrackingToggle();
         }
 
@@ -185,3 +186,4 @@ public class PolicyManagerImpl extends PolicyManager {
     }
 
 }
+*/

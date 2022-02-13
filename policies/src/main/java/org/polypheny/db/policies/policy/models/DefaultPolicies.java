@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy;
+package org.polypheny.db.policies.policy.models;
 
-import lombok.Getter;
-import lombok.Setter;
+import org.polypheny.db.policies.policy.Clause;
+import org.polypheny.db.policies.policy.Clause.ClauseType;
+import org.polypheny.db.policies.policy.Policy.Target;
 
-public class BooleanClause extends Clause {
+public class DefaultPolicies {
 
-    @Getter
-    @Setter
-    private boolean value;
+    private final String name;
+    private final Target target;
+    private final Clause clause;
+    private final ClauseType clauseType;
 
-
-    private final String description;
-
-
-    public BooleanClause( ClauseName clauseName, boolean defaultValue, boolean isDefault, Category category, String description ) {
-        super( clauseName, isDefault,  ClauseType.BOOLEAN, category );
-        this.value = defaultValue;
-        this.description = description;
+    public DefaultPolicies(String name, Target target, Clause clause, ClauseType clauseType){
+        this.name = name;
+        this.target = target;
+        this.clause = clause;
+        this.clauseType = clauseType;
     }
 
 

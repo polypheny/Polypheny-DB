@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy;
+package org.polypheny.db.policies.policy.models;
 
 
-public class ModificationSelector extends PolicyManagerImpl {
+public class PolicyChangedRequest {
 
+    public String requestType;
 
+    public int clauseId;
 
+    public String targetName;
 
-    enum Modifications{
-        CREATE_TABLE
-    }
+    public boolean booleanValue;
 
 
 }
-
-

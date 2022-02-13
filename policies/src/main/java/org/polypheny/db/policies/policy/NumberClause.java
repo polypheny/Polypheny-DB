@@ -28,24 +28,11 @@ public class NumberClause extends Clause {
     private final HashMap<Category, Pair<Integer, Integer>> categoryRange;
 
 
-    public NumberClause( String clauseName, int defaultValue, HashMap<Category, Pair<Integer, Integer>> categoryRange ) {
-        super( clauseName );
+    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<Category, Pair<Integer, Integer>> categoryRange, Category category ) {
+        super( clauseName, isDefault, ClauseType.NUMBER, category );
         this.value = defaultValue;
         this.categoryRange = categoryRange;
 
-    }
-
-
-    @Override
-    public Category getCategory() {
-
-        for ( Entry<Category, Pair<Integer, Integer>> entries : categoryRange.entrySet() ) {
-            if ( value >= entries.getValue().left && value <= entries.getValue().right ) {
-                return entries.getKey();
-            }
-        }
-
-        throw new PolicyRuntimeException( "Default Value is not in CategoryRange" );
     }
 
 }

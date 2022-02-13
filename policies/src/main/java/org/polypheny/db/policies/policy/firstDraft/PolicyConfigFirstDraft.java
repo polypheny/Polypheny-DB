@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.policies.policy;
+package org.polypheny.db.policies.policy.firstDraft;
 
 
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.policies.policy.Clause.Category;
-import org.polypheny.db.policies.policy.Clause.PolicyListener;
-import org.polypheny.db.policies.policy.Policy.Target;
+import org.polypheny.db.policies.policy.BooleanClause;
 import org.polypheny.db.policies.policy.PolicyManager.Action;
+import org.polypheny.db.policies.policy.firstDraft.ClauseFirstDraft.Category;
+import org.polypheny.db.policies.policy.firstDraft.ClauseFirstDraft.PolicyListener;
+
+import org.polypheny.db.policies.policy.firstDraft.PolicyFirstDraft.Target;
 
 @Slf4j
-public enum PolicyConfig {
+public enum PolicyConfigFirstDraft {
 
     PERSISTENCE(
             Category.PERSISTENT,
@@ -67,23 +69,23 @@ public enum PolicyConfig {
     private final String description;
     private final List<Long> targetIds;
 
-    private final PolicyManager policyManager = PolicyManager.getInstance();
+   // private final PolicyManagerFirstDraft policyManager = PolicyManagerFirstDraft.getInstance();
 
 
-    PolicyConfig( final Category category, final String description, final Object defaultValue, final Action action, Target target, List<Long> targetIds ) {
+    PolicyConfigFirstDraft( final Category category, final String description, final Object defaultValue, final Action action, Target target, List<Long> targetIds ) {
         this.category = category;
         this.description = description;
         this.targetIds = targetIds;
         this.action = action;
 
-        final Clause clause;
+        final ClauseFirstDraft clause;
 
         switch ( category ) {
             case PERSISTENT:
-                clause = new BooleanClause( action.name(), (Boolean) defaultValue, Category.PERFORMANCE, Category.NON_PERSISTENT );
+                //clause = new BooleanClause( action.name(), (Boolean) defaultValue, Category.PERFORMANCE, Category.NON_PERSISTENT );
                 break;
             case NON_PERSISTENT:
-                clause = new BooleanClause( action.name(), (Boolean) defaultValue, Category.NON_PERSISTENT, Category.PERFORMANCE );
+                //clause = new BooleanClause( action.name(), (Boolean) defaultValue, Category.NON_PERSISTENT, Category.PERFORMANCE );
                 break;
             default:
                 throw new RuntimeException( "Unknown action of policy: " + action.name() );
@@ -91,17 +93,17 @@ public enum PolicyConfig {
         }
 
         // add Clauses to policies, policies are created on start up / creation
-        policyManager.registerClause( clause, target, targetIds );
+        //policyManager.registerClause( clause, target, targetIds );
     }
 
 
     public void addObserver( final PolicyListener listener ) {
-        policyManager.getClause( action.name() ).addObserver( listener );
+       // policyManager.getClause( action.name() ).addObserver( listener );
     }
 
 
     public void removeObserver( final PolicyListener listener ) {
-        policyManager.getClause( action.name() ).removeObserver( listener );
+       // policyManager.getClause( action.name() ).removeObserver( listener );
     }
 
 }

@@ -2155,8 +2155,10 @@ public class Crud implements InformationObserver {
                 index.getStoreUniqueName() );
         Transaction transaction = getTransaction();
         int affectedRows = 0;
+        Result result;
         try {
             affectedRows = executeSqlUpdate( transaction, query );
+            result = new Result(affectedRows).setGeneratedQuery( query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             try {
@@ -2164,9 +2166,10 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            ctx.json( new Result( e ) );
+            result = new Result(e);
+
         }
-        ctx.json( new Result( affectedRows ).setGeneratedQuery( query ) );
+        ctx.json( result );
     }
 
 
