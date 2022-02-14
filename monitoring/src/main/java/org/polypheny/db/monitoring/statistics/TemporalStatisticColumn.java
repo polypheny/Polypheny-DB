@@ -98,8 +98,10 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
 
     @Override
     public void insert( List<T> values ) {
-        for ( T val : values ) {
-            insert( val );
+        if ( values != null ) {
+            for ( T val : values ) {
+                insert( val );
+            }
         }
     }
 

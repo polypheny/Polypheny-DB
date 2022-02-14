@@ -302,6 +302,7 @@ public class CottontailStore extends DataStore {
         partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
             /* Prepare DROP TABLE message. */
             final String physicalTableName = partitionPlacement.physicalTableName;
             final EntityName tableEntity = EntityName.newBuilder()

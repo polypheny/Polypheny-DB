@@ -131,8 +131,8 @@ public class StatisticRepository implements MonitoringRepository {
                     } else if ( dataPoint.getMonitoringType().equals( "DELETE" ) ) {
                         int deleted = dataPoint.getRowCount();
                         statisticsManager.updateRowCountPerTable( tableId, deleted, dataPoint.getMonitoringType() );
-                        // After a delete, it is not clear what exactly was deleted, so the statistics are updated
-                        //statisticsManager.tablesToUpdate( tableId );
+                        // After a delete, it is not clear what exactly was deleted, so the statistics of the table are updated
+                        statisticsManager.tablesToUpdate( tableId );
                     }
                 }
             } else {

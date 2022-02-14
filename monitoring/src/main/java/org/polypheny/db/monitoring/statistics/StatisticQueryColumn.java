@@ -29,7 +29,7 @@ public class StatisticQueryColumn extends QueryColumn {
      * All specified statistics for a column identified by their keys
      */
     @Getter
-    private String[] data;
+    private Comparable<?>[] data;
 
 
     /**
@@ -37,7 +37,7 @@ public class StatisticQueryColumn extends QueryColumn {
      *
      * @param data map consisting of different values to a given statistic
      */
-    public StatisticQueryColumn( QueryColumn queryColumn, final String[] data ) {
+    public StatisticQueryColumn( QueryColumn queryColumn, final Comparable<?>[] data ) {
         super( queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), queryColumn.getType() );
         this.data = data;
     }

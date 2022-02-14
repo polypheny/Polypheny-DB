@@ -30,13 +30,13 @@ import org.polypheny.db.type.PolyType;
 class QueryColumn {
 
     @Getter
-    private final String schema;
+    private String schema;
 
     @Getter
-    private final String table;
+    private String table;
 
     @Getter
-    private final String column;
+    private String column;
 
     @Getter
     private final Long schemaId;
@@ -58,9 +58,14 @@ class QueryColumn {
         this.type = type;
 
         Catalog catalog = Catalog.getInstance();
-        this.schema = catalog.getSchema( schemaId ).name;
-        this.table = catalog.getTable( tableId ).name;
-        this.column = catalog.getColumn( columnId ).name;
+        if(catalog.checkIfExistsTable( tableId )){
+            this.schema = catalog.getSchema( schemaId ).name;
+            this.table = catalog.getTable( tableId ).name;
+            if(columnId != null){
+                this.column = catalog.getColumn( columnId ).name;
+            }
+
+        }
     }
 
 

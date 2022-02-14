@@ -87,6 +87,7 @@ public class StatisticTable<T extends Comparable<T>> {
             this.owner = catalogTable.ownerName;
             this.tableType = catalogTable.tableType;
         }
+        calls = new TableCalls( tableId, 0, 0 ,0, 0 );
 
         this.numberOfRows = 0;
         alphabeticColumn = new ArrayList<>();
