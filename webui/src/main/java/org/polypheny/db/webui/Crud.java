@@ -3606,7 +3606,7 @@ public class Crud implements InformationObserver {
 
             DbColumn dbCol = new DbColumn(
                     metaData.getName(),
-                    metaData.getType().getFullTypeString(),
+                    metaData.getType().getPolyType().getTypeName(),
                     metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
                     metaData.getType().getPrecision(),
                     sort,
