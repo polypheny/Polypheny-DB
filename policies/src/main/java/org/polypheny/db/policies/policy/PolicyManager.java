@@ -102,7 +102,7 @@ public class PolicyManager {
     }
 
 
-    public Object getDefaultPolicies() {
+    public Object getPolicies(Long schemaId, Long tableId) {
         List<DefaultPolicies> defaultPolicies = new ArrayList<>();
         for ( Policy policy : policies.values() ) {
             if ( !policy.getClauses().isEmpty() ) {
@@ -119,6 +119,8 @@ public class PolicyManager {
 
 
     public void updatePolicies( PolicyChangedRequest changeRequest ) {
+
+
         for ( Policy policy : policies.values() ) {
             if ( !policy.getClauses().isEmpty() ) {
                 if ( policy.getTarget().name().equals( changeRequest.targetName ) ) {

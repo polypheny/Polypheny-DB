@@ -4279,7 +4279,10 @@ public class CatalogImpl extends Catalog {
         return partitionStream.collect( Collectors.toList() );
     }
 
-
+    /**
+     * Get all existing partition placements of the database.
+     * @return List of all CatalogPartitionPlacement
+     */
     @Override
     public List<CatalogPartitionPlacement> getAllPartitionPlacement( ) {
         List<CatalogPartitionPlacement> partitionPlacement = new ArrayList<>();

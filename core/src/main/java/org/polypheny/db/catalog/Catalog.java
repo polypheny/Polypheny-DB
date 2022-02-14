@@ -1218,6 +1218,10 @@ public abstract class Catalog {
      */
     public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
+    /**
+     * Get all existing partition placements of the database.
+     * @return List of all CatalogPartitionPlacement
+     */
     public abstract List<CatalogPartitionPlacement> getAllPartitionPlacement( );
 
     /**
