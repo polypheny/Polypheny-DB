@@ -20,18 +20,20 @@ import org.polypheny.db.policies.policy.Clause;
 import org.polypheny.db.policies.policy.Clause.ClauseType;
 import org.polypheny.db.policies.policy.Policy.Target;
 
-public class DefaultPolicies {
+public class Policies {
 
     private final String name;
     private final Target target;
     private final Clause clause;
     private final ClauseType clauseType;
+    private final String description;
 
-    public DefaultPolicies(String name, Target target, Clause clause, ClauseType clauseType){
+    public Policies(String name, Target target, Clause clause, ClauseType clauseType, String description){
         this.name = name;
         this.target = target;
         this.clause = clause;
         this.clauseType = clauseType;
+        this.description = description;
     }
 
 

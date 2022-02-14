@@ -32,7 +32,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
 import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
-import org.polypheny.db.policies.policy.models.DefaultPolicies;
+import org.polypheny.db.policies.policy.models.Policies;
 import org.polypheny.db.policies.policy.models.PolicyChangedRequest;
 
 @Slf4j
@@ -102,24 +102,52 @@ public class PolicyManager {
     }
 
 
-    public Object getPolicies(Long schemaId, Long tableId) {
-        List<DefaultPolicies> defaultPolicies = new ArrayList<>();
-        for ( Policy policy : policies.values() ) {
-            if ( !policy.getClauses().isEmpty() ) {
-                for ( Clause clause : policy.getClauses().values() ) {
-                    if ( clause.isDefault() ) {
-                        defaultPolicies.add( new DefaultPolicies( clause.getClauseName().name(), policy.getTarget(), clause, clause.getClauseType() ) );
-                    }
-
-                }
-            }
+    public Object getPolicies( String polypheny, Long namespaceId, Long entityId ) throws RuntimeException {
+        List<Policies> policies = new ArrayList<>();
+        // for the whole system
+        if ( polypheny != null ) {
+            Policy policy = this.policies.get( polyphenyPolicyId );
+            getRelevantClauses( policies, policy );
         }
-        return defaultPolicies;
+        // for a namespace
+        else if ( entityId == null ) {
+            Policy policy = this.policies.get( namespacePolicies.get( namespaceId ) );
+            getRelevantClauses( policies, policy );
+        }
+        // for a entity
+        else {
+            Policy policy = this.policies.get( entityPolicies.get( entityId ) );
+            getRelevantClauses( policies, policy );
+        }
+        if ( policies.isEmpty() ) {
+            throw new PolicyRuntimeException( "There are no policies for this target." );
+        } else {
+            return policies;
+        }
     }
 
 
-    public void updatePolicies( PolicyChangedRequest changeRequest ) {
+    private void getRelevantClauses( List<Policies> policies, Policy policy ) {
+        if ( !policy.getClauses().isEmpty() ) {
+            for ( Clause clause : policy.getClauses().values() ) {
+                policies.add( new Policies( clause.getClauseName().name(), policy.getTarget(), clause, clause.getClauseType(), clause.getDescription()) );
+            }
+        }
+    }
 
+
+
+    public void getPossiblePolicies( String polypheny, Long schemaId, Long tableId ) {
+/*
+        AdapterManager.getInstance().getAdapters().forEach( (k, v) ->
+                v.getDeployMode());
+                }
+        );
+
+ */
+    }
+
+    public void updatePolicies( PolicyChangedRequest changeRequest ) {
 
         for ( Policy policy : policies.values() ) {
             if ( !policy.getClauses().isEmpty() ) {

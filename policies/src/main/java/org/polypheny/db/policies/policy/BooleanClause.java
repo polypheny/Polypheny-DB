@@ -26,13 +26,9 @@ public class BooleanClause extends Clause {
     private boolean value;
 
 
-    private final String description;
-
-
     public BooleanClause( ClauseName clauseName, boolean defaultValue, boolean isDefault, Category category, String description ) {
-        super( clauseName, isDefault,  ClauseType.BOOLEAN, category );
+        super( clauseName, isDefault,  ClauseType.BOOLEAN, category, description );
         this.value = defaultValue;
-        this.description = description;
     }
 
 

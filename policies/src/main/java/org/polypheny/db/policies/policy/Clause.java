@@ -21,7 +21,7 @@ import lombok.Getter;
 
 public abstract class Clause {
 
-    private final AtomicInteger atomicId = new AtomicInteger();
+    private static final AtomicInteger atomicId = new AtomicInteger();
     /**
      * Name of clause.
      */
@@ -43,13 +43,17 @@ public abstract class Clause {
     @Getter
     private final Category category;
 
+    @Getter
+    private final String description;
 
-    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category ) {
+
+    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category, String description ) {
         this.id = atomicId.getAndIncrement();
         this.clauseName = clauseName;
         this.isDefault = isDefault;
         this.clauseType = clauseType;
         this.category = category;
+        this.description = description;
 
     }
 
@@ -63,7 +67,7 @@ public abstract class Clause {
 
 
     public enum ClauseName {
-        FULLY_PERSISTENT
+        FULLY_PERSISTENT, ONLY_EMBEDDED
     }
 
     public enum ClauseType {

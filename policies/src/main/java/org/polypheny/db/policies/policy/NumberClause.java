@@ -28,8 +28,8 @@ public class NumberClause extends Clause {
     private final HashMap<Category, Pair<Integer, Integer>> categoryRange;
 
 
-    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<Category, Pair<Integer, Integer>> categoryRange, Category category ) {
-        super( clauseName, isDefault, ClauseType.NUMBER, category );
+    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<Category, Pair<Integer, Integer>> categoryRange, Category category, String description ) {
+        super( clauseName, isDefault, ClauseType.NUMBER, category, description );
         this.value = defaultValue;
         this.categoryRange = categoryRange;
 

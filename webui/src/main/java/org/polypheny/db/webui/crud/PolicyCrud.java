@@ -39,34 +39,59 @@ public class PolicyCrud {
     }
 
 
-
-    public void getDefaultPolicies(final Context ctx){
-
+    public void getPolicies( final Context ctx ) {
 
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        long tableId;
-        long schemaId;
+        Long schemaId = null;
+        Long tableId = null;
+        String polypheny = null;
         try {
-            schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
-            tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
+            if ( request.tableId.equals( "polypheny" ) ) {
+                polypheny = request.tableId;
+            } else if ( !request.tableId.contains( "." ) ) {
+                schemaId = Catalog.getInstance().getSchema( 1, request.tableId ).id;
+            } else {
+                schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
+                tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
+            }
 
-            ctx.json( policyManager.getPolicies( schemaId, tableId ) );
+            ctx.json( policyManager.getPolicies( polypheny, schemaId, tableId ) );
         } catch ( UnknownTableException | UnknownSchemaException e ) {
             throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
                     + request.tableId.split( "\\." )[1] + "is unknown." );
         }
+    }
 
+
+    public void setPolicies( final Context ctx ) {
+
+        policyManager.updatePolicies( ctx.bodyAsClass( PolicyChangedRequest.class ) );
 
     }
 
 
-    public void getPolicies(final Context ctx  ) {
-    }
+    public void getAllPossiblePolicies( final Context ctx ) {
 
+        UIRequest request = ctx.bodyAsClass( UIRequest.class );
+        Long schemaId = null;
+        Long tableId = null;
+        String polypheny = null;
+        try {
+            if ( request.tableId.equals( "polypheny" ) ) {
+                polypheny = request.tableId;
+            } else if ( !request.tableId.contains( "." ) ) {
+                schemaId = Catalog.getInstance().getSchema( 1, request.tableId ).id;
+            } else {
+                schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
+                tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
+            }
 
-    public void setPolicies( Context ctx ) {
+            policyManager.getPossiblePolicies( polypheny, schemaId, tableId );
 
-        policyManager.updatePolicies( ctx.bodyAsClass( PolicyChangedRequest.class ));
+        } catch ( UnknownTableException | UnknownSchemaException e ) {
+            throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
+                    + request.tableId.split( "\\." )[1] + "is unknown." );
+        }
 
     }
 

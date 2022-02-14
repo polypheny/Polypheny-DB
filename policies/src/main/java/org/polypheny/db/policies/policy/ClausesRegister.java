@@ -47,6 +47,15 @@ public class ClausesRegister {
                         "If persistency is switched on, Polypheny only adds tables and partitions only to persistent stores."  ) 
         );
 
+        register( ClauseName.ONLY_EMBEDDED,
+                new BooleanClause(
+                        ClauseName.ONLY_EMBEDDED,
+                        false,
+                        true,
+                        Category.AVAILABILITY,
+                        "If only embedded is switched on, Polypheny only adds tables and partitions to embedded store."  )
+        );
+
     }
 
 

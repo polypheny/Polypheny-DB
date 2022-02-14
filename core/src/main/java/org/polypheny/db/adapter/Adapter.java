@@ -70,6 +70,7 @@ import org.polypheny.db.transaction.PolyXid;
 public abstract class Adapter {
 
     private final AdapterProperties properties;
+    @Getter
     protected final DeployMode deployMode;
 
 
