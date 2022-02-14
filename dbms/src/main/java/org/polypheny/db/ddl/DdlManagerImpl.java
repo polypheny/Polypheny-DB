@@ -115,6 +115,8 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.partition.properties.TemperaturePartitionProperty.PartitionCostIndication;
 import org.polypheny.db.partition.raw.RawTemperaturePartitionInformation;
+import org.polypheny.db.policies.policy.PolicyManager;
+import org.polypheny.db.policies.policy.PolicyManager.Action;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -271,6 +273,7 @@ public class DdlManagerImpl extends DdlManager {
                     catalog.addPartitionPlacement(
                             adapter.getAdapterId(),
                             catalogTable.id,
+                            catalogTable.schemaId,
                             catalogTable.partitionProperty.partitionIds.get( 0 ),
                             PlacementType.AUTOMATIC,
                             null,
@@ -511,6 +514,8 @@ public class DdlManagerImpl extends DdlManager {
         addDefaultValue( defaultValue, columnId );
         CatalogColumn addedColumn = catalog.getColumn( columnId );
 
+
+
         // Ask router on which stores this column shall be placed
         List<DataStore> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewColumn( addedColumn );
 
@@ -654,6 +659,13 @@ public class DdlManagerImpl extends DdlManager {
                 throw new PlacementAlreadyExistsException();
             }
         }
+
+        // Check Policies if placement is against the policy or not
+        List<Integer> ids = PolicyManager.getInstance().makeDecision(Integer.class, Action.ADD_PLACEMENT, catalogTable.schemaId, catalogTable.id, dataStore.getAdapterId());
+        if(ids.isEmpty()){
+            throw new RuntimeException("Not possible to add Placement because the Datastore is not persistent.");
+        }
+
         // Check whether the list is empty (this is a short hand for a full placement)
         if ( columnIds.size() == 0 ) {
             columnIds = ImmutableList.copyOf( catalogTable.columnIds );
@@ -766,6 +778,7 @@ public class DdlManagerImpl extends DdlManager {
             catalog.addPartitionPlacement(
                     dataStore.getAdapterId(),
                     catalogTable.id,
+                    catalogTable.schemaId,
                     partitionId,
                     PlacementType.AUTOMATIC,
                     null,
@@ -1365,6 +1378,7 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.addPartitionPlacement(
                         storeInstance.getAdapterId(),
                         catalogTable.id,
+                        catalogTable.schemaId,
                         partitionId,
                         PlacementType.AUTOMATIC,
                         null,
@@ -1600,7 +1614,7 @@ public class DdlManagerImpl extends DdlManager {
 
         if ( stores == null ) {
             // Ask router on which store(s) the table should be placed
-            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable(schemaId);
         }
 
         AlgDataType fieldList = algRoot.alg.getRowType();
@@ -1692,6 +1706,7 @@ public class DdlManagerImpl extends DdlManager {
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
                     tableId,
+                    schemaId,
                     catalogMaterializedView.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,
@@ -1847,7 +1862,7 @@ public class DdlManagerImpl extends DdlManager {
 
             if ( stores == null ) {
                 // Ask router on which store(s) the table should be placed
-                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+                stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable(schemaId);
             }
 
             long tableId = catalog.addTable(
@@ -1875,6 +1890,7 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.addPartitionPlacement(
                         store.getAdapterId(),
                         catalogTable.id,
+                        catalogTable.schemaId,
                         catalogTable.partitionProperty.partitionIds.get( 0 ),
                         PlacementType.AUTOMATIC,
                         null,
@@ -2144,6 +2160,21 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+
+        // Check Policies if placement is against the policy or not
+        // todo ig: check stores before updating catalog, this can cause issues
+        List<Object> persistentStore = PolicyManager.getInstance().makeDecision( Object.class, Action.ADD_PARTITIONING, partitionInfo.table.schemaId, partitionInfo.table.id, stores );
+        if(persistentStore.isEmpty()){
+            throw new RuntimeException("Not possible to add Placement because the Datastore is not persistent.");
+        }
+        stores.clear();
+        for ( Object store : persistentStore ) {
+            if(store instanceof DataStore){
+                stores.add( (DataStore) store );
+            }
+        }
+
+
         // Now get the partitioned table, partitionInfo still contains the basic/unpartitioned table.
         CatalogTable partitionedTable = catalog.getTable( partitionInfo.table.id );
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -2152,6 +2183,7 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.addPartitionPlacement(
                         store.getAdapterId(),
                         partitionedTable.id,
+                        partitionedTable.schemaId,
                         partitionId,
                         PlacementType.AUTOMATIC,
                         null,
@@ -2233,6 +2265,7 @@ public class DdlManagerImpl extends DdlManager {
             catalog.addPartitionPlacement(
                     store.getAdapterId(),
                     mergedTable.id,
+                    mergedTable.schemaId,
                     mergedTable.partitionProperty.partitionIds.get( 0 ),
                     PlacementType.AUTOMATIC,
                     null,

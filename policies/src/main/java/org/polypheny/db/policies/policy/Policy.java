@@ -52,6 +52,12 @@ public class Policy {
     @Getter
     private final Map<Integer, Clause> clauses = new HashMap<>();
 
+    /**
+     * All different clauses
+     */
+    @Getter
+    private final Map<ClauseName, Integer> clausesByName = new HashMap<>();
+
 
     /**
      * Agreements between the user and polypheny, namespaces or entities.
@@ -85,9 +91,10 @@ public class Policy {
                 for ( Entry<ClauseName, Clause> clause : registeredClauses.entrySet() ) {
                     if ( clause.getValue().isDefault() ) {
                         clauses.put( clause.getValue().getId(), clause.getValue() );
+                        clausesByName.put( clause.getKey(), clause.getValue().getId() );
                     }
                 }
-                log.warn( "Yeey, default policies for Polypheny are added.");
+                log.warn( "Yeey, default policies for Polypheny are added." );
                 break;
             case NAMESPACE:
                 log.warn( "No default policies are defined for the: " + target.name() );

@@ -295,6 +295,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                             catalog.addPartitionPlacement(
                                     store.getAdapterId(),
                                     table.id,
+                                    table.schemaId,
                                     partitionId,
                                     PlacementType.AUTOMATIC,
                                     null,
@@ -343,6 +344,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                             catalog.addPartitionPlacement(
                                     store.getAdapterId(),
                                     table.id,
+                                    table.schemaId, 
                                     partitionId,
                                     PlacementType.AUTOMATIC,
                                     null,

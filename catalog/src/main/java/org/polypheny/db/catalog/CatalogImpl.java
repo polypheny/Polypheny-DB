@@ -865,7 +865,7 @@ public class CatalogImpl extends Catalog {
             updateColumnPlacementPhysicalPosition( csv.id, colId, position );
 
             long partitionId = getPartitionsOnDataPlacement( csv.id, table.id ).get( 0 );
-            addPartitionPlacement( csv.id, table.id, partitionId, PlacementType.AUTOMATIC, filename, table.name );
+            addPartitionPlacement( csv.id, table.id, table.schemaId, partitionId, PlacementType.AUTOMATIC, filename, table.name );
         }
     }
 
@@ -2081,6 +2081,7 @@ public class CatalogImpl extends Catalog {
             CatalogPartitionPlacement placement = new CatalogPartitionPlacement(
                     old.tableId,
                     old.adapterId,
+                    old.schemaId,
                     old.adapterUniqueName,
                     old.placementType,
                     physicalSchemaName,
@@ -4279,6 +4280,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public List<CatalogPartitionPlacement> getAllPartitionPlacement( ) {
+        List<CatalogPartitionPlacement> partitionPlacement = new ArrayList<>();
+        partitionPlacements.forEach( (k, v) -> partitionPlacement.add( v ) );
+        return partitionPlacement;
+    }
+
     /**
      * Get a List of all partition name belonging to a specific table
      *
@@ -4525,12 +4533,13 @@ public class CatalogImpl extends Catalog {
      * @param physicalTableName The table name on the adapter
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long schemaId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
         if ( !checkIfExistsPartitionPlacement( adapterId, partitionId ) ) {
             CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
             CatalogPartitionPlacement partitionPlacement = new CatalogPartitionPlacement(
                     tableId,
                     adapterId,
+                    schemaId,
                     store.uniqueName,
                     placementType,
                     physicalSchemaName,

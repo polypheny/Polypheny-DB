@@ -1218,6 +1218,8 @@ public abstract class Catalog {
      */
     public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
+    public abstract List<CatalogPartitionPlacement> getAllPartitionPlacement( );
+
     /**
      * Get a List of all partition name belonging to a specific table
      *
@@ -1332,7 +1334,7 @@ public abstract class Catalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      */
-    public abstract void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName );
+    public abstract void addPartitionPlacement( int adapterId, long tableId, long schemaId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName );
 
     /**
      * Change physical names of a partition placement.

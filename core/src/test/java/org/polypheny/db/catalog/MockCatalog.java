@@ -941,6 +941,10 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
+    @Override
+    public List<CatalogPartitionPlacement> getAllPartitionPlacement( ){
+        throw new NotImplementedException();
+    }
 
     /**
      * Get all partitions of a DataPlacement (identified by adapterId and tableId)
@@ -964,7 +968,7 @@ public abstract class MockCatalog extends Catalog {
      * @param physicalTableName The table name on the adapter
      */
     @Override
-    public void addPartitionPlacement( int adapterId, long tableId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
+    public void addPartitionPlacement( int adapterId, long tableId, long schemaId, long partitionId, PlacementType placementType, String physicalSchemaName, String physicalTableName ) {
         throw new NotImplementedException();
     }
 

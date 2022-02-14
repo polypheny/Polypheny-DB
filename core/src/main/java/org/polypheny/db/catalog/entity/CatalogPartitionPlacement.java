@@ -28,6 +28,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     public final long tableId;
     public final long partitionId;
     public final int adapterId;
+    public final long schemaId;
     public final String adapterUniqueName;
     public final PlacementType placementType;
 
@@ -38,6 +39,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     public CatalogPartitionPlacement(
             final long tableId,
             final int adapterId,
+            final long schemaId,
             @NonNull final String adapterUniqueName,
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
@@ -45,6 +47,7 @@ public class CatalogPartitionPlacement implements CatalogEntity {
             final long partitionId ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
+        this.schemaId = schemaId;
         this.adapterUniqueName = adapterUniqueName;
         this.placementType = placementType;
         this.physicalSchemaName = physicalSchemaName;

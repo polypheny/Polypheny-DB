@@ -25,10 +25,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.policies.policy.Clause.Category;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
 import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
@@ -56,7 +56,7 @@ public class PolicyManager {
     private int polyphenyPolicyId;
 
     // map <schemaId -> policyId>
-    private final Map<Long, Integer> schemaPolicies = new HashMap<>();
+    private final Map<Long, Integer> namespacePolicies = new HashMap<>();
 
     // map <entityId -> policyId>
     private final Map<Long, Integer> entityPolicies = new HashMap<>();
@@ -89,7 +89,7 @@ public class PolicyManager {
         List<CatalogSchema> namespaces = catalog.getSchemas( 1, null );
         for ( CatalogSchema namespace : namespaces ) {
             Policy schemaPolicy = new Policy( Target.NAMESPACE, namespace.id );
-            schemaPolicies.put( namespace.id, schemaPolicy.getId() );
+            namespacePolicies.put( namespace.id, schemaPolicy.getId() );
             policies.put( schemaPolicy.getId(), schemaPolicy );
             // Policy for each entity
             List<CatalogTable> entities = catalog.getTables( namespace.id, null );
@@ -122,12 +122,18 @@ public class PolicyManager {
         for ( Policy policy : policies.values() ) {
             if ( !policy.getClauses().isEmpty() ) {
                 if ( policy.getTarget().name().equals( changeRequest.targetName ) ) {
-
                     if ( changeRequest.requestType.equals( "BooleanChangeRequest" ) ) {
                         BooleanClause clause = (BooleanClause) policy.getClauses().get( changeRequest.clauseId );
                         clause.setValue( changeRequest.booleanValue );
-                        policy.getClauses().put( changeRequest.clauseId, clause );
-                        log.warn( "Persistency: " + changeRequest.booleanValue );
+                        if ( checkClauseChange( clause, policy.getTarget(), policy.getTargetId() ) ) {
+                            policy.getClauses().put( changeRequest.clauseId, clause );
+                            log.warn( "Persistency should change: " + clause.isValue() );
+                        } else {
+                            log.warn( "Persistency not possible to change: " + clause.isValue() );
+                            throw new PolicyRuntimeException( "Not possible to change this clause because the policies can not be guaranteed anymore." );
+                        }
+
+
                     }
                 }
             }
@@ -137,64 +143,175 @@ public class PolicyManager {
     }
 
 
-    public <T> List<T> makeDecision( Class<T> clazz, Action action ) {
-        return makeDecision( clazz, action, null );
+    /**
+     * Check if it is possible to switch on a policy, if something is against a policy it is not possible to change it.
+     * At the moment only Stores are checked.
+     *
+     * @param clause that was changed
+     * @param target of the changed clause
+     * @return true if it is possible to change clause otherwise false
+     */
+    private boolean checkClauseChange( BooleanClause clause, Target target, Long targetId ) {
+        switch ( clause.getClauseName() ) {
+            case FULLY_PERSISTENT:
+                List<Integer> storesToCheck = new ArrayList<>();
+                AdapterManager.getInstance().getStores().forEach( ( s, dataStore ) -> {
+                            if ( !dataStore.isPersistent() ) {
+                                storesToCheck.add( dataStore.getAdapterId() );
+                            }
+                        }
+                );
+
+                List<CatalogPartitionPlacement> partitionPlacements = Catalog.getInstance().getAllPartitionPlacement();
+
+                switch ( target ) {
+                    case POLYPHENY:
+                        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+                            if ( storesToCheck.contains( partitionPlacement.adapterId ) ) {
+                                return false;
+                            }
+                        }
+                        break;
+                    case NAMESPACE:
+                        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+                            if ( storesToCheck.contains( partitionPlacement.adapterId ) && partitionPlacement.schemaId == targetId ) {
+                                return false;
+                            }
+                        }
+                        break;
+                    case ENTITY:
+                        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+                            if ( storesToCheck.contains( partitionPlacement.adapterId ) && partitionPlacement.tableId == targetId ) {
+                                return false;
+                            }
+                        }
+                        break;
+                }
+                break;
+            default:
+                throw new PolicyRuntimeException( "Check if it is possible to change clause is not implemented yet." );
+        }
+        return true;
     }
 
 
-    public <T> List<T> makeDecision( Class<T> clazz, Action action, T preSelection ) {
+    public <T> List<T> makeDecision( Class<T> clazz, Action action, Long namespaceId, Long entityId ) {
+        return makeDecision( clazz, action, namespaceId, entityId, null );
+    }
+
+
+    public <T> List<T> makeDecision( Class<T> clazz, Action action, Long namespaceId, Long entityId, T preSelection ) {
+        List<Clause> potentiallyInteresting = new ArrayList<>();
 
         switch ( action ) {
             case CREATE_TABLE:
-                List<Integer> possibleStores = new ArrayList<>();
-
-                // get all availableStores
+                List<Integer> possibleStoreIds = new ArrayList<>();
+                // Get all availableStores
                 Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
-                for ( Policy policy : policies.values() ) {
-                    if ( !policy.getClauses().isEmpty() ) {
-                        for ( Clause clause : policy.getClauses().values() ) {
-                            if ( clause.getCategory() == Category.PERSISTENCY && clause.getClauseName() == ClauseName.FULLY_PERSISTENT && ((BooleanClause)clause).isValue()) {
-                                for ( DataStore store : availableStores.values() ) {
-                                    if ( store.isPersistent() ) {
-                                        possibleStores.add( store.getAdapterId() );
-                                    }
+
+                // Check if there are relevant policies and add it to potentiallyInteresting
+                potentiallyInteresting.add( checkClauses( null, ClauseName.FULLY_PERSISTENT, Target.POLYPHENY ) );
+                potentiallyInteresting.add( checkClauses( namespaceId, ClauseName.FULLY_PERSISTENT, Target.NAMESPACE ) );
+                potentiallyInteresting.add( checkClauses( entityId, ClauseName.FULLY_PERSISTENT, Target.ENTITY ) );
+
+                for ( Clause clause : potentiallyInteresting ) {
+                    if ( clause != null ) {
+                        if ( ((BooleanClause) clause).isValue() ) {
+                            for ( DataStore store : availableStores.values() ) {
+                                if ( store.isPersistent() ) {
+                                    possibleStoreIds.add( store.getAdapterId() );
                                 }
-                            } else {
-                                for ( DataStore store : availableStores.values() ) {
-                                    possibleStores.add( store.getAdapterId() );
-                                }
+                            }
+                        } else {
+                            for ( DataStore store : availableStores.values() ) {
+                                possibleStoreIds.add( store.getAdapterId() );
                             }
                         }
                     }
                 }
-                return (List<T>) possibleStores;
+
+                return (List<T>) possibleStoreIds;
 
             case ADD_PLACEMENT:
 
-                for ( Policy policy : policies.values() ) {
-                    if ( !policy.getClauses().isEmpty() ) {
-                        for ( Clause clause : policy.getClauses().values() ) {
-                            if ( clause.getCategory() == Category.PERSISTENCY && clause.getClauseName() == ClauseName.FULLY_PERSISTENT && ((BooleanClause)clause).isValue()) {
-                                DataStore dataStore = AdapterManager.getInstance().getStore( (int) preSelection );
-                                if ( dataStore.isPersistent() ) {
-                                    return Collections.singletonList( preSelection );
-                                }else{
-                                    return Collections.emptyList();
-                                }
-                            }else{
+                // Check if there are relevant policies and add it to potentiallyInteresting
+                potentiallyInteresting.add( checkClauses( null, ClauseName.FULLY_PERSISTENT, Target.POLYPHENY ) );
+                potentiallyInteresting.add( checkClauses( namespaceId, ClauseName.FULLY_PERSISTENT, Target.NAMESPACE ) );
+                potentiallyInteresting.add( checkClauses( entityId, ClauseName.FULLY_PERSISTENT, Target.ENTITY ) );
+
+                for ( Clause clause : potentiallyInteresting ) {
+                    if ( clause != null ) {
+                        if ( ((BooleanClause) clause).isValue() ) {
+                            DataStore dataStore = AdapterManager.getInstance().getStore( (int) preSelection );
+                            if ( dataStore.isPersistent() ) {
                                 return Collections.singletonList( preSelection );
+                            } else {
+                                return Collections.emptyList();
                             }
+                        } else {
+                            return Collections.singletonList( preSelection );
                         }
                     }
                 }
 
             case ADD_PARTITIONING:
-                throw new PolicyRuntimeException( "This is not implemented yet" );
+                List<DataStore> possibleStores = new ArrayList<>();
 
+                // Check if there are relevant policies and add it to potentiallyInteresting
+                potentiallyInteresting.add( checkClauses( null, ClauseName.FULLY_PERSISTENT, Target.POLYPHENY ) );
+                potentiallyInteresting.add( checkClauses( namespaceId, ClauseName.FULLY_PERSISTENT, Target.NAMESPACE ) );
+                potentiallyInteresting.add( checkClauses( entityId, ClauseName.FULLY_PERSISTENT, Target.ENTITY ) );
+
+                for ( Clause clause : potentiallyInteresting ) {
+                    if ( clause != null ) {
+                        if ( ((BooleanClause) clause).isValue() ) {
+                            for ( DataStore store : (List<DataStore>) preSelection ) {
+                                if ( store.isPersistent() ) {
+                                    possibleStores.add( store );
+                                }
+                            }
+                        } else {
+                            possibleStores.addAll( (List<DataStore>) preSelection );
+                        }
+                    }
+                }
+                return (List<T>) possibleStores;
             default:
                 throw new PolicyRuntimeException( "Not implemented action was used to make a Decision" );
         }
 
+    }
+
+
+    private Clause checkClauses( Long targetId, ClauseName clauseName, Target target ) {
+        switch ( target ) {
+            case POLYPHENY:
+                return getRelevantClauses( polyphenyPolicyId, clauseName );
+            case NAMESPACE:
+                if ( namespacePolicies.containsKey( targetId ) ) {
+                    Integer policyId = namespacePolicies.get( targetId );
+                    if ( policies.get( policyId ).getClausesByName().containsKey( clauseName ) ) {
+                        return getRelevantClauses( policyId, clauseName );
+                    }
+                }
+                return null;
+            case ENTITY:
+                if ( entityPolicies.containsKey( targetId ) ) {
+                    Integer policyId = entityPolicies.get( targetId );
+                    if ( policies.get( policyId ).getClausesByName().containsKey( clauseName ) ) {
+                        return getRelevantClauses( policyId, clauseName );
+                    }
+                }
+                return null;
+            default:
+                throw new PolicyRuntimeException( "For " + target.name() + " is the clause check not implemented" );
+        }
+    }
+
+
+    private Clause getRelevantClauses( Integer policyId, ClauseName clauseName ) {
+        Integer clauseId = policies.get( policyId ).getClausesByName().get( clauseName );
+        return policies.get( policyId ).getClauses().get( clauseId );
     }
 
 
