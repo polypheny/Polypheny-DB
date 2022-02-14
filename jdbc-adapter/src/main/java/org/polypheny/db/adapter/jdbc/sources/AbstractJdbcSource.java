@@ -40,7 +40,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.sql.SqlDialect;
-import org.polypheny.db.sql.sql.dialect.MysqlSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
@@ -63,7 +62,7 @@ public abstract class AbstractJdbcSource extends DataSource {
             SqlDialect dialect,
             boolean readOnly ) {
         super( storeId, uniqueName, settings, readOnly );
-        this.connectionFactory = createConnectionFactory( settings, MysqlSqlDialect.DEFAULT, diverClass );
+        this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerInformationPage();

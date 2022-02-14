@@ -41,7 +41,7 @@ import org.polypheny.db.sql.sql.dialect.PostgresqlSqlDialect;
         usedModes = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote PostgreSQL instance.")
-@AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,
+@AdapterSettingInteger(name = "port", defaultValue = 5432, position = 2,
         description = "JDBC port number on the remote PostgreSQL instance.")
 @AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
         description = "Name of the database to connect to.")
