@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.events.GeneralEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -166,6 +167,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                     StatementEvent eventData = statement.getMonitoringEvent();
                     eventData.setCommitted( true );
                     MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+                }else{
+                    StatementEvent event = new GeneralEvent();
+                    event.setCommitted(true);
+                    MonitoringServiceProvider.getInstance().monitorEvent( event );
                 }
             } );
 
@@ -204,9 +209,13 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             // Free resources hold by statements
             statements.forEach( statement -> {
                 if ( statement.getMonitoringEvent() != null ) {
-                    StatementEvent eventData = statement.getMonitoringEvent();
-                    eventData.setCommitted( false );
-                    MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+                    StatementEvent event = statement.getMonitoringEvent();
+                    event.setCommitted( false );
+                    MonitoringServiceProvider.getInstance().monitorEvent( event );
+                }else{
+                    StatementEvent event = new GeneralEvent();
+                    event.setCommitted(false);
+                    MonitoringServiceProvider.getInstance().monitorEvent( event );
                 }
                 statement.close();
             } );

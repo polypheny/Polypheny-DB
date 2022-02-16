@@ -1380,6 +1380,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 //eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateRowCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
             }
 
+            AlgRoot test = selectedPlan.getRoutedRoot();
+            
             if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {
                 if ( eventData instanceof QueryEvent ) {
                     // aggregate post costs
