@@ -773,7 +773,7 @@ public class SqlDialect {
     }
 
 
-    public boolean supportsIsFalse() {
+    public boolean supportsIsBoolean() {
         return true;
     }
 

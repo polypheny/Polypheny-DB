@@ -284,6 +284,13 @@ public class OperatorsTest {
                         expectedResult
                 );
 
+                // IS TRUE
+                expectedResult = ImmutableList.of();
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ID, TextData FROM TestTable Where FALSE is TRUE" ),
+                        expectedResult
+                );
+
                 // IS NOT FALSE(boolean is NOT FALSE)
                 expectedResult = ImmutableList.of(
                         new Object[]{ 0, "dataA" },

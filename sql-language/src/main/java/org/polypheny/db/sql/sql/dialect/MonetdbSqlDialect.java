@@ -100,7 +100,7 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
-    public boolean supportsIsFalse() {
+    public boolean supportsIsBoolean() {
         return false;
     }
 

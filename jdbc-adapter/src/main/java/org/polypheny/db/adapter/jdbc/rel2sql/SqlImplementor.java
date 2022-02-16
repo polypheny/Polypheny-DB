@@ -110,7 +110,6 @@ import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.sql.sql.SqlSelectKeyword;
 import org.polypheny.db.sql.sql.SqlSetOperator;
 import org.polypheny.db.sql.sql.SqlWindow;
-import org.polypheny.db.sql.sql.dialect.MonetdbSqlDialect;
 import org.polypheny.db.sql.sql.fun.SqlCase;
 import org.polypheny.db.sql.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
@@ -675,16 +674,23 @@ public abstract class SqlImplementor {
                     }
 
                     final RexCall call = (RexCall) stripCastFromString( rex );
+                    final List<SqlNode> nodeList = toSql( program, call.getOperands() );
                     Operator op = call.getOperator();
                     switch ( op.getKind() ) {
                         case SUM0:
                             op = OperatorRegistry.get( OperatorName.SUM );
+                            break;
                         case IS_FALSE:
-                            if(!dialect.supportsIsFalse() ){
+                            if(!dialect.supportsIsBoolean() ){
                                op = OperatorRegistry.get( OperatorName.NOT );
                             }
+                            break;
+                        case IS_TRUE:
+                            if(!dialect.supportsIsBoolean() ){
+                                assert nodeList.size() == 1;
+                                return nodeList.get( 0 );
+                            }
                     }
-                    final List<SqlNode> nodeList = toSql( program, call.getOperands() );
                     switch ( call.getKind() ) {
                         case CAST:
                             if ( ignoreCast ) {
