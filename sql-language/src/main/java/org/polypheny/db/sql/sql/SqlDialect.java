@@ -773,6 +773,11 @@ public class SqlDialect {
     }
 
 
+    public boolean supportsIsFalse() {
+        return true;
+    }
+
+
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 
 

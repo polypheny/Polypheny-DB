@@ -110,6 +110,7 @@ import org.polypheny.db.sql.sql.SqlSelect;
 import org.polypheny.db.sql.sql.SqlSelectKeyword;
 import org.polypheny.db.sql.sql.SqlSetOperator;
 import org.polypheny.db.sql.sql.SqlWindow;
+import org.polypheny.db.sql.sql.dialect.MonetdbSqlDialect;
 import org.polypheny.db.sql.sql.fun.SqlCase;
 import org.polypheny.db.sql.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.sql.sql.validate.SqlValidatorUtil;
@@ -678,6 +679,10 @@ public abstract class SqlImplementor {
                     switch ( op.getKind() ) {
                         case SUM0:
                             op = OperatorRegistry.get( OperatorName.SUM );
+                        case IS_FALSE:
+                            if(!dialect.supportsIsFalse() ){
+                               op = OperatorRegistry.get( OperatorName.NOT );
+                            }
                     }
                     final List<SqlNode> nodeList = toSql( program, call.getOperands() );
                     switch ( call.getKind() ) {

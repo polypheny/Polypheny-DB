@@ -100,6 +100,12 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean supportsIsFalse() {
+        return false;
+    }
+
+
+    @Override
     public void unparseCall( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         switch ( call.getKind() ) {
             default:
