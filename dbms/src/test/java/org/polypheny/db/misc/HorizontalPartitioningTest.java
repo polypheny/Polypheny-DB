@@ -473,9 +473,9 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
-                    // TODO: check partition distribution violation
+                    // TODO: Check partition distribution violation
 
-                    // TODO: Chek unbound partitions
+                    // TODO: Check unbound partitions
                 } finally {
                     statement.executeUpdate( "DROP TABLE listpartitioning" );
                     statement.executeUpdate( "DROP TABLE listpartitioning2" );
@@ -683,7 +683,7 @@ public class HorizontalPartitioningTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                // Sets the background processing of Workload Monitoring an Temperature monitoring to one second to get immediate results
+                // Sets the background processing of Workload Monitoring a Temperature monitoring to one second to get immediate results
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
                 c1.setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
@@ -699,7 +699,6 @@ public class HorizontalPartitioningTest {
                         + " USING FREQUENCY write  INTERVAL 10 minutes WITH  20 HASH PARTITIONS" );
 
                 try {
-
                     CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Check if partition properties are correctly set and parsed
@@ -769,7 +768,6 @@ public class HorizontalPartitioningTest {
                     Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.getInstance().getPartition( targetId ) ) );
 
                     //Todo @Hennlo check number of access
-
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS temperaturetest" );
@@ -822,7 +820,6 @@ public class HorizontalPartitioningTest {
                 }
             }
         }
-
     }
 
 
@@ -932,7 +929,6 @@ public class HorizontalPartitioningTest {
                 }
             }
         }
-
     }
 
 
@@ -950,7 +946,6 @@ public class HorizontalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-
                     // Add data
                     PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO hybridpartitioningtest(tprimary,tvarchar,tinteger) VALUES (?, ?, ?)" );
 
@@ -1155,9 +1150,7 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "DROP TABLE IF EXISTS hybridpartitioningtest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP anotherstore" );
                 }
-
             }
-
         }
     }
 

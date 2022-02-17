@@ -468,7 +468,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     log.error( "Count could not be parsed for column {}.", countColumn.getColumn(), e );
                 }
             }
-
         }
         return 0;
     }
@@ -609,7 +608,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                         Collections.singletonList( aggregateCall ) );
 
                 return statisticQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryColumn );
-
             }
         }
         return null;
