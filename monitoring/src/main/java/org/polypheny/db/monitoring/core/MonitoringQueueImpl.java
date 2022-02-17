@@ -92,7 +92,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-
     @Override
     public void queueEvent( @NonNull MonitoringEvent event ) {
         if ( backgroundProcessingActive ) {

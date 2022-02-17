@@ -1527,12 +1527,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
     }
 
+
     /**
      * To acquire a global shared lock for a statement.
      * This method is used before the statistics are updated to make sure nothing changes during the updating process.
      */
     @Override
-    public void lock( Statement statement ){
+    public void lock( Statement statement ) {
         try {
             LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
         } catch ( DeadlockException e ) {

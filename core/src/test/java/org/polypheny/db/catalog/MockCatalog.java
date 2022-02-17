@@ -1213,4 +1213,5 @@ public abstract class MockCatalog extends Catalog {
     public Long getPartitionGroupByPartition( long partitionId ) {
         throw new NotImplementedException();
     }
+
 }

@@ -16,8 +16,6 @@
 
 package org.polypheny.db.monitoring.statistics;
 
-import java.util.HashMap;
-import java.util.Map;
 import lombok.Getter;
 
 
@@ -77,21 +75,20 @@ public class StatisticResult {
         return rotated;
     }
 
-
-    /**
-     * Transforms an StatisticResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map
-     *
-     * @return map with <b>value</b> as key and <b>occurrence</b> as value
-     */
-    /*public static <E> Map<E, Integer> toOccurrenceMap( StatisticResult stats ) {
-        HashMap<E, Integer> map = new HashMap<>();
-        String[] values = stats.getColumns()[0].getData();
-        String[] occurrences = stats.getColumns()[1].getData();
-        //TODO: handle mismatch
-        for ( int i = 0; i < values.length; i++ ) {
-            map.put( (E) values[i], Integer.parseInt( occurrences[i] ) );
-        }
-        return map;
-    }*/
+//    /**
+//     * Transforms an StatisticResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map
+//     *
+//     * @return map with <b>value</b> as key and <b>occurrence</b> as value
+//     */
+//    public static <E> Map<E, Integer> toOccurrenceMap( StatisticResult stats ) {
+//        HashMap<E, Integer> map = new HashMap<>();
+//        String[] values = stats.getColumns()[0].getData();
+//        String[] occurrences = stats.getColumns()[1].getData();
+//        //TODO: handle mismatch
+//        for ( int i = 0; i < values.length; i++ ) {
+//            map.put( (E) values[i], Integer.parseInt( occurrences[i] ) );
+//        }
+//        return map;
+//    }
 
 }

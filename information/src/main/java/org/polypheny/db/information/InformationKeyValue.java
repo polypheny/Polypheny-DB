@@ -39,7 +39,7 @@ public class InformationKeyValue extends Information {
     /**
      * Constructor
      *
-     * @param id    Unique id for this Information object
+     * @param id Unique id for this Information object
      * @param group The InformationGroup to which this information belongs
      */
     InformationKeyValue( String id, InformationGroup group ) {
@@ -53,11 +53,13 @@ public class InformationKeyValue extends Information {
         return this;
     }
 
+
     public InformationKeyValue removePair( final String key ) {
         this.keyValuePairs.remove( key );
         this.notifyManager();
         return this;
     }
+
 
     public String getValue( final String key ) {
         return this.keyValuePairs.get( key );

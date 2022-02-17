@@ -185,6 +185,7 @@ public class StatisticQueryProcessor {
         }
     }
 
+
     private StatisticResult executeColStat( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
         StatisticResult result = new StatisticResult();
 

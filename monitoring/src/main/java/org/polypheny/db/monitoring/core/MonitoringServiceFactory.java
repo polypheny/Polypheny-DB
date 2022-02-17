@@ -21,7 +21,6 @@ import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.monitoring.statistics.StatisticRepository;
 
 
-
 @Slf4j
 public class MonitoringServiceFactory {
 

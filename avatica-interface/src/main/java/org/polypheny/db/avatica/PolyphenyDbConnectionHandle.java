@@ -110,7 +110,6 @@ public class PolyphenyDbConnectionHandle {
     }
 
 
-
     public void setCurrentOpenResultSet( PolyphenyDbResultSet resultSet ) {
         this.currentOpenResultSet = resultSet;
     }
@@ -148,4 +147,5 @@ public class PolyphenyDbConnectionHandle {
     public int hashCode() {
         return Objects.hash( connectionId );
     }
+
 }

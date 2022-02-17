@@ -22,4 +22,5 @@ public class UnknownPlacementRoleRuntimeException extends CatalogRuntimeExceptio
     public UnknownPlacementRoleRuntimeException( final int id ) {
         super( "There is no PlacementRole with id: " + id );
     }
+
 }

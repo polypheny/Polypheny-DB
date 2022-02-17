@@ -41,7 +41,7 @@ public class AvaticaInterface extends QueryInterface {
     @SuppressWarnings("WeakerAccess")
     public static final String INTERFACE_NAME = "AVATICA Interface";
     @SuppressWarnings("WeakerAccess")
-    public static final String INTERFACE_DESCRIPTION = "AVATICA-SQL query interface with configurable SQL dialect.";
+    public static final String INTERFACE_DESCRIPTION = "AVATICA-SQL query interface supporting the PolySQL dialect.";
     @SuppressWarnings("WeakerAccess")
     public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new QueryInterfaceSettingInteger( "port", false, true, false, 20591 ),

@@ -22,4 +22,5 @@ public class UnknownPlacementRoleException extends CatalogException {
     public UnknownPlacementRoleException( final String name ) {
         super( "There is no PlacementRole with name: '" + name + "'" );
     }
+
 }

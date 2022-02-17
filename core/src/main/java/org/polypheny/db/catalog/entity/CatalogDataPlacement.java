@@ -110,4 +110,5 @@ public class CatalogDataPlacement implements CatalogEntity {
     public Serializable[] getParameterArray() {
         return new Serializable[0];
     }
+
 }

@@ -277,7 +277,6 @@ public class PolyphenyDb {
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
         StatisticsManager.setAndGetInstance( new StatisticsManagerImpl( statisticQueryProcessor ) );
 
-
         // Initialize MaterializedViewManager
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
 

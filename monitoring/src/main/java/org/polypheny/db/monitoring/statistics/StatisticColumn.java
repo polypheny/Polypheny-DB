@@ -90,6 +90,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
         return this.schema + "." + this.table + "." + this.column;
     }
 
+
     public String getQualifiedTableName() {
         return this.schema + "." + this.table;
     }
@@ -106,11 +107,14 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
         this.column = columnName;
     }
 
+
     public void updateTableName( String tableName ) {
         this.table = tableName;
     }
 
-    public void updateSchemaName( String schemaName ){
+
+    public void updateSchemaName( String schemaName ) {
         this.schema = schemaName;
     }
+
 }

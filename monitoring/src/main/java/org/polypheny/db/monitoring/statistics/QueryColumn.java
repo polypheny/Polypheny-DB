@@ -58,10 +58,10 @@ class QueryColumn {
         this.type = type;
 
         Catalog catalog = Catalog.getInstance();
-        if(catalog.checkIfExistsTable( tableId )){
+        if ( catalog.checkIfExistsTable( tableId ) ) {
             this.schema = catalog.getSchema( schemaId ).name;
             this.table = catalog.getTable( tableId ).name;
-            if(columnId != null){
+            if ( columnId != null ) {
                 this.column = catalog.getColumn( columnId ).name;
             }
 

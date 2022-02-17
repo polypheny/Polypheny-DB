@@ -135,7 +135,7 @@ public class HorizontalPartitioningTest {
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttest\" ADD PLACEMENT (tvarchar) ON STORE \"store3\"" );
 
-                    //Modify partitons on new placement
+                    //Modify partitions on new placement
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttest\" MODIFY PARTITIONS (0,1) ON STORE \"store3\" " );
 
                     //AsserTFalse
@@ -148,7 +148,7 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
-                    //Create another table with initial partitoning
+                    //Create another table with initial partitioning
                     statement.executeUpdate( "CREATE TABLE horizontalparttestextension( "
                             + "tprimary INTEGER NOT NULL, "
                             + "tinteger INTEGER NULL, "
@@ -1235,7 +1235,7 @@ public class HorizontalPartitioningTest {
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
                             Assert.assertEquals( 4, dp.partitionPlacementsOnAdapter.size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId , table.id ).size() );
+                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                             Assert.assertEquals( 4, Catalog.getInstance().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
                     }

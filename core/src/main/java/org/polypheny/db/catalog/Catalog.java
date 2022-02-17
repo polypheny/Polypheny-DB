@@ -386,7 +386,7 @@ public abstract class Catalog {
      * Returns the table which is associated with a given partitionId
      *
      * @param partitionId to use for lookup
-     * @return CatalogTable that contians partitionId
+     * @return CatalogTable that contains partitionId
      */
     public abstract CatalogTable getTableFromPartition( long partitionId );
 
@@ -1485,6 +1485,7 @@ public abstract class Catalog {
 
     /**
      * Remove partitions to dataPlacement on a store for a specific table
+     *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
      * @param partitionIds List of partitionIds to remove from a specific store for the table
@@ -1494,6 +1495,7 @@ public abstract class Catalog {
 
     /**
      * Updates and overrides list of associated columnPlacements & partitionPlacements for a given data placement
+     *
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from
      * @param columnIds List of columnIds to be located on a specific store for the table

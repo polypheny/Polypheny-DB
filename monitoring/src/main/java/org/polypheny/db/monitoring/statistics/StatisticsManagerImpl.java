@@ -923,7 +923,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             QueryColumn queryColumn = new QueryColumn( schemaId, catalogTable.id, catalogTable.columnIds.get( i ), polyType );
             if ( this.statisticSchemaMap.get( schemaId ).get( tableId ).get( catalogTable.columnIds.get( i ) ) != null ) {
                 StatisticColumn statisticColumn = createNewStatisticColumns( polyType, queryColumn );
-                if( statisticColumn != null ){
+                if ( statisticColumn != null ) {
                     put( queryColumn, statisticColumn );
                 }
             }
@@ -966,6 +966,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             addInserts( changedValues, catalog, catalogTable, columns );
         }
     }
+
 
     /**
      * Creates new StatisticColumns and inserts the values.
@@ -1039,7 +1040,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 if ( tableStatistic.containsKey( tableId ) ) {
                     statisticTable = tableStatistic.get( tableId );
                     int totalRows = statisticTable.getNumberOfRows() - number;
-                    if(totalRows < 0){
+                    if ( totalRows < 0 ) {
                         totalRows = 0;
                     }
                     statisticTable.setNumberOfRows( totalRows );

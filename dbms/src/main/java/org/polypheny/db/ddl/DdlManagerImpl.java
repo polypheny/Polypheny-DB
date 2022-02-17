@@ -380,7 +380,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.renameSchema( catalogSchema.id, newName );
 
         // Update Name in statistics
-        StatisticsManager.getInstance().updateSchemaName(catalogSchema, newName);
+        StatisticsManager.getInstance().updateSchemaName( catalogSchema, newName );
     }
 
 
@@ -1379,7 +1379,6 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( newPartitions.size() > 0 ) {
@@ -1532,7 +1531,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.renameTable( catalogTable.id, newTableName );
 
         // Update Name in statistics
-        StatisticsManager.getInstance().updateTableName(catalogTable, newTableName);
+        StatisticsManager.getInstance().updateTableName( catalogTable, newTableName );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -1552,7 +1551,7 @@ public class DdlManagerImpl extends DdlManager {
         catalog.renameColumn( catalogColumn.id, newColumnName );
 
         // Update Name in statistics
-        StatisticsManager.getInstance().updateColumnName(catalogColumn, newColumnName);
+        StatisticsManager.getInstance().updateColumnName( catalogColumn, newColumnName );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -1664,7 +1663,7 @@ public class DdlManagerImpl extends DdlManager {
                 ordered
         );
 
-        // Creates a list with all columns, tableId is needed to creat the primary key
+        // Creates a list with all columns, tableId is needed to create the primary key
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
 
@@ -2583,8 +2582,8 @@ public class DdlManagerImpl extends DdlManager {
             event.setMonitoringType( kind.name() );
             event.setTableId( catalogTable.id );
             event.setSchemaId( catalogTable.schemaId );
-            if(kind == Kind.DROP_COLUMN){
-                event.setColumnId(catalogColumn.id);
+            if ( kind == Kind.DROP_COLUMN ) {
+                event.setColumnId( catalogColumn.id );
             }
             statement.setMonitoringEvent( event );
         }
