@@ -1537,7 +1537,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         try {
             LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
         } catch ( DeadlockException e ) {
-            new RuntimeException( e );
+            throw new RuntimeException("DeadLock while locking to reevaluate statistics", e);
         }
     }
 

@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.Getter;
@@ -56,7 +57,7 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
 
     @Override
     public void insert( List<T> values ) {
-        if ( values != null ) {
+        if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
             for ( T val : values ) {
                 insert( val );
             }
