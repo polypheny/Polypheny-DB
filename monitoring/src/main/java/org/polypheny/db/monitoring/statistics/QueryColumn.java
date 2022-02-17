@@ -64,7 +64,6 @@ class QueryColumn {
             if ( columnId != null ) {
                 this.column = catalog.getColumn( columnId ).name;
             }
-
         }
     }
 

@@ -381,23 +381,23 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "processingExecutionGroup" ),
 
-    CORE_POOL_SIZE(
+    MONITORING_CORE_POOL_SIZE(
             "runtime/corePoolSize",
-            "The number of threads to keep in the pool, even if they are idle.",
+            "The number of threads to keep in the pool for processing workload monitoring events, even if they are idle.",
             2,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 
-    MAXIMUM_POOL_SIZE(
+    MONITORING_MAXIMUM_POOL_SIZE(
             "runtime/maximumPoolSize",
-            "The maximum number of threads to allow in the pool.",
+            "The maximum number of threads to allow in the pool used for processing workload monitoring events.",
             5000,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 
-    KEEP_ALIVE_TIME(
+    MONITORING_POOL_KEEP_ALIVE_TIME(
             "runtime/keepAliveTime",
-            "When the number of threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.",
+            "When the number of monitoring processing threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.",
             10,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),

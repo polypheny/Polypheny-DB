@@ -16,7 +16,6 @@
 
 package org.polypheny.db.webui.crud;
 
-
 import io.javalin.http.Context;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;

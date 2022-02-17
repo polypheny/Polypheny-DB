@@ -277,14 +277,14 @@ public class OperatorsTest {
                         true
                 );
 
-                // IS FALSE(boolean is FALSE)
+                // IS FALSE (boolean IS FALSE)
                 expectedResult = ImmutableList.of();
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable Where TRUE is FALSE" ),
                         expectedResult
                 );
 
-                // IS TRUE
+                // IS TRUE (boolean IS TRUE)
                 expectedResult = ImmutableList.of();
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable Where FALSE is TRUE" ),

@@ -48,7 +48,6 @@ public class CatalogDataPlacement implements CatalogEntity {
     public final ImmutableList<Long> columnPlacementsOnAdapter;
     public final ImmutableList<Long> partitionPlacementsOnAdapter;
 
-
     // The newest commit timestamp when any partitions inside this placement has been updated or refreshed
     // Equals the newest timestamp ony any of the CatalogPartitionPlacements.
     // Technically other  linked attachments could still have older update timestamps.
@@ -63,16 +62,14 @@ public class CatalogDataPlacement implements CatalogEntity {
             int adapterId,
             PlacementType placementType,
             DataPlacementRole dataPlacementRole,
-            @NonNull final ImmutableList columnPlacementsOnAdapter,
-            @NonNull final ImmutableList partitionPlacementsOnAdapter ) {
-
+            @NonNull final ImmutableList<Long> columnPlacementsOnAdapter,
+            @NonNull final ImmutableList<Long> partitionPlacementsOnAdapter ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.placementType = placementType;
         this.dataPlacementRole = dataPlacementRole;
         this.columnPlacementsOnAdapter = columnPlacementsOnAdapter;
         this.partitionPlacementsOnAdapter = partitionPlacementsOnAdapter;
-
     }
 
 

@@ -336,7 +336,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Method to sort a column into the different kinds of column types and hands it to the specific reevaluation
      */
     private StatisticColumn<T> reevaluateColumn( QueryColumn column ) {
-
         if ( !Catalog.getInstance().checkIfExistsTable( column.getTableId() )
                 && !Catalog.getInstance().checkIfExistsColumn( column.getTableId(), column.getColumn() ) ) {
             return null;
@@ -456,7 +455,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     private Integer getNumberColumnCount( StatisticQueryColumn countColumn ) {
-
         if ( countColumn != null && countColumn.getData() != null && countColumn.getData().length != 0 ) {
             Object value = countColumn.getData()[0];
             if ( value instanceof Integer ) {
@@ -550,7 +548,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             }
         }
         return null;
-
     }
 
 
@@ -567,7 +564,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Queries the database with an aggregate query, to get the min value or max value.
      */
     private StatisticQueryColumn getAggregateColumn( QueryColumn queryColumn, NodeType nodeType, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster, Transaction transaction, Statement statement ) {
-
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryColumn.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -653,7 +649,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Gets the amount of entries for a column
      */
     private StatisticQueryColumn getColumnCount( QueryColumn queryColumn, TableScan tableScan, RexBuilder rexBuilder, AlgOptCluster cluster, Transaction transaction, Statement statement ) {
-
         for ( int i = 0; i < tableScan.getRowType().getFieldNames().size(); i++ ) {
             if ( tableScan.getRowType().getFieldNames().get( i ).equals( queryColumn.getColumn() ) ) {
                 LogicalProject logicalProject = LogicalProject.create(
@@ -680,17 +675,13 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      * Gets the amount of entries for a table.
      */
     private StatisticQueryColumn getTableCount( QueryColumn queryColumn, TableScan tableScan, AlgOptCluster cluster, Transaction transaction, Statement statement ) {
-
         AggregateCall aggregateCall = getRowCountAggregateCall( cluster );
-
         AlgNode relNode = LogicalAggregate.create(
                 tableScan,
                 ImmutableBitSet.of(),
                 Collections.singletonList( ImmutableBitSet.of() ),
                 Collections.singletonList( aggregateCall ) );
-
         return statisticQueryInterface.selectOneColumnStat( relNode, transaction, statement, queryColumn );
-
     }
 
 
@@ -928,7 +919,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 }
             }
         }
-
     }
 
 
@@ -1090,8 +1080,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
 
 
     /**
-     * Updates how many times a DML (SELECT, INSERT, DELETE, UPDATE) was used on a table
-     * checks if the {@link StatisticsManagerImpl#tableStatistic} already holds information about the tableCalls and if not creates a new TableCall.
+     * Updates how many times a DML (SELECT, INSERT, DELETE, UPDATE) was used on a table. It checks if
+     * the {@link StatisticsManagerImpl#tableStatistic} already holds information about the tableCalls
+     * and if not creates a new TableCall.
      *
      * @param tableId of the table
      * @param kind of DML

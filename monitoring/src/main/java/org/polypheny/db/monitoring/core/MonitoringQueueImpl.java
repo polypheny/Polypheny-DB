@@ -68,14 +68,14 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         this.eventQueue = new LinkedBlockingQueue();
         this.backgroundProcessingActive = backgroundProcessingActive;
 
-        this.CORE_POOL_SIZE = RuntimeConfig.CORE_POOL_SIZE.getInteger();
-        this.MAXIMUM_POOL_SIZE = RuntimeConfig.MAXIMUM_POOL_SIZE.getInteger();
-        this.KEEP_ALIVE_TIME = RuntimeConfig.KEEP_ALIVE_TIME.getInteger();
+        this.CORE_POOL_SIZE = RuntimeConfig.MONITORING_CORE_POOL_SIZE.getInteger();
+        this.MAXIMUM_POOL_SIZE = RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.getInteger();
+        this.KEEP_ALIVE_TIME = RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.getInteger();
 
         if ( this.backgroundProcessingActive ) {
-            RuntimeConfig.CORE_POOL_SIZE.setRequiresRestart( true );
-            RuntimeConfig.MAXIMUM_POOL_SIZE.setRequiresRestart( true );
-            RuntimeConfig.KEEP_ALIVE_TIME.setRequiresRestart( true );
+            RuntimeConfig.MONITORING_CORE_POOL_SIZE.setRequiresRestart( true );
+            RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
+            RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
 
             threadPoolWorkers = new ThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, eventQueue );
         }

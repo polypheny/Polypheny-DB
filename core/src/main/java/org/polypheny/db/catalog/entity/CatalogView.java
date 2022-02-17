@@ -65,7 +65,8 @@ public class CatalogView extends CatalogTable {
             ImmutableList<Long> connectedViews,
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             QueryLanguage language ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, dataPlacements, modifiable, partitionProperty, connectedViews );
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, primaryKey, dataPlacements,
+                modifiable, partitionProperty, connectedViews );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;
@@ -172,6 +173,5 @@ public class CatalogView extends CatalogTable {
     public AlgNode getDefinition() {
         return Catalog.getInstance().getNodeInfo().get( id );
     }
-
 
 }
