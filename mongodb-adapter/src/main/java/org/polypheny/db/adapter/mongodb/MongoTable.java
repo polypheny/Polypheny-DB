@@ -397,7 +397,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @return the enumerable which holds the result of the operation
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, Boolean onlyOne ) {
+        public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument ) {
             MongoTable mongoTable = getTable();
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( mongoTable.getStoreId() ) );
@@ -408,7 +408,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
 
             try {
                 // while this should not happen, we still can handle it and return a corrected message back and rollback
-                changes = doDML( operation, filter, operations, onlyOne, mongoTable, session, bucket, changes );
+                changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoTable, session, bucket, changes );
             } catch ( MongoException e ) {
                 mongoTable.getTransactionProvider().rollback( xid );
                 throw new RuntimeException( e.getMessage().replace( "_data.", "" ), e );
@@ -424,7 +424,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         }
 
 
-        private long doDML( Operation operation, String filter, List<String> operations, Boolean onlyOne, MongoTable mongoTable, ClientSession session, GridFSBucket bucket, long changes ) {
+        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoTable mongoTable, ClientSession session, GridFSBucket bucket, long changes ) {
             switch ( operation ) {
                 case INSERT:
                     if ( dataContext.getParameterValues().size() != 0 ) {
@@ -446,20 +446,34 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     assert operations.size() == 1;
                     // we use only update docs
                     if ( dataContext.getParameterValues().size() != 0 ) {
-                        // prepared
+                        // prepared we use document update not pipeline
                         MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
                         MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
                         for ( Map<Long, Object> parameterValue : dataContext.getParameterValues() ) {
                             if ( onlyOne ) {
-                                changes += mongoTable
-                                        .getCollection()
-                                        .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
-                                        .getModifiedCount();
+                                if ( needsDocument ) {
+                                    changes += mongoTable
+                                            .getCollection()
+                                            .updateOne( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                            .getModifiedCount();
+                                } else {
+                                    changes += mongoTable
+                                            .getCollection()
+                                            .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                            .getModifiedCount();
+                                }
                             } else {
-                                changes += mongoTable
-                                        .getCollection()
-                                        .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
-                                        .getModifiedCount();
+                                if ( needsDocument ) {
+                                    changes += mongoTable
+                                            .getCollection()
+                                            .updateMany( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
+                                            .getModifiedCount();
+                                } else {
+                                    changes += mongoTable
+                                            .getCollection()
+                                            .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                            .getModifiedCount();
+                                }
                             }
                         }
                     } else {

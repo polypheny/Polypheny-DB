@@ -68,6 +68,7 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogMaterializedView;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
@@ -4826,7 +4827,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             long id = keyIdBuilder.getAndIncrement();
-            CatalogKey key = new CatalogKey( id, table.id, table.schemaId, table.databaseId, columnIds );
+            CatalogKey key = new CatalogKey( id, table.id, table.schemaId, table.databaseId, columnIds, EnforcementTime.ON_COMMIT );
             synchronized ( this ) {
                 keys.put( id, key );
                 keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );

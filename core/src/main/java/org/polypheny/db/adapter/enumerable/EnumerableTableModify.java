@@ -47,7 +47,10 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Prepare;
@@ -60,6 +63,16 @@ import org.polypheny.db.util.BuiltInMethod;
  * Implementation of {@link TableModify} in {@link org.polypheny.db.adapter.enumerable.EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableTableModify extends TableModify implements EnumerableAlg {
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        if ( getOperation() != Operation.UPDATE ) {
+            return super.computeSelfCost( planner, mq );
+        } else {
+            return super.computeSelfCost( planner, mq ).multiplyBy( 2 );
+        }
+    }
+
 
     public EnumerableTableModify( AlgOptCluster cluster, AlgTraitSet traits, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traits, table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );

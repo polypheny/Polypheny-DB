@@ -45,7 +45,7 @@ public class AlgDataTypeFieldImpl implements AlgDataTypeField, Serializable {
 
     private final AlgDataType type;
     private final String name;
-    private String physicalName;
+    private final String physicalName;
     private final int index;
 
 

@@ -898,6 +898,15 @@ public class RexBuilder {
     }
 
 
+    public RexLiteral makeFileLiteral( byte[] bytes ) {
+        ByteString byteString = new ByteString( bytes );
+        return makeLiteral(
+                new ByteString( bytes ),
+                typeFactory.createPolyType( PolyType.BINARY, byteString.length() ),
+                PolyType.BINARY );
+    }
+
+
     /**
      * Creates a double-precision literal.
      */
@@ -1229,6 +1238,8 @@ public class RexBuilder {
                 } else {
                     return literal;
                 }
+            case FILE:
+                return makeFileLiteral( (byte[]) value );
             case TINYINT:
             case SMALLINT:
             case INTEGER:

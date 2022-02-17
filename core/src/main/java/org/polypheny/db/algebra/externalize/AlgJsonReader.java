@@ -116,7 +116,7 @@ public class AlgJsonReader {
 
     private void readAlg( final Map<String, Object> jsonAlg ) {
         String id = (String) jsonAlg.get( "id" );
-        String type = (String) jsonAlg.get( "algOp" );
+        String type = (String) jsonAlg.get( "relOp" );
         Constructor constructor = algJson.getConstructor( type );
         AlgInput input = new AlgInput() {
             @Override

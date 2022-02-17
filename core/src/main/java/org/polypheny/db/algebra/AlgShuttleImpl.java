@@ -43,6 +43,7 @@ import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalExchange;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -181,6 +182,12 @@ public class AlgShuttleImpl implements AlgShuttle {
     @Override
     public AlgNode visit( LogicalConditionalExecute lce ) {
         return visitChildren( lce );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
+        return visitChildren( enforcer );
     }
 
 

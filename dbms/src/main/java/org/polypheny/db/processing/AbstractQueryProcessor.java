@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,8 +59,10 @@ import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.BatchIterator;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
+import org.polypheny.db.algebra.core.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
@@ -132,7 +135,6 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
@@ -341,10 +343,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().start( "Constraint Enforcement" );
             }
             AlgRoot constraintsRoot = indexUpdateRoot;
-            if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+            /*if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
                 ConstraintEnforcer constraintEnforcer = new EnumerableConstraintEnforcer();
                 constraintsRoot = constraintEnforcer.enforce( constraintsRoot, statement );
-            }
+            }*/
 
             //
             // Index Lookup Rewrite
@@ -352,6 +354,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().stop( "Constraint Enforcement" );
                 statement.getProcessingDuration().start( "Index Lookup Rewrite" );
             }
+
+            //constraintsRoot = EnumerableAdjuster.prepareJoins( constraintsRoot, statement, this );
+
+            if ( constraintsRoot.kind == Kind.UPDATE && EnumerableAdjuster.needsAdjustment( constraintsRoot.alg ) ) {
+                //constraintsRoot = EnumerableAdjuster.adjustModify( constraintsRoot, statement );
+            }
+
+            if ( constraintsRoot.kind == Kind.UPDATE || constraintsRoot.kind == Kind.INSERT ) {
+                //constraintsRoot = EnumerableAdjuster.adjustBatch( constraintsRoot, statement );
+            }
+
+            if ( constraintsRoot.kind.belongsTo( Kind.DML ) && (RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) ) {
+                EnumerableAdjuster.attachOnCommitConstraints( constraintsRoot.alg, statement );
+                constraintsRoot = EnumerableAdjuster.attachOnQueryConstraints( constraintsRoot, statement );
+            }
+
             AlgRoot indexLookupRoot = constraintsRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
                 indexLookupRoot = indexLookup( indexLookupRoot, statement );
@@ -586,18 +604,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot ) {
         // Locking
         try {
-            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
-            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+            Collection<Entry<TableIdentifier, LockMode>> idAccessMap = new ArrayList<>();
             // Get locks for individual tables
             TableAccessMap accessMap = new TableAccessMap( logicalRoot.alg );
-            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                if ( mode == Mode.READ_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                }
-            }
+            // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
+            idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
+
+            idAccessMap.addAll( accessMap.getTablesAccessedPair() );
+            LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
             throw new RuntimeException( e );
         }
@@ -984,6 +998,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, statement, queryInformation );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryClass() ) );
+        } else if ( logicalRoot.alg instanceof BatchIterator ) {
+            AlgNode routedIterator = dmlRouter.handleBatchIterator( logicalRoot.alg, statement, queryInformation );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedIterator, logicalRoot, queryInformation.getQueryClass() ) );
+        } else if ( logicalRoot.alg instanceof ConstraintEnforcer ) {
+            AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalRoot.alg, statement, queryInformation );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryClass() ) );
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
             if ( statement.getTransaction().isAnalyze() ) {
@@ -1365,7 +1385,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             event.setAnalyze( isAnalyze );
             event.setSubQuery( isSubquery );
             event.setLogicalQueryInformation( queryInformation );
-            event.setMonitoringType( logicalRoot.kind.name() );
             statement.setMonitoringEvent( event );
         }
     }

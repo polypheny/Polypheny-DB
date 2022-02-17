@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -131,6 +132,28 @@ public class DataContextImpl implements DataContext {
         for ( Object d : data ) {
             parameterValues.get( i++ ).put( index, d );
         }
+    }
+
+
+    @Override
+    public void addSingleValue( long index, AlgDataType type, Object data ) {
+        if ( parameterTypes.containsKey( index ) ) {
+            throw new RuntimeException( "There are already values assigned to this index" );
+        }
+        if ( parameterValues.size() == 0 ) {
+            parameterValues.add( new HashMap<>() );
+        }
+        if ( parameterValues.size() != 1 ) {
+            throw new RuntimeException( "Expecting 1 rows but 1 values specified!" );
+        }
+        parameterTypes.put( index, type );
+        parameterValues.get( 0 ).put( index, data );
+    }
+
+
+    @Override
+    public long getMaxParameterIndex() {
+        return Collections.max( parameterTypes.keySet() );
     }
 
 

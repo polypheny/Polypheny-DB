@@ -35,4 +35,8 @@ public interface DmlRouter {
      */
     AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation );
 
+    AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
+
+    AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
+
 }

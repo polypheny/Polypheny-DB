@@ -63,9 +63,9 @@ public class TableScanRule extends AlgOptRule {
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalTableScan oldRel = call.alg( 0 );
-        AlgNode newRel = oldRel.getTable().toAlg( oldRel::getCluster );
-        call.transformTo( newRel );
+        final LogicalTableScan oldAlg = call.alg( 0 );
+        AlgNode newAlg = oldAlg.getTable().toAlg( oldAlg::getCluster );
+        call.transformTo( newAlg );
     }
 
 }

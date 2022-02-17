@@ -56,7 +56,7 @@ public final class CatalogForeignKey extends CatalogKey {
             final List<Long> referencedKeyColumnIds,
             final ForeignKeyOption updateRule,
             final ForeignKeyOption deleteRule ) {
-        super( id, tableId, schemaId, databaseId, columnIds );
+        super( id, tableId, schemaId, databaseId, columnIds, EnforcementTime.ON_COMMIT );
         this.name = name;
         this.referencedKeyId = referencedKeyId;
         this.referencedKeyTableId = referencedKeyTableId;

@@ -82,7 +82,7 @@ public interface Convention extends AlgTrait, Serializable {
     class Impl implements Convention {
 
         private final String name;
-        private final transient Class<? extends AlgNode> algClass;
+        private final Class<? extends AlgNode> algClass;
 
 
         public Impl( String name, Class<? extends AlgNode> algClass ) {

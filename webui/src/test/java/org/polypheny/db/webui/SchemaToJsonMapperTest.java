@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -76,8 +77,8 @@ public class SchemaToJsonMapperTest extends SqlLanguagelDependant {
         new HashMap<>();
         new HashMap<>();
         Arrays.asList(
-                new CatalogKey( 23L, 4, 1, 1, Arrays.asList( 5L, 6L ) ),
-                new CatalogKey( 24L, 4, 1, 1, Arrays.asList( 6L ) )
+                new CatalogKey( 23L, 4, 1, 1, Arrays.asList( 5L, 6L ), EnforcementTime.ON_COMMIT ),
+                new CatalogKey( 24L, 4, 1, 1, Arrays.asList( 6L ), EnforcementTime.ON_COMMIT )
         );
         String json = SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, true, true );
         Assert.assertEquals( json, mockJson );

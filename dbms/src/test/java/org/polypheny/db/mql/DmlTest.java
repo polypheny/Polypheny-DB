@@ -41,7 +41,7 @@ public class DmlTest extends MqlTestTemplate {
 
     @Test
     public void insertTest() {
-        String data = "{\"test\":3}";
+        String data = "{\"test\":4}";
         insert( data );
 
         Result result = find( "{}", "{}" );

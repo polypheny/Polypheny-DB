@@ -101,7 +101,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
     @Getter
     private String revalId = null;
 
-    @Getter
     private final DashboardInformation dashboardInformation;
 
     @Getter

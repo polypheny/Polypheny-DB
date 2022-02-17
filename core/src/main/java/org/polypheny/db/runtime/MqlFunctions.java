@@ -112,7 +112,7 @@ public class MqlFunctions {
      * @return a transformed object as JSON string
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docJsonize( Object input ) {
+    public static Object docJsonify( Object input ) {
         if ( input instanceof BsonDocument ) {
             return ((BsonDocument) input).toJson();
         } else if ( input instanceof Map ) {
@@ -207,7 +207,8 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateRemove( Object input, List names ) {
         // TODO enable as soon as pushing down of TableModify is possible
-        Map<String, ?> doc = (Map) deserializeBsonIfNecessary( input );
+        Map<String, ?> initial = (Map) deserializeBsonIfNecessary( input );
+        Map<String, ?> doc = initial;
         String name;
         Iterator<String> iter = names.iterator();
         while ( iter.hasNext() ) {
@@ -219,67 +220,72 @@ public class MqlFunctions {
                     if ( doc.get( name ) instanceof Map ) {
                         doc = (Map<String, ?>) doc.get( name );
                     } else {
-                        return input;
+                        return docJsonify( initial );
                     }
 
                 }
             }
         }
 
-        return input;
+        return docJsonify( initial );
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateReplace( Object input, List names, List values ) {
         // TODO enable as soon as pushing down of TableModify is possible
-        Map<String, Object> doc = (Map) deserializeBsonIfNecessary( input );
+        Map<String, Object> initial = (Map) deserializeBsonIfNecessary( input );
+        Map<String, Object> doc = initial;
         String name;
+        int count = -1;
         Iterator<String> iter = names.iterator();
         while ( iter.hasNext() ) {
             name = iter.next();
+            count++;
             if ( doc.containsKey( name ) ) {
                 if ( !iter.hasNext() ) {
-                    doc.put( name, values );
+                    doc.put( name, values.get( count ) );
                 } else {
                     if ( doc.get( name ) instanceof Map ) {
                         doc = (Map<String, Object>) doc.get( name );
                     } else {
-                        return input;
+                        return docJsonify( initial );
                     }
 
                 }
             }
         }
 
-        return input;
+        return docJsonify( initial );
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateRename( Object input, List names, List newNames ) {
         // TODO enable as soon as pushing down of TableModify is possible
-        Map<String, Object> doc = (Map) deserializeBsonIfNecessary( input );
+        Map<String, Object> initial = (Map) deserializeBsonIfNecessary( input );
+        Map<String, Object> doc = initial;
         String name;
+        int count = -1;
         Iterator<String> iter = names.iterator();
         while ( iter.hasNext() ) {
             name = iter.next();
             if ( doc.containsKey( name ) ) {
                 if ( !iter.hasNext() ) {
                     Object obj = doc.get( name );
-                    doc.put( String.join( ".", newNames ), obj );
+                    doc.put( String.join( ".", (List) newNames.get( count ) ), obj );
                 } else {
                     if ( doc.get( name ) instanceof Map ) {
                         doc = (Map<String, Object>) doc.get( name );
                     } else {
-                        return input;
+                        return docJsonify( initial );
                     }
 
                 }
             }
         }
 
-        return input;
+        return docJsonify( initial );
     }
 
 

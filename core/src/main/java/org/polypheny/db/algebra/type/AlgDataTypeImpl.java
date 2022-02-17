@@ -362,7 +362,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
      */
     public static AlgProtoDataType proto( final AlgDataType protoType ) {
         assert protoType != null;
-        return typeFactory -> typeFactory.copyType( protoType );
+        return (AlgProtoDataType & Serializable) typeFactory -> typeFactory.copyType( protoType );
     }
 
 

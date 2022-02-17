@@ -53,18 +53,18 @@ public class HepAlgVertex extends AbstractAlgNode {
     /**
      * Wrapped alg currently chosen for implementation of expression.
      */
-    private AlgNode currentRel;
+    private AlgNode currentAlg;
 
 
     HepAlgVertex( AlgNode alg ) {
         super( alg.getCluster(), alg.getTraitSet() );
-        currentRel = alg;
+        currentAlg = alg;
     }
 
 
     @Override
     public void explain( AlgWriter pw ) {
-        currentRel.explain( pw );
+        currentAlg.explain( pw );
     }
 
 
@@ -92,19 +92,19 @@ public class HepAlgVertex extends AbstractAlgNode {
 
     @Override
     public double estimateRowCount( AlgMetadataQuery mq ) {
-        return mq.getRowCount( currentRel );
+        return mq.getRowCount( currentAlg );
     }
 
 
     @Override
     protected AlgDataType deriveRowType() {
-        return currentRel.getRowType();
+        return currentAlg.getRowType();
     }
 
 
     @Override
     protected String computeDigest() {
-        return "HepAlgVertex(" + currentRel + ")";
+        return "HepAlgVertex(" + currentAlg + ")";
     }
 
 
@@ -114,7 +114,7 @@ public class HepAlgVertex extends AbstractAlgNode {
      * @param newRel new expression
      */
     void replaceRel( AlgNode newRel ) {
-        currentRel = newRel;
+        currentAlg = newRel;
     }
 
 
@@ -122,7 +122,7 @@ public class HepAlgVertex extends AbstractAlgNode {
      * @return current implementation chosen for this vertex
      */
     public AlgNode getCurrentAlg() {
-        return currentRel;
+        return currentAlg;
     }
 
 }

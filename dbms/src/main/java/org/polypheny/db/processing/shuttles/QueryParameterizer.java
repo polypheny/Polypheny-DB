@@ -30,6 +30,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.LogicalProject;
@@ -62,6 +64,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     private final Map<Integer, List<ParameterValue>> values;
     @Getter
     private final List<AlgDataType> types;
+    private int batchSize;
 
 
     public QueryParameterizer( int indexStart, List<AlgDataType> parameterRowType ) {
@@ -101,6 +104,40 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
+    public AlgNode visit( LogicalConditionalExecute input ) {
+        AlgNode right = input.getRight().accept( this );
+        AlgNode left = input.getLeft();
+        // left is always only one batch as it needs to return only one ResultSet
+        // right can be more, so we can only parametrize left if right has the same size
+        if ( this.batchSize == 1 ) {
+            left = left.accept( this );
+        }
+        return new LogicalConditionalExecute(
+                input.getCluster(),
+                input.getTraitSet(),
+                left,
+                right,
+                input.getCondition(),
+                input.getExceptionClass(),
+                input.getExceptionMessage() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
+        AlgNode modify = enforcer.getLeft().accept( this );
+
+        return new LogicalConstraintEnforcer(
+                enforcer.getCluster(),
+                enforcer.getTraitSet(),
+                modify,
+                enforcer.getRight(),
+                enforcer.getExceptionClasses(),
+                enforcer.getExceptionMessages() );
+    }
+
+
+    @Override
     public AlgNode visit( AlgNode other ) {
         if ( other instanceof TableModify ) {
             LogicalTableModify modify = (LogicalTableModify) super.visit( other );
@@ -116,6 +153,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
                 HashMap<Integer, Integer> idxMapping = new HashMap<>();
+                this.batchSize = ((LogicalValues) input).tuples.size();
                 for ( ImmutableList<RexLiteral> node : ((LogicalValues) input).getTuples() ) {
                     int i = 0;
                     for ( RexLiteral literal : node ) {

@@ -219,6 +219,13 @@ public class MongoRules {
     }
 
 
+    public static String adjustName( String name ) {
+        return name.startsWith( "$" )
+                ? "_" + maybeFix( name.substring( 2 ) )
+                : maybeFix( name );
+    }
+
+
     /**
      * Translator from {@link RexNode} to strings in MongoDB's expression language.
      */
@@ -774,6 +781,7 @@ public class MongoRules {
 
 
         private final GridFSBucket bucket;
+        private Implementor implementor;
 
 
         protected MongoTableModify(
@@ -816,6 +824,7 @@ public class MongoRules {
         public void implement( Implementor implementor ) {
             implementor.setDML( true );
             Table preTable = table.getTable();
+            this.implementor = implementor;
 
             if ( !(preTable instanceof MongoTable) ) {
                 throw new RuntimeException( "There seems to be a problem with the correct costs for one of stores." );
@@ -901,16 +910,17 @@ public class MongoRules {
 
 
         private BsonDocument handleDocumentUpdate( RexCall el, GridFSBucket bucket, MongoRowType rowType ) {
+            if ( el.op.getKind() == Kind.MQL_JSONIFY ) {
+                assert el.getOperands().size() == 1;
+                return handleDocumentUpdate( (RexCall) el.getOperands().get( 0 ), bucket, rowType );
+            }
+
             BsonDocument doc = new BsonDocument();
             assert el.getOperands().size() >= 2;
             assert el.getOperands().get( 0 ) instanceof RexInputRef;
 
             String key = getDocParentKey( (RexInputRef) el.operands.get( 0 ), rowType );
-
-            for ( RexNode rexNode : el.getOperands().subList( 1, el.getOperands().size() ) ) {
-                assert rexNode instanceof RexCall;
-                attachUpdateStep( doc, (RexCall) rexNode, rowType, key );
-            }
+            attachUpdateStep( doc, el, rowType, key );
 
             return doc;
         }
@@ -999,6 +1009,7 @@ public class MongoRules {
                     doc.append( "$set", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) operand, this.bucket ) ) );
                 } else {
                     RexCall op = (RexCall) operand;
+                    this.implementor.isDocumentUpdate = true;
                     switch ( op.getKind() ) {
                         case PLUS:
                             doc.append( "$inc", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );

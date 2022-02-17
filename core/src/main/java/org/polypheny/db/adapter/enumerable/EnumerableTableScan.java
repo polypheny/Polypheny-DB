@@ -52,10 +52,13 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.FilterableTable;
@@ -276,6 +279,12 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
                         format() );
         final Expression expression = getExpression( physType );
         return implementor.result( physType, Blocks.toBlock( expression ) );
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 2 );
     }
 
 }

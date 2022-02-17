@@ -20,6 +20,8 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
@@ -74,10 +76,21 @@ public class HttpServer implements Runnable {
             .setPrettyPrinting()
             .create();
 
-    public static TypeAdapter<Throwable> throwableTypeAdapter;
+    public static final TypeAdapterFactory throwableTypeAdapterFactory;
+    public static final TypeAdapter<Throwable> throwableTypeAdapter;
 
 
     static {
+        throwableTypeAdapterFactory = new TypeAdapterFactory() {
+            @Override
+            public <T> TypeAdapter<T> create( Gson gson, TypeToken<T> type ) {
+                if ( !Throwable.class.isAssignableFrom( type.getRawType() ) ) {
+                    return null;
+                }
+                //noinspection unchecked
+                return (TypeAdapter<T>) throwableTypeAdapter;
+            }
+        };
         throwableTypeAdapter = new TypeAdapter<Throwable>() {
             @Override
             public void write( JsonWriter out, Throwable value ) throws IOException {
@@ -104,7 +117,7 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( PolyType.class, PolyType.getSerializer() )
                 .registerTypeAdapter( AdapterInformation.class, AdapterInformation.getSerializer() )
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
-                .registerTypeAdapter( Throwable.class, throwableTypeAdapter )
+                .registerTypeAdapterFactory( throwableTypeAdapterFactory )
                 .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
                 .registerTypeAdapter( Duration.class, Duration.getSerializer() )
                 .registerTypeAdapter( Result.class, Result.getSerializer() )

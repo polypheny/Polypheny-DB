@@ -62,6 +62,11 @@ public class EnumerableTableModifyRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         final LogicalTableModify modify = (LogicalTableModify) alg;
+        if ( modify.isUpdate() ) {
+            // this is something, which is not supported therefore we can just substitute it
+            return EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE.convert( alg );
+        }
+
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
         if ( modifiableTable == null ) {
             return null;

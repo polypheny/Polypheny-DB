@@ -105,7 +105,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
         final Expression fields =
                 list.append(
-                        "fields",
+                        list.newName( "fields" ),
                         constantArrayList(
                                 Pair.zip(
                                         MongoRules.mongoFieldNames( rowType ),
@@ -165,15 +165,16 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
             final Expression logicalCols = list.append( "logical", constantArrayList( Arrays.asList( mongoImplementor.physicalMapper.toArray() ), String.class ) );
             final Expression preProjects = list.append( "prePro", constantArrayList( mongoImplementor.getPreProjects(), String.class ) );
             enumerable = list.append(
-                    "enumerable",
+                    list.newName( "enumerable" ),
                     Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, fields, arrayClassFields, ops, filter, preProjects, logicalCols ) );
         } else {
-            final Expression operations = list.append( "operations", constantArrayList( mongoImplementor.getOperations(), String.class ) );
-            final Expression operation = list.append( "operation", Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );
-            final Expression onlyOne = list.append( "onlyOne", Expressions.constant( mongoImplementor.onlyOne, Boolean.class ) );
+            final Expression operations = list.append( list.newName( "operations" ), constantArrayList( mongoImplementor.getOperations(), String.class ) );
+            final Expression operation = list.append( list.newName( "operation" ), Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );
+            final Expression onlyOne = list.append( list.newName( "onlyOne" ), Expressions.constant( mongoImplementor.onlyOne, boolean.class ) );
+            final Expression needsDocument = list.append( list.newName( "needsUpdate" ), Expressions.constant( mongoImplementor.isDocumentUpdate, boolean.class ) );
             enumerable = list.append(
-                    "enumerable",
-                    Expressions.call( table, MongoMethod.HANDLE_DIRECT_DML.method, operation, filter, operations, onlyOne ) );
+                    list.newName( "enumerable" ),
+                    Expressions.call( table, MongoMethod.HANDLE_DIRECT_DML.method, operation, filter, operations, onlyOne, needsDocument ) );
         }
 
         if ( RuntimeConfig.DEBUG.getBoolean() ) {

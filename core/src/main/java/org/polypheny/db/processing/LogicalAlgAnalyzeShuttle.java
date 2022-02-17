@@ -39,7 +39,6 @@ import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
-import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
@@ -225,14 +224,6 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( AlgNode other ) {
         hashBasis.add( "other#" + other.getClass().getSimpleName() );
-        if ( other instanceof LogicalTableModify ) {
-            // Add all columns to availableColumnsWithTable for statistics
-            if ( (other.getTable().getTable() instanceof LogicalTable) ) {
-                LogicalTable logicalTable = ((LogicalTable) other.getTable().getTable());
-                Long tableId = logicalTable.getTableId();
-                logicalTable.getColumnIds().forEach( v -> availableColumnsWithTable.put( v, tableId ) );
-            }
-        }
         return visitChildren( other );
     }
 

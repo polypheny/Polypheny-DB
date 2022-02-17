@@ -20,11 +20,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -63,13 +65,13 @@ import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.DeadlockException;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -281,18 +283,14 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
             try {
                 Statement statement = transaction.createStatement();
-                // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                Collection<Entry<TableIdentifier, LockMode>> idAccessMap = new ArrayList<>();
+                // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
+                idAccessMap.add( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) );
                 // Get locks for individual tables
                 TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition() );
-                for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                    Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                    if ( mode == Mode.READ_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                    } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                    }
-                }
+                idAccessMap.addAll( accessMap.getTablesAccessedPair() );
+                LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
+
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "DeadLock while locking for materialized view update", e );
             }
@@ -427,7 +425,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             }
         } finally {
             // Release lock
-            LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
+            LockManager.INSTANCE.unlock( Collections.singletonList( LockManager.GLOBAL_LOCK ), (TransactionImpl) transaction );
         }
     }
 

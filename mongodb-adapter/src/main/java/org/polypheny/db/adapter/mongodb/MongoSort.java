@@ -82,8 +82,12 @@ public class MongoSort extends Sort implements MongoAlg {
             final List<String> keys = new ArrayList<>();
             final List<AlgDataTypeField> fields = getRowType().getFieldList();
             for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
-                final String name =
+                // we can only sort by field not by db.collection.field
+                String name =
                         fields.get( fieldCollation.getFieldIndex() ).getName();
+                String[] splits = name.split( "\\." );
+                name = splits[splits.length - 1];
+                name = MongoRules.adjustName( name );
                 keys.add( name + ": " + direction( fieldCollation ) );
                 if ( false ) {
                     // TODO: NULLS FIRST and NULLS LAST

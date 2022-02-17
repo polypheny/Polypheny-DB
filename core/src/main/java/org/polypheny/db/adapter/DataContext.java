@@ -76,6 +76,14 @@ public interface DataContext {
 
     void addParameterValues( long index, AlgDataType type, List<Object> data );
 
+    default void addSingleValue( long index, AlgDataType type, Object data ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default long getMaxParameterIndex() {
+        throw new UnsupportedOperationException();
+    }
+
     AlgDataType getParameterType( long index );
 
     List<Map<Long, Object>> getParameterValues();

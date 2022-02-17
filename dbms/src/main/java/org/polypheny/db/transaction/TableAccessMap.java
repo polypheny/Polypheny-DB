@@ -17,27 +17,35 @@
 package org.polypheny.db.transaction;
 
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.AlgOptTableImpl;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.transaction.Lock.LockMode;
 
 
 /**
  * <code>TableAccessMap</code> represents the tables accessed by a query plan, with READ/WRITE information.
  */
 public class TableAccessMap {
+
 
     /**
      * Access mode.
@@ -66,6 +74,7 @@ public class TableAccessMap {
 
 
     private final Map<TableIdentifier, Mode> accessMap;
+    private final Map<TableIdentifier, LockMode> accessLockMap;
 
 
     /**
@@ -73,6 +82,7 @@ public class TableAccessMap {
      */
     public TableAccessMap() {
         accessMap = Collections.emptyMap();
+        accessLockMap = Collections.emptyMap();
     }
 
 
@@ -86,6 +96,24 @@ public class TableAccessMap {
         // don't want to retain any alg references after preparation completes.
         accessMap = new HashMap<>();
         AlgOptUtil.go( new TableRelVisitor(), alg );
+        accessLockMap = getAccessLockMap();
+    }
+
+
+    @NotNull
+    private Map<TableIdentifier, LockMode> getAccessLockMap() {
+        return accessMap.entrySet()
+                .stream()
+                .filter( e -> Arrays.asList( Mode.READ_ACCESS, Mode.WRITE_ACCESS, Mode.READWRITE_ACCESS ).contains( e.getValue() ) )
+                .collect( Collectors.toMap( Entry::getKey, e -> {
+                    if ( e.getValue() == Mode.READ_ACCESS ) {
+                        return LockMode.SHARED;
+                    } else if ( e.getValue() == Mode.WRITE_ACCESS || e.getValue() == Mode.READWRITE_ACCESS ) {
+                        return LockMode.EXCLUSIVE;
+                    } else {
+                        throw new RuntimeException( "LockMode not possible." );
+                    }
+                } ) );
     }
 
 
@@ -98,6 +126,7 @@ public class TableAccessMap {
     public TableAccessMap( TableIdentifier tableIdentifier, Mode mode ) {
         accessMap = new HashMap<>();
         accessMap.put( tableIdentifier, mode );
+        accessLockMap = getAccessLockMap();
     }
 
 
@@ -106,6 +135,11 @@ public class TableAccessMap {
      */
     public Set<TableIdentifier> getTablesAccessed() {
         return accessMap.keySet();
+    }
+
+
+    public Collection<Entry<TableIdentifier, LockMode>> getTablesAccessedPair() {
+        return accessLockMap.entrySet();
     }
 
 
@@ -195,6 +229,16 @@ public class TableAccessMap {
             //  {@link AlgNode} interface.
             if ( p instanceof TableModify ) {
                 newAccess = Mode.WRITE_ACCESS;
+                if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+                    LogicalTable logicalTable = (LogicalTable) table.getTable();
+                    for ( Long constraintTable : logicalTable.getConstraintIds() ) {
+                        TableIdentifier id = new TableIdentifier( constraintTable );
+                        if ( !accessMap.containsKey( id ) ) {
+                            accessMap.put( id, Mode.READ_ACCESS );
+                        }
+                    }
+                }
+
             } else {
                 newAccess = Mode.READ_ACCESS;
             }

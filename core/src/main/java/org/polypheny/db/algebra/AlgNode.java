@@ -201,7 +201,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     /**
      * Returns the cost of this plan (not including children). The base implementation throws an error; derived classes should override.
      *
-     * NOTE: Don't call this method directly. Instead, use {@link AlgMetadataQuery#getNonCumulativeCost}, which gives plugins a chance to override the rel's default ideas about cost.
+     * NOTE: Don't call this method directly. Instead, use {@link AlgMetadataQuery#getNonCumulativeCost}, which gives plugins a chance to override the alg's default ideas about cost.
      *
      * @param planner Planner for cost calculation
      * @param mq Metadata query

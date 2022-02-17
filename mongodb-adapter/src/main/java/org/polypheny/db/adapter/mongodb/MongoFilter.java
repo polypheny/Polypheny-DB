@@ -303,6 +303,10 @@ public class MongoFilter extends Filter implements MongoAlg {
                 case DYNAMIC_PARAM:
                     translateBooleanDyn( (RexDynamicParam) node );
                     return;
+                case INPUT_REF:
+                    // means is true
+                    attachCondition( "$eq", getParamAsKey( node ), new BsonBoolean( true ) );
+                    return;
                 default:
                     throw new AssertionError( "cannot translate " + node );
             }

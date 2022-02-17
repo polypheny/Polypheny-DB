@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
@@ -41,6 +42,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -127,6 +129,19 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             columnNames,
                             AlgDataTypeImpl.proto( rowType ),
                             catalogSchema.schemaType );
+                    if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+                        table.getConstraintIds()
+                                .addAll( catalog.getForeignKeys( catalogTable.id ).stream()
+                                        .filter( f -> f.enforcementTime == EnforcementTime.ON_COMMIT )
+                                        .map( f -> f.referencedKeyTableId )
+                                        .collect( Collectors.toList() ) );
+                        table.getConstraintIds()
+                                .addAll( catalog.getExportedKeys( catalogTable.id ).stream()
+                                        .filter( f -> f.enforcementTime == EnforcementTime.ON_COMMIT )
+                                        .map( f -> f.referencedKeyTableId )
+                                        .collect( Collectors.toList() ) );
+                    }
+
                     s.add( catalogTable.name, table );
                     tableMap.put( catalogTable.name, table );
                 } else {

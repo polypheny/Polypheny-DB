@@ -425,7 +425,7 @@ public class DataMigratorImpl implements DataMigrator {
      * @param sourceTable Source Table from where data is queried
      * @param targetTable Source Table from where data is queried
      * @param columns Necessary columns on target
-     * @param placementDistribution Pre computed mapping of partitions and the necessary column placements
+     * @param placementDistribution Pre-computed mapping of partitions and the necessary column placements
      * @param targetPartitionIds Target Partitions where data should be inserted
      */
     @Override

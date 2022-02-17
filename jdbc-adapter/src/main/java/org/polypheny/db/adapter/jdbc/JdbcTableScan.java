@@ -39,7 +39,10 @@ import java.util.List;
 import org.polypheny.db.adapter.jdbc.rel2sql.SqlImplementor.Result;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -52,7 +55,13 @@ public class JdbcTableScan extends TableScan implements JdbcAlg {
     protected final JdbcTable jdbcTable;
 
 
-    protected JdbcTableScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.9 );
+    }
+
+
+    public JdbcTableScan( AlgOptCluster cluster, AlgOptTable table, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
         super( cluster, cluster.traitSetOf( jdbcConvention ), table );
         this.jdbcTable = jdbcTable;
         assert jdbcTable != null;

@@ -36,7 +36,8 @@ public final class CatalogPrimaryKey extends CatalogKey {
                 catalogKey.tableId,
                 catalogKey.schemaId,
                 catalogKey.databaseId,
-                catalogKey.columnIds );
+                catalogKey.columnIds,
+                EnforcementTime.ON_QUERY );
     }
 
 

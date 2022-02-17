@@ -23,7 +23,10 @@ import org.polypheny.db.adapter.cottontail.CottontailTable;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext.QueryType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -43,6 +46,12 @@ public class CottontailTableScan extends TableScan implements CottontailAlg {
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert inputs.isEmpty();
         return new CottontailTableScan( getCluster(), this.table, this.cottontailTable, (CottontailConvention) this.getConvention() );
+    }
+
+
+    @Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
     }
 
 

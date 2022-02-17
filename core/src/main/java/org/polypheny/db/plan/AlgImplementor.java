@@ -34,6 +34,8 @@
 package org.polypheny.db.plan;
 
 
+import java.util.Map;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.util.Conformance;
 
@@ -50,6 +52,9 @@ public interface AlgImplementor {
      * @return
      */
     Conformance getConformance();
+
+
+    Map<ParameterExpression, Object> getNodes();
 
 }
 

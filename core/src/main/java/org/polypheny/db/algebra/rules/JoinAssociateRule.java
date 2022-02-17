@@ -132,8 +132,8 @@ public class JoinAssociateRule extends AlgOptRule {
         JoinPushThroughJoinRule.split( bottomJoin.getCondition(), aBitSet, top, bottom );
 
         // Mapping for moving conditions from topJoin or bottomJoin to newBottomJoin.
-        // target: | B | C      |
-        // source: | A       | B | C      |
+        // target: | B | C |
+        // source: | A | B | C      |
         final Mappings.TargetMapping bottomMapping =
                 Mappings.createShiftMapping(
                         aCount + bCount + cCount,

@@ -85,6 +85,7 @@ public interface MongoAlg extends AlgNode {
         // and need to be projected beforehand from their physical names
         public Set<String> physicalMapper = new TreeSet<>();
         public boolean onlyOne = false;
+        public boolean isDocumentUpdate = false;
 
         AlgOptTable table;
         @Setter
