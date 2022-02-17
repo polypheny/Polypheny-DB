@@ -2154,7 +2154,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public Long getPartitionGroupByPartition( long partitionId ) {
+    public long getPartitionGroupByPartition( long partitionId ) {
         return getPartition( partitionId ).partitionGroupId;
     }
 

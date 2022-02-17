@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
-import java.sql.Timestamp;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -41,13 +40,11 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     public final String physicalTableName;
 
 
-    // Related to multi-tier replication. If Placement is considered a primary node it needs to receive every update eagerly.
-    // If false, nodes are considered refreshable and can be lazily replicated
+    // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
+    // If false, physical partition placements are considered to be refreshable and can therefore become outdated and need to be lazily updated.
     // This attribute is derived from an effective data placement (table entity on a store)
-    // This means that the store is not entirely considered a primary and can therefore be different on another table
     // TODO @HENNLO remove default role
     public final DataPlacementRole role = DataPlacementRole.UPTODATE;
-    public Timestamp updateTimestamp;
 
 
     public CatalogPartitionPlacement(

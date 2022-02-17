@@ -565,7 +565,7 @@ public abstract class Catalog {
 
     public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId );
 
-    public abstract Long getPartitionGroupByPartition( long partitionId );
+    public abstract long getPartitionGroupByPartition( long partitionId );
 
     public abstract List<CatalogKey> getKeys();
 
