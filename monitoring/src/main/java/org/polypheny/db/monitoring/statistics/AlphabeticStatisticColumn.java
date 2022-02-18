@@ -36,7 +36,7 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
     boolean cacheFull;
 
 
-    public AlphabeticStatisticColumn( QueryColumn column ) {
+    public AlphabeticStatisticColumn( QueryResult column ) {
         super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
     }
 

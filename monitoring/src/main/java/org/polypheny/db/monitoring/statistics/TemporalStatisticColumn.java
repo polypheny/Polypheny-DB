@@ -55,7 +55,7 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
     public TreeSet<T> maxCache = new TreeSet<>();
 
 
-    public TemporalStatisticColumn( QueryColumn column ) {
+    public TemporalStatisticColumn( QueryResult column ) {
         super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
         temporalType = column.getType().getFamily().name();
     }

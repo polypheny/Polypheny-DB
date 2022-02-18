@@ -27,7 +27,7 @@ import org.polypheny.db.type.PolyType;
  * Boilerplate of a column to guide the handling and pattern of a column
  */
 @Slf4j
-class QueryColumn {
+class QueryResult {
 
     @Getter
     private String schema;
@@ -39,10 +39,10 @@ class QueryColumn {
     private String column;
 
     @Getter
-    private final Long schemaId;
+    private final long schemaId;
 
     @Getter
-    private final Long tableId;
+    private final long tableId;
 
     @Getter
     private final Long columnId;
@@ -51,7 +51,7 @@ class QueryColumn {
     private final PolyType type;
 
 
-    QueryColumn( Long schemaId, Long tableId, Long columnId, PolyType type ) {
+    QueryResult( long schemaId, long tableId, Long columnId, PolyType type ) {
         this.schemaId = schemaId;
         this.tableId = tableId;
         this.columnId = columnId;
@@ -68,8 +68,8 @@ class QueryColumn {
     }
 
 
-    public static QueryColumn fromCatalogColumn( CatalogColumn column ) {
-        return new QueryColumn( column.schemaId, column.tableId, column.id, column.type );
+    public static QueryResult fromCatalogColumn( CatalogColumn column ) {
+        return new QueryResult( column.schemaId, column.tableId, column.id, column.type );
     }
 
 }

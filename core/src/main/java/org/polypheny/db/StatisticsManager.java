@@ -47,24 +47,24 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
 
     // Use relNode to update
-    public abstract void tablesToUpdate( Long tableId );
+    public abstract void tablesToUpdate( long tableId );
 
     // Use cache if possible
-    public abstract void tablesToUpdate( Long tableId, Map<Long, List<Object>> changedValues, String type, Long schemaId );
+    public abstract void tablesToUpdate( long tableId, Map<Long, List<Object>> changedValues, String type, long schemaId );
 
-    protected abstract void reevaluateTable( Long tableId );
+    protected abstract void reevaluateTable( long tableId );
 
     public abstract void displayInformation();
 
     public abstract void asyncReevaluateAllStatistics();
 
-    public abstract void deleteTableToUpdate( Long tableId, Long schemaId );
+    public abstract void deleteTableToUpdate( long tableId, long schemaId );
 
-    public abstract void updateRowCountPerTable( Long tableId, Integer number, String source );
+    public abstract void updateRowCountPerTable( long tableId, int number, String source );
 
-    public abstract void setIndexSize( Long tableId, int indexSize );
+    public abstract void setIndexSize( long tableId, int indexSize );
 
-    public abstract void setTableCalls( Long tableId, String kind );
+    public abstract void setTableCalls( long tableId, String kind );
 
     public abstract String getRevalId();
 
@@ -72,9 +72,9 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract Map<?, ?> getStatisticSchemaMap();
 
-    public abstract Object getTableStatistic( Long schemaId, Long tableId );
+    public abstract Object getTableStatistic( long schemaId, long tableId );
 
-    public abstract Integer rowCountPerTable( Long tableId );
+    public abstract Integer rowCountPerTable( long tableId );
 
     public abstract void updateCommitRollback( boolean committed );
 

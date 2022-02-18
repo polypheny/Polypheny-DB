@@ -44,13 +44,13 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     private String column;
 
     @Getter
-    private final Long schemaId;
+    private final long schemaId;
 
     @Getter
-    private final Long tableId;
+    private final long tableId;
 
     @Getter
-    private final Long columnId;
+    private final long columnId;
 
     @Getter
     private final PolyType type;
@@ -71,7 +71,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     protected Integer count;
 
 
-    public StatisticColumn( Long schemaId, Long tableId, Long columnId, PolyType type ) {
+    public StatisticColumn( long schemaId, long tableId, long columnId, PolyType type ) {
         this.schemaId = schemaId;
         this.tableId = tableId;
         this.columnId = columnId;

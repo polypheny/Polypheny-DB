@@ -25,14 +25,14 @@ import lombok.Getter;
 public class StatisticResult {
 
     @Getter
-    private StatisticQueryColumn[] columns;
+    private StatisticQueryResult[] columns;
 
 
     public StatisticResult() {
     }
 
 
-    public StatisticResult( StatisticQueryColumn[] columns ) {
+    public StatisticResult( StatisticQueryResult[] columns ) {
         this.columns = columns;
     }
 
@@ -42,16 +42,16 @@ public class StatisticResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatisticResult( QueryColumn queryColumn, Comparable<?>[][] data ) {
+    public StatisticResult( QueryResult queryResult, Comparable<?>[][] data ) {
         if ( data.length == 0 || data[0].length == 0 ) {
-            this.columns = new StatisticQueryColumn[0];
+            this.columns = new StatisticQueryResult[0];
         } else {
-            this.columns = new StatisticQueryColumn[data[0].length];
+            this.columns = new StatisticQueryResult[data[0].length];
 
             Comparable<?>[][] rotated = rotate2dArray( data );
 
             for ( int i = 0; i < rotated.length; i++ ) {
-                this.columns[i] = new StatisticQueryColumn( queryColumn, rotated[i] );
+                this.columns[i] = new StatisticQueryResult( queryResult, rotated[i] );
             }
         }
     }

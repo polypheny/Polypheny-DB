@@ -50,7 +50,7 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     private final TreeSet<T> maxCache = new TreeSet<>();
 
 
-    public NumericalStatisticColumn( QueryColumn column ) {
+    public NumericalStatisticColumn( QueryResult column ) {
         super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
     }
 

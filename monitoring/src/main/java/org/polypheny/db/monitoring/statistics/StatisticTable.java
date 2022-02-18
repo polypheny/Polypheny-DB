@@ -37,7 +37,7 @@ public class StatisticTable<T extends Comparable<T>> {
     private String table;
 
     @Getter
-    private final Long tableId;
+    private final long tableId;
 
     @Getter
     @Setter

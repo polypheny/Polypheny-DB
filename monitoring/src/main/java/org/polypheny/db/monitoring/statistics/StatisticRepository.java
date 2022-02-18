@@ -85,7 +85,7 @@ public class StatisticRepository implements MonitoringRepository {
             Catalog catalog = Catalog.getInstance();
 
             if ( isOneTable ) {
-                Long tableId = values.stream().findFirst().get();
+                long tableId = values.stream().findFirst().get();
                 if ( catalog.checkIfExistsTable( tableId ) ) {
                     statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
@@ -99,7 +99,7 @@ public class StatisticRepository implements MonitoringRepository {
                     }
                 }
             } else {
-                for ( Long id : values ) {
+                for ( long id : values ) {
                     if ( catalog.checkIfExistsTable( id ) ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
@@ -116,7 +116,7 @@ public class StatisticRepository implements MonitoringRepository {
 
             Catalog catalog = Catalog.getInstance();
             if ( isOneTable ) {
-                Long tableId = values.stream().findFirst().get();
+                long tableId = values.stream().findFirst().get();
                 statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
                 if ( catalog.checkIfExistsTable( tableId ) ) {
@@ -136,7 +136,7 @@ public class StatisticRepository implements MonitoringRepository {
                     }
                 }
             } else {
-                for ( Long id : values ) {
+                for ( long id : values ) {
                     if ( catalog.checkIfExistsTable( id ) ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }

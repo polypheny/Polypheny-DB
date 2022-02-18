@@ -73,8 +73,8 @@ public class StatisticQueryProcessor {
      *
      * @return result of the query
      */
-    public StatisticQueryColumn selectOneColumnStat( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
-        StatisticResult res = this.executeColStat( node, transaction, statement, queryColumn );
+    public StatisticQueryResult selectOneColumnStat( AlgNode node, Transaction transaction, Statement statement, QueryResult queryResult ) {
+        StatisticResult res = this.executeColStat( node, transaction, statement, queryResult );
         if ( res.getColumns() != null && res.getColumns().length == 1 ) {
             return res.getColumns()[0];
         }
@@ -115,18 +115,18 @@ public class StatisticQueryProcessor {
      *
      * @return all the columns
      */
-    public List<QueryColumn> getAllColumns() {
+    public List<QueryResult> getAllColumns() {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumn> catalogColumns = catalog.getColumns(
                 new Pattern( databaseName ),
                 null,
                 null,
                 null );
-        List<QueryColumn> allColumns = new ArrayList<>();
+        List<QueryResult> allColumns = new ArrayList<>();
 
         for ( CatalogColumn catalogColumn : catalogColumns ) {
             if ( catalog.getTable( catalogColumn.tableId ).tableType != TableType.VIEW ) {
-                allColumns.add( new QueryColumn( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ) );
+                allColumns.add( new QueryResult( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ) );
             }
         }
         return allColumns;
@@ -160,10 +160,10 @@ public class StatisticQueryProcessor {
      *
      * @return all columns
      */
-    public List<QueryColumn> getAllColumns( Long tableId ) {
+    public List<QueryResult> getAllColumns( Long tableId ) {
         Catalog catalog = Catalog.getInstance();
-        List<QueryColumn> columns = new ArrayList<>();
-        catalog.getColumns( tableId ).forEach( c -> columns.add( QueryColumn.fromCatalogColumn( c ) ) );
+        List<QueryResult> columns = new ArrayList<>();
+        catalog.getColumns( tableId ).forEach( c -> columns.add( QueryResult.fromCatalogColumn( c ) ) );
         return columns;
     }
 
@@ -186,11 +186,11 @@ public class StatisticQueryProcessor {
     }
 
 
-    private StatisticResult executeColStat( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
+    private StatisticResult executeColStat( AlgNode node, Transaction transaction, Statement statement, QueryResult queryResult ) {
         StatisticResult result = new StatisticResult();
 
         try {
-            result = executeColStat( statement, node, queryColumn );
+            result = executeColStat( statement, node, queryResult );
         } catch ( QueryExecutionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
         }
@@ -211,7 +211,7 @@ public class StatisticQueryProcessor {
     // -----------------------------------------------------------------------
 
 
-    private StatisticResult executeColStat( Statement statement, AlgNode node, QueryColumn queryColumn ) throws QueryExecutionException {
+    private StatisticResult executeColStat( Statement statement, AlgNode node, QueryResult queryResult ) throws QueryExecutionException {
         PolyResult result;
         List<List<Object>> rows;
 
@@ -240,7 +240,7 @@ public class StatisticQueryProcessor {
 
         Comparable<?>[][] d = data.toArray( new Comparable<?>[0][] );
 
-        return new StatisticResult( queryColumn, d );
+        return new StatisticResult( queryResult, d );
     }
 
 
