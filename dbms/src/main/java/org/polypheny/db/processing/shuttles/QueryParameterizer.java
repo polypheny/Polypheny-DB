@@ -29,7 +29,6 @@ import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -139,18 +138,36 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public AlgNode visit( AlgNode other ) {
-        if ( other instanceof TableModify ) {
-            LogicalTableModify modify = (LogicalTableModify) super.visit( other );
-            List<RexNode> newSourceExpression = null;
-            if ( modify.getSourceExpressionList() != null ) {
-                newSourceExpression = new ArrayList<>();
-                for ( RexNode node : modify.getSourceExpressionList() ) {
-                    newSourceExpression.add( node.accept( this ) );
-                }
+        if ( other instanceof LogicalModifyCollect ) {
+            List<AlgNode> inputs = new ArrayList<>( other.getInputs().size() );
+            for ( AlgNode node : other.getInputs() ) {
+                inputs.add( visit( node ) );
             }
-            AlgNode input = modify.getInput();
-            if ( input instanceof LogicalValues ) {
-                List<RexNode> projects = new ArrayList<>();
+            return new LogicalModifyCollect(
+                    other.getCluster(),
+                    other.getTraitSet(),
+                    inputs,
+                    ((LogicalModifyCollect) other).all
+            );
+        } else {
+            return super.visit( other );
+        }
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalTableModify initial ) {
+        LogicalTableModify modify = (LogicalTableModify) super.visit( initial );
+        List<RexNode> newSourceExpression = null;
+        if ( modify.getSourceExpressionList() != null ) {
+            newSourceExpression = new ArrayList<>();
+            for ( RexNode node : modify.getSourceExpressionList() ) {
+                newSourceExpression.add( node.accept( this ) );
+            }
+        }
+        AlgNode input = modify.getInput();
+        if ( input instanceof LogicalValues ) {
+            List<RexNode> projects = new ArrayList<>();
                 boolean firstRow = true;
                 HashMap<Integer, Integer> idxMapping = new HashMap<>();
                 this.batchSize = ((LogicalValues) input).tuples.size();
@@ -196,20 +213,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     modify.getUpdateColumnList(),
                     newSourceExpression,
                     modify.isFlattened() );
-        } else if ( other instanceof LogicalModifyCollect ) {
-            List<AlgNode> inputs = new ArrayList<>( other.getInputs().size() );
-            for ( AlgNode node : other.getInputs() ) {
-                inputs.add( visit( node ) );
-            }
-            return new LogicalModifyCollect(
-                    other.getCluster(),
-                    other.getTraitSet(),
-                    inputs,
-                    ((LogicalModifyCollect) other).all
-            );
-        } else {
-            return super.visit( other );
-        }
+
     }
 
     //

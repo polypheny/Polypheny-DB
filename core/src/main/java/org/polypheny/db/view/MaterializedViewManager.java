@@ -24,7 +24,6 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.TableModify.Operation;
 import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -90,23 +89,23 @@ public abstract class MaterializedViewManager {
 
 
         @Override
-        public AlgNode visit( AlgNode other ) {
-            if ( other instanceof LogicalTableModify ) {
-                if ( ((TableModify) other).getOperation() != Operation.MERGE ) {
-                    if ( (other.getTable().getTable() instanceof LogicalTable) ) {
-                        List<String> qualifiedName = other.getTable().getQualifiedName();
-                        if ( qualifiedName.size() < 2 ) {
-                            names.add( ((LogicalTable) other.getTable().getTable()).getLogicalSchemaName() );
-                            names.add( ((LogicalTable) other.getTable().getTable()).getLogicalTableName() );
-                        } else {
-                            names.addAll( qualifiedName );
-                        }
+        public AlgNode visit( LogicalTableModify modify ) {
+            if ( modify.getOperation() != Operation.MERGE ) {
+                if ( (modify.getTable().getTable() instanceof LogicalTable) ) {
+                    List<String> qualifiedName = modify.getTable().getQualifiedName();
+                    if ( qualifiedName.size() < 2 ) {
+                        names.add( ((LogicalTable) modify.getTable().getTable()).getLogicalSchemaName() );
+                        names.add( ((LogicalTable) modify.getTable().getTable()).getLogicalTableName() );
+                    } else {
+                        names.addAll( qualifiedName );
                     }
                 }
             }
-            return super.visit( other );
+            return super.visit( modify );
         }
 
+
     }
+
 
 }

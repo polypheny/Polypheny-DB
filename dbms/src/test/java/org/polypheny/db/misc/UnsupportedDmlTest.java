@@ -26,7 +26,6 @@ import java.util.Arrays;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
-import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.mql.MqlTestTemplate;
@@ -93,7 +92,6 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test
     public void ddlNormalTest() throws SQLException {
-        TestHelper.getInstance();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -117,7 +115,6 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test
     public void ddlSqlUpdateTest() throws SQLException {
-        TestHelper.getInstance();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -141,7 +138,6 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test
     public void ddlSqlCountTest() throws SQLException {
-        TestHelper.getInstance();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {

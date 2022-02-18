@@ -59,7 +59,6 @@ public class StatisticTable {
     private TableType tableType;
 
     @Getter
-    @Setter
     private int numberOfRows;
 
     @Getter
@@ -92,6 +91,11 @@ public class StatisticTable {
         alphabeticColumn = new ArrayList<>();
         numericalColumn = new ArrayList<>();
         temporalColumn = new ArrayList<>();
+    }
+
+
+    public void setNumberOfRows( int rows ) {
+        this.numberOfRows = Math.max( rows, 0 );
     }
 
 }

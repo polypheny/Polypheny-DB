@@ -18,8 +18,8 @@ package org.polypheny.db.schema.document;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 
@@ -36,18 +36,14 @@ public class DataModelShuttle extends AlgShuttleImpl {
 
 
     @Override
-    public AlgNode visit( AlgNode other ) {
-        if ( other instanceof TableModify ) {
-            TableModify modify = (TableModify) other;
-            if ( modify.getTable().getTable().getSchemaType() == SchemaType.DOCUMENT ) {
-                if ( modify.getInput() instanceof LogicalValues && !(modify.getInput() instanceof LogicalDocuments) ) {
-                    modify.replaceInput( 0, LogicalDocuments.create( (LogicalValues) modify.getInput() ) );
-                }
-                return super.visit( other );
+    public AlgNode visit( LogicalTableModify modify ) {
+        if ( modify.getTable().getTable().getSchemaType() == SchemaType.DOCUMENT ) {
+            if ( modify.getInput() instanceof LogicalValues && !(modify.getInput() instanceof LogicalDocuments) ) {
+                modify.replaceInput( 0, LogicalDocuments.create( (LogicalValues) modify.getInput() ) );
             }
-            return super.visit( other );
+            return super.visit( modify );
         }
-        return super.visit( other );
+        return super.visit( modify );
     }
 
 }

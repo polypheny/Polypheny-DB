@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
@@ -228,6 +229,14 @@ public class ViewManager {
             handleNodeType( other );
             depth++;
             return other;
+        }
+
+
+        @Override
+        public AlgNode visit( LogicalTableModify modify ) {
+            handleNodeType( modify );
+            depth++;
+            return modify;
         }
 
 
