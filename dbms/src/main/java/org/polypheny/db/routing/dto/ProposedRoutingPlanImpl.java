@@ -141,7 +141,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
             return this.physicalPlacementsOfPartitions.values()
                     .stream().flatMap( Collection::stream )
                     .map( elem -> elem.right.hashCode() * elem.left.hashCode() )
-                    .reduce( ( a, b ) -> a + b )
+                    .reduce( Integer::sum )
                     .get();
         }
         return super.hashCode();

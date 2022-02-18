@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
+import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.LogicalExchange;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -122,6 +123,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalAggregate aggregate ) {
         hashBasis.add( "LogicalAggregate#" + aggregate.getAggCallList() );
         return visitChild( aggregate, 0, aggregate.getInput() );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
+        hashBasis.add( "LogicalConstraintEnforcer#" + enforcer.algCompareString() );
+        return super.visit( enforcer );
     }
 
 
