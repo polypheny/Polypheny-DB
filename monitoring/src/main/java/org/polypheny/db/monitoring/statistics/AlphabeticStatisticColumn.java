@@ -59,7 +59,7 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
 
 
     @Override
-    public void insert( List<T> values  ) {
+    public void insert( List<T> values ) {
         if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
             for ( T val : values ) {
                 insert( val );

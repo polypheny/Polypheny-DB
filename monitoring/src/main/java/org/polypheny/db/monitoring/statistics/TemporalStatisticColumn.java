@@ -99,7 +99,7 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
 
     @Override
     public void insert( List<T> values ) {
-        if ( values != null && !(values.get( 0 ) instanceof ArrayList)) {
+        if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
             for ( T val : values ) {
                 insert( val );
             }
