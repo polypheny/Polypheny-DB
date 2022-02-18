@@ -26,6 +26,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -36,6 +39,8 @@ import org.polypheny.db.information.InformationTable;
 public class CatalogInfoPage implements PropertyChangeListener {
 
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "HH:mm:ss" );
+
+    private boolean addDebugMessages = RuntimeConfig.CATALOG_DEBUG_MESSAGES.getBoolean();
 
     private final InformationManager infoManager;
     private final Catalog catalog;
@@ -48,7 +53,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable partitionGroupInformation;
     private final InformationTable partitionInformation;
 
-    private final InformationTable debugInformation;
+    private InformationTable debugInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -67,12 +72,33 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.partitionGroupInformation = addCatalogInformationTable( page, "Partition Groups", 7, Arrays.asList( "ID", "Name", "TableID", "# Partitions" ), 0 );
         this.partitionInformation = addCatalogInformationTable( page, "Partitions", 8, Arrays.asList( "ID", "PartitionGroupID", "TableID", "Qualifiers" ), 0 );
 
-        this.debugInformation = addCatalogInformationTable( page, "Debug", 10, Arrays.asList( "Time", "Message" ), 100 );
-
+        if ( addDebugMessages ) {
+            debugInformation = addCatalogInformationTable( page, "Debug", 10, Arrays.asList( "Time", "Message" ), 100 );
+        }
         addPersistentInfo( page );
 
         page.setRefreshFunction( this::resetCatalogInformation );
         catalog.addObserver( this );
+        RuntimeConfig.CATALOG_DEBUG_MESSAGES.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                boolean newValue = RuntimeConfig.CATALOG_DEBUG_MESSAGES.getBoolean();
+                if ( !addDebugMessages && newValue ) {
+                    debugInformation = addCatalogInformationTable( page, "Debug", 10, Arrays.asList( "Time", "Message" ), 100 );
+                } else if ( addDebugMessages && !newValue && debugInformation != null ) {
+                    infoManager.removeInformation( debugInformation );
+                    infoManager.removeGroup( infoManager.getGroup( debugInformation.getGroup() ) );
+                    debugInformation = null;
+                }
+                addDebugMessages = newValue;
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+                // do nothing
+            }
+        } );
     }
 
 
@@ -98,7 +124,9 @@ public class CatalogInfoPage implements PropertyChangeListener {
 
     @Override
     public void propertyChange( PropertyChangeEvent propertyChangeEvent ) {
-        addDebugMessage( propertyChangeEvent );
+        if ( addDebugMessages ) {
+            addDebugMessage( propertyChangeEvent );
+        }
     }
 
 

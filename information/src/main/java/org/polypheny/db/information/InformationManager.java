@@ -186,6 +186,7 @@ public class InformationManager {
         for ( InformationGroup g : groups ) {
             if ( this.groups.containsKey( g.getId() ) ) {
                 this.groups.remove( g.getId() );
+                getPage( g.getPageId() ).removeGroup( g );
             } else {
                 log.warn( "Trying to remove a information group which is not registered in this information manager." );
             }
@@ -212,7 +213,8 @@ public class InformationManager {
      */
     public void removeInformation( final Information... infos ) {
         for ( Information i : infos ) {
-            this.informationMap.remove( i.getId(), i );
+            this.informationMap.remove( i.getId() );
+            getGroup( i.getGroup() ).removeInformation( i );
         }
     }
 
@@ -313,6 +315,5 @@ public class InformationManager {
             observer.observePageList( this.pages.values().toArray( new InformationPage[0] ), instanceId, session );
         }
     }
-
 
 }

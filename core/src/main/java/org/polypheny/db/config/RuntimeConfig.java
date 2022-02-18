@@ -407,7 +407,14 @@ public enum RuntimeConfig {
             "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
             BackgroundTask.TaskSchedulingType.EVERY_MINUTE,
             ConfigType.ENUM,
-            "temperaturePartitionProcessingSettingsGroup" );
+            "temperaturePartitionProcessingSettingsGroup" ),
+
+    CATALOG_DEBUG_MESSAGES(
+            "runtime/catalogDebugMessages",
+            "Enable output of catalog debug messages on the monitoring page.",
+            false,
+            ConfigType.BOOLEAN,
+            "monitoringGroup" );
 
 
     private final String key;
@@ -490,10 +497,13 @@ public enum RuntimeConfig {
                 "Polypheny-UI",
                 "Settings for this user interface." );
         //uiSettingsPage.withIcon( "fa fa-window-maximize" );
+        configManager.registerWebUiPage( uiSettingsPage );
         final WebUiGroup uiSettingsDataViewGroup = new WebUiGroup( "uiSettingsDataViewGroup", uiSettingsPage.getId() );
         uiSettingsDataViewGroup.withTitle( "Data View" );
-        configManager.registerWebUiPage( uiSettingsPage );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
+        final WebUiGroup monitoringGroup = new WebUiGroup( "monitoringGroup", uiSettingsPage.getId() );
+        monitoringGroup.withTitle( "Monitoring" );
+        configManager.registerWebUiGroup( monitoringGroup );
 
         // Workload Monitoring specific setting
         final WebUiPage monitoringSettingsPage = new WebUiPage(
