@@ -1369,6 +1369,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             event.setAnalyze( isAnalyze );
             event.setSubQuery( isSubquery );
             event.setLogicalQueryInformation( queryInformation );
+            event.setMonitoringType( logicalRoot.kind.name() );
             statement.setMonitoringEvent( event );
         }
     }

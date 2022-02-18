@@ -172,10 +172,10 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
-                    connection.commit();
+                    connection.commit(); // todo remove when auto-commit works
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 1), (4, 3)" );
-                        connection.commit();
+                        connection.commit(); // todo remove when auto-commit works
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaClientRuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
@@ -262,7 +262,7 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
-                    connection.commit();
+                    connection.commit(); // todo remove when auto-commit works
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 SELECT ctid + 10 AS ct2id, ctid * 2 AS ctid FROM constraint_test" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
@@ -354,9 +354,9 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
-                    connection.commit();
+                    connection.commit(); // todo remove when auto-commit works
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
-                    connection.commit();
+                    connection.commit(); // todo remove when auto-commit works
                     try {
                         statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );
                         connection.commit();
@@ -453,12 +453,12 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
-                    connection.commit();
+                    connection.commit(); // todo remove when auto-commit works
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
-                    connection.commit();
+                    connection.commit(); // todo remove when auto-commit works
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE ctid = 1" );
-                        connection.commit();
+                        connection.commit(); // todo remove when auto-commit works
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
                     } catch ( AvaticaClientRuntimeException e ) {
                         if ( !(e.getMessage().contains( "Remote driver error:" )
@@ -551,9 +551,9 @@ public class ForeignKeyConstraintTest {
 
                 try {
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3)" );
-                    connection.commit();
+                    connection.commit(); // todo remove when auto-commit works
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (1, 1), (3, 3)" );
-                    connection.commit();
+                    connection.commit(); // todo remove when auto-commit works
                     try {
                         statement.executeUpdate( "DELETE FROM constraint_test WHERE ctid = 1" );
                         connection.commit();

@@ -72,6 +72,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_SEMI_JOIN_RULE,
                     EnumerableRules.ENUMERABLE_CORRELATE_RULE,
+                    EnumerableRules.ENUMERABLE_CONSTRAINT_ENFORCER_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE,
                     EnumerableRules.ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE,

@@ -176,7 +176,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                     .getConstraintAlg( catalogTables, statement );
             List<PolyResult> results = infos
                     .stream()
-                    .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) ).collect( Collectors.toList() );
+                    .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );
             List<List<List<Object>>> rows = results.stream().map( r -> r.getRows( statement, -1 ) ).filter( r -> r.size() != 0 ).collect( Collectors.toList() );
             if ( rows.size() != 0 ) {
                 Integer index = (Integer) rows.get( 0 ).get( 0 ).get( 1 );
