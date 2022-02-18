@@ -27,7 +27,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
-import org.polypheny.db.algebra.core.BatchIterator;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.TableModify;
@@ -83,17 +83,10 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
 
     private static EnforcementInformation getControl( AlgNode node, Statement statement ) {
-        TableModify modify;
-        // todo maybe use shuttle?
-        if ( node instanceof TableModify ) {
-            modify = (TableModify) node;
-        } else if ( node instanceof BatchIterator ) {
-            if ( node.getInput( 0 ) instanceof TableModify ) {
-                modify = (TableModify) node.getInput( 0 );
-            } else {
-                throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
-            }
-        } else {
+        ModifyExtractor extractor = new ModifyExtractor();
+        node.accept( extractor );
+        TableModify modify = extractor.getModify();
+        if ( modify == null ) {
             throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
@@ -369,10 +362,21 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         }
     }
 
-    /*public static AlgNode create( List<CatalogTable>, Statement statement ) {
-        EnforcementInformation information = getControl( modify, statement );
-        return new LogicalConstraintEnforcer( modify.getCluster(), modify.getTraitSet(), modify, information.getControl(), information.getErrorClasses(), information.getErrorMessages() );
-    }*/
+
+    public static String getEntityName( TableModify root, CatalogSchema schema ) {
+        String tableName;
+        if ( root.getTable().getQualifiedName().size() == 1 ) { // tableName
+            tableName = root.getTable().getQualifiedName().get( 0 );
+        } else if ( root.getTable().getQualifiedName().size() == 2 ) { // schemaName.tableName
+            if ( !schema.name.equalsIgnoreCase( root.getTable().getQualifiedName().get( 0 ) ) ) {
+                throw new RuntimeException( "Schema name does not match expected schema name: " + root.getTable().getQualifiedName().get( 0 ) );
+            }
+            tableName = root.getTable().getQualifiedName().get( 1 );
+        } else {
+            throw new RuntimeException( "Invalid table name: " + root.getTable().getQualifiedName() );
+        }
+        return tableName;
+    }
 
 
     @Override
@@ -413,17 +417,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         }
 
         try {
-            String tableName;
-            if ( modify.getTable().getQualifiedName().size() == 1 ) { // tableName
-                tableName = modify.getTable().getQualifiedName().get( 0 );
-            } else if ( modify.getTable().getQualifiedName().size() == 2 ) { // schemaName.tableName
-                if ( !schema.name.equalsIgnoreCase( modify.getTable().getQualifiedName().get( 0 ) ) ) {
-                    throw new RuntimeException( "Schema name does not match expected schema name: " + modify.getTable().getQualifiedName().get( 0 ) );
-                }
-                tableName = modify.getTable().getQualifiedName().get( 1 );
-            } else {
-                throw new RuntimeException( "Invalid table name: " + modify.getTable().getQualifiedName() );
-            }
+            String tableName = getEntityName( modify, schema );
             return catalog.getTable( schema.id, tableName );
 
         } catch ( UnknownTableException e ) {
@@ -441,10 +435,33 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         private final List<String> errorMessages;
 
 
+        /**
+         * {@link EnforcementInformation} holds all needed information regarding a constraint.
+         *
+         * @param control the control query, which is either execute during execution for {@code ON_QUERY}
+         * or during the commit for {@code ON_COMMIT}.
+         * @param errorClasses Class used to throw if constraint is violated
+         * @param errorMessages messages, which describes validated constraint in case of validation
+         */
         public EnforcementInformation( AlgNode control, List<Class<? extends Exception>> errorClasses, List<String> errorMessages ) {
             this.control = control;
             this.errorClasses = errorClasses;
             this.errorMessages = errorMessages;
+        }
+
+    }
+
+
+    public static class ModifyExtractor extends AlgShuttleImpl {
+
+        @Getter
+        private LogicalTableModify modify;
+
+
+        @Override
+        public AlgNode visit( LogicalTableModify modify ) {
+            this.modify = modify;
+            return modify;
         }
 
     }

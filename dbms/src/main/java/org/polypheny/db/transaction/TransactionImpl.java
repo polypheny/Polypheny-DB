@@ -51,9 +51,9 @@ import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.piglet.PigProcessorImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.processing.ConstraintEnforcer;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
-import org.polypheny.db.processing.EnumerableAdjuster;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
 import org.polypheny.db.processing.MqlProcessorImpl;
 import org.polypheny.db.processing.Processor;
@@ -172,7 +172,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         if ( !catalogTables.isEmpty() ) {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
-            List<EnforcementInformation> infos = EnumerableAdjuster
+            List<EnforcementInformation> infos = ConstraintEnforcer
                     .getConstraintAlg( catalogTables, statement );
             List<PolyResult> results = infos
                     .stream()

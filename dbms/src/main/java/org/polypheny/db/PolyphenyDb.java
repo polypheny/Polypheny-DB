@@ -63,7 +63,7 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.processing.AuthenticatorImpl;
-import org.polypheny.db.processing.EnumerableAdjuster.ConstraintTracker;
+import org.polypheny.db.processing.ConstraintEnforcer.ConstraintTracker;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;

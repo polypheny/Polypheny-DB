@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.algebra.logical.LogicalValues;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -182,6 +183,12 @@ public class AlgShuttleImpl implements AlgShuttle {
     @Override
     public AlgNode visit( LogicalConditionalExecute lce ) {
         return visitChildren( lce );
+    }
+
+
+    @Override
+    public AlgNode visit( LogicalTableModify modify ) {
+        return visitChildren( modify );
     }
 
 

@@ -62,7 +62,6 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.BatchIterator;
 import org.polypheny.db.algebra.core.ConditionalExecute;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
-import org.polypheny.db.algebra.core.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
@@ -343,31 +342,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().start( "Constraint Enforcement" );
             }
             AlgRoot constraintsRoot = indexUpdateRoot;
-            /*if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                ConstraintEnforcer constraintEnforcer = new EnumerableConstraintEnforcer();
-                constraintsRoot = constraintEnforcer.enforce( constraintsRoot, statement );
-            }*/
+
+            if ( constraintsRoot.kind.belongsTo( Kind.DML ) && (RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) ) {
+                constraintsRoot = ConstraintEnforcer.handleConstraints( constraintsRoot, statement );
+            }
 
             //
             // Index Lookup Rewrite
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Constraint Enforcement" );
                 statement.getProcessingDuration().start( "Index Lookup Rewrite" );
-            }
-
-            //constraintsRoot = EnumerableAdjuster.prepareJoins( constraintsRoot, statement, this );
-
-            if ( constraintsRoot.kind == Kind.UPDATE && EnumerableAdjuster.needsAdjustment( constraintsRoot.alg ) ) {
-                //constraintsRoot = EnumerableAdjuster.adjustModify( constraintsRoot, statement );
-            }
-
-            if ( constraintsRoot.kind == Kind.UPDATE || constraintsRoot.kind == Kind.INSERT ) {
-                //constraintsRoot = EnumerableAdjuster.adjustBatch( constraintsRoot, statement );
-            }
-
-            if ( constraintsRoot.kind.belongsTo( Kind.DML ) && (RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) ) {
-                EnumerableAdjuster.attachOnCommitConstraints( constraintsRoot.alg, statement );
-                constraintsRoot = EnumerableAdjuster.attachOnQueryConstraints( constraintsRoot, statement );
             }
 
             AlgRoot indexLookupRoot = constraintsRoot;
@@ -1001,7 +985,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else if ( logicalRoot.alg instanceof BatchIterator ) {
             AlgNode routedIterator = dmlRouter.handleBatchIterator( logicalRoot.alg, statement, queryInformation );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedIterator, logicalRoot, queryInformation.getQueryClass() ) );
-        } else if ( logicalRoot.alg instanceof ConstraintEnforcer ) {
+        } else if ( logicalRoot.alg instanceof org.polypheny.db.algebra.core.ConstraintEnforcer ) {
             AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalRoot.alg, statement, queryInformation );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryClass() ) );
         } else {
