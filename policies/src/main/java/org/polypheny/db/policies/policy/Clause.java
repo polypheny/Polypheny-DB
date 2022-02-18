@@ -16,8 +16,10 @@
 
 package org.polypheny.db.policies.policy;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
+import org.polypheny.db.policies.policy.Policy.Target;
 
 public abstract class Clause {
 
@@ -46,14 +48,18 @@ public abstract class Clause {
     @Getter
     private final String description;
 
+    @Getter
+    private final List<Target> possibleTargets;
 
-    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category, String description ) {
+
+    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category, List<Target> possibleTargets, String description ) {
         this.id = atomicId.getAndIncrement();
         this.clauseName = clauseName;
         this.isDefault = isDefault;
         this.clauseType = clauseType;
         this.category = category;
         this.description = description;
+        this.possibleTargets = possibleTargets;
 
     }
 
@@ -67,7 +73,8 @@ public abstract class Clause {
 
 
     public enum ClauseName {
-        FULLY_PERSISTENT, ONLY_EMBEDDED
+        FULLY_PERSISTENT, ONLY_EMBEDDED, ONLY_DOCKER, PERSISTENT
+
     }
 
     public enum ClauseType {

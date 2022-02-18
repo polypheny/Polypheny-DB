@@ -103,26 +103,26 @@ public class PolicyManager {
 
 
     public Object getPolicies( String polypheny, Long namespaceId, Long entityId ) throws RuntimeException {
-        List<Policies> policies = new ArrayList<>();
+        List<Policies> targetPolicies = new ArrayList<>();
         // for the whole system
         if ( polypheny != null ) {
             Policy policy = this.policies.get( polyphenyPolicyId );
-            getRelevantClauses( policies, policy );
+            getRelevantClauses( targetPolicies, policy );
         }
         // for a namespace
         else if ( entityId == null ) {
             Policy policy = this.policies.get( namespacePolicies.get( namespaceId ) );
-            getRelevantClauses( policies, policy );
+            getRelevantClauses( targetPolicies, policy );
         }
         // for a entity
         else {
             Policy policy = this.policies.get( entityPolicies.get( entityId ) );
-            getRelevantClauses( policies, policy );
+            getRelevantClauses( targetPolicies, policy );
         }
-        if ( policies.isEmpty() ) {
+        if ( targetPolicies.isEmpty() ) {
             throw new PolicyRuntimeException( "There are no policies for this target." );
         } else {
-            return policies;
+            return targetPolicies;
         }
     }
 
@@ -137,14 +137,42 @@ public class PolicyManager {
 
 
 
-    public void getPossiblePolicies( String polypheny, Long schemaId, Long tableId ) {
-/*
-        AdapterManager.getInstance().getAdapters().forEach( (k, v) ->
-                v.getDeployMode());
-                }
-        );
+    public Object getPossiblePolicies( String polypheny, Long namespaceId, Long entityId ) {
 
- */
+        Map<ClauseName, Clause> registeredClauses = ClausesRegister.getRegistry();
+
+
+        List<Policies> targetPolicies = new ArrayList<>();
+        // for the whole system
+        if ( polypheny != null ) {
+            for ( Clause clause : registeredClauses.values() ) {
+                if(clause.getPossibleTargets().contains( Target.POLYPHENY) && !this.policies.get( polyphenyPolicyId ).getClauses().containsValue( clause )){
+                    targetPolicies.add( new Policies( clause.getClauseName().name(), Target.POLYPHENY, clause, clause.getClauseType(), clause.getDescription()) );
+                }
+            }
+        }
+        // for a namespace
+        else if ( entityId == null ) {
+            for ( Clause clause : registeredClauses.values() ) {
+                if(clause.getPossibleTargets().contains( Target.NAMESPACE) && !this.policies.get( namespacePolicies.get( namespaceId ) ).getClauses().containsValue( clause )){
+                    targetPolicies.add( new Policies( clause.getClauseName().name(), Target.NAMESPACE, clause, clause.getClauseType(), clause.getDescription()) );
+                }
+            }
+        }
+        // for an entity
+        else {
+            for ( Clause clause : registeredClauses.values()) {
+                if(clause.getPossibleTargets().contains( Target.ENTITY)  && !this.policies.get( entityPolicies.get( entityId ) ).getClauses().containsValue( clause )){
+                    targetPolicies.add( new Policies( clause.getClauseName().name(), Target.ENTITY, clause, clause.getClauseType(), clause.getDescription()) );
+                }
+            }
+        }
+        if ( targetPolicies.isEmpty() ) {
+            throw new PolicyRuntimeException( "There are no clauses for this target." );
+        } else {
+            return targetPolicies;
+        }
+
     }
 
     public void updatePolicies( PolicyChangedRequest changeRequest ) {

@@ -17,7 +17,9 @@
 package org.polypheny.db.policies.policy;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
+import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 import org.polypheny.db.util.Pair;
 
@@ -28,8 +30,8 @@ public class NumberClause extends Clause {
     private final HashMap<Category, Pair<Integer, Integer>> categoryRange;
 
 
-    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<Category, Pair<Integer, Integer>> categoryRange, Category category, String description ) {
-        super( clauseName, isDefault, ClauseType.NUMBER, category, description );
+    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<Category, Pair<Integer, Integer>> categoryRange, Category category, List<Target> possibleTargets, String description ) {
+        super( clauseName, isDefault, ClauseType.NUMBER, category, possibleTargets, description );
         this.value = defaultValue;
         this.categoryRange = categoryRange;
 

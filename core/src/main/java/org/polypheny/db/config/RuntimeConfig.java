@@ -188,7 +188,14 @@ public enum RuntimeConfig {
 
     POLICY(
             "statistics/policy",
-            "Enable or disable policies on start up.",
+            "Enable or disable policies.",
+            true,
+            ConfigType.BOOLEAN,
+            "policySettingsGroup" ),
+
+    SELF_ADAPTIVE(
+            "statistics/self-adaptive",
+            "Enable or disable the self-adaptive system.",
             true,
             ConfigType.BOOLEAN,
             "policySettingsGroup" ),

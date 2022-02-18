@@ -16,11 +16,14 @@
 
 package org.polypheny.db.policies.policy;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.policies.policy.Clause.Category;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
+import org.polypheny.db.policies.policy.Policy.Target;
 
 public class ClausesRegister {
 
@@ -44,7 +47,18 @@ public class ClausesRegister {
                         false, 
                         true,
                         Category.PERSISTENCY,
-                        "If persistency is switched on, Polypheny only adds tables and partitions only to persistent stores."  ) 
+                        Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY),
+                        "If fully persistent is switched on, Polypheny only adds tables and partitions to persistent stores."  )
+        );
+
+        register( ClauseName.PERSISTENT,
+                new BooleanClause(
+                        ClauseName.PERSISTENT,
+                        false,
+                        false,
+                        Category.PERSISTENCY,
+                        Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY),
+                        "If persistent is switched on, a table must be stored on at least one persistent store."  )
         );
 
         register( ClauseName.ONLY_EMBEDDED,
@@ -53,7 +67,18 @@ public class ClausesRegister {
                         false,
                         true,
                         Category.AVAILABILITY,
+                        Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY),
                         "If only embedded is switched on, Polypheny only adds tables and partitions to embedded store."  )
+        );
+
+        register( ClauseName.ONLY_DOCKER,
+                new BooleanClause(
+                        ClauseName.ONLY_DOCKER,
+                        false,
+                        false,
+                        Category.AVAILABILITY,
+                        Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY),
+                        "If only docker is switched on, Polypheny only adds tables and partitions to docker store."  )
         );
 
     }

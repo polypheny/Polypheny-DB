@@ -72,6 +72,7 @@ public class PolicyCrud {
 
     public void getAllPossiblePolicies( final Context ctx ) {
 
+
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Long schemaId = null;
         Long tableId = null;
@@ -86,7 +87,7 @@ public class PolicyCrud {
                 tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
             }
 
-            policyManager.getPossiblePolicies( polypheny, schemaId, tableId );
+            ctx.json(policyManager.getPossiblePolicies( polypheny, schemaId, tableId ));
 
         } catch ( UnknownTableException | UnknownSchemaException e ) {
             throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "

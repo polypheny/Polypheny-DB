@@ -16,8 +16,10 @@
 
 package org.polypheny.db.policies.policy;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.policies.policy.Policy.Target;
 
 public class BooleanClause extends Clause {
 
@@ -26,8 +28,8 @@ public class BooleanClause extends Clause {
     private boolean value;
 
 
-    public BooleanClause( ClauseName clauseName, boolean defaultValue, boolean isDefault, Category category, String description ) {
-        super( clauseName, isDefault,  ClauseType.BOOLEAN, category, description );
+    public BooleanClause( ClauseName clauseName, boolean defaultValue, boolean isDefault, Category category, List<Target> possibleTargets, String description ) {
+        super( clauseName, isDefault,  ClauseType.BOOLEAN, category, possibleTargets, description );
         this.value = defaultValue;
     }
 
