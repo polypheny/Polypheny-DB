@@ -135,7 +135,7 @@ public class HorizontalPartitioningTest {
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttest\" ADD PLACEMENT (tvarchar) ON STORE \"store3\"" );
 
-                    //Modify partitons on new placement
+                    //Modify partitions on new placement
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttest\" MODIFY PARTITIONS (0,1) ON STORE \"store3\" " );
 
                     //AsserTFalse
@@ -148,7 +148,7 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
-                    //Create another table with initial partitoning
+                    //Create another table with initial partitioning
                     statement.executeUpdate( "CREATE TABLE horizontalparttestextension( "
                             + "tprimary INTEGER NOT NULL, "
                             + "tinteger INTEGER NULL, "
@@ -473,9 +473,9 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
-                    // TODO: check partition distribution violation
+                    // TODO: Check partition distribution violation
 
-                    // TODO: Chek unbound partitions
+                    // TODO: Check unbound partitions
                 } finally {
                     statement.executeUpdate( "DROP TABLE listpartitioning" );
                     statement.executeUpdate( "DROP TABLE listpartitioning2" );
@@ -683,12 +683,10 @@ public class HorizontalPartitioningTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                // Sets the background processing of Workload Monitoring an Temperature monitoring to one second to get immediate results
+                // Sets the background processing of Workload Monitoring a Temperature monitoring to one second to get immediate results
                 ConfigManager cm = ConfigManager.getInstance();
                 Config c1 = cm.getConfig( "runtime/partitionFrequencyProcessingInterval" );
-                Config c2 = cm.getConfig( "runtime/queueProcessingInterval" );
                 c1.setEnum( TaskSchedulingType.EVERY_FIVE_SECONDS );
-                c2.setEnum( TaskSchedulingType.EVERY_SECOND );
 
                 statement.executeUpdate( "CREATE TABLE temperaturetest( "
                         + "tprimary INTEGER NOT NULL, "
@@ -701,7 +699,6 @@ public class HorizontalPartitioningTest {
                         + " USING FREQUENCY write  INTERVAL 10 minutes WITH  20 HASH PARTITIONS" );
 
                 try {
-
                     CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "temperaturetest" ) ).get( 0 );
 
                     // Check if partition properties are correctly set and parsed
@@ -756,10 +753,6 @@ public class HorizontalPartitioningTest {
                     preparedInsert.setString( 3, partitionValue );
                     preparedInsert.addBatch();
 
-                   /* preparedInsert.setInt( 1, 8 );
-                    preparedInsert.setString( 2, partitionValue );
-                    preparedInsert.addBatch();
-*/
                     preparedInsert.executeBatch();
                     // This should execute two DML INSERTS on the target PartitionId and therefore redistribute the data
 
@@ -775,7 +768,6 @@ public class HorizontalPartitioningTest {
                     Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.getInstance().getPartition( targetId ) ) );
 
                     //Todo @Hennlo check number of access
-
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS temperaturetest" );
@@ -828,7 +820,6 @@ public class HorizontalPartitioningTest {
                 }
             }
         }
-
     }
 
 
@@ -938,7 +929,229 @@ public class HorizontalPartitioningTest {
                 }
             }
         }
+    }
 
+
+    @Test
+    public void hybridPartitioningTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                // Add Table
+                statement.executeUpdate( "CREATE TABLE hybridpartitioningtest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+
+                try {
+                    // Add data
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO hybridpartitioningtest(tprimary,tvarchar,tinteger) VALUES (?, ?, ?)" );
+
+                    preparedInsert.setInt( 1, 1 );
+                    preparedInsert.setString( 2, "Foo" );
+                    preparedInsert.setInt( 3, 4 );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 2 );
+                    preparedInsert.setString( 2, "Bar" );
+                    preparedInsert.setInt( 3, 55 );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 3 );
+                    preparedInsert.setString( 2, "Foo" );
+                    preparedInsert.setInt( 3, 67 );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 4 );
+                    preparedInsert.setString( 2, "FooBar" );
+                    preparedInsert.setInt( 3, 89 );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.executeBatch();
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Foo", 4 },
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 3, "Foo", 67 },
+                                    new Object[]{ 4, "FooBar", 89 } ) );
+
+                    // Add second Adapter
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+
+                    // Add second placement for table on that new adapter
+                    statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Foo", 4 },
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 3, "Foo", 67 },
+                                    new Object[]{ 4, "FooBar", 89 } ) );
+
+                    // Partition Data with HASH 4
+                    statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" PARTITION BY HASH (tvarchar) "
+                            + "WITH (\"one\", \"two\", \"three\", \"four\")" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Foo", 4 },
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 3, "Foo", 67 },
+                                    new Object[]{ 4, "FooBar", 89 } ) );
+
+                    // Place Partition 1 & 2 on first adapter
+                    statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" MODIFY PARTITIONS (\"one\", \"two\" ) ON STORE hsqldb" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Foo", 4 },
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 3, "Foo", 67 },
+                                    new Object[]{ 4, "FooBar", 89 } ) );
+
+                    // Place Partition 3 & 4 on second adapter
+                    statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" MODIFY PARTITIONS (\"three\", \"four\" ) ON STORE anotherstore" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Foo", 4 },
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 3, "Foo", 67 },
+                                    new Object[]{ 4, "FooBar", 89 } ) );
+
+                    // Add more data
+                    preparedInsert = connection.prepareStatement( "INSERT INTO hybridpartitioningtest(tprimary,tvarchar,tinteger) VALUES (?, ?, ?)" );
+                    preparedInsert.setInt( 1, 407 );
+                    preparedInsert.setString( 2, "BarFoo" );
+                    preparedInsert.setInt( 3, 67 );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 12 );
+                    preparedInsert.setString( 2, "FooBar" );
+                    preparedInsert.setInt( 3, 43 );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.executeBatch();
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Foo", 4 },
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 3, "Foo", 67 },
+                                    new Object[]{ 4, "FooBar", 89 },
+                                    new Object[]{ 12, "FooBar", 43 },
+                                    new Object[]{ 407, "BarFoo", 67 } ) );
+
+                    // Remove data
+                    statement.executeUpdate( "DELETE FROM \"hybridpartitioningtest\" where tvarchar = 'Foo' " );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 4, "FooBar", 89 },
+                                    new Object[]{ 12, "FooBar", 43 },
+                                    new Object[]{ 407, "BarFoo", 67 } ) );
+
+                    // Place Partition all partitions on second adapter
+                    statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" MODIFY PARTITIONS (\"one\", \"two\", \"three\", \"four\" ) ON STORE anotherstore" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 4, "FooBar", 89 },
+                                    new Object[]{ 12, "FooBar", 43 },
+                                    new Object[]{ 407, "BarFoo", 67 } ) );
+
+                    // Remove initial placement from adapter
+                    statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 4, "FooBar", 89 },
+                                    new Object[]{ 12, "FooBar", 43 },
+                                    new Object[]{ 407, "BarFoo", 67 } ) );
+
+                    // Merge table
+                    statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" MERGE PARTITIONS" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 4, "FooBar", 89 },
+                                    new Object[]{ 12, "FooBar", 43 },
+                                    new Object[]{ 407, "BarFoo", 67 } ) );
+
+                    // Add Data
+                    preparedInsert = connection.prepareStatement( "INSERT INTO hybridpartitioningtest(tprimary,tvarchar,tinteger) VALUES (?, ?, ?)" );
+                    preparedInsert.setInt( 1, 408 );
+                    preparedInsert.setString( 2, "New" );
+                    preparedInsert.setInt( 3, 22 );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.setInt( 1, 409 );
+                    preparedInsert.setString( 2, "Work" );
+                    preparedInsert.setInt( 3, 23 );
+                    preparedInsert.addBatch();
+
+                    preparedInsert.executeBatch();
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 4, "FooBar", 89 },
+                                    new Object[]{ 12, "FooBar", 43 },
+                                    new Object[]{ 407, "BarFoo", 67 },
+                                    new Object[]{ 408, "New", 22 },
+                                    new Object[]{ 409, "Work", 23 } ) );
+
+                    // Repartition with different number of partitions
+                    statement.executeUpdate( "ALTER TABLE \"hybridpartitioningtest\" PARTITION BY HASH (tvarchar) "
+                            + "WITH (\"one\", \"two\", \"three\", \"four\", \"five\", \"six\", \"seven\", \"eight\", \"nine\")" );
+
+                    // Assert and Check if Table has the desired entries
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM hybridpartitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 2, "Bar", 55 },
+                                    new Object[]{ 4, "FooBar", 89 },
+                                    new Object[]{ 12, "FooBar", 43 },
+                                    new Object[]{ 407, "BarFoo", 67 },
+                                    new Object[]{ 408, "New", 22 },
+                                    new Object[]{ 409, "Work", 23 } ) );
+
+                } finally {
+                    statement.executeUpdate( "DROP TABLE IF EXISTS hybridpartitioningtest" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP anotherstore" );
+                }
+            }
+        }
     }
 
 
@@ -1015,7 +1228,7 @@ public class HorizontalPartitioningTest {
                         } else if ( dp.adapterId == initialAdapterId ) {
                             Assert.assertEquals( 3, dp.columnPlacementsOnAdapter.size() );
                             Assert.assertEquals( 4, dp.getAllPartitionIds().size() );
-                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId , table.id ).size() );
+                            Assert.assertEquals( 3, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( initialAdapterId, table.id ).size() );
                             Assert.assertEquals( 4, Catalog.getInstance().getPartitionsOnDataPlacement( initialAdapterId, table.id ).size() );
                         }
                     }

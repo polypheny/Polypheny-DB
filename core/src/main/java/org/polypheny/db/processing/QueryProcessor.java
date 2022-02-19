@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.polypheny.db.PolyResult;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.transaction.Statement;
 
 
 public interface QueryProcessor {
@@ -59,5 +60,16 @@ public interface QueryProcessor {
      * Resets caches Implementation, QueryPlan, RoutingPlan and Router caches.
      */
     void resetCaches();
+
+    /**
+     * To acquire a global shared lock for a statement.
+     * This method is used before the statistics are updated to make sure nothing changes during the updating process.
+     */
+    void lock( Statement statement );
+
+    /**
+     * Unlocks statement
+     */
+    void unlock( Statement statement );
 
 }

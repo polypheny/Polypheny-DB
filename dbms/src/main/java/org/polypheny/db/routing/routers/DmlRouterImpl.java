@@ -355,7 +355,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             // Changes the value of partition column of complete table to only reside on one partition
                             else if ( identifiedPartitionForSetValue != -1 ) {
 
-                                // Data Migrate copy of all other partitions beside the identifed on towards the identified one
+                                // Data Migrate copy of all other partitions beside the identified on towards the identified one
                                 // Then inject a DELETE statement for all those partitions
 
                                 // Do the update only on the identified partition

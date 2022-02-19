@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
-import java.sql.Timestamp;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.DataPlacementRole;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -41,6 +40,10 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     public final String physicalTableName;
 
 
+    // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
+    // If false, physical partition placements are considered to be refreshable and can therefore become outdated and need to be lazily updated.
+    // This attribute is derived from an effective data placement (table entity on a store)
+
     // Related to multi-tier replication. If Placement is considered a primary node it needs to receive every update eagerly.
     // If false, nodes are considered refreshable and can be lazily replicated
     // This attribute is derived from an effective data placement (table entity on a store)
@@ -48,9 +51,8 @@ public class CatalogPartitionPlacement implements CatalogEntity {
     // Is present at the DataPlacement && the PartitionPlacement
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
-    // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.
+    // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
     public final DataPlacementRole role;
-    public Timestamp updateTimestamp;
 
 
     public CatalogPartitionPlacement(
@@ -60,7 +62,8 @@ public class CatalogPartitionPlacement implements CatalogEntity {
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
-            final long partitionId, DataPlacementRole role ) {
+            final long partitionId,
+            DataPlacementRole role ) {
         this.tableId = tableId;
         this.adapterId = adapterId;
         this.adapterUniqueName = adapterUniqueName;

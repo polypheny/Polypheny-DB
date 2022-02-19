@@ -103,7 +103,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
                                 field.getName() ) );
             }
         }
-        return new PolyphenyDbSignature<T>(
+        return new PolyphenyDbSignature<>(
                 "",
                 parameters,
                 new HashMap<>(),

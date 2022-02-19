@@ -18,6 +18,7 @@ package org.polypheny.db.avatica;
 
 
 import java.util.Objects;
+import lombok.Getter;
 import org.apache.calcite.avatica.ConnectionPropertiesImpl;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.ConnectionHandle;
@@ -40,6 +41,7 @@ public class PolyphenyDbConnectionHandle {
 
     private final UserId userId;
 
+    @Getter
     private final CatalogUser user;
     private final CatalogDatabase database;
     private final CatalogSchema schema;
@@ -108,7 +110,6 @@ public class PolyphenyDbConnectionHandle {
     }
 
 
-
     public void setCurrentOpenResultSet( PolyphenyDbResultSet resultSet ) {
         this.currentOpenResultSet = resultSet;
     }
@@ -146,4 +147,5 @@ public class PolyphenyDbConnectionHandle {
     public int hashCode() {
         return Objects.hash( connectionId );
     }
+
 }

@@ -37,7 +37,7 @@ public class StatisticTable<T extends Comparable<T>> {
     private String table;
 
     @Getter
-    private final Long tableId;
+    private final long tableId;
 
     @Getter
     @Setter
@@ -87,11 +87,17 @@ public class StatisticTable<T extends Comparable<T>> {
             this.owner = catalogTable.ownerName;
             this.tableType = catalogTable.tableType;
         }
+        calls = new TableCalls( tableId, 0, 0, 0, 0 );
 
         this.numberOfRows = 0;
         alphabeticColumn = new ArrayList<>();
         numericalColumn = new ArrayList<>();
         temporalColumn = new ArrayList<>();
+    }
+
+
+    public void updateTableName( String tableName ) {
+        this.table = tableName;
     }
 
 }

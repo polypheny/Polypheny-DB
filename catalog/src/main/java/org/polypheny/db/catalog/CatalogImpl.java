@@ -2017,7 +2017,7 @@ public class CatalogImpl extends Catalog {
             if ( oldTable.partitionProperty.isPartitioned ) {
                 if ( !isTableFlaggedForDeletion( oldTable.id ) ) {
                     if ( !columnOnly ) {
-                        if ( !validateDataPlacementsConstraints( adapterId, oldTable.id, Arrays.asList( columnId ), new ArrayList<>() ) ) {
+                        if ( !validateDataPlacementsConstraints( oldTable.id, adapterId, Arrays.asList( columnId ), new ArrayList<>() ) ) {
                             throw new RuntimeException( "Partition Distribution failed" );
                         }
                     }
@@ -2141,7 +2141,7 @@ public class CatalogImpl extends Catalog {
                         adapterId,
                         ImmutableList.copyOf(
                                 getDataPlacement( adapterId, tableId ).getAllPartitionIds() )
-                            )
+                )
         );
 
         return ImmutableMap.copyOf( partitionPlacementsByAdapter );
@@ -2155,7 +2155,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public Long getPartitionGroupByPartition( long partitionId ) {
+    public long getPartitionGroupByPartition( long partitionId ) {
         return getPartition( partitionId ).partitionGroupId;
     }
 
@@ -4513,7 +4513,87 @@ public class CatalogImpl extends Catalog {
 
                 listeners.firePropertyChange( "partitionPlacement", null, partitionPlacements );
             }
+        }
+    }
 
+
+    /**
+     * Adds a new DataPlacement for a given table on a specific store.
+     * If it already exists it simply returns the existing placement.
+     *
+     * @param adapterId adapter where placement is located
+     * @param tableId table to retrieve the placement from
+     * @return DataPlacement of a table placed on a specific store
+     */
+    @Override
+    public CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId ) {
+        CatalogDataPlacement dataPlacement;
+        if ( (dataPlacement = getDataPlacement( adapterId, tableId )) == null ) {
+            if ( log.isDebugEnabled() ) {
+                log.debug( "No DataPlacement exists on adapter '{}' for entity '{}'. Creating a new one.", getAdapter( adapterId ), getTable( tableId ) );
+            }
+            addDataPlacement( adapterId, tableId );
+            dataPlacement = getDataPlacement( adapterId, tableId );
+        }
+
+        return dataPlacement;
+    }
+
+
+    /**
+     * Updates the list of data placements on a table
+     *
+     * @param tableId table to be updated
+     * @param newDataPlacements list of new DataPlacements that shall replace the old ones
+     */
+    @Override
+    public void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements ) {
+        CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
+
+        CatalogTable newTable;
+
+        if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
+            newTable = new CatalogMaterializedView(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    ((CatalogMaterializedView) old).getQuery(),
+                    old.primaryKey,
+                    ImmutableList.copyOf( newDataPlacements ),
+                    old.modifiable,
+                    old.partitionProperty,
+                    ((CatalogMaterializedView) old).getAlgCollation(),
+                    old.connectedViews,
+                    ((CatalogMaterializedView) old).getUnderlyingTables(),
+                    ((CatalogMaterializedView) old).getLanguage(),
+                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
+                    ((CatalogMaterializedView) old).isOrdered()
+            );
+        } else {
+            newTable = new CatalogTable(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    old.primaryKey,
+                    ImmutableList.copyOf( newDataPlacements ),
+                    old.modifiable,
+                    old.partitionProperty,
+                    old.connectedViews );
+        }
+
+        synchronized ( this ) {
+            tables.replace( tableId, newTable );
+            tableNames.replace( new Object[]{ newTable.databaseId, newTable.schemaId, newTable.name }, newTable );
         }
     }
 
@@ -4546,29 +4626,6 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "dataPlacement", null, dataPlacement );
         }
-    }
-
-
-    /**
-     * Adds a new DataPlacement for a given table on a specific store.
-     * If it already exists it simply returns the existing placement.
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @return DataPlacement of a table placed on a specific store
-     */
-    @Override
-    public CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId ) {
-
-        CatalogDataPlacement dataPlacement;
-
-        if ( (dataPlacement = getDataPlacement( adapterId, tableId )) == null ) {
-            log.debug( "No DataPlacement exists on adapter '{}' for entity '{}'. Creating a new one.", getAdapter( adapterId ), getTable( tableId ) );
-            addDataPlacement( adapterId, tableId );
-            dataPlacement = getDataPlacement( adapterId, tableId );
-        }
-
-        return dataPlacement;
     }
 
 
@@ -4670,63 +4727,6 @@ public class CatalogImpl extends Catalog {
         if ( updatedPlacements.contains( adapterId ) ) {
             updatedPlacements.remove( adapterId );
             updateDataPlacementsOnTable( tableId, updatedPlacements );
-        }
-    }
-
-
-    /**
-     * Updates the list of data placements on a table
-     *
-     * @param tableId table to be updated
-     * @param newDataPlacements list of new DataPlacements that shall replace the old ones
-     */
-    public void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements ) {
-        CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
-
-        CatalogTable newTable;
-
-        if ( old.tableType == TableType.MATERIALIZED_VIEW ) {
-            newTable = new CatalogMaterializedView(
-                    old.id,
-                    old.name,
-                    old.columnIds,
-                    old.schemaId,
-                    old.databaseId,
-                    old.ownerId,
-                    old.ownerName,
-                    old.tableType,
-                    ((CatalogMaterializedView) old).getQuery(),
-                    old.primaryKey,
-                    ImmutableList.copyOf( newDataPlacements ),
-                    old.modifiable,
-                    old.partitionProperty,
-                    ((CatalogMaterializedView) old).getAlgCollation(),
-                    old.connectedViews,
-                    ((CatalogMaterializedView) old).getUnderlyingTables(),
-                    ((CatalogMaterializedView) old).getLanguage(),
-                    ((CatalogMaterializedView) old).getMaterializedCriteria(),
-                    ((CatalogMaterializedView) old).isOrdered()
-            );
-        } else {
-            newTable = new CatalogTable(
-                    old.id,
-                    old.name,
-                    old.columnIds,
-                    old.schemaId,
-                    old.databaseId,
-                    old.ownerId,
-                    old.ownerName,
-                    old.tableType,
-                    old.primaryKey,
-                    ImmutableList.copyOf( newDataPlacements ),
-                    old.modifiable,
-                    old.partitionProperty,
-                    old.connectedViews );
-        }
-
-        synchronized ( this ) {
-            tables.replace( tableId, newTable );
-            tableNames.replace( new Object[]{ newTable.databaseId, newTable.schemaId, newTable.name }, newTable );
         }
     }
 

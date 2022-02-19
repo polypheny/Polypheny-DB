@@ -180,7 +180,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                     statement
             );
         } catch ( LastPlacementException e ) {
-            e.printStackTrace();
+            throw new RuntimeException( "Failed to execute requested partition modification. This change would remove one partition entirely from table '" + catalogTable.name + "'", e );
         }
     }
 

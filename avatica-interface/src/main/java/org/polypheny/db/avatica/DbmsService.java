@@ -271,4 +271,5 @@ public class DbmsService implements Service {
         this.rpcMetaData = metadata;
         delegate.setRpcMetadata( metadata );
     }
+
 }

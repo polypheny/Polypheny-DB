@@ -1521,4 +1521,24 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         return (CachedProposedRoutingPlan) routingPlan;
     }
 
+
+    @Override
+    public void unlock( Statement statement ) {
+        LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
+    }
+
+
+    /**
+     * To acquire a global shared lock for a statement.
+     * This method is used before the statistics are updated to make sure nothing changes during the updating process.
+     */
+    @Override
+    public void lock( Statement statement ) {
+        try {
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( "DeadLock while locking to reevaluate statistics", e );
+        }
+    }
+
 }

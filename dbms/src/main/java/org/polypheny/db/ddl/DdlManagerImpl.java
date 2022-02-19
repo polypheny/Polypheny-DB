@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
@@ -379,6 +380,9 @@ public class DdlManagerImpl extends DdlManager {
         }
         CatalogSchema catalogSchema = catalog.getSchema( databaseId, oldName );
         catalog.renameSchema( catalogSchema.id, newName );
+
+        // Update Name in statistics
+        StatisticsManager.getInstance().updateSchemaName( catalogSchema, newName );
     }
 
 
@@ -762,12 +766,6 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-
-        // TODO @HENNLO change siganture of this method to receive the placementrole.
-        // addPartitionPlacements based on this received placement role
-        // Remove this hardcoded configuration
-        DataPlacementRole desiredPlacementRole = DataPlacementRole.UPTODATE;
-
         // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
         for ( long partitionId : partitionIds ) {
             catalog.addPartitionPlacement(
@@ -777,7 +775,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    desiredPlacementRole);
+                    DataPlacementRole.UPTODATE );
         }
 
         // Make sure that the stores have created the schema
@@ -905,6 +903,9 @@ public class DdlManagerImpl extends DdlManager {
                 catalog.setColumnPosition( columns.get( i ).id, i );
             }
         }
+
+        // Monitor dropColumn for statistics
+        prepareMonitoring( statement, Kind.DROP_COLUMN, catalogTable, column );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -1221,6 +1222,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new LastPlacementException();
         }
 
+        boolean adjustPartitions = true;
         // Remove columns physically
         for ( long columnId : columnsToRemove ) {
             // Drop Column on store
@@ -1276,10 +1278,10 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // All internal partitions placed on this store
-        List<Long> partitionIds = new ArrayList<>();
+        List<Long> intendedPartitionIds = new ArrayList<>();
 
         // Gather all partitions relevant to add depending on the specified partitionGroup
-        tempPartitionGroupList.forEach( pg -> catalog.getPartitions( pg ).forEach( p -> partitionIds.add( p.id ) ) );
+        tempPartitionGroupList.forEach( pg -> catalog.getPartitions( pg ).forEach( p -> intendedPartitionIds.add( p.id ) ) );
 
         // Which columns to add
         List<CatalogColumn> addedColumns = new LinkedList<>();
@@ -1308,33 +1310,46 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        Set<Long> newColumnIdsOnDataPlacement = new HashSet<>();
-        newColumnIdsOnDataPlacement.addAll( columnIds );
-        newColumnIdsOnDataPlacement.addAll( catalog.getPrimaryKey( catalogTable.primaryKey ).columnIds );
+        CatalogDataPlacement dataPlacement = catalog.getDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
+        List<Long> removedPartitionIdsFromDataPlacement = new ArrayList<>();
+        // Removed Partition Ids
+        for ( long partitionId : dataPlacement.getAllPartitionIds() ) {
+            if ( !intendedPartitionIds.contains( partitionId ) ) {
+                removedPartitionIdsFromDataPlacement.add( partitionId );
+            }
+        }
 
+        List<Long> newPartitionIdsOnDataPlacement = new ArrayList<>();
+        // Added Partition Ids
+        for ( long partitionId : intendedPartitionIds ) {
+            if ( !dataPlacement.getAllPartitionIds().contains( partitionId ) ) {
+                newPartitionIdsOnDataPlacement.add( partitionId );
+            }
+        }
 
-        List<Long> newPartitionIdsOnDataPlacement = partitionIds.stream().collect( Collectors.toList());
-        // Get all partitionIds that are currently on that placement and remove them to get the newly added
-        newPartitionIdsOnDataPlacement.removeAll( catalog.getDataPlacement( storeInstance.getAdapterId(),catalogTable.id ).getAllPartitionIds() );
+        if ( removedPartitionIdsFromDataPlacement.size() > 0 ) {
+            storeInstance.dropTable( statement.getPrepareContext(), catalogTable, removedPartitionIdsFromDataPlacement );
+        }
 
+        if ( newPartitionIdsOnDataPlacement.size() > 0 ) {
 
-        newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
-                storeInstance.getAdapterId(),
-                catalogTable.id,
-                partitionId,
-                PlacementType.MANUAL,
-                null,
-                null,
-                DataPlacementRole.UPTODATE )
-        );
+            newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.addPartitionPlacement(
+                    storeInstance.getAdapterId(),
+                    catalogTable.id,
+                    partitionId,
+                    PlacementType.MANUAL,
+                    null,
+                    null,
+                    DataPlacementRole.UPTODATE )
+            );
 
-        storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
-
+            storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitionIdsOnDataPlacement );
+        }
 
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( addedColumns.size() > 0 ) {
-            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, partitionIds );
+            dataMigrator.copyData( statement.getTransaction(), catalog.getAdapter( storeInstance.getAdapterId() ), addedColumns, intendedPartitionIds );
         }
 
         // Reset query plan cache, implementation cache & routing cache
@@ -1368,7 +1383,6 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-
         // Copy the data to the newly added column placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         if ( newPartitions.size() > 0 ) {
@@ -1381,7 +1395,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE);
+                        DataPlacementRole.UPTODATE );
             }
 
             storeInstance.createTable( statement.getPrepareContext(), catalogTable, newPartitions );
@@ -1521,6 +1535,9 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.renameTable( catalogTable.id, newTableName );
 
+        // Update Name in statistics
+        StatisticsManager.getInstance().updateTableName( catalogTable, newTableName );
+
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -1537,6 +1554,9 @@ public class DdlManagerImpl extends DdlManager {
         checkViewDependencies( catalogTable );
 
         catalog.renameColumn( catalogColumn.id, newColumnName );
+
+        // Update Name in statistics
+        StatisticsManager.getInstance().updateColumnName( catalogColumn, newColumnName );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -1648,7 +1668,7 @@ public class DdlManagerImpl extends DdlManager {
                 ordered
         );
 
-        // Creates a list with all columns, tableId is needed to creat the primary key
+        // Creates a list with all columns, tableId is needed to create the primary key
         List<ColumnInformation> columns = getColumnInformation( projectedColumns, fieldList, true, tableId );
         Map<Integer, List<CatalogColumn>> addedColumns = new HashMap<>();
 
@@ -1709,7 +1729,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE);
+                    DataPlacementRole.UPTODATE );
 
             store.createTable( statement.getPrepareContext(), catalogMaterializedView, catalogMaterializedView.partitionProperty.partitionIds );
         }
@@ -1896,7 +1916,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE);
+                        DataPlacementRole.UPTODATE );
 
                 store.createTable( statement.getPrepareContext(), catalogTable, catalogTable.partitionProperty.partitionIds );
             }
@@ -2176,7 +2196,7 @@ public class DdlManagerImpl extends DdlManager {
                         PlacementType.AUTOMATIC,
                         null,
                         null,
-                        DataPlacementRole.UPTODATE);
+                        DataPlacementRole.UPTODATE );
             }
 
             // First create new tables
@@ -2258,7 +2278,7 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.AUTOMATIC,
                     null,
                     null,
-                    DataPlacementRole.UPTODATE);
+                    DataPlacementRole.UPTODATE );
 
             // First create new tables
             store.createTable( statement.getPrepareContext(), mergedTable, mergedTable.partitionProperty.partitionIds );
@@ -2405,9 +2425,6 @@ public class DdlManagerImpl extends DdlManager {
         // Delete the view
         catalog.deleteTable( catalogView.id );
 
-        // Monitor dropTables for statistics
-        prepareMonitoring( statement, Kind.DROP_MATERIALIZED_VIEW, catalogView );
-
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -2429,9 +2446,6 @@ public class DdlManagerImpl extends DdlManager {
         catalog.deleteViewDependencies( (CatalogView) materializedView );
 
         dropTable( materializedView, statement );
-
-        // Monitor dropTables for statistics
-        prepareMonitoring( statement, Kind.DROP_VIEW, materializedView );
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -2566,13 +2580,20 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void prepareMonitoring( Statement statement, Kind kind, CatalogTable catalogTable ) {
+        prepareMonitoring( statement, kind, catalogTable, null );
+    }
+
+
+    private void prepareMonitoring( Statement statement, Kind kind, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         // Initialize Monitoring
         if ( statement.getMonitoringEvent() == null ) {
             StatementEvent event = new DdlEvent();
-
             event.setMonitoringType( kind.name() );
             event.setTableId( catalogTable.id );
             event.setSchemaId( catalogTable.schemaId );
+            if ( kind == Kind.DROP_COLUMN ) {
+                event.setColumnId( catalogColumn.id );
+            }
             statement.setMonitoringEvent( event );
         }
     }

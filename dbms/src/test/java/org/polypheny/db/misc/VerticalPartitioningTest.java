@@ -16,7 +16,6 @@
 
 package org.polypheny.db.misc;
 
-
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -36,6 +35,7 @@ import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.excluded.CassandraExcluded;
+
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
@@ -144,7 +144,6 @@ public class VerticalPartitioningTest {
                                     new Object[]{ 1, 33, "foo" },
                                     new Object[]{ 2, 22, "bar" },
                                     new Object[]{ 3, 69, "foobar" } ) );
-
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE partitioningtest" );
@@ -170,8 +169,7 @@ public class VerticalPartitioningTest {
                 try {
                     CatalogTable table = Catalog.getInstance().getTables( null, null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
 
-                    // Check if initially as many DataPlacements are created as requested
-                    // One for each store
+                    // Check if initially as many DataPlacements are created as requested (one for each store)
                     Assert.assertEquals( 1, table.dataPlacements.size() );
 
                     CatalogDataPlacement dataPlacement = Catalog.getInstance().getDataPlacement( table.dataPlacements.get( 0 ), table.id );
@@ -289,8 +287,6 @@ public class VerticalPartitioningTest {
 
                     //Check also if ColumnPlacements have been correctly removed
                     Assert.assertEquals( 0, Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( adapterId, table.id ).size() );
-
-
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS verticalDataPlacementTest" );
@@ -346,7 +342,6 @@ public class VerticalPartitioningTest {
                         failed = true;
                     }
                     Assert.assertTrue( failed );
-
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS verticalDataPlacementTest" );

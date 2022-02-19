@@ -23,13 +23,13 @@ import lombok.Getter;
 /**
  * Contains stat data for a column
  */
-public class StatisticQueryColumn extends QueryColumn {
+public class StatisticQueryResult extends QueryResult {
 
     /**
      * All specified statistics for a column identified by their keys
      */
     @Getter
-    private String[] data;
+    private Comparable<?>[] data;
 
 
     /**
@@ -37,9 +37,10 @@ public class StatisticQueryColumn extends QueryColumn {
      *
      * @param data map consisting of different values to a given statistic
      */
-    public StatisticQueryColumn( QueryColumn queryColumn, final String[] data ) {
-        super( queryColumn.getSchemaId(), queryColumn.getTableId(), queryColumn.getColumnId(), queryColumn.getType() );
+    public StatisticQueryResult( QueryResult queryResult, final Comparable<?>[] data ) {
+        super( queryResult.getSchemaId(), queryResult.getTableId(), queryResult.getColumnId(), queryResult.getType() );
         this.data = data;
     }
+
 
 }

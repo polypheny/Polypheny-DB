@@ -417,7 +417,6 @@ public abstract class Catalog {
      */
     public abstract long addView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, String query, QueryLanguage language );
 
-
     /**
      * Adds a materialized view to a specified schema.
      *
@@ -438,7 +437,6 @@ public abstract class Catalog {
      */
     public abstract long addMaterializedView( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, AlgNode definition, AlgCollation algCollation, Map<Long, List<Long>> underlyingTables, AlgDataType fieldList, MaterializedCriteria materializedCriteria, String query, QueryLanguage language, boolean ordered ) throws GenericCatalogException;
 
-
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
@@ -447,7 +445,6 @@ public abstract class Catalog {
      * @return true if there is a table with this name, false if not.
      */
     public abstract boolean checkIfExistsTable( long schemaId, String tableName );
-
 
     /**
      * Checks if there is a table with the specified id.
@@ -499,7 +496,6 @@ public abstract class Catalog {
      * @param physicalColumnName The column name on the adapter
      */
     public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName );
-
 
     /**
      * Deletes all dependent column placements
@@ -565,7 +561,7 @@ public abstract class Catalog {
 
     public abstract ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId );
 
-    public abstract Long getPartitionGroupByPartition( long partitionId );
+    public abstract long getPartitionGroupByPartition( long partitionId );
 
     public abstract List<CatalogKey> getKeys();
 
@@ -825,7 +821,6 @@ public abstract class Catalog {
      * @return List of constraints
      */
     public abstract List<CatalogConstraint> getConstraints( long tableId );
-
 
     public abstract List<CatalogIndex> getIndexes( CatalogKey key );
 
@@ -1220,6 +1215,7 @@ public abstract class Catalog {
      */
     public abstract void updatePartition( long partitionId, Long partitionGroupId );
 
+
     /**
      * Get a List of all partitions belonging to a specific table
      *
@@ -1267,7 +1263,6 @@ public abstract class Catalog {
      * @return List of CatalogAdapters
      */
     public abstract List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
-
 
     /**
      * Get all partitions of a DataPlacement (identified by adapterId and tableId)
@@ -1419,7 +1414,6 @@ public abstract class Catalog {
      */
     public abstract void addDataPlacement( int adapterId, long tableId );
 
-
     /**
      * Adds a new DataPlacement for a given table on a specific store.
      * If it already exists it simply returns the existing placement.
@@ -1429,7 +1423,6 @@ public abstract class Catalog {
      * @return DataPlacement of a table placed on a specific store
      */
     public abstract CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId );
-
 
     /**
      * Modifies a specific DataPlacement of a given table.
@@ -1456,7 +1449,6 @@ public abstract class Catalog {
      */
     protected abstract void addSingleDataPlacementToTable( Integer adapterId, long tableId );
 
-
     /**
      * Removes a single dataPlacement from a store for a specific table
      *
@@ -1465,7 +1457,6 @@ public abstract class Catalog {
      */
     protected abstract void removeSingleDataPlacementFromTable( Integer adapterId, long tableId );
 
-
     /**
      * Updates the list of data placements on a table
      *
@@ -1473,7 +1464,6 @@ public abstract class Catalog {
      * @param newDataPlacements list of new DataPlacements that shall replace the old ones
      */
     public abstract void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements );
-
 
     /**
      * Adds columns to dataPlacement on a store for a specific table
@@ -1484,7 +1474,6 @@ public abstract class Catalog {
      */
     protected abstract void addColumnsToDataPlacement( int adapterId, long tableId, List<Long> columnIds );
 
-
     /**
      * Remove columns to dataPlacement on a store for a specific table
      *
@@ -1493,7 +1482,6 @@ public abstract class Catalog {
      * @param columnIds List of columnIds to remove from a specific store for the table
      */
     protected abstract void removeColumnsFromDataPlacement( int adapterId, long tableId, List<Long> columnIds );
-
 
     /**
      * Adds partitions to dataPlacement on a store for a specific table
@@ -1504,25 +1492,24 @@ public abstract class Catalog {
      */
     protected abstract void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
 
-
     /**
      * Remove partitions to dataPlacement on a store for a specific table
+     *
      * @param adapterId adapter id corresponding to a new DataPlacements
      * @param tableId table to be updated
      * @param partitionIds List of partitionIds to remove from a specific store for the table
      */
     protected abstract void removePartitionsFromDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
 
-
     /**
      * Updates and overrides list of associated columnPlacements & partitionPlacements for a given data placement
+     *
      * @param adapterId adapter where placement is located
      * @param tableId table to retrieve the placement from
      * @param columnIds List of columnIds to be located on a specific store for the table
      * @param partitionIds List of partitionIds to be located on a specific store for the table
      */
     public abstract void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds );
-
 
     /**
      * Change physical names of a partition placement.

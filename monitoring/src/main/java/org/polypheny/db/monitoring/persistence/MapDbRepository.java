@@ -223,7 +223,9 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             }
             // Exceeded threshold
             if ( (finish - start) >= timeThreshold ) {
-                throw new RuntimeException( "Initializing Monitoring Repository took too long..." );
+                throw new RuntimeException( "Initializing Monitoring Repository took too long...\nMake sure that no other "
+                        + "instance of Polypheny-DB has still locked the monitoring information.\n"
+                        + "Wait a few seconds or stop the locking process and try again. " );
             }
 
             simpleBackendDb.getStore().fileLoad();

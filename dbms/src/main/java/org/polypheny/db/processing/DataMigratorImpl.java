@@ -18,6 +18,7 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -104,7 +105,9 @@ public class DataMigratorImpl implements DataMigrator {
             Statement sourceStatement = transaction.createStatement();
             Statement targetStatement = transaction.createStatement();
 
-            AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
+            Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( placementDistribution );
+            subDistribution.keySet().retainAll( Arrays.asList( partitionId ) );
+            AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
             AlgRoot targetAlg;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement

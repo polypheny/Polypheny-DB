@@ -90,7 +90,7 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
     }
 
 
-    // do not make public
+    // Do not make public
     <T> PolyphenyDbSignature<T> getSignature() {
         //noinspection unchecked
         return (PolyphenyDbSignature) signature;

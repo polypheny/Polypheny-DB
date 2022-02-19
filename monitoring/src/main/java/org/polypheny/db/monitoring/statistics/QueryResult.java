@@ -16,30 +16,25 @@
 
 package org.polypheny.db.monitoring.statistics;
 
-
-import com.google.gson.annotations.Expose;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.type.PolyType;
 
 
 /**
- * Stores the available statistic data of a specific column
+ * Boilerplate of a column to guide the handling and pattern of a column
  */
-public abstract class StatisticColumn<T extends Comparable<T>> {
+@Slf4j
+class QueryResult {
 
-    @Expose
     @Getter
     private String schema;
 
-    @Expose
     @Getter
     private String table;
 
-    @Expose
     @Getter
     private String column;
 
@@ -50,28 +45,13 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     private final long tableId;
 
     @Getter
-    private final long columnId;
+    private final Long columnId;
 
     @Getter
     private final PolyType type;
 
-    @Expose
-    @Setter
-    @Getter
-    protected boolean full;
 
-    @Expose
-    @Getter
-    @Setter
-    protected List<T> uniqueValues = new ArrayList<>();
-
-    @Expose
-    @Getter
-    @Setter
-    protected Integer count;
-
-
-    public StatisticColumn( long schemaId, long tableId, long columnId, PolyType type ) {
+    QueryResult( long schemaId, long tableId, Long columnId, PolyType type ) {
         this.schemaId = schemaId;
         this.tableId = tableId;
         this.columnId = columnId;
@@ -81,40 +61,15 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
         if ( catalog.checkIfExistsTable( tableId ) ) {
             this.schema = catalog.getSchema( schemaId ).name;
             this.table = catalog.getTable( tableId ).name;
-            this.column = catalog.getColumn( columnId ).name;
+            if ( columnId != null ) {
+                this.column = catalog.getColumn( columnId ).name;
+            }
         }
     }
 
 
-    public String getQualifiedColumnName() {
-        return this.schema + "." + this.table + "." + this.column;
-    }
-
-
-    public String getQualifiedTableName() {
-        return this.schema + "." + this.table;
-    }
-
-
-    public abstract void insert( T val );
-
-    public abstract void insert( List<T> values );
-
-    public abstract String toString();
-
-
-    public void updateColumnName( String columnName ) {
-        this.column = columnName;
-    }
-
-
-    public void updateTableName( String tableName ) {
-        this.table = tableName;
-    }
-
-
-    public void updateSchemaName( String schemaName ) {
-        this.schema = schemaName;
+    public static QueryResult fromCatalogColumn( CatalogColumn column ) {
+        return new QueryResult( column.schemaId, column.tableId, column.id, column.type );
     }
 
 }
