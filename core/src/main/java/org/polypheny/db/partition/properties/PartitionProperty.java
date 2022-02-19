@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.Catalog.PartitionType;
 public class PartitionProperty implements Serializable {
 
     public final PartitionType partitionType;
+    public final boolean isPartitioned;
     public final ImmutableList<Long> partitionGroupIds;
     public final ImmutableList<Long> partitionIds;
     public final long partitionColumnId;

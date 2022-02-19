@@ -64,6 +64,8 @@ public abstract class StatementEvent extends BaseEvent {
     protected long tableId;
     // Only used for ddl events
     protected long schemaId;
+    // Only used for ddl events
+    protected long columnId;
 
 
     @Override

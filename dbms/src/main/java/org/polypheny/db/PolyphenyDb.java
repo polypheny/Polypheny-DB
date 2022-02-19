@@ -273,6 +273,10 @@ public class PolyphenyDb {
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
+        // Initialize statistic manager
+        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
+        StatisticsManager.setAndGetInstance( new StatisticsManagerImpl( statisticQueryProcessor ) );
+
         // Initialize MaterializedViewManager
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
 
@@ -313,9 +317,8 @@ public class PolyphenyDb {
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
-        // Create internal query interfaces
-        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
-        StatisticsManager.setAndGetInstance( new StatisticsManagerImpl( statisticQueryProcessor ) );
+        // Initialize statistic settings
+        StatisticsManager.getInstance().initializeStatisticSettings();
 
         // Start Polypheny-UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );

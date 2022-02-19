@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,7 +166,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     for ( long tableId : tableIds ) {
                         CatalogTable catalogTable = catalog.getTable( tableId );
 
-                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( adapter.getAdapterId(), tableId );
+                        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( adapter.getAdapterId(), tableId );
 
                         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
                             Table table = adapter.createTableSchema(

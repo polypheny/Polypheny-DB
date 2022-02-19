@@ -73,17 +73,12 @@ public class StatisticQueryProcessor {
      *
      * @return result of the query
      */
-    public StatisticQueryColumn selectOneColumnStat( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
-        StatisticResult res = this.executeColStat( node, transaction, statement, queryColumn );
+    public StatisticQueryResult selectOneColumnStat( AlgNode node, Transaction transaction, Statement statement, QueryResult queryResult ) {
+        StatisticResult res = this.executeColStat( node, transaction, statement, queryResult );
         if ( res.getColumns() != null && res.getColumns().length == 1 ) {
             return res.getColumns()[0];
         }
         return null;
-    }
-
-
-    public String selectTableStat( AlgNode node, Transaction transaction, Statement statement ) {
-        return this.executeOneTableStat( node, transaction, statement );
     }
 
 
@@ -120,18 +115,18 @@ public class StatisticQueryProcessor {
      *
      * @return all the columns
      */
-    public List<QueryColumn> getAllColumns() {
+    public List<QueryResult> getAllColumns() {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumn> catalogColumns = catalog.getColumns(
                 new Pattern( databaseName ),
                 null,
                 null,
                 null );
-        List<QueryColumn> allColumns = new ArrayList<>();
+        List<QueryResult> allColumns = new ArrayList<>();
 
         for ( CatalogColumn catalogColumn : catalogColumns ) {
             if ( catalog.getTable( catalogColumn.tableId ).tableType != TableType.VIEW ) {
-                allColumns.add( new QueryColumn( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ) );
+                allColumns.add( new QueryResult( catalogColumn.schemaId, catalogColumn.tableId, catalogColumn.id, catalogColumn.type ) );
             }
         }
         return allColumns;
@@ -165,43 +160,39 @@ public class StatisticQueryProcessor {
      *
      * @return all columns
      */
-    public List<QueryColumn> getAllColumns( Long tableId ) {
+    public List<QueryResult> getAllColumns( Long tableId ) {
         Catalog catalog = Catalog.getInstance();
-        List<QueryColumn> columns = new ArrayList<>();
-        catalog.getColumns( tableId ).forEach( c -> columns.add( QueryColumn.fromCatalogColumn( c ) ) );
+        List<QueryResult> columns = new ArrayList<>();
+        catalog.getColumns( tableId ).forEach( c -> columns.add( QueryResult.fromCatalogColumn( c ) ) );
         return columns;
     }
 
 
-    private StatisticResult executeColStat( AlgNode node, Transaction transaction, Statement statement, QueryColumn queryColumn ) {
-        StatisticResult result = new StatisticResult();
+    public void commitTransaction( Transaction transaction, Statement statement ) {
         try {
-            result = executeColStat( statement, node, queryColumn );
+            // Locks are released within commit
             transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
+        } catch ( TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
                 log.error( "Caught exception while rollback", e );
             }
+        } finally {
+            // Release lock
+            statement.getQueryProcessor().unlock( statement );
         }
-        return result;
     }
 
 
-    private String executeOneTableStat( AlgNode node, Transaction transaction, Statement statement ) {
-        String result = "";
+    private StatisticResult executeColStat( AlgNode node, Transaction transaction, Statement statement, QueryResult queryResult ) {
+        StatisticResult result = new StatisticResult();
+
         try {
-            result = executeOneTableStat( statement, node );
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
+            result = executeColStat( statement, node, queryResult );
+        } catch ( QueryExecutionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return result;
     }
@@ -220,67 +211,36 @@ public class StatisticQueryProcessor {
     // -----------------------------------------------------------------------
 
 
-    private StatisticResult executeColStat( Statement statement, AlgNode node, QueryColumn queryColumn ) throws QueryExecutionException {
+    private StatisticResult executeColStat( Statement statement, AlgNode node, QueryResult queryResult ) throws QueryExecutionException {
         PolyResult result;
         List<List<Object>> rows;
 
         try {
-            result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), true );
+            result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
             rows = result.getRows( statement, getPageSize() );
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );
         }
 
-        List<String[]> data = new ArrayList<>();
+        List<Comparable<?>[]> data = new ArrayList<>();
         for ( List<Object> row : rows ) {
-            String[] temp = new String[row.size()];
+            Comparable<?>[] temp = new Comparable<?>[row.size()];
             int counter = 0;
             for ( Object o : row ) {
                 if ( o == null ) {
                     temp[counter] = null;
                 } else {
-                    temp[counter] = o.toString();
+                    assert o instanceof Comparable<?>;
+                    temp[counter] = (Comparable<?>) o;
                 }
                 counter++;
             }
             data.add( temp );
         }
 
-        String[][] d = data.toArray( new String[0][] );
+        Comparable<?>[][] d = data.toArray( new Comparable<?>[0][] );
 
-        return new StatisticResult( queryColumn, d );
-    }
-
-
-    private String executeOneTableStat( Statement statement, AlgNode node ) throws QueryExecutionException {
-        PolyResult result;
-        List<List<Object>> rows;
-
-        try {
-            result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), true );
-            rows = result.getRows( statement, getPageSize() );
-        } catch ( Throwable t ) {
-            throw new QueryExecutionException( t );
-        }
-
-        List<String[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
-            String[] temp = new String[row.size()];
-            int counter = 0;
-            for ( Object o : row ) {
-                if ( o == null ) {
-                    temp[counter] = null;
-                } else {
-                    temp[counter] = o.toString();
-                }
-                counter++;
-            }
-            data.add( temp );
-        }
-
-        String[][] d = data.toArray( new String[0][] );
-
-        return d[0][0];
+        return new StatisticResult( queryResult, d );
     }
 
 

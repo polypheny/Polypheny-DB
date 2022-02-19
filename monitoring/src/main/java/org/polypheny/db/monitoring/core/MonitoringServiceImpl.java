@@ -24,7 +24,6 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
-import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
 
 @Slf4j
@@ -32,17 +31,14 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     private final MonitoringQueue monitoringQueue;
     private final PersistentMonitoringRepository repository;
-    private final MonitoringServiceUi monitoringServiceUi;
 
 
     public MonitoringServiceImpl(
             @NonNull MonitoringQueue monitoringQueue,
-            @NonNull PersistentMonitoringRepository repository,
-            @NonNull MonitoringServiceUi monitoringServiceUi ) {
+            @NonNull PersistentMonitoringRepository repository ) {
 
         this.monitoringQueue = monitoringQueue;
         this.repository = repository;
-        this.monitoringServiceUi = monitoringServiceUi;
     }
 
 

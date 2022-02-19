@@ -58,7 +58,7 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private String queryClass;
     private String physicalQueryClass;
     @Builder.Default
-    private final Map<Long, List<Object>> changedValues = new HashMap<>();
+    private final HashMap<Long, List<Object>> changedValues = new HashMap<>();
     @Builder.Default
     private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 

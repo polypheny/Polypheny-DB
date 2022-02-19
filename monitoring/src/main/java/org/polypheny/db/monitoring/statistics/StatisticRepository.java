@@ -16,6 +16,7 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -67,6 +68,13 @@ public class StatisticRepository implements MonitoringRepository {
         if ( dataPoint.getMonitoringType().equals( "DROP_TABLE" ) ) {
             statisticsManager.deleteTableToUpdate( dataPoint.getTableId(), dataPoint.getSchemaId() );
         }
+        if ( dataPoint.getMonitoringType().equals( "DROP_COLUMN" ) ) {
+            statisticsManager.tablesToUpdate(
+                    dataPoint.getTableId(),
+                    Collections.singletonMap( dataPoint.getColumnId(), null ),
+                    dataPoint.getMonitoringType(),
+                    dataPoint.getSchemaId() );
+        }
     }
 
 
@@ -77,7 +85,7 @@ public class StatisticRepository implements MonitoringRepository {
             Catalog catalog = Catalog.getInstance();
 
             if ( isOneTable ) {
-                Long tableId = values.stream().findFirst().get();
+                long tableId = values.stream().findFirst().get();
                 if ( catalog.checkIfExistsTable( tableId ) ) {
                     statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
@@ -91,7 +99,7 @@ public class StatisticRepository implements MonitoringRepository {
                     }
                 }
             } else {
-                for ( Long id : values ) {
+                for ( long id : values ) {
                     if ( catalog.checkIfExistsTable( id ) ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
@@ -108,28 +116,27 @@ public class StatisticRepository implements MonitoringRepository {
 
             Catalog catalog = Catalog.getInstance();
             if ( isOneTable ) {
-                Long tableId = values.stream().findFirst().get();
+                long tableId = values.stream().findFirst().get();
                 statisticsManager.setTableCalls( tableId, dataPoint.getMonitoringType() );
 
                 if ( catalog.checkIfExistsTable( tableId ) ) {
-                    statisticsManager.tablesToUpdate(
-                            tableId,
-                            dataPoint.getChangedValues(),
-                            dataPoint.getMonitoringType(),
-                            catalog.getTable( tableId ).schemaId );
-
                     if ( dataPoint.getMonitoringType().equals( "INSERT" ) ) {
                         int added = dataPoint.getRowCount();
+                        statisticsManager.tablesToUpdate(
+                                tableId,
+                                dataPoint.getChangedValues(),
+                                dataPoint.getMonitoringType(),
+                                catalog.getTable( tableId ).schemaId );
                         statisticsManager.updateRowCountPerTable( tableId, added, dataPoint.getMonitoringType() );
                     } else if ( dataPoint.getMonitoringType().equals( "DELETE" ) ) {
                         int deleted = dataPoint.getRowCount();
                         statisticsManager.updateRowCountPerTable( tableId, deleted, dataPoint.getMonitoringType() );
-                        // After a delete, it is not clear what exactly was deleted, so the statistics are updated
+                        // After a delete, it is not clear what exactly was deleted, so the statistics of the table are updated
                         statisticsManager.tablesToUpdate( tableId );
                     }
                 }
             } else {
-                for ( Long id : values ) {
+                for ( long id : values ) {
                     if ( catalog.checkIfExistsTable( id ) ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
