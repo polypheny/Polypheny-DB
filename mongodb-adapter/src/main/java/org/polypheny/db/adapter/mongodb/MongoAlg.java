@@ -48,7 +48,10 @@ import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.TableScan;
+import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.Convention;
@@ -71,7 +74,7 @@ public interface MongoAlg extends AlgNode {
     /**
      * Callback for the implementation process that converts a tree of {@link MongoAlg} nodes into a MongoDB query.
      */
-    class Implementor implements Serializable {
+    class Implementor extends AlgShuttleImpl implements Serializable {
 
         final List<Pair<String, String>> list = new ArrayList<>();
         public List<BsonDocument> operations = new ArrayList<>();
@@ -173,6 +176,22 @@ public interface MongoAlg extends AlgNode {
 
         public List<String> getOperations() {
             return operations.stream().map( p -> p.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() ) ).collect( Collectors.toList() );
+        }
+
+
+        @Override
+        public AlgNode visit( LogicalProject project ) {
+            super.visit( project );
+
+            return project;
+        }
+
+
+        @Override
+        public AlgNode visit( TableScan scan ) {
+            super.visit( scan );
+
+            return scan;
         }
 
     }

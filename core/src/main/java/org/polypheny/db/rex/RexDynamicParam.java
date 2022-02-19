@@ -54,7 +54,10 @@ public class RexDynamicParam extends RexVariable {
      * @param index 0-based index of dynamic parameter in statement
      */
     public RexDynamicParam( AlgDataType type, long index ) {
-        super( "?" + index, type );
+        super( "?" + index + ":" + type.getPolyType().getName(), type );
+        // without this change, during optimization two nodes,
+        // which are parameterized can result in the same digest, this leads to errors, on set retrieval {VulcanoPlanner#mapDigestToRel}
+        // e.g. project(id File) -> $f0=?0  project(name VARCHAR(30)) -> $f0=?0
         this.index = index;
     }
 

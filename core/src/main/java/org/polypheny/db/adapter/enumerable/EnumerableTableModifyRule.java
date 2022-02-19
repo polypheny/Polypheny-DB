@@ -62,9 +62,12 @@ public class EnumerableTableModifyRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         final LogicalTableModify modify = (LogicalTableModify) alg;
-        if ( modify.isUpdate() ) {
+        // EnumerableTableModify uses getModifiableCollection, which no store implements correctly
+        // the streamer should be able to handles it without this method
+        if ( true ) {
             // this is something, which is not supported therefore we can just substitute it
-            return EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE.convert( alg );
+            // return EnumerableRules.ENUMERABLE_TABLE_MODIFY_TO_STREAMER_RULE.convert( alg );
+            return null;
         }
 
         final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );

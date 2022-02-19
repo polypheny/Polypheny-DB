@@ -440,7 +440,9 @@ public class AlgSubset extends AbstractAlgNode {
                 AlgSubset subset = (AlgSubset) p;
                 AlgNode cheapest = subset.best;
                 if ( cheapest == null ) {
-                    // Dump the planner's expression pool so we can figure out why we reached impasse.
+                    AlgOptCost cost = planner.getCost( p, p.getCluster().getMetadataQuery() );
+
+                    // Dump the planner's expression pool, so we can figure out why we reached impasse.
                     StringWriter sw = new StringWriter();
                     final PrintWriter pw = new PrintWriter( sw );
                     pw.println( "Node [" + subset.getDescription() + "] could not be implemented; planner state:\n" );

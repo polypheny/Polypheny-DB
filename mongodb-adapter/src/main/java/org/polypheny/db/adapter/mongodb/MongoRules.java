@@ -56,6 +56,7 @@ import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
@@ -64,6 +65,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Documents;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -85,6 +87,7 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -746,7 +749,38 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
+            super( TableModify.class, MongoTableModificationRule::mongoSupported, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
+        }
+
+
+        private static boolean mongoSupported( TableModify node ) {
+            ScanChecker scanChecker = new ScanChecker();
+            node.accept( scanChecker );
+            return node.isDelete() || scanChecker.supported;
+        }
+
+
+        private static class ScanChecker extends AlgShuttleImpl {
+
+            @Getter
+            private boolean supported = true;
+
+
+            @Override
+            public AlgNode visit( TableScan scan ) {
+                supported = false;
+                return super.visit( scan );
+            }
+
+
+            @Override
+            public AlgNode visit( AlgNode other ) {
+                if ( other instanceof AlgSubset ) {
+                    ((AlgSubset) other).getAlgList().forEach( a -> a.accept( this ) );
+                }
+                return super.visit( other );
+            }
+
         }
 
 
@@ -1090,7 +1124,8 @@ public class MongoRules {
             BsonDocument doc = new BsonDocument();
             CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
-            Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
+            assert input.getRowType().getFieldCount() == this.getTable().getRowType().getFieldCount();
+            Map<Integer, String> physicalMapping = getPhysicalMap( this.getTable().getRowType().getFieldList(), catalogTable );
 
             implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
 
@@ -1099,7 +1134,6 @@ public class MongoRules {
                 if ( rexNode instanceof RexDynamicParam ) {
                     // preparedInsert
                     doc.append( physicalMapping.get( pos ), new BsonDynamic( (RexDynamicParam) rexNode ) );
-
                 } else if ( rexNode instanceof RexLiteral ) {
                     doc.append( getPhysicalName( input, catalogTable, pos ), BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
                 } else if ( rexNode instanceof RexCall ) {

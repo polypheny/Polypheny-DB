@@ -48,6 +48,12 @@ public abstract class Streamer extends BiAlg {
     }
 
 
+    /*@Override
+    public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
+        return getProvider().computeSelfCost( planner, mq ).plus( getCollector().computeSelfCost( planner, mq ) );
+    }*/
+
+
     @Override
     public void childrenAccept( AlgVisitor visitor ) {
         visitor.visit( left, 0, this );

@@ -35,6 +35,9 @@ package org.polypheny.db.algebra.logical;
 
 
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.TableModify;
@@ -50,6 +53,12 @@ import org.polypheny.db.rex.RexNode;
  * Sub-class of {@link TableModify} not targeted at any particular engine or calling convention.
  */
 public final class LogicalTableModify extends TableModify {
+
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    boolean isStreamed = false;
+
 
     /**
      * Creates a LogicalTableModify.
@@ -74,7 +83,7 @@ public final class LogicalTableModify extends TableModify {
     @Override
     public LogicalTableModify copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return new LogicalTableModify( getCluster(), traitSet, table, catalogReader, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() );
+        return new LogicalTableModify( getCluster(), traitSet, table, catalogReader, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() ).isStreamed( isStreamed );
     }
 
 

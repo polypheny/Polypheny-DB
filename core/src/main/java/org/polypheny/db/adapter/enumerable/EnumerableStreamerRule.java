@@ -20,7 +20,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.LogicalStreamer;
-import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 
 public class EnumerableStreamerRule extends ConverterRule {
@@ -36,9 +35,9 @@ public class EnumerableStreamerRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         final LogicalStreamer streamer = (LogicalStreamer) alg;
-        final AlgNode query = AlgOptRule.convert( streamer.getLeft(), streamer.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        final AlgNode prepared = AlgOptRule.convert( streamer.getRight(), streamer.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        return EnumerableStreamer.create( query, prepared );
+        final AlgNode query = streamer.getLeft();//convert( streamer.getLeft(), streamer.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        final AlgNode prepared = streamer.getRight();//convert( streamer.getRight(), streamer.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        return EnumerableStreamer.create( alg.getTraitSet().replace( EnumerableConvention.INSTANCE ), query, prepared );
     }
 
 }

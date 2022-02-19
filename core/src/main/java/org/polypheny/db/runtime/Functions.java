@@ -301,9 +301,8 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static void streamRight( final DataContext context, final Enumerable<Object[]> baz, final List<String> types ) {
+    public static void streamRight( final DataContext context, final Enumerable<Object[]> baz, final List<PolyType> polyTypes ) {
 
-        List<PolyType> polyTypes = types.stream().map( PolyType::valueOf ).collect( Collectors.toList() );
         PolyTypeFactoryImpl factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 

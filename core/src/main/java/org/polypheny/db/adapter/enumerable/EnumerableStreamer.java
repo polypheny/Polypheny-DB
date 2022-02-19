@@ -51,14 +51,14 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
     }
 
 
-    public static EnumerableStreamer create( AlgNode query, AlgNode prepared ) {
-        return new EnumerableStreamer( query.getCluster(), query.getTraitSet(), query, prepared );
+    public static EnumerableStreamer create( AlgTraitSet traitSet, AlgNode query, AlgNode prepared ) {
+        return new EnumerableStreamer( query.getCluster(), traitSet, query, prepared );
     }
 
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return right.computeSelfCost( planner, mq );//.plus( right.computeSelfCost( planner, mq ) );
+        return super.computeSelfCost( planner, mq );//.plus( right.computeSelfCost( planner, mq ) );
     }
 
 
@@ -71,7 +71,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
                 BuiltInMethod.STREAM_RIGHT.method,
                 Expressions.constant( DataContext.ROOT ),
                 builder.append( builder.newName( "provider" + System.nanoTime() ), query.block ),
-                Expressions.constant( getLeft().getRowType().getFieldList().stream().map( f -> f.getType().getPolyType().name() ).collect( Collectors.toList() ) ) );
+                Expressions.constant( getLeft().getRowType().getFieldList().stream().map( f -> f.getType().getPolyType() ).collect( Collectors.toList() ) ) );
 
         final Result prepared = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
