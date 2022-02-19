@@ -1409,7 +1409,8 @@ public class Crud implements InformationObserver {
     void getAvailableSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( databaseName, request.getSchemaName(), request.getTableName() ).placementsByAdapter;
+        CatalogTable table = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getColumnPlacementsByAdapter( table.id );
         Set<Integer> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
             log.warn( String.format( "The number of sources of an entity should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
@@ -1964,7 +1965,7 @@ public class Crud implements InformationObserver {
             }
 
             // Get functional indexes
-            for ( Integer storeId : catalogTable.placementsByAdapter.keySet() ) {
+            for ( Integer storeId : catalogTable.dataPlacements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( storeId );
                 DataStore store;
                 if ( adapter instanceof DataStore ) {
@@ -2094,7 +2095,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.tableType );
+            Placement p = new Placement( table.partitionProperty.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.tableType );
             if ( table.tableType == TableType.VIEW ) {
 
                 return p;
@@ -3604,7 +3605,7 @@ public class Crud implements InformationObserver {
 
             DbColumn dbCol = new DbColumn(
                     metaData.getName(),
-                    metaData.getType().getFullTypeString(),
+                    metaData.getType().getPolyType().getTypeName(),
                     metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
                     metaData.getType().getPrecision(),
                     sort,

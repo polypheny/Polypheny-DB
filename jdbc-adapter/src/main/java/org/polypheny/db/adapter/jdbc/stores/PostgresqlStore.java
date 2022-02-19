@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
         StringBuilder builder = new StringBuilder();
-        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementByTable( getAdapterId(), catalogColumn.tableId );
+        List<CatalogPartitionPlacement> partitionPlacements = catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogColumn.tableId );
 
         for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
             builder.append( "ALTER TABLE " )

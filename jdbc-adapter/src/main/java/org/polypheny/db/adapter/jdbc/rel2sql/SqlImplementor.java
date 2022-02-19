@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -674,12 +674,23 @@ public abstract class SqlImplementor {
                     }
 
                     final RexCall call = (RexCall) stripCastFromString( rex );
+                    final List<SqlNode> nodeList = toSql( program, call.getOperands() );
                     Operator op = call.getOperator();
                     switch ( op.getKind() ) {
                         case SUM0:
                             op = OperatorRegistry.get( OperatorName.SUM );
+                            break;
+                        case IS_FALSE:
+                            if ( !dialect.supportsIsBoolean() ) {
+                                op = OperatorRegistry.get( OperatorName.NOT );
+                            }
+                            break;
+                        case IS_TRUE:
+                            if ( !dialect.supportsIsBoolean() ) {
+                                assert nodeList.size() == 1;
+                                return nodeList.get( 0 );
+                            }
                     }
-                    final List<SqlNode> nodeList = toSql( program, call.getOperands() );
                     switch ( call.getKind() ) {
                         case CAST:
                             if ( ignoreCast ) {

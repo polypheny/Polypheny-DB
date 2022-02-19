@@ -30,6 +30,7 @@ public class DdlEventAnalyzer {
                 .tableId( ddlEvent.getTableId() )
                 .monitoringType( ddlEvent.getMonitoringType() )
                 .schemaId( ddlEvent.getSchemaId() )
+                .columnId( ddlEvent.getColumnId() )
                 .build();
 
         return metric;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import lombok.NonNull;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -51,36 +50,6 @@ public class CatalogMaterializedView extends CatalogView {
 
     public CatalogMaterializedView(
             long id,
-            @NonNull String name,
-            ImmutableList<Long> columnIds,
-            long schemaId,
-            long databaseId,
-            int ownerId,
-            @NonNull String ownerName,
-            @NonNull Catalog.TableType type,
-            String query,
-            Long primaryKey,
-            @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
-            boolean modifiable,
-            AlgCollation algCollation,
-            ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
-            QueryLanguage language,
-            MaterializedCriteria materializedCriteria,
-            boolean ordered,
-            PartitionProperty partitionProperty
-    ) {
-        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, query, primaryKey, placementsByAdapter,
-                modifiable, algCollation, underlyingTables, language, partitionProperty );
-        this.query = query;
-        this.algCollation = algCollation;
-        this.language = language;
-        this.materializedCriteria = materializedCriteria;
-        this.ordered = ordered;
-    }
-
-
-    public CatalogMaterializedView(
-            long id,
             String name,
             ImmutableList<Long> columnIds,
             long schemaId,
@@ -90,11 +59,8 @@ public class CatalogMaterializedView extends CatalogView {
             TableType tableType,
             String query,
             Long primaryKey,
-            ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            @NonNull ImmutableList<Integer> dataPlacements,
             boolean modifiable,
-            PartitionType partitionType,
-            long partitionColumnId,
-            boolean isPartitioned,
             PartitionProperty partitionProperty,
             AlgCollation algCollation,
             ImmutableList<Long> connectedViews,
@@ -114,11 +80,8 @@ public class CatalogMaterializedView extends CatalogView {
                 tableType,
                 query,
                 primaryKey,
-                placementsByAdapter,
+                dataPlacements,
                 modifiable,
-                partitionType,
-                partitionColumnId,
-                isPartitioned,
                 partitionProperty,
                 algCollation,
                 connectedViews,
@@ -145,14 +108,15 @@ public class CatalogMaterializedView extends CatalogView {
                 tableType,
                 query,
                 primaryKey,
-                placementsByAdapter,
+                dataPlacements,
                 modifiable,
+                partitionProperty,
                 algCollation,
+                connectedViews,
                 underlyingTables,
                 language,
                 materializedCriteria,
-                ordered,
-                partitionProperty );
+                ordered );
     }
 
 
@@ -169,11 +133,8 @@ public class CatalogMaterializedView extends CatalogView {
                 tableType,
                 query,
                 primaryKey,
-                placementsByAdapter,
+                dataPlacements,
                 modifiable,
-                partitionType,
-                partitionColumnId,
-                isPartitioned,
                 partitionProperty,
                 algCollation,
                 newConnectedViews,
@@ -197,11 +158,8 @@ public class CatalogMaterializedView extends CatalogView {
                 tableType,
                 query,
                 primaryKey,
-                placementsByAdapter,
+                dataPlacements,
                 modifiable,
-                partitionType,
-                partitionColumnId,
-                isPartitioned,
                 partitionProperty,
                 algCollation,
                 connectedViews,

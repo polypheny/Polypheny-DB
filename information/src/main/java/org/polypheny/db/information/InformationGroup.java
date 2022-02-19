@@ -181,6 +181,16 @@ public class InformationGroup extends Refreshable {
     }
 
 
+    public void removeInformation( final Information... infos ) {
+        for ( Information i : infos ) {
+            if ( !i.getGroup().equals( this.id ) ) {
+                throw new InformationRuntimeException( "Something is really wrong here" );
+            }
+            this.informationObjects.remove( i.getId(), i );
+        }
+    }
+
+
     /**
      * Groups with lower uiOrder will be rendered first in the UI. The groups with no uiOrder (0) are rendered last.
      *

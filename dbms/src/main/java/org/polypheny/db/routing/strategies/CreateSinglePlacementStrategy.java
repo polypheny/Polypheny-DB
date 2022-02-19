@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
     @Override
     public List<DataStore> getDataStoresForNewColumn( CatalogColumn addedColumn ) {
         CatalogTable catalogTable = Catalog.getInstance().getTable( addedColumn.tableId );
-        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.placementsByAdapter.keySet().asList().get( 0 ) ) );
+        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.dataPlacements.get( 0 ) ) );
     }
 
 

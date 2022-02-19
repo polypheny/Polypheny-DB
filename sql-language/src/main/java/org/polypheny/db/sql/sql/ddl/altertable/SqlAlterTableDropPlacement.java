@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
         }
 
         try {
-            DdlManager.getInstance().dropPlacement( catalogTable, storeInstance, statement );
+            DdlManager.getInstance().dropDataPlacement( catalogTable, storeInstance, statement );
         } catch ( PlacementNotExistsException e ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),

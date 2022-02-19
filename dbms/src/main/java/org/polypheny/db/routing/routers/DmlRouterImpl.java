@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 // Essentially gets a list of all stores where this table resides
                 List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacement( pkColumn.id );
 
-                if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
+                if ( catalogTable.partitionProperty.isPartitioned && log.isDebugEnabled() ) {
                     log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionProperty.partitionGroupIds );
                     for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
                         log.debug(
@@ -170,14 +170,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     long identifiedPartitionForSetValue = -1;
                     Set<Long> accessedPartitionList = new HashSet<>();
                     // Identify where clause of UPDATE
-                    if ( catalogTable.isPartitioned ) {
+                    if ( catalogTable.partitionProperty.isPartitioned ) {
                         boolean worstCaseRouting = false;
                         Set<Long> identifiedPartitionsInFilter = new HashSet<>();
 
                         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-                        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionType );
+                        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( catalogTable.partitionProperty.partitionType );
 
-                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
+                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
                         node.accept( new AlgShuttleImpl() {
                             @Override
                             public AlgNode visit( LogicalFilter filter ) {
@@ -218,9 +218,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                             for ( String cn : updateColumnList ) {
                                 try {
-                                    if ( catalog.getColumn( catalogTable.id, cn ).id == catalogTable.partitionColumnId ) {
+                                    if ( catalog.getColumn( catalogTable.id, cn ).id == catalogTable.partitionProperty.partitionColumnId ) {
                                         if ( log.isDebugEnabled() ) {
-                                            log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionColumnId, index );
+                                            log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", catalogTable.partitionProperty.partitionColumnId, index );
                                         }
                                         // Routing/Locking can now be executed on certain partitions
                                         partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
@@ -355,7 +355,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             // Changes the value of partition column of complete table to only reside on one partition
                             else if ( identifiedPartitionForSetValue != -1 ) {
 
-                                // Data Migrate copy of all other partitions beside the identifed on towards the identified one
+                                // Data Migrate copy of all other partitions beside the identified on towards the identified one
                                 // Then inject a DELETE statement for all those partitions
 
                                 // Do the update only on the identified partition
@@ -383,10 +383,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     resultColMapping.put( catalogTable.columnIds.get( columnIndex ), j );
 
                                     // Determine location of partitionColumn in fieldList
-                                    if ( catalogTable.columnIds.get( columnIndex ) == catalogTable.partitionColumnId ) {
+                                    if ( catalogTable.columnIds.get( columnIndex ) == catalogTable.partitionProperty.partitionColumnId ) {
                                         partitionColumnIndex = columnIndex;
                                         if ( log.isDebugEnabled() ) {
-                                            log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionColumnId, j );
+                                            log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", catalogTable.partitionProperty.partitionColumnId, j );
                                             worstCaseRouting = false;
 
                                         }
@@ -470,7 +470,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             } else if ( ((LogicalTableModify) node).getInput() instanceof LogicalProject
                                     && ((LogicalProject) ((LogicalTableModify) node).getInput()).getInput() instanceof LogicalValues ) {
 
-                                String partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
+                                String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
                                 List<String> fieldNames = ((LogicalTableModify) node).getInput().getRowType().getFieldNames();
 
                                 LogicalTableModify ltm = ((LogicalTableModify) node);
@@ -566,7 +566,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             }
 
                             if ( log.isDebugEnabled() ) {
-                                String partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
+                                String partitionColumnName = catalog.getColumn( catalogTable.partitionProperty.partitionColumnId ).name;
                                 String partitionName = catalog.getPartitionGroup( identPart ).partitionGroupName;
                                 log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
                                         partitionValue, identPart, partitionName, partitionColumnName );
@@ -779,14 +779,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         } else if ( node instanceof LogicalProject ) {
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, generic handling is sufficient
-                if ( catalogTable.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
+                if ( catalogTable.partitionProperty.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
                     return remapParameterizedDml( node, builder, statement, parameterValues );
                 } else {
                     return super.handleGeneric( node, builder );
                 }
             } else { // vertically partitioned, adjust project
                 if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                    if ( catalogTable.isPartitioned && remapParameterValues ) {
+                    if ( catalogTable.partitionProperty.isPartitioned && remapParameterValues ) {
                         builder = remapParameterizedDml( node, builder, statement, parameterValues );
                     }
                     builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
