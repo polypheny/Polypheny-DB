@@ -1212,7 +1212,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public Long getPartitionGroupByPartition( long partitionId ) {
+    public long getPartitionGroupByPartition( long partitionId ) {
         throw new NotImplementedException();
     }
 
