@@ -116,6 +116,37 @@ licenseReport {
 
 
 licensee {
+    //
+    // Ignore these dependencies, remove on release branches!
+    // START
+    ignoreDependencies('nz.ac.waikato.cms.weka') {
+        transitive = true
+        because "removed on release branches"
+    }
+    ignoreDependencies('com.datastax.oss') {
+        transitive = true
+        because "removed on release branches"
+    }
+    ignoreDependencies('com.github.nosan') {
+        transitive = true
+        because "removed on release branches"
+    }
+    ignoreDependencies('org.mariadb.jdbc') {
+        transitive = true
+        because "removed on release branches"
+    }
+    ignoreDependencies('org.apache.cassandra') {
+        transitive = true
+        because "removed on release branches"
+    }
+    allowDependency('com.github.jnr', 'jnr-posix', '3.0.50') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-analysis', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-commons', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-tree', '7.1') { because 'removed on release branches' }
+    allowDependency('org.ow2.asm', 'asm-util', '7.1') { because 'removed on release branches' }
+    // END
+
     allow('Apache-2.0')
     allow('MIT')
     allow('BSD-2-Clause')
@@ -182,7 +213,6 @@ licensee {
     allowDependency('org.glassfish.hk2', 'hk2-api', '2.6.1') { because 'Eclipse Public License v. 2.0' }
     allowDependency('org.glassfish.hk2', 'hk2-locator', '2.6.1') { because 'Eclipse Public License v. 2.0' }
     allowDependency('org.glassfish.hk2', 'hk2-utils', '2.6.1') { because 'Eclipse Public License v. 2.0' }
-
 }
 
 
