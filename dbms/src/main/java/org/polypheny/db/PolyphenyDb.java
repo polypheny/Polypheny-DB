@@ -99,6 +99,9 @@ public class PolyphenyDb {
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
 
+    @Option(name = { "-daemon" }, description = "Disable splash screen")
+    public boolean daemonMode = false;
+
     @Option(name = { "-defaultStore" }, description = "Type of default store")
     public String defaultStoreName = "hsqldb";
 
@@ -145,14 +148,43 @@ public class PolyphenyDb {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
 
+        // Select behavior depending on arguments
+        boolean showSplashScreen;
+        boolean trayMenu;
+        boolean openUiInBrowser;
+        if ( daemonMode ) {
+            showSplashScreen = false;
+            try {
+                trayMenu = SystemTray.isSupported();
+            } catch ( Exception e ) {
+                trayMenu = false;
+            }
+            openUiInBrowser = false;
+        } else if ( desktopMode ) {
+            showSplashScreen = true;
+            try {
+                trayMenu = SystemTray.isSupported();
+            } catch ( Exception e ) {
+                trayMenu = false;
+            }
+            openUiInBrowser = true;
+        } else {
+            showSplashScreen = false;
+            trayMenu = false;
+            openUiInBrowser = false;
+        }
+
         // Open splash screen
-        if ( desktopMode ) {
+        if ( showSplashScreen ) {
             this.splashScreen = new SplashHelper();
         }
 
         // Check if Polypheny is already running
-        if ( desktopMode && GuiUtils.checkPolyphenyAlreadyRunning() ) {
-            GuiUtils.openUiInBrowser();
+        if ( GuiUtils.checkPolyphenyAlreadyRunning() ) {
+            if ( openUiInBrowser ) {
+                GuiUtils.openUiInBrowser();
+            }
+            System.err.println( "There is already an instance of Polypheny running on this system." );
             System.exit( 0 );
         }
 
@@ -354,7 +386,7 @@ public class PolyphenyDb {
         MonitoringServiceProvider.getInstance();
 
         // Add icon to system tray
-        if ( desktopMode && SystemTray.isSupported() ) {
+        if ( trayMenu ) {
             // Init TrayGUI
             TrayGui.getInstance();
         }
@@ -367,7 +399,7 @@ public class PolyphenyDb {
         isReady = true;
 
         // Close splash screen
-        if ( desktopMode ) {
+        if ( showSplashScreen ) {
             splashScreen.setComplete();
         }
 
@@ -383,7 +415,7 @@ public class PolyphenyDb {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
 
-        if ( desktopMode && SystemTray.isSupported() ) {
+        if ( trayMenu ) {
             TrayGui.getInstance().shutdown();
         }
     }
