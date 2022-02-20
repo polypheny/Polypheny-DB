@@ -44,8 +44,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.exploreByExample.ExploreManager;
-import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
@@ -341,9 +339,9 @@ public class PolyphenyDb {
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
 
-        final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
+        /*final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();
-        explore.setExploreQueryProcessor( exploreQueryProcessor );
+        explore.setExploreQueryProcessor( exploreQueryProcessor );*/
 
         // Add config and monitoring test page for UI testing
         if ( testMode ) {

@@ -32,7 +32,7 @@ dependencies {
     implementation project(":mql-language")
     implementation project(":pig-language")
     implementation project(":cql-language")
-    implementation project(":cassandra-adapter")
+//    implementation project(":cassandra-adapter")
     implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")
     implementation project(":ethereum-adapter")
@@ -45,7 +45,7 @@ dependencies {
     implementation project(":http-interface")
     implementation project(":rest-interface")
     implementation project(":statistic")
-    implementation project(":explore-by-example")
+    //implementation project(":explore-by-example")
     implementation project(":monitoring")
 
     ////// Logging
