@@ -86,6 +86,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         ModifyExtractor extractor = new ModifyExtractor();
         node.accept( extractor );
         TableModify modify = extractor.getModify();
+
         if ( modify == null ) {
             throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
@@ -95,22 +96,28 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();
 
-        final List<CatalogConstraint> constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
+        EnforcementTime enforcementTime = EnforcementTime.ON_QUERY;
+        final List<CatalogConstraint> constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) )
+                .stream()
+                .filter( f -> f.key.enforcementTime == enforcementTime )
+                .collect( Collectors.toCollection( ArrayList::new ) );
         final List<CatalogForeignKey> foreignKeys = Catalog.getInstance()
                 .getForeignKeys( table.id )
                 .stream()
-                .filter( f -> f.enforcementTime == EnforcementTime.ON_QUERY )
+                .filter( f -> f.enforcementTime == enforcementTime )
                 .collect( Collectors.toList() );
         final List<CatalogForeignKey> exportedKeys = Catalog.getInstance()
                 .getExportedKeys( table.id )
                 .stream()
-                .filter( f -> f.enforcementTime == EnforcementTime.ON_QUERY )
+                .filter( f -> f.enforcementTime == enforcementTime )
                 .collect( Collectors.toList() );
 
         // Turn primary key into an artificial unique constraint
         CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
-        final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
-        constraints.add( pkc );
+        if ( pk.enforcementTime == enforcementTime ) {
+            final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+            constraints.add( pkc );
+        }
 
         AlgNode constrainedNode;
 
@@ -209,24 +216,35 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             constrainedNode = mergeFilter( filters, builder );
         }
 
-        // todo dl add missing tree ui
         return new EnforcementInformation( constrainedNode, errorClasses, errorMessages );
     }
 
 
-    public static EnforcementInformation getControl( CatalogTable table, Statement statement ) {
+    public static EnforcementInformation getControl( CatalogTable table, Statement statement, EnforcementTime enforcementTime ) {
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = builder.getRexBuilder();
 
-        final List<CatalogConstraint> constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
-        final List<CatalogForeignKey> foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
-        final List<CatalogForeignKey> exportedKeys = Catalog.getInstance().getExportedKeys( table.id );
+        final List<CatalogConstraint> constraints = Catalog.getInstance()
+                .getConstraints( table.id )
+                .stream()
+                .filter( c -> c.key.enforcementTime == enforcementTime )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+        final List<CatalogForeignKey> foreignKeys = Catalog.getInstance().getForeignKeys( table.id )
+                .stream()
+                .filter( c -> c.enforcementTime == enforcementTime )
+                .collect( Collectors.toCollection( ArrayList::new ) );
+        final List<CatalogForeignKey> exportedKeys = Catalog.getInstance().getExportedKeys( table.id )
+                .stream()
+                .filter( c -> c.enforcementTime == enforcementTime )
+                .collect( Collectors.toCollection( ArrayList::new ) );
 
         // Turn primary key into an artificial unique constraint
         CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
-        final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
-        constraints.add( pkc );
+        if ( pk.enforcementTime == enforcementTime ) {
+            final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+            constraints.add( pkc );
+        }
 
         AlgNode constrainedNode;
 
@@ -320,7 +338,6 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
             constrainedNode = builder.build();
         }
 
-        // todo dl add missing tree ui
         return new EnforcementInformation( constrainedNode, errorClasses, errorMessages );
     }
 

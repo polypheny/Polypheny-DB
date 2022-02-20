@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.logical.LogicalConstraintEnforcer.EnforcementInf
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.QueryLanguage;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -173,7 +174,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             Statement statement = createStatement();
             QueryProcessor processor = statement.getQueryProcessor();
             List<EnforcementInformation> infos = ConstraintEnforcer
-                    .getConstraintAlg( catalogTables, statement );
+                    .getConstraintAlg( catalogTables, statement, EnforcementTime.ON_COMMIT );
             List<PolyResult> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );

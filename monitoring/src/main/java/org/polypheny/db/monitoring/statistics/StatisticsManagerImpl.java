@@ -1222,8 +1222,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public synchronized Integer rowCountPerTable( long tableId ) {
-        if ( tableStatistic.containsKey( tableId ) ) {
-            return tableStatistic.get( tableId ).getNumberOfRows();
+        StatisticTable<T> table = tableStatistic.get( tableId );
+        if ( table != null ) {
+            return table.getNumberOfRows();
         } else {
             return null;
         }

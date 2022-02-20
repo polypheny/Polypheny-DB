@@ -57,6 +57,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
+import org.polypheny.db.catalog.entity.CatalogKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -139,10 +140,10 @@ public class ConstraintEnforcer {
     }
 
 
-    public static List<EnforcementInformation> getConstraintAlg( Set<CatalogTable> catalogTables, Statement statement ) {
+    public static List<EnforcementInformation> getConstraintAlg( Set<CatalogTable> catalogTables, Statement statement, EnforcementTime enforcementTime ) {
         return catalogTables
                 .stream()
-                .map( t -> LogicalConstraintEnforcer.getControl( t, statement ) )
+                .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
                 .filter( i -> i.getControl() != null )
                 .collect( Collectors.toList() );
     }
@@ -673,7 +674,7 @@ public class ConstraintEnforcer {
                     Statement statement = transaction.createStatement();
                     QueryProcessor processor = statement.getQueryProcessor();
                     List<EnforcementInformation> infos = ConstraintEnforcer
-                            .getConstraintAlg( new TreeSet<>( tables ), statement );
+                            .getConstraintAlg( new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY );
                     List<PolyResult> results = infos
                             .stream()
                             .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) )

@@ -240,8 +240,8 @@ public class StatisticsTest {
                         Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                         Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
 
-                        Assert.assertEquals( rowCountNation, Integer.valueOf( 3 ) );
-                        Assert.assertEquals( rowCountRegion, Integer.valueOf( 2 ) );
+                        Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
+                        Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
                     } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                         log.error( "Caught exception test", e );
                     }
@@ -266,11 +266,11 @@ public class StatisticsTest {
                             statement.executeQuery( "SELECT * FROM statisticschema.nationdelete" ),
                             ImmutableList.of()
                     );
-                    waiter.await( 30, TimeUnit.SECONDS );
+                    waiter.await( 50, TimeUnit.SECONDS );
                     try {
                         CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nationdelete" );
                         Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                        Assert.assertEquals( rowCountNation, Integer.valueOf( 0 ) );
+                        Assert.assertEquals( Integer.valueOf( 0 ), rowCountNation );
                     } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                         log.error( "Caught exception test", e );
                     }

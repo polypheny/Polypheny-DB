@@ -42,7 +42,8 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
             final long tableId,
             final long schemaId,
             final long databaseId,
-            final List<Long> columnIds, EnforcementTime enforcementTime ) {
+            final List<Long> columnIds,
+            EnforcementTime enforcementTime ) {
         this.id = id;
         this.tableId = tableId;
         this.schemaId = schemaId;
@@ -51,14 +52,6 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
         this.enforcementTime = enforcementTime;
     }
 
-
-    public CatalogKey(
-            final long id,
-            final long tableId,
-            final long schemaId,
-            final long databaseId ) {
-        this( id, tableId, schemaId, databaseId, null, EnforcementTime.ON_COMMIT );
-    }
 
 
     @SneakyThrows
