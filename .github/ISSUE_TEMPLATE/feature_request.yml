@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please search the existing issues for relevant feature requests, and use the [reaction feature](https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) to add upvotes to pre-existing requests.
+        Please check if there is already a ticket for this feature requests, and use the [reaction feature](https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) to up-vote the existing request.
         
         ---
   - type: dropdown
@@ -53,5 +53,4 @@ body:
     attributes:
       label: Possible alternatives
       description: A clear and concise description of any alternative solutions or features you've considered.
-
-
+      

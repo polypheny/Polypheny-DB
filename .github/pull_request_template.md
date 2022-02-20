@@ -1,18 +1,16 @@
 <!--
-If possible fill in all headings that are necessary for your request 
-
-Please label your request accordingly
+Please fill in all headings that are applicable to your pull request and make sure to label this it accordingly.
 -->
 
 ## Summary
 
-Please concisely describe the introduced changes and implementations.
+Please concisely describe the introduced changes.
 
 **Fixes:** #ABC, #XYZ [link all relevant issues]
 
 ### Changes
 
-If applicable list all changes you introduced to the current architecture and list how the behaviour has changed.
+If applicable, list all changes you introduced to the current architecture and list how the behavior has changed.
 
 * ...
 
@@ -42,9 +40,10 @@ Summarize the introduced test capabilities for your feature.
 
 ### ToDo
 
-<!-- For WIP PR add meanigful todos -->
+<!-- For WIP PR add meaningful todos -->
 
 - [ ] Verify design and implementation
 - [ ] Verify test coverage and CI build status
 - [ ] Verify documentation (including upgrade notes)
 - [ ] ...
+
