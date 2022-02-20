@@ -162,11 +162,7 @@ public class PolyphenyDb {
         boolean openUiInBrowser;
         if ( daemonMode ) {
             showSplashScreen = false;
-            try {
-                trayMenu = SystemTray.isSupported();
-            } catch ( Exception e ) {
-                trayMenu = false;
-            }
+            trayMenu = false;
             openUiInBrowser = false;
         } else if ( desktopMode ) {
             showSplashScreen = true;
