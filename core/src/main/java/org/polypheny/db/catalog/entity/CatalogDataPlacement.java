@@ -156,8 +156,8 @@ public class CatalogDataPlacement implements CatalogEntity {
                 }
             }
         }catch (RuntimeException e){
-            // Catalog is not ready assume
-            // Happens only for defaultColumns during setAndGetInstance
+            // Catalog is not ready
+            // Happens only for defaultColumns during setAndGetInstance of Catalog
             // Just assume UPTODATE for all.
             partitionsPerRole.put( DataPlacementRole.UPTODATE, ImmutableList.copyOf( unsortedPartitionIds ) );
         }
