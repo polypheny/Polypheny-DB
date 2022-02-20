@@ -391,7 +391,7 @@ public enum RuntimeConfig {
     MONITORING_MAXIMUM_POOL_SIZE(
             "runtime/maximumPoolSize",
             "The maximum number of threads to allow in the pool used for processing workload monitoring events.",
-            5000,
+            8,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 
