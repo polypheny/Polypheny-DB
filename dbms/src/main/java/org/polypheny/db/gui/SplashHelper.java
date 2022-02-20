@@ -64,6 +64,11 @@ public class SplashHelper {
 
 
     public void setComplete() {
+        try {
+            Thread.sleep( 2000 );
+        } catch ( InterruptedException e ) {
+            // ignore
+        }
         GuiUtils.openUiInBrowser();
         this.screen.setComplete();
         StatusService.removeSubscriber( statusId );
