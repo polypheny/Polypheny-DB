@@ -19,6 +19,9 @@ package org.polypheny.db;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
 
 
 public abstract class StatisticsManager<T extends Comparable<T>> implements PropertyChangeListener {
@@ -44,24 +47,24 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
 
     // Use relNode to update
-    public abstract void tablesToUpdate( Long tableId );
+    public abstract void tablesToUpdate( long tableId );
 
     // Use cache if possible
-    public abstract void tablesToUpdate( Long tableId, Map<Long, List<Object>> changedValues, String type, Long schemaId );
+    public abstract void tablesToUpdate( long tableId, Map<Long, List<Object>> changedValues, String type, long schemaId );
 
-    protected abstract void reevaluateTable( Long tableId );
+    protected abstract void reevaluateTable( long tableId );
 
     public abstract void displayInformation();
 
     public abstract void asyncReevaluateAllStatistics();
 
-    public abstract void deleteTableToUpdate( Long tableId, Long schemaId );
+    public abstract void deleteTableToUpdate( long tableId, long schemaId );
 
-    public abstract void updateRowCountPerTable( Long tableId, Integer number, String source );
+    public abstract void updateRowCountPerTable( long tableId, int number, String source );
 
-    public abstract void setIndexSize( Long tableId, int indexSize );
+    public abstract void setIndexSize( long tableId, int indexSize );
 
-    public abstract void setTableCalls( Long tableId, String kind );
+    public abstract void setTableCalls( long tableId, String kind );
 
     public abstract String getRevalId();
 
@@ -69,12 +72,20 @@ public abstract class StatisticsManager<T extends Comparable<T>> implements Prop
 
     public abstract Map<?, ?> getStatisticSchemaMap();
 
-    public abstract Object getTableStatistic( Long schemaId, Long tableId );
+    public abstract Object getTableStatistic( long schemaId, long tableId );
 
-    public abstract Integer rowCountPerTable( Long tableId );
+    public abstract Integer rowCountPerTable( long tableId );
 
     public abstract void updateCommitRollback( boolean committed );
 
     public abstract Object getDashboardInformation();
+
+    public abstract void initializeStatisticSettings();
+
+    public abstract void updateColumnName( CatalogColumn catalogColumn, String newName );
+
+    public abstract void updateTableName( CatalogTable catalogTable, String newName );
+
+    public abstract void updateSchemaName( CatalogSchema catalogSchema, String newName );
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -323,12 +323,12 @@ public class CatalogTest {
         CatalogAdapter store1 = catalog.getAdapter( "store1" );
         CatalogAdapter store2 = catalog.getAdapter( "store2" );
 
-        catalog.addColumnPlacement( store1.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name, null );
+        catalog.addColumnPlacement( store1.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name );
 
         assertEquals( 1, catalog.getColumnPlacement( columnId ).size() );
         assertEquals( columnId, catalog.getColumnPlacement( columnId ).get( 0 ).columnId );
 
-        catalog.addColumnPlacement( store2.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name, null );
+        catalog.addColumnPlacement( store2.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name );
 
         assertEquals( 2, catalog.getColumnPlacement( columnId ).size() );
         assertTrue( catalog.getColumnPlacement( columnId ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).containsAll( Arrays.asList( store2.id, store1.id ) ) );

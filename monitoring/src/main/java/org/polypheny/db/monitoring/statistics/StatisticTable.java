@@ -16,8 +16,8 @@
 
 package org.polypheny.db.monitoring.statistics;
 
+
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -31,13 +31,13 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 /**
  * Stores the available statistic data of a specific table.
  */
-public class StatisticTable {
+public class StatisticTable<T extends Comparable<T>> {
 
     @Getter
     private String table;
 
     @Getter
-    private final Long tableId;
+    private final long tableId;
 
     @Getter
     @Setter
@@ -47,7 +47,7 @@ public class StatisticTable {
     private SchemaType schemaType;
 
     @Getter
-    private ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
+    private ImmutableList<Integer> dataPlacements;
 
     @Getter
     private final List<Integer> availableAdapters = new ArrayList<>();
@@ -64,15 +64,15 @@ public class StatisticTable {
 
     @Getter
     @Setter
-    private List<AlphabeticStatisticColumn<?>> alphabeticColumn;
+    private List<AlphabeticStatisticColumn<T>> alphabeticColumn;
 
     @Getter
     @Setter
-    private List<NumericalStatisticColumn<?>> numericalColumn;
+    private List<NumericalStatisticColumn<T>> numericalColumn;
 
     @Getter
     @Setter
-    private List<TemporalStatisticColumn<?>> temporalColumn;
+    private List<TemporalStatisticColumn<T>> temporalColumn;
 
 
     public StatisticTable( Long tableId ) {
@@ -83,15 +83,21 @@ public class StatisticTable {
             CatalogTable catalogTable = catalog.getTable( tableId );
             this.table = catalogTable.name;
             this.schemaType = catalogTable.getSchemaType();
-            this.placementsByAdapter = catalogTable.placementsByAdapter;
+            this.dataPlacements = catalogTable.dataPlacements;
             this.owner = catalogTable.ownerName;
             this.tableType = catalogTable.tableType;
         }
+        calls = new TableCalls( tableId, 0, 0, 0, 0 );
 
         this.numberOfRows = 0;
         alphabeticColumn = new ArrayList<>();
         numericalColumn = new ArrayList<>();
         temporalColumn = new ArrayList<>();
+    }
+
+
+    public void updateTableName( String tableName ) {
+        this.table = tableName;
     }
 
 }

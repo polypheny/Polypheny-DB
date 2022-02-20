@@ -23,7 +23,7 @@ import lombok.Setter;
 @Setter
 public class TableCalls {
 
-    private Long tableId;
+    private long tableId;
 
     private int numberOfSelects;
     private int numberOfInserts;
@@ -31,7 +31,7 @@ public class TableCalls {
     private int numberOfUpdates;
 
 
-    public TableCalls( Long tableId, int numberOfSelects, int numberOfInserts, int numberOfDeletes, int numberOfUpdates ) {
+    public TableCalls( long tableId, int numberOfSelects, int numberOfInserts, int numberOfDeletes, int numberOfUpdates ) {
         this.tableId = tableId;
         this.numberOfSelects = numberOfSelects;
         this.numberOfInserts = numberOfInserts;

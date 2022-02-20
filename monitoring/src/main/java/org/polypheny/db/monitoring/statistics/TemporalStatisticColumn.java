@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.Getter;
@@ -54,7 +55,7 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
     public TreeSet<T> maxCache = new TreeSet<>();
 
 
-    public TemporalStatisticColumn( QueryColumn column ) {
+    public TemporalStatisticColumn( QueryResult column ) {
         super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
         temporalType = column.getType().getFamily().name();
     }
@@ -98,8 +99,10 @@ public class TemporalStatisticColumn<T extends Comparable<T>> extends StatisticC
 
     @Override
     public void insert( List<T> values ) {
-        for ( T val : values ) {
-            insert( val );
+        if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
+            for ( T val : values ) {
+                insert( val );
+            }
         }
     }
 
