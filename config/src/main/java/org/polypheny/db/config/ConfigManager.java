@@ -174,7 +174,9 @@ public class ConfigManager {
             // If so, the value will be omitted since there is no need to write it to file
             if ( configs.get( configKey ).isDefault() ) {
                 //if ( updatedValue.toString().equals( configs.get( configKey ).getDefaultValue().toString() ) ) {
-                log.warn( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Updated value: '{}' for key: '{}' is equal to default value. Omitting.", updatedValue, configKey );
+                }
                 newConfig = configFile.withoutPath( configKey );
             } else {
                 newConfig = parseConfigObject( configKey, updatedValue );

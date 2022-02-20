@@ -1404,17 +1404,16 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Get the exported tables of a DataSource that a table originates from
+     * Get additional columns of the DataSource that are not mapped to the table.
      */
-    void getExportedColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
+    void getAvailableSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
         CatalogTable table = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
-
         ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getColumnPlacementsByAdapter( table.id );
         Set<Integer> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
-            log.warn( String.format( "The number of DataSources of a Table should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
+            log.warn( String.format( "The number of sources of an entity should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
         }
         List<Result> exportedColumns = new ArrayList<>();
         for ( int adapterId : adapterIds ) {
@@ -1446,7 +1445,7 @@ public class Crud implements InformationObserver {
 
         }
 
-        ctx.json( new Result( "Could not retrieve exported Columns." ) );
+        ctx.json( new Result( "Could not retrieve exported source fields." ) );
     }
 
 
