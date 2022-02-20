@@ -79,6 +79,12 @@ public class FilterToCalcRule extends AlgOptRule {
         final LogicalFilter filter = call.alg( 0 );
         final AlgNode alg = filter.getInput();
 
+        final LogicalCalc calc = from( filter, alg );
+        call.transformTo( calc );
+    }
+
+
+    public static LogicalCalc from( LogicalFilter filter, AlgNode alg ) {
         // Create a program containing a filter.
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
         final AlgDataType inputRowType = alg.getRowType();
@@ -87,8 +93,7 @@ public class FilterToCalcRule extends AlgOptRule {
         programBuilder.addCondition( filter.getCondition() );
         final RexProgram program = programBuilder.getProgram();
 
-        final LogicalCalc calc = LogicalCalc.create( alg, program );
-        call.transformTo( calc );
+        return LogicalCalc.create( alg, program );
     }
 
 }

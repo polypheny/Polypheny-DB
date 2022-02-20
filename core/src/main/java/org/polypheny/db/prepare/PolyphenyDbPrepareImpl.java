@@ -222,7 +222,10 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_VALUES_RULE,
                     EnumerableRules.ENUMERABLE_WINDOW_RULE,
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
-                    EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE );
+                    EnumerableRules.ENUMERABLE_TABLE_FUNCTION_SCAN_RULE,
+                    EnumerableRules.ENUMERABLE_CALC_RULE,
+                    EnumerableRules.ENUMERABLE_FILTER_TO_CALC_RULE,
+                    EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(

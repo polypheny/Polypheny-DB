@@ -78,6 +78,12 @@ public class ProjectToCalcRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalProject project = call.alg( 0 );
         final AlgNode input = project.getInput();
+        final LogicalCalc calc = from( project, input );
+        call.transformTo( calc );
+    }
+
+
+    public static LogicalCalc from( LogicalProject project, AlgNode input ) {
         final RexProgram program =
                 RexProgram.create(
                         input.getRowType(),
@@ -85,8 +91,7 @@ public class ProjectToCalcRule extends AlgOptRule {
                         null,
                         project.getRowType(),
                         project.getCluster().getRexBuilder() );
-        final LogicalCalc calc = LogicalCalc.create( input, program );
-        call.transformTo( calc );
+        return LogicalCalc.create( input, program );
     }
 
 }
