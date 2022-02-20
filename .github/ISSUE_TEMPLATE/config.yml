@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Polypheny Community Support
+    url: https://github.com/polypheny/Polypheny-DB/discussions
+    about: If you have a question, or are seeking advice, please post on our discussions' forum! The community loves to chime in to help.
+  - name: 🤝 Polypheny Discord Community
+    url: https://discord.com/channels/819939709597122572/819948267739676702
+    about: If you want to team up or engage with other contributors, join our Discord channel! 
+  - name: 📚 Documentation
+    url: https://polypheny.org/documentation/
+    about: Please check out the documentation. There are also hands-on guides to get started with Polypheny-DB.
