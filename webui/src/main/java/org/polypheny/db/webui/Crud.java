@@ -1404,15 +1404,16 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Get the exported tables of a DataSource that a table originates from
+     * Get additional columns of the DataSource that are not mapped to the table.
      */
-    void getExportedColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
+    void getAvailableSourceColumns( final Context ctx ) throws UnknownDatabaseException, UnknownTableException, UnknownSchemaException {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() ).placementsByAdapter;
+        CatalogTable table = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+        ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getColumnPlacementsByAdapter( table.id );
         Set<Integer> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
-            log.warn( String.format( "The number of DataSources of a Table should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
+            log.warn( String.format( "The number of sources of an entity should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
         }
         List<Result> exportedColumns = new ArrayList<>();
         for ( int adapterId : adapterIds ) {
@@ -1444,7 +1445,7 @@ public class Crud implements InformationObserver {
 
         }
 
-        ctx.json( new Result( "Could not retrieve exported Columns." ) );
+        ctx.json( new Result( "Could not retrieve exported source fields." ) );
     }
 
 
@@ -1964,7 +1965,7 @@ public class Crud implements InformationObserver {
             }
 
             // Get functional indexes
-            for ( Integer storeId : catalogTable.placementsByAdapter.keySet() ) {
+            for ( Integer storeId : catalogTable.dataPlacements ) {
                 Adapter adapter = AdapterManager.getInstance().getAdapter( storeId );
                 DataStore store;
                 if ( adapter instanceof DataStore ) {
@@ -2094,7 +2095,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.tableType );
+            Placement p = new Placement( table.partitionProperty.isPartitioned, catalog.getPartitionGroupNames( table.id ), table.tableType );
             if ( table.tableType == TableType.VIEW ) {
 
                 return p;
@@ -3604,7 +3605,7 @@ public class Crud implements InformationObserver {
 
             DbColumn dbCol = new DbColumn(
                     metaData.getName(),
-                    metaData.getType().getFullTypeString(),
+                    metaData.getType().getPolyType().getTypeName(),
                     metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1),
                     metaData.getType().getPrecision(),
                     sort,

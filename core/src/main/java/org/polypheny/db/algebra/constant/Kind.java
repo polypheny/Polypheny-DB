@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,15 @@ import org.polypheny.db.nodes.Node;
 /**
  * Enumerates the possible types of {@link Node}.
  *
- * The values are immutable, canonical constants, so you can use Kinds to find particular types of expressions quickly. To identity a call to a common operator such as '=', use {@link Node#isA}:
+ * The values are immutable, canonical constants, so you can use Kinds to find particular types of expressions quickly.
+ * To identity a call to a common operator such as '=', use {@link Node#isA}:
  *
  * <blockquote>
  * exp.{@link Node#isA isA}({@link #EQUALS})
  * </blockquote>
  *
- * Only commonly-used nodes have their own type; other nodes are of type {@link #OTHER}. Some of the values, such as {@link #SET_QUERY}, represent aggregates.
+ * Only commonly-used nodes have their own type; other nodes are of type {@link #OTHER}. Some of the values, such as
+ * {@link #SET_QUERY}, represent aggregates.
  *
  * To quickly choose between a number of options, use a switch statement:
  *
@@ -53,16 +55,19 @@ import org.polypheny.db.nodes.Node;
  *
  * Note that we do not even have to check that a {@code SqlNode} is a {@link Call}.
  *
- * To identify a category of expressions, use {@code SqlNode.isA} with an aggregate Kind. The following expression will return <code>true</code> for calls to '=' and '&gt;=', but <code>false</code> for the constant '5', or a call to '+':
+ * To identify a category of expressions, use {@code SqlNode.isA} with an aggregate Kind. The following expression will
+ * return <code>true</code> for calls to '=' and '&gt;=', but <code>false</code> for the constant '5', or a call to '+':
  *
  * <blockquote>
  * <pre>exp.isA({@link #COMPARISON Kind.COMPARISON})</pre>
  * </blockquote>
  *
- * RexNode also has a {@code getKind} method; {@code Kind} values are preserved during translation from {@code SqlNode} to {@code RexNode}, where applicable.
+ * RexNode also has a {@code getKind} method; {@code Kind} values are preserved during translation from {@code SqlNode}
+ * to {@code RexNode}, where applicable.
  *
- * There is no water-tight definition of "common", but that's OK. There will always be operators that don't have their own kind, and for these we use the {@code SqlOperator}. But for really the common ones, e.g. the many places where we are looking
- * for {@code AND}, {@code OR} and {@code EQUALS}, the enum helps.
+ * There is no water-tight definition of "common", but that's OK. There will always be operators that don't have their own
+ * kind, and for these we use the {@code SqlOperator}. But for really the common ones, e.g. the many places where we are
+ * looking for {@code AND}, {@code OR} and {@code EQUALS}, the enum helps.
  *
  * (If we were using Scala, {@link Operator} would be a case class, and we wouldn't need {@code Kind}. But we're not.)
  */
@@ -85,7 +90,8 @@ public enum Kind {
     /**
      * JOIN operator or compound FROM clause.
      *
-     * A FROM clause with more than one table is represented as if it were a join. For example, "FROM x, y, z" is represented as "JOIN(x, JOIN(x, y))".
+     * A FROM clause with more than one table is represented as if it were a join. For example, "FROM x, y, z" is represented
+     * as "JOIN(x, JOIN(x, y))".
      */
     JOIN,
 
@@ -748,7 +754,8 @@ public enum Kind {
     LATERAL,
 
     /**
-     * Table operator which converts user-defined transform into a relation, for example, <code>select * from TABLE(udx(x, y, z))</code>. See also the {@link #EXPLICIT_TABLE} prefix operator.
+     * Table operator which converts user-defined transform into a relation, for example,
+     * <code>select * from TABLE(udx(x, y, z))</code>. See also the {@link #EXPLICIT_TABLE} prefix operator.
      */
     COLLECTION_TABLE,
 
@@ -1134,6 +1141,11 @@ public enum Kind {
     DROP_TABLE,
 
     /**
+     * {@code ALTER TABLE xxx DROP COLUMN} DDL statement.
+     */
+    DROP_COLUMN,
+
+    /**
      * {@code CREATE VIEW} DDL statement.
      */
     CREATE_VIEW,
@@ -1216,7 +1228,9 @@ public enum Kind {
     /**
      * DDL statement not handled above.
      *
-     * <b>Note to other projects</b>: If you are extending Polypheny-DB's SQL parser and have your own object types you no doubt want to define CREATE and DROP commands for them. Use OTHER_DDL in the short term, but we are happy to add new enum values for your object types. Just ask!
+     * <b>Note to other projects</b>: If you are extending Polypheny-DB's SQL parser and have your own object types you no
+     * doubt want to define CREATE and DROP commands for them. Use OTHER_DDL in the short term, but we are happy to add new
+     * enum values for your object types. Just ask!
      */
     OTHER_DDL,
 
@@ -1315,9 +1329,39 @@ public enum Kind {
     /**
      * Category consisting of all built-in aggregate functions.
      */
-    public static final EnumSet<Kind> AGGREGATE =
-            EnumSet.of( COUNT, SUM, SUM0, MIN, MAX, LEAD, LAG, FIRST_VALUE, LAST_VALUE, COVAR_POP, COVAR_SAMP, REGR_COUNT, REGR_SXX, REGR_SYY, AVG, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, NTILE, COLLECT,
-                    FUSION, SINGLE_VALUE, ROW_NUMBER, RANK, PERCENT_RANK, DENSE_RANK, CUME_DIST, JSON_ARRAYAGG, JSON_OBJECTAGG, BIT_AND, BIT_OR );
+    public static final EnumSet<Kind> AGGREGATE = EnumSet.of(
+            COUNT,
+            SUM,
+            SUM0,
+            MIN,
+            MAX,
+            LEAD,
+            LAG,
+            FIRST_VALUE,
+            LAST_VALUE,
+            COVAR_POP,
+            COVAR_SAMP,
+            REGR_COUNT,
+            REGR_SXX,
+            REGR_SYY,
+            AVG,
+            STDDEV_POP,
+            STDDEV_SAMP,
+            VAR_POP,
+            VAR_SAMP,
+            NTILE,
+            COLLECT,
+            FUSION,
+            SINGLE_VALUE,
+            ROW_NUMBER,
+            RANK,
+            PERCENT_RANK,
+            DENSE_RANK,
+            CUME_DIST,
+            JSON_ARRAYAGG,
+            JSON_OBJECTAGG,
+            BIT_AND,
+            BIT_OR );
 
     /**
      * Category consisting of all DML operators.
@@ -1329,16 +1373,48 @@ public enum Kind {
      * {@link #MERGE},
      * {@link #PROCEDURE_CALL}.
      *
-     * NOTE jvs 1-June-2006: For now we treat procedure calls as DML; this makes it easy for JDBC clients to call execute or executeUpdate and not have to process dummy cursor results.
-     * If in the future we support procedures which return results sets, we'll need to refine this.
+     * NOTE jvs 1-June-2006: For now we treat procedure calls as DML; this makes it easy for JDBC clients to call execute or
+     * executeUpdate and not have to process dummy cursor results. If in the future we support procedures which return
+     * results sets, we'll need to refine this.
      */
-    public static final EnumSet<Kind> DML = EnumSet.of( INSERT, DELETE, UPDATE, MERGE, PROCEDURE_CALL );
+    public static final EnumSet<Kind> DML = EnumSet.of(
+            INSERT,
+            DELETE,
+            UPDATE,
+            MERGE,
+            PROCEDURE_CALL );
 
     /**
      * Category consisting of all DDL operators.
      */
-    public static final EnumSet<Kind> DDL =
-            EnumSet.of( COMMIT, ROLLBACK, ALTER_SESSION, CREATE_SCHEMA, CREATE_FOREIGN_SCHEMA, DROP_SCHEMA, CREATE_TABLE, ALTER_TABLE, DROP_TABLE, CREATE_VIEW, ALTER_VIEW, DROP_VIEW, CREATE_MATERIALIZED_VIEW, ALTER_MATERIALIZED_VIEW, DROP_MATERIALIZED_VIEW, CREATE_SEQUENCE, ALTER_SEQUENCE, DROP_SEQUENCE, CREATE_INDEX, ALTER_INDEX, DROP_INDEX, CREATE_TYPE, DROP_TYPE, SET_OPTION, TRUNCATE, ALTER_SCHEMA, OTHER_DDL );
+    public static final EnumSet<Kind> DDL = EnumSet.of(
+            COMMIT,
+            ROLLBACK,
+            ALTER_SESSION,
+            CREATE_SCHEMA,
+            CREATE_FOREIGN_SCHEMA,
+            DROP_SCHEMA,
+            CREATE_TABLE,
+            ALTER_TABLE,
+            DROP_TABLE,
+            CREATE_VIEW,
+            ALTER_VIEW,
+            DROP_VIEW,
+            CREATE_MATERIALIZED_VIEW,
+            ALTER_MATERIALIZED_VIEW,
+            DROP_MATERIALIZED_VIEW,
+            CREATE_SEQUENCE,
+            ALTER_SEQUENCE,
+            DROP_SEQUENCE,
+            CREATE_INDEX,
+            ALTER_INDEX,
+            DROP_INDEX,
+            CREATE_TYPE,
+            DROP_TYPE,
+            SET_OPTION,
+            TRUNCATE,
+            ALTER_SCHEMA,
+            OTHER_DDL );
 
     /**
      * Category consisting of query node types.
@@ -1352,7 +1428,15 @@ public enum Kind {
      * {@link #ORDER_BY},
      * {@link #EXPLICIT_TABLE}.
      */
-    public static final EnumSet<Kind> QUERY = EnumSet.of( SELECT, UNION, INTERSECT, EXCEPT, VALUES, WITH, ORDER_BY, EXPLICIT_TABLE );
+    public static final EnumSet<Kind> QUERY = EnumSet.of(
+            SELECT,
+            UNION,
+            INTERSECT,
+            EXCEPT,
+            VALUES,
+            WITH,
+            ORDER_BY,
+            EXPLICIT_TABLE );
 
     /**
      * Category consisting of all expression operators.
@@ -1379,8 +1463,12 @@ public enum Kind {
     public static final Set<Kind> EXPRESSION =
             EnumSet.complementOf(
                     concat(
-                            EnumSet.of( AS, ARGUMENT_ASSIGNMENT, DEFAULT, RUNNING, FINAL, LAST, FIRST, PREV, NEXT, DESCENDING, CUBE, ROLLUP, GROUPING_SETS, EXTEND, LATERAL, SELECT, JOIN, OTHER_FUNCTION, POSITION, CAST, TRIM, FLOOR, CEIL, TIMESTAMP_ADD, TIMESTAMP_DIFF, EXTRACT,
-                                    LITERAL_CHAIN, JDBC_FN, PRECEDING, FOLLOWING, ORDER_BY, NULLS_FIRST, NULLS_LAST, COLLECTION_TABLE, TABLESAMPLE, VALUES, WITH, WITH_ITEM, SKIP_TO_FIRST, SKIP_TO_LAST, JSON_VALUE_EXPRESSION, JSON_API_COMMON_SYNTAX ),
+                            EnumSet.of( AS, ARGUMENT_ASSIGNMENT, DEFAULT, RUNNING, FINAL, LAST, FIRST, PREV, NEXT, DESCENDING,
+                                    CUBE, ROLLUP, GROUPING_SETS, EXTEND, LATERAL, SELECT, JOIN, OTHER_FUNCTION, POSITION,
+                                    CAST, TRIM, FLOOR, CEIL, TIMESTAMP_ADD, TIMESTAMP_DIFF, EXTRACT, LITERAL_CHAIN, JDBC_FN,
+                                    PRECEDING, FOLLOWING, ORDER_BY, NULLS_FIRST, NULLS_LAST, COLLECTION_TABLE, TABLESAMPLE,
+                                    VALUES, WITH, WITH_ITEM, SKIP_TO_FIRST, SKIP_TO_LAST, JSON_VALUE_EXPRESSION,
+                                    JSON_API_COMMON_SYNTAX ),
                             AGGREGATE, DML, DDL ) );
 
     /**
@@ -1395,21 +1483,39 @@ public enum Kind {
      *
      * Consists of regular functions {@link #OTHER_FUNCTION} and special functions {@link #ROW}, {@link #TRIM}, {@link #CAST}, {@link #JDBC_FN}.
      */
-    public static final Set<Kind> FUNCTION = EnumSet.of( OTHER_FUNCTION, ROW, TRIM, LTRIM, RTRIM, CAST, JDBC_FN, POSITION );
+    public static final Set<Kind> FUNCTION = EnumSet.of(
+            OTHER_FUNCTION,
+            ROW,
+            TRIM,
+            LTRIM,
+            RTRIM,
+            CAST,
+            JDBC_FN,
+            POSITION );
 
     /**
      * Category of SqlAvgAggFunction.
      *
      * Consists of {@link #AVG}, {@link #STDDEV_POP}, {@link #STDDEV_SAMP}, {@link #VAR_POP}, {@link #VAR_SAMP}.
      */
-    public static final Set<Kind> AVG_AGG_FUNCTIONS = EnumSet.of( AVG, STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP );
+    public static final Set<Kind> AVG_AGG_FUNCTIONS = EnumSet.of(
+            AVG,
+            STDDEV_POP,
+            STDDEV_SAMP,
+            VAR_POP,
+            VAR_SAMP );
 
     /**
      * Category of SqlCovarAggFunction.
      *
      * Consists of {@link #COVAR_POP}, {@link #COVAR_SAMP}, {@link #REGR_SXX}, {@link #REGR_SYY}.
      */
-    public static final Set<Kind> COVAR_AVG_AGG_FUNCTIONS = EnumSet.of( COVAR_POP, COVAR_SAMP, REGR_COUNT, REGR_SXX, REGR_SYY );
+    public static final Set<Kind> COVAR_AVG_AGG_FUNCTIONS = EnumSet.of(
+            COVAR_POP,
+            COVAR_SAMP,
+            REGR_COUNT,
+            REGR_SXX,
+            REGR_SYY );
 
     /**
      * Category of comparison operators.
@@ -1423,7 +1529,14 @@ public enum Kind {
      * {@link #LESS_THAN_OR_EQUAL},
      * {@link #GREATER_THAN_OR_EQUAL}.
      */
-    public static final Set<Kind> COMPARISON = EnumSet.of( IN, EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL );
+    public static final Set<Kind> COMPARISON = EnumSet.of(
+            IN,
+            EQUALS,
+            NOT_EQUALS,
+            LESS_THAN,
+            GREATER_THAN,
+            GREATER_THAN_OR_EQUAL,
+            LESS_THAN_OR_EQUAL );
 
     public static final Set<Kind> ORDER = EnumSet.of( ORDER_BY );
 
@@ -1464,7 +1577,8 @@ public enum Kind {
 
 
     /**
-     * Returns the kind that corresponds to this operator but in the opposite direction. Or returns this, if this kind is not reversible.
+     * Returns the kind that corresponds to this operator but in the opposite direction. Or returns this,
+     * if this kind is not reversible.
      *
      * For example, {@code GREATER_THAN.reverse()} returns {@link #LESS_THAN}.
      */
@@ -1489,7 +1603,8 @@ public enum Kind {
      *
      * For example, {@code IS_NOT_NULL.negate()} returns {@link #IS_NULL}.
      *
-     * For {@link #IS_TRUE}, {@link #IS_FALSE}, {@link #IS_NOT_TRUE}, {@link #IS_NOT_FALSE}, nullable inputs need to be treated carefully.
+     * For {@link #IS_TRUE}, {@link #IS_FALSE}, {@link #IS_NOT_TRUE}, {@link #IS_NOT_FALSE}, nullable inputs need to be
+     * treated carefully.
      *
      * {@code NOT(IS_TRUE(null))} = {@code NOT(false)} = {@code true}, while {@code IS_FALSE(null)} = {@code false},
      * so {@code NOT(IS_TRUE(X))} should be {@code IS_NOT_TRUE(X)}.
@@ -1525,7 +1640,8 @@ public enum Kind {
      * Returns the kind that you get if you negate this kind.
      * To conform to null semantics, null value should not be compared.
      *
-     * For {@link #IS_TRUE}, {@link #IS_FALSE}, {@link #IS_NOT_TRUE} and {@link #IS_NOT_FALSE}, nullable inputs need to be treated carefully:
+     * For {@link #IS_TRUE}, {@link #IS_FALSE}, {@link #IS_NOT_TRUE} and {@link #IS_NOT_FALSE}, nullable inputs
+     * need to be treated carefully:
      *
      * <ul>
      * <li>NOT(IS_TRUE(null)) = NOT(false) = true</li>
@@ -1570,7 +1686,8 @@ public enum Kind {
     /**
      * Returns whether this {@code Kind} belongs to a given category.
      *
-     * A category is a collection of kinds, not necessarily disjoint. For example, QUERY is { SELECT, UNION, INTERSECT, EXCEPT, VALUES, ORDER_BY, EXPLICIT_TABLE }.
+     * A category is a collection of kinds, not necessarily disjoint.
+     * For example, QUERY is { SELECT, UNION, INTERSECT, EXCEPT, VALUES, ORDER_BY, EXPLICIT_TABLE }.
      *
      * @param category Category
      * @return Whether this kind belongs to the given category

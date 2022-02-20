@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -90,7 +91,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // We need a columnPlacement for every partition
         Map<Long, List<CatalogColumnPlacement>> placementDistribution = new HashMap<>();
-        if ( table.isPartitioned ) {
+        if ( table.partitionProperty.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( table.partitionProperty.partitionType );
             placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, Collections.singletonList( store.id ) );
@@ -104,7 +105,9 @@ public class DataMigratorImpl implements DataMigrator {
             Statement sourceStatement = transaction.createStatement();
             Statement targetStatement = transaction.createStatement();
 
-            AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
+            Map<Long, List<CatalogColumnPlacement>> subDistribution = new HashMap<>( placementDistribution );
+            subDistribution.keySet().retainAll( Arrays.asList( partitionId ) );
+            AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
             AlgRoot targetAlg;
             if ( Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( store.id, table.id ).size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
@@ -381,9 +384,10 @@ public class DataMigratorImpl implements DataMigrator {
 
     private List<CatalogColumnPlacement> selectSourcePlacements( CatalogTable table, List<CatalogColumn> columns, int excludingAdapterId ) {
         // Find the adapter with the most column placements
+        Catalog catalog = Catalog.getInstance();
         int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
+        for ( Entry<Integer, ImmutableList<Long>> entry : catalog.getColumnPlacementsByAdapter( table.id ).entrySet() ) {
             if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -399,10 +403,10 @@ public class DataMigratorImpl implements DataMigrator {
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         for ( long cid : table.columnIds ) {
             if ( columnIds.contains( cid ) ) {
-                if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
-                    placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+                if ( catalog.getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( cid ) ) {
+                    placementList.add( catalog.getColumnPlacement( adapterIdWithMostPlacements, cid ) );
                 } else {
-                    for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacement( cid ) ) {
+                    for ( CatalogColumnPlacement placement : catalog.getColumnPlacement( cid ) ) {
                         if ( placement.adapterId != excludingAdapterId ) {
                             placementList.add( placement );
                             break;
@@ -605,7 +609,7 @@ public class DataMigratorImpl implements DataMigrator {
             int partitionColumnIndex = -1;
             String parsedValue = null;
             String nullifiedPartitionValue = partitionManager.getUnifiedNullValue();
-            if ( targetTable.isPartitioned ) {
+            if ( targetTable.partitionProperty.isPartitioned ) {
                 if ( resultColMapping.containsKey( targetTable.partitionProperty.partitionColumnId ) ) {
                     partitionColumnIndex = resultColMapping.get( targetTable.partitionProperty.partitionColumnId );
                 } else {

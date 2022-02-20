@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogPartitionGroup;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -101,10 +102,10 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        if ( !catalogTable.isPartitioned ) {
+        if ( !catalogTable.partitionProperty.isPartitioned ) {
             throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
 
@@ -122,7 +123,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
         int storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
-        if ( !catalogTable.placementsByAdapter.containsKey( storeId ) ) {
+        if ( !catalogTable.dataPlacements.contains( storeId ) ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
@@ -171,12 +172,16 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             return;
         }
         // Update
-        DdlManager.getInstance().modifyPartitionPlacement(
-                catalogTable,
-                tempPartitionList,
-                storeInstance,
-                statement
-        );
+        try {
+            DdlManager.getInstance().modifyPartitionPlacement(
+                    catalogTable,
+                    tempPartitionList,
+                    storeInstance,
+                    statement
+            );
+        } catch ( LastPlacementException e ) {
+            throw new RuntimeException( "Failed to execute requested partition modification. This change would remove one partition entirely from table '" + catalogTable.name + "'", e );
+        }
     }
 
 }

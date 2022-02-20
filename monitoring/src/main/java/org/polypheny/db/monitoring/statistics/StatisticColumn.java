@@ -33,31 +33,27 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
 
     @Expose
     @Getter
-    private final String schema;
+    private String schema;
 
     @Expose
     @Getter
-    private final String table;
+    private String table;
 
     @Expose
     @Getter
-    private final String column;
+    private String column;
 
     @Getter
-    private final Long schemaId;
+    private final long schemaId;
 
     @Getter
-    private final Long tableId;
+    private final long tableId;
 
     @Getter
-    private final Long columnId;
+    private final long columnId;
 
     @Getter
     private final PolyType type;
-
-    @Expose
-    @Getter
-    private final String qualifiedColumnName;
 
     @Expose
     @Setter
@@ -72,20 +68,26 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     @Expose
     @Getter
     @Setter
-    protected int count;
+    protected Integer count;
 
 
-    public StatisticColumn( Long schemaId, Long tableId, Long columnId, PolyType type ) {
+    public StatisticColumn( long schemaId, long tableId, long columnId, PolyType type ) {
         this.schemaId = schemaId;
         this.tableId = tableId;
         this.columnId = columnId;
         this.type = type;
 
         Catalog catalog = Catalog.getInstance();
-        this.schema = catalog.getSchema( schemaId ).name;
-        this.table = catalog.getTable( tableId ).name;
-        this.column = catalog.getColumn( columnId ).name;
-        this.qualifiedColumnName = this.schema + "." + this.table + "." + this.column;
+        if ( catalog.checkIfExistsTable( tableId ) ) {
+            this.schema = catalog.getSchema( schemaId ).name;
+            this.table = catalog.getTable( tableId ).name;
+            this.column = catalog.getColumn( columnId ).name;
+        }
+    }
+
+
+    public String getQualifiedColumnName() {
+        return this.schema + "." + this.table + "." + this.column;
     }
 
 
@@ -99,5 +101,20 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     public abstract void insert( List<T> values );
 
     public abstract String toString();
+
+
+    public void updateColumnName( String columnName ) {
+        this.column = columnName;
+    }
+
+
+    public void updateTableName( String tableName ) {
+        this.table = tableName;
+    }
+
+
+    public void updateSchemaName( String schemaName ) {
+        this.schema = schemaName;
+    }
 
 }

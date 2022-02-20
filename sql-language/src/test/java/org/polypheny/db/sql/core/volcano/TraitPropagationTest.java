@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.avatica.PolyphenyDbServerStatement;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.jdbc.PolyphenyDbServerStatement;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptAbstractTable;
 import org.polypheny.db.plan.AlgOptCluster;

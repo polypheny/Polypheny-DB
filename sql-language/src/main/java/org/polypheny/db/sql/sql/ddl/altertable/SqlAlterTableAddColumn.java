@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
         if ( column.names.size() != 1 ) {
@@ -131,7 +131,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type store (and not source)
-        for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
+        for ( int storeId : catalogTable.dataPlacements ) {
             getDataStoreInstance( storeId );
         }
 

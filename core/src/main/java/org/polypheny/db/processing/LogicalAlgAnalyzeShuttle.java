@@ -266,10 +266,10 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         CatalogTable catalogTable = Catalog.getInstance().getTable( ((LogicalTable) logicalTable).getTableId() );
 
         // Only if table is partitioned
-        if ( catalogTable.isPartitioned ) {
+        if ( catalogTable.partitionProperty.isPartitioned ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,
-                    catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
+                    catalogTable.columnIds.indexOf( catalogTable.partitionProperty.partitionColumnId ) );
             filter.accept( whereClauseVisitor );
 
             int scanId = filter.getInput().getId();

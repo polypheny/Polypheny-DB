@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,7 @@ public class MongoStore extends DataStore {
     public void truncate( Context context, CatalogTable table ) {
         commitAll();
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), table.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
             // DDL is auto-committed
             currentSchema.database.getCollection( partitionPlacement.physicalTableName ).deleteMany( new Document() );
         }
@@ -345,7 +345,7 @@ public class MongoStore extends DataStore {
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         commitAll();
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
             Document field = new Document().append( partitionPlacement.physicalTableName, 1 );
             Document filter = new Document().append( "$unset", field );
 
@@ -389,7 +389,7 @@ public class MongoStore extends DataStore {
 
 
     private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns ) {
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), catalogIndex.key.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), catalogIndex.key.tableId ) ) {
             Document doc = new Document();
             columns.forEach( name -> doc.append( name, 1 ) );
 

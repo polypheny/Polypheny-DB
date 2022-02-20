@@ -183,6 +183,13 @@ public class InformationPage extends Refreshable {
     }
 
 
+    public void removeGroup( final InformationGroup... groups ) {
+        for ( InformationGroup g : groups ) {
+            this.groups.remove( g.getId(), g );
+        }
+    }
+
+
     /**
      * Display all InformationObjects withing this page with the full width in the UI
      */

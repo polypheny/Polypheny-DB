@@ -58,7 +58,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).plus( right.computeSelfCost( planner, mq ) ).multiplyBy( 2 );
+        return super.computeSelfCost( planner, mq ).plus( right.computeSelfCost( planner, mq ) ).multiplyBy( 10 );
     }
 
 

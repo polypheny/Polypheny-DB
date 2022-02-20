@@ -17,7 +17,6 @@ buildscript {
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.5.31"
     id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.1"
-    id "com.github.johnrengelman.shadow" version "7.0.0"
 }
 
 
@@ -43,12 +42,13 @@ allprojects {
     compileTestJava.options.encoding = "UTF-8"
     javadoc.options.encoding = "UTF-8"
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    sourceCompatibility = 1.11
+    targetCompatibility = 1.11
 
     tasks.withType(JavaCompile) {
         options.encoding = "UTF-8"
     }
+
 
     repositories {
         mavenLocal()
@@ -94,7 +94,7 @@ allprojects {
     }
     dockerTests.dependsOn(testClasses)
 
-    String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : "hsqldb"
+    String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : 'hsqldb'
 
     task integrationTests(type: Test) {
         description = 'Runs integration tests.'

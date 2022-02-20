@@ -16,17 +16,15 @@
 
 package org.polypheny.db.monitoring.core;
 
-import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
@@ -34,9 +32,6 @@ import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.repository.MonitoringRepository;
 import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
-import org.polypheny.db.util.background.BackgroundTask;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 /**
@@ -46,37 +41,43 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 @Slf4j
 public class MonitoringQueueImpl implements MonitoringQueue {
 
-    // Monitoring queue which will queue all the incoming jobs.
-    private final Queue<MonitoringEvent> monitoringJobQueue = new ConcurrentLinkedQueue<>();
-
-    private final Set<UUID> queueIds = Sets.newConcurrentHashSet();
-    private final Lock processingQueueLock = new ReentrantLock();
     private final PersistentMonitoringRepository persistentRepository;
     private final MonitoringRepository statisticRepository;
+    private ThreadPoolExecutor threadPoolWorkers;
 
-    private String backgroundTaskId;
+    private final BlockingQueue eventQueue;
 
-    /**
-     * Processed events since restart.
-     */
-    private long processedEvents;
-    private long processedEventsTotal;
+    private final int CORE_POOL_SIZE;
+    private final int MAXIMUM_POOL_SIZE;
+    private final int KEEP_ALIVE_TIME;
+
+    private boolean backgroundProcessingActive;
 
 
     /**
      * Ctor which automatically will start the background task based on the given boolean
      *
-     * @param startBackGroundTask Indicates whether the background task for consuming the queue will be started.
+     * @param backgroundProcessingActive Indicates whether the background task for consuming the queue will be started.
      */
     public MonitoringQueueImpl(
-            boolean startBackGroundTask,
+            boolean backgroundProcessingActive,
             @NonNull PersistentMonitoringRepository persistentRepository,
             @NonNull MonitoringRepository statisticRepository ) {
         this.persistentRepository = persistentRepository;
         this.statisticRepository = statisticRepository;
+        this.eventQueue = new LinkedBlockingQueue();
+        this.backgroundProcessingActive = backgroundProcessingActive;
 
-        if ( startBackGroundTask ) {
-            this.startBackgroundTask();
+        this.CORE_POOL_SIZE = RuntimeConfig.MONITORING_CORE_POOL_SIZE.getInteger();
+        this.MAXIMUM_POOL_SIZE = RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.getInteger();
+        this.KEEP_ALIVE_TIME = RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.getInteger();
+
+        if ( this.backgroundProcessingActive ) {
+            RuntimeConfig.MONITORING_CORE_POOL_SIZE.setRequiresRestart( true );
+            RuntimeConfig.MONITORING_MAXIMUM_POOL_SIZE.setRequiresRestart( true );
+            RuntimeConfig.MONITORING_POOL_KEEP_ALIVE_TIME.setRequiresRestart( true );
+
+            threadPoolWorkers = new ThreadPoolExecutor( CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS, eventQueue );
         }
     }
 
@@ -91,18 +92,10 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
-    public void terminateQueue() {
-        if ( backgroundTaskId != null ) {
-            BackgroundTaskManager.INSTANCE.removeBackgroundTask( backgroundTaskId );
-        }
-    }
-
-
     @Override
     public void queueEvent( @NonNull MonitoringEvent event ) {
-        if ( !queueIds.contains( event.getId() ) ) {
-            queueIds.add( event.getId() );
-            this.monitoringJobQueue.add( event );
+        if ( backgroundProcessingActive ) {
+            threadPoolWorkers.execute( new MonitoringWorker( event ) );
         }
     }
 
@@ -114,15 +107,23 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      */
     @Override
     public long getNumberOfElementsInQueue() {
-        return queueIds.size();
+        return threadPoolWorkers.getQueue().size();
     }
 
 
     @Override
     public List<HashMap<String, String>> getInformationOnElementsInQueue() {
         List<HashMap<String, String>> infoList = new ArrayList<>();
+        List<MonitoringEvent> queueElements = new ArrayList<>();
 
-        for ( MonitoringEvent event : monitoringJobQueue.stream().limit( 100 ).collect( Collectors.toList() ) ) {
+        threadPoolWorkers.getQueue().stream().limit( 100 ).collect( Collectors.toList() )
+                .forEach(
+                        task -> queueElements.add(
+                                ((MonitoringWorker) task).getEvent()
+                        )
+                );
+
+        for ( MonitoringEvent event : queueElements ) {
             HashMap<String, String> infoRow = new HashMap<>();
             infoRow.put( "type", event.getClass().toString() );
             infoRow.put( "id", event.getId().toString() );
@@ -135,72 +136,49 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public long getNumberOfProcessedEvents( boolean all ) {
-        if ( all ) {
-            return processedEventsTotal;
-        }
-        // Returns only processed events since last restart
-        return processedEvents;
+    public long getNumberOfProcessedEvents() {
+        return threadPoolWorkers.getCompletedTaskCount();
     }
 
 
-    private void startBackgroundTask() {
-        if ( backgroundTaskId == null ) {
-            backgroundTaskId = BackgroundTaskManager.INSTANCE.registerTask(
-                    this::processQueue,
-                    "Send monitoring jobs to job consumers",
-                    BackgroundTask.TaskPriority.LOW,
-                    (TaskSchedulingType) RuntimeConfig.QUEUE_PROCESSING_INTERVAL.getEnum()
-            );
+    class MonitoringWorker implements Runnable {
+
+        @Getter
+        private MonitoringEvent event;
+
+
+        public MonitoringWorker( MonitoringEvent event ) {
+            this.event = event;
         }
-    }
 
 
-    private void processQueue() {
-        log.debug( "Start processing queue" );
-        this.processingQueueLock.lock();
+        @Override
+        public void run() {
+            processQueue();
+        }
 
-        MonitoringEvent event;
 
-        try {
-            // While there are jobs to consume:
-            int countEvents = 0;
-            while ( (event = this.getNextJob()) != null && countEvents < RuntimeConfig.QUEUE_PROCESSING_ELEMENTS.getInteger() ) {
+        private void processQueue() {
+            if ( event != null ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "get new monitoring job {}", event.getId().toString() );
                 }
 
                 // Returns list of metrics which was produced by this particular event
                 final List<MonitoringDataPoint> dataPoints = event.analyze();
-                if ( dataPoints.isEmpty() ) {
-                    continue;
-                }
-
-                // Sends all extracted metrics to subscribers
-                for ( MonitoringDataPoint dataPoint : dataPoints ) {
-                    this.persistentRepository.dataPoint( dataPoint );
-                    // Statistics are only collected if Active Tracking is switched on
-                    if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-                        this.statisticRepository.dataPoint( dataPoint );
+                if ( !dataPoints.isEmpty() ) {
+                    // Sends all extracted metrics to subscribers
+                    for ( MonitoringDataPoint dataPoint : dataPoints ) {
+                        persistentRepository.dataPoint( dataPoint );
+                        // Statistics are only collected if Active Tracking is switched on
+                        if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
+                            statisticRepository.dataPoint( dataPoint );
+                        }
                     }
                 }
-
-                countEvents++;
-                queueIds.remove( event.getId() );
             }
-            processedEvents += countEvents;
-            processedEventsTotal += countEvents;
-        } finally {
-            this.processingQueueLock.unlock();
         }
-    }
 
-
-    private MonitoringEvent getNextJob() {
-        if ( monitoringJobQueue.peek() != null ) {
-            return monitoringJobQueue.poll();
-        }
-        return null;
     }
 
 }

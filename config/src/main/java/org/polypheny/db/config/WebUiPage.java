@@ -108,7 +108,7 @@ public class WebUiPage {
     @Override
     public String toString() {
 
-        TypeAdapter<Enum<?>> enumTypeAdapter = new TypeAdapter<Enum<?>>() {
+        TypeAdapter<Enum<?>> enumTypeAdapter = new TypeAdapter<>() {
             @Override
             public void write( JsonWriter out, Enum value ) throws IOException {
                 out.beginObject();

@@ -33,11 +33,11 @@ jobs:
                 uses: nick-invision/retry@v2
                 with:
                     max_attempts: 2
-                    timeout_minutes: 30
+                    timeout_minutes: 60
                     command: ./gradlew assemble
             -   name: Execute tests
                 uses: nick-invision/retry@v2
                 with:
-                    max_attempts: 2
-                    timeout_minutes: 40
+                    max_attempts: 3
+                    timeout_minutes: 30
                     command: ./gradlew check

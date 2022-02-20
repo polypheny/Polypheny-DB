@@ -198,7 +198,7 @@ public class FileStore extends DataStore {
                 break;
             }
         }
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( ccp.adapterId, catalogTable.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( ccp.adapterId, catalogTable.id ) ) {
             File newColumnFolder = getColumnFolder( catalogColumn.id, partitionPlacement.partitionId );
             if ( !newColumnFolder.mkdir() ) {
                 throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
@@ -231,7 +231,7 @@ public class FileStore extends DataStore {
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
             File columnFile = getColumnFolder( columnPlacement.columnId, partitionPlacement.partitionId );
             try {
                 FileUtils.deleteDirectory( columnFile );
@@ -396,7 +396,7 @@ public class FileStore extends DataStore {
     @Override
     public void truncate( Context context, CatalogTable table ) {
         //context.getStatement().getTransaction().registerInvolvedStore( this );
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementByTable( getAdapterId(), table.id ) ) {
+        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
             FileTranslatableTable fileTable = (FileTranslatableTable) currentSchema.getTable( table.name + "_" + partitionPlacement.partitionId );
             try {
                 for ( String colName : fileTable.getColumnNames() ) {

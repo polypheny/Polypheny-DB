@@ -291,6 +291,7 @@ public class CassandraStore extends DataStore {
     public void dropTable( Context context, CatalogTable catalogTable, List<Long> partitionIds ) {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getAdapterId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.id );
+        partitionIds.forEach( partitionId -> catalog.deletePartitionPlacement( getAdapterId(), partitionId ) );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
 
         context.getStatement().getTransaction().registerInvolvedAdapter( this );

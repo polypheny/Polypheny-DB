@@ -18,6 +18,7 @@ package org.polypheny.db.monitoring.statistics;
 
 
 import com.google.gson.annotations.Expose;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.Getter;
@@ -49,15 +50,17 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     private final TreeSet<T> maxCache = new TreeSet<>();
 
 
-    public NumericalStatisticColumn( QueryColumn column ) {
+    public NumericalStatisticColumn( QueryResult column ) {
         super( column.getSchemaId(), column.getTableId(), column.getColumnId(), column.getType() );
     }
 
 
     @Override
     public void insert( List<T> values ) {
-        for ( T val : values ) {
-            insert( val );
+        if ( values != null && !(values.get( 0 ) instanceof ArrayList) ) {
+            for ( T val : values ) {
+                insert( val );
+            }
         }
     }
 
@@ -66,7 +69,9 @@ public class NumericalStatisticColumn<T extends Comparable<T>> extends Statistic
     public void insert( T val ) {
         if ( uniqueValues.size() < RuntimeConfig.STATISTIC_BUFFER.getInteger() ) {
             if ( !uniqueValues.contains( val ) ) {
-                uniqueValues.add( val );
+                if ( !uniqueValues.isEmpty() ) {
+                    uniqueValues.add( val );
+                }
                 minCache.add( val );
                 maxCache.add( val );
             }
