@@ -19,6 +19,7 @@ package org.polypheny.db.gui;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Font;
+import java.awt.Insets;
 import java.net.URI;
 import java.util.Objects;
 import javax.swing.ImageIcon;
@@ -89,6 +90,8 @@ public class AboutWindow {
             ossButton.setBackground( lblIcon.getBackground() );
             ossButton.setToolTipText( "Acknowledgements" );
             ossButton.addActionListener( e -> openWebsite( ossUri ) );
+            ossButton.setContentAreaFilled( false );
+            ossButton.setMargin( new Insets( 4, 24, 0, 0 ) );
             ossButton.setBounds( 258, 153, 240, 20 );
             ossButton.setHorizontalAlignment( SwingConstants.LEFT );
             add( ossButton );
@@ -121,6 +124,8 @@ public class AboutWindow {
             websiteButton.setBackground( lblIcon.getBackground() );
             websiteButton.setToolTipText( websiteUri.toString() );
             websiteButton.addActionListener( e -> openWebsite( websiteUri ) );
+            websiteButton.setMargin( new Insets( 0, 22, 0, 0 ) );
+            websiteButton.setContentAreaFilled( false );
             websiteButton.setBounds( 78, 235, 400, 20 );
             websiteButton.setHorizontalAlignment( SwingConstants.LEFT );
             add( websiteButton );
