@@ -35,8 +35,9 @@ public class EnumerableStreamerRule extends ConverterRule {
     @Override
     public AlgNode convert( AlgNode alg ) {
         final LogicalStreamer streamer = (LogicalStreamer) alg;
-        final AlgNode query = streamer.getLeft();//convert( streamer.getLeft(), streamer.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        final AlgNode prepared = streamer.getRight();//convert( streamer.getRight(), streamer.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        final AlgNode query = convert( streamer.getLeft(), streamer.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+        final AlgNode prepared = convert( streamer.getRight(), streamer.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
+
         return EnumerableStreamer.create( alg.getTraitSet().replace( EnumerableConvention.INSTANCE ), query, prepared );
     }
 

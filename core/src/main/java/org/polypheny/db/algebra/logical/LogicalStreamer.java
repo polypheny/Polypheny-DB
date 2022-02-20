@@ -90,14 +90,6 @@ public class LogicalStreamer extends Streamer {
 
             // we project the needed sources out and modify them to fit the prepared
             query = LogicalProject.create( modify.getInput(), source, update );
-            /*RexProgram program =
-            RexProgram.create(
-                    input.getRowType(),
-                    ((Project) query).getProjects(),
-                    null,
-                    query.getRowType(),
-                    rexBuilder );
-            query = LogicalCalc.create( input, program );*/
         }
 
         /////// prepared
@@ -108,18 +100,20 @@ public class LogicalStreamer extends Streamer {
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
-            algBuilder.push( LogicalValues.createOneRow( input.getCluster() ) );
+            //algBuilder.push( LogicalValues.createOneRow( input.getCluster() ) );
 
             assert input.getRowType().getFieldCount() == modify.getTable().getRowType().getFieldCount();
             // attach a projection, so the values can be inserted on execution
-            algBuilder.project(
-                    modify
-                            .getTable()
-                            .getRowType()
-                            .getFieldList()
-                            .stream()
-                            .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
-                            .collect( Collectors.toList() ) );
+            algBuilder.push(
+                    LogicalProject.create(
+                            LogicalValues.createOneRow( input.getCluster() ),
+                            input.getRowType()
+                                    .getFieldList()
+                                    .stream()
+                                    .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
+                                    .collect( Collectors.toList() ),
+                            input.getRowType() )
+            );
         }
 
         LogicalTableModify prepared = LogicalTableModify.create(
