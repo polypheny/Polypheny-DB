@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,8 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             AlgProtoDataType protoRowType,
             String physicalSchemaName,
             String physicalTableName,
-            List<String> physicalColumnNames ) {
+            List<String> physicalColumnNames,
+            Long tableId ) {
         super( Object[].class );
         this.jdbcSchema = jdbcSchema;
         this.logicalSchemaName = logicalSchemaName;
@@ -124,7 +125,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
         this.physicalColumnNames = physicalColumnNames;
         this.jdbcTableType = Objects.requireNonNull( jdbcTableType );
         this.protoRowType = protoRowType;
-
+        this.tableId = tableId;
     }
 
 

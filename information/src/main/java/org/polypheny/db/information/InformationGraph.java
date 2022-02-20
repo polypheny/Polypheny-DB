@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.polypheny.db.information;
 import com.google.gson.annotations.SerializedName;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -32,7 +33,7 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 @Accessors(chain = true, fluent = true)
 public class InformationGraph extends Information {
 
-    private HashMap<String, GraphData<? extends Number>> data = new HashMap<>();
+    private final Map<String, GraphData<? extends Number>> data = new HashMap<>();
     @SuppressWarnings("unused")
     @SerializedName("labels")
     private String[] xLabels;
@@ -59,9 +60,9 @@ public class InformationGraph extends Information {
     /**
      * Constructor
      *
-     * @param group   The group this InformationGraph object belongs to
+     * @param group The group this InformationGraph object belongs to
      * @param xLabels labels that are displayed on the x-axis
-     * @param data    data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
+     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
     @SafeVarargs
     public InformationGraph( final InformationGroup group, GraphType type, final String[] xLabels, final GraphData<? extends Number>... data ) {
@@ -74,7 +75,7 @@ public class InformationGraph extends Information {
      *
      * @param groupId The id of the group to which this InformationGraph object belongs
      * @param xLabels labels that are displayed on the x-axis
-     * @param data    data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
+     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
     @SafeVarargs
     public InformationGraph( final String groupId, GraphType type, final String[] xLabels, final GraphData<? extends Number>... data ) {
@@ -85,10 +86,10 @@ public class InformationGraph extends Information {
     /**
      * Constructor
      *
-     * @param id      unique id of the Information object
+     * @param id unique id of the Information object
      * @param groupId id of the group to which this InformationGraph object belongs
      * @param xLabels labels that are displayed on the x-axis
-     * @param data    data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
+     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
     @SafeVarargs
     public InformationGraph( final String id, final String groupId, GraphType type, final String[] xLabels, final GraphData<? extends Number>... data ) {
@@ -142,7 +143,7 @@ public class InformationGraph extends Information {
      * Set the data for this graph.
      *
      * @param xLabels labels that are displayed on the x-axis
-     * @param data    new GraphData objects. Types PIE, DOUGHNUT and POLARAREA can accept only one GraphData object
+     * @param data new GraphData objects. Types PIE, DOUGHNUT and POLARAREA can accept only one GraphData object
      */
     @SafeVarargs
     public final void updateGraph( final String[] xLabels, final GraphData<? extends Number>... data ) {
@@ -228,7 +229,7 @@ public class InformationGraph extends Information {
          * GraphData constructor
          *
          * @param dataLabel The label that describes the data
-         * @param data      Data for the graph, e.g. a line in the line-graph. The maximum amount of data points is defined by DEFAULT_MAX_LENGTH
+         * @param data Data for the graph, e.g. a line in the line-graph. The maximum amount of data points is defined by DEFAULT_MAX_LENGTH
          */
         public GraphData( final String dataLabel, final T[] data ) {
             this( dataLabel, data, DEFAULT_MAX_LENGTH );
@@ -239,7 +240,7 @@ public class InformationGraph extends Information {
          * GraphData constructor
          *
          * @param dataLabel The label that describes the data
-         * @param data      Data for the graph, e.g. a line in the line-graph
+         * @param data Data for the graph, e.g. a line in the line-graph
          * @param maxLength Maximal number of data points that should be stored.
          */
         public GraphData( final String dataLabel, final T[] data, final int maxLength ) {

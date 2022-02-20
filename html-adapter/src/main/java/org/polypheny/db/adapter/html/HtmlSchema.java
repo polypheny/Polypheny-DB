@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,7 +161,7 @@ class HtmlSchema extends AbstractSchema {
             //
             // TODO: MV: This three nulls most properly introduce trouble. Fix to have the correct row details at this point.
             //
-            final Table table = new CsvFilterableTable( source, null, null, null, null );
+            final Table table = new CsvFilterableTable( source, null, null, null, null, null );
             builder.put( Util.first( tableName, sourceSansCsv.path() ), table );
             return true;
         }
@@ -178,4 +178,5 @@ class HtmlSchema extends AbstractSchema {
 
         return false;
     }
+
 }

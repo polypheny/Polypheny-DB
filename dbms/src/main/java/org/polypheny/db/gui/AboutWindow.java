@@ -51,6 +51,7 @@ public class AboutWindow {
         frame.setBounds( 100, 100, 505, 300 );
         frame.setDefaultCloseOperation( JFrame.HIDE_ON_CLOSE );
         frame.add( new AboutPanel() );
+        frame.setAlwaysOnTop( true );
     }
 
 

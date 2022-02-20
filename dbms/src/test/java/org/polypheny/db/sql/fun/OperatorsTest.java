@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -277,10 +277,17 @@ public class OperatorsTest {
                         true
                 );
 
-                // IS FALSE(boolean is FALSE)
+                // IS FALSE (boolean IS FALSE)
                 expectedResult = ImmutableList.of();
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable Where TRUE is FALSE" ),
+                        expectedResult
+                );
+
+                // IS TRUE (boolean IS TRUE)
+                expectedResult = ImmutableList.of();
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ID, TextData FROM TestTable Where FALSE is TRUE" ),
                         expectedResult
                 );
 

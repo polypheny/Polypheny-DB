@@ -30,6 +30,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
+import org.mapdb.DBException;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 import org.polypheny.db.StatusService;
@@ -37,11 +38,11 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
-
 @Slf4j
-public class MapDbRepository implements MonitoringRepository {
+public class MapDbRepository implements PersistentMonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
@@ -57,7 +58,7 @@ public class MapDbRepository implements MonitoringRepository {
 
 
     @Override
-    public void persistDataPoint( @NonNull MonitoringDataPoint dataPoint ) {
+    public void dataPoint( @NonNull MonitoringDataPoint dataPoint ) {
         BTreeMap table = this.data.get( dataPoint.getClass() );
         if ( table == null ) {
             this.createPersistentTable( dataPoint.getClass() );
@@ -197,13 +198,35 @@ public class MapDbRepository implements MonitoringRepository {
                 }
             }
 
-            simpleBackendDb = DBMaker
-                    .fileDB( new File( folder, filePath ) )
-                    .closeOnJvmShutdown()
-                    .transactionEnable()
-                    .fileMmapEnableIfSupported()
-                    .fileMmapPreclearDisable()
-                    .make();
+            // Assume that file is locked
+            boolean fileLocked = true;
+            long secondsToWait = 30;
+
+            long timeThreshold = secondsToWait * 1000;
+
+            long start = System.currentTimeMillis();
+            long finish = System.currentTimeMillis();
+            while ( fileLocked && ((finish - start) < timeThreshold) ) {
+                try {
+                    simpleBackendDb = DBMaker
+                            .fileDB( new File( folder, filePath ) )
+                            .closeOnJvmShutdown()
+                            .transactionEnable()
+                            .fileMmapEnableIfSupported()
+                            .fileMmapPreclearDisable()
+                            .make();
+                    fileLocked = false;
+                } catch ( DBException e ) {
+                    log.warn( "Monitoring Repository is currently locked by another process. Waiting..." );
+                }
+                finish = System.currentTimeMillis();
+            }
+            // Exceeded threshold
+            if ( (finish - start) >= timeThreshold ) {
+                throw new RuntimeException( "Initializing Monitoring Repository took too long...\nMake sure that no other "
+                        + "instance of Polypheny-DB has still locked the monitoring information.\n"
+                        + "Wait a few seconds or stop the locking process and try again. " );
+            }
 
             simpleBackendDb.getStore().fileLoad();
         }

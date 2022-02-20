@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
@@ -79,14 +80,12 @@ public abstract class AbstractTable implements Table, Wrapper {
     private AlgRecordType substitutedRowType;
 
 
+    @Getter
+    protected Long tableId;
+    protected Statistic statistic = Statistics.UNKNOWN;
+
+
     protected AbstractTable() {
-    }
-
-
-    // Default implementation. Override if you have statistics.
-    @Override
-    public Statistic getStatistic() {
-        return Statistics.UNKNOWN;
     }
 
 
@@ -153,6 +152,21 @@ public abstract class AbstractTable implements Table, Wrapper {
             return f;
         } ).collect( Collectors.toList() ) );
 
+    }
+
+
+    @Override
+    public Statistic getStatistic() {
+        if ( tableId == null ) {
+            return Statistics.UNKNOWN;
+        }
+        Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( tableId );
+
+        if ( rowCount == null ) {
+            return Statistics.UNKNOWN;
+        } else {
+            return Statistics.of( Double.valueOf( rowCount ), ImmutableList.of() );
+        }
     }
 
 }

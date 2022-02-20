@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ public class InformationPage extends Refreshable {
             .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
             .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
             .registerTypeAdapter( Duration.class, Duration.getSerializer() )
+            .registerTypeAdapter( Enum.class, getSerializer() )
             .create();
 
     /**
@@ -144,7 +145,7 @@ public class InformationPage extends Refreshable {
                     id = in.nextString();
                     break;
                 case "name":
-                    name = in.nextName();
+                    name = in.nextString();
                     break;
                 case "description":
                     description = in.nextString();
@@ -182,6 +183,13 @@ public class InformationPage extends Refreshable {
     }
 
 
+    public void removeGroup( final InformationGroup... groups ) {
+        for ( InformationGroup g : groups ) {
+            this.groups.remove( g.getId(), g );
+        }
+    }
+
+
     /**
      * Display all InformationObjects withing this page with the full width in the UI
      */
@@ -214,7 +222,7 @@ public class InformationPage extends Refreshable {
      * @return this page as JSON
      */
     public String asJson() {
-        return getSerializer().toJson( this );
+        return gson.toJson( this );
     }
 
 

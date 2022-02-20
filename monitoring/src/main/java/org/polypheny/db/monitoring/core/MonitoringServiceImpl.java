@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,26 +23,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryPostCost;
-import org.polypheny.db.monitoring.persistence.MonitoringRepository;
-import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 
 
 @Slf4j
 public class MonitoringServiceImpl implements MonitoringService {
 
     private final MonitoringQueue monitoringQueue;
-    private final MonitoringRepository repository;
-    private final MonitoringServiceUi monitoringServiceUi;
+    private final PersistentMonitoringRepository repository;
 
 
     public MonitoringServiceImpl(
             @NonNull MonitoringQueue monitoringQueue,
-            @NonNull MonitoringRepository repository,
-            @NonNull MonitoringServiceUi monitoringServiceUi ) {
+            @NonNull PersistentMonitoringRepository repository ) {
 
         this.monitoringQueue = monitoringQueue;
         this.repository = repository;
-        this.monitoringServiceUi = monitoringServiceUi;
     }
 
 

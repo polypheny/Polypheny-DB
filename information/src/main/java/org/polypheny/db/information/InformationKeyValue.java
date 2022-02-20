@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.UUID;
 
 public class InformationKeyValue extends Information {
 
-    HashMap<String, String> keyValuePairs = new HashMap<>();
+    private final HashMap<String, String> keyValuePairs = new HashMap<>();
 
 
     /**
@@ -39,7 +39,7 @@ public class InformationKeyValue extends Information {
     /**
      * Constructor
      *
-     * @param id    Unique id for this Information object
+     * @param id Unique id for this Information object
      * @param group The InformationGroup to which this information belongs
      */
     InformationKeyValue( String id, InformationGroup group ) {
@@ -53,11 +53,13 @@ public class InformationKeyValue extends Information {
         return this;
     }
 
+
     public InformationKeyValue removePair( final String key ) {
         this.keyValuePairs.remove( key );
         this.notifyManager();
         return this;
     }
+
 
     public String getValue( final String key ) {
         return this.keyValuePairs.get( key );

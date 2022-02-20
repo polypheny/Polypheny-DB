@@ -85,7 +85,6 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -1302,8 +1301,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                     log.debug(
                                             "TableID: {} is partitioned on column: {} - {}",
                                             logicalTable.getTableId(),
-                                            catalogTable.partitionColumnId,
-                                            Catalog.getInstance().getColumn( catalogTable.partitionColumnId ).name );
+                                            catalogTable.partitionProperty.partitionColumnId,
+                                            Catalog.getInstance().getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
                                 }
                                 List<Long> identifiedPartitions = new ArrayList<>();
                                 for ( String partitionValue : partitionValues ) {
@@ -1311,7 +1310,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         log.debug( "Extracted PartitionValue: {}", partitionValue );
                                     }
                                     long identifiedPartition = PartitionManagerFactory.getInstance()
-                                            .getPartitionManager( catalogTable.partitionType )
+                                            .getPartitionManager( catalogTable.partitionProperty.partitionType )
                                             .getTargetPartitionId( catalogTable, partitionValue );
 
                                     identifiedPartitions.add( identifiedPartition );
@@ -1366,6 +1365,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             event.setAnalyze( isAnalyze );
             event.setSubQuery( isSubquery );
             event.setLogicalQueryInformation( queryInformation );
+            event.setMonitoringType( logicalRoot.kind.name() );
             statement.setMonitoringEvent( event );
         }
     }
@@ -1377,7 +1377,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             eventData.setAlgCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
             if ( selectedPlan.getPhysicalQueryClass() != null ) {
                 eventData.setPhysicalQueryClass( selectedPlan.getPhysicalQueryClass() );
-                eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateRowCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
+                //eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateRowCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
             }
 
             if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {
@@ -1387,7 +1387,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
             finalizeAccessedPartitions( eventData );
-            MonitoringServiceProvider.getInstance().monitorEvent( eventData );
         }
     }
 
@@ -1520,6 +1519,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement );
 
         return (CachedProposedRoutingPlan) routingPlan;
+    }
+
+
+    @Override
+    public void unlock( Statement statement ) {
+        LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
+    }
+
+
+    /**
+     * To acquire a global shared lock for a statement.
+     * This method is used before the statistics are updated to make sure nothing changes during the updating process.
+     */
+    @Override
+    public void lock( Statement statement ) {
+        try {
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( "DeadLock while locking to reevaluate statistics", e );
+        }
     }
 
 }

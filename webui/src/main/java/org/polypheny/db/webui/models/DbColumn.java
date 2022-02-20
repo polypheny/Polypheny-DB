@@ -130,6 +130,9 @@ public class DbColumn {
                 case "name":
                     name = in.nextString();
                     break;
+                case "physicalName":
+                    physicalName = in.nextString();
+                    break;
                 case "dataType":
                     dataType = in.nextString();
                     break;
@@ -187,6 +190,8 @@ public class DbColumn {
                 out.beginObject();
                 out.name( "name" );
                 out.value( col.name );
+                out.name( "physicalName" );
+                out.value( col.physicalName );
                 out.name( "dataType" );
                 out.value( col.dataType );
                 out.name( "collectionsType" );

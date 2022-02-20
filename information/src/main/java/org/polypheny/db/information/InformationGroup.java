@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -181,6 +181,16 @@ public class InformationGroup extends Refreshable {
     }
 
 
+    public void removeInformation( final Information... infos ) {
+        for ( Information i : infos ) {
+            if ( !i.getGroup().equals( this.id ) ) {
+                throw new InformationRuntimeException( "Something is really wrong here" );
+            }
+            this.informationObjects.remove( i.getId(), i );
+        }
+    }
+
+
     /**
      * Groups with lower uiOrder will be rendered first in the UI. The groups with no uiOrder (0) are rendered last.
      *
@@ -256,6 +266,8 @@ public class InformationGroup extends Refreshable {
                     return;
                 }
                 out.beginObject();
+                out.name( "name" );
+                out.value( value.name );
                 out.name( "id" );
                 out.value( value.id );
                 out.name( "pageId" );

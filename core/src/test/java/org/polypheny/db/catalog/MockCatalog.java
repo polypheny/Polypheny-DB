@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.NotImplementedException;
@@ -27,6 +29,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -229,6 +232,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public CatalogTable getTableFromPartition( long partitionId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
         throw new NotImplementedException();
     }
@@ -313,7 +322,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionGroupIds ) {
+    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
         throw new NotImplementedException();
     }
 
@@ -811,12 +820,6 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void updatePartitionGroupsOnDataPlacement( int adapterId, long tableId, List<Long> partitionGroupIds ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
     public List<Long> getPartitionGroupsOnDataPlacement( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
@@ -824,18 +827,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public List<Long> getPartitionGroupsIndexOnDataPlacement( int adapterId, long tableId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public void deletePartitionGroupsOnDataPlacement( int storeId, long tableId ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public boolean validatePartitionGroupDistribution( int adapterId, long tableId, long columnId, int threshold ) {
         throw new NotImplementedException();
     }
 
@@ -1007,7 +998,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementByTable( int adapterId, long tableId ) {
+    public List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( int adapterId, long tableId ) {
         throw new NotImplementedException();
     }
 
@@ -1082,6 +1073,144 @@ public abstract class MockCatalog extends Catalog {
      */
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogDataPlacement getDataPlacement( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getDataPlacements( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getDataPlacementsByRole( long tableId, DataPlacementRole role ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void addDataPlacement( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public CatalogDataPlacement addDataPlacementIfNotExists( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    protected void modifyDataPlacement( int adapterId, long tableId, CatalogDataPlacement catalogDataPlacement ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void removeDataPlacement( int adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    protected void addSingleDataPlacementToTable( Integer adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    protected void removeSingleDataPlacementFromTable( Integer adapterId, long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateDataPlacementsOnTable( long tableId, List<Integer> newDataPlacements ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    protected void addColumnsToDataPlacement( int adapterId, long tableId, List<Long> columnIds ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    protected void removeColumnsFromDataPlacement( int adapterId, long tableId, List<Long> columnIds ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    protected void addPartitionsToDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    protected void removePartitionsFromDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public void updateDataPlacement( int adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public ImmutableMap<Integer, ImmutableList<Long>> getColumnPlacementsByAdapter( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public ImmutableMap<Integer, ImmutableList<Long>> getPartitionPlacementsByAdapter( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public ImmutableMap<Integer, ImmutableList<Long>> getPartitionGroupsByAdapter( long tableId ) {
+        return null;
+    }
+
+
+    @Override
+    public boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getAllFullDataPlacements( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getAllColumnFullDataPlacements( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public List<CatalogDataPlacement> getAllPartitionFullDataPlacements( long tableId ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
+    public long getPartitionGroupByPartition( long partitionId ) {
         throw new NotImplementedException();
     }
 

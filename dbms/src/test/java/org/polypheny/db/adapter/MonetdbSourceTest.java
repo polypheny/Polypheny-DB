@@ -54,6 +54,7 @@ public class MonetdbSourceTest extends AbstractSourceTest {
             try ( Statement statement = connection.createStatement() ) {
                 Map<String, String> settings = new HashMap<>();
                 settings.put( "database", "" );
+                settings.put( "mode", "remote" );
                 settings.put( "host", "running-embedded" );
                 settings.put( "maxConnections", "25" );
                 settings.put( "password", "" );

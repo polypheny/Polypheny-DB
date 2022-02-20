@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.polypheny.db.monitoring.events.MonitoringEvent;
 import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.persistence.MonitoringRepository;
+import org.polypheny.db.monitoring.repository.MonitoringRepository;
+import org.polypheny.db.monitoring.repository.PersistentMonitoringRepository;
 
 
 class MonitoringQueueImplTest {
@@ -31,10 +32,11 @@ class MonitoringQueueImplTest {
     @Test
     public void ctor_validParameters_instanceNotNull() {
         // arrange
-        MonitoringRepository repo = Mockito.mock( MonitoringRepository.class );
+        PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
+        MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
 
         // act
-        MonitoringQueue sut = new MonitoringQueueImpl( false, repo );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
 
         // assert
         Assertions.assertNotNull( sut );
@@ -44,8 +46,9 @@ class MonitoringQueueImplTest {
     @Test
     public void queueEvent_validEvent_QueueConsistsElements() {
         // arrange
-        MonitoringRepository repo = Mockito.mock( MonitoringRepository.class );
-        MonitoringQueue sut = new MonitoringQueueImpl( false, repo );
+        PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
+        MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
         MonitoringEvent event = Mockito.mock( MonitoringEvent.class );
 
         // act
@@ -60,8 +63,9 @@ class MonitoringQueueImplTest {
     @Test
     public void queueEvent_validEvent2Times_QueueConsistsElementOnce() {
         // arrange
-        MonitoringRepository repo = Mockito.mock( MonitoringRepository.class );
-        MonitoringQueue sut = new MonitoringQueueImpl( false, repo );
+        PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
+        MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
         QueryEvent event = new QueryEvent();
 
         // act
@@ -77,8 +81,9 @@ class MonitoringQueueImplTest {
     @Test
     public void queueEvent_validEvents_QueueConsistsElements() {
         // arrange
-        MonitoringRepository repo = Mockito.mock( MonitoringRepository.class );
-        MonitoringQueue sut = new MonitoringQueueImpl( false, repo );
+        PersistentMonitoringRepository persistentRepo = Mockito.mock( PersistentMonitoringRepository.class );
+        MonitoringRepository statisticRepo = Mockito.mock( MonitoringRepository.class );
+        MonitoringQueue sut = new MonitoringQueueImpl( false, persistentRepo, statisticRepo );
         long numberOfEvents = 100L;
 
         // act

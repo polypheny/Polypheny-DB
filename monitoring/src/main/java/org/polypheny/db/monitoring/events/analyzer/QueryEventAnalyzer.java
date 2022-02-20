@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.events.analyzer;
 
 
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -31,18 +32,25 @@ public class QueryEventAnalyzer {
         QueryDataPointImpl metric = QueryDataPointImpl
                 .builder()
                 .Id( queryEvent.getId() )
+                .tables( queryEvent.getLogicalQueryInformation().getTables() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
                 .isSubQuery( queryEvent.isSubQuery() )
+                .isCommitted( queryEvent.isCommitted() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .algCompareString( queryEvent.getAlgCompareString() )
-                .accessedPartitions( queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) )
                 .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )
-                .monitoringType( "SELECT" )
+                .monitoringType( queryEvent.getMonitoringType() )
                 .physicalQueryClass( queryEvent.getPhysicalQueryClass() )
+                .availableColumnsWithTable( queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )
+                .indexSize( queryEvent.getIndexSize() )
                 .build();
-        metric.getTables().addAll( queryEvent.getLogicalQueryInformation().getTables() );
+        if ( queryEvent.getAccessedPartitions() != null ) {
+            metric.setAccessedPartitions( queryEvent.getAccessedPartitions().values().stream().flatMap( Set::stream ).collect( Collectors.toList() ) );
+        } else {
+            metric.setAccessedPartitions( Collections.emptyList() );
+        }
 
         return metric;
     }

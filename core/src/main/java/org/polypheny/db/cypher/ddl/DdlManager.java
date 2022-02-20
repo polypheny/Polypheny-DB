@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,8 @@ public abstract class DdlManager {
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+    public abstract void addDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+
 
     /**
      * Adds a new primary key to a table
@@ -282,13 +283,13 @@ public abstract class DdlManager {
     public abstract void dropIndex( CatalogTable catalogTable, String indexName, Statement statement ) throws DdlOnSourceException;
 
     /**
-     * Drop the placement of a table on a specified data store
+     * Drop the data placement of a table on a specified data store
      *
-     * @param catalogTable the table for which to to drop a placement
+     * @param catalogTable the table for which to drop a placement
      * @param storeInstance the data store from which to drop the placement
      * @param statement the query statement
      */
-    public abstract void dropPlacement( CatalogTable catalogTable, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException;
+    public abstract void dropDataPlacement( CatalogTable catalogTable, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, LastPlacementException;
 
     /**
      * Drop the primary key of a table
@@ -372,7 +373,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+    public abstract void modifyDataPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -383,7 +384,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store on which the partition placements should be altered
      * @param statement the used statement
      */
-    public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement );
+    public abstract void modifyPartitionPlacement( CatalogTable catalogTable, List<Long> partitionGroupIds, DataStore storeInstance, Statement statement ) throws LastPlacementException;
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of

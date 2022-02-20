@@ -1,0 +1,106 @@
+name: 🐞 Bug Report
+description: Let us know about a bug!
+labels: [ "C-bug" ]
+body:
+    -   type: markdown
+        attributes:
+            value: |
+                Before opening a bug report, please check if there is already a ticket for this issue.
+
+                For questions, the best place to get answers is on our [discussion forum](https://github.com/polypheny/Polypheny-DB/discussions).
+
+                ---
+
+                Thank you for taking the time to file a bug report. To address this bug as fast as possible, we need some information.
+
+                ---
+    -   type: dropdown
+        id: os
+        attributes:
+            label: Operating System (Polypheny-DB)
+            description: "On which operating system is Polypheny-DB running? "
+            multiple: true
+            options:
+                - Linux
+                - Windows
+                - macOS
+        validations:
+            required: false
+    -   type: input
+        id: polypheny-db-version
+        attributes:
+            label: Polypheny-DB Version
+            description: "Please provide the full Polypheny-DB version of your project. Or if you are in a dev environment, please specify the commit hash of the head and the name of the branch."
+            placeholder: "v0.7.1"
+        validations:
+            required: true
+    -   type: dropdown
+        id: area
+        attributes:
+            label: Affected Areas
+            description: Which areas of the project are affected
+            multiple: true
+            options:
+                - DB
+                - UI
+                - Control
+                - Client
+                - Website
+                - JDBC
+                - Python
+                - Something else (please specify in the description!)
+        validations:
+            required: true
+    -   type: dropdown
+        id: browser
+        attributes:
+            label: Browser
+            description: "If applicable (e.g., issues with Polypheny-UI): Which browser did you use to connect to the Polypheny-UI."
+            multiple: true
+            options:
+                - Chrome
+                - Firefox
+                - Safari
+                - Edge
+                - Opera
+        validations:
+            required: false
+    -   type: input
+        id: client-os
+        attributes:
+            label: Client Operating System
+            description: "If applicable (e.g., Query-to-File): Which operating system do you use? Please provide the version as well."
+            placeholder: "macOS Big Sur 11.5.2"
+        validations:
+            required: false
+    -   type: markdown
+        attributes:
+            value:
+                ---
+    -   type: textarea
+        id: bug-description
+        attributes:
+            label: Bug description
+            description: What happened? If applicable, add screenshots and any other context about the problem or additional supporting information here.
+        validations:
+            required: true
+    -   type: textarea
+        id: steps
+        attributes:
+            label: Reproduction Steps
+            description: Which steps do we need to take to reproduce this error?
+        validations:
+            required: true
+    -   type: textarea
+        id: expected
+        attributes:
+            label: Expected Behavior
+        validations:
+            required: true
+    -   type: textarea
+        id: logs
+        attributes:
+            label: Relevant log output
+            description: If applicable, provide relevant log output. No need for backticks here.
+            render: shell
+

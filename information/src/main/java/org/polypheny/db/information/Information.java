@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 
 @Slf4j
 public abstract class Information {
+
+    private static Gson gson = new Gson();
 
     /**
      * The id needs to be unique for every Information object.
@@ -61,7 +63,7 @@ public abstract class Information {
     /**
      * Constructor
      *
-     * @param id      Unique id for this Information object
+     * @param id Unique id for this Information object
      * @param groupId The id of the InformationGroup to which this information belongs
      */
     Information( final String id, final String groupId ) {
@@ -123,7 +125,6 @@ public abstract class Information {
      * @return object as JSON string
      */
     public String asJson() {
-        Gson gson = new Gson();
         return gson.toJson( this );
     }
 

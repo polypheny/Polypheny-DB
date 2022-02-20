@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,6 +128,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         this.mongoSchema = schema;
         this.collection = schema.database.getCollection( collectionName );
         this.storeId = storeId;
+        this.tableId = catalogTable.id;
     }
 
 
@@ -240,7 +241,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                 MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket(), dataContext );
                 list.add( opUtil.insert( parameterValues, dataContext ) );
             }
-
         }
 
         if ( logicalCols.size() != 0 ) {

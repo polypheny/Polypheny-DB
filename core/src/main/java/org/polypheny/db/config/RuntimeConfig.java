@@ -230,7 +230,7 @@ public enum RuntimeConfig {
     UI_USE_HARDLINKS(
             "ui/useHardlinks",
             "Whether or not to use hardlinks for temporal files in the UI. If false, softlinks are used. This config has only an effect when one or multiple file stores are deployed. "
-                    + "With hardlinks, the data you see is is the correct data that was selected during the transaction. "
+                    + "With hardlinks, the data you see is the correct data that was selected during the transaction. "
                     + "But with multiple file stores on different file systems, hardlinks won't work. "
                     + "In this case you can use softlinks, but you might see data that is more recent.",
             true,
@@ -381,17 +381,24 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "processingExecutionGroup" ),
 
-    QUEUE_PROCESSING_INTERVAL(
-            "runtime/queueProcessingInterval",
-            "Rate of passive tracking of statistics.",
-            TaskSchedulingType.EVERY_SECOND,
-            ConfigType.ENUM,
+    MONITORING_CORE_POOL_SIZE(
+            "runtime/corePoolSize",
+            "The number of threads to keep in the pool for processing workload monitoring events, even if they are idle.",
+            2,
+            ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 
-    QUEUE_PROCESSING_ELEMENTS(
-            "runtime/queueProcessingElements",
-            "Number of elements in workload queue to process per time.",
+    MONITORING_MAXIMUM_POOL_SIZE(
+            "runtime/maximumPoolSize",
+            "The maximum number of threads to allow in the pool used for processing workload monitoring events.",
             5000,
+            ConfigType.INTEGER,
+            "monitoringSettingsQueueGroup" ),
+
+    MONITORING_POOL_KEEP_ALIVE_TIME(
+            "runtime/keepAliveTime",
+            "When the number of monitoring processing threads is greater than the core, this is the maximum time that excess idle threads will wait for new tasks before terminating.",
+            10,
             ConfigType.INTEGER,
             "monitoringSettingsQueueGroup" ),
 
@@ -400,7 +407,14 @@ public enum RuntimeConfig {
             "Time interval in seconds, how often the access frequency of all TEMPERATURE-partitioned tables is analyzed and redistributed",
             BackgroundTask.TaskSchedulingType.EVERY_MINUTE,
             ConfigType.ENUM,
-            "temperaturePartitionProcessingSettingsGroup" );
+            "temperaturePartitionProcessingSettingsGroup" ),
+
+    CATALOG_DEBUG_MESSAGES(
+            "runtime/catalogDebugMessages",
+            "Enable output of catalog debug messages on the monitoring page.",
+            false,
+            ConfigType.BOOLEAN,
+            "monitoringGroup" );
 
 
     private final String key;
@@ -483,10 +497,13 @@ public enum RuntimeConfig {
                 "Polypheny-UI",
                 "Settings for this user interface." );
         //uiSettingsPage.withIcon( "fa fa-window-maximize" );
+        configManager.registerWebUiPage( uiSettingsPage );
         final WebUiGroup uiSettingsDataViewGroup = new WebUiGroup( "uiSettingsDataViewGroup", uiSettingsPage.getId() );
         uiSettingsDataViewGroup.withTitle( "Data View" );
-        configManager.registerWebUiPage( uiSettingsPage );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
+        final WebUiGroup monitoringGroup = new WebUiGroup( "monitoringGroup", uiSettingsPage.getId() );
+        monitoringGroup.withTitle( "Monitoring" );
+        configManager.registerWebUiGroup( monitoringGroup );
 
         // Workload Monitoring specific setting
         final WebUiPage monitoringSettingsPage = new WebUiPage(
