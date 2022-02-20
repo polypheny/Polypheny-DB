@@ -16,7 +16,7 @@
 
 package org.polypheny.db;
 
-
+import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
@@ -24,6 +24,7 @@ import com.github.rvesse.airline.annotations.OptionType;
 import java.awt.SystemTray;
 import java.io.File;
 import java.io.Serializable;
+import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService.ErrorConfig;
@@ -86,6 +87,9 @@ public class PolyphenyDb {
 
     private final TransactionManager transactionManager = new TransactionManagerImpl();
 
+    @Inject
+    public HelpOption helpOption;
+
     @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
     public boolean resetCatalog = false;
 
@@ -132,6 +136,10 @@ public class PolyphenyDb {
 
             // Hide dock icon on macOS systems
             System.setProperty( "apple.awt.UIElement", "true" );
+
+            if (polyphenyDb.helpOption.showHelpIfRequested()) {
+                return;
+            }
 
             polyphenyDb.runPolyphenyDb();
         } catch ( Throwable uncaught ) {
