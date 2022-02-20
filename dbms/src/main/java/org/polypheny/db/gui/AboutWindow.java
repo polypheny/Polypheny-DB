@@ -21,6 +21,7 @@ import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.Insets;
 import java.net.URI;
+import java.util.Locale;
 import java.util.Objects;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -63,6 +64,9 @@ public class AboutWindow {
 
     private static class AboutPanel extends JPanel {
 
+        private final static boolean isWindows = System.getProperty( "os.name" ).toLowerCase( Locale.ROOT ).contains( "windows" );
+
+
         @SneakyThrows
         public AboutPanel() {
             setBounds( 100, 100, 505, 300 );
@@ -91,7 +95,9 @@ public class AboutWindow {
             ossButton.setToolTipText( "Acknowledgements" );
             ossButton.addActionListener( e -> openWebsite( ossUri ) );
             ossButton.setContentAreaFilled( false );
-            ossButton.setMargin( new Insets( 4, 24, 0, 0 ) );
+            if ( isWindows ) {
+                ossButton.setMargin( new Insets( 4, 24, 0, 0 ) );
+            }
             ossButton.setBounds( 258, 153, 240, 20 );
             ossButton.setHorizontalAlignment( SwingConstants.LEFT );
             add( ossButton );
@@ -124,7 +130,9 @@ public class AboutWindow {
             websiteButton.setBackground( lblIcon.getBackground() );
             websiteButton.setToolTipText( websiteUri.toString() );
             websiteButton.addActionListener( e -> openWebsite( websiteUri ) );
-            websiteButton.setMargin( new Insets( 0, 22, 0, 0 ) );
+            if ( isWindows ) {
+                websiteButton.setMargin( new Insets( 0, 22, 0, 0 ) );
+            }
             websiteButton.setContentAreaFilled( false );
             websiteButton.setBounds( 78, 235, 400, 20 );
             websiteButton.setHorizontalAlignment( SwingConstants.LEFT );
