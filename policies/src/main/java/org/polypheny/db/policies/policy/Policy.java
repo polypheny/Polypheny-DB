@@ -87,11 +87,11 @@ public class Policy {
     private void addDefaulClauses() {
         switch ( target ) {
             case POLYPHENY:
-                Map<ClauseName, Clause> registeredClauses = ClausesRegister.getRegistry();
-                for ( Entry<ClauseName, Clause> clause : registeredClauses.entrySet() ) {
+                Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
+                for ( Entry<Integer, Clause> clause : registeredClauses.entrySet() ) {
                     if ( clause.getValue().isDefault() ) {
                         clauses.put( clause.getValue().getId(), clause.getValue() );
-                        clausesByName.put( clause.getKey(), clause.getValue().getId() );
+                        clausesByName.put( clause.getValue().getClauseName(), clause.getValue().getId() );
                     }
                 }
                 log.warn( "Yeey, default policies for Polypheny are added." );

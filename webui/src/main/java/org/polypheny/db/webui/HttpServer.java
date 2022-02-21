@@ -229,6 +229,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/setPolicies", crud.policyCrud::setPolicies );
 
+        webuiServer.post( "/addPolicy", crud.policyCrud::addPolicy );
+
+        webuiServer.post( "/deletePolicy", crud.policyCrud::deletePolicy );
+
         webuiServer.post( "/getAllPossiblePolicies", crud.policyCrud::getAllPossiblePolicies );
 
         webuiServer.post( "/getColumns", crud::getColumns );

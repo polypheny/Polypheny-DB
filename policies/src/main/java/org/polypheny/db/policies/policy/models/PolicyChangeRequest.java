@@ -17,7 +17,7 @@
 package org.polypheny.db.policies.policy.models;
 
 
-public class PolicyChangedRequest {
+public class PolicyChangeRequest {
 
     public String requestType;
 
@@ -26,6 +26,9 @@ public class PolicyChangedRequest {
     public String targetName;
 
     public boolean booleanValue;
+
+    // has to be Long because sometimes it is not needed and therefore null
+    public Long targetId;
 
 
 }

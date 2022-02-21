@@ -22,7 +22,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.policies.policy.PolicyManager;
-import org.polypheny.db.policies.policy.models.PolicyChangedRequest;
+import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
@@ -65,13 +65,25 @@ public class PolicyCrud {
 
     public void setPolicies( final Context ctx ) {
 
-        policyManager.updatePolicies( ctx.bodyAsClass( PolicyChangedRequest.class ) );
+        policyManager.updatePolicies( ctx.bodyAsClass( PolicyChangeRequest.class ) );
 
     }
 
 
-    public void getAllPossiblePolicies( final Context ctx ) {
+    public void addPolicy( final Context ctx ) {
 
+        policyManager.addPolicy( ctx.bodyAsClass( PolicyChangeRequest.class ) );
+
+    }
+
+
+    public void deletePolicy( Context ctx ) {
+
+        policyManager.deletePolicy( ctx.bodyAsClass( PolicyChangeRequest.class ) );
+    }
+
+
+    public void getAllPossiblePolicies( final Context ctx ) {
 
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Long schemaId = null;
@@ -87,7 +99,7 @@ public class PolicyCrud {
                 tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
             }
 
-            ctx.json(policyManager.getPossiblePolicies( polypheny, schemaId, tableId ));
+            ctx.json( policyManager.getPossiblePolicies( polypheny, schemaId, tableId ) );
 
         } catch ( UnknownTableException | UnknownSchemaException e ) {
             throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "

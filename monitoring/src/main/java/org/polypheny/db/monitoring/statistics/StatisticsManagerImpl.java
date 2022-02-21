@@ -1162,12 +1162,14 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public void updateCommitRollback( boolean committed ) {
-        if ( committed ) {
-            int numberOfCommits = dashboardInformation.getNumberOfCommits();
-            dashboardInformation.setNumberOfCommits( numberOfCommits + 1 );
-        } else {
-            int numberOfRollbacks = dashboardInformation.getNumberOfRollbacks();
-            dashboardInformation.setNumberOfRollbacks( numberOfRollbacks + 1 );
+        if ( dashboardInformation != null ) {
+            if ( committed ) {
+                int numberOfCommits = dashboardInformation.getNumberOfCommits();
+                dashboardInformation.setNumberOfCommits( numberOfCommits + 1 );
+            } else {
+                int numberOfRollbacks = dashboardInformation.getNumberOfRollbacks();
+                dashboardInformation.setNumberOfRollbacks( numberOfRollbacks + 1 );
+            }
         }
     }
 

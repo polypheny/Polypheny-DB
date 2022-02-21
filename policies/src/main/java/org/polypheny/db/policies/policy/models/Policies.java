@@ -24,13 +24,15 @@ public class Policies {
 
     private final String name;
     private final Target target;
+    private final long targetId;
     private final Clause clause;
     private final ClauseType clauseType;
     private final String description;
 
-    public Policies(String name, Target target, Clause clause, ClauseType clauseType, String description){
+    public Policies(String name, Target target, long targetId, Clause clause, ClauseType clauseType, String description){
         this.name = name;
         this.target = target;
+        this.targetId = targetId;
         this.clause = clause;
         this.clauseType = clauseType;
         this.description = description;

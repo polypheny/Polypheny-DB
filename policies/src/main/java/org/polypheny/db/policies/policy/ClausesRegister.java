@@ -32,7 +32,7 @@ public class ClausesRegister {
     private static boolean isInit = false;
 
     @Getter
-    private static final Map<ClauseName, Clause> registry = new HashMap<>();
+    private static final Map<Integer, Clause> registry = new HashMap<>();
 
 
     public static void registerClauses() {
@@ -41,8 +41,7 @@ public class ClausesRegister {
         }
         isInit = true;
 
-        register( ClauseName.FULLY_PERSISTENT,
-                new BooleanClause( 
+        register( new BooleanClause(
                         ClauseName.FULLY_PERSISTENT,
                         false, 
                         true,
@@ -51,8 +50,7 @@ public class ClausesRegister {
                         "If fully persistent is switched on, Polypheny only adds tables and partitions to persistent stores."  )
         );
 
-        register( ClauseName.PERSISTENT,
-                new BooleanClause(
+        register( new BooleanClause(
                         ClauseName.PERSISTENT,
                         false,
                         false,
@@ -61,8 +59,7 @@ public class ClausesRegister {
                         "If persistent is switched on, a table must be stored on at least one persistent store."  )
         );
 
-        register( ClauseName.ONLY_EMBEDDED,
-                new BooleanClause(
+        register( new BooleanClause(
                         ClauseName.ONLY_EMBEDDED,
                         false,
                         true,
@@ -71,8 +68,7 @@ public class ClausesRegister {
                         "If only embedded is switched on, Polypheny only adds tables and partitions to embedded store."  )
         );
 
-        register( ClauseName.ONLY_DOCKER,
-                new BooleanClause(
+        register( new BooleanClause(
                         ClauseName.ONLY_DOCKER,
                         false,
                         false,
@@ -84,8 +80,8 @@ public class ClausesRegister {
     }
 
 
-    private static void register( ClauseName name, Clause clause ) {
-        registry.put( name, clause );
+    private static void register( Clause clause ) {
+        registry.put( clause.getId(), clause );
     }
 
 }
