@@ -36,6 +36,7 @@ import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 import org.polypheny.db.policies.policy.models.Policies;
 import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class PolicyManager {
@@ -71,7 +72,6 @@ public class PolicyManager {
         if ( RuntimeConfig.POLICY.getBoolean() ) {
             ClausesRegister.registerClauses();
             createDefaultPolicies();
-
         }
     }
 
@@ -104,24 +104,51 @@ public class PolicyManager {
     }
 
 
-    public Object getPolicies( String polypheny, Long namespaceId, Long entityId ) throws RuntimeException {
-        List<Policies> targetPolicies = new ArrayList<>();
-        // for the whole system
+    /**
+     * Finds the target if a UI-Request was used and the target is not known.
+     */
+    public Pair<Target, Long> findTarget( String polypheny, Long namespaceId, Long entityId ) {
         if ( polypheny != null ) {
-            Policy policy = this.policies.get( polyphenyPolicyId );
-            getRelevantClauses( targetPolicies, policy );
+            return new Pair<>( Target.POLYPHENY, TARGET_POLYPHENY );
         }
         // for a namespace
-        else if ( entityId == null ) {
-            Policy policy = this.policies.get( namespacePolicies.get( namespaceId ) );
-            getRelevantClauses( targetPolicies, policy );
+        else if ( namespaceId != null && entityId == null ) {
+            return new Pair<>( Target.NAMESPACE, namespaceId );
         }
-        // for a entity
-        else {
-            Policy policy = this.policies.get( entityPolicies.get( entityId ) );
-            getRelevantClauses( targetPolicies, policy );
+        // for an entity
+        else if ( entityId != null ) {
+            return new Pair<>( Target.ENTITY, entityId );
+        } else {
+            throw new PolicyRuntimeException( "Not possible to find target. There is no target that matches." );
+        }
+    }
+
+
+    /**
+     * This method returns all active policies for a specific target.
+     */
+    public Object getPolicies( Pair<Target, Long> target ) {
+        List<Policies> targetPolicies = new ArrayList<>();
+        Policy policy;
+        switch ( target.left ) {
+            case POLYPHENY:
+                policy = this.policies.get( polyphenyPolicyId );
+                getRelevantClauses( targetPolicies, policy );
+                break;
+            case NAMESPACE:
+                policy = this.policies.get( namespacePolicies.get( target.right ) );
+                getRelevantClauses( targetPolicies, policy );
+                break;
+            case ENTITY:
+                policy = this.policies.get( entityPolicies.get( target.right ) );
+                getRelevantClauses( targetPolicies, policy );
+                break;
+            default:
+                log.warn( "This Target is not implemented yet." );
+                throw new PolicyRuntimeException( "This Target is not implemented yet." );
         }
         if ( targetPolicies.isEmpty() ) {
+            log.warn( "There are no policies for this target." );
             throw new PolicyRuntimeException( "There are no policies for this target." );
         } else {
             return targetPolicies;
@@ -138,41 +165,45 @@ public class PolicyManager {
     }
 
 
-    public Object getPossiblePolicies( String polypheny, Long namespaceId, Long entityId ) {
-
-        Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
-
+    /**
+     * Checks all the registered clauses for a specific target and returns it.
+     */
+    public Object getPossiblePolicies( Pair<Target, Long> target ) {
         List<Policies> targetPolicies = new ArrayList<>();
-        // for the whole system
-        if ( polypheny != null ) {
-            for ( Clause clause : registeredClauses.values() ) {
-                if ( clause.getPossibleTargets().contains( Target.POLYPHENY ) && !this.policies.get( polyphenyPolicyId ).getClauses().containsValue( clause ) ) {
-                    targetPolicies.add( new Policies( clause.getClauseName().name(), Target.POLYPHENY, -1, clause, clause.getClauseType(), clause.getDescription() ) );
-                }
-            }
-        }
-        // for a namespace
-        else if ( entityId == null ) {
-            for ( Clause clause : registeredClauses.values() ) {
-                if ( clause.getPossibleTargets().contains( Target.NAMESPACE ) && !this.policies.get( namespacePolicies.get( namespaceId ) ).getClauses().containsValue( clause ) ) {
-                    targetPolicies.add( new Policies( clause.getClauseName().name(), Target.NAMESPACE, namespaceId, clause, clause.getClauseType(), clause.getDescription() ) );
-                }
-            }
-        }
-        // for an entity
-        else {
-            for ( Clause clause : registeredClauses.values() ) {
-                if ( clause.getPossibleTargets().contains( Target.ENTITY ) && !this.policies.get( entityPolicies.get( entityId ) ).getClauses().containsValue( clause ) ) {
-                    targetPolicies.add( new Policies( clause.getClauseName().name(), Target.ENTITY, entityId, clause, clause.getClauseType(), clause.getDescription() ) );
-                }
-            }
+        long targetId = target.right;
+        switch ( target.left ) {
+            case POLYPHENY:
+                targetPolicies.addAll( getRelevantPolicies( polyphenyPolicyId, targetId, target.left ) );
+                break;
+            case NAMESPACE:
+                targetPolicies.addAll( getRelevantPolicies( namespacePolicies.get( targetId ), targetId, target.left ) );
+                break;
+            case ENTITY:
+                targetPolicies.addAll( getRelevantPolicies( entityPolicies.get( targetId ), targetId, target.left ) );
+                break;
+            default:
+                log.warn( "This Target is not implemented yet." );
+                throw new PolicyRuntimeException( "This Target is not implemented yet." );
         }
         if ( targetPolicies.isEmpty() ) {
+            log.warn( "There are no clauses for this target." );
             throw new PolicyRuntimeException( "There are no clauses for this target." );
         } else {
             return targetPolicies;
         }
 
+    }
+
+
+    private List<Policies> getRelevantPolicies( int policyId, long targetId, Target target ) {
+        Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
+        List<Policies> relevantPolicies = new ArrayList<>();
+        for ( Clause clause : registeredClauses.values() ) {
+            if ( clause.getPossibleTargets().contains( target ) && !this.policies.get( policyId ).getClauses().containsValue( clause ) ) {
+                relevantPolicies.add( new Policies( clause.getClauseName().name(), target, targetId, clause, clause.getClauseType(), clause.getDescription() ) );
+            }
+        }
+        return relevantPolicies;
     }
 
 
@@ -191,136 +222,97 @@ public class PolicyManager {
                             log.warn( "Persistency not possible to change: " + clause.isValue() );
                             throw new PolicyRuntimeException( "Not possible to change this clause because the policies can not be guaranteed anymore." );
                         }
-
-
                     }
                 }
             }
         }
-
-
     }
 
 
     public void addPolicy( PolicyChangeRequest changeRequest ) {
-
         Target target = Target.valueOf( changeRequest.targetName );
-        Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
+        long targetId = changeRequest.targetId;
+        int clauseId = changeRequest.clauseId;
 
-        // for the whole system
-        if ( target == Target.POLYPHENY ) {
-
-            if ( this.policies.containsKey( polyphenyPolicyId ) ) {
-                Policy policy = this.policies.remove( polyphenyPolicyId );
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                policy.getClauses().put( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            } else {
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                Policy policy = new Policy( Target.POLYPHENY, TARGET_POLYPHENY );
-                policy.getClauses().put( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            }
-
+        switch ( target ) {
+            case POLYPHENY:
+                addSpecificPolicy( clauseId, targetId, polyphenyPolicyId, target );
+                break;
+            case NAMESPACE:
+                if ( namespacePolicies.containsKey( targetId ) ) {
+                    int policyId = namespacePolicies.get( targetId );
+                    addSpecificPolicy( clauseId, targetId, policyId, target );
+                }
+                break;
+            case ENTITY:
+                if ( entityPolicies.containsKey( targetId ) ) {
+                    int policyId = entityPolicies.get( targetId );
+                    addSpecificPolicy( clauseId, targetId, policyId, target );
+                }
+                break;
+            default:
+                log.warn( "Not possible to add Policy for target: " + target + ". Not implemented." );
+                throw new PolicyRuntimeException( "Not possible to add Policy for target: " + target + ". Not implemented." );
         }
-        // for a namespace
-        else if ( target == Target.NAMESPACE ) {
-
-            long namespaceId = changeRequest.targetId;
-            if ( namespacePolicies.containsKey( namespaceId )  &&  this.policies.containsKey( namespacePolicies.get( namespaceId ) ) ) {
-                int policyId = namespacePolicies.get( namespaceId );
-                Policy policy = this.policies.remove( policyId );
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                policy.getClauses().put( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            } else {
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                Policy policy = new Policy( Target.NAMESPACE, namespaceId);
-                policy.getClauses().put( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            }
-
-        }
-        // for a entity
-        else if ( target == Target.ENTITY ) {
-
-            long entityId = changeRequest.targetId;
-            if ( namespacePolicies.containsKey( entityId )  &&  this.policies.containsKey( namespacePolicies.get( entityId ) ) ) {
-                int policyId = namespacePolicies.get( entityId );
-                Policy policy = this.policies.remove( policyId );
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                policy.getClauses().put( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            } else {
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                Policy policy = new Policy( Target.NAMESPACE, entityId);
-                policy.getClauses().put( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            }
-
-
-        } else {
-            throw new PolicyRuntimeException( "Not possible to add Policy for target: " + target + ". Not implemented." );
-        }
-
     }
 
+
+    private void addSpecificPolicy( int clauseId, long targetId, int policyId, Target target ) {
+        Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
+        if ( this.policies.containsKey( policyId ) ) {
+            Policy policy = this.policies.remove( policyId );
+            Clause clause = registeredClauses.get( clauseId );
+            policy.getClauses().put( clause.getId(), clause );
+            this.policies.put( policy.getId(), policy );
+        } else {
+            Clause clause = registeredClauses.get( clauseId );
+            Policy policy = new Policy( target, targetId );
+            policy.getClauses().put( clause.getId(), clause );
+            this.policies.put( policy.getId(), policy );
+        }
+    }
 
 
     public void deletePolicy( PolicyChangeRequest changeRequest ) {
 
         Target target = Target.valueOf( changeRequest.targetName );
-        Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
+        long targetId = changeRequest.targetId;
+        int clauseId = changeRequest.clauseId;
 
-        // for the whole system
-        if ( target == Target.POLYPHENY ) {
+        switch ( target ) {
+            case POLYPHENY:
+                deleteSpecificPolicy( polyphenyPolicyId, clauseId );
+                break;
 
-            if ( this.policies.containsKey( polyphenyPolicyId ) ) {
-                Policy policy = this.policies.remove( polyphenyPolicyId );
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                policy.getClauses().remove( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            } else {
-               throw new PolicyRuntimeException( "Something went wrong, it should not be possible to delete a policy if this policy was never set." );
-            }
-
+            case NAMESPACE:
+                if ( namespacePolicies.containsKey( targetId ) ) {
+                    int policyId = namespacePolicies.get( targetId );
+                    deleteSpecificPolicy( policyId, clauseId );
+                }
+                break;
+            case ENTITY:
+                if ( entityPolicies.containsKey( targetId ) ) {
+                    int policyId = entityPolicies.get( targetId );
+                    deleteSpecificPolicy( policyId, clauseId );
+                }
+                break;
+            default:
+                log.warn( "Not possible to delete Policy for target: " + target + ". Not implemented." );
+                throw new PolicyRuntimeException( "Not possible to delete Policy for target: " + target + ". Not implemented." );
         }
-        // for a namespace
-        else if ( target == Target.NAMESPACE ) {
-
-            long namespaceId = changeRequest.targetId;
-            if ( namespacePolicies.containsKey( namespaceId )  &&  this.policies.containsKey( namespacePolicies.get( namespaceId ) ) ) {
-                int policyId = namespacePolicies.get( namespaceId );
-                Policy policy = this.policies.remove( policyId );
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                policy.getClauses().remove( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            } else {
-                throw new PolicyRuntimeException( "Something went wrong, it should not be possible to delete a policy if this policy was never set." );
-            }
-
-        }
-        // for a entity
-        else if ( target == Target.ENTITY ) {
-
-            long entityId = changeRequest.targetId;
-            if ( namespacePolicies.containsKey( entityId )  &&  this.policies.containsKey( namespacePolicies.get( entityId ) ) ) {
-                int policyId = namespacePolicies.get( entityId );
-                Policy policy = this.policies.remove( policyId );
-                Clause clause = registeredClauses.get( changeRequest.clauseId );
-                policy.getClauses().remove( clause.getId(), clause );
-                this.policies.put( policy.getId(), policy );
-            } else {
-                throw new PolicyRuntimeException( "Something went wrong, it should not be possible to delete a policy if this policy was never set." );
-            }
-
-        } else {
-            throw new PolicyRuntimeException( "Not possible to delete Policy for target: " + target + ". Not implemented." );
-        }
-
     }
 
 
+    private void deleteSpecificPolicy( int policyId, int clauseId ) {
+        if ( this.policies.containsKey( policyId ) ) {
+            Policy policy = this.policies.remove( policyId );
+            policy.getClauses().remove( clauseId );
+            this.policies.put( policy.getId(), policy );
+        } else {
+            log.warn( "Something went wrong, it should not be possible to delete a policy if this policy was never set." );
+            throw new PolicyRuntimeException( "Something went wrong, it should not be possible to delete a policy if this policy was never set." );
+        }
+    }
 
 
     /**
@@ -380,6 +372,10 @@ public class PolicyManager {
     }
 
 
+    /**
+     * Before polypheny can make a decision it needs to be checked if there is a policy that does not allow the change.
+     * For example fully persistent is used, then it is checked that no data is stored on a not persistent store.
+     */
     public <T> List<T> makeDecision( Class<T> clazz, Action action, Long namespaceId, Long entityId, T preSelection ) {
         List<Clause> potentiallyInteresting = new ArrayList<>();
 

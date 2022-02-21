@@ -21,8 +21,11 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.PolicyManager;
+import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
@@ -40,11 +43,20 @@ public class PolicyCrud {
 
 
     public void getPolicies( final Context ctx ) {
+        ctx.json(policyManager.getPolicies( findTarget( ctx ) ));
+    }
 
+    public void getAllPossiblePolicies( final Context ctx ) {
+        ctx.json(policyManager.getPossiblePolicies( findTarget( ctx ) ));
+    }
+
+    private Pair<Target, Long> findTarget( Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
+
         Long schemaId = null;
         Long tableId = null;
         String polypheny = null;
+
         try {
             if ( request.tableId.equals( "polypheny" ) ) {
                 polypheny = request.tableId;
@@ -54,10 +66,9 @@ public class PolicyCrud {
                 schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
                 tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
             }
-
-            ctx.json( policyManager.getPolicies( polypheny, schemaId, tableId ) );
+            return policyManager.findTarget( polypheny, schemaId, tableId );
         } catch ( UnknownTableException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
+            throw new PolicyRuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
                     + request.tableId.split( "\\." )[1] + "is unknown." );
         }
     }
@@ -83,29 +94,6 @@ public class PolicyCrud {
     }
 
 
-    public void getAllPossiblePolicies( final Context ctx ) {
 
-        UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        Long schemaId = null;
-        Long tableId = null;
-        String polypheny = null;
-        try {
-            if ( request.tableId.equals( "polypheny" ) ) {
-                polypheny = request.tableId;
-            } else if ( !request.tableId.contains( "." ) ) {
-                schemaId = Catalog.getInstance().getSchema( 1, request.tableId ).id;
-            } else {
-                schemaId = Catalog.getInstance().getSchema( 1, request.tableId.split( "\\." )[0] ).id;
-                tableId = Catalog.getInstance().getTable( schemaId, request.tableId.split( "\\." )[1] ).id;
-            }
-
-            ctx.json( policyManager.getPossiblePolicies( polypheny, schemaId, tableId ) );
-
-        } catch ( UnknownTableException | UnknownSchemaException e ) {
-            throw new RuntimeException( "Schema: " + request.tableId.split( "\\." )[0] + " or Table: "
-                    + request.tableId.split( "\\." )[1] + "is unknown." );
-        }
-
-    }
 
 }
