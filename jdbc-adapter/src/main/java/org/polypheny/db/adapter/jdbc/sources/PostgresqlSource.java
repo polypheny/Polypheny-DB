@@ -38,10 +38,10 @@ import org.polypheny.db.sql.sql.dialect.PostgresqlSqlDialect;
 @AdapterProperties(
         name = "PostgreSQL",
         description = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.",
-        usedModes = DeployMode.EMBEDDED)
+        usedModes = DeployMode.REMOTE)
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote PostgreSQL instance.")
-@AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,
+@AdapterSettingInteger(name = "port", defaultValue = 5432, position = 2,
         description = "JDBC port number on the remote PostgreSQL instance.")
 @AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
         description = "Name of the database to connect to.")

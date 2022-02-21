@@ -4,7 +4,7 @@ Copyright 2017-2021 The Polypheny Project
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
-This product contains code from the Apache Calcite
+This product contains code forked from the Apache Calcite
 project which is based on source code originally developed
 by DynamoBI Corporation, LucidEra Inc., SQLstream Inc. and others
 under the auspices of the Eigenbase Foundation

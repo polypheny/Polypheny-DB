@@ -113,8 +113,8 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because" + catalogTable.name + " is not a table." );
+        if ( catalogTable.tableType != TableType.SOURCE ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a source table." );
         }
 
         if ( columnLogical.names.size() != 1 ) {

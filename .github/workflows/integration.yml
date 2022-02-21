@@ -40,6 +40,6 @@ jobs:
             -   name: Execute integration tests for ${{ matrix.adapter }}
                 uses: nick-invision/retry@v2
                 with:
-                    max_attempts: 2
-                    timeout_minutes: 60
+                    max_attempts: 3
+                    timeout_minutes: 30
                     command: ./gradlew integrationTests -Dstore.default=${{ matrix.adapter }}

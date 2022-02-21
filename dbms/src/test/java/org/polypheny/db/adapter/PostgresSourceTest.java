@@ -56,6 +56,7 @@ public class PostgresSourceTest extends AbstractSourceTest {
             try ( Statement statement = connection.createStatement() ) {
                 Map<String, String> settings = new HashMap<>();
                 settings.put( "database", "postgres" );
+                settings.put( "mode", "remote" );
                 settings.put( "host", "localhost" );
                 settings.put( "maxConnections", "25" );
                 settings.put( "password", "" );
