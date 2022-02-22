@@ -45,9 +45,10 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 public class TransactionManagerImpl implements TransactionManager {
 
     private ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
+    private static TransactionManager INSTANCE = null;
 
 
-    public TransactionManagerImpl() {
+    private TransactionManagerImpl() {
         InformationManager im = InformationManager.getInstance();
         InformationPage page = new InformationPage( "Transactions" );
         page.fullWidth();
@@ -68,6 +69,16 @@ public class TransactionManagerImpl implements TransactionManager {
                     v.getInvolvedAdapters().stream().map( Adapter::getUniqueName ).collect( Collectors.joining( ", " ) ),
                     v.getOrigin() ) );
         } );
+    }
+
+
+    public static TransactionManager getInstance() {
+
+        if ( INSTANCE == null ) {
+            INSTANCE = new TransactionManagerImpl();
+        }
+
+        return INSTANCE;
     }
 
 
