@@ -83,7 +83,7 @@ public class PolyphenyDb {
 
     private PUID shutdownHookId;
 
-    private final TransactionManager transactionManager = new TransactionManagerImpl();
+    private final TransactionManager transactionManager = TransactionManagerImpl.getInstance();
 
     @Inject
     public HelpOption helpOption;
