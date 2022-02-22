@@ -44,8 +44,7 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 @Slf4j
 public class TransactionManagerImpl implements TransactionManager {
 
-    private ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
-    private static TransactionManager INSTANCE = null;
+    private final ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
 
 
     private TransactionManagerImpl() {
@@ -72,13 +71,15 @@ public class TransactionManagerImpl implements TransactionManager {
     }
 
 
+    private static final class InstanceHolder {
+
+        private static final TransactionManager INSTANCE = new TransactionManagerImpl();
+
+    }
+
+
     public static TransactionManager getInstance() {
-
-        if ( INSTANCE == null ) {
-            INSTANCE = new TransactionManagerImpl();
-        }
-
-        return INSTANCE;
+        return InstanceHolder.INSTANCE;
     }
 
 
