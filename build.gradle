@@ -22,6 +22,11 @@ plugins {
 
 allprojects {
 
+    version = versionMajor + "." + versionMinor + "." + versionMicro
+    if (!isRelease) {
+        version = version + "-SNAPSHOT"
+    }
+
     buildscript {
         repositories {
             mavenCentral()

@@ -1,7 +1,5 @@
 group "org.polypheny"
 
-version = versionMajor + "." + versionMinor + versionQualifier
-
 
 dependencies {
     implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
