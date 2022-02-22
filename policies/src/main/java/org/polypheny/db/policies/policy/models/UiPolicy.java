@@ -20,7 +20,7 @@ import org.polypheny.db.policies.policy.Clause;
 import org.polypheny.db.policies.policy.Clause.ClauseType;
 import org.polypheny.db.policies.policy.Policy.Target;
 
-public class Policies {
+public class UiPolicy {
 
     private final String name;
     private final Target target;
@@ -29,7 +29,7 @@ public class Policies {
     private final ClauseType clauseType;
     private final String description;
 
-    public Policies(String name, Target target, long targetId, Clause clause, ClauseType clauseType, String description){
+    public UiPolicy(String name, Target target, long targetId, Clause clause, ClauseType clauseType, String description){
         this.name = name;
         this.target = target;
         this.targetId = targetId;

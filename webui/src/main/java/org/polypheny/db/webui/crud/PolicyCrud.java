@@ -16,7 +16,11 @@
 
 package org.polypheny.db.webui.crud;
 
+import static org.reflections.Reflections.log;
+
 import io.javalin.http.Context;
+import java.util.Collections;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -25,6 +29,8 @@ import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.PolicyManager;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
+import org.polypheny.db.policies.policy.models.UiPolicies;
+import org.polypheny.db.policies.policy.models.UiPolicy;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.requests.UIRequest;
@@ -43,12 +49,45 @@ public class PolicyCrud {
 
 
     public void getPolicies( final Context ctx ) {
-        ctx.json(policyManager.getPolicies( findTarget( ctx ) ));
+        List<UiPolicy> policies = policyManager.getPolicies( findTarget( ctx ) );
+
+        if ( policies.isEmpty() ) {
+            log.warn( "There are no policies for this target." );
+            ctx.json( new UiPolicies( null, "No policies are set for this target." ) );
+        } else{
+            ctx.json( new UiPolicies( policies, null ) );
+        }
+
     }
 
+
     public void getAllPossiblePolicies( final Context ctx ) {
-        ctx.json(policyManager.getPossiblePolicies( findTarget( ctx ) ));
+        List<UiPolicy> policies =  policyManager.getPossiblePolicies( findTarget( ctx ) );
+
+        if ( policies.isEmpty() ) {
+            log.warn( "There are no clauses for this target." );
+            ctx.json( new UiPolicies( null, "There are no clauses for this target." ) );
+        } else {
+            ctx.json( new UiPolicies( policies, null ) );
+        }
+
     }
+
+
+    public void setPolicies( final Context ctx ) {
+        policyManager.updatePolicies( ctx.bodyAsClass( PolicyChangeRequest.class ) );
+    }
+
+
+    public void addPolicy( final Context ctx ) {
+        policyManager.addPolicy( ctx.bodyAsClass( PolicyChangeRequest.class ) );
+    }
+
+
+    public void deletePolicy( Context ctx ) {
+        policyManager.deletePolicy( ctx.bodyAsClass( PolicyChangeRequest.class ) );
+    }
+
 
     private Pair<Target, Long> findTarget( Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
@@ -72,28 +111,6 @@ public class PolicyCrud {
                     + request.tableId.split( "\\." )[1] + "is unknown." );
         }
     }
-
-
-    public void setPolicies( final Context ctx ) {
-
-        policyManager.updatePolicies( ctx.bodyAsClass( PolicyChangeRequest.class ) );
-
-    }
-
-
-    public void addPolicy( final Context ctx ) {
-
-        policyManager.addPolicy( ctx.bodyAsClass( PolicyChangeRequest.class ) );
-
-    }
-
-
-    public void deletePolicy( Context ctx ) {
-
-        policyManager.deletePolicy( ctx.bodyAsClass( PolicyChangeRequest.class ) );
-    }
-
-
 
 
 }

@@ -34,8 +34,8 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
 import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
-import org.polypheny.db.policies.policy.models.Policies;
 import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
+import org.polypheny.db.policies.policy.models.UiPolicy;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -127,49 +127,44 @@ public class PolicyManager {
     /**
      * This method returns all active policies for a specific target.
      */
-    public Object getPolicies( Pair<Target, Long> target ) {
-        List<Policies> targetPolicies = new ArrayList<>();
-        Policy policy;
+    public List<UiPolicy> getPolicies( Pair<Target, Long> target ) {
+        List<UiPolicy> targetPolicies = new ArrayList<>();
+
         switch ( target.left ) {
             case POLYPHENY:
-                policy = this.policies.get( polyphenyPolicyId );
-                getRelevantClauses( targetPolicies, policy );
+                targetPolicies.addAll( getRelevantClauses( polyphenyPolicyId ) );
                 break;
             case NAMESPACE:
-                policy = this.policies.get( namespacePolicies.get( target.right ) );
-                getRelevantClauses( targetPolicies, policy );
+                targetPolicies.addAll( getRelevantClauses( namespacePolicies.get( target.right ) ) );
                 break;
             case ENTITY:
-                policy = this.policies.get( entityPolicies.get( target.right ) );
-                getRelevantClauses( targetPolicies, policy );
+                targetPolicies.addAll( getRelevantClauses( entityPolicies.get( target.right ) ) );
                 break;
             default:
                 log.warn( "This Target is not implemented yet." );
                 throw new PolicyRuntimeException( "This Target is not implemented yet." );
         }
-        if ( targetPolicies.isEmpty() ) {
-            log.warn( "There are no policies for this target." );
-            throw new PolicyRuntimeException( "There are no policies for this target." );
-        } else {
-            return targetPolicies;
-        }
+        return targetPolicies;
     }
 
 
-    private void getRelevantClauses( List<Policies> policies, Policy policy ) {
+    private List<UiPolicy> getRelevantClauses( int policyId ) {
+        List<UiPolicy> policies = new ArrayList<>();
+        Policy policy = this.policies.get( policyId );
         if ( !policy.getClauses().isEmpty() ) {
             for ( Clause clause : policy.getClauses().values() ) {
-                policies.add( new Policies( clause.getClauseName().name(), policy.getTarget(), policy.getTargetId(), clause, clause.getClauseType(), clause.getDescription() ) );
+                policies.add( new UiPolicy( clause.getClauseName().name(), policy.getTarget(), policy.getTargetId(), clause, clause.getClauseType(), clause.getDescription() ) );
             }
         }
+        return policies;
     }
 
 
     /**
      * Checks all the registered clauses for a specific target and returns it.
      */
-    public Object getPossiblePolicies( Pair<Target, Long> target ) {
-        List<Policies> targetPolicies = new ArrayList<>();
+    public List<UiPolicy> getPossiblePolicies( Pair<Target, Long> target ) {
+        List<UiPolicy> targetPolicies = new ArrayList<>();
         long targetId = target.right;
         switch ( target.left ) {
             case POLYPHENY:
@@ -185,22 +180,16 @@ public class PolicyManager {
                 log.warn( "This Target is not implemented yet." );
                 throw new PolicyRuntimeException( "This Target is not implemented yet." );
         }
-        if ( targetPolicies.isEmpty() ) {
-            log.warn( "There are no clauses for this target." );
-            throw new PolicyRuntimeException( "There are no clauses for this target." );
-        } else {
-            return targetPolicies;
-        }
-
+        return targetPolicies;
     }
 
 
-    private List<Policies> getRelevantPolicies( int policyId, long targetId, Target target ) {
+    private List<UiPolicy> getRelevantPolicies( int policyId, long targetId, Target target ) {
         Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
-        List<Policies> relevantPolicies = new ArrayList<>();
+        List<UiPolicy> relevantPolicies = new ArrayList<>();
         for ( Clause clause : registeredClauses.values() ) {
             if ( clause.getPossibleTargets().contains( target ) && !this.policies.get( policyId ).getClauses().containsValue( clause ) ) {
-                relevantPolicies.add( new Policies( clause.getClauseName().name(), target, targetId, clause, clause.getClauseType(), clause.getDescription() ) );
+                relevantPolicies.add( new UiPolicy( clause.getClauseName().name(), target, targetId, clause, clause.getClauseType(), clause.getDescription() ) );
             }
         }
         return relevantPolicies;
