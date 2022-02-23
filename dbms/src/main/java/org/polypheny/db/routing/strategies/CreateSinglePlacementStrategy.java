@@ -17,9 +17,7 @@
 package org.polypheny.db.routing.strategies;
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;

@@ -20,7 +20,6 @@ package org.polypheny.db.policies.policy.firstDraft;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.policies.policy.BooleanClause;
 import org.polypheny.db.policies.policy.PolicyManager.Action;
 import org.polypheny.db.policies.policy.firstDraft.ClauseFirstDraft.Category;
 import org.polypheny.db.policies.policy.firstDraft.ClauseFirstDraft.PolicyListener;
