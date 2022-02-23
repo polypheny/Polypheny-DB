@@ -23,6 +23,7 @@ plugins {
 allprojects {
 
     version = versionMajor + "." + versionMinor + "." + versionMicro
+    isRelease = isRelease.toBoolean()
     if (!isRelease) {
         version = version + "-SNAPSHOT"
     }
