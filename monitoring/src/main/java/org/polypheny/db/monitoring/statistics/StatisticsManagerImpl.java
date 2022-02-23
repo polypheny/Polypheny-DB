@@ -94,7 +94,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
  * DELETEs and UPDATEs should wait to be reprocessed
  */
 @Slf4j
-public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsManager<T> {
+public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsManager {
 
     private static StatisticQueryProcessor statisticQueryInterface;
 
@@ -892,6 +892,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     handleDrop( tableId, changedValues, schemaId );
                     break;
             }
+        } else {
+            log.warn( "This should not happen maybe needs manual reevaluation: " + tableId );
         }
     }
 
@@ -1030,9 +1032,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 if ( tableStatistic.containsKey( tableId ) ) {
                     statisticTable = tableStatistic.get( tableId );
                     int totalRows = statisticTable.getNumberOfRows() - number;
-                    if ( totalRows < 0 ) {
-                        totalRows = 0;
-                    }
+
                     statisticTable.setNumberOfRows( totalRows );
                 } else {
                     statisticTable = new StatisticTable<T>( tableId );
@@ -1043,7 +1043,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 if ( tableStatistic.containsKey( tableId ) ) {
                     statisticTable = tableStatistic.get( tableId );
                 } else {
-                    statisticTable = new StatisticTable<T>( tableId );
+                    statisticTable = new StatisticTable<>( tableId );
                 }
                 statisticTable.setNumberOfRows( number );
                 break;

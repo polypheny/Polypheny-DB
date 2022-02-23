@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.logical.LogicalMatch;
 import org.polypheny.db.algebra.logical.LogicalMinus;
 import org.polypheny.db.algebra.logical.LogicalProject;
 import org.polypheny.db.algebra.logical.LogicalSort;
+import org.polypheny.db.algebra.logical.LogicalTableModify;
 import org.polypheny.db.algebra.logical.LogicalTableScan;
 import org.polypheny.db.algebra.logical.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
@@ -230,13 +231,22 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     @Override
+    public AlgNode visit( LogicalTableModify modify ) {
+        hashBasis.add( "LogicalModify" );
+        // e.g. inserts only have underlying values and need to attach the table correctly
+        this.getAvailableColumns( modify );
+        return visitChildren( modify );
+    }
+
+
+    @Override
     public AlgNode visit( AlgNode other ) {
         hashBasis.add( "other#" + other.getClass().getSimpleName() );
         return visitChildren( other );
     }
 
 
-    private void getAvailableColumns( TableScan scan ) {
+    private void getAvailableColumns( AlgNode scan ) {
         this.tables.addAll( scan.getTable().getQualifiedName() );
         final Table table = scan.getTable().getTable();
         LogicalTable logicalTable = (table instanceof LogicalTable) ? (LogicalTable) table : null;

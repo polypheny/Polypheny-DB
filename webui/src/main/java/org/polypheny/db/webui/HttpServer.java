@@ -91,7 +91,7 @@ public class HttpServer implements Runnable {
                 return (TypeAdapter<T>) throwableTypeAdapter;
             }
         };
-        throwableTypeAdapter = new TypeAdapter<Throwable>() {
+        throwableTypeAdapter = new TypeAdapter<>() {
             @Override
             public void write( JsonWriter out, Throwable value ) throws IOException {
                 if ( value == null ) {

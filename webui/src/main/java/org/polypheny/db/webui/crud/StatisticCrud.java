@@ -46,7 +46,7 @@ public class StatisticCrud {
     private static Crud crud;
     @Getter
     private boolean activeTracking = false;
-    private final StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
+    private final StatisticsManager statisticsManager = StatisticsManager.getInstance();
 
 
     public StatisticCrud( Crud crud ) {

@@ -344,7 +344,7 @@ public class Rest {
             int index = 0;
             for ( RequestColumn column : filters.literalFilters.keySet() ) {
                 for ( Pair<Operator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
-                    AlgDataTypeField typeField = filterMap.get( column.getFullyQualifiedName() );
+                    AlgDataTypeField typeField = filterMap.get( column.getColumn().name );
                     RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
                     Object param = filterOperationPair.right;
                     if ( param instanceof TimestampString ) {
@@ -442,7 +442,7 @@ public class Rest {
             aliases.add( column.getAlias() );
         }
 
-        algBuilder = algBuilder.project( inputRefs, aliases, true );
+        algBuilder = algBuilder.project( inputRefs );//,aliases, true );
         return algBuilder;
     }
 

@@ -200,7 +200,7 @@ public class RestTest {
 
         // Update
         Map<String, String> where2 = new LinkedHashMap<>();
-        where.put( "restschema.resttest.tsmallint", "=" + 46 );
+        where2.put( "restschema.resttest.tsmallint", "=" + 46 );
         request = buildRestUpdate( "restschema.resttest", getTestRow( 0 ), where2 );
         Assert.assertEquals(
                 "{\"result\":[{\"ROWCOUNT\":1}],\"size\":1}",

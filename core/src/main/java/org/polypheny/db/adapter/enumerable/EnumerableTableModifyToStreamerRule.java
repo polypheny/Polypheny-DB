@@ -27,7 +27,7 @@ import org.polypheny.db.plan.Convention;
 public class EnumerableTableModifyToStreamerRule extends AlgOptRule {
 
     public EnumerableTableModifyToStreamerRule() {
-        super( operand( LogicalTableModify.class, Convention.NONE, any() ), "EnumerableTableModifyToStreamerRule" );
+        super( operandJ( LogicalTableModify.class, Convention.NONE, r -> !r.isStreamed(), any() ), "EnumerableTableModifyToStreamerRule" );
     }
 
 

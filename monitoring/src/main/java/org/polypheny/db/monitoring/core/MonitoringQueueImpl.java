@@ -65,7 +65,7 @@ public class MonitoringQueueImpl implements MonitoringQueue {
             @NonNull MonitoringRepository statisticRepository ) {
         this.persistentRepository = persistentRepository;
         this.statisticRepository = statisticRepository;
-        this.eventQueue = new LinkedBlockingQueue();
+        this.eventQueue = new LinkedBlockingQueue<>();
         this.backgroundProcessingActive = backgroundProcessingActive;
 
         this.CORE_POOL_SIZE = RuntimeConfig.MONITORING_CORE_POOL_SIZE.getInteger();

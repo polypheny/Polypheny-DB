@@ -231,7 +231,6 @@ public class StatisticsTest {
                             statement.executeQuery( "SELECT * FROM statisticschema.region" ),
                             REGION_TEST_DATA
                     );
-
                     waiter.await( 20, TimeUnit.SECONDS );
                     try {
                         CatalogTable catalogTableNation = Catalog.getInstance().getTable( "APP", "statisticschema", "nation" );
