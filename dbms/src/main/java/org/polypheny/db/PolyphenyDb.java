@@ -137,7 +137,7 @@ public class PolyphenyDb {
             // Hide dock icon on macOS systems
             System.setProperty( "apple.awt.UIElement", "true" );
 
-            if (polyphenyDb.helpOption.showHelpIfRequested()) {
+            if ( polyphenyDb.helpOption.showHelpIfRequested() ) {
                 return;
             }
 
