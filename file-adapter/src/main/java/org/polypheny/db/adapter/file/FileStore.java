@@ -4,6 +4,7 @@ package org.polypheny.db.adapter.file;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.gson.annotations.Expose;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;

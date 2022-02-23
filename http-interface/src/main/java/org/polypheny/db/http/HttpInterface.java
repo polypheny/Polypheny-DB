@@ -46,6 +46,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
+import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -64,9 +65,6 @@ public class HttpInterface extends QueryInterface {
             new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 )
     );
 
-    private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter( Result.class, Result.getSerializer() )
-            .create();
 
     private final int port;
     private final String uniqueName;
@@ -98,14 +96,14 @@ public class HttpInterface extends QueryInterface {
             @NotNull
             @Override
             public String toJsonString( @NotNull Object obj ) {
-                return gson.toJson( obj );
+                return HttpServer.gson.toJson( obj );
             }
 
 
             @NotNull
             @Override
             public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetClass ) {
-                return gson.fromJson( json, targetClass );
+                return HttpServer.gson.fromJson( json, targetClass );
             }
         };
         server = Javalin.create( config -> {
