@@ -50,7 +50,7 @@ public class Policy {
      * All different clauses
      */
     @Getter
-    private final Map<Integer, Clause> clauses = new HashMap<>();
+    private final Map<ClauseName, Clause> clauses = new HashMap<>();
 
     /**
      * All different clauses
@@ -87,11 +87,11 @@ public class Policy {
     private void addDefaulClauses() {
         switch ( target ) {
             case POLYPHENY:
-                Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
-                for ( Entry<Integer, Clause> clause : registeredClauses.entrySet() ) {
+                Map<ClauseName, Clause> registeredClauses = ClausesRegister.getRegistry();
+                for ( Entry<ClauseName, Clause> clause : registeredClauses.entrySet() ) {
                     if ( clause.getValue().isDefault() ) {
-                        clauses.put( clause.getValue().getId(), clause.getValue() );
-                        clausesByName.put( clause.getValue().getClauseName(), clause.getValue().getId() );
+                        clauses.put( clause.getValue().getClauseName(), clause.getValue() );
+                        //clausesByName.put( clause.getValue().getClauseName(), clause.getValue().getId() );
                     }
                 }
                 log.warn( "Yeey, default policies for Polypheny are added." );

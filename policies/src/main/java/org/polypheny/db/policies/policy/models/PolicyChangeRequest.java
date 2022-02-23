@@ -21,7 +21,7 @@ public class PolicyChangeRequest {
 
     public String requestType;
 
-    public int clauseId;
+    public String clauseName;
 
     public String targetName;
 

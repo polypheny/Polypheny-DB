@@ -19,6 +19,7 @@ package org.polypheny.db.policies.policy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.policies.policy.Clause.Category;
@@ -31,8 +32,7 @@ public class ClausesRegister {
     @Getter
     private static boolean isInit = false;
 
-    @Getter
-    private static final Map<Integer, Clause> registry = new HashMap<>();
+    private static final Map<ClauseName, Clause> registry = new HashMap<>();
 
 
     public static void registerClauses() {
@@ -81,7 +81,25 @@ public class ClausesRegister {
 
 
     private static void register( Clause clause ) {
-        registry.put( clause.getId(), clause );
+        registry.put( clause.getClauseName(), clause );
+    }
+
+    public static Map<ClauseName, Clause> getRegistry(){
+        Map<ClauseName, Clause> registryCopy  = new HashMap<>();
+        for ( Clause value : registry.values() ) {
+            if(value instanceof BooleanClause){
+                BooleanClause booleanClause = new BooleanClause(
+                        value.getClauseName(),
+                        ((BooleanClause)value).isValue(),
+                        value.isDefault(),
+                        value.getCategory(),
+                        value.getPossibleTargets(),
+                        value.getDescription()
+                );
+                registryCopy.put(booleanClause.getClauseName(), booleanClause );
+            }
+        }
+        return registryCopy;
     }
 
 }

@@ -185,10 +185,10 @@ public class PolicyManager {
 
 
     private List<UiPolicy> getRelevantPolicies( int policyId, long targetId, Target target ) {
-        Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
+        Map<ClauseName, Clause> registeredClauses = ClausesRegister.getRegistry();
         List<UiPolicy> relevantPolicies = new ArrayList<>();
         for ( Clause clause : registeredClauses.values() ) {
-            if ( clause.getPossibleTargets().contains( target ) && !this.policies.get( policyId ).getClauses().containsValue( clause ) ) {
+            if ( clause.getPossibleTargets().contains( target ) && !this.policies.get( policyId ).getClauses().containsKey( clause.getClauseName() ) ) {
                 relevantPolicies.add( new UiPolicy( clause.getClauseName().name(), target, targetId, clause, clause.getClauseType(), clause.getDescription() ) );
             }
         }
@@ -198,14 +198,20 @@ public class PolicyManager {
 
     public void updatePolicies( PolicyChangeRequest changeRequest ) {
 
+        Target target = Target.valueOf( changeRequest.targetName );
+
         for ( Policy policy : policies.values() ) {
             if ( !policy.getClauses().isEmpty() ) {
-                if ( policy.getTarget().name().equals( changeRequest.targetName ) ) {
+                if ( policy.getTarget() == target ) {
                     if ( changeRequest.requestType.equals( "BooleanChangeRequest" ) ) {
-                        BooleanClause clause = (BooleanClause) policy.getClauses().get( changeRequest.clauseId );
+                        BooleanClause clause = (BooleanClause) policy.getClauses().get( changeRequest.clauseName );
                         clause.setValue( changeRequest.booleanValue );
                         if ( checkClauseChange( clause, policy.getTarget(), policy.getTargetId() ) ) {
-                            policy.getClauses().put( changeRequest.clauseId, clause );
+                            policy.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
+                            this.policies.put( policy.getId(), policy );
+
+
+
                             log.warn( "Persistency should change: " + clause.isValue() );
                         } else {
                             log.warn( "Persistency not possible to change: " + clause.isValue() );
@@ -220,23 +226,23 @@ public class PolicyManager {
 
     public void addPolicy( PolicyChangeRequest changeRequest ) {
         Target target = Target.valueOf( changeRequest.targetName );
+        ClauseName clauseName = ClauseName.valueOf( changeRequest.clauseName );
         long targetId = changeRequest.targetId;
-        int clauseId = changeRequest.clauseId;
 
         switch ( target ) {
             case POLYPHENY:
-                addSpecificPolicy( clauseId, targetId, polyphenyPolicyId, target );
+                addSpecificPolicy( clauseName, targetId, polyphenyPolicyId, target );
                 break;
             case NAMESPACE:
                 if ( namespacePolicies.containsKey( targetId ) ) {
                     int policyId = namespacePolicies.get( targetId );
-                    addSpecificPolicy( clauseId, targetId, policyId, target );
+                    addSpecificPolicy( clauseName, targetId, policyId, target );
                 }
                 break;
             case ENTITY:
                 if ( entityPolicies.containsKey( targetId ) ) {
                     int policyId = entityPolicies.get( targetId );
-                    addSpecificPolicy( clauseId, targetId, policyId, target );
+                    addSpecificPolicy( clauseName, targetId, policyId, target );
                 }
                 break;
             default:
@@ -246,17 +252,17 @@ public class PolicyManager {
     }
 
 
-    private void addSpecificPolicy( int clauseId, long targetId, int policyId, Target target ) {
-        Map<Integer, Clause> registeredClauses = ClausesRegister.getRegistry();
+    private void addSpecificPolicy( ClauseName clauseName, long targetId, int policyId, Target target ) {
+        Map<ClauseName, Clause> registeredClauses = ClausesRegister.getRegistry();
         if ( this.policies.containsKey( policyId ) ) {
             Policy policy = this.policies.remove( policyId );
-            Clause clause = registeredClauses.get( clauseId );
-            policy.getClauses().put( clause.getId(), clause );
+            Clause clause = registeredClauses.get( clauseName );
+            policy.getClauses().put( clause.getClauseName(), clause );
             this.policies.put( policy.getId(), policy );
         } else {
-            Clause clause = registeredClauses.get( clauseId );
+            Clause clause = registeredClauses.get( clauseName );
             Policy policy = new Policy( target, targetId );
-            policy.getClauses().put( clause.getId(), clause );
+            policy.getClauses().put( clause.getClauseName(), clause );
             this.policies.put( policy.getId(), policy );
         }
     }
@@ -265,24 +271,24 @@ public class PolicyManager {
     public void deletePolicy( PolicyChangeRequest changeRequest ) {
 
         Target target = Target.valueOf( changeRequest.targetName );
+        ClauseName clauseName = ClauseName.valueOf( changeRequest.clauseName );
         long targetId = changeRequest.targetId;
-        int clauseId = changeRequest.clauseId;
 
         switch ( target ) {
             case POLYPHENY:
-                deleteSpecificPolicy( polyphenyPolicyId, clauseId );
+                deleteSpecificPolicy( polyphenyPolicyId, clauseName );
                 break;
 
             case NAMESPACE:
                 if ( namespacePolicies.containsKey( targetId ) ) {
                     int policyId = namespacePolicies.get( targetId );
-                    deleteSpecificPolicy( policyId, clauseId );
+                    deleteSpecificPolicy( policyId, clauseName );
                 }
                 break;
             case ENTITY:
                 if ( entityPolicies.containsKey( targetId ) ) {
                     int policyId = entityPolicies.get( targetId );
-                    deleteSpecificPolicy( policyId, clauseId );
+                    deleteSpecificPolicy( policyId, clauseName );
                 }
                 break;
             default:
@@ -292,10 +298,10 @@ public class PolicyManager {
     }
 
 
-    private void deleteSpecificPolicy( int policyId, int clauseId ) {
+    private void deleteSpecificPolicy( int policyId, ClauseName clauseName ) {
         if ( this.policies.containsKey( policyId ) ) {
             Policy policy = this.policies.remove( policyId );
-            policy.getClauses().remove( clauseId );
+            policy.getClauses().remove( clauseName );
             this.policies.put( policy.getId(), policy );
         } else {
             log.warn( "Something went wrong, it should not be possible to delete a policy if this policy was never set." );
