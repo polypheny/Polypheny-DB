@@ -169,15 +169,15 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * @return Enumerator of results
      */
     private Enumerable<Object> find( MongoDatabase mongoDb, MongoTable table, String filterJson, String projectJson, List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields ) {
-        final MongoCollection collection = mongoDb.getCollection( collectionName );
-        final Bson filter = filterJson == null ? null : BsonDocument.parse( filterJson );
-        final Bson project = projectJson == null ? null : BsonDocument.parse( projectJson );
+        final MongoCollection<Document> collection = mongoDb.getCollection( collectionName );
+        final Bson filter = filterJson == null ? new BsonDocument() : BsonDocument.parse( filterJson );
+        final Bson project = projectJson == null ? new BsonDocument() : BsonDocument.parse( projectJson );
         final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
 
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
-                @SuppressWarnings("unchecked") final FindIterable<Document> cursor = collection.find( filter ).projection( project );
+                final FindIterable<Document> cursor = collection.find( filter ).projection( project );
                 return new MongoEnumerator( cursor.iterator(), getter, table.getMongoSchema().getBucket() );
             }
         };
@@ -253,7 +253,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             log.debug( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         }
         //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
                 final Iterator<Document> resultIterator;
