@@ -30,6 +30,7 @@ ehthumbs_vista.db
 
 # Folder config file
 Desktop.ini
+polypheny.conf
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/

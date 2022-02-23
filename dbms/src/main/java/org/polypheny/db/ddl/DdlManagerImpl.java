@@ -242,6 +242,8 @@ public class DdlManagerImpl extends DdlManager {
                 long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
                 List<Long> primaryKeyColIds = new ArrayList<>();
                 int colPos = 1;
+                String physicalSchemaName = null;
+                String physicalTableName = null;
                 for ( ExportedColumn exportedColumn : entry.getValue() ) {
                     long columnId = catalog.addColumn(
                             exportedColumn.name,
@@ -267,6 +269,12 @@ public class DdlManagerImpl extends DdlManager {
                     if ( exportedColumn.primary ) {
                         primaryKeyColIds.add( columnId );
                     }
+                    if ( physicalSchemaName == null ) {
+                        physicalSchemaName = exportedColumn.physicalSchemaName;
+                    }
+                    if ( physicalTableName == null ) {
+                        physicalTableName = exportedColumn.physicalTableName;
+                    }
                 }
                 try {
                     catalog.addPrimaryKey( tableId, primaryKeyColIds );
@@ -276,8 +284,8 @@ public class DdlManagerImpl extends DdlManager {
                             catalogTable.id,
                             catalogTable.partitionProperty.partitionIds.get( 0 ),
                             PlacementType.AUTOMATIC,
-                            null,
-                            null,
+                            physicalSchemaName,
+                            physicalTableName,
                             DataPlacementRole.UPTODATE);
                 } catch ( GenericCatalogException e ) {
                     throw new RuntimeException( "Exception while adding primary key" );
@@ -397,7 +405,9 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
 
         // Make sure that the table is of table type SOURCE
-        checkIfDdlPossible( catalogTable.tableType );
+        if ( catalogTable.tableType != TableType.SOURCE ) {
+            throw new RuntimeException( "Illegal operation on table of type " + catalogTable.tableType );
+        }
 
         // Make sure there is only one adapter
         if ( catalog.getColumnPlacement( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
