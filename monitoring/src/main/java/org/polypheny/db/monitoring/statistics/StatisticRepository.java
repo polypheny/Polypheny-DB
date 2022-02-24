@@ -43,12 +43,14 @@ public class StatisticRepository implements MonitoringRepository {
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
         statisticsManager.updateCommitRollback( dataPoint.isCommitted() );
 
-        if ( dataPoint.getDataPointType() == DataPointType.DML ) {
-            updateDmlStatistics( (DmlDataPoint) dataPoint, statisticsManager );
-        } else if ( dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl ) {
-            updateQueryStatistics( (QueryDataPointImpl) dataPoint, statisticsManager );
-        } else if ( dataPoint.getDataPointType() == DataPointType.DDL ) {
-            updateDdlStatistics( (DdlDataPoint) dataPoint, statisticsManager );
+        if( dataPoint.isCommitted() ){
+            if ( dataPoint.getDataPointType() == DataPointType.DML ) {
+                updateDmlStatistics( (DmlDataPoint) dataPoint, statisticsManager );
+            } else if ( dataPoint.getDataPointType() == DataPointType.QueryDataPointImpl ) {
+                updateQueryStatistics( (QueryDataPointImpl) dataPoint, statisticsManager );
+            } else if ( dataPoint.getDataPointType() == DataPointType.DDL ) {
+                updateDdlStatistics( (DdlDataPoint) dataPoint, statisticsManager );
+            }
         }
     }
 

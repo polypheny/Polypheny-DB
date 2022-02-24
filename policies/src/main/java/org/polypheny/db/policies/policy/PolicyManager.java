@@ -362,7 +362,6 @@ public class PolicyManager {
     }
 
 
-
     private Boolean checkAllPartitions( Target target, Long targetId, List<Integer> storesToCheck, List<CatalogPartitionPlacement> partitionPlacements ) {
         switch ( target ) {
             case POLYPHENY:
@@ -401,7 +400,8 @@ public class PolicyManager {
      * For example fully persistent is used, then it is checked that no data is stored on a not persistent store.
      */
     public <T> List<T> makeDecision( Class<T> clazz, Action action, Long namespaceId, Long entityId, T preSelection ) {
-        List<Clause> potentiallyInteresting = new ArrayList<>();
+        List<Clause> potentiallyInteresting;
+        List<DataStore> possibleStores = new ArrayList<>();
         List<ClauseName> clauseNames;
 
         switch ( action ) {
@@ -426,32 +426,37 @@ public class PolicyManager {
                         if ( clause.getClauseName() == ClauseName.FULLY_PERSISTENT && ((BooleanClause) clause).isValue() ) {
                             for ( DataStore store : availableStores.values() ) {
                                 if ( store.isPersistent() ) {
-                                    possibleStoreIds.add( store.getAdapterId() );
+                                    possibleStores.add( store );
                                 }
                             }
-                        } else if (clause.getClauseName() == ClauseName.PERSISTENT && ((BooleanClause) clause).isValue() ){
-                            List<Integer> ids = new ArrayList<>();
+                        } else if ( clause.getClauseName() == ClauseName.PERSISTENT && ((BooleanClause) clause).isValue() ) {
+                            List<DataStore> stores = new ArrayList<>();
                             boolean isPersisten = false;
                             for ( DataStore store : availableStores.values() ) {
-                                ids.add( store.getAdapterId() );
-                                if(store.isPersistent()){
-                                   isPersisten = true;
+                                stores.add( store );
+                                if ( store.isPersistent() ) {
+                                    isPersisten = true;
+                                } else {
+                                    possibleStores.remove( store );
                                 }
                             }
-                            if(isPersisten){
-                                possibleStoreIds = ids;
+                            if ( isPersisten ) {
+                                possibleStores.addAll( stores );
                             }
-                        } else if(clause.getClauseName() == ClauseName.ONLY_DOCKER && ((BooleanClause) clause).isValue()){
+                        } else if ( clause.getClauseName() == ClauseName.ONLY_DOCKER && ((BooleanClause) clause).isValue() ) {
                             for ( DataStore store : availableStores.values() ) {
                                 if ( store.getDeployMode() == DeployMode.DOCKER ) {
-                                    possibleStoreIds.add( store.getAdapterId() );
+                                    possibleStores.add( store );
+                                } else {
+                                    possibleStores.remove( store );
                                 }
                             }
-                        } else if(clause.getClauseName() == ClauseName.ONLY_EMBEDDED && ((BooleanClause) clause).isValue()){
-
+                        } else if ( clause.getClauseName() == ClauseName.ONLY_EMBEDDED && ((BooleanClause) clause).isValue() ) {
                             for ( DataStore store : availableStores.values() ) {
                                 if ( store.getDeployMode() == DeployMode.EMBEDDED ) {
-                                    possibleStoreIds.add( store.getAdapterId() );
+                                    possibleStores.add( store );
+                                } else {
+                                    possibleStores.remove( store );
                                 }
                             }
                         } else {
@@ -461,6 +466,8 @@ public class PolicyManager {
                         }
                     }
                 }
+
+                possibleStores.forEach( v -> possibleStoreIds.add( v.getAdapterId() ) );
 
                 return (List<T>) possibleStoreIds;
 
@@ -490,7 +497,6 @@ public class PolicyManager {
                 }
 
             case ADD_PARTITIONING:
-                List<DataStore> possibleStores = new ArrayList<>();
 
                 clauseNames = Arrays.asList( ClauseName.FULLY_PERSISTENT, ClauseName.PERSISTENT, ClauseName.ONLY_DOCKER, ClauseName.ONLY_EMBEDDED );
                 // Check if there are relevant policies and add it to potentiallyInteresting

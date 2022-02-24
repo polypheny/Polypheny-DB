@@ -2206,6 +2206,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check Policies if placement is against the policy or not
         // todo ig: check stores before updating catalog, this can cause issues
+        /*
         List<Object> persistentStore = PolicyManager.getInstance().makeDecision( Object.class, Action.ADD_PARTITIONING, partitionInfo.table.schemaId, partitionInfo.table.id, stores );
         if(persistentStore.isEmpty()){
             throw new RuntimeException("Not possible to add Placement because the Datastore is not persistent.");
@@ -2217,6 +2218,8 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+
+         */
 
         // Now get the partitioned table, partitionInfo still contains the basic/unpartitioned table.
         CatalogTable partitionedTable = catalog.getTable( partitionInfo.table.id );

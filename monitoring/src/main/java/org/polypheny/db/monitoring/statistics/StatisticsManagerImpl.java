@@ -387,7 +387,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         Integer count = getNumberColumnCount( this.prepareNode( column, NodeType.ROW_COUNT_COLUMN ) );
 
         TemporalStatisticColumn<T> statisticColumn = new TemporalStatisticColumn<>( column );
-        if ( min != null ) {
+        if ( min.getData()[0] != null ) {
             if ( max.getData()[0] instanceof Integer ) {
                 statisticColumn.setMin( (T) new Date( (Integer) min.getData()[0] ) );
             } else if ( max.getData()[0] instanceof Long ) {
@@ -397,7 +397,7 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
             }
         }
 
-        if ( max != null ) {
+        if ( max.getData()[0] != null ) {
             if ( max.getData()[0] instanceof Integer ) {
                 statisticColumn.setMax( (T) new Date( (Integer) max.getData()[0] ) );
             } else if ( max.getData()[0] instanceof Long ) {
@@ -410,7 +410,10 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
         StatisticQueryResult unique = this.prepareNode( column, NodeType.UNIQUE_VALUE );
         if ( unique != null ) {
             for ( int idx = 0; idx < unique.getData().length; idx++ ) {
-                unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString( (Number) unique.getData()[idx], column.getType() );
+                if(unique.getData()[idx] != null){
+                    unique.getData()[idx] = DateTimeStringUtils.longToAdjustedString( (Number) unique.getData()[idx], column.getType() );
+                }
+
 
             }
         }
