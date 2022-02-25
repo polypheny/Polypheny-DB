@@ -306,6 +306,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         ParameterValueValidator valueValidator = new ParameterValueValidator( logicalRoot.validatedRowType, statement.getDataContext() );
         valueValidator.visit( logicalRoot.alg );
 
+        // ToDO @HENNLO Remove hardcoded option to specify query as FRESHNESS-RELATED
+        boolean acceptsOutdated = false;
+
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Parameter Validation" );
         }
@@ -584,7 +587,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot ) {
-        // Locking
+
         try {
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
             LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
@@ -592,15 +595,41 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             TableAccessMap accessMap = new TableAccessMap( logicalRoot.alg );
             for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
                 Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                if ( mode == Mode.READ_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+
+                // Is related to freshness
+                if ( statement.getTransaction().acceptsOutdated() ) {
+                    handleFreshnessLocks( logicalRoot, tableIdentifier, mode );
+                } else {
+                    handlePrimaryLocks( logicalRoot, tableIdentifier, mode );
                 }
+            }
+
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( e );
+        }
+
+    }
+
+
+    private void handlePrimaryLocks( AlgRoot logicalRoot, TableIdentifier tableIdentifier, Mode mode ) {
+        // Locking
+        try {
+            if ( mode == Mode.READ_ACCESS ) {
+                LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+            } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
             }
         } catch ( DeadlockException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+
+    private void handleFreshnessLocks( AlgRoot logicalRoot, TableIdentifier tableIdentifier, Mode mode ) {
+        // TODO @HENNLO Check if even necessary
+
+        // Skip locking temporarily
+
     }
 
 

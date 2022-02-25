@@ -96,6 +96,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Set<Lock> lockList = new HashSet<>();
     private boolean useCache = true;
 
+    private boolean acceptsOutdated = false;
+
     @Getter
     private final JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
 
@@ -308,6 +310,26 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Override
     public boolean getUseCache() {
         return this.useCache;
+    }
+
+
+    /**
+     * Used to specify if a TX was started using freshness tolerance levels and
+     * therefore allows the usage of outdated replicas.
+     *
+     * If this is active no DML operations are possible for this TX.
+     * If however a DML operation was already executed by this TX.
+     * This TX can now support no more freshness-related queries.
+     */
+    @Override
+    public void setAcceptsOutdated( boolean acceptsOutdated ) {
+        this.acceptsOutdated = acceptsOutdated;
+    }
+
+
+    @Override
+    public boolean acceptsOutdated() {
+        return this.acceptsOutdated;
     }
 
     //

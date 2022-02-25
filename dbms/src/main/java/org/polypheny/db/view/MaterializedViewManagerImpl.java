@@ -87,13 +87,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     @Getter
     private final List<Long> intervalToUpdate;
 
-    final Map<PolyXid, Long> potentialInteresting;
+    final Map<PolyXid, Long> updateCandidates;
 
 
     public MaterializedViewManagerImpl( TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
         this.materializedInfo = new ConcurrentHashMap<>();
-        this.potentialInteresting = new HashMap<>();
+        this.updateCandidates = new HashMap<>();
         this.intervalToUpdate = Collections.synchronizedList( new ArrayList<>() );
         registerFreshnessLoop();
     }
@@ -166,8 +166,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * If a change is committed to the transactionId and the tableId are saved as potential interesting for
-     * materialized view with freshness update
+     * If a change is committed to the transactionId and the tableId are saved as potential interesting
+     * update candidates for materialized view with freshness updates
      *
      * @param transaction transaction of the commit
      * @param tableNames table that was changed
@@ -179,7 +179,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 CatalogTable catalogTable = Catalog.getInstance().getTable( 1, tableNames.get( 0 ), tableNames.get( 1 ) );
                 long id = catalogTable.id;
                 if ( !catalogTable.getConnectedViews().isEmpty() ) {
-                    potentialInteresting.put( transaction.getXid(), id );
+                    updateCandidates.put( transaction.getXid(), id );
                 }
             } catch ( UnknownTableException e ) {
                 throw new RuntimeException( "Not possible to getTable to update which Tables were changed.", e );
@@ -196,8 +196,8 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public void updateCommittedXid( PolyXid xid ) {
-        if ( potentialInteresting.containsKey( xid ) ) {
-            materializedUpdate( potentialInteresting.remove( xid ) );
+        if ( updateCandidates.containsKey( xid ) ) {
+            materializedUpdate( updateCandidates.remove( xid ) );
         }
     }
 
