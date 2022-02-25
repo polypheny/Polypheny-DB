@@ -68,6 +68,18 @@ public interface PersistentMonitoringRepository extends MonitoringRepository {
     <T extends MonitoringDataPoint> List<T> getDataPointsAfter( Class<T> dataPointClass, Timestamp timestamp );
 
     /**
+     * Removes all data points for given monitoring persistent type.
+     *
+     * @param dataPointClass specific datapoint class of interest to remove
+     */
+    <T extends MonitoringDataPoint> void removeAllDataPointsOfSpecificClass( Class<T> dataPointClass );
+
+    /**
+     * Removes all aggregated dataPoints.
+     */
+    void resetAllDataPoints();
+
+    /**
      * @param physicalQueryClass the physical query class string to identify aggregated post costs.
      * @return The aggregated query post costs.
      */

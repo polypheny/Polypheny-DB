@@ -136,7 +136,6 @@ public class FrequencyMapImpl extends FrequencyMap {
     private void incrementPartitionAccess( long identifiedPartitionId, List<Long> partitionIds ) {
         // Outer if is needed to ignore frequencies from old non-existing partitionIds
         // Which are not yet linked to the table but are still in monitoring
-        // TODO @CEDRIC or @HENNLO introduce monitoring cleaning of data points
         if ( partitionIds.contains( identifiedPartitionId ) ) {
             if ( accessCounter.containsKey( identifiedPartitionId ) ) {
                 accessCounter.replace( identifiedPartitionId, accessCounter.get( identifiedPartitionId ) + 1 );
