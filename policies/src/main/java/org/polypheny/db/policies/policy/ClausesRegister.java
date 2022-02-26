@@ -45,7 +45,7 @@ public class ClausesRegister {
                         ClauseName.FULLY_PERSISTENT,
                         false, 
                         true,
-                        Category.PERSISTENCY,
+                        Category.STORE,
                         Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY),
                         "If fully persistent is switched on, Polypheny only adds tables and partitions to persistent stores."  )
         );
@@ -54,7 +54,7 @@ public class ClausesRegister {
                         ClauseName.PERSISTENT,
                         false,
                         false,
-                        Category.PERSISTENCY,
+                        Category.STORE,
                         Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY),
                         "If persistent is switched on, a table must be stored on at least one persistent store."  )
         );
@@ -63,7 +63,7 @@ public class ClausesRegister {
                         ClauseName.ONLY_EMBEDDED,
                         false,
                         true,
-                        Category.AVAILABILITY,
+                        Category.STORE,
                         Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY),
                         "If only embedded is switched on, Polypheny only adds tables and partitions to embedded store."  )
         );
@@ -72,7 +72,7 @@ public class ClausesRegister {
                         ClauseName.ONLY_DOCKER,
                         false,
                         false,
-                        Category.AVAILABILITY,
+                        Category.STORE,
                         Arrays.asList( Target.POLYPHENY, Target.NAMESPACE, Target.ENTITY),
                         "If only docker is switched on, Polypheny only adds tables and partitions to docker store."  )
         );

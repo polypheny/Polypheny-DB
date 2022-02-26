@@ -81,6 +81,16 @@ public class StatisticRepository implements MonitoringRepository {
 
 
     private void updateQueryStatistics( QueryDataPointImpl dataPoint, StatisticsManager<?> statisticsManager ) {
+
+        if(!dataPoint.getColumnIds().isEmpty()){
+            log.warn( "show me tha ids" );
+            log.warn( dataPoint.getColumnIds().toString());
+
+            log.warn( String.valueOf( dataPoint.getExecutionTime() ) );
+
+            log.warn( dataPoint.getHashBasis().toString());
+        }
+
         if ( !dataPoint.getAvailableColumnsWithTable().isEmpty() ) {
             Set<Long> values = new HashSet<>( dataPoint.getAvailableColumnsWithTable().values() );
             boolean isOneTable = values.size() == 1;

@@ -173,9 +173,19 @@ public class PolicyManager {
                 targetPolicies.addAll( getRelevantPolicies( polyphenyPolicyId, targetId, target.left ) );
                 break;
             case NAMESPACE:
+                if ( !namespacePolicies.containsKey( targetId ) ) {
+                    Policy schemaPolicy = new Policy( Target.NAMESPACE, targetId );
+                    namespacePolicies.put( targetId, schemaPolicy.getId() );
+                    policies.put( schemaPolicy.getId(), schemaPolicy );
+                }
                 targetPolicies.addAll( getRelevantPolicies( namespacePolicies.get( targetId ), targetId, target.left ) );
                 break;
             case ENTITY:
+                if ( !entityPolicies.containsKey( targetId ) ) {
+                    Policy tablePolicy = new Policy( Target.ENTITY, targetId );
+                    entityPolicies.put( targetId, tablePolicy.getId() );
+                    policies.put( tablePolicy.getId(), tablePolicy );
+                }
                 targetPolicies.addAll( getRelevantPolicies( entityPolicies.get( targetId ), targetId, target.left ) );
                 break;
             default:
@@ -320,6 +330,18 @@ public class PolicyManager {
     private boolean checkClauseChange( BooleanClause clause, Target target, Long targetId ) {
         List<Integer> storesToCheck = new ArrayList<>();
         List<CatalogPartitionPlacement> partitionPlacements = Catalog.getInstance().getAllPartitionPlacement();
+
+        switch ( clause.getCategory() ) {
+            case STORE:
+                return checkStoreClauses( clause, target, targetId, storesToCheck, partitionPlacements );
+            default:
+                throw new PolicyRuntimeException( "Category is not yet implemented: " + clause.getCategory() );
+        }
+
+    }
+
+
+    private boolean checkStoreClauses( BooleanClause clause, Target target, Long targetId, List<Integer> storesToCheck, List<CatalogPartitionPlacement> partitionPlacements ) {
         switch ( clause.getClauseName() ) {
             case FULLY_PERSISTENT:
 
@@ -333,7 +355,7 @@ public class PolicyManager {
                 return checkAllPartitions( target, targetId, storesToCheck, partitionPlacements );
 
             case PERSISTENT:
-
+                log.warn( "in persistent" );
                 break;
             case ONLY_EMBEDDED:
                 AdapterManager.getInstance().getStores().forEach( ( s, dataStore ) -> {
@@ -354,9 +376,8 @@ public class PolicyManager {
                 );
 
                 return checkAllPartitions( target, targetId, storesToCheck, partitionPlacements );
-
             default:
-                throw new PolicyRuntimeException( "Check if it is possible to change clause is not implemented yet." );
+                throw new PolicyRuntimeException( "Clause is not yet implemented: " + clause.getClauseName() );
         }
         return true;
     }
@@ -421,48 +442,29 @@ public class PolicyManager {
                     return (List<T>) possibleStoreIds;
                 }
 
+                possibleStores.addAll( availableStores.values() );
+
                 for ( Clause clause : potentiallyInteresting ) {
                     if ( clause != null ) {
                         if ( clause.getClauseName() == ClauseName.FULLY_PERSISTENT && ((BooleanClause) clause).isValue() ) {
-                            for ( DataStore store : availableStores.values() ) {
-                                if ( store.isPersistent() ) {
-                                    possibleStores.add( store );
-                                }
-                            }
+                            possibleStores.removeIf( store -> !store.isPersistent() );
                         } else if ( clause.getClauseName() == ClauseName.PERSISTENT && ((BooleanClause) clause).isValue() ) {
                             List<DataStore> stores = new ArrayList<>();
                             boolean isPersisten = false;
-                            for ( DataStore store : availableStores.values() ) {
+                            for ( DataStore store : possibleStores ) {
                                 stores.add( store );
                                 if ( store.isPersistent() ) {
                                     isPersisten = true;
-                                } else {
-                                    possibleStores.remove( store );
                                 }
                             }
-                            if ( isPersisten ) {
-                                possibleStores.addAll( stores );
+                            if ( !isPersisten ) {
+                                possibleStores.removeAll( stores );
                             }
                         } else if ( clause.getClauseName() == ClauseName.ONLY_DOCKER && ((BooleanClause) clause).isValue() ) {
-                            for ( DataStore store : availableStores.values() ) {
-                                if ( store.getDeployMode() == DeployMode.DOCKER ) {
-                                    possibleStores.add( store );
-                                } else {
-                                    possibleStores.remove( store );
-                                }
-                            }
+                            possibleStores.removeIf( store -> store.getDeployMode() != DeployMode.DOCKER );
                         } else if ( clause.getClauseName() == ClauseName.ONLY_EMBEDDED && ((BooleanClause) clause).isValue() ) {
-                            for ( DataStore store : availableStores.values() ) {
-                                if ( store.getDeployMode() == DeployMode.EMBEDDED ) {
-                                    possibleStores.add( store );
-                                } else {
-                                    possibleStores.remove( store );
-                                }
-                            }
-                        } else {
-                            for ( DataStore store : availableStores.values() ) {
-                                possibleStoreIds.add( store.getAdapterId() );
-                            }
+                            possibleStores.removeIf( store -> store.getDeployMode() != DeployMode.EMBEDDED );
+
                         }
                     }
                 }

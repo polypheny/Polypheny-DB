@@ -16,6 +16,7 @@
 
 package org.polypheny.db.routing;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -62,5 +63,7 @@ public interface LogicalQueryInformation {
      * @return Gets a list of all accessed tables.
      */
     List<String> getTables();
+
+    HashSet<String> getHashBasis();
 
 }

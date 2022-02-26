@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,6 +60,8 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private String queryClass;
     private String physicalQueryClass;
     private Integer indexSize;
+    protected List<Long> columnIds = new ArrayList<>();
+    protected HashSet<String> hashBasis = new HashSet<>();
     @Builder.Default
     private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 

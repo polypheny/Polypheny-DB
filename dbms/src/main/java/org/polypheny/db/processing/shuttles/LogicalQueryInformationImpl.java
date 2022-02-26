@@ -17,6 +17,7 @@
 package org.polypheny.db.processing.shuttles;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,8 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
     @Getter
     protected final List<String> tables;
+    @Getter
+    protected final HashSet<String> hashBasis;
 
 
     public LogicalQueryInformationImpl(
@@ -45,13 +48,15 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
             LinkedHashMap<Long, String> availableColumns,
             HashMap<Long, Long> availableColumnsWithTable,
             Map<Long, String> usedColumns,
-            List<String> tables ) {
+            List<String> tables,
+            HashSet<String> hashBasis) {
         this.queryId = queryId;
         this.accessedPartitions = accessedPartitionMap;
         this.availableColumns = availableColumns;
         this.availableColumnsWithTable = availableColumnsWithTable;
         this.usedColumns = usedColumns;
         this.tables = tables;
+        this.hashBasis = hashBasis;
     }
 
 

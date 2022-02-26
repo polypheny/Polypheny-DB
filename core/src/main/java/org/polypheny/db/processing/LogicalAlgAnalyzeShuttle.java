@@ -71,9 +71,6 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Getter
     protected HashMap<Long, List<Object>> ordered;
 
-    @Getter
-    public int rowCount;
-
 
     public LogicalAlgAnalyzeShuttle( Statement statement ) {
         this.statement = statement;

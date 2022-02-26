@@ -68,7 +68,7 @@ public abstract class Clause {
      * Different Categories are used to describe the different policies used in Polypheny
      */
     public enum Category {
-        AVAILABILITY, PERFORMANCE, REDUNDANCY, PERSISTENCY, TWO_PHASE_COMMIT
+        STORE
     }
 
 
