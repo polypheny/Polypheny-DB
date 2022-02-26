@@ -36,7 +36,6 @@ package org.polypheny.db.adapter.mongodb;
 
 import com.google.common.collect.Lists;
 import java.util.AbstractList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -109,10 +108,10 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
                         constantArrayList(
                                 Pair.zip(
                                         MongoRules.mongoFieldNames( rowType ),
-                                        new AbstractList<Class>() {
+                                        new AbstractList<Class<?>>() {
 
                                             @Override
-                                            public Class get( int index ) {
+                                            public Class<?> get( int index ) {
                                                 return physType.fieldClass( index );
                                             }
 
@@ -132,11 +131,11 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
                         constantArrayList(
                                 Pair.zip(
                                         MongoRules.mongoFieldNames( rowType ),
-                                        new AbstractList<Class>() {
+                                        new AbstractList<Class<?>>() {
 
                                             @Override
-                                            public Class get( int index ) {
-                                                Class clazz = physType.fieldClass( index );
+                                            public Class<?> get( int index ) {
+                                                Class<?> clazz = physType.fieldClass( index );
                                                 if ( clazz != List.class ) {
                                                     return physType.fieldClass( index );
                                                 } else {
@@ -162,11 +161,11 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
         Expression enumerable;
         if ( !mongoImplementor.isDML() ) {
-            final Expression logicalCols = list.append( "logical", constantArrayList( Arrays.asList( mongoImplementor.physicalMapper.toArray() ), String.class ) );
+            final Expression logicalCols = list.append( "logical", constantArrayList( mongoImplementor.getNecessaryPhysicalFields(), String.class ) );
             final Expression preProjects = list.append( "prePro", constantArrayList( mongoImplementor.getPreProjects(), String.class ) );
             enumerable = list.append(
                     list.newName( "enumerable" ),
-                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, fields, arrayClassFields, ops, filter, preProjects, logicalCols ) );
+                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, fields, arrayClassFields, ops, preProjects, logicalCols ) );
         } else {
             final Expression operations = list.append( list.newName( "operations" ), constantArrayList( mongoImplementor.getOperations(), String.class ) );
             final Expression operation = list.append( list.newName( "operation" ), Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );

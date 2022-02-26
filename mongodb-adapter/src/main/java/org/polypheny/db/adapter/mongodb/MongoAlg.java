@@ -78,6 +78,7 @@ public interface MongoAlg extends AlgNode {
 
         final List<Pair<String, String>> list = new ArrayList<>();
         public List<BsonDocument> operations = new ArrayList<>();
+        public List<BsonDocument> groups = new ArrayList<>();
         public BsonArray filter = new BsonArray();
         @Getter
         @Setter
@@ -165,17 +166,22 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getFilterSerialized() {
-            return getFilter().toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
+            return toJson( getFilter() );
         }
 
 
         public List<String> getPreProjects() {
-            return preProjections.stream().map( p -> p.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() ) ).collect( Collectors.toList() );
+            return preProjections.stream().map( Implementor::toJson ).collect( Collectors.toList() );
         }
 
 
         public List<String> getOperations() {
-            return operations.stream().map( p -> p.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() ) ).collect( Collectors.toList() );
+            return operations.stream().map( Implementor::toJson ).collect( Collectors.toList() );
+        }
+
+
+        public static String toJson( BsonDocument doc ) {
+            return doc.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
         }
 
 
@@ -192,6 +198,17 @@ public interface MongoAlg extends AlgNode {
             super.visit( scan );
 
             return scan;
+        }
+
+
+        public List<String> getNecessaryPhysicalFields() {
+            List<String> names = table.getRowType().getFieldNames();
+            return new ArrayList<>( physicalMapper );
+        }
+
+
+        public List<String> getGroups() {
+            return groups.stream().map( Implementor::toJson ).collect( Collectors.toList() );
         }
 
     }

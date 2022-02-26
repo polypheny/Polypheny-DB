@@ -210,7 +210,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             List<Entry<String, Class>> arrayFields,
             final List<String> operations,
             Map<Long, Object> parameterValues,
-            BsonDocument filter,
+            //BsonDocument filter,
             List<BsonDocument> preOps,
             List<String> logicalCols ) {
         final List<BsonDocument> list = new ArrayList<>();
@@ -219,9 +219,9 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             // direct query
             preOps.forEach( op -> list.add( new BsonDocument( "$addFields", op ) ) );
 
-            if ( !filter.isEmpty() ) {
+            /*if ( !filter.isEmpty() ) {
                 list.add( new BsonDocument( "$match", filter ) );
-            }
+            }*/
 
             for ( String operation : operations ) {
                 list.add( BsonDocument.parse( operation ) );
@@ -232,10 +232,10 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket(), dataContext ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
 
-            if ( !filter.isEmpty() ) {
+            /*if ( !filter.isEmpty() ) {
                 MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket(), dataContext );
                 list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
-            }
+            }*/
 
             for ( String operation : operations ) {
                 MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket(), dataContext );
@@ -252,7 +252,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
         if ( log.isDebugEnabled() ) {
             log.debug( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         }
-        //list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
+        System.out.println( "new" );
+        list.forEach( el -> System.out.println( el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ) );
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<Object> enumerator() {
@@ -349,7 +350,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, String filter, List<String> preProjections, List<String> logicalCols ) {
+        public Enumerable<Object> aggregate( List<Map.Entry<String, Class>> fields, List<Map.Entry<String, Class>> arrayClass, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getTable().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( this.getTable().getStoreId() ) );
 
@@ -367,7 +368,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
                     arrayClass,
                     operations,
                     values,
-                    BsonDocument.parse( filter ),
+                    //BsonDocument.parse( filter ),
                     preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ),
                     logicalCols );
         }
@@ -415,7 +416,7 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             }
 
             long finalChanges = changes;
-            return new AbstractEnumerable<Object>() {
+            return new AbstractEnumerable<>() {
                 @Override
                 public Enumerator<Object> enumerator() {
                     return new IterWrapper( Collections.singletonList( (Object) finalChanges ).iterator() );

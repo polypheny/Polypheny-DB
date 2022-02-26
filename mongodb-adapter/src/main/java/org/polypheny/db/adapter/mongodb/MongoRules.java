@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableList;
 import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +57,7 @@ import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.constant.Kind;
@@ -64,6 +66,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Documents;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.TableScan;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -85,6 +88,7 @@ import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -159,7 +163,7 @@ public class MongoRules {
 
     static List<String> mongoFieldNames( final AlgDataType rowType ) {
         return ValidatorUtil.uniquify(
-                new AbstractList<String>() {
+                new AbstractList<>() {
                     @Override
                     public String get( int index ) {
                         final String name = MongoRules.maybeFix( rowType.getFieldList().get( index ).getName() );
@@ -746,7 +750,42 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
+            super( TableModify.class, MongoTableModificationRule::mongoSupported, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
+        }
+
+
+        private static boolean mongoSupported( TableModify modify ) {
+            if ( !modify.isInsert() ) {
+                return true;
+            }
+
+            ScanChecker scanChecker = new ScanChecker();
+            modify.accept( scanChecker );
+            return scanChecker.supported;
+        }
+
+
+        private static class ScanChecker extends AlgShuttleImpl {
+
+            @Getter
+            private boolean supported = true;
+
+
+            @Override
+            public AlgNode visit( TableScan scan ) {
+                supported = false;
+                return super.visit( scan );
+            }
+
+
+            @Override
+            public AlgNode visit( AlgNode other ) {
+                if ( other instanceof AlgSubset ) {
+                    ((AlgSubset) other).getAlgList().forEach( a -> a.accept( this ) );
+                }
+                return super.visit( other );
+            }
+
         }
 
 
@@ -857,26 +896,33 @@ public class MongoRules {
                     List<BsonDocument> docDocs = new ArrayList<>();
                     GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
                     for ( RexNode el : getSourceExpressionList() ) {
-                        if ( el instanceof RexLiteral ) {
+                        if ( el.isA( Kind.LITERAL ) ) {
                             doc.append(
                                     rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                     BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
                         } else if ( el instanceof RexCall ) {
-                            if ( ((RexCall) el).op.getKind() == Kind.PLUS ) {
+                            RexCall call = ((RexCall) el);
+                            if ( Arrays.asList( Kind.PLUS, Kind.PLUS, Kind.TIMES, Kind.DIVIDE ).contains( call.op.getKind() ) ) {
                                 doc.append(
                                         rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                        visitCall( implementor, (RexCall) el, Kind.PLUS, el.getType().getPolyType() ) );
-                            } else if ( ((RexCall) el).op.getKind().belongsTo( Kind.MQL_KIND ) ) {
+                                        visitCall( implementor, (RexCall) el, call.op.getKind(), el.getType().getPolyType() ) );
+                            } else if ( call.op.getKind().belongsTo( Kind.MQL_KIND ) ) {
                                 docDocs.add( handleDocumentUpdate( (RexCall) el, bucket, rowType ) );
                             } else {
                                 doc.append(
                                         rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                        BsonUtil.getBsonArray( (RexCall) el, bucket ) );
+                                        BsonUtil.getBsonArray( call, bucket ) );
                             }
-                        } else if ( el instanceof RexDynamicParam ) {
+                        } else if ( el.isA( Kind.DYNAMIC_PARAM ) ) {
                             doc.append(
                                     rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
                                     new BsonDynamic( (RexDynamicParam) el ) );
+                        } else if ( el.isA( Kind.FIELD_ACCESS ) ) {
+                            doc.append(
+                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
+                                    new BsonString(
+                                            "$" + rowType.getPhysicalName(
+                                                    ((RexFieldAccess) el).getField().getName(), implementor ) ) );
                         }
                         pos++;
                     }
@@ -1070,12 +1116,21 @@ public class MongoRules {
                     throw new RuntimeException( "Not implemented yet" );
                 }
             }
-            if ( op == Kind.PLUS ) {
-                doc.append( "$add", array );
-            } else if ( op == Kind.MINUS ) {
-                doc.append( "$subtract", array );
-            } else {
-                throw new RuntimeException( "Not implemented yet" );
+            switch ( op ) {
+                case PLUS:
+                    doc.append( "$add", array );
+                    break;
+                case MINUS:
+                    doc.append( "$subtract", array );
+                    break;
+                case TIMES:
+                    doc.append( "$multiply", array );
+                    break;
+                case DIVIDE:
+                    doc.append( "$divide", array );
+                    break;
+                default:
+                    throw new RuntimeException( "Not implemented yet" );
             }
 
             return doc;

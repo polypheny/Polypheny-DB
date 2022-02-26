@@ -151,6 +151,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonDocument value = translateFinalOr( condition );
             if ( !value.isEmpty() ) {
                 implementor.filter.add( value );
+                implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", value ) ) );
             }
 
             if ( preProjections.size() != 0 ) {
@@ -292,6 +293,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                     translateIsTrue( (RexCall) node, false );
                     return;
                 case NOT:
+                case IS_FALSE:
                     translateNot( (RexCall) node );
                     return;
                 case OR:
@@ -722,6 +724,23 @@ public class MongoFilter extends Filter implements MongoAlg {
                         translateMatch2( single );
                     }
                 }
+                return;
+            }
+
+            BsonValue field;
+            BsonBoolean trueBool = new BsonBoolean( true );
+            String randomName = getRandomName();
+            if ( single.isA( Kind.LITERAL ) && ((RexLiteral) single).getTypeName() == PolyType.BOOLEAN ) {
+                field = new BsonBoolean( ((RexLiteral) single).getValueAs( Boolean.class ) );
+                this.preProjections.put( randomName, field );
+
+                attachCondition( isInverted ? "$ne" : "$eq", randomName, trueBool );
+                return;
+            } else if ( single.isA( Kind.DYNAMIC_PARAM ) ) {
+                field = new BsonDynamic( (RexDynamicParam) single );
+                this.preProjections.put( randomName, field );
+
+                attachCondition( isInverted ? "$ne" : "$eq", randomName, trueBool );
                 return;
             }
 

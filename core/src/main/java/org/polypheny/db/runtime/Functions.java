@@ -301,15 +301,21 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static void streamRight( final DataContext context, final Enumerable<Object[]> baz, final List<PolyType> polyTypes ) {
+    public static <T> void streamRight( final DataContext context, final Enumerable<Object> baz, final List<PolyType> polyTypes ) {
 
         PolyTypeFactoryImpl factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
+        boolean single = polyTypes.size() == 1;
+
         // better approach would here be to create a new DataContext and hand it to the executor
         List<Object[]> values = new ArrayList<>();
-        for ( Object[] o : baz ) {
-            values.add( o );
+        for ( Object o : baz ) {
+            if ( single ) {
+                values.add( new Object[]{ o } );
+            } else {
+                values.add( (Object[]) o );
+            }
         }
         context.resetParameterValues();
         Map<Integer, List<Object>> vals = new HashMap<>();

@@ -54,11 +54,8 @@ public class TransactionProvider {
      * @return the corresponding session, which holds the information of the transaction
      */
     public ClientSession startTransaction( PolyXid xid ) {
-        TransactionOptions options = TransactionOptions.builder()
-                /*.readPreference( ReadPreference.primary() )
-                .readConcern( ReadConcern.LOCAL )
-                .maxCommitTime( 3L, TimeUnit.MINUTES )
-                .writeConcern( WriteConcern.MAJORITY )*/.build();
+        TransactionOptions options = TransactionOptions.builder().build();
+
         ClientSession session;
         if ( !sessions.containsKey( xid ) ) {
             session = client.startSession();
@@ -144,6 +141,7 @@ public class TransactionProvider {
     public ClientSession getSession( PolyXid xid ) {
         if ( !sessions.containsKey( xid ) ) {
             startTransaction( xid );
+            log.warn( "new one" );
         }
         return sessions.get( xid );
     }
