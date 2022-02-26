@@ -202,13 +202,15 @@ public interface MongoAlg extends AlgNode {
 
 
         public List<String> getNecessaryPhysicalFields() {
-            List<String> names = table.getRowType().getFieldNames();
             return new ArrayList<>( physicalMapper );
         }
 
 
-        public List<String> getGroups() {
-            return groups.stream().map( Implementor::toJson ).collect( Collectors.toList() );
+        public List<String> reorderPhysical() {
+            // this is only needed if there is a basic scan without project or group,
+            // where we cannot be sure if the fields are all ordered as intended
+            assert table.getRowType().getFieldCount() == physicalMapper.size();
+            return table.getRowType().getFieldNames();
         }
 
     }

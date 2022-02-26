@@ -28,16 +28,20 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.excluded.MongodbExcluded;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @RunWith(Parameterized.class)
+@Category(AdapterTestSuite.class)
 public class ForeignKeyConstraintTest {
 
     @Parameters(name = "Create Indexes: {0}")
@@ -155,6 +159,8 @@ public class ForeignKeyConstraintTest {
 
 
     @Test
+    @Category(MongodbExcluded.class) // COUNT() on empty collection returns no result and not 0...
+    // https://jira.mongodb.org/browse/SERVER-54958
     public void testInsertConflict() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

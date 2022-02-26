@@ -1146,7 +1146,7 @@ public class MongoRules {
             CatalogTable catalogTable = implementor.mongoTable.getCatalogTable();
             GridFSBucket bucket = implementor.mongoTable.getMongoSchema().getBucket();
             assert input.getRowType().getFieldCount() == this.getTable().getRowType().getFieldCount();
-            Map<Integer, String> physicalMapping = getPhysicalMap( this.getTable().getRowType().getFieldList(), catalogTable );
+            Map<Integer, String> physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
 
             implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
 

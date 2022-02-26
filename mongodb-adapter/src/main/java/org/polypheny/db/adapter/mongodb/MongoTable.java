@@ -199,7 +199,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
      * @param fields List of fields to project; or null to return map
      * @param operations One or more JSON strings
      * @param parameterValues the values pre-ordered
-     * @param filter tje filter in a BsonDocument form
      * @return Enumerator of results
      */
     private Enumerable<Object> aggregate(
@@ -219,10 +218,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             // direct query
             preOps.forEach( op -> list.add( new BsonDocument( "$addFields", op ) ) );
 
-            /*if ( !filter.isEmpty() ) {
-                list.add( new BsonDocument( "$match", filter ) );
-            }*/
-
             for ( String operation : operations ) {
                 list.add( BsonDocument.parse( operation ) );
             }
@@ -231,11 +226,6 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
             preOps.stream()
                     .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoSchema.getBucket(), dataContext ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
-
-            /*if ( !filter.isEmpty() ) {
-                MongoDynamic util = new MongoDynamic( filter, getMongoSchema().getBucket(), dataContext );
-                list.add( new BsonDocument( "$match", util.insert( parameterValues ) ) );
-            }*/
 
             for ( String operation : operations ) {
                 MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoSchema().getBucket(), dataContext );
