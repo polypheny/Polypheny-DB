@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -91,6 +92,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
+    @Ignore // this is only a reverence
     public void ddlNormalTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -114,6 +116,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
+    @Ignore // this is only a reverence
     public void ddlSqlUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -137,6 +140,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
+    @Ignore // this is only a reverence
     public void ddlSqlCountTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
