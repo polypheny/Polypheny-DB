@@ -29,10 +29,11 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
+import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.webui.models.Result;
 
-@Category(AdapterTestSuite.class)
+@Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test
