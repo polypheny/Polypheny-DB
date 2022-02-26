@@ -16,6 +16,7 @@
 
 package org.polypheny.db.view;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.sql.Timestamp;
@@ -58,13 +59,13 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.EntityAccessMap;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.EntityAccessMap.Mode;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.Mode;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
@@ -284,13 +285,13 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
                 // Get locks for individual tables
-                TableAccessMap accessMap = new TableAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition() );
-                for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                    Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                EntityAccessMap accessMap = new EntityAccessMap( ((CatalogMaterializedView) catalogTable).getDefinition(), new HashMap<>() );
+                for ( EntityIdentifier entityIdentifier : accessMap.getAccessedEntities() ) {
+                    Mode mode = accessMap.getEntityAccessMode( entityIdentifier );
                     if ( mode == Mode.READ_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                        LockManager.INSTANCE.lock( entityIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
                     } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+                        LockManager.INSTANCE.lock( entityIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                     }
                 }
             } catch ( DeadlockException e ) {

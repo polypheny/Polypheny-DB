@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
@@ -128,12 +129,12 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
+import org.polypheny.db.transaction.EntityAccessMap;
+import org.polypheny.db.transaction.EntityAccessMap.EntityIdentifier;
+import org.polypheny.db.transaction.EntityAccessMap.Mode;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TableAccessMap;
-import org.polypheny.db.transaction.TableAccessMap.Mode;
-import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Conformance;
@@ -322,7 +323,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().start( "Locking" );
             }
             if ( lock ) {
-                this.acquireLock( isAnalyze, logicalRoot );
+                this.acquireLock( isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions() );
             }
 
             //
@@ -586,50 +587,30 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot ) {
+    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Integer, List<Long>> accessedPartitions ) {
+        // TODO @HENNLO Check if this is this is necessary to pass the partitions explicitly.
+        // This currently only works for queries. Since DMLs are evaluated during routing.
+        // This SHOULD be adjusted
 
+        // Locking
         try {
             // Get a shared global schema lock (only DDLs acquire an exclusive global schema lock)
             LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-            // Get locks for individual tables
-            TableAccessMap accessMap = new TableAccessMap( logicalRoot.alg );
-            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+            // Get locks for individual Entities (tables-partitions)
+            EntityAccessMap accessMap = new EntityAccessMap( logicalRoot.alg, accessedPartitions );
+            for ( EntityIdentifier entityIdentifier : accessMap.getAccessedEntities() ) {
+                Mode mode = accessMap.getEntityAccessMode( entityIdentifier );
 
-                // Is related to freshness
-                if ( statement.getTransaction().acceptsOutdated() ) {
-                    handleFreshnessLocks( logicalRoot, tableIdentifier, mode );
-                } else {
-                    handlePrimaryLocks( logicalRoot, tableIdentifier, mode );
+                if ( mode == Mode.READ_ACCESS ) {
+                    LockManager.INSTANCE.lock( entityIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                    LockManager.INSTANCE.lock( entityIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 }
             }
 
         } catch ( DeadlockException e ) {
             throw new RuntimeException( e );
         }
-
-    }
-
-
-    private void handlePrimaryLocks( AlgRoot logicalRoot, TableIdentifier tableIdentifier, Mode mode ) {
-        // Locking
-        try {
-            if ( mode == Mode.READ_ACCESS ) {
-                LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-            } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-            }
-        } catch ( DeadlockException e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-
-    private void handleFreshnessLocks( AlgRoot logicalRoot, TableIdentifier tableIdentifier, Mode mode ) {
-        // TODO @HENNLO Check if even necessary
-
-        // Skip locking temporarily
-
     }
 
 
