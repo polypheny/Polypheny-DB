@@ -675,7 +675,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check Policies if placement is against the policy or not
-        List<Integer> ids = PolicyManager.getInstance().makeDecision(Integer.class, Action.ADD_PLACEMENT, catalogTable.schemaId, catalogTable.id, dataStore.getAdapterId());
+        List<DataStore> ids = PolicyManager.getInstance().makeDecision(DataStore.class, Action.CHECK_STORES, catalogTable.schemaId, catalogTable.id, dataStore);
         if(ids.isEmpty()){
             throw new RuntimeException("Not possible to add Placement because the Datastore is not persistent.");
         }

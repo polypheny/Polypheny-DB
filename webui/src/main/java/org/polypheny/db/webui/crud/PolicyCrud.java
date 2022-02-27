@@ -19,7 +19,6 @@ package org.polypheny.db.webui.crud;
 import static org.reflections.Reflections.log;
 
 import io.javalin.http.Context;
-import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
@@ -48,8 +47,8 @@ public class PolicyCrud {
     }
 
 
-    public void getPolicies( final Context ctx ) {
-        List<UiPolicy> policies = policyManager.getPolicies( findTarget( ctx ) );
+    public void getClauses( final Context ctx ) {
+        List<UiPolicy> policies = policyManager.getClause( findTarget( ctx ) );
 
         if ( policies.isEmpty() ) {
             log.warn( "There are no policies for this target." );
@@ -61,8 +60,8 @@ public class PolicyCrud {
     }
 
 
-    public void getAllPossiblePolicies( final Context ctx ) {
-        List<UiPolicy> policies =  policyManager.getPossiblePolicies( findTarget( ctx ) );
+    public void getAllPossibleClauses( final Context ctx ) {
+        List<UiPolicy> policies =  policyManager.getPossibleClause( findTarget( ctx ) );
 
         if ( policies.isEmpty() ) {
             log.warn( "There are no clauses for this target." );
@@ -74,18 +73,18 @@ public class PolicyCrud {
     }
 
 
-    public void setPolicies( final Context ctx ) {
-        policyManager.updatePolicies( ctx.bodyAsClass( PolicyChangeRequest.class ) );
+    public void setClauses( final Context ctx ) {
+        policyManager.updateClauses( ctx.bodyAsClass( PolicyChangeRequest.class ) );
     }
 
 
-    public void addPolicy( final Context ctx ) {
-        policyManager.addPolicy( ctx.bodyAsClass( PolicyChangeRequest.class ) );
+    public void addClause( final Context ctx ) {
+        policyManager.addClause( ctx.bodyAsClass( PolicyChangeRequest.class ) );
     }
 
 
-    public void deletePolicy( Context ctx ) {
-        policyManager.deletePolicy( ctx.bodyAsClass( PolicyChangeRequest.class ) );
+    public void deleteClause( Context ctx ) {
+        policyManager.deleteClause( ctx.bodyAsClass( PolicyChangeRequest.class ) );
     }
 
 

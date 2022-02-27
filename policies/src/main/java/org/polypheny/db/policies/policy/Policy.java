@@ -28,7 +28,7 @@ import org.polypheny.db.policies.policy.Clause.ClauseName;
 public class Policy {
 
     private final static AtomicInteger atomicId = new AtomicInteger();
-    private static final long TARGET_POLYPHENY = -1;
+    protected static final long TARGET_POLYPHENY = -1;
 
     @Getter
     private final int id;
@@ -87,7 +87,7 @@ public class Policy {
     private void addDefaulClauses() {
         switch ( target ) {
             case POLYPHENY:
-                Map<ClauseName, Clause> registeredClauses = ClausesRegister.getRegistry();
+                Map<ClauseName, Clause> registeredClauses = ClausesRegister.getBlankRegistry();
                 for ( Entry<ClauseName, Clause> clause : registeredClauses.entrySet() ) {
                     if ( clause.getValue().isDefault() ) {
                         clauses.put( clause.getValue().getClauseName(), clause.getValue() );

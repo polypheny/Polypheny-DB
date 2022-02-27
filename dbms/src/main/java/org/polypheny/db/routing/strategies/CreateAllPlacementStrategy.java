@@ -16,7 +16,6 @@
 
 package org.polypheny.db.routing.strategies;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.AdapterManager;
@@ -43,20 +42,13 @@ public class CreateAllPlacementStrategy implements CreatePlacementStrategy {
 
 
     @Override
-    public List<DataStore> getDataStoresForNewTable(long schemaId) {
-
-        List<DataStore> possibleStores = new ArrayList<>();
-        List<Integer> storeIds = PolicyManager.getInstance().makeDecision(Integer.class, Action.CREATE_TABLE, schemaId, null);
-        if(storeIds.isEmpty()){
-            throw new RuntimeException("Not possible to create Table because there is no persistent Datastore available.");
-        }else{
-            for ( Integer id : storeIds ) {
-                possibleStores.add( AdapterManager.getInstance().getStore( id ) );
-            }
-            return possibleStores;
+    public List<DataStore> getDataStoresForNewTable( long schemaId ) {
+        List<DataStore> stores = PolicyManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES, schemaId, null );
+        if ( stores.isEmpty() ) {
+            throw new RuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
+        } else {
+            return stores;
         }
-
-        //return AdapterManager.getInstance().getStores().values().asList();
     }
 
 }

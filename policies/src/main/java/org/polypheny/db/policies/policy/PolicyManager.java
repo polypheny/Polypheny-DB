@@ -16,7 +16,7 @@
 
 package org.polypheny.db.policies.policy;
 
-import static org.polypheny.db.policies.policy.firstDraft.PolicyFirstDraft.TARGET_POLYPHENY;
+import static org.polypheny.db.policies.policy.Policy.TARGET_POLYPHENY;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -33,7 +35,10 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.policies.policy.Clause.AffectedOperations;
+import org.polypheny.db.policies.policy.Clause.Category;
 import org.polypheny.db.policies.policy.Clause.ClauseName;
+import org.polypheny.db.policies.policy.Clause.ClauseType;
 import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.policies.policy.exception.PolicyRuntimeException;
 import org.polypheny.db.policies.policy.models.PolicyChangeRequest;
@@ -73,6 +78,7 @@ public class PolicyManager {
     public void initialize() {
         if ( RuntimeConfig.POLICY.getBoolean() ) {
             ClausesRegister.registerClauses();
+            ClausesRegister.addInterferingClauses();
             createDefaultPolicies();
         }
     }
@@ -129,7 +135,7 @@ public class PolicyManager {
     /**
      * This method returns all active policies for a specific target.
      */
-    public List<UiPolicy> getPolicies( Pair<Target, Long> target ) {
+    public List<UiPolicy> getClause( Pair<Target, Long> target ) {
         List<UiPolicy> targetPolicies = new ArrayList<>();
 
         switch ( target.left ) {
@@ -165,7 +171,7 @@ public class PolicyManager {
     /**
      * Checks all the registered clauses for a specific target and returns it.
      */
-    public List<UiPolicy> getPossiblePolicies( Pair<Target, Long> target ) {
+    public List<UiPolicy> getPossibleClause( Pair<Target, Long> target ) {
         List<UiPolicy> targetPolicies = new ArrayList<>();
         long targetId = target.right;
         switch ( target.left ) {
@@ -197,7 +203,7 @@ public class PolicyManager {
 
 
     private List<UiPolicy> getRelevantPolicies( int policyId, long targetId, Target target ) {
-        Map<ClauseName, Clause> registeredClauses = ClausesRegister.getRegistry();
+        Map<ClauseName, Clause> registeredClauses = ClausesRegister.getBlankRegistry();
         List<UiPolicy> relevantPolicies = new ArrayList<>();
         for ( Clause clause : registeredClauses.values() ) {
             if ( clause.getPossibleTargets().contains( target ) && !this.policies.get( policyId ).getClauses().containsKey( clause.getClauseName() ) ) {
@@ -208,7 +214,7 @@ public class PolicyManager {
     }
 
 
-    public void updatePolicies( PolicyChangeRequest changeRequest ) {
+    public void updateClauses( PolicyChangeRequest changeRequest ) {
 
         Target target = Target.valueOf( changeRequest.targetName );
 
@@ -233,7 +239,7 @@ public class PolicyManager {
     }
 
 
-    public void addPolicy( PolicyChangeRequest changeRequest ) {
+    public void addClause( PolicyChangeRequest changeRequest ) {
         Target target = Target.valueOf( changeRequest.targetName );
         ClauseName clauseName = ClauseName.valueOf( changeRequest.clauseName );
         long targetId = changeRequest.targetId;
@@ -262,7 +268,7 @@ public class PolicyManager {
 
 
     private void addSpecificPolicy( ClauseName clauseName, long targetId, int policyId, Target target ) {
-        Map<ClauseName, Clause> registeredClauses = ClausesRegister.getRegistry();
+        Map<ClauseName, Clause> registeredClauses = ClausesRegister.getBlankRegistry();
         if ( this.policies.containsKey( policyId ) ) {
             Policy policy = this.policies.remove( policyId );
             Clause clause = registeredClauses.get( clauseName );
@@ -277,7 +283,7 @@ public class PolicyManager {
     }
 
 
-    public void deletePolicy( PolicyChangeRequest changeRequest ) {
+    public void deleteClause( PolicyChangeRequest changeRequest ) {
 
         Target target = Target.valueOf( changeRequest.targetName );
         ClauseName clauseName = ClauseName.valueOf( changeRequest.clauseName );
@@ -422,84 +428,39 @@ public class PolicyManager {
      */
     public <T> List<T> makeDecision( Class<T> clazz, Action action, Long namespaceId, Long entityId, T preSelection ) {
         List<Clause> potentiallyInteresting;
-        List<DataStore> possibleStores = new ArrayList<>();
+
         List<ClauseName> clauseNames;
 
         switch ( action ) {
-            case CREATE_TABLE:
-                List<Integer> possibleStoreIds = new ArrayList<>();
-                // Get all availableStores
-                Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
-                clauseNames = Arrays.asList( ClauseName.FULLY_PERSISTENT, ClauseName.PERSISTENT, ClauseName.ONLY_DOCKER, ClauseName.ONLY_EMBEDDED );
-
-                // Check if there are relevant policies and add it to potentiallyInteresting
-                potentiallyInteresting = findPotentiallyInteresting( clauseNames, namespaceId, entityId );
-
-                if ( potentiallyInteresting.isEmpty() ) {
-                    for ( DataStore store : availableStores.values() ) {
-                        possibleStoreIds.add( store.getAdapterId() );
-                    }
-                    return (List<T>) possibleStoreIds;
-                }
-
-                possibleStores.addAll( availableStores.values() );
-
-                for ( Clause clause : potentiallyInteresting ) {
-                    if ( clause != null ) {
-                        if ( clause.getClauseName() == ClauseName.FULLY_PERSISTENT && ((BooleanClause) clause).isValue() ) {
-                            possibleStores.removeIf( store -> !store.isPersistent() );
-                        } else if ( clause.getClauseName() == ClauseName.PERSISTENT && ((BooleanClause) clause).isValue() ) {
-                            List<DataStore> stores = new ArrayList<>();
-                            boolean isPersisten = false;
-                            for ( DataStore store : possibleStores ) {
-                                stores.add( store );
-                                if ( store.isPersistent() ) {
-                                    isPersisten = true;
-                                }
-                            }
-                            if ( !isPersisten ) {
-                                possibleStores.removeAll( stores );
-                            }
-                        } else if ( clause.getClauseName() == ClauseName.ONLY_DOCKER && ((BooleanClause) clause).isValue() ) {
-                            possibleStores.removeIf( store -> store.getDeployMode() != DeployMode.DOCKER );
-                        } else if ( clause.getClauseName() == ClauseName.ONLY_EMBEDDED && ((BooleanClause) clause).isValue() ) {
-                            possibleStores.removeIf( store -> store.getDeployMode() != DeployMode.EMBEDDED );
-
-                        }
-                    }
-                }
-
-                possibleStores.forEach( v -> possibleStoreIds.add( v.getAdapterId() ) );
-
-                return (List<T>) possibleStoreIds;
-
-            case ADD_PLACEMENT:
-
+            case CHECK_STORES:
+                List<Object> possibleStores;
                 clauseNames = Arrays.asList( ClauseName.FULLY_PERSISTENT, ClauseName.PERSISTENT, ClauseName.ONLY_DOCKER, ClauseName.ONLY_EMBEDDED );
                 // Check if there are relevant policies and add it to potentiallyInteresting
                 potentiallyInteresting = findPotentiallyInteresting( clauseNames, namespaceId, entityId );
 
+                if(preSelection != null){
+                    possibleStores = Collections.singletonList(preSelection);
+                }else{
+                    // Get all availableStores
+                    Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
+                    possibleStores = new ArrayList<>( availableStores.values() );
+                }
+
                 if ( potentiallyInteresting.isEmpty() ) {
-                    return Collections.singletonList( preSelection );
+                    return (List<T>) possibleStores;
                 }
 
                 for ( Clause clause : potentiallyInteresting ) {
-                    if ( clause != null ) {
-                        if ( ((BooleanClause) clause).isValue() ) {
-                            DataStore dataStore = AdapterManager.getInstance().getStore( (int) preSelection );
-                            if ( dataStore.isPersistent() ) {
-                                return Collections.singletonList( preSelection );
-                            } else {
-                                return Collections.emptyList();
-                            }
-                        } else {
-                            return Collections.singletonList( preSelection );
+                    if ( clause.getCategory() == Category.STORE && clause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) clause).isValue() ) {
+                        for ( Entry<AffectedOperations, Function<List<Object>, List<Object>>> findStores : clause.getDecide().entrySet() ) {
+                            possibleStores = findStores.getValue().apply( possibleStores );
                         }
                     }
                 }
+                return (List<T>) possibleStores;
 
             case ADD_PARTITIONING:
-
+/*
                 clauseNames = Arrays.asList( ClauseName.FULLY_PERSISTENT, ClauseName.PERSISTENT, ClauseName.ONLY_DOCKER, ClauseName.ONLY_EMBEDDED );
                 // Check if there are relevant policies and add it to potentiallyInteresting
                 potentiallyInteresting = findPotentiallyInteresting( clauseNames, namespaceId, entityId );
@@ -521,7 +482,8 @@ public class PolicyManager {
                         }
                     }
                 }
-                return (List<T>) possibleStores;
+                return (List<T>) possibleStores;*/
+                return null;
             default:
                 throw new PolicyRuntimeException( "Not implemented action was used to make a Decision" );
         }
@@ -582,7 +544,7 @@ public class PolicyManager {
 
 
     public enum Action {
-        CREATE_TABLE, ADD_PARTITIONING, ADD_PLACEMENT
+        CHECK_STORES, ADD_PARTITIONING,
 
     }
 

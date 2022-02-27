@@ -16,7 +16,9 @@
 
 package org.polypheny.db.policies.policy;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.policies.policy.Policy.Target;
@@ -28,10 +30,15 @@ public class BooleanClause extends Clause {
     private boolean value;
 
 
-    public BooleanClause( ClauseName clauseName, boolean defaultValue, boolean isDefault, Category category, List<Target> possibleTargets, String description ) {
-        super( clauseName, isDefault,  ClauseType.BOOLEAN, category, possibleTargets, description );
+    public BooleanClause( ClauseName clauseName, boolean defaultValue, boolean isDefault, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide ) {
+        super( clauseName, isDefault,  ClauseType.BOOLEAN, category, possibleTargets, description, decide );
         this.value = defaultValue;
     }
 
+
+    @Override
+    public <T extends Clause> BooleanClause copy() {
+        return new BooleanClause( getClauseName(), isValue(), isDefault(), getCategory(), getPossibleTargets(), getDescription(), getDecide() );
+    }
 
 }

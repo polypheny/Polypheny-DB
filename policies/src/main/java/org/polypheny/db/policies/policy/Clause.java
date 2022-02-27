@@ -16,43 +16,46 @@
 
 package org.polypheny.db.policies.policy;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import lombok.Getter;
+import org.checkerframework.checker.units.qual.C;
 import org.polypheny.db.policies.policy.Policy.Target;
 
+@Getter
 public abstract class Clause {
 
     private static final AtomicInteger atomicId = new AtomicInteger();
     /**
      * Name of clause.
      */
-    @Getter
+
     private final ClauseName clauseName;
 
     /**
      * Unique id of clause.
      */
-    @Getter
     private final int id;
 
-    @Getter
     private final boolean isDefault;
 
-    @Getter
     private final ClauseType clauseType;
 
-    @Getter
     private final Category category;
 
-    @Getter
     private final String description;
 
-    @Getter
     private final List<Target> possibleTargets;
 
+    private final HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide;
 
-    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category, List<Target> possibleTargets, String description ) {
+    //first Value is its own setting, second value is interfering with it
+    private final HashMap<Clause, Clause> interfering;
+
+
+    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide ) {
         this.id = atomicId.getAndIncrement();
         this.clauseName = clauseName;
         this.isDefault = isDefault;
@@ -60,7 +63,24 @@ public abstract class Clause {
         this.category = category;
         this.description = description;
         this.possibleTargets = possibleTargets;
+        this.decide = decide;
+        this.interfering = new HashMap<>();
 
+    }
+
+
+    public boolean isA( ClauseType clauseType ) {
+        return this.getClauseType() == clauseType;
+    }
+
+
+    public abstract <T extends Clause> BooleanClause copy();
+
+
+    public <T extends Clause> T copyClause() {
+        T clause = (T) copy();
+        assert clause.getId() != this.id;
+        return clause;
     }
 
 
@@ -71,11 +91,15 @@ public abstract class Clause {
         STORE
     }
 
+    public enum AffectedOperations {
+        STORE
+    }
 
     public enum ClauseName {
         FULLY_PERSISTENT, ONLY_EMBEDDED, ONLY_DOCKER, PERSISTENT
 
     }
+
 
     public enum ClauseType {
         BOOLEAN, NUMBER

@@ -37,26 +37,14 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
 
 
     @Override
-    public List<DataStore> getDataStoresForNewTable(long schemaId) {
+    public List<DataStore> getDataStoresForNewTable( long schemaId ) {
 
-        List<Integer> storeIds = PolicyManager.getInstance().makeDecision(Integer.class, Action.CREATE_TABLE, schemaId, null);
-        if(storeIds.isEmpty()){
-            throw new RuntimeException("Not possible to create Table because there is no persistent Datastore available.");
-        }else{
-            for ( Integer id : storeIds ) {
-                return ImmutableList.of( AdapterManager.getInstance().getStore( id ) );
-            }
+        List<DataStore> stores = PolicyManager.getInstance().makeDecision( DataStore.class, Action.CHECK_STORES, schemaId, null );
+        if ( stores.isEmpty() ) {
+            throw new RuntimeException( "Not possible to create Table because there is no persistent Datastore available." );
+        } else {
+            return stores;
         }
-
-        throw new RuntimeException( "No suitable data store found" );
-        /*
-        Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
-        for ( DataStore store : availableStores.values() ) {
-            return ImmutableList.of( store );
-        }
-        throw new RuntimeException( "No suitable data store found" );
-
-         */
     }
 
 }
