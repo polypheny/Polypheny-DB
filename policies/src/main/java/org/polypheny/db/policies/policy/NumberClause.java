@@ -16,12 +16,16 @@
 
 package org.polypheny.db.policies.policy;
 
+import static org.reflections.Reflections.log;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
+import lombok.Getter;
 import org.polypheny.db.policies.policy.Policy.Target;
 import org.polypheny.db.util.Pair;
 
+@Getter
 public class NumberClause extends Clause {
 
     private final int value;
@@ -29,8 +33,8 @@ public class NumberClause extends Clause {
     private final HashMap<Category, Pair<Integer, Integer>> categoryRange;
 
 
-    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<Category, Pair<Integer, Integer>> categoryRange, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide ) {
-        super( clauseName, isDefault, ClauseType.NUMBER, category, possibleTargets, description, decide );
+    public NumberClause( ClauseName clauseName, int defaultValue, boolean isDefault, HashMap<Category, Pair<Integer, Integer>> categoryRange, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide, HashMap<Clause, Clause> interfering ) {
+        super( clauseName, isDefault, ClauseType.NUMBER, category, possibleTargets, description, decide, interfering );
         this.value = defaultValue;
         this.categoryRange = categoryRange;
 
@@ -39,7 +43,15 @@ public class NumberClause extends Clause {
 
     @Override
     public <T extends Clause> BooleanClause copy() {
+        log.warn("IMPLEMENT copy in Numberclauses");
         return null;
+    }
+
+
+    @Override
+    public boolean compareClause( Clause clauseAddition ) {
+        log.warn("IMPLEMENT compareClause in Numberclauses");
+        return false;
     }
 
 }

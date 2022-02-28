@@ -16,8 +16,10 @@
 
 package org.polypheny.db.policies.policy.models;
 
+import org.polypheny.db.policies.policy.BooleanClause;
 import org.polypheny.db.policies.policy.Clause;
 import org.polypheny.db.policies.policy.Clause.ClauseType;
+import org.polypheny.db.policies.policy.NumberClause;
 import org.polypheny.db.policies.policy.Policy.Target;
 
 public class UiPolicy {
@@ -25,17 +27,31 @@ public class UiPolicy {
     private final String name;
     private final Target target;
     private final long targetId;
-    private final Clause clause;
+    private final UiClause clause;
     private final ClauseType clauseType;
     private final String description;
 
-    public UiPolicy(String name, Target target, long targetId, Clause clause, ClauseType clauseType, String description){
+
+    public UiPolicy( String name, Target target, long targetId, Clause clause, ClauseType clauseType, String description ) {
         this.name = name;
         this.target = target;
         this.targetId = targetId;
-        this.clause = clause;
+        this.clause = buildClause( clause, clauseType );
         this.clauseType = clauseType;
         this.description = description;
+    }
+
+
+    private UiClause buildClause( Clause clause, ClauseType clauseType ) {
+        switch ( clauseType ) {
+            case BOOLEAN:
+                return new UiBooleanClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getCategory(), clause.getDescription(), clause.getPossibleTargets(), ((BooleanClause) clause).isValue() );
+            case NUMBER:
+                return new UiNumberClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getCategory(), clause.getDescription(), clause.getPossibleTargets(), ((NumberClause) clause).getValue(), ((NumberClause) clause).getCategoryRange() );
+            default:
+                return new UiClause( clause.getClauseName(), clause.getId(), clause.isDefault(), clause.getClauseType(), clause.getCategory(), clause.getDescription(), clause.getPossibleTargets() );
+        }
+
     }
 
 

@@ -29,7 +29,6 @@ import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -78,7 +77,6 @@ public class PolicyManager {
     public void initialize() {
         if ( RuntimeConfig.POLICY.getBoolean() ) {
             ClausesRegister.registerClauses();
-            ClausesRegister.addInterferingClauses();
             createDefaultPolicies();
         }
     }
@@ -217,21 +215,23 @@ public class PolicyManager {
     public void updateClauses( PolicyChangeRequest changeRequest ) {
 
         Target target = Target.valueOf( changeRequest.targetName );
+        Clause clause = null;
 
         for ( Policy policy : policies.values() ) {
             if ( !policy.getClauses().isEmpty() ) {
                 if ( policy.getTarget() == target ) {
                     if ( changeRequest.requestType.equals( "BooleanChangeRequest" ) ) {
-                        BooleanClause clause = (BooleanClause) policy.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
-                        clause.setValue( changeRequest.booleanValue );
-                        if ( checkClauseChange( clause, policy.getTarget(), policy.getTargetId() ) ) {
-                            policy.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
-                            this.policies.put( policy.getId(), policy );
-                            log.warn( "Persistency should change: " + clause.isValue() );
-                        } else {
-                            log.warn( "Persistency not possible to change: " + clause.isValue() );
-                            throw new PolicyRuntimeException( "Not possible to change this clause because the policies can not be guaranteed anymore." );
-                        }
+                        clause = policy.getClauses().get( ClauseName.valueOf( changeRequest.clauseName ) );
+                        ((BooleanClause) clause).setValue( changeRequest.booleanValue );
+                    }
+
+                    assert clause != null;
+                    if ( checkClauseChange( clause, policy.getTarget(), policy.getTargetId() ) ) {
+                        policy.getClauses().put( ClauseName.valueOf( changeRequest.clauseName ), clause );
+                        this.policies.put( policy.getId(), policy );
+                    } else {
+                        log.warn( "Persistency not possible to change." );
+                        throw new PolicyRuntimeException( "Not possible to change this clause because the policies can not be guaranteed anymore." );
                     }
                 }
             }
@@ -291,19 +291,19 @@ public class PolicyManager {
 
         switch ( target ) {
             case POLYPHENY:
-                deleteSpecificPolicy( polyphenyPolicyId, clauseName );
+                deleteSpecificClause( polyphenyPolicyId, clauseName );
                 break;
 
             case NAMESPACE:
                 if ( namespacePolicies.containsKey( targetId ) ) {
                     int policyId = namespacePolicies.get( targetId );
-                    deleteSpecificPolicy( policyId, clauseName );
+                    deleteSpecificClause( policyId, clauseName );
                 }
                 break;
             case ENTITY:
                 if ( entityPolicies.containsKey( targetId ) ) {
                     int policyId = entityPolicies.get( targetId );
-                    deleteSpecificPolicy( policyId, clauseName );
+                    deleteSpecificClause( policyId, clauseName );
                 }
                 break;
             default:
@@ -313,7 +313,7 @@ public class PolicyManager {
     }
 
 
-    private void deleteSpecificPolicy( int policyId, ClauseName clauseName ) {
+    private void deleteSpecificClause( int policyId, ClauseName clauseName ) {
         if ( this.policies.containsKey( policyId ) ) {
             Policy policy = this.policies.remove( policyId );
             policy.getClauses().remove( clauseName );
@@ -333,13 +333,10 @@ public class PolicyManager {
      * @param target of the changed clause
      * @return true if it is possible to change clause otherwise false
      */
-    private boolean checkClauseChange( BooleanClause clause, Target target, Long targetId ) {
-        List<Integer> storesToCheck = new ArrayList<>();
-        List<CatalogPartitionPlacement> partitionPlacements = Catalog.getInstance().getAllPartitionPlacement();
-
+    private boolean checkClauseChange( Clause clause, Target target, Long targetId ) {
         switch ( clause.getCategory() ) {
             case STORE:
-                return checkStoreClauses( clause, target, targetId, storesToCheck, partitionPlacements );
+                return checkStoreClauses( clause, target, targetId ) && checkActiveClauses( clause, target, targetId );
             default:
                 throw new PolicyRuntimeException( "Category is not yet implemented: " + clause.getCategory() );
         }
@@ -347,71 +344,69 @@ public class PolicyManager {
     }
 
 
-    private boolean checkStoreClauses( BooleanClause clause, Target target, Long targetId, List<Integer> storesToCheck, List<CatalogPartitionPlacement> partitionPlacements ) {
-        switch ( clause.getClauseName() ) {
-            case FULLY_PERSISTENT:
+    private boolean checkActiveClauses( Clause clause, Target target, Long targetId ) {
+        switch ( target ) {
+            case POLYPHENY:
+                return checkClauses( clause, polyphenyPolicyId );
+            case NAMESPACE:
+                return checkClauses( clause, polyphenyPolicyId ) && checkClauses( clause, namespacePolicies.get( targetId ) );
+            case ENTITY:
+                return checkClauses( clause, polyphenyPolicyId ) && checkClauses( clause, namespacePolicies.get( targetId ) ) && checkClauses( clause, entityPolicies.get( targetId ) );
+        }
+        return false;
+    }
 
-                AdapterManager.getInstance().getStores().forEach( ( s, dataStore ) -> {
-                            if ( !dataStore.isPersistent() ) {
-                                storesToCheck.add( dataStore.getAdapterId() );
-                            }
-                        }
-                );
 
-                return checkAllPartitions( target, targetId, storesToCheck, partitionPlacements );
-
-            case PERSISTENT:
-                log.warn( "in persistent" );
-                break;
-            case ONLY_EMBEDDED:
-                AdapterManager.getInstance().getStores().forEach( ( s, dataStore ) -> {
-                            if ( dataStore.getDeployMode() != DeployMode.EMBEDDED ) {
-                                storesToCheck.add( dataStore.getAdapterId() );
-                            }
-                        }
-                );
-
-                return checkAllPartitions( target, targetId, storesToCheck, partitionPlacements );
-
-            case ONLY_DOCKER:
-                AdapterManager.getInstance().getStores().forEach( ( s, dataStore ) -> {
-                            if ( dataStore.getDeployMode() != DeployMode.DOCKER ) {
-                                storesToCheck.add( dataStore.getAdapterId() );
-                            }
-                        }
-                );
-
-                return checkAllPartitions( target, targetId, storesToCheck, partitionPlacements );
-            default:
-                throw new PolicyRuntimeException( "Clause is not yet implemented: " + clause.getClauseName() );
+    private boolean checkClauses( Clause clause, int policyId ) {
+        List<Clause> clauses = new ArrayList<>( policies.get( policyId ).getClauses().values() );
+        for ( Clause clauseToCheck : clauses ) {
+            for ( Entry<Clause, Clause> interfering : clauseToCheck.getInterfering().entrySet() ) {
+                if ( clauseToCheck.compareClause( interfering.getKey() ) && interfering.getValue().compareClause( clause ) ) {
+                    return false;
+                }
+            }
         }
         return true;
     }
 
 
-    private Boolean checkAllPartitions( Target target, Long targetId, List<Integer> storesToCheck, List<CatalogPartitionPlacement> partitionPlacements ) {
-        switch ( target ) {
-            case POLYPHENY:
-                for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                    if ( storesToCheck.contains( partitionPlacement.adapterId ) ) {
+    private boolean checkStoreClauses( Clause clause, Target target, Long targetId ) {
+
+        List<CatalogPartitionPlacement> partitionPlacements = Catalog.getInstance().getAllPartitionPlacement();
+        Map<String, DataStore> allStores = AdapterManager.getInstance().getStores();
+        List<Object> possibleStores = new ArrayList<>( allStores.values() );
+
+        if ( clause.getCategory() == Category.STORE && clause.isA( ClauseType.BOOLEAN ) && ((BooleanClause) clause).isValue() ) {
+            for ( Entry<AffectedOperations, Function<List<Object>, List<Object>>> findStores : clause.getDecide().entrySet() ) {
+                possibleStores = findStores.getValue().apply( possibleStores );
+            }
+        }
+        if(allStores.size() == possibleStores.size()){
+            return true;
+        }
+        List<Integer> adapterIds = new ArrayList<>();
+        possibleStores.forEach( ( s ) -> adapterIds.add( ((DataStore) s).getAdapterId() ) );
+        for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
+            switch ( target ) {
+                case POLYPHENY:
+                    if ( !adapterIds.contains( partitionPlacement.adapterId ) ) {
                         return false;
                     }
-                }
-                break;
-            case NAMESPACE:
-                for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                    if ( storesToCheck.contains( partitionPlacement.adapterId ) && partitionPlacement.schemaId == targetId ) {
+                    break;
+                case NAMESPACE:
+                    if ( !adapterIds.contains( partitionPlacement.adapterId ) && partitionPlacement.schemaId == targetId ) {
                         return false;
                     }
-                }
-                break;
-            case ENTITY:
-                for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                    if ( storesToCheck.contains( partitionPlacement.adapterId ) && partitionPlacement.tableId == targetId ) {
+                    break;
+                case ENTITY:
+                    if ( !adapterIds.contains( partitionPlacement.adapterId ) && partitionPlacement.tableId == targetId ) {
                         return false;
                     }
-                }
-                break;
+                    break;
+                default:
+                    log.warn( "target is not specified in checkStoreclause" );
+            }
+
         }
         return true;
     }
@@ -438,9 +433,9 @@ public class PolicyManager {
                 // Check if there are relevant policies and add it to potentiallyInteresting
                 potentiallyInteresting = findPotentiallyInteresting( clauseNames, namespaceId, entityId );
 
-                if(preSelection != null){
-                    possibleStores = Collections.singletonList(preSelection);
-                }else{
+                if ( preSelection != null ) {
+                    possibleStores = Collections.singletonList( preSelection );
+                } else {
                     // Get all availableStores
                     Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
                     possibleStores = new ArrayList<>( availableStores.values() );

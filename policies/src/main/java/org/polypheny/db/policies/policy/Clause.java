@@ -55,7 +55,7 @@ public abstract class Clause {
     private final HashMap<Clause, Clause> interfering;
 
 
-    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide ) {
+    protected Clause( ClauseName clauseName, boolean isDefault, ClauseType clauseType, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide, HashMap<Clause, Clause> interfering ) {
         this.id = atomicId.getAndIncrement();
         this.clauseName = clauseName;
         this.isDefault = isDefault;
@@ -64,7 +64,7 @@ public abstract class Clause {
         this.description = description;
         this.possibleTargets = possibleTargets;
         this.decide = decide;
-        this.interfering = new HashMap<>();
+        this.interfering = interfering;
 
     }
 
@@ -82,6 +82,9 @@ public abstract class Clause {
         assert clause.getId() != this.id;
         return clause;
     }
+
+
+    public abstract boolean compareClause( Clause clauseAddition );
 
 
     /**

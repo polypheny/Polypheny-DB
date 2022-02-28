@@ -56,7 +56,8 @@ public class ClausesRegister {
                 "If fully persistent is switched on, Polypheny only adds tables and partitions to persistent stores.",
                 new HashMap<>() {{
                     put( AffectedOperations.STORE, (( l ) -> l.stream().filter( e -> ((DataStore) e).isPersistent() ).collect( Collectors.toList() )) );
-                }})
+                }},
+                new HashMap<>())
         );
 
         register( new BooleanClause(
@@ -73,7 +74,8 @@ public class ClausesRegister {
                         }
                         return Collections.emptyList();
                     }) );
-                }} )
+                }},
+                new HashMap<>())
         );
 
         register( new BooleanClause(
@@ -85,7 +87,8 @@ public class ClausesRegister {
                 "If only embedded is switched on, Polypheny only adds tables and partitions to embedded store.",
                 new HashMap<>() {{
                     put( AffectedOperations.STORE, (( l ) -> l.stream().filter( e -> ((DataStore) e).getDeployMode() == DeployMode.EMBEDDED ).collect( Collectors.toList() )) );
-                }})
+                }},
+                new HashMap<>())
         );
 
         register( new BooleanClause(
@@ -97,9 +100,11 @@ public class ClausesRegister {
                 "If only docker is switched on, Polypheny only adds tables and partitions to docker store.",
                 new HashMap<>() {{
                     put( AffectedOperations.STORE, (( l ) -> l.stream().filter( e -> ((DataStore) e).getDeployMode() == DeployMode.DOCKER ).collect( Collectors.toList() )) );
-                }})
+                }},
+                new HashMap<>())
         );
 
+        addInterferingClauses();
     }
 
 
@@ -118,19 +123,33 @@ public class ClausesRegister {
 
 
     public static void addInterferingClauses() {
-        HashMap<Clause, Clause> interfering;
 
+        BooleanClause fullyPersistent = registry.get( ClauseName.FULLY_PERSISTENT ).copyClause();
+        BooleanClause minimalPersistent = registry.get( ClauseName.PERSISTENT ).copyClause();
+        BooleanClause embedded = registry.get( ClauseName.ONLY_EMBEDDED ).copyClause();
+        BooleanClause docker = registry.get( ClauseName.ONLY_DOCKER ).copyClause();
 
-        BooleanClause fullyPersistent = (BooleanClause) registry.get( ClauseName.FULLY_PERSISTENT );
-        BooleanClause minimalPersistent = (BooleanClause) registry.get( ClauseName.FULLY_PERSISTENT );
-        BooleanClause embedded = (BooleanClause) registry.get( ClauseName.FULLY_PERSISTENT );
-        BooleanClause docker = (BooleanClause) registry.get( ClauseName.FULLY_PERSISTENT );
-
-        //fully persistent interfering
+        //fully and minimal-persistent interfering
         fullyPersistent.setValue( true );
         minimalPersistent.setValue( true );
-        fullyPersistent.getInterfering().put(fullyPersistent , minimalPersistent);
+        Clause fullyPersistentClause = registry.get( ClauseName.FULLY_PERSISTENT );
+        fullyPersistentClause.getInterfering().put(fullyPersistent , minimalPersistent);
+        registry.put(fullyPersistentClause.getClauseName(), fullyPersistentClause );
 
+        Clause persistentClause = registry.get( ClauseName.PERSISTENT );
+        persistentClause.getInterfering().put(minimalPersistent, fullyPersistent);
+        registry.put(persistentClause.getClauseName(), persistentClause );
+
+        //embedded and docker persistent interfering
+        embedded.setValue( true );
+        docker.setValue( true );
+        Clause embeddedClause = registry.get( ClauseName.ONLY_EMBEDDED );
+        embeddedClause.getInterfering().put(embedded, docker);
+        registry.put(embeddedClause.getClauseName(), embeddedClause );
+
+        Clause dockerClause = registry.get( ClauseName.ONLY_DOCKER );
+        dockerClause.getInterfering().put(docker, embedded);
+        registry.put(dockerClause.getClauseName(), dockerClause );
     }
 
 }

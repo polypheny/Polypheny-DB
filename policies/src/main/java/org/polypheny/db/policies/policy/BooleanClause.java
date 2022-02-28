@@ -30,15 +30,32 @@ public class BooleanClause extends Clause {
     private boolean value;
 
 
-    public BooleanClause( ClauseName clauseName, boolean defaultValue, boolean isDefault, Category category, List<Target> possibleTargets, String description, HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide ) {
-        super( clauseName, isDefault,  ClauseType.BOOLEAN, category, possibleTargets, description, decide );
+    public BooleanClause(
+            ClauseName clauseName,
+            boolean defaultValue,
+            boolean isDefault,
+            Category category,
+            List<Target> possibleTargets,
+            String description,
+            HashMap<AffectedOperations, Function<List<Object>, List<Object>>> decide,
+            HashMap<Clause, Clause> interfering ) {
+        super( clauseName, isDefault,  ClauseType.BOOLEAN, category, possibleTargets, description, decide, interfering );
         this.value = defaultValue;
     }
 
 
     @Override
     public <T extends Clause> BooleanClause copy() {
-        return new BooleanClause( getClauseName(), isValue(), isDefault(), getCategory(), getPossibleTargets(), getDescription(), getDecide() );
+        return new BooleanClause( getClauseName(), isValue(), isDefault(), getCategory(), getPossibleTargets(), getDescription(), getDecide(), getInterfering() );
+    }
+
+
+    @Override
+    public boolean compareClause( Clause clauseAddition ) {
+        return getClauseName().equals( clauseAddition.getClauseName() ) &&
+                getClauseType().equals( clauseAddition.getClauseType() ) &&
+                clauseAddition.isA( ClauseType.BOOLEAN )&&
+                isValue() == ((BooleanClause)clauseAddition).isValue();
     }
 
 }
