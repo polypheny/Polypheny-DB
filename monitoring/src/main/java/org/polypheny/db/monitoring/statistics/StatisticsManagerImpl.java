@@ -892,8 +892,6 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                     handleDrop( tableId, changedValues, schemaId );
                     break;
             }
-        } else {
-            log.warn( "This should not happen maybe needs manual reevaluation: " + tableId );
         }
     }
 
@@ -1032,7 +1030,9 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
                 if ( tableStatistic.containsKey( tableId ) ) {
                     statisticTable = tableStatistic.get( tableId );
                     int totalRows = statisticTable.getNumberOfRows() - number;
-
+                    if ( totalRows < 0 ) {
+                        totalRows = 0;
+                    }
                     statisticTable.setNumberOfRows( totalRows );
                 } else {
                     statisticTable = new StatisticTable<T>( tableId );
@@ -1222,9 +1222,8 @@ public class StatisticsManagerImpl<T extends Comparable<T>> extends StatisticsMa
      */
     @Override
     public synchronized Integer rowCountPerTable( long tableId ) {
-        StatisticTable<T> table = tableStatistic.get( tableId );
-        if ( table != null ) {
-            return table.getNumberOfRows();
+        if ( tableStatistic.containsKey( tableId ) ) {
+            return tableStatistic.get( tableId ).getNumberOfRows();
         } else {
             return null;
         }
