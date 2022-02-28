@@ -45,6 +45,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -69,8 +70,16 @@ public class FileRules {
 
 
         public FileTableModificationRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( TableModify.class, r -> true, Convention.NONE, out, algBuilderFactory, "FileTableModificationRule:" + out.getName() );
+            super( TableModify.class, FileTableModificationRule::supports, Convention.NONE, out, algBuilderFactory, "FileTableModificationRule:" + out.getName() );
             this.convention = out;
+        }
+
+
+        private static boolean supports( TableModify node ) {
+            if ( node.getSourceExpressionList() != null ) {
+                return node.getSourceExpressionList().stream().noneMatch( DocumentRules::containsDocumentUpdate );
+            }
+            return true;
         }
 
 
@@ -264,7 +273,7 @@ public class FileRules {
 
 
         public FileFilterRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Filter.class, f -> !functionInFilter( f ), Convention.NONE, out, algBuilderFactory, "FileFilterRule:" + out.getName() );
+            super( Filter.class, f -> !functionInFilter( f ) && !DocumentRules.containsDocument( f ), Convention.NONE, out, algBuilderFactory, "FileFilterRule:" + out.getName() );
             this.convention = out;
         }
 

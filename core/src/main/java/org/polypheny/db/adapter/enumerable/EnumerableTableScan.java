@@ -61,6 +61,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.schema.QueryableTable;
@@ -284,7 +285,8 @@ public class EnumerableTableScan extends TableScan implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 2 );
+        return VolcanoCost.FACTORY.makeInfiniteCost();
+        //return super.computeSelfCost( planner, mq ).multiplyBy( 10 );
     }
 
 }

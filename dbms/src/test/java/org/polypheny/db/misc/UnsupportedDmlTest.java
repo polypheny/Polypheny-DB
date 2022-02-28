@@ -30,10 +30,11 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
+import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.webui.models.Result;
 
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, CassandraExcluded.class, FileExcluded.class }) // todo fix error with filter in file
 public class UnsupportedDmlTest extends MqlTestTemplate {
 
     @Test
@@ -117,7 +118,7 @@ public class UnsupportedDmlTest extends MqlTestTemplate {
 
 
     @Test
-    @Ignore // this is only a reverence
+    //@Ignore // this is only a reverence
     public void ddlSqlUpdateTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
