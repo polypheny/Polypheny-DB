@@ -38,8 +38,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalValues;
@@ -181,7 +181,7 @@ public class Rest {
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
 
         AlgNode algNode = algBuilder.build();
-        TableModify tableModify = new LogicalModify(
+        Modify modify = new LogicalModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
@@ -194,13 +194,13 @@ public class Rest {
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = tableModify.getRowType();
+        final AlgDataType rowType = modify.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
                         : AlgCollations.EMPTY;
-        AlgRoot root = new AlgRoot( tableModify, rowType, Kind.UPDATE, fields, collation );
+        AlgRoot root = new AlgRoot( modify, rowType, Kind.UPDATE, fields, collation );
         log.debug( "AlgRoot was built." );
 
         return executeAndTransformPolyAlg( root, statement, ctx );
@@ -234,7 +234,7 @@ public class Rest {
         AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
 
         AlgNode algNode = algBuilder.build();
-        TableModify tableModify = new LogicalModify(
+        Modify modify = new LogicalModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
@@ -247,13 +247,13 @@ public class Rest {
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = tableModify.getRowType();
+        final AlgDataType rowType = modify.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
                         : AlgCollations.EMPTY;
-        AlgRoot root = new AlgRoot( tableModify, rowType, Kind.DELETE, fields, collation );
+        AlgRoot root = new AlgRoot( modify, rowType, Kind.DELETE, fields, collation );
         log.debug( "AlgRoot was built." );
 
         return executeAndTransformPolyAlg( root, statement, ctx );
@@ -286,7 +286,7 @@ public class Rest {
 
         // Table Modify
         AlgNode algNode = algBuilder.build();
-        TableModify tableModify = new LogicalModify(
+        Modify modify = new LogicalModify(
                 cluster,
                 algNode.getTraitSet(),
                 table,
@@ -299,13 +299,13 @@ public class Rest {
         );
 
         // Wrap {@link AlgNode} into a RelRoot
-        final AlgDataType rowType = tableModify.getRowType();
+        final AlgDataType rowType = modify.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final AlgCollation collation =
                 algNode instanceof Sort
                         ? ((Sort) algNode).collation
                         : AlgCollations.EMPTY;
-        AlgRoot root = new AlgRoot( tableModify, rowType, Kind.INSERT, fields, collation );
+        AlgRoot root = new AlgRoot( modify, rowType, Kind.INSERT, fields, collation );
         log.debug( "AlgRoot was built." );
 
         return executeAndTransformPolyAlg( root, statement, ctx );

@@ -119,7 +119,7 @@ public class MutableRelTest {
     @Test
     public void testConvertTableModify() {
         checkConvertMutableAlg(
-                "TableModify",
+                "Modify",
                 "insert into dept select empno, ename from emp" );
     }
 

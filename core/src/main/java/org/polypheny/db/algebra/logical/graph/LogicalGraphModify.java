@@ -19,7 +19,7 @@ package org.polypheny.db.algebra.logical.graph;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.GraphAlg;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 

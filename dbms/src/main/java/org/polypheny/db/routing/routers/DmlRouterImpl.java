@@ -32,8 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.LogicalDocuments;
@@ -295,7 +295,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                     statement,
                                                     cluster ).build();
 
-                                            TableModify deleteModify = LogicalModify.create(
+                                            Modify deleteModify = LogicalModify.create(
                                                     physical,
                                                     catalogReader,
                                                     input,
@@ -332,7 +332,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                     statement,
                                                     cluster ).build();
 
-                                            TableModify insertModify = modifiableTable.toModificationRel(
+                                            Modify insertModify = modifiableTable.toModificationRel(
                                                     cluster,
                                                     physical,
                                                     catalogReader,
@@ -455,7 +455,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                                         // Build DML
-                                        TableModify adjustedModify = modifiableTable.toModificationAlg(
+                                        Modify adjustedModify = modifiableTable.toModificationAlg(
                                                 cluster,
                                                 physical,
                                                 catalogReader,
@@ -532,7 +532,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                                                 // Build DML
-                                                TableModify adjustedModify = modifiableTable.toModificationAlg(
+                                                Modify adjustedModify = modifiableTable.toModificationAlg(
                                                         cluster,
                                                         physical,
                                                         catalogReader,
@@ -619,7 +619,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             AlgOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
 
                             // Build DML
-                            TableModify adjustedModify;
+                            Modify adjustedModify;
                             AlgNode input = buildDml(
                                     super.recursiveCopy( modify.getInput( 0 ) ),
                                     RoutedAlgBuilder.create( statement, cluster ),

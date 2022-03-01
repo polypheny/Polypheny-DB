@@ -28,7 +28,7 @@ import org.polypheny.db.adapter.cassandra.CassandraAlg.CassandraImplementContext
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -44,13 +44,13 @@ import org.polypheny.db.util.Pair;
 
 
 @Slf4j
-public class CassandraTableModify extends TableModify implements CassandraAlg {
+public class CassandraTableModify extends Modify implements CassandraAlg {
 
     public final CassandraTable cassandraTable;
 
 
     /**
-     * Creates a {@code TableModify}.
+     * Creates a {@code Modify}.
      * <p>
      * The UPDATE operation has format like this:
      * <blockquote>

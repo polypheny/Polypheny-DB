@@ -36,8 +36,8 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.logical.LogicalConditionalExecute;
@@ -86,10 +86,10 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         if ( !logicalRoot.kind.belongsTo( Kind.DML ) ) {
             return logicalRoot;
         }
-        if ( !(logicalRoot.alg instanceof TableModify) ) {
+        if ( !(logicalRoot.alg instanceof Modify) ) {
             return logicalRoot;
         }
-        final TableModify root = (TableModify) logicalRoot.alg;
+        final Modify root = (Modify) logicalRoot.alg;
 
         final Catalog catalog = Catalog.getInstance();
         final CatalogSchema schema = statement.getTransaction().getDefaultSchema();

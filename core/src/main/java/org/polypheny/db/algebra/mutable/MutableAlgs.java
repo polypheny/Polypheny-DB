@@ -49,13 +49,13 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sample;
 import org.polypheny.db.algebra.core.Scan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
@@ -374,8 +374,8 @@ public abstract class MutableAlgs {
             final MutableAlg input = toMutable( window.getInput() );
             return MutableWindow.of( window.getRowType(), input, window.groups, window.getConstants() );
         }
-        if ( alg instanceof TableModify ) {
-            final TableModify modify = (TableModify) alg;
+        if ( alg instanceof Modify ) {
+            final Modify modify = (Modify) alg;
             final MutableAlg input = toMutable( modify.getInput() );
             return MutableTableModify.of(
                     modify.getRowType(),

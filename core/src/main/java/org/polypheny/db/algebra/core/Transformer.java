@@ -60,7 +60,7 @@ public class Transformer extends SingleAlg {
      * DQL operations can be ignored by the stores, as they are most of the time handled by the EnumerableTransformer after the store supported scan
      * DML operations need adjustment of the operation itself.
      *
-     * e.g. TableModify -> Values
+     * e.g. Modify -> Values
      *
      * @param cluster Cluster this relational expression belongs to
      * @param traits

@@ -48,8 +48,8 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
-import org.polypheny.db.algebra.core.TableModify.Operation;
+import org.polypheny.db.algebra.core.Modify;
+import org.polypheny.db.algebra.core.Modify.Operation;
 import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -243,7 +243,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
 
 
     @Override
-    public TableModify toModificationAlg(
+    public Modify toModificationAlg(
             AlgOptCluster cluster,
             AlgOptTable table,
             CatalogReader catalogReader,

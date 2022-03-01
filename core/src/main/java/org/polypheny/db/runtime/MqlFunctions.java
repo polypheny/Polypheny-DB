@@ -211,7 +211,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateRemove( Object input, List names ) {
-        // TODO enable as soon as pushing down of TableModify is possible
+        // TODO enable as soon as pushing down of Modify is possible
         Map<String, ?> doc = (Map) deserializeBsonIfNecessary( input );
         String name;
         Iterator<String> iter = names.iterator();
@@ -237,7 +237,7 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateReplace( Object input, List names, List values ) {
-        // TODO enable as soon as pushing down of TableModify is possible
+        // TODO enable as soon as pushing down of Modify is possible
         Map<String, Object> doc = (Map) deserializeBsonIfNecessary( input );
         String name;
         Iterator<String> iter = names.iterator();
@@ -263,7 +263,7 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static Object docUpdateRename( Object input, List names, List newNames ) {
-        // TODO enable as soon as pushing down of TableModify is possible
+        // TODO enable as soon as pushing down of Modify is possible
         Map<String, Object> doc = (Map) deserializeBsonIfNecessary( input );
         String name;
         Iterator<String> iter = names.iterator();

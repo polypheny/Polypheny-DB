@@ -43,7 +43,7 @@ import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -410,7 +410,7 @@ public class FrameworksTest extends SqlLanguagelDependant {
 
 
         @Override
-        public TableModify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, TableModify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+        public Modify toModificationAlg( AlgOptCluster cluster, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode child, Modify.Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
             return LogicalModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
         }
 

@@ -36,7 +36,7 @@ package org.polypheny.db.algebra.logical;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -46,9 +46,9 @@ import org.polypheny.db.rex.RexNode;
 
 
 /**
- * Sub-class of {@link TableModify} not targeted at any particular engine or calling convention.
+ * Sub-class of {@link Modify} not targeted at any particular engine or calling convention.
  */
-public final class LogicalModify extends TableModify {
+public final class LogicalModify extends Modify {
 
     /**
      * Creates a LogicalModify.

@@ -27,7 +27,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgVisitor;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.prepare.AlgOptTableImpl;
@@ -191,9 +191,9 @@ public class TableAccessMap {
             Mode newAccess;
 
             // FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
-            //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
+            //  something which doesn't inherit Modify, and this will break. Need to make this explicit in the
             //  {@link AlgNode} interface.
-            if ( p instanceof TableModify ) {
+            if ( p instanceof Modify ) {
                 newAccess = Mode.WRITE_ACCESS;
             } else {
                 newAccess = Mode.READ_ACCESS;

@@ -68,7 +68,7 @@ import org.polypheny.db.type.PolyTypeUtil;
  * <li>for {@code UPDATE}, all old values plus updated new values.
  * </ul>
  */
-public abstract class TableModify extends SingleAlg {
+public abstract class Modify extends SingleAlg {
 
     /**
      * Enumeration of supported modification operations.
@@ -95,7 +95,7 @@ public abstract class TableModify extends SingleAlg {
 
 
     /**
-     * Creates a {@code TableModify}.
+     * Creates a {@code Modify}.
      *
      * The UPDATE operation has format like this:
      * <blockquote>
@@ -112,7 +112,7 @@ public abstract class TableModify extends SingleAlg {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    protected TableModify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    protected Modify( AlgOptCluster cluster, AlgTraitSet traitSet, AlgOptTable table, Prepare.CatalogReader catalogReader, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( cluster, traitSet, input );
         this.table = table;
         this.catalogReader = catalogReader;

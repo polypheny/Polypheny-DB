@@ -62,8 +62,8 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Documents;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalAggregate;
 import org.polypheny.db.algebra.logical.LogicalFilter;
@@ -739,13 +739,13 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( TableModify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
+            super( Modify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final TableModify modify = (TableModify) alg;
+            final Modify modify = (Modify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -770,7 +770,7 @@ public class MongoRules {
     }
 
 
-    private static class MongoTableModify extends TableModify implements MongoAlg {
+    private static class MongoTableModify extends Modify implements MongoAlg {
 
 
         private final GridFSBucket bucket;

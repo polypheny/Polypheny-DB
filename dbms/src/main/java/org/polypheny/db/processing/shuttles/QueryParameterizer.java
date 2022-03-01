@@ -29,7 +29,7 @@ import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.TableModify;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.logical.LogicalFilter;
 import org.polypheny.db.algebra.logical.LogicalModify;
 import org.polypheny.db.algebra.logical.LogicalModifyCollect;
@@ -102,7 +102,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public AlgNode visit( AlgNode other ) {
-        if ( other instanceof TableModify ) {
+        if ( other instanceof Modify ) {
             LogicalModify modify = (LogicalModify) super.visit( other );
             List<RexNode> newSourceExpression = null;
             if ( modify.getSourceExpressionList() != null ) {

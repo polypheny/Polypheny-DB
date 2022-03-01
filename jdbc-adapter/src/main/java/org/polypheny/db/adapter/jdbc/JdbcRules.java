@@ -60,10 +60,10 @@ import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Transformer;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
@@ -994,15 +994,15 @@ public class JdbcRules {
          * Creates a JdbcTableModificationRule.
          */
         private JdbcTableModificationRule( JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( TableModify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcTableModificationRule." + out );
+            super( Modify.class, (Predicate<AlgNode>) r -> true, Convention.NONE, out, algBuilderFactory, "JdbcTableModificationRule." + out );
         }
 
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final TableModify tableModify = call.alg( 0 );
-            if ( tableModify.getTable().unwrap( JdbcTable.class ) != null ) {
-                JdbcTable table = tableModify.getTable().unwrap( JdbcTable.class );
+            final Modify modify = call.alg( 0 );
+            if ( modify.getTable().unwrap( JdbcTable.class ) != null ) {
+                JdbcTable table = modify.getTable().unwrap( JdbcTable.class );
                 if ( out.getJdbcSchema() == table.getSchema() ) {
                     return true;
                 }
@@ -1013,7 +1013,7 @@ public class JdbcRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final TableModify modify = (TableModify) alg;
+            final Modify modify = (Modify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -1037,7 +1037,7 @@ public class JdbcRules {
     /**
      * Table-modification operator implemented in JDBC convention.
      */
-    public static class JdbcTableModify extends TableModify implements JdbcAlg {
+    public static class JdbcTableModify extends Modify implements JdbcAlg {
 
         private final Expression expression;
 

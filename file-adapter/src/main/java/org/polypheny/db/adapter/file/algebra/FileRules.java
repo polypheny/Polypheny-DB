@@ -29,8 +29,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Modify;
 import org.polypheny.db.algebra.core.Project;
-import org.polypheny.db.algebra.core.TableModify;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.logical.LogicalProject;
@@ -69,18 +69,18 @@ public class FileRules {
 
 
         public FileTableModificationRule( FileConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( TableModify.class, r -> true, Convention.NONE, out, algBuilderFactory, "FileTableModificationRule:" + out.getName() );
+            super( Modify.class, r -> true, Convention.NONE, out, algBuilderFactory, "FileTableModificationRule:" + out.getName() );
             this.convention = out;
         }
 
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final TableModify tableModify = call.alg( 0 );
-            if ( tableModify.getTable().unwrap( FileTranslatableTable.class ) == null ) {
+            final Modify modify = call.alg( 0 );
+            if ( modify.getTable().unwrap( FileTranslatableTable.class ) == null ) {
                 return false;
             }
-            FileTranslatableTable table = tableModify.getTable().unwrap( FileTranslatableTable.class );
+            FileTranslatableTable table = modify.getTable().unwrap( FileTranslatableTable.class );
             /*if ( convention.getFileSchema() != table.getFileSchema() ) {
                 return false;
             }*/
@@ -91,7 +91,7 @@ public class FileRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final TableModify modify = (TableModify) alg;
+            final Modify modify = (Modify) alg;
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             //todo this check might be redundant
             if ( modifiableTable == null ) {
